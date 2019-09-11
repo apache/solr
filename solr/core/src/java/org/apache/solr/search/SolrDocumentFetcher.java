@@ -124,7 +124,7 @@ public class SolrDocumentFetcher {
       documentCache =
           solrConfig.documentCacheConfig == null
               ? null
-              : solrConfig.documentCacheConfig.newInstance();
+              : solrConfig.documentCacheConfig.newInstance(searcher.getCore());
     } else {
       documentCache = null;
     }

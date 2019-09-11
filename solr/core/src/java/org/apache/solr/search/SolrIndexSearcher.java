@@ -374,15 +374,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       fieldValueCache =
           solrConfig.fieldValueCacheConfig == null
               ? null
-              : solrConfig.fieldValueCacheConfig.newInstance();
+              : solrConfig.fieldValueCacheConfig.newInstance(core);
       if (fieldValueCache != null) clist.add(fieldValueCache);
       filterCache =
-          solrConfig.filterCacheConfig == null ? null : solrConfig.filterCacheConfig.newInstance();
+          solrConfig.filterCacheConfig == null
+              ? null
+              : solrConfig.filterCacheConfig.newInstance(core);
       if (filterCache != null) clist.add(filterCache);
       queryResultCache =
           solrConfig.queryResultCacheConfig == null
               ? null
-              : solrConfig.queryResultCacheConfig.newInstance();
+              : solrConfig.queryResultCacheConfig.newInstance(core);
       if (queryResultCache != null) clist.add(queryResultCache);
       SolrCache<Integer, Document> documentCache = docFetcher.getDocumentCache();
       if (documentCache != null) clist.add(documentCache);
@@ -392,7 +394,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String, CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          SolrCache<?, ?> cache = e.getValue().newInstance();
+          SolrCache cache = e.getValue().newInstance(core);
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);

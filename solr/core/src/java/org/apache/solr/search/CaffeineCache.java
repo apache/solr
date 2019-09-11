@@ -464,6 +464,10 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
 
+  public Cache<K, V> getCache() {
+    return cache;
+  }
+
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
