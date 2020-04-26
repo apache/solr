@@ -712,6 +712,19 @@
        any data added to them will be ignored outright.  -->
   <fieldtype name="ignored" stored="false" indexed="false" docValues="false" multiValued="true" class="solr.StrField"/>
 
+  <fieldType name="location" class="solr.LatLonPointSpatialField" />
+
+  <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
+       Parameters:
+         defaultCurrency: Specifies the default currency if none specified. Defaults to "USD"
+         precisionStep:   Specifies the precisionStep for the TrieLong field used for the amount
+         providerClass:   Lets you plug in other exchange provider backend:
+                          solr.FileExchangeRateProvider is the default and takes one parameter:
+                            currencyConfig: name of an xml file holding exchange rates
+                          solr.OpenExchangeRatesOrgProvider uses rates from openexchangerates.org:
+                            ratesFileLocation: URL or path to rates JSON file (default latest.json on the web)
+                            refreshInterval: Number of minutes between each rates fetch (default: 1440, min: 60)
+  -->
   <fieldType name="currency" class="solr.CurrencyField" precisionStep="8" defaultCurrency="USD"
              currencyConfig="currency.xml"/>
 
