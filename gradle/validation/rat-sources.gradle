@@ -102,6 +102,12 @@ allprojects {
                     exclude "src/test-files/META-INF/services/*"
                     break
 
+                case ":solr:contrib:hdfs":
+                    exclude "src/test-files/**/*.aff"
+                    exclude "src/test-files/**/*.dic"
+                    exclude "src/test-files/**/*.incl"
+                    break
+
                 case ":solr:contrib:langid":
                     exclude "**/langdetect-profiles/*"
                     break

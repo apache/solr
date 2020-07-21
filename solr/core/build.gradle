@@ -109,7 +109,6 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
   testImplementation 'org.apache.commons:commons-compress' // required for customized hadoop classes
 
   implementation ('net.hydromatic:eigenbase-properties') { transitive = false }
@@ -127,8 +126,7 @@ dependencies {
   testImplementation project(':solr:test-framework')
 
   testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
+
   testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
   testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
 
