@@ -107,6 +107,9 @@ The `response` field is now a map, containing information about the backup (`sta
 * SOLR-15884: In Backup request responses, the `response` key now uses a map to return information instead of a list.
 This is only applicable for users returning information in JSON format, which is the default behavior.
 
+* SOLR-14660: HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
+changes, however the module needs to be installed - see <<solr-on-hdfs.adoc#,Running Solr on HDFS>>.
+
 == New Features & Enhancements
 
 * Replica placement plugins
@@ -272,8 +275,6 @@ This feature has been migrated to an installable package at https://github.com/e
 Users have to modify their existing configurations to use CaffeineCache instead. (ab)
 
 * CDCR
-
-* Storing indexes and backups in HDFS
 
 * Solr's blob store
 ** SOLR-14654: plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use and load plugins
