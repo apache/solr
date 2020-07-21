@@ -401,9 +401,7 @@ An example configuration using this property can be found below.
 
 === HdfsBackupRepository
 
-Stores and retrieves backup files from HDFS directories.
-
-WARNING: HdfsBackupRepository is deprecated and may be removed or relocated in a subsequent version of Solr.
+Stores and retrieves backup files from HDFS directories. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
 
 HdfsBackupRepository accepts the following configuration options:
 

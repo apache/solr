@@ -60,6 +60,6 @@ Use this DirectoryFactory to store your index in RAM.
 
 [NOTE]
 ====
-If you are using Hadoop and would like to store your indexes in HDFS, you should use the {solr-javadocs}/core/org/apache/solr/core/HdfsDirectoryFactory.html[`solr.HdfsDirectoryFactory`] instead of either of the above implementations.
+If you are using Hadoop and would like to store your indexes in HDFS, you should use the {solr-javadocs}/modules/hdfs/org/apache/solr/core/HdfsDirectoryFactory.html[`solr.HdfsDirectoryFactory`] instead of either of the above implementations.
 For more details, see the section <<solr-on-hdfs.adoc#,Solr on HDFS>>.
 ====
