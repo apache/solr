@@ -91,10 +91,15 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
 
       try {
+        SchemaManager schemaMgr = new SchemaManager(req);
         @SuppressWarnings({"rawtypes"})
-        List errs = new SchemaManager(req).performOperations();
+        List errs = schemaMgr.performOperations();
         if (!errs.isEmpty())
           throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
+        int schemaVersion = schemaMgr.getSchemaVersionAfterOps();
+        if (schemaVersion != -1 && rsp.getResponseHeader() != null) {
+          rsp.getResponseHeader().add("schemaZkVersion", schemaVersion);
+        }
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error reading input String " + e.getMessage(), e);
       }
