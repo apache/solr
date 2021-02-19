@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -373,13 +374,13 @@ public class CoreContainer {
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
 
     this.allowPaths = new java.util.HashSet<>();
-    this.allowPaths.add(cfg.getSolrHome());
-    this.allowPaths.add(cfg.getCoreRootDirectory());
+    addToAllowPath(cfg.getSolrHome());
+    addToAllowPath(cfg.getCoreRootDirectory());
     if (cfg.getSolrDataHome() != null) {
-      this.allowPaths.add(cfg.getSolrDataHome());
+      addToAllowPath(cfg.getSolrDataHome());
     }
     if (!cfg.getAllowPaths().isEmpty()) {
-      this.allowPaths.addAll(cfg.getAllowPaths());
+      addAllToAllowPath(cfg.getAllowPaths());
       if (log.isInfoEnabled()) {
         log.info("Allowing use of paths: {}", cfg.getAllowPaths());
       }
@@ -391,6 +392,14 @@ public class CoreContainer {
     } catch (Exception e) {
       log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
     }
+  }
+
+  private void addToAllowPath(Path path) {
+    this.allowPaths.add(path.normalize());
+  }
+
+  private void addAllToAllowPath(Set<Path> paths) {
+    this.allowPaths.addAll(paths.stream().map( path -> path.normalize()).collect(Collectors.toSet()));
   }
 
   @SuppressWarnings({"unchecked"})
