@@ -390,9 +390,26 @@ public class TestDocSet extends SolrTestCase {
     return mr;
   }
 
+  private boolean checkNullOrEmpty(DocIdSetIterator ia, DocIdSetIterator ib) throws IOException {
+    if (ia == null || ib == null) {
+      if (ia != null) {
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, ia.nextDoc());
+      }
+      if (ib != null) {
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, ib.nextDoc());
+      }
+      return true;
+    }
+    return false;
+  }
+
   public void doTestIteratorEqual(DocIdSet a, DocIdSet b) throws IOException {
     DocIdSetIterator ia = a.iterator();
     DocIdSetIterator ib = b.iterator();
+    if (checkNullOrEmpty(ia, ib)) {
+      // both iterators are empty or null (equivalent), so there's nothing more to check
+      return;
+    }
 
     // test for next() equivalence
     for(;;) {

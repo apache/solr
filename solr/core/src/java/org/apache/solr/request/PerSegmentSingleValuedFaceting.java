@@ -304,6 +304,11 @@ class PerSegmentSingleValuedFaceting {
       DocIdSet idSet = baseSet.getDocIdSet(context, null);  // this set only includes live docs
       DocIdSetIterator iter = idSet.iterator();
 
+      if (iter == null) {
+        // `DocIdSet.iterator()` can return null instead of empty DocIdSetIterator
+        return;
+      }
+
       if (prefix==null) {
         // specialized version when collecting counts for all terms
         int doc;
