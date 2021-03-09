@@ -18,10 +18,12 @@ package org.apache.solr.search;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import com.carrotsearch.hppc.IntHashSet;
-import org.apache.lucene.index.LeafReader;
+
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
@@ -671,107 +673,141 @@ public class SortedIntDocSet extends DocSet {
     return new BitDocSet(newbits);
   }
 
-  @Override
-  public Filter getTopFilter() {
-    return new Filter() {
+  private int[] cachedOrdIdxMap;
+  private int[] getOrdIdxMap(LeafReaderContext ctx) {
+    final int[] ret;
+    if (ctx.isTopLevel) {
+      // don't bother caching this?
+      ret = new int[] {0, docs.length - 1};
+    } else if (cachedOrdIdxMap != null) {
+      ret = cachedOrdIdxMap;
+    } else {
+      List<LeafReaderContext> leaves = ReaderUtil.getTopLevelContext(ctx).leaves();
+      ret = new int[leaves.size() << 1];
       int lastEndIdx = 0;
-
-      @Override
-      public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) {
-        LeafReader reader = context.reader();
-        // all Solr DocSets that are used as filters only include live docs
-        final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
-
-        final int base = context.docBase;
-        final int maxDoc = reader.maxDoc();
+      for (LeafReaderContext lrc : leaves) {
+        final int base = lrc.docBase;
+        final int maxDoc = lrc.reader().maxDoc();
         final int max = base + maxDoc;   // one past the max doc in this segment.
         int sidx = Math.max(0,lastEndIdx);
 
-        if (sidx > 0 && docs[sidx-1] >= base) {
-          // oops, the lastEndIdx isn't correct... we must have been used
-          // in a multi-threaded context, or the indexreaders are being
-          // used out-of-order.  start at 0.
-          sidx = 0;
-        }
         if (sidx < docs.length && docs[sidx] < base) {
           // if docs[sidx] is < base, we need to seek to find the real start.
           sidx = findIndex(docs, base, sidx, docs.length-1);
         }
 
-        final int startIdx = sidx;
-
         // Largest possible end index is limited to the start index
         // plus the number of docs contained in the segment.  Subtract 1 since
         // the end index is inclusive.
-        int eidx = Math.min(docs.length, startIdx + maxDoc) - 1;
+        int eidx = Math.min(docs.length, sidx + maxDoc) - 1;
 
         // find the real end
-        eidx = findIndex(docs, max, startIdx, eidx) - 1;
+        eidx = findIndex(docs, max, sidx, eidx) - 1;
 
-        final int endIdx = eidx;
-        lastEndIdx = endIdx;
+        final int mapOrdIdx = lrc.ord << 1;
+        ret[mapOrdIdx] = sidx;
+        ret[mapOrdIdx + 1] = eidx;
+        lastEndIdx = eidx;
+      }
+      cachedOrdIdxMap = ret; // replace atomically after building
+    }
+    return ret;
+  }
 
+  @Override
+  public DocIdSetIterator iterator(LeafReaderContext context) {
+
+    if (docs.length == 0 || context.reader().maxDoc() < 1) {
+      // empty docset or entirely empty segment (verified that the latter actually happens)
+      // NOTE: wrt the "empty docset" case, this is not just an optimization; this shortcircuits also
+      // to prevent the static DocSet.EmptyLazyHolder.INSTANCE from having cachedOrdIdxMap initiated
+      // across different IndexReaders.
+      return null;
+    }
+
+    int[] ordIdxMap = getOrdIdxMap(context);
+    final int base = context.docBase;
+
+    final int mapOrdIdx = context.ord << 1;
+    final int startIdx = ordIdxMap[mapOrdIdx];
+    final int endIdx = ordIdxMap[mapOrdIdx + 1];
+
+    if (startIdx > endIdx) {
+      return null; // verified this does happen
+    }
+
+    return new DocIdSetIterator() {
+      int idx = startIdx;
+      int adjustedDoc = -1;
+
+      @Override
+      public int docID() {
+        return adjustedDoc;
+      }
+
+      @Override
+      public int nextDoc() {
+        return adjustedDoc = (idx > endIdx) ? NO_MORE_DOCS : (docs[idx++] - base);
+      }
+
+      @Override
+      public int advance(int target) {
+        if (idx > endIdx || target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
+        target += base;
+
+        // probe next
+        int rawDoc = docs[idx++];
+        if (rawDoc >= target) return adjustedDoc=rawDoc-base;
+
+        int high = endIdx;
+
+        // TODO: probe more before resorting to binary search?
+
+        // binary search
+        while (idx <= high) {
+          int mid = (idx+high) >>> 1;
+          rawDoc = docs[mid];
+
+          if (rawDoc < target) {
+            idx = mid+1;
+          }
+          else if (rawDoc > target) {
+            high = mid-1;
+          }
+          else {
+            idx=mid+1;
+            return adjustedDoc=rawDoc - base;
+          }
+        }
+
+        // low is on the insertion point...
+        if (idx <= endIdx) {
+          return adjustedDoc = docs[idx++] - base;
+        } else {
+          return adjustedDoc=NO_MORE_DOCS;
+        }
+      }
+
+      @Override
+      public long cost() {
+        return docs.length;
+      }
+    };
+  }
+
+  @Override
+  public Filter getTopFilter() {
+    return new Filter() {
+
+      @Override
+      public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) {
+        // all Solr DocSets that are used as filters only include live docs
+        final Bits acceptDocs2 = acceptDocs == null ? null : (context.reader().getLiveDocs() == acceptDocs ? null : acceptDocs);
 
         return BitsFilteredDocIdSet.wrap(new DocIdSet() {
           @Override
           public DocIdSetIterator iterator() {
-            return new DocIdSetIterator() {
-              int idx = startIdx;
-              int adjustedDoc = -1;
-
-              @Override
-              public int docID() {
-                return adjustedDoc;
-              }
-
-              @Override
-              public int nextDoc() {
-                return adjustedDoc = (idx > endIdx) ? NO_MORE_DOCS : (docs[idx++] - base);
-              }
-
-              @Override
-              public int advance(int target) {
-                if (idx > endIdx || target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
-                target += base;
-
-                // probe next
-                int rawDoc = docs[idx++];
-                if (rawDoc >= target) return adjustedDoc=rawDoc-base;
-
-                int high = endIdx;
-
-                // TODO: probe more before resorting to binary search?
-
-                // binary search
-                while (idx <= high) {
-                  int mid = (idx+high) >>> 1;
-                  rawDoc = docs[mid];
-
-                  if (rawDoc < target) {
-                    idx = mid+1;
-                  }
-                  else if (rawDoc > target) {
-                    high = mid-1;
-                  }
-                  else {
-                    idx=mid+1;
-                    return adjustedDoc=rawDoc - base;
-                  }
-                }
-
-                // low is on the insertion point...
-                if (idx <= endIdx) {
-                  return adjustedDoc = docs[idx++] - base;
-                } else {
-                  return adjustedDoc=NO_MORE_DOCS;
-                }
-              }
-
-              @Override
-              public long cost() {
-                return docs.length;
-              }
-            };
+            return SortedIntDocSet.this.iterator(context);
           }
 
           @Override
