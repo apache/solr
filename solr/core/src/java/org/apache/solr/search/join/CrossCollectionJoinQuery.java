@@ -29,7 +29,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -61,7 +60,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetUtil;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 public class CrossCollectionJoinQuery extends Query {
@@ -178,7 +176,7 @@ public class CrossCollectionJoinQuery extends Query {
 
     private SolrIndexSearcher searcher;
     private ScoreMode scoreMode;
-    private Filter filter;
+    private DocSet docs;
 
     public CrossCollectionJoinQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float score) {
       super(CrossCollectionJoinQuery.this, score);
@@ -307,15 +305,11 @@ public class CrossCollectionJoinQuery extends Query {
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      if (filter == null) {
-        filter = getDocSet().getTopFilter();
+      if (docs == null) {
+        docs = getDocSet();
       }
 
-      DocIdSet readerSet = filter.getDocIdSet(context, null);
-      if (readerSet == null) {
-        return null;
-      }
-      DocIdSetIterator readerSetIterator = readerSet.iterator();
+      DocIdSetIterator readerSetIterator = docs.iterator(context);
       if (readerSetIterator == null) {
         return null;
       }

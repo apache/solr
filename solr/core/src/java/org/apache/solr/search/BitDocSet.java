@@ -237,7 +237,8 @@ public class BitDocSet extends DocSet {
     return new BitDocSet(bits.clone(), size);
   }
 
-  private Bits getBits(LeafReaderContext context) {
+  @Override
+  public Bits getBits(LeafReaderContext context) {
     if (context.isTopLevel) {
       return bits;
     }

@@ -57,7 +57,6 @@ import org.apache.solr.search.DocSetBuilder;
 import org.apache.solr.search.DocSetProducer;
 import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.ExtendedQueryBase;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /** @lucene.experimental */
@@ -320,16 +319,25 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   private static class SegState {
     final Weight weight;
-    final DocIdSet set;
+    final DocSet docs;
+    final DocIdSet docIdSet;
 
     SegState(Weight weight) {
       this.weight = weight;
-      this.set = null;
+      this.docs = null;
+      this.docIdSet = null;
     }
 
-    SegState(DocIdSet set) {
-      this.set = set;
+    SegState(DocSet docs) {
+      this.docs = docs;
       this.weight = null;
+      this.docIdSet = null;
+    }
+
+    SegState(DocIdSet docIdSet) {
+      this.docs = null;
+      this.weight = null;
+      this.docIdSet = docIdSet;
     }
   }
 
@@ -341,7 +349,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     final IndexSearcher searcher;
     final ScoreMode scoreMode;
     boolean checkedFilterCache;
-    Filter filter;
+    DocSet answer;
     final SegState[] segStates;
 
 
@@ -400,17 +408,14 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
           doCheck = false;
         } else {
           solrSearcher = (SolrIndexSearcher)searcher;
-          DocSet answer = solrSearcher.getFilterCache().get(SolrRangeQuery.this);
-          if (answer != null) {
-            filter = answer.getTopFilter();
-          }
+          answer = solrSearcher.getFilterCache().get(SolrRangeQuery.this);
         }
       } else {
         doCheck = false;
       }
       
-      if (filter != null) {
-        return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
+      if (answer != null) {
+        return segStates[context.ord] = new SegState(answer);
       }
 
       final Terms terms = context.reader().terms(SolrRangeQuery.this.getField());
@@ -439,10 +444,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       // Too many terms for boolean query...
 
       if (doCheck) {
-        DocSet answer = createDocSet(solrSearcher, count);
+        answer = createDocSet(solrSearcher, count);
         solrSearcher.getFilterCache().put(SolrRangeQuery.this, answer);
-        filter = answer.getTopFilter();
-        return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
+        return segStates[context.ord] = new SegState(answer);
       }
 
       /* FUTURE: reuse term states in the future to help build DocSet, use collected count so far...
@@ -484,11 +488,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       return segStates[context.ord] = new SegState(segSet);
     }
 
-    private Scorer scorer(DocIdSet set) throws IOException {
-      if (set == null) {
-        return null;
-      }
-      final DocIdSetIterator disi = set.iterator();
+    private Scorer scorer(DocIdSetIterator disi) throws IOException {
       if (disi == null) {
         return null;
       }
@@ -501,7 +501,15 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (weightOrBitSet.weight != null) {
         return weightOrBitSet.weight.bulkScorer(context);
       } else {
-        final Scorer scorer = scorer(weightOrBitSet.set);
+        final DocIdSetIterator disi;
+        if (weightOrBitSet.docs != null) {
+          disi = weightOrBitSet.docs.iterator(context);
+        } else if (weightOrBitSet.docIdSet != null) {
+          disi = weightOrBitSet.docIdSet.iterator();
+        } else {
+          disi = null;
+        }
+        final Scorer scorer = scorer(disi);
         if (scorer == null) {
           return null;
         }
@@ -515,7 +523,15 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (weightOrBitSet.weight != null) {
         return weightOrBitSet.weight.scorer(context);
       } else {
-        return scorer(weightOrBitSet.set);
+        final DocIdSetIterator disi;
+        if (weightOrBitSet.docs != null) {
+          disi = weightOrBitSet.docs.iterator(context);
+        } else if (weightOrBitSet.docIdSet != null) {
+          disi = weightOrBitSet.docIdSet.iterator();
+        } else {
+          disi = null;
+        }
+        return scorer(disi);
       }
     }
 

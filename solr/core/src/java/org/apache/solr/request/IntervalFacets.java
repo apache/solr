@@ -274,15 +274,10 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   }
 
   private void getCountString() throws IOException {
-    Filter filter = docs.getTopFilter();
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
       LeafReaderContext leaf = leaves.get(subIndex);
-      DocIdSet dis = filter.getDocIdSet(leaf, null); // solr docsets already exclude any deleted docs
-      if (dis == null) {
-        continue;
-      }
-      DocIdSetIterator disi = dis.iterator();
+      final DocIdSetIterator disi = docs.iterator(leaf); // solr docsets already exclude any deleted docs
       if (disi != null) {
         if (schemaField.multiValued()) {
           SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(schemaField.getName());
@@ -292,16 +287,16 @@ public class IntervalFacets implements Iterable<FacetInterval> {
           final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
           if (singleton != null) {
             // some codecs may optimize SORTED_SET storage for single-valued fields
-            accumIntervalsSingle(singleton, disi, dis.bits());
+            accumIntervalsSingle(singleton, disi, docs.getBits(leaf));
           } else {
-            accumIntervalsMulti(sub, disi, dis.bits());
+            accumIntervalsMulti(sub, disi, docs.getBits(leaf));
           }
         } else {
           SortedDocValues sub = leaf.reader().getSortedDocValues(schemaField.getName());
           if (sub == null) {
             continue;
           }
-          accumIntervalsSingle(sub, disi, dis.bits());
+          accumIntervalsSingle(sub, disi, docs.getBits(leaf));
         }
       }
     }

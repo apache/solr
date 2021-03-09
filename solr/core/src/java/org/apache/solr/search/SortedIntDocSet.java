@@ -628,6 +628,12 @@ public class SortedIntDocSet extends DocSet {
     };
   }
 
+  @Override
+  public Bits getBits(LeafReaderContext context) {
+    // random access is expensive for this set
+    return null;
+  }
+
   /** the {@link Bits#length()} or maxdoc (1 greater than largest possible doc number) */
   private int getLength() {
     return size() == 0 ? 0 : getDocs()[size() - 1] + 1;
