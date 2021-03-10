@@ -24,7 +24,6 @@ import java.lang.reflect.Constructor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -272,7 +271,7 @@ public abstract class ConfigSetService {
 
     @Override
     protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
-      Path schemaFile = Paths.get(solrConfig.getResourceLoader().getConfigDir()).resolve(schemaFileName);
+      Path schemaFile = solrConfig.getResourceLoader().getConfigPath().resolve(schemaFileName);
       try {
         return Files.getLastModifiedTime(schemaFile).toMillis();
       } catch (FileNotFoundException e) {
