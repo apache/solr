@@ -15,10 +15,7 @@
     limitations under the License.
  -->
 
-# Apache Lucene and Solr
-
-Apache Lucene is a high-performance, full featured text search engine library
-written in Java.
+# Apache Solr
 
 Apache Solr is an enterprise search platform written in Java and using Apache Lucene.
 Major features include full-text search, index replication and sharding, and
@@ -31,18 +28,9 @@ result faceting and highlighting.
 ## Online Documentation
 
 This README file only contains basic setup instructions.  For more
-comprehensive documentation, visit:
-
-- Lucene: <http://lucene.apache.org/core/documentation.html>
-- Solr: <http://lucene.apache.org/solr/guide/>
+comprehensive documentation, visit <https://solr.apache.org/guide/>
 
 ## Building with Gradle
-
-### Building Lucene
-
-See [lucene/BUILD.md](./lucene/BUILD.md).
-
-### Building Solr
 
 Firstly, you need to set up your development environment (OpenJDK 11 or greater).
 
@@ -51,7 +39,7 @@ don't, then we suggest starting at https://www.oracle.com/java/ and learning
 more about Java, before returning to this README. Solr runs with
 Java 11 and later.
 
-As of 9.0, Lucene/Solr uses [Gradle](https://gradle.org/) as the build
+As of 9.0, Solr uses [Gradle](https://gradle.org/) as the build
 system. Ant build support has been removed.
 
 To build Lucene and Solr, run (`./` can be omitted on Windows):
@@ -83,7 +71,7 @@ If you want to build the documentation, type `./gradlew -p solr documentation`.
 
 ## Running Solr
 
-After [building Solr](#building-lucene-solr), the server can be started using
+After building Solr, the server can be started using
 the `bin/solr` control scripts.  Solr can be run in either standalone or
 distributed (SolrCloud mode).
 
@@ -129,8 +117,7 @@ contributing.
 
 ## Discussion and Support
 
-- [Users Mailing List](http://lucene.apache.org/solr/community.html#solr-user-list-solr-userluceneapacheorg)
-- [Developers Mailing List](http://lucene.apache.org/solr/community.html#developer-list-devluceneapacheorg)
-- [Lucene Issue Tracker](https://issues.apache.org/jira/browse/LUCENE)
-- [Solr Issue Tracker](https://issues.apache.org/jira/browse/SOLR)
+- [Mailing Lists](https://solr.apache.org/community.html#mailing-lists-chat)
+- [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
 - IRC: `#solr` and `#solr-dev` on freenode.net
+- [Slack](https://solr.apache.org/community.html#slack) 
