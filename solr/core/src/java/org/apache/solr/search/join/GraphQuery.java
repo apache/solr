@@ -269,7 +269,6 @@ public class GraphQuery extends Query {
       if (resultSet == null) {
         resultSet = getDocSet();
       }
-      // nocommit: there was previously a filter (below) for `context.reader().getLiveDocs()` -- probably superfluous?
       DocIdSetIterator disi = resultSet.iterator(context);
       // create a scrorer on the result set, if results from right query are empty, use empty iterator.
       return new GraphScorer(this, disi == null ? DocIdSetIterator.empty() : disi, 1);
