@@ -24,6 +24,9 @@ project's git repository now:
 - Lucene: <https://gitbox.apache.org/repos/asf/lucene.git>
 - Solr: <https://gitbox.apache.org/repos/asf/solr.git>
 
+If you're seeing this message then switch the development to 'main':
+git checkout main
+
 Development for branch 8x remains in the shared repository:
 
 - https://gitbox.apache.org/repos/asf/lucene-solr.git
