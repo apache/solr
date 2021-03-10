@@ -217,6 +217,9 @@ Bug fixes
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
 
+* LUCENE-9580: Fix bug in the polygon tessellator when introducing collinear edges during polygon 
+  splitting. (Ignacio Vera)  
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-9669: DirectoryReader#open now accepts an argument to open indices created with versions
@@ -265,6 +268,8 @@ Other
   to separate reading header/footer from reading content of the file. (Ignacio Vera)
 
 * LUCENE-9773: Upgrade icu to 68.2 (Robert Muir)
+
+* LUCENE-9822: Add assertion to PFOR exception encoding, documenting the BLOCK_SIZE assumption. (Greg Miller)
 
 ======================= Lucene 8.9.0 =======================
 
