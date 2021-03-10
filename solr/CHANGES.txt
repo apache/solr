@@ -292,6 +292,8 @@ Bug Fixes
 * SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
   (Thomas Wöckinger, David Smiley)
 
+* SOLR-15170: Elevation file in data dir now works in Solr Cloud. (Bruno Roustant)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)

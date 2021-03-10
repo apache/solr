@@ -226,14 +226,15 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         // If not overridden handleInitializationException() simply skips this exception.
         throw new InitializationException("Missing component parameter " + CONFIG_FILE + " - it has to define the path to the elevation configuration file", InitializationExceptionCause.NO_CONFIG_FILE_DEFINED);
       }
-      boolean configFileExists = false;
-      ElevationProvider elevationProvider = NO_OP_ELEVATION_PROVIDER;
-
-      // check if using ZooKeeper
+      ElevationProvider elevationProvider = null;
+      // Check if using ZooKeeper for SolrCloud.
       ZkController zkController = core.getCoreContainer().getZkController();
       if (zkController != null) {
-        // TODO : shouldn't have to keep reading the config name when it has been read before
-        configFileExists = zkController.configFileExists(zkController.getZkStateReader().readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), configFileName);
+        if (zkController.configFileExists(zkController.getZkStateReader().readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), configFileName)) {
+          XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null);
+          elevationProvider = loadElevationProvider(cfg);
+          elevationProviderCache.put(null, elevationProvider);
+        }
       } else {
         File fC = new File(core.getResourceLoader().getConfigDir(), configFileName);
         File fD = new File(core.getDataDir(), configFileName);
@@ -246,7 +247,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             InitializationException e = new InitializationException("Empty config file \"" + configFileName + "\" - " + fC.getAbsolutePath(), InitializationExceptionCause.EMPTY_CONFIG_FILE);
             elevationProvider = handleConfigLoadingException(e, true);
           } else {
-            configFileExists = true;
             if (log.isInfoEnabled()) {
               log.info("Loading QueryElevation from: {}", fC.getAbsolutePath());
             }
@@ -256,9 +256,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           elevationProviderCache.put(null, elevationProvider);
         }
       }
-      //in other words, we think this is in the data dir, not the conf dir
-      if (!configFileExists) {
-        // preload the first data
+      // Check if the ElevationProvider was loaded.
+      // If the config file (elevate.xml) was not found in the config dir, it must be in the data dir.
+      if (elevationProvider == null) {
         RefCounted<SolrIndexSearcher> searchHolder = null;
         try {
           searchHolder = core.getNewestSearcher(false);
@@ -269,7 +269,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             elevationProvider = getElevationProvider(reader, core);
           }
         } finally {
-          if (searchHolder != null) searchHolder.decref();
+          if (searchHolder != null) {
+            searchHolder.decref();
+          }
         }
       }
       return elevationProvider.size();
@@ -321,7 +323,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     synchronized (elevationProviderCache) {
       ElevationProvider elevationProvider;
       elevationProvider = elevationProviderCache.get(null);
-      if (elevationProvider != null) return elevationProvider;
+      if (elevationProvider != null) {
+        return elevationProvider;
+      }
 
       elevationProvider = elevationProviderCache.get(reader);
       if (elevationProvider == null) {
@@ -370,14 +374,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     log.info("Loading QueryElevation from data dir: {}", configFileName);
 
-    XmlConfigFile cfg;
-    ZkController zkController = core.getCoreContainer().getZkController();
-    if (zkController != null) {
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null);
-    } else {
-      InputStream is = VersionedFile.getLatestFile(core.getDataDir(), configFileName);
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null);
-    }
+    InputStream is = VersionedFile.getLatestFile(core.getDataDir(), configFileName);
+    XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null);
     ElevationProvider elevationProvider = loadElevationProvider(cfg);
     assert elevationProvider != null;
     return elevationProvider;
@@ -416,7 +414,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         String id = DOMUtil.getAttr(child, "id", "missing 'id'");
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {
-          if (Boolean.valueOf(e)) {
+          if (Boolean.parseBoolean(e)) {
             elevationBuilder.addExcludedIds(Collections.singleton(id));
             continue;
           }
