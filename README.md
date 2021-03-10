@@ -17,12 +17,12 @@
 
 # Apache Solr
 
-Apache Solr is an enterprise search platform written in Java and using Apache Lucene.
+Apache Solr is an enterprise search platform written in Java and using [Apache Lucene](https://lucene.apache.org/).
 Major features include full-text search, index replication and sharding, and
 result faceting and highlighting.
 
 
-[![Build Status](https://ci-builds.apache.org/job/Lucene/job/Lucene-Artifacts-master/badge/icon?subject=Lucene)](https://ci-builds.apache.org/job/Lucene/job/Lucene-Artifacts-master/) [![Build Status](https://ci-builds.apache.org/job/Lucene/job/Solr-Artifacts-master/badge/icon?subject=Solr)](https://ci-builds.apache.org/job/Lucene/job/Solr-Artifacts-master/)
+[![Build Status](https://ci-builds.apache.org/job/Lucene/job/Solr-Artifacts-master/badge/icon?subject=Solr)](https://ci-builds.apache.org/job/Lucene/job/Solr-Artifacts-master/)
 
 
 ## Online Documentation
@@ -42,7 +42,7 @@ Java 11 and later.
 As of 9.0, Solr uses [Gradle](https://gradle.org/) as the build
 system. Ant build support has been removed.
 
-To build Lucene and Solr, run (`./` can be omitted on Windows):
+To build Solr, run (`./` can be omitted on Windows):
 
 `./gradlew assemble`
 
@@ -102,7 +102,7 @@ directory.
 
 `./gradlew assemble` will build a runnable Solr as noted above.
 
-`./gradlew check` will assemble Lucene/Solr and run all validation
+`./gradlew check` will assemble Solr and run all validation
   tasks unit tests.
 
 `./gradlew help` will print a list of help commands for high-level tasks. One
