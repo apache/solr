@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Explanation;
@@ -124,10 +125,13 @@ public class LTRRescorer extends Rescorer {
     final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
         .createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
 
-    scoreFeatures(searcher,topN, modelWeight, firstPassResults, leaves, reranked);
+    int hitUpto = scoreFeatures(searcher,topN, modelWeight, firstPassResults, leaves, reranked);
+    final ScoreDoc[] rerankHited = new ScoreDoc[hitUpto];
+    System.arraycopy(reranked, 0, rerankHited,0, hitUpto);
+	
     // Must sort all documents that we reranked, and then select the top
-    sortByScore(reranked);
-    return reranked;
+    sortByScore(rerankHited);
+    return rerankHited;
   }
 
   protected static void sortByScore(ScoreDoc[] reranked) {
@@ -161,7 +165,7 @@ public class LTRRescorer extends Rescorer {
     return hits;
   }
 
-  public void scoreFeatures(IndexSearcher indexSearcher,
+  public int scoreFeatures(IndexSearcher indexSearcher,
                             int topN, LTRScoringQuery.ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
                             ScoreDoc[] reranked) throws IOException {
 
@@ -181,14 +185,19 @@ public class LTRRescorer extends Rescorer {
         readerContext = leaves.get(readerUpto);
         endDoc = readerContext.docBase + readerContext.reader().maxDoc();
       }
-      // We advanced to another segment
-      if (readerContext != null) {
-        docBase = readerContext.docBase;
-        scorer = modelWeight.scorer(readerContext);
+      try{
+        // We advanced to another segment
+        if (readerContext != null) {
+          docBase = readerContext.docBase;
+          scorer = modelWeight.scorer(readerContext);
+        }
+        scoreSingleHit(indexSearcher, topN, modelWeight, docBase, hitUpto, hit, docID, scoringQuery, scorer, reranked);
+        hitUpto++;
+      } catch (ExitableDirectoryReader.ExitingReaderException ex) {
+        break;
       }
-      scoreSingleHit(indexSearcher, topN, modelWeight, docBase, hitUpto, hit, docID, scoringQuery, scorer, reranked);
-      hitUpto++;
     }
+    return hitUpto;
   }
 
   protected static void scoreSingleHit(IndexSearcher indexSearcher, int topN, LTRScoringQuery.ModelWeight modelWeight, int docBase, int hitUpto, ScoreDoc hit, int docID, LTRScoringQuery rerankingQuery, LTRScoringQuery.ModelWeight.ModelScorer scorer, ScoreDoc[] reranked) throws IOException {
