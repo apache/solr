@@ -47,6 +47,12 @@
 
   <requestHandler name="/select" class="solr.SearchHandler"/>
 
+  <cache name="exportCache"
+      class="solr.CaffeineCache"
+      size="512"
+      initialSize="0"
+      regenerator="solr.NoOpRegenerator"/>
+
   <!-- config for the admin interface -->
   <admin>
     <defaultQuery>solr</defaultQuery>

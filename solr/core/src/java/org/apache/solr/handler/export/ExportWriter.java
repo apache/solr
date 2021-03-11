@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -127,7 +128,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   PushWriter writer;
 
   // per-segment caches for already populated partitioning filters when parallel() is in use
-  final SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>> partitionCaches;
+  final static SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>> partitionCaches;
+  static {
+    partitionCaches = new CaffeineCache<>();
+    partitionCaches.init(Map.of("size", "100"), null, null);
+  }
 
   // local per-segment partitioning filters that are incomplete (still being updated from the current request)
   final Map<IndexReader.CacheKey, FixedBitSet> tempPartitionCaches;
@@ -156,7 +161,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       partitionKeys = StrUtils.splitSmart(keysList, ',', true);
       // we have to use ALL parameters as a cache key to account for different queries
       partitionCacheKey = req.getParamString();
-      tempPartitionCaches = new HashMap<>();
+      tempPartitionCaches = new ConcurrentHashMap<>();
     } else {
       partitionKeys = null;
       partitionCacheKey = null;
@@ -164,7 +169,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
     this.fieldList = req.getParams().get(CommonParams.FL);
     this.batchSize = DEFAULT_BATCH_SIZE;
-    this.partitionCaches = (SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>)req.getSearcher().getCache(SOLR_CACHE_KEY);
+    //this.partitionCaches = (SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>)req.getSearcher().getCache(SOLR_CACHE_KEY);
   }
 
   @Override
@@ -270,6 +275,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         writeException((new IOException(new SyntaxError("xport RankQuery is required for xsort: rq={!xport}"))), writer, true);
         return;
       }
+      if (partitionCacheKey != null && partitionCaches != null) {
+        totalHits = intersectWithCachedPartitions(sets, req.getSearcher().getTopReaderContext().leaves());
+      }
     }
     SolrParams params = req.getParams();
 
@@ -346,6 +354,22 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     if (streamContext != null) {
       streamContext = null;
     }
+  }
+
+  // re-calculate expected totalHits using cached partitioning sets
+  // AND intersect the original sets with any existing cached per-segment sets.
+  // This way we can avoid iterating over results that we already know don't belong to the
+  // previously-calculated segment's partition
+  private int intersectWithCachedPartitions(FixedBitSet[] originalSets, List<LeafReaderContext> leaves) {
+    int newTotalHits = 0;
+    for (int i = 0; i < leaves.size(); i++) {
+      FixedBitSet partitionSet = getMyPartitionSet(leaves.get(i));
+      if (partitionSet != null) {
+        originalSets[i].and(partitionSet);
+      }
+      newTotalHits += originalSets[i].cardinality();
+    }
+    return newTotalHits;
   }
 
   private TupleStream createTupleStream() throws IOException {
@@ -619,6 +643,13 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
   }
 
   MapWriter partitionFilter(SortDoc sortDoc, LeafReaderContext leaf, OutputDocMapWriter doc) {
+    FixedBitSet myPartitionSet = getMyPartitionSet(leaf);
+    if (myPartitionSet != null) {
+      // we already eliminated docs that don't belong to the partition
+      // and they are already marked in a cached set - so we already know this one
+      // belongs to our partition and we can skip the filtering
+      return doc;
+    }
     // calculate hash
     int hash = 0;
     for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
@@ -871,7 +902,7 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
         int sortQueueSize = Math.min((int) (((double) maxDoc / (double) totalDocs) * this.priorityQueueSize), batchSize);
 
         //Protect against too small a queue size as well
-        if(sortQueueSize < 10) {
+        if (sortQueueSize < 10) {
           sortQueueSize = 10;
         }
 
@@ -891,9 +922,7 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
       SegmentIterator[] segmentIterators = new SegmentIterator[leaves.size()];
       for (int i = 0; i < segmentIterators.length; i++) {
         SortQueue sortQueue = new SortQueue(sizes[i], sortDoc.copy());
-        // check if we have an existing partition filter and use it if present
-        FixedBitSet myPartitionSet = partitionCacheKey != null ? getMyPartitionSet(leaves.get(i)) : null;
-        segmentIterators[i] = new SegmentIterator(bits[i], myPartitionSet, leaves.get(i), sortQueue, sortDoc.copy());
+        segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy());
       }
 
       return new MergeIterator(segmentIterators, sortDoc);
@@ -934,17 +963,12 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
     /**
      * Construct per-segment iterator for matching docs.
      * @param bits matching document id-s in the segment
-     * @param myPartitionSet filter to match only the docs in the current worker's partition, may be
-     *                       null if not partitioning
      * @param context segment context
      * @param sortQueue sort queue
      * @param sortDoc proto sort document
      */
-    public SegmentIterator(FixedBitSet bits, FixedBitSet myPartitionSet, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc) throws IOException {
+    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc) throws IOException {
       this.bits = bits;
-      if (myPartitionSet != null) {
-        this.bits.and(myPartitionSet);
-      }
       this.queue = sortQueue;
       this.sortDoc = sortDoc;
       this.nextDoc = sortDoc.copy();
@@ -981,6 +1005,11 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
     }
 
     private void topDocs() throws IOException {
+      // optimization
+      if (bits.cardinality() == 0) {
+        index = -1;
+        return;
+      }
       try {
         queue.reset();
         SortDoc top = queue.top();

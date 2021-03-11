@@ -2547,22 +2547,25 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "initialCheckpoint=\"0\", " +
           "partitionKeys=\"id\"))");
 
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
+      // make sure this uses partitioning caches
+      for (int i = 0; i < 5; i++) {
+        stream = factory.constructStream(expression);
+        context = new StreamContext();
+        context.setSolrClientCache(cache);
+        stream.setStreamContext(context);
 
-      assertTopicSubject(stream, "ha ha bla blah0",
-          "ha ha bla blah1",
-          "ha ha bla blah2",
-          "ha ha bla blah3",
-          "ha ha bla blah4",
-          "ha ha bla blah5",
-          "ha ha bla blah6",
-          "ha ha bla blah7",
-          "ha ha bla blah8",
-          "ha ha bla blah9",
-          "ha ha bla blah10");
+        assertTopicSubject(stream, "ha ha bla blah0",
+                "ha ha bla blah1",
+                "ha ha bla blah2",
+                "ha ha bla blah3",
+                "ha ha bla blah4",
+                "ha ha bla blah5",
+                "ha ha bla blah6",
+                "ha ha bla blah7",
+                "ha ha bla blah8",
+                "ha ha bla blah9",
+                "ha ha bla blah10");
+      }
 
     } finally {
       cache.close();

@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,15 +66,20 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.LogLevel;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@LogLevel("org.apache.solr.handler.export=DEBUG")
 public class StreamDecoratorTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String COLLECTIONORALIAS = "collection1";
   private static final int TIMEOUT = DEFAULT_TIMEOUT;
@@ -1415,16 +1421,19 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     try {
 
-      ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"), over=\"a_f\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_f asc\")");
-      pstream.setStreamContext(streamContext);
-      List<Tuple> tuples = getTuples(pstream);
-      assert (tuples.size() == 5);
-      assertOrder(tuples, 0, 1, 3, 4, 6);
+      for (int i = 0; i < 5; i++) {
+        log.info("======== RUN {} ============", i);
+        ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"), over=\"a_f\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_f asc\")");
+        pstream.setStreamContext(streamContext);
+        List<Tuple> tuples = getTuples(pstream);
+        assertEquals(5, tuples.size());
+        assertOrder(tuples, 0, 1, 3, 4, 6);
 
-      //Test the eofTuples
+        //Test the eofTuples
 
-      Map<String, Tuple> eofTuples = pstream.getEofTuples();
-      assert (eofTuples.size() == 2); //There should be an EOF tuple for each worker.
+        Map<String, Tuple> eofTuples = pstream.getEofTuples();
+        assert (eofTuples.size() == 2); //There should be an EOF tuple for each worker.
+      }
     } finally {
       solrClientCache.close();
     }
