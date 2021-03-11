@@ -1599,7 +1599,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ScoreMode scoreModeUsed = buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
 
       totalHits = topCollector.getTotalHits();
-      TopDocs topDocs = topCollector.topDocs(0, len);
+      TopDocs topDocs = null;
+      try {
+        topDocs = topCollector.topDocs(0, len);
+      } catch (ReRankCollector.UnReRankedTopDocs urrTopDocs) {
+        topDocs = urrTopDocs.topDocs;
+        qr.setPartialResults(true);
+      }
       if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
         hitsRelation = TotalHits.Relation.EQUAL_TO;
       } else {

@@ -30,6 +30,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
@@ -249,6 +250,8 @@ public class LTRScoringQuery extends Query implements Accountable {
       try{
         Feature.FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
         featureWeights.add(fw);
+      } catch (ExitableDirectoryReader.ExitingReaderException ex) {
+        throw ex;
       } catch (final Exception e) {
         throw new RuntimeException("Exception from createWeight for " + f.toString() + " "
             + e.getMessage(), e);
@@ -274,6 +277,8 @@ public class LTRScoringQuery extends Query implements Accountable {
       try {
         Feature.FeatureWeight fw  = f.createWeight(searcher, needsScores, req, originalQuery, efi);
         return fw;
+      } catch (ExitableDirectoryReader.ExitingReaderException ex) {
+        throw ex;
       } catch (final Exception e) {
         throw new RuntimeException("Exception from createWeight for " + f.toString() + " "
             + e.getMessage(), e);
