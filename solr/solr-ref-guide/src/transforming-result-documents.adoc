@@ -127,7 +127,7 @@ A default style can be configured by specifying an `args` parameter in your `sol
 
 This transformer returns all <<indexing-nested-documents.adoc#,descendant documents>> of each parent document matching your query.  This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
 
-Note that this transformer can be used even when the query used to match the result documents is not a <<other-parsers.adoc#block-join-query-parsers,Block Join query>>.
+Note that this transformer can be used even when the query used to match the result documents is not a <<block-join-query-parser.adoc#,Block Join query>>.
 
 
 [source,plain]
@@ -198,7 +198,7 @@ DocIdAugmenterFactory does not support any request parameters, or configuration 
 
 === [elevated] and [excluded]
 
-These transformers are available only when using the <<the-query-elevation-component.adoc#,Query Elevation Component>>.
+These transformers are available only when using the <<query-elevation-component.adoc#,Query Elevation Component>>.
 
 * `[elevated]` annotates each document to indicate if it was elevated or not.
 * `[excluded]` annotates each document to indicate if it would have been excluded - this is only supported if you also use the `markExcludes` parameter.

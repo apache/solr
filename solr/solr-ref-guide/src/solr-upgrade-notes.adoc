@@ -137,11 +137,10 @@ The Solr community is working on pluggable API to replace this functionality, wi
 
 * Solr has replaced the terms "master" and "slave" in the codebase and all documentation with "leader" and "follower".
 +
-This impacts the functionality described in the section <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>.
 This functionality has only changed in terms of parameter names changed, and we do not expect any back-compatibility issues on upgrade to 8.7 or even 9.0 later.
 +
 However, users should update their `solrconfig.xml` files after completing the upgrade on all nodes of a cluster.
-Comparing your configuration to the updated configuration examples in <<index-replication.adoc#,Index Replication>> will show examples of what needs to change, but here are the main changes:
+Comparing your configuration to the updated configuration examples in <<user-managed-index-replication.adoc#,Index Replication>> will show examples of what needs to change, but here are the main changes:
 +
 . On the replication leader, in the definition of the `/replication` request handler:
 .. Replace "master" with "leader".

@@ -481,7 +481,7 @@ The source field. This parameter is required.
 A field or an array of fields to which the source field will be copied. This parameter is required.
 
 `maxChars`::
-The upper limit for the number of characters to be copied. The section <<copying-fields.adoc#,Copying Fields>> has more details.
+The upper limit for the number of characters to be copied. The section <<copy-fields.adoc#,Copy Fields>> has more details.
 
 For example, to define a rule to copy the field "shelf" to the "location" and "catchall" fields, you would POST the following request:
 
@@ -1083,7 +1083,7 @@ Comma- or space-separated list of one or more copyField destination fields to in
 
 ==== List Copy Field Response
 
-The output will include the `source` and `dest` (destination) of each copy field rule defined in `schema.xml`. For more information about copying fields, see the section <<copying-fields.adoc#,Copying Fields>>.
+The output will include the `source` and `dest` (destination) of each copy field rule defined in `schema.xml`. For more information about copy fields, see the section <<copy-fields.adoc#,Copy Fields>>.
 
 ==== List Copy Field Examples
 

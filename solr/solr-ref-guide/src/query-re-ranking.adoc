@@ -1,5 +1,4 @@
 = Query Re-Ranking
-:page-children: learning-to-rank
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -65,4 +64,6 @@ The `ltr` stands for Learning To Rank, please see <<learning-to-rank.adoc#,Learn
 
 == Combining Ranking Queries with Other Solr Features
 
-The `rq` parameter and the re-ranking feature in general works well with other Solr features. For example, it can be used in conjunction with the <<collapse-and-expand-results.adoc#,collapse parser>> to re-rank the group heads after they've been collapsed. It also preserves the order of documents elevated by the <<the-query-elevation-component.adoc#,elevation component>>. And it even has its own custom explain so you can see how the re-ranking scores were derived when looking at <<common-query-parameters.adoc#debug-parameter,debug information>>.
+The `rq` parameter and the re-ranking feature in general works well with other Solr features.
+For example, it can be used in conjunction with the <<collapse-and-expand-results.adoc#,collapse parser>> to re-rank the group heads after they've been collapsed. It also preserves the order of documents elevated by the <<query-elevation-component.adoc#,elevation component>>.
+And it even has its own custom explain so you can see how the re-ranking scores were derived when looking at <<common-query-parameters.adoc#debug-parameter,debug information>>.

@@ -1,0 +1,53 @@
+= Query Guide
+:page-children: query-syntax-and-parsers, \
+    enhancing-queries, \
+    controlling-results, \
+    streaming-expressions
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+This section describes options to control how Solr works with user input and returns results for queries.
+
+It covers the following topics:
+
+****
+<<query-syntax-and-parsers.adoc#,*Query Syntax and Parsers*>>: Query parsers and supported syntax for user searches.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::query-syntax-and-parsers.adoc[tag=parser-sections]
+****
+
+****
+<<enhancing-queries.adoc#,*Enhancing Queries*>>: Augment user queries with other data from the index or based on machine learning.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::enhancing-queries.adoc[tag=queries-sections]
+****
+
+****
+<<controlling-results.adoc#,*Controlling Results*>>: Modify standard results as needed for your use case.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::controlling-results.adoc[tag=results-sections]
+****
+
+****
+<<streaming-expressions.adoc#,*Streaming Expressions*>>: A stream processing language with a suite of functions for many types of queries and parallel execution tasks.
+
+* *TODO* child page has no master list of sub-sections
+****

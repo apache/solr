@@ -1,0 +1,55 @@
+= Indexing and Data Operations
+:page-children: indexing-with-update-handlers, \
+    indexing-with-tika, \
+    indexing-nested-documents, \
+    post-tool, \
+    documents-screen, \
+    updating-parts-of-documents, \
+    reindexing, \
+    detecting-languages-during-indexing, \
+    de-duplication, \
+    content-streams
+:page-show-toc: false
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section describes how Solr adds data to its index. It covers the following topics:
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::indexing-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>: Solr's update handlers to index XML/XSLT, JSON and CSV data.
+| <<indexing-with-tika.adoc#,Indexing with Solr Cell and Apache Tika>>: The Solr Cell framework to upload data for indexing.
+| <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>: Index any JSON of your choice
+| <<indexing-nested-documents.adoc#,Indexing Nested Documents>>: Indexing and schema configuration for nested documents.
+| <<post-tool.adoc#,Post Tool>>: The `post.jar` to quickly upload content to your system.
+| <<documents-screen.adoc#,Documents Screen>>: Form-based document updates using the Admin UI.
+| <<updating-parts-of-documents.adoc#,Updating Parts of Documents>>: Atomic updates and optimistic concurrency for partial document updates.
+| <<reindexing.adoc#,Reindexing>>: When reindexing is required or recommended, and some strategies for completely reindexing your documents.
+| <<detecting-languages-during-indexing.adoc#,Detecting Languages During Indexing>>: Language identification during the indexing process.
+| <<de-duplication.adoc#,De-Duplication>>: Configuring Solr to mark duplicate documents as they are indexed.
+| <<content-streams.adoc#,Content Streams>>: Streaming content to Solr request handlers.
+|
+|===
+// end::indexing-sections[]
+****
+
+== Indexing Using Client APIs
+
+Using client APIs, such as <<using-solrj.adoc#,SolrJ>>, from your applications is an important option for updating Solr indexes. See the <<client-apis.adoc#,Client APIs>> section for more information.

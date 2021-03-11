@@ -1,5 +1,10 @@
 = Configuration APIs
-:page-children:  config-api, request-parameters-api, managed-resources
+:page-children:  config-api, \
+    request-parameters-api, \
+    managed-resources, \
+    collections-api, \
+    configsets-api, \
+    v2-api
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -19,6 +24,17 @@
 
 Solr includes several APIs that can be used to modify settings in `solrconfig.xml`.
 
-* <<config-api.adoc#,Config API>>
-* <<request-parameters-api.adoc#,Request Parameters API>>
-* <<managed-resources.adoc#,Managed Resources>>
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::configapi-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<config-api.adoc#,Config API>>
+| <<request-parameters-api.adoc#,Request Parameters API>>
+| <<managed-resources.adoc#,Managed Resources>>
+| <<collections-api.adoc#,Collections API>>
+| <<configsets-api.adoc#,Configsets API>>
+| <<v2-api.adoc#,V2 API>>: Describes how to use the new V2 APIs, a redesigned API framework covering most Solr APIs.
+|===
+// end::configapi-sections[]
+****

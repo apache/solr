@@ -1,0 +1,57 @@
+= Scaling Solr
+:page-children: clusters, \
+    index-sharding-replication, \
+    distributed-queries, \
+    cluster-coordination, \
+    solrcloud-collections, \
+    solrcloud-with-legacy-configuration-files
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr supports large implementations.
+
+The section *<<clusters.adoc#,Solr Clusters>>* describes the two main approaches available for scaling.
+
+Both approaches share the ability to distribute parts of an index across multiple servers, a process called _sharding_.
+This allows for an index that is larger than any one server can host and maintain reasonable performance.
+
+A second process called _replication_ is also shared by both approaches.
+This allows for copying the index (in whole or as shards) across multiple servers, and provides query volume distribution.
+
+The differences between the approaches are then how each cluster is managed and what features are available to you.
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::scaling-sections[]
+*Index Sharding and Replication*
+
+include::index-sharding-replication.adoc[tag=sharding-sections]
+
+*Distributed Queries*
+
+include::distributed-queries.adoc[tag=shard-queries-sections]
+
+*SolrCloud Cluster Coordination*
+
+include::cluster-coordination.adoc[tag=coordination-sections]
+
+*SolrCloud Collections*
+
+include::solrcloud-collections.adoc[tag=collections-sections]
+
+// end::scaling-sections[]
+****

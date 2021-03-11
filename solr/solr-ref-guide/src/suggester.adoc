@@ -78,7 +78,7 @@ If not set, the default dictionary implementation is `HighFrequencyDictionaryFac
 `field`::
 A field from the index to use as the basis of suggestion terms. If `sourceLocation` is empty (meaning any dictionary implementation other than `FileDictionaryFactory`), then terms from this field in the index will be used.
 +
-To be used as the basis for a suggestion, the field must be stored. You may want to <<copying-fields.adoc#,use copyField rules>> to create a special 'suggest' field comprised of terms from other fields in documents. In any event, you very likely want a minimal amount of analysis on the field, so an additional option is to create a field type in your schema that only uses basic tokenizers or filters. One option for such a field type is shown here:
+To be used as the basis for a suggestion, the field must be stored. You may want to <<copy-fields.adoc#,use copyField rules>> to create a special 'suggest' field comprised of terms from other fields in documents. In any event, you very likely want a minimal amount of analysis on the field, so an additional option is to create a field type in your schema that only uses basic tokenizers or filters. One option for such a field type is shown here:
 +
 [source,xml]
 ----

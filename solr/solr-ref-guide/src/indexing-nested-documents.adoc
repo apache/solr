@@ -1,4 +1,4 @@
-= Indexing Nested Child Documents
+= Indexing Nested Documents
 :solr-root-path: ../../
 :example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -27,7 +27,7 @@ with multiple types of child documents representing individual SKUs (with unique
 The "top most" parent with all children is referred to as a "root" document or formerly "block
 document" and it explains some of the nomenclature of related features.
 
-At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
+At query time, the <<block-join-query-parser.adoc#,Block Join Query Parsers>> can search these relationships,
  and the `<<transforming-result-documents.adoc#child-childdoctransformerfactory,[child]>>` Document Transformer can attach child (or other "descendent") documents to the result documents.
 In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent "<<other-parsers#join-query-parser,query time join>>",
  since the relationships are already stored in the index and do not need to be computed.
@@ -126,7 +126,7 @@ Even though the child documents in these examples are provided syntactically as 
 
 [CAUTION]
 =====
-The <<uploading-data-with-index-handlers#json-update-convenience-paths,`/update/json/docs` convenience path>> will automatically flatten complex JSON documents by default -- so to index nested JSON documents make sure to use `/update`.
+The <<indexing-with-update-handlers#json-update-convenience-paths,`/update/json/docs` convenience path>> will automatically flatten complex JSON documents by default -- so to index nested JSON documents make sure to use `/update`.
 =====
 ====
 
@@ -252,7 +252,7 @@ Preferably, you will also define `\_nest_path_` which adds features and ease-of-
 when using the `<<searching-nested-documents.adoc#child-doc-transformer,[child]>>` doc transformer.
 ** If this field does not exist, the `[child]` transformer will return all descendent child documents as a flattened list -- just as if they had been <<#indexing-anonymous-children,indexed as anonymous children>>.
 * If you do not use `\_nest_path_` it is strongly recommended that every document have some
-field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly necessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
+field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly necessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<block-join-query-parser#,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
 * It's possible to query on this field, although at present it's only documented how to in the
 context of `[child]`'s `childFilter` parameter.
 

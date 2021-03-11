@@ -1,0 +1,52 @@
+= Schema and Indexing Guide
+:page-children: solr-schema, \
+    fields-and-schema-design, \
+    document-analysis, \
+    indexing-data-operations
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+This Guide covers indexing documents in Solr.
+
+****
+<<solr-schema.adoc#,*Solr Schema*>>: Solr's schema governs how documents are indexed and how terms in a query are interpreted.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::solr-schema.adoc[tag=schema-sections]
+****
+
+****
+<<fields-and-schema-design.adoc#,*Fields and Schema Design*>>: This section describes how Solr organizes data in the index. It explains how a Solr schema defines the fields and field types which Solr uses to organize data within the document files it indexes.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::fields-and-schema-design.adoc[tag=fields-sections]
+****
+
+****
+<<document-analysis.adoc#,*Document Analysis in Solr*>>: This section explains how Solr prepares text for indexing and searching. Analyzers parse text and produce a stream of tokens, lexical units used for indexing and searching. Tokenizers break field data down into tokens. Filters perform other transformational or selective work on token streams.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::document-analysis.adoc[tag=analysis-sections]
+****
+
+****
+<<indexing-data-operations.adoc#,*Indexing and Data Operations*>>: This section describes the indexing process and basic index operations, such as commit, optimize, and rollback.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::indexing-data-operations.adoc[tag=indexing-sections]
+****

@@ -17,7 +17,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Core Admin API is primarily used under the covers by the <<collections-api.adoc#,Collections API>> when running a <<solrcloud.adoc#,SolrCloud>> cluster.
+The Core Admin API is primarily used under the covers by the <<collections-api.adoc#,Collections API>> when running a <<clusters.adoc#solrcloud-mode,SolrCloud>> cluster.
 
 SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of single-node or leader/follower Solr installations for core maintenance operations.
 

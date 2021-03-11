@@ -151,7 +151,7 @@ Document Analysis:: Return a breakdown of the analysis process of the given docu
 |`solr/<collection>/analysis/document` |{solr-javadocs}/core/org/apache/solr/handler/DocumentAnalysisRequestHandler.html[DocumentAnalysisRequestHandler] |`_ANALYSIS_DOCUMENT`
 |===
 
-Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s). This handler drives the <<analysis-screen.adoc#,Analysis screen>> in Solr's Admin UI.
+Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s). This handler drives the <<running-your-analyzer.adoc#,Analysis screen>> in Solr's Admin UI.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -257,7 +257,7 @@ Streaming Expressions:: Distributed stream processing.
 
 Terms:: Return a field's indexed terms and the number of documents containing each term.
 +
-*Documentation*: <<the-terms-component.adoc#using-the-terms-component-in-a-request-handler,Using the Terms Component in a Request Handler>>
+*Documentation*: <<terms-component.adoc#using-the-terms-component-in-a-request-handler,Using the Terms Component in a Request Handler>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -270,7 +270,7 @@ Terms:: Return a field's indexed terms and the number of documents containing ea
 [horizontal]
 Update:: Add, delete and update indexed documents formatted as SolrXML, CSV, SolrJSON or javabin.
 +
-*Documentation*: <<uploading-data-with-index-handlers.adoc#,Uploading Data with Index Handlers>>
+*Documentation*: <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -280,7 +280,7 @@ Update:: Add, delete and update indexed documents formatted as SolrXML, CSV, Sol
 
 CSV Updates:: Add and update CSV-formatted documents.
 +
-*Documentation*: <<uploading-data-with-index-handlers.adoc#csv-update-convenience-paths,CSV Update Convenience Paths>>
+*Documentation*: <<indexing-with-update-handlers.adoc#csv-update-convenience-paths,CSV Update Convenience Paths>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -290,7 +290,7 @@ CSV Updates:: Add and update CSV-formatted documents.
 
 JSON Updates:: Add, delete and update SolrJSON-formatted documents.
 +
-*Documentation*: <<uploading-data-with-index-handlers.adoc#json-update-convenience-paths,JSON Update Convenience Paths>>
+*Documentation*: <<indexing-with-update-handlers.adoc#json-update-convenience-paths,JSON Update Convenience Paths>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===

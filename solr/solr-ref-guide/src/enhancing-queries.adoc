@@ -1,0 +1,61 @@
+= Enhancing Queries
+:page-children: spell-checking, \
+    suggester, \
+    morelikethis, \
+    query-re-ranking, \
+    learning-to-rank, \
+    tagger-handler, \
+    analytics, \
+    terms-component, \
+    term-vector-component, \
+    stats-component, \
+    realtime-get
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+Solr provides many options for assisting users with their queries.
+
+These options allow you to show users alternate spellings for their search terms, or provide suggestions for terms while they type.
+
+Re-ranking provides an ability to show documents in an order based on a query that may be more complex than the user's query.
+This forms the basis of Solr's Learning to Rank functionality, which can re-rank documents based on a machine-learned model.
+
+The Tagger request handler provides basic named entity recognition functionality.
+
+Finally, if you want to understand the terms in your index or get statistics from terms in the index, those options are covered here also.
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::queries-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<spell-checking.adoc#,Spell Checking>>: Spell check for user queries to correct mistakes on the fly.
+| <<suggester.adoc#,Suggester>>: Autosuggest component to suggest query terms while the user types.
+| <<morelikethis.adoc#,MoreLikeThis>>: Solr's similar results query component.
+| <<query-re-ranking.adoc#,Query Re-Ranking>>: Re-ranking top scoring documents from simple queries using more complex scores. *TODO* this is about query parsers, maybe should move?
+| <<learning-to-rank.adoc#,Learning to Rank>>: Use LTR to run machine learned ranking models in Solr.
+| <<tagger-handler.adoc#,Tagger Handler>>: Basic named entity tagging in text.
+| <<analytics.adoc#,Analytics Component>>: A framework to compute complex analytics over a result set.
+| <<terms-component.adoc#,Terms Component>>: Access indexed terms and the documents that include them.
+| <<term-vector-component.adoc#,Term Vector Component>>: Term information about specific documents.
+| <<stats-component.adoc#,Stats Component>>: Get information from numeric fields within a document set.
+| <<realtime-get.adoc#,RealTime Get>>: Get the latest version of a document without opening a searcher. *TODO* possibly move this.
+|
+|===
+// end::queries-sections[]
+****

@@ -108,13 +108,13 @@ curl http://host:8983/api/collections/mycollection/config -d '{"set-user-propert
 
 === Changes to Default Behaviors
 * JSON is now the default response format. If you rely on XML responses, you must now define `wt=xml` in your request. In addition, line indentation is enabled by default (`indent=on`).
-* The `sow` parameter (short for "Split on Whitespace") now defaults to `false`, which allows support for multi-word synonyms out of the box. This parameter is used with the eDismax and standard/"lucene" query parsers. If this parameter is not explicitly specified as `true`, query text will not be split on whitespace before analysis.
+* The `sow` parameter (short for "Split on Whitespace") now defaults to `false`, which allows support for multi-word synonyms out of the box. This parameter is used with the eDisMax and standard/"lucene" query parsers. If this parameter is not explicitly specified as `true`, query text will not be split on whitespace before analysis.
 * The `legacyCloud` parameter now defaults to `false`. If an entry for a replica does not exist in `state.json`, that replica will not get registered.
 +
 This may affect users who bring up replicas and they are automatically registered as a part of a shard. It is possible to fall back to the old behavior by setting the property `legacyCloud=true`, in the cluster properties using the following command:
 +
 `./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:2181  -cmd clusterprop -name legacyCloud -val true`
-* The eDismax query parser parameter `lowercaseOperators` now defaults to `false` if the `luceneMatchVersion` in `solrconfig.xml` is 7.0.0 or above. Behavior for `luceneMatchVersion` lower than 7.0.0 is unchanged (so, `true`). This means that clients must sent boolean operators (such as AND, OR and NOT) in upper case in order to be recognized, or you must explicitly set this parameter to `true`.
+* The eDisMax query parser parameter `lowercaseOperators` now defaults to `false` if the `luceneMatchVersion` in `solrconfig.xml` is 7.0.0 or above. Behavior for `luceneMatchVersion` lower than 7.0.0 is unchanged (so, `true`). This means that clients must sent boolean operators (such as AND, OR and NOT) in upper case in order to be recognized, or you must explicitly set this parameter to `true`.
 * The `handleSelect` parameter in `solrconfig.xml` now defaults to `false` if the `luceneMatchVersion` is 7.0.0 or above. This causes Solr to ignore the `qt` parameter if it is present in a request. If you have request handlers without a leading '/', you can set `handleSelect="true"` or consider migrating your configuration.
 +
 The `qt` parameter is still used as a SolrJ special parameter that specifies the request handler (tail URL path) to use.
@@ -168,8 +168,8 @@ The following changes were made in SolrJ.
 * `HttpSolrClient#setDefaultMaxConnectionsPerHost` and `HttpSolrClient#setMaxTotalConnections` have been removed. These now default very high and can only be changed via parameter when creating an HttpClient instance.
 
 === Other Deprecations and Removals
-* The `defaultOperator` parameter in the schema is no longer supported. Use the `q.op` parameter instead. This option had been deprecated for several releases. See the section <<the-standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
-* The `defaultSearchField` parameter in the schema is no longer supported. Use the `df` parameter instead. This option had been deprecated for several releases. See the section <<the-standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
+* The `defaultOperator` parameter in the schema is no longer supported. Use the `q.op` parameter instead. This option had been deprecated for several releases. See the section <<standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
+* The `defaultSearchField` parameter in the schema is no longer supported. Use the `df` parameter instead. This option had been deprecated for several releases. See the section <<standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
 * The `mergePolicy`, `mergeFactor` and `maxMergeDocs` parameters have been removed and are no longer supported. You should define a `mergePolicyFactory` instead. See the section <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for more information.
 * The PostingsSolrHighlighter has been deprecated. It's recommended that you move to using the UnifiedHighlighter instead. See the section <<highlighting.adoc#the-unified-highlighter,Unified Highlighter>> for more information about this highlighter.
 * Index-time boosts have been removed from Lucene, and are no longer available from Solr. If any boosts are provided, they will be ignored by the indexing chain. As a replacement, index-time scoring factors should be indexed in a separate field and combined with the query score using a function query. See the section <<function-queries.adoc#,Function Queries>> for more information.

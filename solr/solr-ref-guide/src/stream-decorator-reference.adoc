@@ -596,7 +596,7 @@ daemonStream.close();
 
 == delete
 
-The `delete` function wraps other functions and uses the `id` and `\_version_` values found to send the tuples to a SolrCloud collection as <<uploading-data-with-index-handlers.adoc#delete-operations,Delete By Id>> commands.
+The `delete` function wraps other functions and uses the `id` and `\_version_` values found to send the tuples to a SolrCloud collection as <<indexing-with-update-handlers.adoc#delete-operations,Delete By Id>> commands.
 
 This is similar to the `<<#update,update()>>` function described below.
 

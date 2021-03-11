@@ -74,7 +74,7 @@ Sets the maximum number of tokens to parse in each example document field that i
 Specifies if the query will be boosted by the interesting term relevance. It can be either "true" or "false".
 
 `mlt.qf`::
-Query fields and their boosts using the same format as that used by the <<the-dismax-query-parser.adoc#,DisMax Query Parser>>. These fields must also be specified in `mlt.fl`.
+Query fields and their boosts using the same format as that used by the <<dismax-query-parser.adoc#,DisMax Query Parser>>. These fields must also be specified in `mlt.fl`.
 
 == Parameters for the MoreLikeThisComponent
 

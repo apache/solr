@@ -206,7 +206,7 @@ The following sections are allowed within a Search Handler:
 
 All the blocks are optional, especially since parameters can also be provided with `initParams` and `useParams`.
 
-The defaults/appends/invariants blocks were described <<#defaults-appends-and-invariants,higher>> on the page. All the parameters described in the section  <<searching.adoc#,Searching>> can be defined as parameters for any of the Search Handlers.
+The defaults/appends/invariants blocks were described <<#defaults-appends-and-invariants,higher>> on the page. All the parameters described in the section  <<query-guide.adoc#,Query Guide>> can be defined as parameters for any of the Search Handlers.
 
 The Search Components blocks are described next, and <<distributed-requests.adoc#configuring-the-shardhandlerfactory,shardHandlerFactory>> is for fine-tuning of the SolrCloud distributed requests.
 
@@ -222,14 +222,14 @@ As you can see below, what we see as a search experience is mostly a sequence of
 [cols="20,40,40",options="header"]
 |===
 |Component Name |Class Name |More Information
-|query |`solr.QueryComponent` |Described in the section <<query-syntax-and-parsing.adoc#,Query Syntax and Parsing>>.
+|query |`solr.QueryComponent` |Described in the section <<query-syntax-and-parsers.adoc#,Query Syntax and Parsing>>.
 |facet |`solr.FacetComponent` |Original parameter-based facet component, described in the section <<faceting.adoc#,Faceting>>.
 |facet_module |`solr.facet.FacetModule` | JSON Faceting and Analytics module, described in the section <<json-facet-api.adoc#, JSON Facet API>>.
 |mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#,MoreLikeThis>>.
 |highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#,Highlighting>>.
-|stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#,The Stats Component>>.
+|stats |`solr.StatsComponent` |Described in the section <<stats-component.adoc#,The Stats Component>>.
 |expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>.
-|terms |`solr.TermsComponent` |Described in the section <<the-terms-component.adoc#,The Terms Component>>.
+|terms |`solr.TermsComponent` |Described in the section <<terms-component.adoc#,The Terms Component>>.
 |debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |===
 
@@ -240,12 +240,12 @@ They do need to defined and referenced in `solrconfig.xml` to be actually used.
 * `AnalyticsComponent`, described in the section <<analytics.adoc#,Analytics>>.
 * `ClusteringComponent`, described in the section <<result-clustering.adoc#,Result Clustering>>.
 * `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}/core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
-* `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#,The Query Elevation Component>>.
+* `QueryElevationComponent`, described in the section <<query-elevation-component.adoc#,The Query Elevation Component>>.
 * `RealTimeGetComponent`, described in the section <<realtime-get.adoc#,RealTime Get>>.
 * `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}/core/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
 * `SpellCheckComponent`, described in the section <<spell-checking.adoc#,Spell Checking>>.
 * `SuggestComponent`, described in the section <<suggester.adoc#,Suggester>>.
-* `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#,The Term Vector Component>>.
+* `TermVectorComponent`, described in the section <<term-vector-component.adoc#,The Term Vector Component>>.
 
 Some third party components are also linked from https://solr.cool/ website.
 
@@ -315,7 +315,7 @@ If you need to define additional Update Request Handler, the syntax is:
 
 ----
 
-The full details are covered in the section <<uploading-data-with-index-handlers.adoc#,Uploading Data with Index Handlers>>.
+The full details are covered in the section <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>.
 
 Similar to Search Components for Search Handlers, Solr has document-preprocessing plugins for Update Request Handlers,
 called <<update-request-processors.adoc#,Update Request Processors>>,

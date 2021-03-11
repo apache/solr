@@ -152,7 +152,7 @@ The following changes impact how fields behave.
 Note that if you have not specified any similarityFactory in the schema, or use the default
 `SchemaSimilarityFactory`, then `LegacyBM25Similarity` is automatically selected when the value for `luceneMatchVersion` is lower than `8.0.0`.
 +
-See also the section <<other-schema-elements.adoc#similarity,Similarity>> for more information.
+See also the section <<schema-elements.adoc#similarity,Similarity>> for more information.
 
 *Memory Codecs Removed*
 
@@ -197,7 +197,7 @@ Also note that the default set of date patterns (formats) have expanded from pre
 
 *Solr Cell*
 
-* The extraction contrib (<<uploading-data-with-solr-cell-using-apache-tika.adoc#,Solr Cell>>) no longer does any date parsing, and thus no longer supports the `date.formats` parameter. To ensure date strings are properly parsed, use the `ParseDateFieldUpdateProcessorFactory` in your update chain. This update request processor is found by default with the "parse-date" update processor when running Solr in "<<schemaless-mode.adoc#set-the-default-updaterequestprocessorchain,schemaless mode>>".
+* The extraction contrib (<<indexing-with-tika.adoc#,Solr Cell>>) no longer does any date parsing, and thus no longer supports the `date.formats` parameter. To ensure date strings are properly parsed, use the `ParseDateFieldUpdateProcessorFactory` in your update chain. This update request processor is found by default with the "parse-date" update processor when running Solr in "<<schemaless-mode.adoc#set-the-default-updaterequestprocessorchain,schemaless mode>>".
 
 *Langid Contrib*
 
@@ -390,7 +390,7 @@ When upgrading to Solr 7.4, users should be aware of the following major changes
 
 *Legacy Scaling (non-SolrCloud)*
 
-* In the <<index-replication.adoc#,leader-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
+* In the <<user-managed-index-replication.adoc#,leader-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
 
 If you are upgrading from a version earlier than Solr 7.3, please see previous version notes below.
 

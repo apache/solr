@@ -220,7 +220,7 @@ nodes(emails,
       gather="to")
 ----
 
-In the example above only emails that match the filter query will be included in the traversal. Any Solr query can be included here. So you can do fun things like <<spatial-search.adoc#,geospatial queries>>, apply any of the available <<query-syntax-and-parsing.adoc#,query parsers>>, or even write custom query parsers to limit the traversal.
+In the example above only emails that match the filter query will be included in the traversal. Any Solr query can be included here. So you can do fun things like <<spatial-search.adoc#,geospatial queries>>, apply any of the available <<query-syntax-and-parsers.adoc#,query parsers>>, or even write custom query parsers to limit the traversal.
 
 == Root Streams
 

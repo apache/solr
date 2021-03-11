@@ -16,7 +16,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 SolrCloud has the ability to query one or more collections via an alternative name. These
 alternative names for collections are known as aliases, and are useful when you want to:
 

@@ -18,7 +18,7 @@
 
 Function queries enable you to generate a relevancy score using the actual value of one or more numeric fields.
 
-Function queries are supported by the <<the-dismax-query-parser.adoc#,DisMax>>, <<the-extended-dismax-query-parser.adoc#,Extended DisMax>>, and <<the-standard-query-parser.adoc#,standard>> query parsers.
+Function queries are supported by the <<dismax-query-parser.adoc#,DisMax>>, <<edismax-query-parser.adoc#,Extended DisMax>>, and <<standard-query-parser.adoc#,standard>> query parsers.
 
 Function queries use _functions_. The functions can be a constant (numeric or string literal), a field, another function or a parameter substitution argument. You can use these functions to modify the ranking of results for users. These could be used to change the ranking of results based on a user's location, or some other calculation.
 
@@ -57,7 +57,7 @@ the output would be:
 <float name="score">0.343</float>
 ...
 ----
-* Use in a parameter that is explicitly for specifying functions, such as the eDisMax query parser's <<the-extended-dismax-query-parser.adoc#extended-dismax-parameters,`boost` parameter>>, or the DisMax query parser's <<the-dismax-query-parser.adoc#bf-boost-functions-parameter,`bf` (boost function) parameter>>. (Note that the `bf` parameter actually takes a list of function queries separated by white space and each with an optional boost. Make sure you eliminate any internal white space in single function queries when using `bf`). For example:
+* Use in a parameter that is explicitly for specifying functions, such as the eDisMax query parser's <<edismax-query-parser.adoc#extended-dismax-parameters,`boost` parameter>>, or the DisMax query parser's <<dismax-query-parser.adoc#bf-boost-functions-parameter,`bf` (boost function) parameter>>. (Note that the `bf` parameter actually takes a list of function queries separated by white space and each with an optional boost. Make sure you eliminate any internal white space in single function queries when using `bf`). For example:
 +
 [source,text]
 ----
@@ -85,7 +85,7 @@ Returns the absolute value of the specified value or function.
 * `abs(-5)`
 
 === childfield(field) Function
-Returns the value of the given field for one of the matched child docs when searching by <<other-parsers.adoc#block-join-parent-query-parser,{!parent}>>. It can be used only in `sort` parameter.
+Returns the value of the given field for one of the matched child docs when searching by <<block-join-query-parser.adoc#block-join-parent-query-parser,{!parent}>>. It can be used only in `sort` parameter.
 
 *Syntax Examples*
 

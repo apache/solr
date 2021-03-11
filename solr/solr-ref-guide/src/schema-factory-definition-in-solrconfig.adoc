@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr's <<schema-api.adoc#,Schema API>> enables remote clients to access <<documents-fields-and-schema-design.adoc#,schema>> information, and make schema modifications, through a REST interface.
+Solr's <<schema-api.adoc#,Schema API>> enables remote clients to access <<solr-schema.adoc#,schema>> information, and make schema modifications, through a REST interface.
 
 Other features such as Solr's <<schemaless-mode.adoc#,Schemaless Mode>> also work via schema modifications made programatically at run time.
 

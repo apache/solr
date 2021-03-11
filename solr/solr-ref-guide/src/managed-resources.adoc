@@ -37,7 +37,7 @@ Let's begin learning about managed resources by looking at a couple of examples 
 
 === Managing Stop Words
 
-To begin, you need to define a field type that uses the <<filter-descriptions.adoc#managed-stop-filter,ManagedStopFilterFactory>>, such as:
+To begin, you need to define a field type that uses the <<filters.adoc#managed-stop-filter,ManagedStopFilterFactory>>, such as:
 
 [source,xml,subs="verbatim,callouts"]
 ----
@@ -52,7 +52,7 @@ To begin, you need to define a field type that uses the <<filter-descriptions.ad
 
 There are two important things to notice about this field type definition:
 
-<1> The filter implementation class is `solr.ManagedStopFilterFactory`. This is a special implementation of the <<filter-descriptions.adoc#stop-filter,StopFilterFactory>> that uses a set of stop words that are managed from a REST API.
+<1> The filter implementation class is `solr.ManagedStopFilterFactory`. This is a special implementation of the <<filters.adoc#stop-filter,StopFilterFactory>> that uses a set of stop words that are managed from a REST API.
 
 <2> The `managed=”english”` attribute gives a name to the set of managed stop words, in this case indicating the stop words are for English text.
 

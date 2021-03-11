@@ -49,7 +49,7 @@ A `maxIdleTime` attribute controls the automatic eviction of entries that haven'
 
 The `maxRamMB` attribute limits the maximum amount of memory a cache may consume. When both `size` and `maxRamMB` limits are specified the `maxRamMB` limit will take precedence and the `size` limit will be ignored.
 
-All caches can be disabled using the parameter `enabled` with a value of `false`. Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section <<common-query-parameters.adoc#cache-parameter,cache Parameter>>. 
+All caches can be disabled using the parameter `enabled` with a value of `false`. Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section <<common-query-parameters.adoc#cache-parameter,cache Parameter>>.
 
 Details of each cache are described below.
 
@@ -57,9 +57,9 @@ Details of each cache are described below.
 
 This cache is used by `SolrIndexSearcher` for filters (DocSets) for unordered sets of all documents that match a query. The numeric attributes control the number of entries in the cache.
 
-The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other cases as well. Subsequent queries using the same parameter filter query result in cache hits and rapid returns of results. See <<searching.adoc#,Searching>> for a detailed discussion of the `fq` parameter. Another Solr feature using this cache is the `filter(...)` syntax in the default Lucene query parser.
+The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other cases as well. Subsequent queries using the same parameter filter query result in cache hits and rapid returns of results. See <<query-guide.adoc#,Query Guide>> for a detailed discussion of the `fq` parameter. Another Solr feature using this cache is the `filter(...)` syntax in the default Lucene query parser.
 
-Solr also uses this cache for faceting when the configuration parameter `facet.method` is set to `fc`. For a discussion of faceting, see <<searching.adoc#,Searching>>.
+Solr also uses this cache for faceting when the configuration parameter `facet.method` is set to `fc`. For a discussion of faceting, see <<query-guide.adoc#,Query Guide>>.
 
 [source,xml]
 ----

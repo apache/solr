@@ -140,7 +140,7 @@ The spellchecker can be configured with a traditional checker (i.e., `DirectSolr
 
 === Add It to a Request Handler
 
-Queries will be sent to a <<query-syntax-and-parsing.adoc#,RequestHandler>>. If every request should generate a suggestion, then you would add the following to the `requestHandler` that you are using:
+Queries will be sent to a <<query-syntax-and-parsers.adoc#,RequestHandler>>. If every request should generate a suggestion, then you would add the following to the `requestHandler` that you are using:
 
 [source,xml]
 ----

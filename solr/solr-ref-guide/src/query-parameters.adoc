@@ -1,0 +1,40 @@
+= Query Parser Parameters
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+*TODO this entire page*
+
+The following query parameters are supported by Solr. Some are only supported by specific query parsers.
+
+The query parsers supported are noted in the labels.
+
+[.badge.badge-pill.badge-lucene]*Lucene/Standard* +
+[.badge.badge-pill.badge-dismax]*DisMax* +
+[.badge.badge-pill.badge-edismax]*eDisMax*
+
+
+|===
+| Parameter | Description | Example(s) | Supported in
+
+| `q` | *Mandatory* Defines a query using standard query syntax. | `q=searchTerm` | [.badge.badge-pill.badge-lucene]*Lucene/Standard* +
+[.badge.badge-pill.badge-dismax]*DisMax* +
+[.badge.badge-pill.badge-edismax]*eDisMax*
+
+|`boost` | | `boost=div(1,sum(1,price))` | [.badge.badge-pill.badge-edismax]*eDisMax*
+
+
+|===

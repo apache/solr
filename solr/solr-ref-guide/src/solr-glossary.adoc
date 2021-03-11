@@ -142,7 +142,7 @@ The appropriateness of a document to the search conducted by the user.
 [[replica]]Replica::
 A <<core,Core>> that acts as a physical copy of a <<shard,Shard>> in a <<solrclouddef,SolrCloud>> <<collection,Collection>>.
 
-[[replication]]<<index-replication.adoc#,Replication>>::
+[[replication]]<<user-managed-index-replication.adoc#,Replication>>::
 
 A method of copying a leader index from one server to one or more "follower" or "child" servers.
 
@@ -158,13 +158,13 @@ Logic and configuration parameters used by request handlers to process query req
 [[shard]]Shard::
 In SolrCloud, a logical partition of a single <<collection,Collection>>. Every shard consists of at least one physical <<replica,Replica>>, but there may be multiple Replicas distributed across multiple <<node,Nodes>> for fault tolerance. See also <<solrclouddef,SolrCloud>>.
 
-[[solrclouddef]]<<solrcloud.adoc#,SolrCloud>>::
+[[solrclouddef]]<<clusters.adoc#solrcloud-mode,SolrCloud>>::
 Umbrella term for a suite of functionality in Solr which allows managing a <<cluster,Cluster>> of Solr <<node,Nodes>> for scalability, fault tolerance, and high availability.
 
-[[schema]]<<documents-fields-and-schema-design.adoc#,Solr Schema (managed-schema or schema.xml)>>::
+[[schema]]<<solr-schema.adoc#,Solr Schema (managed-schema or schema.xml)>>::
 The Solr index Schema defines the fields to be indexed and the type for the field (text, integers, etc.) By default schema data can be "managed" at run time using the <<schema-api.adoc#,Schema API>> and is typically kept in a file named `managed-schema` which Solr modifies as needed, but a collection may be configured to use a static Schema, which is only loaded on startup from a human edited configuration file - typically named `schema.xml`. See <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>> for details.
 
-[[solrconfig]]<<the-well-configured-solr-instance.adoc#,SolrConfig (solrconfig.xml)>>::
+[[solrconfig]]<<configuring-solrconfig-xml.adoc#,SolrConfig (solrconfig.xml)>>::
 
 The Apache Solr configuration file. Defines indexing options, RequestHandlers, highlighting, spellchecking and various other configurations. The file, `solrconfig.xml`, is located in the Solr home `conf` directory.
 

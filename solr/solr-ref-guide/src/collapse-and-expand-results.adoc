@@ -73,7 +73,6 @@ The `hint=top_fc` hint is only available when collapsing on String fields. `top_
 +
 The default is none.
 
-
 `size`::
 Sets the initial size of the collapse data structures when collapsing on a *numeric field only*.
 +

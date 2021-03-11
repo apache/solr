@@ -1,5 +1,11 @@
 = Streaming Expressions
-:page-children: stream-source-reference, stream-decorator-reference, stream-evaluator-reference, math-expressions, graph-traversal, stream-api
+:page-children: stream-source-reference, \
+    stream-decorator-reference, \
+    stream-evaluator-reference, \
+    math-expressions, \
+    graph-traversal, \
+    stream-api, \
+    stream-screen
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -124,3 +130,7 @@ Visualization of both streaming expressions and math expressions is done using A
 Visualizing Streaming expressions and setting up of Apache Zeppelin is documented in <<math-start.adoc#zeppelin-solr-interpreter,Zeppelin-Solr Interpreter>>.
 
 The <<math-expressions.adoc#,Math Expressions User Guide>> has in depth coverage of visualization techniques.
+
+=== Stream Screen
+
+* <<stream-screen.adoc#,Stream Screen>>: Submit streaming expressions and see results and parsing explanations.

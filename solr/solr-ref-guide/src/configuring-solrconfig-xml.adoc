@@ -2,15 +2,17 @@
 :page-children: datadir-and-directoryfactory-in-solrconfig, \
     schema-factory-definition-in-solrconfig, \
     indexconfig-in-solrconfig, \
+    segments-info, \
     requesthandlers-and-searchcomponents-in-solrconfig, \
+    implicit-requesthandlers, \
     initparams-in-solrconfig, \
     updatehandlers-in-solrconfig, \
     query-settings-in-solrconfig, \
     requestdispatcher-in-solrconfig, \
     update-request-processors, \
-    script-update-processor, \    
-    codec-factory
-
+    script-update-processor, \
+    codec-factory, \
+    resource-loading
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -42,22 +44,34 @@ In `solrconfig.xml`, you configure important features such as:
 
 * the Admin Web interface
 
-* parameters related to replication and duplication (these parameters are covered in detail in <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>)
+* parameters related to replication and duplication when not running in SolrCloud mode
 
 The `solrconfig.xml` file is located in the `conf/` directory for each collection. Several well-commented example files can be found in the `server/solr/configsets/` directories demonstrating best practices for many different types of installations.
 
 We've covered the options in the following sections:
 
-* <<datadir-and-directoryfactory-in-solrconfig.adoc#,DataDir and DirectoryFactory in SolrConfig>>
-* <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>>
-* <<indexconfig-in-solrconfig.adoc#,IndexConfig in SolrConfig>>
-* <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers and SearchComponents in SolrConfig>>
-* <<initparams-in-solrconfig.adoc#,InitParams in SolrConfig>>
-* <<updatehandlers-in-solrconfig.adoc#,UpdateHandlers in SolrConfig>>
-* <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>>
-* <<requestdispatcher-in-solrconfig.adoc#,RequestDispatcher in SolrConfig>>
-* <<update-request-processors.adoc#,Update Request Processors>>
-* <<codec-factory.adoc#,Codec Factory>>
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::solrconfig-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<datadir-and-directoryfactory-in-solrconfig.adoc#,DataDir and DirectoryFactory in SolrConfig>>: Where and how Solr's indexes are stored.
+| <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>>: Schema file formats.
+| <<indexconfig-in-solrconfig.adoc#,IndexConfig in SolrConfig>>: Options for Lucene index writers, including segment management, merges, and locks.
+| <<segments-info.adoc#,Segments Info screen>>: A visualization of the underlying Lucene index segments. *TODO* this placement is kind of odd unless this whole section is re-done in a different way.
+| <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers and SearchComponents in SolrConfig>>: *TODO*
+| <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>>: Request end-points automatically provided by Solr and how to configure them.
+| <<initparams-in-solrconfig.adoc#,InitParams in SolrConfig>>: Default parameters for request handlers.
+| <<updatehandlers-in-solrconfig.adoc#,UpdateHandlers in SolrConfig>>: Update requests and commit settings.
+| <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>>: Caches, query warming, and query listeners.
+| <<requestdispatcher-in-solrconfig.adoc#,RequestDispatcher in SolrConfig>>: Advanced settings for how parsing requests and HTTP cache headers.
+| <<update-request-processors.adoc#,Update Request Processors>>: Plugins for update requests. *TODO*
+| <<script-update-processor.adoc#,Script Update Processor>>: Java scripting engines during document updates.
+| <<codec-factory.adoc#,Codec Factory>>: The Lucene codec to use when writing data to disk.
+| <<resource-loading.adoc#,Resource Loading>>: Describes how word lists, model files, and other related data are resolved by the components that need them.
+|===
+//end::solrconfig-sections[]
+****
 
 Some SolrConfig aspects are covered in other sections.
 See <<libs.adoc#lib-directives-in-solrconfig,lib directives in SolrConfig>>, which can be used for both Plugins and Resources.

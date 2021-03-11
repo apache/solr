@@ -1,0 +1,43 @@
+= Installation and Deployment
+:page-children: solr-system-requirements, \
+    installing-solr, \
+    taking-solr-to-production, \
+    jvm-settings, \
+    upgrading-a-solr-cluster, \
+    making-and-restoring-backups, \
+    running-solr-on-hdfs
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+This section covers system requirements, installation, upgrades, and deployments.
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::install-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<solr-system-requirements.adoc#,Solr System Requirements>>: Solr system requirements.
+| <<installing-solr.adoc#,Installing Solr>>: The Solr installation process.
+| <<taking-solr-to-production.adoc#,Taking Solr to Production>>: Install Solr as a service and take your application to production.
+| <<jvm-settings.adoc#,JVM Settings>>: Best practices for working with Java Virtual Machines.
+| <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>: Upgrading a production SolrCloud cluster.
+| <<making-and-restoring-backups.adoc#,Making and Restoring Backups>>: Backup strategies for your Solr indexes.
+| <<running-solr-on-hdfs.adoc#,Running Solr on HDFS>>: Store Solr indexes and transaction logs in HDFS.
+|===
+// end::install-sections[]
+****

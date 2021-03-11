@@ -85,4 +85,4 @@ TIP: For extremely high bulk indexing, especially for the initial load if there 
 
 == Advanced Commit Options
 
-All varieties of commits can be invoked from a SolrJ client or via a URL. The usual recommendation is to _not_ call commits externally. For those cases where it is desirable, see <<uploading-data-with-index-handlers.adoc#xml-update-commands,Update Commands>>. These options are listed for XML update commands that can be issued from a browser or curl, etc., and the equivalents are available from a SolrJ client.
+All varieties of commits can be invoked from a SolrJ client or via a URL. The usual recommendation is to _not_ call commits externally. For those cases where it is desirable, see <<indexing-with-update-handlers.adoc#xml-update-commands,Update Commands>>. These options are listed for XML update commands that can be issued from a browser or curl, etc., and the equivalents are available from a SolrJ client.

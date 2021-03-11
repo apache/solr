@@ -1,5 +1,17 @@
 = Monitoring Solr
-:page-children: metrics-reporting, metrics-history, mbean-request-handler, configuring-logging, using-jmx-with-solr, monitoring-solr-with-prometheus-and-grafana, performance-statistics-reference, solr-tracing
+:page-children: configuring-logging, \
+    ping, \
+    metrics-reporting, \
+    metrics-history, \
+    performance-statistics-reference, \
+    plugins-stats-screen, \
+    mbean-request-handler, \
+    monitoring-solr-with-prometheus-and-grafana, \
+    using-jmx-with-solr, \
+    thread-dump, \
+    solr-tracing, \
+    circuit-breakers, \
+    rate-limiters
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,25 +29,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Administration and monitoring can be performed using the web-based administration console, through the command line interface, or using REST APIs.
+[.lead]
+This section covers tools and approaches for monitoring Solr via the web-based administration UI, the command line interface, or REST APIs.
 
-
-Common administrative tasks include:
-
-<<metrics-reporting.adoc#,Metrics Reporting>>: Details of Solr's metrics registries and Metrics API.
-
-<<metrics-history.adoc#,Metrics History>>: Metrics history collection, configuration and API.
-
-<<mbean-request-handler.adoc#,MBean Request Handler>>: How to use Solr's MBeans for programmatic access to the system plugins and stats.
-
-<<configuring-logging.adoc#,Configuring Logging>>: Describes how to configure logging for Solr.
-
-<<using-jmx-with-solr.adoc#,Using JMX with Solr>>: Describes how to use Java Management Extensions with Solr.
-
-<<monitoring-solr-with-prometheus-and-grafana.adoc#,Monitoring Solr with Prometheus and Grafana>>: Describes how to monitor Solr with Prometheus and Grafana.
-
-<<performance-statistics-reference.adoc#,Performance Statistics Reference>>: Additional information on statistics returned from JMX.
-
-<<solr-tracing.adoc#,Distributed Solr Tracing>>: Describes how to do distributed tracing for Solr requests.
-
-
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::monitoring-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<configuring-logging.adoc#,Configuring Logging>>: Configure log levels and logging slow queries.
+| <<ping.adoc#,Ping>>: Ping a named core to determine whether it is active.
+| <<metrics-reporting.adoc#,Metrics Reporting>>: Solr's metrics registries and Metrics API.
+| <<metrics-history.adoc#,Metrics History>>: Metrics history collection, configuration, and API.
+| <<performance-statistics-reference.adoc#,Performance Statistics Reference>>: Statistics returned from JMX.
+| <<plugins-stats-screen.adoc#,Plugins/Stats Screen>>: Statistics for request handlers, search components, plugins, and other installed components
+| <<mbean-request-handler.adoc#,MBean Request Handler>>: Solr's MBeans for programmatic access to the system plugins and stats.
+| <<monitoring-solr-with-prometheus-and-grafana.adoc#,Monitoring Solr with Prometheus and Grafana>>: Monitor Solr with Prometheus and Grafana.
+| <<using-jmx-with-solr.adoc#,Using JMX with Solr>>: Java Management Extensions with Solr.
+|  <<thread-dump.adoc#,Thread Dump Screen>>: Detailed information about each thread, along with state information.
+| <<solr-tracing.adoc#,Distributed Solr Tracing>>: Distributed tracing for Solr requests.
+| <<circuit-breakers.adoc#,Circuit Breakers>>: Limit loads based on Java heap usage or CPU utilization to prevent system instability.
+| <<rate-limiters.adoc#,Request Rate Limiters>> Limit concurrent requests by type to ensure availability of resources for other requests.
+|
+|===
+// end::monitoring-sections[]
+****

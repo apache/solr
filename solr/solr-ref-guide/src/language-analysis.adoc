@@ -545,7 +545,7 @@ NOTE: Lucene currently does not index token types, so if you want to keep this i
 
 *Examples:*
 
-The OpenNLP tokenizer will tokenize punctuation, which is useful for following token filters, but ordinarily you don't want to include punctuation in your index, so the `TypeTokenFilter` (<<filter-descriptions.adoc#type-token-filter,described here>>) is included in the examples below, with `stop.pos.txt` containing the following:
+The OpenNLP tokenizer will tokenize punctuation, which is useful for following token filters, but ordinarily you don't want to include punctuation in your index, so the `TypeTokenFilter` (<<filters.adoc#type-token-filter,described here>>) is included in the examples below, with `stop.pos.txt` containing the following:
 
 .stop.pos.txt
 [source,text]
@@ -597,7 +597,7 @@ Index the POS for each token as a payload:
 ====
 --
 
-Index the POS for each token as a synonym, after prefixing the POS with "@" (see the <<filter-descriptions.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+Index the POS for each token as a synonym, after prefixing the POS with "@" (see the <<filters.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
 
 [source,xml]
 ----
@@ -676,7 +676,7 @@ Index the phrase chunk label for each token as a payload:
 ====
 --
 
-Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the <<filter-descriptions.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the <<filters.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
 
 [source,xml]
 ----

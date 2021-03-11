@@ -207,7 +207,7 @@ There are other ways to do it too, like using a `{!geofilt}` in each facet.query
 
 === Boost Nearest Results
 
-Using the <<the-dismax-query-parser.adoc#,DisMax>> or <<the-extended-dismax-query-parser.adoc#,Extended DisMax>>, you can combine spatial search with the boost function to boost the nearest results:
+Using the <<dismax-query-parser.adoc#,DisMax>> or <<edismax-query-parser.adoc#,Extended DisMax>>, you can combine spatial search with the boost function to boost the nearest results:
 
 [source,text]
 &q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc

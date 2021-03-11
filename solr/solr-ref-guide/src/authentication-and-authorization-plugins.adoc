@@ -99,7 +99,7 @@ Once `security.json` has been uploaded to ZooKeeper, you should use the appropri
 
 When running Solr in standalone mode, you need to create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
 
-If you are using <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>, you will need to place `security.json` on each node of the cluster.
+In this mode, you will need to place `security.json` on each node of the cluster.
 
 You can use the authentication and authorization APIs, but if you are using the legacy scaling model, you will need to make the same API requests on each node separately. You can also edit `security.json` by hand if you prefer.
 

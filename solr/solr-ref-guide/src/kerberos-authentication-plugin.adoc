@@ -185,7 +185,7 @@ More details on how to use a `/security.json` file in Solr are available in the 
 
 [IMPORTANT]
 ====
-If you already have a `/security.json` file in ZooKeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the <<command-line-utilities.adoc#,Command Line Utilities>> available in Solr.
+If you already have a `/security.json` file in ZooKeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the <<zookeeper-utilities.adoc#,ZooKeeper Utilities>> available in Solr.
 ====
 
 === Define a JAAS Configuration File

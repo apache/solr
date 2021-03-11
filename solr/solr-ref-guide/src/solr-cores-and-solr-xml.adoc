@@ -1,5 +1,8 @@
 = Solr Cores and solr.xml
-:page-children: format-of-solr-xml, defining-core-properties, coreadmin-api, config-sets
+:page-children: format-of-solr-xml, \
+    defining-core-properties, \
+    coreadmin-api, \
+    config-sets
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -30,7 +33,15 @@ In older versions of Solr, cores had to be predefined as `<core>` tags in `solr.
 
 The following sections describe these options in more detail.
 
-* *<<format-of-solr-xml.adoc#,Format of solr.xml>>*: Details on how to define `solr.xml`, including the acceptable parameters for the `solr.xml` file
-* *<<defining-core-properties.adoc#,Defining core.properties>>*: Details on placement of `core.properties` and available property options.
-* *<<coreadmin-api.adoc#,CoreAdmin API>>*: Tools and commands for core administration using a REST API.
-* *<<config-sets.adoc#,Configsets>>*: How to use configsets to avoid duplicating effort when defining a new core.
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::solrxml-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<format-of-solr-xml.adoc#,Format of solr.xml>>: Details on how to define `solr.xml`, including the acceptable parameters for the `solr.xml` file
+| <<defining-core-properties.adoc#,Defining core.properties>>: Details on placement of `core.properties` and available property options.
+| <<coreadmin-api.adoc#,CoreAdmin API>>: Tools and commands for core administration using a REST API.
+| <<config-sets.adoc#,Configsets>>: How to use configsets to avoid duplicating effort when defining a new core.
+|===
+// end::solrxml-sections[]
+****
