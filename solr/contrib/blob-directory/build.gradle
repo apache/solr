@@ -15,30 +15,13 @@
  * limitations under the License.
  */
 
-rootProject.name = "solr-root"
 
-includeBuild("dev-tools/missing-doclet")
+apply plugin: 'java-library'
 
-if (!(System.getProperty("skip.solr") as Boolean)) {
-  include "solr:solrj"
-  include "solr:core"
-  include "solr:server"
-  include "solr:contrib:analysis-extras"
-  include "solr:contrib:analytics"
-  include "solr:contrib:blob-directory"
-  include "solr:contrib:clustering"
-  include "solr:contrib:extraction"
-  include "solr:contrib:langid"
-  include "solr:contrib:jaegertracer-configurator"
-  include "solr:contrib:prometheus-exporter"
-  include "solr:contrib:scripting"
-  include "solr:contrib:ltr"
-  include "solr:webapp"
-  include "solr:test-framework"
-  include "solr:solr-ref-guide"
-  include "solr:example"
+description = 'A shared storage approach based on Lucene\'s Directory abstraction'
 
-  include "solr:documentation"
-  include "solr:packaging"
-  include "solr:docker"
+dependencies {
+  implementation project(':solr:core')
+
+  testImplementation project(':solr:test-framework')
 }
