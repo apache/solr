@@ -15,17 +15,9 @@
  * limitations under the License.
  */
 
-
-apply plugin: 'java-library'
-
-description = 'Search Results Clustering Integraton'
-
-dependencies {
-  implementation project(':solr:core')
-
-  implementation "org.apache.lucene:lucene-analysis-common"
-
-  implementation 'org.carrot2:carrot2-core'
-
-  testImplementation project(':solr:test-framework')
+configure(project(":solr:solr-ref-guide")) {
+  tasks.matching { it.name == "checkLocalJavadocLinksSite" }.all {
+    enabled = false
+    logger.warn("Skipping checkLocalJavadocLinksSite (tlp git migration)")
+  }
 }
