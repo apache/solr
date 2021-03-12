@@ -34,13 +34,21 @@ import org.apache.tools.ant.BuildException
 
 // See the associated help task "gradlew helpValidateLogCalls"
 
-allprojects {
+configure(subprojects.findAll { it.path.startsWith(':solr') }) {
   plugins.withType(JavaPlugin) {
-    task validateLogCalls(type: ValidateLogCallsTask) {
+    task validateLogCalls(type: ValidateLogCallsTask) { task ->
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
+
+      // This task has no proper outputs.
+      setupDummyOutputs(task)
+
+      sourceFiles = files(sourceSets*.java)
     }
-  }
+ 
+    // Add log validation to per-project checks as well.
+    check.dependsOn validateLogCalls
+ }
 }
 
 class ValidateLogCallsTask extends DefaultTask {
@@ -53,12 +61,13 @@ class ValidateLogCallsTask extends DefaultTask {
     violations.add(System.lineSeparator + msg);
     errsFound++;
   }
+
   // We have a log.something line, check for patterns we're not fond of.
   def checkLine(File file, String line, int lineNumber, String previous) {
     boolean violation = false
 
     // If the line has been explicitly OK'd, then it's OK!
-    if (line.replaceAll("\\s", "").toLowerCase().contains("//logok")) {
+    if (line.replaceAll("\\s", "").toLowerCase().contains("//nowarn")) {
       return
     }
     // Strip all of the comments, things in quotes and the like.
@@ -124,14 +133,17 @@ class ValidateLogCallsTask extends DefaultTask {
     }
 
     // Always report toString(). Note, this over-reports some constructs
-    // but just add //logOK if it's really OK.
+    // but just add //nowarn if it's really OK.
     if (violation == false) {
       if (line.contains("toString(") == true && prevLineNotIf) {
         cause = "Line contains toString"
         violation = true
       }
     }
-
+    if (stripped.contains("getMessage()") || stripped.contains("getCause()")) {
+      cause = "getMessage or getCause in log line";
+      violation = true;
+    }
     if (violation) {
       reportViolation(String.format("cause: '%s' Suspicious logging call, Parameterize and possibly surround with 'if (log.is*Enabled) {..}'. Help at: 'gradlew helpValidateLogCalls' %s    %s:%d"
           , cause , System.lineSeparator, file.getAbsolutePath(), lineNumber))
@@ -139,27 +151,13 @@ class ValidateLogCallsTask extends DefaultTask {
     return
   }
 
-// Require all our logger definitions lower case "log", except a couple of special ones.
+// Require all our logger definitions lower case "log", except if they have //nowarn
   def checkLogName(File file, String line) {
     // It's many times faster to do check this way than use a regex
     if (line.contains("static ") && line.contains("getLogger") && line.contains(" log ") == false) {
-      String name = file.name
-      if (name.equals("LoggerFactory.java")) {
+      if (line.replaceAll("\\s", "").toLowerCase().contains("//nowarn")) {
         return
       }
-      if (name.equals("SolrCore.java") && (line.contains("requestLog") || line.contains("slowLog"))) {
-        return
-      }
-      if (name.equals("StartupLoggingUtils.java") && line.contains("getLoggerImplStr")) {
-        return
-      }
-      // Apparently the Hadoop code expectes upper-case LOG, so...
-
-      if ((name.equals("HttpServer2.java") || name.equals("BlockPoolSlice.java") || name.equals("FileUtil.java"))
-        && line.contains(" LOG ")) {
-        return
-      }
-
       reportViolation("Change the logger name to lower-case 'log' in " + file.name + " " + line + " project" + project)
     }
   }
@@ -204,31 +202,30 @@ class ValidateLogCallsTask extends DefaultTask {
           reportViolation("Bad state, should be 0-1 in the switch statement") // make people aware the code sucks
           break
       }
-      switch (state) { // It's just easier to do this here rather than read another line in the switch above.
-        case 0: // Not collcting a log line
+
+      // It's just easier to do this here rather than read another line in the switch above.
+      if (state == 0) {
+          // Not collecting a log line
           prevLine = line.toLowerCase();
-          break;
-        case 1: // collecting a logging line.
-          break;
-        case 2: // We've collected the complete log line.
+      } else if (state == 1) {
+          // collecting a logging line.
+      } else if (state == 2) {
+          // We've collected the complete log line.
           checkLine(file, sb.toString(), lineNumber, prevLine)
           state = 0
-          break;
-        default:
-          break;
+      } else {
+          assert false
       }
     }
-    return
   }
+
+  @InputFiles
+  FileCollection sourceFiles
 
   @TaskAction
   def checkLogLines() {
-
-    project.sourceSets.each { srcSet ->
-      srcSet.java.each { f ->
-        checkFile(f)
-      }
-    }
+    sourceFiles.each { checkFile(it) }
+    logger.info("Checked: ${sourceFiles.files.size()}")
 
     if (errsFound > 0) {
       throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',

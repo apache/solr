@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SolrTestCaseJ4.SuppressPointFields(bugUrl="Test explicitly compares Trie to Points, randomization defeats the point")
+@SolrTestCaseJ4.SuppressSSL
 public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -75,6 +76,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   int indexSize;
   List<FldType> types;
+  @SuppressWarnings({"rawtypes"})
   Map<Comparable, Doc> model = null;
   boolean validateResponses = true;
 
@@ -123,7 +125,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     int percent = rand.nextInt(100);
     if (model == null) return;
     ArrayList<String> ids = new ArrayList<>(model.size());
-    for (Comparable id : model.keySet()) {
+    for (@SuppressWarnings({"rawtypes"})Comparable id : model.keySet()) {
       if (rand.nextInt(100) < percent) {
         ids.add(id.toString());
       }

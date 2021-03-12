@@ -18,33 +18,73 @@
 configure(rootProject) {
   def urlVersion = project.baseVersion.replace('.', '_')
   def refguideUrlVersion = project.baseVersion.replaceFirst(/^(\d+)\.(\d+).*$/, '$1_$2')
-  
+
   ext {
-    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${urlVersion}")
-    solrDocUrl = project.propertyOrDefault('solr.javadoc.url', "https://lucene.apache.org/solr/${urlVersion}")
-    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://lucene.apache.org/solr/guide/${refguideUrlVersion}")
+    // TODO: The url should be constructed from actual dependency version... but this isn't available
+    // at evaluation time. it'd have to be a lazy property provider.
+    //
+    // There are actually two questions -
+    //   1) what to do about links to yet-unreleased Lucene versions and
+    //   2) forgot what the second question was...
+    //
+    // For now, just hardcode the latest released version.
+    // We could download Lucene javadoc artifacts for the actual dependency and just
+    // link it locally (and publish it on Solr site). This would ensure the docs are always up-to-date,
+    // even for Lucene snapshots.
+    luceneDocVersion = "9_0_0-SNAPSHOT"
+    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${luceneDocVersion}")
+
+    // SOLR ONLY
+    if (!skipSolr) {
+      solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
+        if (project.version != project.baseVersion) {
+          // non-release build
+          new File(project('solr:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
+        } else {
+          // release build
+          "https://lucene.apache.org/solr/${urlVersion}"
+        }
+      }())
+
+      solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://lucene.apache.org/solr/guide/${refguideUrlVersion}")
+    }
   }
 
   task documentation() {
     group = 'documentation'
     description = 'Generate all documentation'
 
-    dependsOn ':lucene:documentation'
-    dependsOn ':solr:documentation'
+    dependsOn ':solr:documentation:assemble'
+
+    doFirst {
+      // Sanity check doc. version vs. actual version.
+      def actualLuceneVersion = getVersion("org.apache.lucene", "lucene-core").replace('.', '_')
+      if (luceneDocVersion != actualLuceneVersion) {
+        throw new GradleException("Compiling documentation with Lucene version ${luceneDocVersion} which is " +
+            "different from actual dependency ${actualLuceneVersion}?")
+      }
+    }
   }
+
+  assemble.dependsOn documentation
 }
 
 // docroot will point to Lucene and Solr relative directory for each sub-project.
-configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path == ':solr:documentation' }) {
+
   ext {
-    docroot = file("${buildDir}/documentation")
+    docroot = file("${buildDir}/site")
+    docrootMinimal = file("${buildDir}/minimalSite")
+
+    markdownSrc = file("src/markdown")
+    assets = file("src/assets")
   }
-  
+
   task documentation() {
     group = 'documentation'
     description = "Generate ${project.name.capitalize()} documentation"
 
-    dependsOn subprojects.collect { prj ->
+    dependsOn project.parent.subprojects.collect { prj ->
       prj.tasks.matching { it.name == 'renderSiteJavadoc' }
     }
     dependsOn 'changesToHtml','copyDocumentationAssets',
@@ -53,26 +93,66 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
 
   task copyDocumentationAssets(type: Copy) {
     includeEmptyDirs = false
-    from('site/html')      // lucene
-    from('site/assets')    // solr
+    from(project.assets)
     into project.docroot
+  }
+  
+  assemble {
+    dependsOn documentation
+  }
+
+  configurations {
+    site
+  }
+  
+  artifacts {
+    site project.docroot, {
+      builtBy documentation
+    }
   }
 }
 
-configure(project(':solr')) {
-  ext {
-    // required for the "simple" Solr docs shipped in tgz/zip files, only referring to online web pages:
-    docrootOnline = file("${buildDir}/docs-online")
-  }
+// SOLR ONLY
+if (!skipSolr) {
+  configure(project(':solr:documentation')) {
+    task documentationMinimal() {
+      group = 'documentation'
+      description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
+      dependsOn 'copyMiniDocumentationAssets', 'createMiniDocumentationIndex', 'copyChangesToHtmlForMiniSite'
+    }
 
-  documentation {
-    // for Solr we also have a page shipped with zip/tgz that just points to online web pages:
-    dependsOn 'copyOnlineDocumentationAssets','createOnlineDocumentationIndex'
+    task copyChangesToHtmlForMiniSite(type: Copy) {
+      from project.docroot
+      into project.docrootMinimal
+      include 'changes/**'
+      dependsOn 'changesToHtml'
+    }
+
+    task copyMiniDocumentationAssets(type: Copy) {
+      includeEmptyDirs = false
+      from('src/assets')
+      into project.docrootMinimal
+    }
+
+    assemble {
+      dependsOn documentationMinimal
+    }
+
+    configurations {
+      minimalSite
+    }
+
+    artifacts {
+      minimalSite project.docrootMinimal, {
+        builtBy documentationMinimal
+      }
+    }
   }
-  
-  task copyOnlineDocumentationAssets(type: Copy) {
-    includeEmptyDirs = false
-    from('site/assets')
-    into project.docrootOnline
+}
+
+configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+  ext {
+    docroot = project('documentation').docroot
+    docrootMinimal = project('documentation').docrootMinimal
   }
 }

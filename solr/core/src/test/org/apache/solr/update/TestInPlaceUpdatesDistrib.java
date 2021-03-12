@@ -47,6 +47,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -56,17 +57,20 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Tests the in-place updates (docValues updates) for a one shard, three replica cluster.
@@ -84,8 +88,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // we need consistent segments that aren't re-ordered on merge because we're
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
-
-    randomizeUpdateLogImpl();
 
     initCore(configString, schemaString);
     
@@ -648,7 +650,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue("Earlier: "+docids+", now: "+getInternalDocIds("100"), docids.equals(getInternalDocIds("100")));
     
     SolrDocument sdoc = LEADER.getById("100");  // RTG straight from the index
-    assertEquals(sdoc.toString(), (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+    assertEquals(sdoc.toString(), inplace_updatable_float, sdoc.get("inplace_updatable_float"));
     assertEquals(sdoc.toString(), title, sdoc.get("title_s"));
     assertEquals(sdoc.toString(), version, sdoc.get("_version_"));
 
@@ -659,7 +661,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       version = currentVersion;
 
       sdoc = LEADER.getById("100");  // RTG from the tlog
-      assertEquals(sdoc.toString(), (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+      assertEquals(sdoc.toString(), inplace_updatable_float, sdoc.get("inplace_updatable_float"));
       assertEquals(sdoc.toString(), title, sdoc.get("title_s"));
       assertEquals(sdoc.toString(), version, sdoc.get("_version_"));
 
@@ -684,13 +686,25 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue(currentVersion > version);
     version = currentVersion;
 
+    // set operation with invalid value for field
+    SolrException e = expectThrows(SolrException.class,
+        () -> addDocAndGetVersion( "id", 100, "inplace_updatable_float", map("set", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
+    // inc operation with invalid inc value
+    e = expectThrows(SolrException.class,
+        () -> addDocAndGetVersion( "id", 100, "inplace_updatable_int", map("inc", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
     // RTG from tlog(s)
     for (SolrClient client : clients) {
       final String clientDebug = client.toString() + (LEADER.equals(client) ? " (leader)" : " (not leader)");
       sdoc = client.getById("100", params("distrib", "false"));
 
-      assertEquals(clientDebug + " => "+ sdoc, (int) 100, sdoc.get("inplace_updatable_int"));
-      assertEquals(clientDebug + " => "+ sdoc, (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+      assertEquals(clientDebug + " => "+ sdoc, 100, sdoc.get("inplace_updatable_int"));
+      assertEquals(clientDebug + " => "+ sdoc, inplace_updatable_float, sdoc.get("inplace_updatable_float"));
       assertEquals(clientDebug + " => "+ sdoc, title, sdoc.get("title_s"));
       assertEquals(clientDebug + " => "+ sdoc, version, sdoc.get("_version_"));
     }
@@ -945,7 +959,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     if (log.isInfoEnabled()) {
       log.info("Non leader 0: {}", ((HttpSolrClient) NONLEADERS.get(0)).getBaseURL());
-      log.info("Non leader 1: {}", ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()); // logOk
+      log.info("Non leader 1: {}", ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()); // nowarn
     }
     
     SolrDocument doc0 = NONLEADERS.get(0).getById(String.valueOf(0), params("distrib", "false"));
@@ -1036,7 +1050,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       if (log.isInfoEnabled()) {
         log.info("Testing client (Fetch missing test): {}", ((HttpSolrClient) client).getBaseURL());
         log.info("Version at {} is: {}"
-            , ((HttpSolrClient) client).getBaseURL(), getReplicaValue(client, 1, "_version_")); // logOk
+            , ((HttpSolrClient) client).getBaseURL(), getReplicaValue(client, 1, "_version_")); // nowarn
       }
       assertReplicaValue(client, 1, "inplace_updatable_float", (newinplace_updatable_float + 2.0f),
           "inplace_updatable_float didn't match for replica at client: " + ((HttpSolrClient) client).getBaseURL());
@@ -1346,7 +1360,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       if (log.isInfoEnabled()) {
         log.info("Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): {}", ((HttpSolrClient) client).getBaseURL());
         log.info("Version at {} is: {}", ((HttpSolrClient) client).getBaseURL(),
-            getReplicaValue(client, 1, "_version_")); // logOk
+            getReplicaValue(client, 1, "_version_")); // nowarn
       }
       assertNull(client.getById("1", params("distrib", "false")));
     }

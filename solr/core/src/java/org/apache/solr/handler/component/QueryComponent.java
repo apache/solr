@@ -358,11 +358,6 @@ public class QueryComponent extends SearchComponent
 
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
-    if (null != rb.getCursorMark() && 0 < timeAllowed) {
-      // fundamentally incompatible
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not search using both " +
-                              CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
-    }
 
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
@@ -650,7 +645,7 @@ public class QueryComponent extends SearchComponent
   protected static final EndResultTransformer MAIN_END_RESULT_TRANSFORMER = new MainEndResultTransformer();
   protected static final EndResultTransformer SIMPLE_END_RESULT_TRANSFORMER = new SimpleEndResultTransformer();
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected void groupedFinishStage(final ResponseBuilder rb) {
     // To have same response as non-distributed request.
     GroupingSpecification groupSpec = rb.getGroupingSpec();
@@ -806,6 +801,7 @@ public class QueryComponent extends SearchComponent
     return true;
   }
 
+  @SuppressWarnings({"unchecked"})
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
       List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
       if(mergeStrategies != null) {
@@ -929,11 +925,13 @@ public class QueryComponent extends SearchComponent
           hitCountIsExact = false;
         }
 
+        @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
         if (sortFieldValues.size()==0 && // we bypass merging this response only if it's partial itself
                             thisResponseIsPartial) { // but not the previous one!!
           continue; //fsv timeout yields empty sort_vlaues
         }
+        @SuppressWarnings({"rawtypes"})
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
 
         // go through every doc in this response, construct a ShardDoc, and
@@ -1069,6 +1067,7 @@ public class QueryComponent extends SearchComponent
         nextCursorMarkValues.add(lastDoc.score);
       } else {
         assert null != sf.getField() : "SortField has null field";
+        @SuppressWarnings({"unchecked"})
         List<Object> fieldVals = (List<Object>) lastDoc.sortFieldValues.get(sf.getField());
         nextCursorMarkValues.add(fieldVals.get(lastDoc.orderInShard));
       }
@@ -1078,7 +1077,8 @@ public class QueryComponent extends SearchComponent
     rb.setNextCursorMark(nextCursorMark);
   }
 
-  protected NamedList unmarshalSortValues(SortSpec sortSpec, 
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  protected NamedList unmarshalSortValues(SortSpec sortSpec,
                                         NamedList sortFieldValues, 
                                         IndexSchema schema) {
     NamedList unmarshalledSortValsPerField = new NamedList();

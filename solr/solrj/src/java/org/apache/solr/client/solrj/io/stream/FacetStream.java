@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -60,9 +61,15 @@ import org.apache.solr.common.util.NamedList;
  * @since 6.0.0
  **/
 
-public class FacetStream extends TupleStream implements Expressible  {
+public class FacetStream extends TupleStream implements Expressible, ParallelMetricsRollup {
 
   private static final long serialVersionUID = 1;
+
+  // allow client apps to disable the auto-plist via system property if they want to turn it off globally
+  private static final boolean defaultTieredEnabled =
+      Boolean.parseBoolean(System.getProperty("solr.facet.stream.tiered", "true"));
+
+  static final String TIERED_PARAM = "tiered";
 
   private Bucket[] buckets;
   private Metric[] metrics;
@@ -83,6 +90,8 @@ public class FacetStream extends TupleStream implements Expressible  {
 
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
+  protected transient TupleStream parallelizedStream;
+  protected transient StreamContext context;
 
   public FacetStream(String zkHost,
                      String collection,
@@ -323,6 +332,10 @@ public class FacetStream extends TupleStream implements Expressible  {
          zkHost);
   }
 
+  // see usage in parallelize method
+  private FacetStream() {
+  }
+
   public int getBucketSizeLimit() {
     return this.bucketSizeLimit;
   }
@@ -375,7 +388,7 @@ public class FacetStream extends TupleStream implements Expressible  {
   }
 
   private String[] parseSorts(String sortString) {
-    List<String> sorts = new ArrayList();
+    List<String> sorts = new ArrayList<>();
     boolean inParam = false;
     StringBuilder buff = new StringBuilder();
     for(int i=0; i<sortString.length(); i++) {
@@ -531,11 +544,12 @@ public class FacetStream extends TupleStream implements Expressible  {
   }
   
   public void setStreamContext(StreamContext context) {
+    this.context = context;
     cache = context.getSolrClientCache();
   }
 
   public List<TupleStream> children() {
-    return new ArrayList();
+    return new ArrayList<>();
   }
 
   public void open() throws IOException {
@@ -545,6 +559,19 @@ public class FacetStream extends TupleStream implements Expressible  {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
       cloudSolrClient = new Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build();
+    }
+
+    // Parallelize the facet expression across multiple collections for an alias using plist if possible
+    if (params.getBool(TIERED_PARAM, defaultTieredEnabled)) {
+      ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
+      final List<String> resolved = clusterStateProvider != null ? clusterStateProvider.resolveAlias(collection) : null;
+      if (resolved != null && resolved.size() > 1) {
+        Optional<TupleStream> maybeParallelize = openParallelStream(context, resolved, metrics);
+        if (maybeParallelize.isPresent()) {
+          this.parallelizedStream = maybeParallelize.get();
+          return; // we're using a plist to parallelize the facet operation
+        } // else, there's a metric that we can't rollup over the plist results safely ... no plist for you!
+      }
     }
 
     FieldComparator[] adjustedSorts = adjustSorts(buckets, bucketSorts);
@@ -557,7 +584,12 @@ public class FacetStream extends TupleStream implements Expressible  {
     paramsLoc.set("rows", "0");
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
+    if (paramsLoc.get("lb.proxy") != null) {
+      request.setPath("/"+collection+"/select");
+    }
+
     try {
+      @SuppressWarnings({"rawtypes"})
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, buckets, metrics);
 
@@ -621,20 +653,22 @@ public class FacetStream extends TupleStream implements Expressible  {
   }
 
   public Tuple read() throws IOException {
+    // if we're parallelizing the facet expression over multiple collections with plist,
+    // then delegate the read operation to that stream instead
+    if (parallelizedStream != null) {
+      return parallelizedStream.read();
+    }
+
     if(index < tuples.size() && index < (offset+rows)) {
       Tuple tuple = tuples.get(index);
       ++index;
       return tuple;
     } else {
-      Map fields = new HashMap();
+      Tuple tuple = Tuple.EOF();
 
       if(bucketSizeLimit == Integer.MAX_VALUE) {
-        fields.put("totalRows", tuples.size());
+        tuple.put("totalRows", tuples.size());
       }
-
-      fields.put("EOF", true);
-
-      Tuple tuple = new Tuple(fields);
       return tuple;
     }
   }
@@ -767,11 +801,12 @@ public class FacetStream extends TupleStream implements Expressible  {
     return "index";
   }
 
-  private void getTuples(NamedList response,
+  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response,
                                 Bucket[] buckets,
                                 Metric[] metrics) {
 
-    Tuple tuple = new Tuple(new HashMap());
+    Tuple tuple = new Tuple();
+    @SuppressWarnings({"rawtypes"})
     NamedList facets = (NamedList)response.get("facets");
     fillTuples(0,
                tuples,
@@ -785,17 +820,20 @@ public class FacetStream extends TupleStream implements Expressible  {
   private void fillTuples(int level,
                           List<Tuple> tuples,
                           Tuple currentTuple,
-                          NamedList facets,
+                          @SuppressWarnings({"rawtypes"}) NamedList facets,
                           Bucket[] _buckets,
                           Metric[] _metrics) {
 
     String bucketName = _buckets[level].toString();
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList)facets.get(bucketName);
     if(nl == null) {
       return;
     }
+    @SuppressWarnings({"rawtypes"})
     List allBuckets = (List)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
+      @SuppressWarnings({"rawtypes"})
       NamedList bucket = (NamedList)allBuckets.get(b);
       Object val = bucket.get("val");
       if (val instanceof Integer) {
@@ -848,5 +886,65 @@ public class FacetStream extends TupleStream implements Expressible  {
     } else {
       return bucketSorts[0];
     }
+  }
+
+  List<Metric> getMetrics() {
+    return Arrays.asList(metrics);
+  }
+
+  @Override
+  public TupleStream[] parallelize(List<String> partitions) throws IOException {
+
+    final ModifiableSolrParams withoutTieredParam = new ModifiableSolrParams(params);
+    withoutTieredParam.remove(TIERED_PARAM); // each individual facet request is not tiered
+
+    TupleStream[] streams = new TupleStream[partitions.size()];
+    for (int p = 0; p < streams.length; p++) {
+      FacetStream cloned = new FacetStream();
+      cloned.init(partitions.get(p), /* each collection */
+                  withoutTieredParam, /* removes the tiered param */
+                  buckets,
+                  bucketSorts,
+                  metrics,
+                  rows,
+                  offset,
+                  bucketSizeLimit,
+                  refine,
+                  method,
+                  serializeBucketSizeLimit,
+                  overfetch,
+                  zkHost);
+      streams[p] = cloned;
+    }
+    return streams;
+  }
+
+  @Override
+  public TupleStream getSortedRollupStream(ParallelListStream plist, Metric[] rollupMetrics) throws IOException {
+    // using a hashRollup removes the need to sort the streams from the plist
+    HashRollupStream rollup = new HashRollupStream(plist, buckets, rollupMetrics);
+    SelectStream select = new SelectStream(rollup, getRollupSelectFields(rollupMetrics));
+    // the final stream must be sorted based on the original stream sort
+    return new SortStream(select, getStreamSort());
+  }
+
+  /**
+   * The projection of dimensions and metrics from the rollup stream.
+   *
+   * @param rollupMetrics The metrics being rolled up.
+   * @return A mapping of fields produced by the rollup stream to their output name.
+   */
+  protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
+    Map<String, String> map = new HashMap<>();
+    for (Bucket b : buckets) {
+      String key = b.toString();
+      map.put(key, key);
+    }
+    for (Metric m : rollupMetrics) {
+      String[] cols = m.getColumns();
+      String col = cols != null && cols.length > 0 ? cols[0] : "*";
+      map.put(m.getIdentifier(), col);
+    }
+    return map;
   }
 }

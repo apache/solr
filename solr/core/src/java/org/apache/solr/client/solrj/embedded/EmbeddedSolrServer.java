@@ -71,6 +71,7 @@ public class EmbeddedSolrServer extends SolrClient {
   protected final String coreName;
   private final SolrRequestParsers _parser;
   private final RequestWriterSupplier supplier;
+  private boolean containerIsLocal = false;
 
   public enum RequestWriterSupplier {
     JavaBin(() -> new BinaryRequestWriter()), XML(() -> new RequestWriter());
@@ -94,6 +95,7 @@ public class EmbeddedSolrServer extends SolrClient {
    */
   public EmbeddedSolrServer(Path solrHome, String defaultCoreName) {
     this(load(new CoreContainer(solrHome, new Properties())), defaultCoreName);
+    containerIsLocal = true;
   }
 
   /**
@@ -104,6 +106,7 @@ public class EmbeddedSolrServer extends SolrClient {
    */
   public EmbeddedSolrServer(NodeConfig nodeConfig, String defaultCoreName) {
     this(load(new CoreContainer(nodeConfig)), defaultCoreName);
+    containerIsLocal = true;
   }
 
   private static CoreContainer load(CoreContainer cc) {
@@ -120,9 +123,6 @@ public class EmbeddedSolrServer extends SolrClient {
 
   /**
    * Create an EmbeddedSolrServer wrapping a CoreContainer.
-   * <p>
-   * Note that EmbeddedSolrServer will shutdown the wrapped CoreContainer when
-   * {@link #close()} is called.
    *
    * @param coreContainer the core container
    * @param coreName      the core to route requests to by default (optional)
@@ -133,8 +133,6 @@ public class EmbeddedSolrServer extends SolrClient {
 
   /**
    * Create an EmbeddedSolrServer wrapping a CoreContainer.
-   * <p>
-   * Note that EmbeddedSolrServer will shutdown the wrapped CoreContainer when {@link #close()} is called.
    *
    * @param coreContainer
    *          the core container
@@ -158,7 +156,8 @@ public class EmbeddedSolrServer extends SolrClient {
   // It *should* be able to convert the response directly into a named list.
 
   @Override
-  public NamedList<Object> request(SolrRequest request, String coreName) throws SolrServerException, IOException {
+  @SuppressWarnings({"unchecked"})
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String coreName) throws SolrServerException, IOException {
 
     String path = request.getPath();
     if (path == null || !path.startsWith("/")) {
@@ -270,12 +269,14 @@ public class EmbeddedSolrServer extends SolrClient {
     } catch (Exception ex) {
       throw new SolrServerException(ex);
     } finally {
-      if (req != null) req.close();
-      SolrRequestInfo.clearRequestInfo();
+      if (req != null) {
+        req.close();
+        SolrRequestInfo.clearRequestInfo();
+      }
     }
   }
 
-  private Set<ContentStream> getContentStreams(SolrRequest request) throws IOException {
+  private Set<ContentStream> getContentStreams(@SuppressWarnings({"rawtypes"})SolrRequest request) throws IOException {
     if (request.getMethod() == SolrRequest.METHOD.GET) return null;
     if (request instanceof ContentStreamUpdateRequest) {
       final ContentStreamUpdateRequest csur = (ContentStreamUpdateRequest) request;
@@ -351,11 +352,13 @@ public class EmbeddedSolrServer extends SolrClient {
   }
 
   /**
-   * Shutdown all cores within the EmbeddedSolrServer instance
+   * Closes any resources created by this instance
    */
   @Override
   public void close() throws IOException {
-    coreContainer.shutdown();
+    if (containerIsLocal) {
+      coreContainer.shutdown();
+    }
   }
 
   /**

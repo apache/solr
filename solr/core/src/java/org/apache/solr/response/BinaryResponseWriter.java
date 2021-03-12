@@ -81,7 +81,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     /* NOOP */
   }
 
@@ -166,7 +166,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.SOLRDOCLST);
       List<Object> l = new ArrayList<>(4);
-      l.add((long) ctx.getDocList().matches());
+      l.add( ctx.getDocList().matches());
       l.add((long) ctx.getDocList().offset());
       
       Float maxScore = null;
@@ -195,6 +195,9 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   @SuppressWarnings("unchecked")
   public static NamedList<Object> getParsedResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     try {
+      if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) {
+        rsp.removeResponseHeader();
+      }
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -239,6 +242,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       return null;
     }
 
+    @SuppressWarnings({"unchecked"})
     public Collection<Object> getRawFieldValues(String name) {
       Object v = _fields.get(name);
       if (v instanceof Collection) {
@@ -266,6 +270,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         }
 
         @Override
+        @SuppressWarnings({"unchecked"})
         public Entry<String, Object> next() {
           return convertCharSeq(it.next());
         }
@@ -284,6 +289,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public Object getFirstValue(String name) {
       Object v = _fields.get(name);
       if (v == null || !(v instanceof Collection)) return convertCharSeq(v);
+      @SuppressWarnings({"rawtypes"})
       Collection c = (Collection) v;
       if (c.size() > 0) {
         return convertCharSeq(c.iterator().next());
