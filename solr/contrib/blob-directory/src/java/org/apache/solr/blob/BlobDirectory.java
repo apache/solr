@@ -127,6 +127,7 @@ public class BlobDirectory extends FilterDirectory {
 
     log.debug("Sync to BlobStore writes={} deleted={}", writes, deletedFileNames);
     blobPusher.push(blobDirPath, writes, this::openInputStream, deletedFileNames);
+
     synchronizedFileNames.clear();
     deletedFileNames.clear();
   }
@@ -149,7 +150,6 @@ public class BlobDirectory extends FilterDirectory {
     log.debug("close");
     isOpen = false;
     IOUtils.closeQuietly(in);
-    IOUtils.closeQuietly(blobPusher);
   }
 
   @Override

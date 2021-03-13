@@ -19,25 +19,20 @@ package org.apache.solr.blob;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.store.NativeFSLockFactory;
-import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.*;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.DirectoryFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,10 +43,9 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   private static final Pattern INDEX_NAME_PATTERN = Pattern.compile("index(?:\\.[0-9]{17})?");
 
   private String localRootPath;
-  private BlobStore blobStore;
+  private LocalBlobStore blobStore;
   private BlobPusher blobPusher;
-  private DirectoryFactory delegateFactory;
-  private String delegateLockType;
+  private org.apache.solr.core.DirectoryFactory delegateFactory;
 
   // Parameters for MMapDirectory
   // TODO: Change DirectoryFactory.get() upstream to allow us to provide a Function<Directory,
@@ -73,7 +67,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings("rawtypes") NamedList args) {
     super.init(args);
     SolrParams params = args.toSolrParams();
 
@@ -82,20 +76,15 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
       throw new IllegalArgumentException("delegateFactory class is required");
     }
     delegateFactory =
-        coreContainer.getResourceLoader().newInstance(delegateFactoryClass, DirectoryFactory.class);
+        coreContainer.getResourceLoader().newInstance(delegateFactoryClass, org.apache.solr.core.DirectoryFactory.class);
     delegateFactory.initCoreContainer(coreContainer);
     delegateFactory.init(args);
-
-    delegateLockType = params.get("delegateLockType");
-    if (delegateLockType == null) {
-      throw new IllegalArgumentException("delegateLockType is required");
-    }
 
     String blobRootDir = params.get("blobRootDir");
     if (blobRootDir == null) {
       throw new IllegalArgumentException("blobRootDir is required");
     }
-    blobStore = null;//TODO new BlobStore(blobRootDir);
+    blobStore = new LocalBlobStore(blobRootDir);
     blobPusher = new BlobPusher(blobStore);
 
     maxChunk = params.getInt("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);
@@ -104,6 +93,14 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     }
     unmapHack = params.getBool("unmap", true);
     preload = params.getBool("preload", false); // default turn-off
+  }
+
+  org.apache.solr.core.DirectoryFactory getDelegateFactory() {
+    return delegateFactory;
+  }
+
+  BlobStore getBlobStore() {
+    return blobStore;
   }
 
   @Override
@@ -124,13 +121,43 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   }
 
   @Override
-  protected LockFactory createLockFactory(String rawLockType) throws IOException {
-    return rawLockType.equals(DirectoryFactory.LOCK_TYPE_NONE)
-        ? NoLockFactory.INSTANCE
-        : NativeFSLockFactory.INSTANCE;
-    // TODO return rawLockType.equals(DirectoryFactory.LOCK_TYPE_NONE) ? NoLockFactory.INSTANCE :
-    //  DELEGATE_LOCK_FACTORY;
+  protected LockFactory createLockFactory(String rawLockType) {
+    log.debug("createLockFactory {}", rawLockType);
+    if (rawLockType == null) {
+      rawLockType = org.apache.solr.core.DirectoryFactory.LOCK_TYPE_NATIVE;
+      log.warn("No lockType configured, assuming '{}'.", rawLockType);
+    }
+    String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
+    switch (lockType) {
+      case org.apache.solr.core.DirectoryFactory.LOCK_TYPE_SIMPLE:
+        return SimpleFSLockFactory.INSTANCE;
+      case org.apache.solr.core.DirectoryFactory.LOCK_TYPE_NATIVE:
+        return NativeFSLockFactory.INSTANCE;
+      case org.apache.solr.core.DirectoryFactory.LOCK_TYPE_SINGLE:
+        return new SingleInstanceLockFactory();
+      case org.apache.solr.core.DirectoryFactory.LOCK_TYPE_NONE:
+        return NoLockFactory.INSTANCE;
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Unrecognized lockType: " + rawLockType);
+    }
   }
+
+  /* TODO
+  private static String getLockType(LockFactory lockFactory) {
+    if (lockFactory == NativeFSLockFactory.INSTANCE) {
+      return DirectoryFactory.LOCK_TYPE_NATIVE;
+    } else if (lockFactory == NoLockFactory.INSTANCE) {
+      return DirectoryFactory.LOCK_TYPE_NONE;
+    } else if (lockFactory == SimpleFSLockFactory.INSTANCE) {
+      return DirectoryFactory.LOCK_TYPE_SIMPLE;
+    } else if (lockFactory instanceof SingleInstanceLockFactory) {
+      return DirectoryFactory.LOCK_TYPE_SINGLE;
+    }
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unrecognized lockFactory class: " + lockFactory.getClass().getName());
+  }
+  */
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
@@ -144,10 +171,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     }
     mapDirectory.setPreload(preload);
     Directory delegateDirectory = mapDirectory;
-    // TODO
-    //  String delegateLockType = lockFactory == NoLockFactory.INSTANCE ?
-    //  DirectoryFactory.LOCK_TYPE_NONE : this.delegateLockType;
-    //  Directory delegateDirectory = delegateFactory.get(path, dirContext, delegateLockType);
+    // TODO Directory delegateDirectory = delegateFactory.get(path, dirContext, getLockType(lockFactory));
     String blobDirPath = getRelativePath(path, localRootPath);
     return new BlobDirectory(delegateDirectory, blobDirPath, blobPusher);
   }
