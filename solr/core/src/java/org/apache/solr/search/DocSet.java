@@ -67,8 +67,7 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
 
   /**
    * Returns an ordered iterator of the documents in the set for the specified {@link LeafReaderContext}.
-   * <b>NOTE:</b> <code>null</code> should be returned if the filter doesn't accept any documents otherwise
-   * internal optimization might not apply in the case an <i>empty</i> {@link DocIdSetIterator} is returned.
+   * <b>NOTE:</b> may return null if there are no matching documents for this leaf.
    */
   public abstract DocIdSetIterator iterator(LeafReaderContext ctx);
 
