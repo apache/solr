@@ -127,6 +127,10 @@
 # framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
 #SOLR_LOG_PRESTART_ROTATION=false
 
+# Enables gc log rotation before starting Solr. Setting SOLR_GC_LOG_PRESTART_ARCHIVE=true will let Solr take care
+# of pre start archiving of gc logs.
+#SOLR_GC_LOG_PRESTART_ARCHIVE=false
+
 # Enables jetty request log for all requests
 #SOLR_REQUESTLOG_ENABLED=false
 
