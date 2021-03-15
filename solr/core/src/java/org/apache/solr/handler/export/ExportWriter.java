@@ -128,11 +128,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   PushWriter writer;
 
   // per-segment caches for already populated partitioning filters when parallel() is in use
-  final static SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>> partitionCaches;
-  static {
-    partitionCaches = new CaffeineCache<>();
-    partitionCaches.init(Map.of("size", "100"), null, null);
-  }
+  final SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>> partitionCaches;
 
   // local per-segment partitioning filters that are incomplete (still being updated from the current request)
   final Map<IndexReader.CacheKey, FixedBitSet> tempPartitionCaches;
@@ -169,7 +165,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
     this.fieldList = req.getParams().get(CommonParams.FL);
     this.batchSize = DEFAULT_BATCH_SIZE;
-    //this.partitionCaches = (SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>)req.getSearcher().getCache(SOLR_CACHE_KEY);
+    this.partitionCaches = (SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>)req.getSearcher().getCache(SOLR_CACHE_KEY);
   }
 
   @Override
@@ -540,7 +536,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       buffer.outDocsIndex = outDocsIndex;
     } catch (Throwable t) {
-      log.error("transfer", t);
+      log.error("fillNextBuffer", t);
       if (t instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
