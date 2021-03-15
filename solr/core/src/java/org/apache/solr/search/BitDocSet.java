@@ -18,11 +18,9 @@ package org.apache.solr.search;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
@@ -237,45 +235,15 @@ public class BitDocSet extends DocSet {
     return new BitDocSet(bits.clone(), size);
   }
 
-  private static final int NO_DOCS_THIS_SEGMENT = -1;
-  private int[] cachedFloorDocs;
-
-  /**
-   * Because `bits.nextSetBit(int)` (called in `nextDoc()`) has no upper limit, lazily cache
-   * floorDocs for each segment to avoid duplicate scanning of bits (and to enable optimization
-   * in consumers afforded by returning <code>null</code> when there are no docs for a given
-   * segment).
-   */
   private int getFloorDoc(final LeafReaderContext ctx) {
     assert !ctx.isTopLevel;
-    final int[] floorDocs;
-    final int setMax = bits.length();
-    if (cachedFloorDocs != null) {
-      floorDocs = cachedFloorDocs;
-    } else {
-      List<LeafReaderContext> leaves = ReaderUtil.getTopLevelContext(ctx).leaves();
-      floorDocs = new int[leaves.size()];
-      int idx = 0;
-      int nextFloorDoc = -1;
-      for (LeafReaderContext c : leaves) {
-        final int base = c.docBase;
-        final int max = base + c.reader().maxDoc();
-        final int recordFloorDoc;
-        if (nextFloorDoc >= max) {
-          recordFloorDoc = NO_DOCS_THIS_SEGMENT;
-        } else if (nextFloorDoc >= base) {
-          recordFloorDoc = nextFloorDoc;
-        } else if (setMax <= base || (nextFloorDoc = bits.nextSetBit(base)) >= max) {
-          recordFloorDoc = NO_DOCS_THIS_SEGMENT;
-        } else {
-          recordFloorDoc = nextFloorDoc;
-        }
-        floorDocs[idx++] = recordFloorDoc;
-      }
-
-      cachedFloorDocs = floorDocs;
+    final int base = ctx.docBase;
+    if (base >= bits.length()) {
+      return DocIdSetIterator.NO_MORE_DOCS;
     }
-    return floorDocs[ctx.ord];
+    final int max = base + ctx.reader().maxDoc();
+    final int nextFloorDoc = bits.nextSetBit(base);
+    return nextFloorDoc < max ? nextFloorDoc : DocIdSetIterator.NO_MORE_DOCS;
   }
 
   @Override
@@ -305,7 +273,7 @@ public class BitDocSet extends DocSet {
     }
 
     final int firstDocId = getFloorDoc(context);
-    if (firstDocId == NO_DOCS_THIS_SEGMENT) {
+    if (firstDocId == DocIdSetIterator.NO_MORE_DOCS) {
       return null;
     }
     final int base = context.docBase;
