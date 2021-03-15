@@ -17,14 +17,10 @@
 
 package org.apache.solr.cloud;
 
-import java.util.Map;
-
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -71,11 +67,9 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
 
   }
   
-  private String getConfigNameFromZk(String collName) throws KeeperException, InterruptedException {
-    byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null, false);
-    @SuppressWarnings({"rawtypes"})
-    Map confData = (Map) Utils.fromJSON(b);
-    return (String) confData.get(ZkController.CONFIGNAME_PROP); 
+  private String getConfigNameFromZk(String collName) {
+    final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    return zkStateReader.getClusterState().getCollection(collName).getConfigName(zkStateReader);
   }
 
 }

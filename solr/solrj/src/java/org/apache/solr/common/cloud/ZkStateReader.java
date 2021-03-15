@@ -238,7 +238,6 @@ public class ZkStateReader implements SolrCloseable {
 
   /**
    * Returns config set name for collection.
-   * TODO move to DocCollection (state.json).
    *
    * @param collection to return config set name for
    */

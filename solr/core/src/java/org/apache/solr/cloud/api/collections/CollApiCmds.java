@@ -226,8 +226,8 @@ public class CollApiCmds {
 
       final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
       //the rest of the processing is based on writing cluster state properties
-      //remove the property here to avoid any errors down the pipeline due to this property appearing
-      String configName = (String) message.getProperties().remove(CollectionAdminParams.COLL_CONF);
+      //configName will be put in collectionProps so that it will appear in state.json
+      String configName = (String) message.getProperties().get(CollectionAdminParams.COLL_CONF);
 
       if (configName != null) {
         CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getSolrCloudManager(), configName);

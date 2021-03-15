@@ -136,6 +136,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // this also creates the collection zk node as a side-effect
       CollectionHandlingUtils.createConfNode(stateManager, configName, collectionName);
 
+      message.getProperties().put(COLL_CONF, configName);
+
       Map<String,String> collectionParams = new HashMap<>();
       Map<String,Object> collectionProps = message.getProperties();
       for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
@@ -374,7 +376,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         log.debug("Finished create command on all shards for collection: {}", collectionName);
         // Emit a warning about production use of data driven functionality
         boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null ||
-            message.getStr(COLL_CONF).equals(DEFAULT_CONFIGSET_NAME);
+            message.getStr(COLL_CONF).contains(DEFAULT_CONFIGSET_NAME);
         if (defaultConfigSetUsed) {
           results.add("warning", "Using _default configset. Data driven schema functionality"
               + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:"

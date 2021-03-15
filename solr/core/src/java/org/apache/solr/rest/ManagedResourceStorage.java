@@ -41,6 +41,7 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -90,8 +91,8 @@ public abstract class ManagedResourceStorage {
     if (resourceLoader instanceof ZkSolrResourceLoader) {
       zkClient = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkClient();
       try {
-        zkConfigName = ((ZkSolrResourceLoader)resourceLoader).getZkController().
-            getZkStateReader().readConfigName(collection);
+        final ZkStateReader zkStateReader = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkStateReader();
+        zkConfigName = zkStateReader.getClusterState().getCollection(collection).getConfigName(zkStateReader);
       } catch (Exception e) {
         log.error("Failed to get config name due to", e);
         throw new SolrException(ErrorCode.SERVER_ERROR,

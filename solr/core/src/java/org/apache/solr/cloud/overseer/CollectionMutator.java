@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,6 +144,12 @@ public class CollectionMutator {
     if (!hasAnyOps) {
       return ZkStateWriter.NO_OP;
     }
+
+    //put configName in props so that it will appear in state.json
+    if (message.getStr(CollectionAdminParams.COLL_CONF) != null) {
+      m.put(ZkStateReader.CONFIGNAME_PROP,  message.getStr(CollectionAdminParams.COLL_CONF));
+    }
+
 
     DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion());
     if (replicaOps == null){

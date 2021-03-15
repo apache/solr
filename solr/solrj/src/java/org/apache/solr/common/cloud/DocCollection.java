@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
+import org.apache.solr.common.SolrException;
+import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
@@ -55,6 +59,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final int znodeVersion;
 
   private final String name;
+  private final String configName;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final Slice[] activeSlicesArr;
@@ -88,7 +93,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
-
+    this.configName = (String) props.get(CONFIGNAME_PROP);
     this.slices = slices;
     this.activeSlices = new HashMap<>();
     this.nodeNameLeaderReplicas = new HashMap<>();
@@ -204,6 +209,28 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public String getName() {
     return name;
+  }
+
+  /**
+   * Return config name or null if solr version is 8x or below
+   */
+  public String getConfigName() { return configName; }
+
+  /**
+   * Return non-null config name
+   */
+  public String getConfigName(ZkStateReader zkStateReader) {
+    final String configSetName;
+    if (this.configName != null) {
+      configSetName = this.configName;
+    } else {
+      try {
+        configSetName = zkStateReader.readConfigName(name);
+      } catch (KeeperException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No configName data found at " + COLLECTIONS_ZKNODE + "/" + name);
+      }
+    }
+    return configSetName;
   }
 
   public Slice getSlice(String sliceName) {
