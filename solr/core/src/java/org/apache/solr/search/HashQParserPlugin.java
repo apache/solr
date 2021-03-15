@@ -112,7 +112,7 @@ public class HashQParserPlugin extends QParserPlugin {
             @Override
             public boolean advanceExact(int doc) throws IOException { atDoc = values.advanceExact(doc); return true; }
             @Override
-            public long longValue() throws IOException { return atDoc ? values.binaryValue().hashCode() : 0; }
+            public long longValue() throws IOException { return atDoc ? values.lookupOrd(values.ordValue()).hashCode() : 0; }//TODO: SortedDocValues quick fix
           };
           continue;
         }

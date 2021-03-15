@@ -104,7 +104,7 @@ public class HashRangeQuery extends Query {
       }
 
       private int hash(SortedDocValues docValues) throws IOException {
-        BytesRef bytesRef = docValues.binaryValue();
+        BytesRef bytesRef = docValues.lookupOrd(docValues.ordValue());//TODO: SortedDocValues quick fix
         return Hash.murmurhash3_x86_32(bytesRef.bytes, bytesRef.offset, bytesRef.length, 0);
       }
     };
