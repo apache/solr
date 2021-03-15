@@ -319,28 +319,35 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   private static class SegState {
     final Weight weight;
-    final DocSet docs;
-    final DocIdSet docIdSet;
+    final DocIdSet set;
 
     SegState(Weight weight) {
       this.weight = weight;
-      this.docs = null;
-      this.docIdSet = null;
+      this.set = null;
     }
 
-    SegState(DocSet docs) {
-      this.docs = docs;
+    SegState(DocIdSet set) {
+      this.set = set;
       this.weight = null;
-      this.docIdSet = null;
-    }
-
-    SegState(DocIdSet docIdSet) {
-      this.docs = null;
-      this.weight = null;
-      this.docIdSet = docIdSet;
     }
   }
 
+  private static class SegmentDocIdSet extends DocIdSet {
+    private final DocSet docs;
+    private final LeafReaderContext ctx;
+    private SegmentDocIdSet(DocSet docs, LeafReaderContext ctx) {
+      this.docs = docs;
+      this.ctx = ctx;
+    }
+    @Override
+    public long ramBytesUsed() {
+      return docs.ramBytesUsed();
+    }
+    @Override
+    public DocIdSetIterator iterator() throws IOException {
+      return docs.iterator(ctx);
+    }
+  }
   // adapted from MultiTermQueryConstantScoreWrapper
   class ConstWeight extends ConstantScoreWeight {
 
@@ -415,7 +422,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       }
       
       if (answer != null) {
-        return segStates[context.ord] = new SegState(answer);
+        return segStates[context.ord] = new SegState(new SegmentDocIdSet(answer, context));
       }
 
       final Terms terms = context.reader().terms(SolrRangeQuery.this.getField());
@@ -446,7 +453,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (doCheck) {
         answer = createDocSet(solrSearcher, count);
         solrSearcher.getFilterCache().put(SolrRangeQuery.this, answer);
-        return segStates[context.ord] = new SegState(answer);
+        return segStates[context.ord] = new SegState(new SegmentDocIdSet(answer, context));
       }
 
       /* FUTURE: reuse term states in the future to help build DocSet, use collected count so far...
@@ -488,7 +495,11 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       return segStates[context.ord] = new SegState(segSet);
     }
 
-    private Scorer scorer(DocIdSetIterator disi) throws IOException {
+    private Scorer scorer(DocIdSet set) throws IOException {
+      if (set == null) {
+        return null;
+      }
+      final DocIdSetIterator disi = set.iterator();
       if (disi == null) {
         return null;
       }
@@ -501,15 +512,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (weightOrBitSet.weight != null) {
         return weightOrBitSet.weight.bulkScorer(context);
       } else {
-        final DocIdSetIterator disi;
-        if (weightOrBitSet.docs != null) {
-          disi = weightOrBitSet.docs.iterator(context);
-        } else if (weightOrBitSet.docIdSet != null) {
-          disi = weightOrBitSet.docIdSet.iterator();
-        } else {
-          disi = null;
-        }
-        final Scorer scorer = scorer(disi);
+        final Scorer scorer = scorer(weightOrBitSet.set);
         if (scorer == null) {
           return null;
         }
@@ -523,15 +526,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (weightOrBitSet.weight != null) {
         return weightOrBitSet.weight.scorer(context);
       } else {
-        final DocIdSetIterator disi;
-        if (weightOrBitSet.docs != null) {
-          disi = weightOrBitSet.docs.iterator(context);
-        } else if (weightOrBitSet.docIdSet != null) {
-          disi = weightOrBitSet.docIdSet.iterator();
-        } else {
-          disi = null;
-        }
-        return scorer(disi);
+        return scorer(weightOrBitSet.set);
       }
     }
 
