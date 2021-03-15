@@ -237,29 +237,6 @@ public class BitDocSet extends DocSet {
     return new BitDocSet(bits.clone(), size);
   }
 
-  @Override
-  public Bits getBits(LeafReaderContext context) {
-    if (context.isTopLevel) {
-      return bits;
-    }
-
-    final int base = context.docBase;
-    final int length = context.reader().maxDoc();
-    final FixedBitSet bs = bits;
-
-    return new Bits() {
-      @Override
-      public boolean get(int index) {
-        return bs.get(index + base);
-      }
-
-      @Override
-      public int length() {
-        return length;
-      }
-    };
-  }
-
   private static final int NO_DOCS_THIS_SEGMENT = -1;
   private int[] cachedFloorDocs;
 
@@ -407,7 +384,25 @@ public class BitDocSet extends DocSet {
 
           @Override
           public Bits bits() {
-            return BitDocSet.this.getBits(context);
+            if (context.isTopLevel) {
+              return bits;
+            }
+
+            final int base = context.docBase;
+            final int length = context.reader().maxDoc();
+            final FixedBitSet bs = bits;
+
+            return new Bits() {
+              @Override
+              public boolean get(int index) {
+                return bs.get(index + base);
+              }
+
+              @Override
+              public int length() {
+                return length;
+              }
+            };
           }
 
         }, acceptDocs2);

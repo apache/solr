@@ -140,15 +140,6 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
    */
   public abstract Bits getBits();
 
-  /**
-   * A per-segment {@link Bits} instance that has fast random access (as is generally
-   * required of Bits). In contrast with {@link #getBits()}, only trivial work should
-   * be done to generate a return value (i.e., if the underlying set natively supports
-   * random access). This method should return <code>null</code> for sets that do not
-   * support random access.
-   */
-  public abstract Bits getBits(LeafReaderContext context);
-
   // internal only
   protected abstract FixedBitSet getFixedBitSet();
 

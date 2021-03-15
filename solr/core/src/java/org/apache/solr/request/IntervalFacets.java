@@ -33,7 +33,6 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
@@ -285,16 +284,16 @@ public class IntervalFacets implements Iterable<FacetInterval> {
           final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
           if (singleton != null) {
             // some codecs may optimize SORTED_SET storage for single-valued fields
-            accumIntervalsSingle(singleton, disi, docs.getBits(leaf));
+            accumIntervalsSingle(singleton, disi);
           } else {
-            accumIntervalsMulti(sub, disi, docs.getBits(leaf));
+            accumIntervalsMulti(sub, disi);
           }
         } else {
           SortedDocValues sub = leaf.reader().getSortedDocValues(schemaField.getName());
           if (sub == null) {
             continue;
           }
-          accumIntervalsSingle(sub, disi, docs.getBits(leaf));
+          accumIntervalsSingle(sub, disi);
         }
       }
     }
@@ -339,8 +338,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      }
   }
 
-  private void accumIntervalsMulti(SortedSetDocValues ssdv,
-                                   DocIdSetIterator disi, Bits bits) throws IOException {
+  private void accumIntervalsMulti(SortedSetDocValues ssdv, DocIdSetIterator disi) throws IOException {
     // First update the ordinals in the intervals for this segment
     for (FacetInterval interval : intervals) {
       interval.updateContext(ssdv);
@@ -348,9 +346,6 @@ public class IntervalFacets implements Iterable<FacetInterval> {
 
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (bits != null && bits.get(doc) == false) {
-        continue;
-      }
       if (doc > ssdv.docID()) {
         ssdv.advance(doc);
       }
@@ -390,16 +385,13 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     }
   }
 
-  private void accumIntervalsSingle(SortedDocValues sdv, DocIdSetIterator disi, Bits bits) throws IOException {
+  private void accumIntervalsSingle(SortedDocValues sdv, DocIdSetIterator disi) throws IOException {
     // First update the ordinals in the intervals to this segment
     for (FacetInterval interval : intervals) {
       interval.updateContext(sdv);
     }
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (bits != null && bits.get(doc) == false) {
-        continue;
-      }
       if (doc > sdv.docID()) {
         sdv.advance(doc);
       }

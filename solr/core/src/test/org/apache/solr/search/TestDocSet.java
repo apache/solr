@@ -472,7 +472,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   @SafeVarargs
-  private void doTestIteratorEqual(Supplier<DocIdSetIterator>... disiSuppliers) throws IOException {
+  private void doTestIteratorEqual(Bits bits, Supplier<DocIdSetIterator>... disiSuppliers) throws IOException {
     NoThrowDocIdSetIterator[] disis = new NoThrowDocIdSetIterator[disiSuppliers.length];
     int[] docs = new int[disiSuppliers.length];
     populateDisis(disis, disiSuppliers);
@@ -482,24 +482,33 @@ public class TestDocSet extends SolrTestCase {
     }
 
     // test for next() equivalence
+    final int bitsLength = bits == null ? -1 : bits.length();
+    int bitsDoc = -1;
     for(;;) {
       populateDocs(disis, docs, (disi) -> disi.nextDoc());
       final int expected = docs[0]; // arbitrarily pick the first as "expected"
       assertAll(expected, docs);
       populateDocs(disis, docs, (disi) -> disi.docID());
       assertAll(expected, docs);
+      while (++bitsDoc < expected && bitsDoc < bitsLength) {
+        assertFalse(bits.get(bitsDoc));
+      }
       if (expected==DocIdSetIterator.NO_MORE_DOCS) break;
+      assertTrue(bits.get(expected));
     }
 
     for (int i=0; i<10; i++) {
       // test random skipTo() and next()
       populateDisis(disis, disiSuppliers);
+      bitsDoc = -1;
       int doc = -1;
       for (;;) {
+        final int target;
         if (rand.nextBoolean()) {
+          target = doc + 1;
           populateDocs(disis, docs, (disi) -> disi.nextDoc());
         } else {
-          int target = doc + rand.nextInt(10) + 1;  // keep in mind future edge cases like probing (increase if necessary)
+          target = doc + rand.nextInt(10) + 1;  // keep in mind future edge cases like probing (increase if necessary)
           populateDocs(disis, docs, (disi) -> disi.advance(target));
         }
 
@@ -507,17 +516,13 @@ public class TestDocSet extends SolrTestCase {
         assertAll(expected, docs);
         populateDocs(disis, docs, (disi) -> disi.docID());
         assertAll(expected, docs);
+        for (int j = target; j < expected && j < bitsLength; j++) {
+          assertFalse(bits.get(j));
+        }
         if (expected==DocIdSetIterator.NO_MORE_DOCS) break;
+        assertTrue(bits.get(expected));
         doc = expected;
       }
-    }
-  }
-
-  private static void assertBitsEquals(Bits a, Bits b) {
-    // have to do this as a scan, because the Bits classes are anonymous wrappers
-    // that don't implement `.equals(...)`
-    for (int i = a.length() - 1; i >= 0; i--) {
-      assertEquals(a.get(i), b.get(i));
     }
   }
 
@@ -525,9 +530,8 @@ public class TestDocSet extends SolrTestCase {
    * Tests equivalence among {@link DocIdSetIterator} instances retrieved from {@link BitDocSet} and {@link SortedIntDocSet}
    * implementations, via {@link DocSet#getTopFilter()}/{@link Filter#getDocIdSet(LeafReaderContext, Bits)} and directly
    * via {@link DocSet#iterator(LeafReaderContext)}.
-   * Also tests equivalence of random-access {@link Bits} instances retrieved via {@link DocSet#getTopFilter()}/
-   * {@link Filter#getDocIdSet(LeafReaderContext, Bits)}/{@link DocIdSet#bits()} with those retrieved directly via
-   * {@link DocSet#getBits(LeafReaderContext)}.
+   * Also tests corresponding random-access {@link Bits} instances retrieved via {@link DocSet#getTopFilter()}/
+   * {@link Filter#getDocIdSet(LeafReaderContext, Bits)}/{@link DocIdSet#bits()}.
    */
   public void doFilterTest(IndexReader reader) throws IOException {
     IndexReaderContext topLevelContext = reader.getContext();
@@ -555,14 +559,10 @@ public class TestDocSet extends SolrTestCase {
       db = fb.getDocIdSet(readerContext, null);
 
       // there are various ways that disis can be retrieved for each leafReader; they should all be equivalent.
-      doTestIteratorEqual(disiSupplier(da), disiSupplier(db), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
-
-      // set a is BitDocSet, so should support random access via Bits (and different access points should be equivalent)
-      assertBitsEquals(da.bits(), a.getBits(readerContext));
+      doTestIteratorEqual(da.bits(), disiSupplier(da), disiSupplier(db), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
 
       // set b is SortedIntDocSet, so derivatives should not support random-access via Bits
       assertNull(db.bits());
-      assertNull(b.getBits(readerContext));
     }  
 
     int nReaders = leaves.size();
@@ -571,10 +571,8 @@ public class TestDocSet extends SolrTestCase {
       LeafReaderContext readerContext = leaves.get(rand.nextInt(nReaders));
       da = fa.getDocIdSet(readerContext, null);
       db = fb.getDocIdSet(readerContext, null);
-      doTestIteratorEqual(disiSupplier(da), disiSupplier(db), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
-      assertBitsEquals(da.bits(), a.getBits(readerContext));
+      doTestIteratorEqual(da.bits(), disiSupplier(da), disiSupplier(db), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
       assertNull(db.bits());
-      assertNull(b.getBits(readerContext));
     }
   }
 
