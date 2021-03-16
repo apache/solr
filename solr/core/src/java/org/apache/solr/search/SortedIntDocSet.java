@@ -737,7 +737,6 @@ public class SortedIntDocSet extends DocSet {
 
         // TODO: probe more before resorting to binary search?
 
-        // binary search
         final int findIdx = Arrays.binarySearch(docs, idx + 1, limitIdx, target);
         idx = findIdx < 0 ? ~findIdx : findIdx;
         return adjustedDoc = idx < limitIdx ? docs[idx] - base : NO_MORE_DOCS;
