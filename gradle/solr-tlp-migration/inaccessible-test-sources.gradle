@@ -24,8 +24,14 @@ configure(project(":solr:core")) {
         java {
           exclude '**/TestLuceneIndexBackCompat.java'
           exclude '**/TestXmlQParser.java'
+          exclude '**/TestCodecSupport.java'
         }
       }
     }
+  }
+
+  // disable for now because individual file excludes cannot be applied to ecj.
+  tasks.matching { it.name == "ecjLintTest" }.all { task ->
+    task.enabled = false
   }
 }
