@@ -658,10 +658,7 @@ public class SortedIntDocSet extends DocSet {
   private int[] cachedOrdIdxMap; // idx of first doc _beyond_ the corresponding seg
   private int[] getOrdIdxMap(LeafReaderContext ctx) {
     final int[] ret;
-    if (ctx.isTopLevel) {
-      // don't bother caching this?
-      ret = new int[] { docs.length };
-    } else if (cachedOrdIdxMap != null) {
+    if (cachedOrdIdxMap != null) {
       ret = cachedOrdIdxMap;
     } else {
       List<LeafReaderContext> leaves = ReaderUtil.getTopLevelContext(ctx).leaves();
@@ -699,15 +696,21 @@ public class SortedIntDocSet extends DocSet {
       return null;
     }
 
-    int[] ordIdxMap = getOrdIdxMap(context);
-    final int base = context.docBase;
+    final int startIdx;
+    final int limitIdx;
+    if (context.isTopLevel) {
+      startIdx = 0;
+      limitIdx = docs.length;
+    } else {
+      int[] ordIdxMap = getOrdIdxMap(context);
+      startIdx = context.ord == 0 ? 0 : ordIdxMap[context.ord - 1];
+      limitIdx = ordIdxMap[context.ord];
 
-    final int startIdx = context.ord == 0 ? 0 : ordIdxMap[context.ord - 1];
-    final int limitIdx = ordIdxMap[context.ord];
-
-    if (startIdx >= limitIdx) {
-      return null; // verified this does happen
+      if (startIdx >= limitIdx) {
+        return null; // verified this does happen
+      }
     }
+    final int base = context.docBase;
 
     return new DocIdSetIterator() {
       int idx = startIdx - 1;
