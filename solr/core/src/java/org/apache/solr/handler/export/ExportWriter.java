@@ -24,9 +24,12 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.codahale.metrics.Timer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -118,6 +121,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final String fieldList;
   final List<String> partitionKeys;
   final String partitionCacheKey;
+
+  final Timer writeOutputBufferTimer;
+  final Timer fillOutputBufferTimer;
+  final Timer fillerWaitTimer;
+  final Timer writerWaitTimer;
+  final Timer segmentTopDocsTimer;
+
   //The max combined size of the segment level priority queues.
   private int priorityQueueSize;
   StreamExpression streamExpression;
@@ -145,6 +155,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     this.initialStreamContext = initialStreamContext;
     this.solrMetricsContext = solrMetricsContext;
     this.metricsPath = metricsPath;
+    this.writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
+    this.writerWaitTimer = solrMetricsContext.timer("writerWait", metricsPath);
+    this.fillOutputBufferTimer = solrMetricsContext.timer("fillOutputBuffer", metricsPath);
+    this.fillerWaitTimer = solrMetricsContext.timer("fillerWait", metricsPath);
+    this.segmentTopDocsTimer = solrMetricsContext.timer("segmentTopDocs", metricsPath);
+
     this.priorityQueueSize = req.getParams().getInt(QUEUE_SIZE_PARAM, DEFAULT_QUEUE_SIZE);
     this.numWorkers = req.getParams().getInt(ParallelStream.NUM_WORKERS_PARAM, 1);
     this.workerId = req.getParams().getInt(ParallelStream.WORKER_ID_PARAM, 0);
@@ -392,7 +408,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                                               sort,
                                               queueSize,
                                               totalHits,
-                                              sets);
+                                              sets,
+                                              fillerWaitTimer,
+                                              writeOutputBufferTimer,
+                                              writerWaitTimer);
 
 
     if (streamExpression != null) {
@@ -445,6 +464,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             log.debug("--- writer interrupted");
             break;
           }
+          Timer.Context timerCtx = writeOutputBufferTimer.time();
           try {
             for (int i = 0; i <= buffer.outDocsIndex; ++i) {
               // we're using the raw writer here because there's no potential
@@ -457,8 +477,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
               }
             }
           } finally {
+            timerCtx.stop();
           }
           //log.debug("--- writer exchanging from {}", buffer);
+          timerCtx =writerWaitTimer.time();
           try {
             long startExchangeBuffers = System.nanoTime();
             buffers.exchangeBuffers();
@@ -467,6 +489,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
               log.debug("Waited for reader thread {}:", Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
             }
           } finally {
+            timerCtx.stop();
           }
           buffer = buffers.getOutputBuffer();
           //log.debug("--- writer got {}", buffer);
@@ -524,6 +547,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   void fillNextBuffer(MergeIterator mergeIterator,
                       ExportBuffers.Buffer buffer) throws IOException {
+    Timer.Context timerCtx = fillOutputBufferTimer.time();
     try {
       int outDocsIndex = -1;
       for (int i = 0; i < batchSize; i++) {
@@ -542,7 +566,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       throw t;
     } finally {
-
+      timerCtx.stop();
     }
   }
 
@@ -918,7 +942,7 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
       SegmentIterator[] segmentIterators = new SegmentIterator[leaves.size()];
       for (int i = 0; i < segmentIterators.length; i++) {
         SortQueue sortQueue = new SortQueue(sizes[i], sortDoc.copy());
-        segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy());
+        segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy(), segmentTopDocsTimer);
       }
 
       return new MergeIterator(segmentIterators, sortDoc);
@@ -951,6 +975,7 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
     private final SortDoc sortDoc;
     private final LeafReaderContext context;
     private final SortDoc[] outDocs;
+    private final Timer segmentTopDocsTimer;
 
     private SortDoc nextDoc;
     private int index;
@@ -963,13 +988,15 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
      * @param sortQueue sort queue
      * @param sortDoc proto sort document
      */
-    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc) throws IOException {
+    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc,
+                           Timer segmentTopDocsTimer) throws IOException {
       this.bits = bits;
       this.queue = sortQueue;
       this.sortDoc = sortDoc;
       this.nextDoc = sortDoc.copy();
       this.context = context;
       this.outDocs = new SortDoc[sortQueue.maxSize];
+      this.segmentTopDocsTimer = segmentTopDocsTimer;
       topDocs();
     }
 
@@ -1006,6 +1033,7 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
         index = -1;
         return;
       }
+      Timer.Context timerCtx = segmentTopDocsTimer.time();
       try {
         queue.reset();
         SortDoc top = queue.top();
@@ -1033,7 +1061,7 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
         log.error("Segment Iterator Error:", e);
         throw new IOException(e);
       } finally {
-
+        timerCtx.stop();
       }
     }
   }

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -58,6 +59,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
   int index = -1;
   ExportBuffers exportBuffers;
   ExportBuffers.Buffer buffer;
+  Timer.Context writeOutputTimerContext;
 
   private static final class TupleEntryWriter implements EntryWriter {
     Tuple tuple;
@@ -139,12 +141,16 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     Tuple res = null;
     do {
       if (pos < 0) {
-
+        if (writeOutputTimerContext != null) {
+          writeOutputTimerContext.stop();
+          writeOutputTimerContext = null;
+        }
         try {
           buffer.outDocsIndex = ExportBuffers.Buffer.EMPTY;
           //log.debug("--- ews exchange empty buffer {}", buffer);
           boolean exchanged = false;
           while (!exchanged) {
+            Timer.Context timerCtx = exportBuffers.getWriterWaitTimer().time();
             try {
               long startExchangeBuffers = System.nanoTime();
               exportBuffers.exchangeBuffers();
@@ -174,6 +180,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
               }
               break;
             } finally {
+              timerCtx.stop();
             }
           }
         } catch (InterruptedException e) {
@@ -204,9 +211,14 @@ public class ExportWriterStream extends TupleStream implements Expressible {
       }
       if (res != null) {
         // only errors or EOF assigned result so far
+        if (writeOutputTimerContext != null) {
+          writeOutputTimerContext.stop();
+        }
         return res;
       }
-
+      if (writeOutputTimerContext == null) {
+        writeOutputTimerContext = exportBuffers.getWriteOutputBufferTimer().time();
+      }
       SortDoc sortDoc = buffer.outDocs[++index];
       MapWriter outputDoc = exportBuffers.exportWriter.fillOutputDoc(sortDoc, exportBuffers.leaves, exportBuffers.exportWriter.fieldWriters);
       pos--;

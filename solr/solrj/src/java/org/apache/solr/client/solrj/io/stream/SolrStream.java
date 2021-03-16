@@ -156,8 +156,16 @@ public class SolrStream extends TupleStream {
         // turn on ExportWriter partitioning only for /export and only when requested
         String qt = params.get(CommonParams.QT);
         if (qt != null && qt.equals("/export")) {
-          solrParams.add(ParallelStream.WORKER_ID_PARAM, String.valueOf(workerID));
-          solrParams.add(ParallelStream.NUM_WORKERS_PARAM, String.valueOf(numWorkers));
+          if (params.getBool(ParallelStream.USE_HASH_QUERY_PARAM, false)) {
+            // use old {!hash} partitioning
+            String partitionFilter = getPartitionFilter();
+            solrParams.add(CommonParams.FQ, partitionFilter);
+          } else {
+            // use a more efficient partitioning inside ExportWriter
+            // here just pass along the worker params
+            solrParams.add(ParallelStream.WORKER_ID_PARAM, String.valueOf(workerID));
+            solrParams.add(ParallelStream.NUM_WORKERS_PARAM, String.valueOf(numWorkers));
+          }
         } else {
           String partitionFilter = getPartitionFilter();
           solrParams.add(CommonParams.FQ, partitionFilter);
