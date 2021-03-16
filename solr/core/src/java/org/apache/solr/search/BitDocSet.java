@@ -235,17 +235,6 @@ public class BitDocSet extends DocSet {
     return new BitDocSet(bits.clone(), size);
   }
 
-  private int getFloorDoc(final LeafReaderContext ctx) {
-    assert !ctx.isTopLevel;
-    final int base = ctx.docBase;
-    if (base >= bits.length()) {
-      return DocIdSetIterator.NO_MORE_DOCS;
-    }
-    final int max = base + ctx.reader().maxDoc();
-    final int nextFloorDoc = bits.nextSetBit(base);
-    return nextFloorDoc < max ? nextFloorDoc : DocIdSetIterator.NO_MORE_DOCS;
-  }
-
   @Override
   public DocIdSetIterator iterator(LeafReaderContext context) {
     if (context.isTopLevel) {
@@ -272,16 +261,12 @@ public class BitDocSet extends DocSet {
       return null;
     }
 
-    final int firstDocId = getFloorDoc(context);
-    if (firstDocId == DocIdSetIterator.NO_MORE_DOCS) {
-      return null;
-    }
     final int base = context.docBase;
     final int max = base + maxDoc; // one past the max doc in this segment.
     final FixedBitSet bs = bits;
 
     return new DocIdSetIterator() {
-      int pos = firstDocId - 1;
+      int pos = base - 1;
       int adjustedDoc = -1;
 
       @Override
