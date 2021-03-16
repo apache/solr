@@ -62,28 +62,36 @@ public class BlobDirectoryFactoryTest extends SolrTestCaseJ4 {
         // Then it throws an exception.
         expectThrows(IllegalArgumentException.class, () -> blobDirectoryFactory.init(args));
 
-        // Given one init arg.
-        args.add("delegateFactory", MMapDirectoryFactory.class.getName());
+        // Given only the LocalBlobStore class arg.
+        args.add("blobStore.class", LocalBlobStore.class.getName());
         // When the factory is initialized.
         // Then it throws an exception.
         expectThrows(IllegalArgumentException.class, () -> blobDirectoryFactory.init(args));
 
-        // Given the two required init args are provided.
-        args.add("blobRootDir", blobRootDir.toString());
+        // Given the LocalBlobStore root dir args is provided.
+        args.add("blobStore.rootDir", blobRootDir.toString());
+        // Given other optional MMapDirectory params are provided.
+        args.add("mmap.maxChunkSize", Integer.toString(10));
+        args.add("mmap.unmap", Boolean.toString(false));
+        args.add("mmap.preload", Boolean.toString(true));
         // When the factory is initialized.
         blobDirectoryFactory.init(args);
-        // Then the delegate factory is correctly initialized.
-        assertTrue(blobDirectoryFactory.getDelegateFactory() instanceof MMapDirectoryFactory);
-        // Then the Blob root dir is correctly initialized.
-        assertNotNull(blobRootDir.toString(), blobDirectoryFactory.getBlobStore());
+        // Then the BlobStore is correctly initialized.
+        assertTrue(blobDirectoryFactory.getBlobStore() instanceof LocalBlobStore);
+        // Then the LocalBlobStore root dir is correctly initialized.
+        assertEquals(blobRootDir.toString(), ((LocalBlobStore) blobDirectoryFactory.getBlobStore()).getBlobRootDir());
+        // Then the optional MMapDirectory params are correctly initialized.
+        assertEquals(10, blobDirectoryFactory.getMMapParams().maxChunk);
+        assertFalse(blobDirectoryFactory.getMMapParams().unmap);
+        assertTrue(blobDirectoryFactory.getMMapParams().preload);
     }
 
     @Test
     public void testCleanupOldIndexDirectories() throws Exception {
         // Given a correctly initialized BlobDirectoryFactory.
         NamedList<String> args = new NamedList<>();
-        args.add("delegateFactory", MMapDirectoryFactory.class.getName());
-        args.add("blobRootDir", blobRootDir.toString());
+        args.add("blobStore.class", LocalBlobStore.class.getName());
+        args.add("blobStore.rootDir", blobRootDir.toString());
         blobDirectoryFactory.init(args);
 
         // Given a mock Core with 3 mock indexes. The last one is the active index.

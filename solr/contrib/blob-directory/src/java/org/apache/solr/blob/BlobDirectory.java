@@ -180,7 +180,8 @@ public class BlobDirectory extends FilterDirectory {
 
     @Override
     public void close() throws IOException {
-      blobFileSupplier.getBlobFileFromIndexOutput();
+      // Free the reference to the IndexOutput.
+      blobFileSupplier.indexOutput = null;
       super.close();
     }
   }
@@ -212,18 +213,12 @@ public class BlobDirectory extends FilterDirectory {
 
     BlobFile getBlobFile() throws IOException {
       if (blobFile == null) {
-        getBlobFileFromIndexOutput();
+        blobFile = new BlobFile(name, indexOutput.getFilePointer(), indexOutput.getChecksum());
+        // log.debug("Freeing IndexOutput {}", indexOutput);
+        // Free the reference to the IndexOutput.
+        indexOutput = null;
       }
       return blobFile;
-    }
-
-    /**
-     * Gets the {@link BlobFile} of the referenced {@link IndexOutput} and then frees the reference.
-     */
-    void getBlobFileFromIndexOutput() throws IOException {
-      blobFile = new BlobFile(name, indexOutput.getFilePointer(), indexOutput.getChecksum());
-      // log.debug("Freeing IndexOutput {}", indexOutput);
-      indexOutput = null; // Free the reference since we have the checksum.
     }
   }
 }

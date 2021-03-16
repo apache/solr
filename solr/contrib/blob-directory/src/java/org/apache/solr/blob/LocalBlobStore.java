@@ -1,6 +1,7 @@
 package org.apache.solr.blob;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.params.SolrParams;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,14 +15,18 @@ import java.util.function.Predicate;
 
 public class LocalBlobStore extends BlobStore {
 
-    private final String blobRootDir;
-
-    public LocalBlobStore(String blobRootDir) {
-        this.blobRootDir = blobRootDir;
-    }
+    private String blobRootDir;
 
     public String getBlobRootDir() {
         return blobRootDir;
+    }
+
+    @Override
+    public void init(SolrParams params) {
+        blobRootDir = params.get("blobStore.rootDir");
+        if (blobRootDir == null) {
+            throw new IllegalArgumentException("blobStore.rootDir is required");
+        }
     }
 
     @Override
@@ -45,10 +50,7 @@ public class LocalBlobStore extends BlobStore {
 
     @Override
     public void deleteDirectory(String dirPath) throws IOException {
-        deleteDirectory(new File(blobRootDir, dirPath));
-    }
-
-    private void deleteDirectory(File dir) throws IOException {
+        File dir = new File(blobRootDir, dirPath);
         if (!dir.isDirectory()) {
             if (dir.exists()) {
                 throw new IOException("\"" + dir + "\" is not a directory");
@@ -62,27 +64,23 @@ public class LocalBlobStore extends BlobStore {
     }
 
     @Override
-    public void deleteDirectories(String dirPath, Collection<String> dirNames) throws IOException {
-        File parentDir = new File(blobRootDir, dirPath);
-        for (String dirName : dirNames) {
-            deleteDirectory(new File(parentDir, dirName));
-        }
-    }
-
-    @Override
     public List<String> listInDirectory(String dirPath, Predicate<String> nameFilter) throws IOException {
         File dir = new File(blobRootDir, dirPath);
+        if (!dir.exists()) {
+            return Collections.emptyList();
+        }
         String[] list = dir.list((__, name) -> nameFilter.test(name));
         if (list == null) {
-            if (!dir.exists()) {
-                throw new IOException("\"" + dir + "\" does not exist");
-            }
             if (!dir.isDirectory()) {
                 throw new IOException("\"" + dir + "\" is not a directory");
             }
             throw new IOException("IO error while listing in directory \"" + dir + "\"");
         }
-        return list.length == 0 ? Collections.emptyList() : Arrays.asList(list);
+        if (list.length == 0) {
+            return Collections.emptyList();
+        }
+        Arrays.sort(list);
+        return Arrays.asList(list);
     }
 
     @Override
