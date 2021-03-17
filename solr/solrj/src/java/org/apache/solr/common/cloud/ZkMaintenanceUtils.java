@@ -42,6 +42,10 @@ import org.slf4j.LoggerFactory;
  * in bin/solr it made sense to keep the individual transfer methods in a central place, so here it is.
  */
 public class ZkMaintenanceUtils {
+  /** ZkNode where named configs are stored */
+  public static final String CONFIGS_ZKNODE = "/configs";
+  public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+  public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String ZKNODE_DATA_FILE = "zknode.data";
 
@@ -358,7 +362,7 @@ public class ZkMaintenanceUtils {
 
   public static List<String> listConfigs(SolrZkClient zkClient) throws IOException {
     try {
-      return zkClient.getChildren(SolrZkClient.CONFIGS_ZKNODE, null, true);
+      return zkClient.getChildren(CONFIGS_ZKNODE, null, true);
     }
     catch (KeeperException.NoNodeException e) {
       return Collections.emptyList();

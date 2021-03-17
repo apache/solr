@@ -102,14 +102,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.UrlScheme;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -1547,7 +1540,9 @@ public class SolrCLI implements CLIO {
 
         echoIfVerbose("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost(), cli);
-        ZkConfigSetService.uploadConfigDir(cloudSolrClient.getZkStateReader().getZkClient(), confPath, confname);
+        ZkMaintenanceUtils.uploadToZK(cloudSolrClient.getZkStateReader().getZkClient(),
+                confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
+                ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
       }
 
       // since creating a collection is a heavy-weight operation, check for existence first
@@ -1841,8 +1836,8 @@ public class SolrCLI implements CLIO {
 
         echo("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + cli.getOptionValue("confname") + " to ZooKeeper at " + zkHost);
-
-        ZkConfigSetService.uploadConfigDir(zkClient, confPath, confName);
+        ZkMaintenanceUtils.uploadToZK(zkClient, confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
+                ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
         zkClient.upConfig(confPath, confName);
       } catch (Exception e) {
         log.error("Could not complete upconfig operation for reason: ", e);

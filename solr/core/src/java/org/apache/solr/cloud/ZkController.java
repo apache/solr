@@ -751,15 +751,6 @@ public class ZkController implements Closeable {
 
 
   /**
-   * Returns true if config file exists
-   */
-  public boolean configFileExists(String collection, String fileName)
-      throws KeeperException, InterruptedException {
-    Stat stat = zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + collection + "/" + fileName, null, true);
-    return stat != null;
-  }
-
-  /**
    * @return information about the cluster from ZooKeeper
    */
   public ClusterState getClusterState() {
@@ -788,22 +779,6 @@ public class ZkController implements Closeable {
       cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
-  }
-
-  /**
-   * Returns config file data (in bytes)
-   */
-  public byte[] getConfigFileData(String zkConfigName, String fileName)
-      throws KeeperException, InterruptedException {
-    String zkPath = org.apache.solr.cloud.ZkConfigSetService.CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName;
-    byte[] bytes = zkClient.getData(zkPath, null, null, true);
-    if (bytes == null) {
-      log.error("Config file contains no data:{}", zkPath);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Config file contains no data:" + zkPath);
-    }
-
-    return bytes;
   }
 
   // normalize host removing any url scheme.
@@ -897,7 +872,7 @@ public class ZkController implements Closeable {
             , "intended to be the default. Current 'solr.default.confdir' value:"
             , System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
-        ZkConfigSetService.uploadConfigDir(zkClient, Paths.get(configDirPath), ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
+        ZkMaintenanceUtils.uploadToZK(zkClient, Paths.get(configDirPath),ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
       }
     }
   }
@@ -2044,7 +2019,7 @@ public class ZkController implements Closeable {
         confName = coreName;
       Path udir = cd.getInstanceDir().resolve("conf");
       log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
-      ZkConfigSetService.uploadConfigDir(zkClient, udir, confName);
+      ZkMaintenanceUtils.uploadToZK(zkClient, udir,ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
     }
   }
 

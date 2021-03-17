@@ -22,6 +22,9 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
@@ -54,6 +57,46 @@ public class FileSystemConfigSetService extends ConfigSetService {
     @Override
     public String configSetName(CoreDescriptor cd) {
         return (cd.getConfigSet() == null ? "instancedir " : "configset ") + locateInstanceDir(cd);
+    }
+
+    @Override
+    public Boolean configExists(String configName) throws IOException {
+        return null;
+    }
+
+    @Override
+    public void deleteConfigDir(String configName) throws IOException {
+
+    }
+
+    @Override
+    public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
+
+    }
+
+    @Override
+    public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
+
+    }
+
+    @Override
+    public void uploadConfigDir(Path dir, String configName) throws IOException {
+
+    }
+
+    @Override
+    public void uploadConfigDir(Path dir, String configName, Pattern filenameExclusions) throws IOException {
+
+    }
+
+    @Override
+    public void downloadConfigDir(String configName, Path dir) throws IOException {
+
+    }
+
+    @Override
+    public List<String> listConfigs() throws IOException {
+        return null;
     }
 
     protected Path locateInstanceDir(CoreDescriptor cd) {

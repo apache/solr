@@ -423,12 +423,12 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
           throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
         }
 
-        if (ZkConfigSetService.configExists(h.coreContainer.getZkController().getZkClient(), newConfigSetName)) {
+        if (h.coreContainer.getConfigSetService().configExists(newConfigSetName)) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + newConfigSetName);
         }
 
         // is there a base config that already exists
-        if (!ZkConfigSetService.configExists(h.coreContainer.getZkController().getZkClient(), baseConfigSetName)) {
+        if (!h.coreContainer.getConfigSetService().configExists(baseConfigSetName)) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
                   "Base ConfigSet does not exist: " + baseConfigSetName);
         }
@@ -454,7 +454,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       @Override
       public Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
         NamedList<Object> results = new NamedList<>();
-        List<String> configSetsList = ZkConfigSetService.listConfigs(h.coreContainer.getZkController().getZkClient());
+        List<String> configSetsList = h.coreContainer.getConfigSetService().listConfigs();
         results.add("configSets", configSetsList);
         SolrResponse response = new OverseerSolrResponse(results);
         rsp.getValues().addAll(response.getResponse());

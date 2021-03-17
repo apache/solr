@@ -90,7 +90,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
     final OverseerCollectionMessageHandler collMessageHandler = new OverseerCollectionMessageHandler(
         zkStateReader, myId, shardHandlerFactory, adminPath, stats, overseer, overseerNodePrioritizer);
     final OverseerConfigSetMessageHandler configMessageHandler = new OverseerConfigSetMessageHandler(
-        zkStateReader);
+        zkStateReader, overseer.getCoreContainer().getConfigSetService());
     return new OverseerMessageHandlerSelector() {
       @Override
       public void close() throws IOException {

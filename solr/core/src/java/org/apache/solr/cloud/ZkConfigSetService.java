@@ -18,17 +18,14 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
-import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -49,7 +46,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ZkConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private Map<String, ConfigCacheEntry> cache = new ConcurrentHashMap<>();
   private final ZkController zkController;
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";
@@ -59,20 +55,6 @@ public class ZkConfigSetService extends ConfigSetService {
   public ZkConfigSetService(SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
     super(loader, shareSchema);
     this.zkController = zkController;
-  }
-
-  public void storeConfig(String resource, ConfigNode config, int znodeVersion) {
-    cache.put(resource, new ConfigCacheEntry(config, znodeVersion));
-  }
-
-  public ConfigNode getConfig(String resource, int znodeVersion) {
-    ConfigCacheEntry e = cache.get(resource);
-    if (e == null) return null;
-    ConfigNode configNode = e.configNode.get();
-    if (configNode == null) cache.remove(resource);
-    if (e.znodeVersion == znodeVersion) return configNode;
-    if (e.znodeVersion < znodeVersion) cache.remove(resource);
-    return null;
   }
 
   @Override
@@ -140,106 +122,63 @@ public class ZkConfigSetService extends ConfigSetService {
     return "configset " + cd.getConfigSet();
   }
 
-  /**
-   * Check whether a config exists in Zookeeper
-   *
-   * @param configName the config to check existance on
-   * @return whether the config exists or not
-   * @throws IOException if an I/O error occurs
-   */
-  public static Boolean configExists(SolrZkClient zkClient, String configName) throws IOException {
+  @Override
+  public Boolean configExists(String configName) throws IOException {
     try {
-      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
+      return zkController.getZkClient().exists(CONFIGS_ZKNODE + "/" + configName, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
               SolrZkClient.checkInterrupted(e));
     }
   }
 
-  /**
-   * Delete a config in ZooKeeper
-   *
-   * @param configName the config to delete
-   * @throws IOException if an I/O error occurs
-   */
-  public static void deleteConfigDir(SolrZkClient zkClient, String configName) throws IOException {
+  @Override
+  public void deleteConfigDir(String configName) throws IOException {
     try {
-      zkClient.clean(CONFIGS_ZKNODE + "/" + configName);
+      zkController.getZkClient().clean(CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
               SolrZkClient.checkInterrupted(e));
     }
   }
 
-  /**
-   * Copy a config in ZooKeeper
-   *
-   * @param fromConfig the config to copy from
-   * @param toConfig   the config to copy to
-   * @throws IOException if an I/O error occurs
-   */
-  public static void copyConfigDir(SolrZkClient zkClient, String fromConfig, String toConfig) throws IOException {
-    copyConfigDir(zkClient, fromConfig, toConfig, null);
+  @Override
+  public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
+    copyConfigDir(fromConfig, toConfig, null);
   }
 
-  /**
-   * Copy a config in ZooKeeper
-   *
-   * @param fromConfig      the config to copy from
-   * @param toConfig        the config to copy to
-   * @param copiedToZkPaths should be an empty Set, will be filled in by function
-   *                        with the paths that were actually copied to.
-   * @throws IOException if an I/O error occurs
-   */
-  public static void copyConfigDir(SolrZkClient zkClient, String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
+  @Override
+  public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
     String fromConfigPath = CONFIGS_ZKNODE + "/" + fromConfig;
     String toConfigPath = CONFIGS_ZKNODE + "/" + toConfig;
     try {
-      copyData(zkClient, copiedToZkPaths, fromConfigPath, toConfigPath);
+      copyData(copiedToZkPaths, fromConfigPath, toConfigPath);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error config " + fromConfig + " to " + toConfig,
               SolrZkClient.checkInterrupted(e));
     }
-    copyConfigDirFromZk(zkClient, fromConfigPath, toConfigPath, copiedToZkPaths);
+    copyConfigDirFromZk(fromConfigPath, toConfigPath, copiedToZkPaths);
   }
 
-  /**
-   * Upload files from a given path to a config in Zookeeper
-   *
-   * @param dir        {@link java.nio.file.Path} to the files
-   * @param configName the name to give the config
-   * @throws IOException if an I/O error occurs or the path does not exist
-   */
-  public static void uploadConfigDir(SolrZkClient zkClient, Path dir, String configName) throws IOException {
-    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+  @Override
+  public void uploadConfigDir(Path dir, String configName) throws IOException {
+    zkController.getZkClient().uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
-  /**
-   * Upload matching files from a given path to a config in Zookeeper
-   *
-   * @param dir                {@link java.nio.file.Path} to the files
-   * @param configName         the name to give the config
-   * @param filenameExclusions files matching this pattern will not be uploaded
-   * @throws IOException if an I/O error occurs or the path does not exist
-   */
-  public static void uploadConfigDir(SolrZkClient zkClient, Path dir, String configName, Pattern filenameExclusions) throws IOException {
-    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
+  @Override
+  public void uploadConfigDir(Path dir, String configName, Pattern filenameExclusions) throws IOException {
+    zkController.getZkClient().uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
   }
 
-  /**
-   * Download a config from Zookeeper and write it to the filesystem
-   *
-   * @param configName the config to download
-   * @param dir        the {@link Path} to write files under
-   * @throws IOException if an I/O error occurs or the config does not exist
-   */
-  public static void downloadConfigDir(SolrZkClient zkClient, String configName, Path dir) throws IOException {
-    zkClient.downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
+  @Override
+  public void downloadConfigDir(String configName, Path dir) throws IOException {
+    zkController.getZkClient().downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
-  public static List<String> listConfigs(SolrZkClient zkClient) throws IOException {
+  @Override
+  public List<String> listConfigs() throws IOException {
     try {
-      return zkClient.getChildren(CONFIGS_ZKNODE, null, true);
+      return zkController.getZkClient().getChildren(CONFIGS_ZKNODE, null, true);
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyList();
     } catch (KeeperException | InterruptedException e) {
@@ -285,15 +224,15 @@ public class ZkConfigSetService extends ConfigSetService {
     ));
   }
 
-  private static void copyConfigDirFromZk(SolrZkClient zkClient, String fromZkPath, String toZkPath, Set<String> copiedToZkPaths) throws IOException {
+  private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths) throws IOException {
     try {
-      List<String> files = zkClient.getChildren(fromZkPath, null, true);
+      List<String> files = zkController.getZkClient().getChildren(fromZkPath, null, true);
       for (String file : files) {
-        List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
+        List<String> children = zkController.getZkClient().getChildren(fromZkPath + "/" + file, null, true);
         if (children.size() == 0) {
-          copyData(zkClient, copiedToZkPaths, fromZkPath + "/" + file, toZkPath + "/" + file);
+          copyData(copiedToZkPaths, fromZkPath + "/" + file, toZkPath + "/" + file);
         } else {
-          copyConfigDirFromZk(zkClient,fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
+          copyConfigDirFromZk(fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
         }
       }
     } catch (KeeperException | InterruptedException e) {
@@ -302,22 +241,13 @@ public class ZkConfigSetService extends ConfigSetService {
     }
   }
 
-  private static void copyData(SolrZkClient zkClient, Set<String> copiedToZkPaths, String fromZkFilePath, String toZkFilePath) throws KeeperException, InterruptedException {
+  private void copyData(Set<String> copiedToZkPaths, String fromZkFilePath, String toZkFilePath) throws KeeperException, InterruptedException {
     log.info("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
-    byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
-    zkClient.makePath(toZkFilePath, data, true);
+    byte[] data = zkController.getZkClient().getData(fromZkFilePath, null, null, true);
+    zkController.getZkClient().makePath(toZkFilePath, data, true);
     if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
   }
 
-  private static class ConfigCacheEntry {
-    final WeakReference<ConfigNode> configNode;
-    final int znodeVersion;
-
-    private ConfigCacheEntry(ConfigNode configNode, int znodeVersion) {
-      this.configNode = new WeakReference<>(configNode);
-      this.znodeVersion = znodeVersion;
-    }
-  }
   public SolrCloudManager getSolrCloudManager() {
     return zkController.getSolrCloudManager();
   }

@@ -41,6 +41,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.CLIO;
 import org.apache.zookeeper.CreateMode;
@@ -231,7 +232,7 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
           final Pattern excludePattern = Pattern.compile(excludeExpr);
-          ZkConfigSetService.uploadConfigDir(zkClient, Paths.get(confDir), confName, excludePattern);
+          ZkMaintenanceUtils.uploadToZK(zkClient, Paths.get(confDir), ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, excludePattern);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(DOWNCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
             stdout.println("-" + CONFDIR + " and -" + CONFNAME
@@ -240,7 +241,7 @@ public class ZkCLI implements CLIO {
           }
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
-          ZkConfigSetService.downloadConfigDir(zkClient, confName, Paths.get(confDir));
+          ZkMaintenanceUtils.downloadFromZK(zkClient, confName, Paths.get(confDir));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(LINKCONFIG)) {
           if (!line.hasOption(COLLECTION) || !line.hasOption(CONFNAME)) {
             stdout.println("-" + COLLECTION + " and -" + CONFNAME

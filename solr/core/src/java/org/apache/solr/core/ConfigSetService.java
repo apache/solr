@@ -20,6 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -210,6 +214,73 @@ public abstract class ConfigSetService {
    * @return a name for the core's ConfigSet
    */
   public abstract String configSetName(CoreDescriptor cd);
+
+  /**
+   * Check whether a config exists in Zookeeper
+   *
+   * @param configName the config to check existance on
+   * @return whether the config exists or not
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract Boolean configExists(String configName) throws IOException;
+
+  /**
+   * Delete a config in ZooKeeper
+   *
+   * @param configName the config to delete
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract void deleteConfigDir(String configName) throws IOException;
+
+  /**
+   * Copy a config in ZooKeeper
+   *
+   * @param fromConfig the config to copy from
+   * @param toConfig   the config to copy to
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract void copyConfigDir(String fromConfig, String toConfig) throws IOException;
+
+  /**
+   * Copy a config in ZooKeeper
+   *
+   * @param fromConfig      the config to copy from
+   * @param toConfig        the config to copy to
+   * @param copiedToZkPaths should be an empty Set, will be filled in by function
+   *                        with the paths that were actually copied to.
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException;
+
+  /**
+   * Upload files from a given path to a config in Zookeeper
+   *
+   * @param dir        {@link java.nio.file.Path} to the files
+   * @param configName the name to give the config
+   * @throws IOException if an I/O error occurs or the path does not exist
+   */
+  public abstract void uploadConfigDir(Path dir, String configName) throws IOException;
+
+  /**
+   * Upload matching files from a given path to a config in Zookeeper
+   *
+   * @param dir                {@link java.nio.file.Path} to the files
+   * @param configName         the name to give the config
+   * @param filenameExclusions files matching this pattern will not be uploaded
+   * @throws IOException if an I/O error occurs or the path does not exist
+   */
+  public abstract void uploadConfigDir(Path dir, String configName, Pattern filenameExclusions) throws IOException;
+
+  /**
+   * Download a config from Zookeeper and write it to the filesystem
+   *
+   * @param configName the config to download
+   * @param dir        the {@link Path} to write files under
+   * @throws IOException if an I/O error occurs or the config does not exist
+   */
+  public abstract void downloadConfigDir(String configName, Path dir) throws IOException;
+
+  public abstract List<String> listConfigs() throws IOException;
 
   public interface ConfigResource {
 

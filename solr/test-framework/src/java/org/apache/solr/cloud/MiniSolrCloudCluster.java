@@ -56,14 +56,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.CloudCollectionsListener;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -542,7 +535,7 @@ public class MiniSolrCloudCluster {
   public void uploadConfigSet(Path configDir, String configName) throws IOException, KeeperException, InterruptedException {
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null)) {
-      ZkConfigSetService.uploadConfigDir(zkClient, configDir, configName);
+      ZkMaintenanceUtils.uploadToZK(zkClient, configDir, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + configName, ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
     }
   }
 

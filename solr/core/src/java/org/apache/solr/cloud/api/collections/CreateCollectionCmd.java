@@ -509,7 +509,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     // Copy _default into targetConfig
     try {
-      ZkConfigSetService.copyConfigDir(ccc.getZkStateReader().getZkClient(), DEFAULT_CONFIGSET_NAME, targetConfig, new HashSet<>());
+      ccc.getCoreContainer().getConfigSetService().copyConfigDir(DEFAULT_CONFIGSET_NAME, targetConfig, new HashSet<>());
     } catch (Exception e) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Error while copying _default to " + targetConfig, e);
     }

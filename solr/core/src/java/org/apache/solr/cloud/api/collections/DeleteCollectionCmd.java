@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -192,7 +191,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
         if (!configSetIsUsedByOtherCollection) {
           // delete the config set
-          ZkConfigSetService.deleteConfigDir(zkClient, configSetName);
+          ccc.getCoreContainer().getConfigSetService().deleteConfigDir(configSetName);
         }
       }
 

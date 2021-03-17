@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -276,7 +275,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     private void uploadConfig(String configName, String restoreConfigName, BackupManager backupMgr, CoreContainer container) throws IOException {
-      if (ZkConfigSetService.configExists(container.getZkController().getZkClient(), restoreConfigName)) {
+      if (container.getConfigSetService().configExists(restoreConfigName)) {
         log.info("Using existing config {}", restoreConfigName);
         //TODO add overwrite option?
       } else {
