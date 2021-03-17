@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -66,7 +65,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     try {
       CloudSolrClient client = cluster.getSolrClient();
       SolrException e = expectThrows(SolrException.class, () -> {
-        ZkConfigSetService.uploadConfigDir(cluster.getZkClient(), configPath, "testconfig");
+        cluster.getOpenOverseer().getCoreContainer().getConfigSetService().uploadConfigDir(configPath, "testconfig");
       });
       assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
 
@@ -74,9 +73,9 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       cluster.waitForAllNodes(30);
       client.connect(20, TimeUnit.SECONDS);
 
-      ZkConfigSetService.uploadConfigDir(cluster.getZkClient(), configPath, "testconfig");
+      cluster.getOpenOverseer().getCoreContainer().getConfigSetService().uploadConfigDir(configPath, "testconfig");
 
-      assertTrue("List of uploaded configs does not contain 'testconfig'", ZkConfigSetService.listConfigs(cluster.getZkClient()).contains("testconfig"));
+      assertTrue("List of uploaded configs does not contain 'testconfig'", cluster.getOpenOverseer().getCoreContainer().getConfigSetService().listConfigs().contains("testconfig"));
 
     } finally {
       cluster.shutdown();

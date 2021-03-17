@@ -22,9 +22,8 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.ZkConfigSetService;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
@@ -38,12 +37,13 @@ import org.junit.Test;
  */
 public class ZkConfigFilesTest extends SolrCloudTestCase {
 
-  private static final int ZK_TIMEOUT_MILLIS = 10000;
+  private static ConfigSetService configSetService;
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
     configureCluster(1)
         .configure();
+    configSetService = cluster.getOpenOverseer().getCoreContainer().getConfigSetService();
   }
 
   @Before
@@ -57,23 +57,20 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   }
 
   private void clearConfigs() throws Exception {
-    List<String> configs = ZkConfigSetService.listConfigs(cluster.getZkClient());
+    List<String> configs = configSetService.listConfigs();
     for (String config : configs) {
-      ZkConfigSetService.deleteConfigDir(cluster.getZkClient(), config);
+      configSetService.deleteConfigDir(config);
     }
   }
 
   @Test
   public void testCanUploadConfigToZk() throws Exception {
-    final String zkConnectionString = cluster.getZkClient().getZkServerAddress();
     final String localConfigSetDirectory = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).getAbsolutePath();
 
     assertConfigsContainOnly();
 
     // tag::zk-configset-upload[]
-    try (SolrZkClient zkClient = new SolrZkClient(zkConnectionString, ZK_TIMEOUT_MILLIS)) {
-      ZkConfigSetService.uploadConfigDir(zkClient, Paths.get(localConfigSetDirectory), "nameForConfigset");
-    }
+    configSetService.uploadConfigDir(Paths.get(localConfigSetDirectory), "nameForConfigset");
     // end::zk-configset-upload[]
 
     assertConfigsContainOnly("nameForConfigset");

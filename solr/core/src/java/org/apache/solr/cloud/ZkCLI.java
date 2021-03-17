@@ -241,7 +241,7 @@ public class ZkCLI implements CLIO {
           }
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
-          ZkMaintenanceUtils.downloadFromZK(zkClient, confName, Paths.get(confDir));
+          ZkMaintenanceUtils.downloadFromZK(zkClient, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, Paths.get(confDir));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(LINKCONFIG)) {
           if (!line.hasOption(COLLECTION) || !line.hasOption(CONFNAME)) {
             stdout.println("-" + COLLECTION + " and -" + CONFNAME

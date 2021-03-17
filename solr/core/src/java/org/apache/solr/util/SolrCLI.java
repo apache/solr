@@ -1838,7 +1838,7 @@ public class SolrCLI implements CLIO {
             " for config " + cli.getOptionValue("confname") + " to ZooKeeper at " + zkHost);
         ZkMaintenanceUtils.uploadToZK(zkClient, confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
                 ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
-        zkClient.upConfig(confPath, confName);
+
       } catch (Exception e) {
         log.error("Could not complete upconfig operation for reason: ", e);
         throw (e);

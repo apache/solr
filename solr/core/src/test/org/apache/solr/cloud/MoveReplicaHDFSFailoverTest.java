@@ -57,7 +57,7 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
-    ZkConfigSetService.uploadConfigDir(zkClient(), configset("cloud-hdfs"), "conf1");
+    cluster.uploadConfigSet(configset("cloud-hdfs"), "conf1");
   }
 
   @AfterClass

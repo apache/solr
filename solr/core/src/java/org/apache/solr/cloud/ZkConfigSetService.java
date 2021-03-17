@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 public class ZkConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ZkController zkController;
+  private final SolrZkClient zkClient;
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
@@ -55,6 +57,14 @@ public class ZkConfigSetService extends ConfigSetService {
   public ZkConfigSetService(SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
     super(loader, shareSchema);
     this.zkController = zkController;
+    this.zkClient = zkController.getZkClient();
+  }
+
+  @VisibleForTesting
+  public ZkConfigSetService(SolrResourceLoader loader, boolean shareSchema, SolrZkClient zkClient) {
+    super(loader, shareSchema);
+    this.zkController = null;
+    this.zkClient = zkClient;
   }
 
   @Override
@@ -63,7 +73,7 @@ public class ZkConfigSetService extends ConfigSetService {
 
     // For back compat with cores that can create collections without the collections API
     try {
-      if (!zkController.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
+      if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
         // TODO remove this functionality or maybe move to a CLI mechanism
         log.warn("Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
         CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), colName, cd.getCloudDescriptor().getParams());
@@ -103,7 +113,7 @@ public class ZkConfigSetService extends ConfigSetService {
     String zkPath = CONFIGS_ZKNODE + "/" + configSet + "/" + schemaFile;
     Stat stat;
     try {
-      stat = zkController.getZkClient().exists(zkPath, null, true);
+      stat = zkClient.exists(zkPath, null, true);
     } catch (KeeperException e) {
       log.warn("Unexpected exception when getting modification time of {}", zkPath, e);
       return null; // debatable; we'll see an error soon if there's a real problem
@@ -125,7 +135,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public Boolean configExists(String configName) throws IOException {
     try {
-      return zkController.getZkClient().exists(CONFIGS_ZKNODE + "/" + configName, true);
+      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
               SolrZkClient.checkInterrupted(e));
@@ -135,7 +145,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public void deleteConfigDir(String configName) throws IOException {
     try {
-      zkController.getZkClient().clean(CONFIGS_ZKNODE + "/" + configName);
+      zkClient.clean(CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
               SolrZkClient.checkInterrupted(e));
@@ -162,23 +172,23 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public void uploadConfigDir(Path dir, String configName) throws IOException {
-    zkController.getZkClient().uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   @Override
   public void uploadConfigDir(Path dir, String configName, Pattern filenameExclusions) throws IOException {
-    zkController.getZkClient().uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
+    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
   }
 
   @Override
   public void downloadConfigDir(String configName, Path dir) throws IOException {
-    zkController.getZkClient().downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
+    zkClient.downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
   @Override
   public List<String> listConfigs() throws IOException {
     try {
-      return zkController.getZkClient().getChildren(CONFIGS_ZKNODE, null, true);
+      return zkClient.getChildren(CONFIGS_ZKNODE, null, true);
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyList();
     } catch (KeeperException | InterruptedException e) {
@@ -226,9 +236,9 @@ public class ZkConfigSetService extends ConfigSetService {
 
   private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths) throws IOException {
     try {
-      List<String> files = zkController.getZkClient().getChildren(fromZkPath, null, true);
+      List<String> files = zkClient.getChildren(fromZkPath, null, true);
       for (String file : files) {
-        List<String> children = zkController.getZkClient().getChildren(fromZkPath + "/" + file, null, true);
+        List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
         if (children.size() == 0) {
           copyData(copiedToZkPaths, fromZkPath + "/" + file, toZkPath + "/" + file);
         } else {
@@ -243,8 +253,8 @@ public class ZkConfigSetService extends ConfigSetService {
 
   private void copyData(Set<String> copiedToZkPaths, String fromZkFilePath, String toZkFilePath) throws KeeperException, InterruptedException {
     log.info("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
-    byte[] data = zkController.getZkClient().getData(fromZkFilePath, null, null, true);
-    zkController.getZkClient().makePath(toZkFilePath, data, true);
+    byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
+    zkClient.makePath(toZkFilePath, data, true);
     if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
   }
 

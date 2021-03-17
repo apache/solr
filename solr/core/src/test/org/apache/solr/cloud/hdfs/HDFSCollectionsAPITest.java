@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -48,7 +47,7 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
-    ZkConfigSetService.uploadConfigDir(zkClient(), configset("cloud-hdfs"), "conf1");
+    cluster.uploadConfigSet(configset("cloud-hdfs"), "conf1");
   }
 
 

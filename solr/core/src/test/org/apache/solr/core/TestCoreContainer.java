@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -456,6 +457,46 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     @Override
     public String configSetName(CoreDescriptor cd){
+      return null;
+    }
+
+    @Override
+    public Boolean configExists(String configName) throws IOException {
+      return null;
+    }
+
+    @Override
+    public void deleteConfigDir(String configName) throws IOException {
+
+    }
+
+    @Override
+    public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
+
+    }
+
+    @Override
+    public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
+
+    }
+
+    @Override
+    public void uploadConfigDir(Path dir, String configName) throws IOException {
+
+    }
+
+    @Override
+    public void uploadConfigDir(Path dir, String configName, Pattern filenameExclusions) throws IOException {
+
+    }
+
+    @Override
+    public void downloadConfigDir(String configName, Path dir) throws IOException {
+
+    }
+
+    @Override
+    public List<String> listConfigs() throws IOException {
       return null;
     }
 
