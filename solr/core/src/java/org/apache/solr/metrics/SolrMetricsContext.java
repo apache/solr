@@ -164,6 +164,13 @@ public class SolrMetricsContext {
   }
 
   /**
+   * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String, Gauge, String, SolrMetricManager.ResolutionStrategy, String, String...)}.
+   */
+  public void gauge(Gauge<?> gauge, SolrMetricManager.ResolutionStrategy resolution, String metricName, String... metricPath) {
+    metricManager.registerGauge(this, registryName, gauge, tag, resolution, metricName, metricPath);
+  }
+
+  /**
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String, String...)}.
    */
   public Timer timer(String metricName, String... metricPath) {

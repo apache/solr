@@ -68,11 +68,11 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     public EntryWriter put(CharSequence k, Object v) throws IOException {
       if (v instanceof IteratorWriter) {
         List<Object> lst = new ArrayList<>();
-        ((IteratorWriter)v).toList(lst);
+        ((IteratorWriter) v).toList(lst);
         v = lst;
       } else if (v instanceof MapWriter) {
         Map<String, Object> map = new HashMap<>();
-        ((MapWriter)v).toMap(map);
+        ((MapWriter) v).toMap(map);
         v = map;
       }
       tuple.put(k.toString(), v);

@@ -51,9 +51,12 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
   public static final String WORKER_ID_PARAM = "workerID";
   public static final String PARTITION_KEYS_PARAM = "partitionKeys";
   public static final String USE_HASH_QUERY_PARAM = "useHashQuery";
+  public static final String NO_CACHE_PARAM = "noCache";
 
   private TupleStream tupleStream;
   private int workers;
+  private boolean noCache;
+  private boolean useHashQuery;
   private transient StreamFactory streamFactory;
 
   public ParallelStream(String zkHost,
@@ -61,7 +64,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
                         TupleStream tupleStream,
                         int workers,
                         StreamComparator comp) throws IOException {
-    init(zkHost,collection,tupleStream,workers,comp);
+    init(zkHost, collection, tupleStream, workers, false, false, comp);
   }
 
 
@@ -71,7 +74,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
                         int workers,
                         StreamComparator comp) throws IOException {
     TupleStream tStream = this.streamFactory.constructStream(expressionString);
-    init(zkHost,collection, tStream, workers,comp);
+    init(zkHost, collection, tStream, workers, false, false, comp);
   }
 
   public void setStreamFactory(StreamFactory streamFactory) {
@@ -85,7 +88,9 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
     StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, SORT);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    
+    StreamExpressionNamedParameter noCacheParam = factory.getNamedOperand(expression, NO_CACHE_PARAM);
+    StreamExpressionNamedParameter useHashQueryParam = factory.getNamedOperand(expression, USE_HASH_QUERY_PARAM);
+
     // validate expression contains only what we want.
 
     if (expression.getParameters().size() != streamExpressions.size() + 3 + (null != zkHostExpression ? 1 : 0)) {
@@ -135,18 +140,39 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     if (null == zkHost) {
       throw new IOException(String.format(Locale.ROOT, "invalid expression %s - zkHost not found for collection '%s'", expression, collectionName));
     }
-    
+    boolean noCacheVal;
+    if (noCacheParam == null || noCacheParam.getParameter() == null) {
+      noCacheVal = false;
+    } else {
+      if (!(noCacheParam.getParameter() instanceof StreamExpressionValue)) {
+        throw new IOException(String.format(Locale.ROOT, "invalid expression %s - expecting at most a single noCache boolean param", expression));
+      }
+      noCacheVal = Boolean.parseBoolean(((StreamExpressionValue)noCacheParam.getParameter()).getValue());
+    }
+    boolean useHashQueryVal;
+    if (useHashQueryParam == null || useHashQueryParam.getParameter() == null) {
+      useHashQueryVal = false;
+    } else {
+      if (!(useHashQueryParam.getParameter() instanceof StreamExpressionValue)) {
+        throw new IOException(String.format(Locale.ROOT, "invalid expression %s - expecting at most a single useHashQuery boolean param", expression));
+      }
+      useHashQueryVal = Boolean.parseBoolean(((StreamExpressionValue)useHashQueryParam.getParameter()).getValue());
+    }
+
     // We've got all the required items    
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
     StreamComparator comp = factory.constructComparator(((StreamExpressionValue)sortExpression.getParameter()).getValue(), FieldComparator.class);
     streamFactory = factory;
-    init(zkHost,collectionName,stream,workersInt,comp);
+    init(zkHost, collectionName, stream, workersInt, noCacheVal, useHashQueryVal, comp);
   }
 
-  private void init(String zkHost, String collection, TupleStream tupleStream, int workers, StreamComparator comp) throws IOException{
+  private void init(String zkHost, String collection, TupleStream tupleStream, int workers,
+                    boolean noCache, boolean useHashQuery, StreamComparator comp) throws IOException{
     this.zkHost = zkHost;
     this.collection = collection;
     this.workers = workers;
+    this.noCache = noCache;
+    this.useHashQuery = useHashQuery;
     this.comp = comp;
     this.tupleStream = tupleStream;
 
@@ -182,11 +208,15 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     }
         
     // sort
-    expression.addParameter(new StreamExpressionNamedParameter(SORT,comp.toExpression(factory)));
+    expression.addParameter(new StreamExpressionNamedParameter(SORT, comp.toExpression(factory)));
     
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-    
+
+    // noCache and useHashQuery
+    expression.addParameter(new StreamExpressionNamedParameter(NO_CACHE_PARAM, String.valueOf(noCache)));
+    expression.addParameter(new StreamExpressionNamedParameter(USE_HASH_QUERY_PARAM, String.valueOf(useHashQuery)));
+
     return expression;   
   }
   
@@ -254,13 +284,14 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
 
       for (int w = 0; w < workers; w++) {
         ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-        paramsLoc.set(DISTRIB,"false"); // We are the aggregator.
+        paramsLoc.set(DISTRIB, "false"); // We are the aggregator.
         paramsLoc.set(NUM_WORKERS_PARAM, workers);
         paramsLoc.set(WORKER_ID_PARAM, w);
-        paramsLoc.set(USE_HASH_QUERY_PARAM, false);
+        paramsLoc.set(USE_HASH_QUERY_PARAM, useHashQuery);
+        paramsLoc.set(NO_CACHE_PARAM, noCache);
 
         paramsLoc.set(StreamParams.EXPR, pushStream.toString());
-        paramsLoc.set(CommonParams.QT,"/stream");
+        paramsLoc.set(CommonParams.QT, "/stream");
 
         String url = shardUrls.get(w);
         SolrStream solrStream = new SolrStream(url, paramsLoc);

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -59,6 +60,8 @@ import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -127,6 +130,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final Timer fillerWaitTimer;
   final Timer writerWaitTimer;
   final Timer segmentTopDocsTimer;
+  final Counter noCacheCounter;
+  final Counter useHashQueryCounter;
 
   //The max combined size of the segment level priority queues.
   private int priorityQueueSize;
@@ -155,16 +160,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     this.initialStreamContext = initialStreamContext;
     this.solrMetricsContext = solrMetricsContext;
     this.metricsPath = metricsPath;
-    this.writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
-    this.writerWaitTimer = solrMetricsContext.timer("writerWait", metricsPath);
-    this.fillOutputBufferTimer = solrMetricsContext.timer("fillOutputBuffer", metricsPath);
-    this.fillerWaitTimer = solrMetricsContext.timer("fillerWait", metricsPath);
-    this.segmentTopDocsTimer = solrMetricsContext.timer("segmentTopDocs", metricsPath);
-
     this.priorityQueueSize = req.getParams().getInt(QUEUE_SIZE_PARAM, DEFAULT_QUEUE_SIZE);
     this.numWorkers = req.getParams().getInt(ParallelStream.NUM_WORKERS_PARAM, 1);
     this.workerId = req.getParams().getInt(ParallelStream.WORKER_ID_PARAM, 0);
-    boolean useHashQuery = req.getParams().getBool(ParallelStream.USE_HASH_QUERY_PARAM, false);
+    final boolean useHashQuery = req.getParams().getBool(ParallelStream.USE_HASH_QUERY_PARAM, false);
     if (numWorkers > 1 && !useHashQuery) {
       String keysList = req.getParams().get(ParallelStream.PARTITION_KEYS_PARAM);
       if (keysList == null || keysList.trim().equals("none")) {
@@ -181,7 +180,46 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
     this.fieldList = req.getParams().get(CommonParams.FL);
     this.batchSize = DEFAULT_BATCH_SIZE;
-    this.partitionCaches = (SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>)req.getSearcher().getCache(SOLR_CACHE_KEY);
+    final boolean noCache = req.getParams().getBool(ParallelStream.NO_CACHE_PARAM, false);
+    if (noCache) {
+      this.partitionCaches = null;
+    } else {
+      this.partitionCaches = (SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>) req.getSearcher().getCache(SOLR_CACHE_KEY);
+    }
+
+    // initialize metrics
+    this.writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
+    this.writerWaitTimer = solrMetricsContext.timer("writerWait", metricsPath);
+    this.fillOutputBufferTimer = solrMetricsContext.timer("fillOutputBuffer", metricsPath);
+    this.fillerWaitTimer = solrMetricsContext.timer("fillerWait", metricsPath);
+    this.segmentTopDocsTimer = solrMetricsContext.timer("segmentTopDocs", metricsPath);
+    this.noCacheCounter = solrMetricsContext.counter("noCache", metricsPath);
+    if (noCache) {
+      noCacheCounter.inc();
+    }
+    this.useHashQueryCounter = solrMetricsContext.counter("useHashQuery", metricsPath);
+    if (useHashQuery) {
+      useHashQueryCounter.inc();
+    }
+    MetricsMap cacheMetrics = new MetricsMap(map -> {
+      // don't use per-instance var here - always check this from the current searcher!
+      SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>> caches = req.getSearcher().getCache(SOLR_CACHE_KEY);
+      map.put("configured", caches != null);
+      if (caches != null) {
+        map.put("numSegments", caches.size());
+        if (caches instanceof CaffeineCache) {
+          CaffeineCache <IndexReader.CacheKey, SolrCache<String, FixedBitSet>> exportCache = (CaffeineCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>) caches;
+          final int[] avgSets = new int[1];
+          exportCache.asMap().forEach((key, setsCache) -> {
+            avgSets[0] += setsCache.size();
+          });
+          avgSets[0] = avgSets[0] / exportCache.size();
+          map.put("avgSetsPerSeg", avgSets[0]);
+        }
+      }
+    });
+    // if it already exists then it's been already registered for this core
+    solrMetricsContext.gauge(cacheMetrics, SolrMetricManager.ResolutionStrategy.IGNORE, "partitionCaches", metricsPath);
   }
 
   @Override
@@ -480,7 +518,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             timerCtx.stop();
           }
           //log.debug("--- writer exchanging from {}", buffer);
-          timerCtx =writerWaitTimer.time();
+          timerCtx = writerWaitTimer.time();
           try {
             long startExchangeBuffers = System.nanoTime();
             buffers.exchangeBuffers();

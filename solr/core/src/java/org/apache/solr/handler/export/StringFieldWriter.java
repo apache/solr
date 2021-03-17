@@ -65,7 +65,7 @@ class StringFieldWriter extends FieldWriter {
         When we have long runs of repeated values do to the sort order of the docs this is a huge win.
        */
 
-      if(stringValue.currentOrd == -1) {
+      if (stringValue.currentOrd == -1) {
         //Null sort value
         return false;
       }
@@ -81,15 +81,15 @@ class StringFieldWriter extends FieldWriter {
       //Reuse the last DocValues object if possible
       int readerOrd = readerContext.ord;
       SortedDocValues vals = null;
-      if(docValuesCache.containsKey(readerOrd)) {
+      if (docValuesCache.containsKey(readerOrd)) {
         SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
-        if(sortedDocValues.docID() < sortDoc.docId) {
+        if (sortedDocValues.docID() < sortDoc.docId) {
           //We have not advanced beyond the current docId so we can use this docValues.
           vals = sortedDocValues;
         }
       }
 
-      if(vals == null) {
+      if (vals == null) {
         vals = DocValues.getSorted(readerContext.reader(), this.field);
         docValuesCache.put(readerOrd, vals);
       }
@@ -101,7 +101,7 @@ class StringFieldWriter extends FieldWriter {
       int ord = vals.ordValue();
       ref = vals.lookupOrd(ord);
 
-      if(stringValue != null) {
+      if (stringValue != null) {
         //Don't need to set the lastRef if it's not a sort value.
         lastRef = ref.clone();
       }
