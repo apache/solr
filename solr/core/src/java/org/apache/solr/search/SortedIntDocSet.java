@@ -657,12 +657,12 @@ public class SortedIntDocSet extends DocSet {
 
   private int[] cachedOrdIdxMap; // idx of first doc _beyond_ the corresponding seg
   private int[] getOrdIdxMap(LeafReaderContext ctx) {
-    final int[] ret;
-    if (cachedOrdIdxMap != null) {
-      ret = cachedOrdIdxMap;
+    final int[] cached = cachedOrdIdxMap;
+    if (cached != null) {
+      return cached;
     } else {
       List<LeafReaderContext> leaves = ReaderUtil.getTopLevelContext(ctx).leaves();
-      ret = new int[leaves.size()];
+      final int[] ret = new int[leaves.size()];
       int lastLimit = 0;
       int lastLimitDoc = docs[0]; // docs.length != 0
       for (LeafReaderContext lrc : leaves) {
@@ -680,9 +680,8 @@ public class SortedIntDocSet extends DocSet {
         lastLimitDoc = lastLimit < docs.length ? docs[lastLimit] : DocIdSetIterator.NO_MORE_DOCS;
         ret[lrc.ord] = lastLimit;
       }
-      cachedOrdIdxMap = ret; // replace atomically after building
+      return cachedOrdIdxMap = ret; // set/replace atomically after building
     }
-    return ret;
   }
 
   @Override
