@@ -655,7 +655,7 @@ public class SortedIntDocSet extends DocSet {
     return new BitDocSet(newbits);
   }
 
-  private int[] cachedOrdIdxMap; // idx of first doc _beyond_ the corresponding seg
+  private volatile int[] cachedOrdIdxMap; // idx of first doc _beyond_ the corresponding seg
   private int[] getOrdIdxMap(LeafReaderContext ctx) {
     final int[] cached = cachedOrdIdxMap;
     if (cached != null) {
