@@ -74,7 +74,6 @@ import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
@@ -114,20 +113,15 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static ZkConfigManager zkConfigManager;
-
   @BeforeClass
   public static void setUpClass() throws Exception {
     configureCluster(1)
             .withSecurityJson(getSecurityJson())
             .configure();
-    zkConfigManager = new ZkConfigManager(cluster.getZkClient());
   }
 
   @AfterClass
-  public static void tearDownClass() throws Exception {
-    zkConfigManager = null;
-  }
+  public static void tearDownClass() throws Exception {}
 
   @Override
   @After
@@ -141,7 +135,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testCreateErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-      zkConfigManager.uploadConfigDir(configset("configset-2"), "configSet");
+      cluster.uploadConfigSet(configset("configset-2"), "configSet");
 
       // no action
       CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
@@ -229,7 +223,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
           getConfigSetProps(oldProps), UTF_8);
     }
-    zkConfigManager.uploadConfigDir(tmpConfigDir.toPath(), baseConfigSetName);
+    cluster.uploadConfigSet(tmpConfigDir.toPath(), baseConfigSetName);
   }
 
   private void verifyCreate(String baseConfigSetName, String configSetName,
@@ -241,12 +235,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
               AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
       try {
-        ZkConfigManager configManager = new ZkConfigManager(zkClient);
-        assertFalse(configManager.configExists(configSetName));
+        assertFalse(ZkConfigSetService.configExists(zkClient, configSetName));
 
         ConfigSetAdminResponse response = createConfigSet(baseConfigSetName, configSetName, newProps, solrClient, username);
         assertNotNull(response.getResponse());
-        assertTrue(configManager.configExists(configSetName));
+        assertTrue(ZkConfigSetService.configExists(zkClient, configSetName));
 
         verifyProperties(configSetName, oldProps, newProps, zkClient);
       } finally {
@@ -294,7 +287,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
        Map<String, String> newProps, SolrZkClient zkClient) throws Exception {
     @SuppressWarnings({"rawtypes"})
     NamedList properties = getConfigSetPropertiesFromZk(zkClient,
-        ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName + "/" + DEFAULT_FILENAME);
+        org.apache.solr.cloud.ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSetName + "/" + DEFAULT_FILENAME);
     // let's check without merging the maps, since that's what the MessageHandler does
     // (since we'd probably repeat any bug in the MessageHandler here)
     if (oldProps == null && newProps == null) {
@@ -882,8 +875,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private long uploadConfigSet(String configSetName, String suffix, String username,
                                SolrZkClient zkClient, boolean v2) throws IOException {
-    ZkConfigManager configManager = new ZkConfigManager(zkClient);
-    assertFalse(configManager.configExists(configSetName + suffix));
+    assertFalse(ZkConfigSetService.configExists(zkClient,configSetName + suffix));
     return uploadConfigSet(configSetName, suffix, username, false, false, v2);
   }
 
@@ -1118,7 +1110,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     FileUtils.write(new File(tmpConfigDir, "configsetprops.json"),
         getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")), UTF_8);
-    zkConfigManager.uploadConfigDir(tmpConfigDir.toPath(), "configSet");
+    cluster.uploadConfigSet(tmpConfigDir.toPath(), "configSet");
 
     // no ConfigSet name
     DeleteNoErrorChecking delete = new DeleteNoErrorChecking();
@@ -1150,19 +1142,18 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final String configSet = "testDelete";
-    zkConfigManager.uploadConfigDir(configset("configset-2"), configSet);
+    cluster.uploadConfigSet(configset("configset-2"), configSet);
 
     SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertTrue(configManager.configExists(configSet));
+      assertTrue(ZkConfigSetService.configExists(zkClient, configSet));
 
       Delete delete = new Delete();
       delete.setConfigSetName(configSet);
       ConfigSetAdminResponse response = delete.process(solrClient);
       assertNotNull(response.getResponse());
-      assertFalse(configManager.configExists(configSet));
+      assertFalse(ZkConfigSetService.configExists(zkClient, configSet));
     } finally {
       zkClient.close();
     }
@@ -1188,7 +1179,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Set<String> configSets = new HashSet<String>();
       for (int i = 0; i < 5; ++i) {
         String configSet = "configSet" + i;
-        zkConfigManager.uploadConfigDir(configset("configset-2"), configSet);
+        cluster.uploadConfigSet(configset("configset-2"), configSet);
         configSets.add(configSet);
       }
       response = list.process(solrClient);

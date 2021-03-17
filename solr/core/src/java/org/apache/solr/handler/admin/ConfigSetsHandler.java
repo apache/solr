@@ -35,10 +35,10 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -167,7 +167,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
 
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
-    String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName;
+    String configPathInZk = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSetName;
 
     boolean overwritesExisting = zkClient.exists(configPathInZk, true);
 
@@ -293,7 +293,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   private Set<String> getAllConfigsetFiles(SolrZkClient zkClient, String configPathInZk) throws KeeperException, InterruptedException {
     final Set<String> files = new HashSet<>();
-    if (!configPathInZk.startsWith(ZkConfigManager.CONFIGS_ZKNODE + "/")) {
+    if (!configPathInZk.startsWith(ZkConfigSetService.CONFIGS_ZKNODE + "/")) {
       throw new IllegalArgumentException("\"" + configPathInZk + "\" not recognized as a configset path");
     }
     ZkMaintenanceUtils.traverseZkTree(zkClient, configPathInZk, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, files::add);
@@ -423,13 +423,12 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
           throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
         }
 
-        ZkConfigManager zkConfigManager = new ZkConfigManager(h.coreContainer.getZkController().getZkStateReader().getZkClient());
-        if (zkConfigManager.configExists(newConfigSetName)) {
+        if (ZkConfigSetService.configExists(h.coreContainer.getZkController().getZkClient(), newConfigSetName)) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + newConfigSetName);
         }
 
         // is there a base config that already exists
-        if (!zkConfigManager.configExists(baseConfigSetName)) {
+        if (!ZkConfigSetService.configExists(h.coreContainer.getZkController().getZkClient(), baseConfigSetName)) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
                   "Base ConfigSet does not exist: " + baseConfigSetName);
         }
@@ -438,7 +437,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         props.put(BASE_CONFIGSET, baseConfigSetName);
         if (!DISABLE_CREATE_AUTH_CHECKS &&
                 !isTrusted(req, h.coreContainer.getAuthenticationPlugin()) &&
-                isCurrentlyTrusted(h.coreContainer.getZkController().getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" +  baseConfigSetName)) {
+                isCurrentlyTrusted(h.coreContainer.getZkController().getZkClient(), ZkConfigSetService.CONFIGS_ZKNODE + "/" +  baseConfigSetName)) {
           throw new SolrException(ErrorCode.UNAUTHORIZED, "Can't create a configset with an unauthenticated request from a trusted " + BASE_CONFIGSET);
         }
         return copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX + ".");
@@ -455,9 +454,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       @Override
       public Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
         NamedList<Object> results = new NamedList<>();
-        SolrZkClient zk = h.coreContainer.getZkController().getZkStateReader().getZkClient();
-        ZkConfigManager zkConfigManager = new ZkConfigManager(zk);
-        List<String> configSetsList = zkConfigManager.listConfigs();
+        List<String> configSetsList = ZkConfigSetService.listConfigs(h.coreContainer.getZkController().getZkClient());
         results.add("configSets", configSetsList);
         SolrResponse response = new OverseerSolrResponse(results);
         rsp.getValues().addAll(response.getResponse());

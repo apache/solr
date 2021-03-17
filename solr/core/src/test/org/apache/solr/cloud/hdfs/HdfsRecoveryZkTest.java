@@ -23,7 +23,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.RecoveryZkTest;
-import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -42,8 +42,7 @@ public class HdfsRecoveryZkTest extends RecoveryZkTest {
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
-    ZkConfigManager configManager = new ZkConfigManager(zkClient());
-    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf");
+    ZkConfigSetService.uploadConfigDir(zkClient(), configset("cloud-hdfs"), "conf");
   }
   
   @AfterClass

@@ -72,6 +72,10 @@ import org.slf4j.LoggerFactory;
 public class SolrZkClient implements Closeable {
 
   static final String NEWL = System.getProperty("line.separator");
+  /** ZkNode where named configs are stored */
+  static final String CONFIGS_ZKNODE = "/configs";
+  static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+  static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
 
   static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 30000;
 
@@ -826,7 +830,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void upConfig(Path confPath, String confName) throws IOException {
-    ZkMaintenanceUtils.upConfig(this, confPath, confName);
+    ZkMaintenanceUtils.uploadToZK(this, confPath, CONFIGS_ZKNODE + "/" + confName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   public String listZnode(String path, Boolean recurse) throws KeeperException, InterruptedException, SolrServerException {
@@ -834,7 +838,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void downConfig(String confName, Path confPath) throws IOException {
-    ZkMaintenanceUtils.downConfig(this, confName, confPath);
+    ZkMaintenanceUtils.downloadFromZK(this, CONFIGS_ZKNODE + "/" + confName, confPath);
   }
 
   public void zkTransfer(String src, Boolean srcIsZk,

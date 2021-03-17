@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -286,7 +285,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   private String getPropertyPath(String configName, String propertyPath) {
-    return ZkConfigManager.CONFIGS_ZKNODE + "/" + configName + "/" + propertyPath;
+    return ZkConfigSetService.CONFIGS_ZKNODE + "/" + configName + "/" + propertyPath;
   }
 
   private void createConfigSet(ZkNodeProps message) throws IOException {
@@ -297,13 +296,12 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
     String baseConfigSetName = message.getStr(BASE_CONFIGSET, DEFAULT_CONFIGSET_NAME);
 
-    ZkConfigManager configManager = new ZkConfigManager(zkStateReader.getZkClient());
-    if (configManager.configExists(configSetName)) {
+    if (ZkConfigSetService.configExists(zkStateReader.getZkClient(), configSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + configSetName);
     }
 
     // is there a base config that already exists
-    if (!configManager.configExists(baseConfigSetName)) {
+    if (!ZkConfigSetService.configExists(zkStateReader.getZkClient(), baseConfigSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "Base ConfigSet does not exist: " + baseConfigSetName);
     }
@@ -322,7 +320,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
     Set<String> copiedToZkPaths = new HashSet<String>();
     try {
-      configManager.copyConfigDir(baseConfigSetName, configSetName, copiedToZkPaths);
+      ZkConfigSetService.copyConfigDir(zkStateReader.getZkClient(), baseConfigSetName, configSetName, copiedToZkPaths);
       if (propertyData != null) {
         try {
           zkStateReader.getZkClient().makePath(
@@ -340,7 +338,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       // the entire baseConfig set with the old properties, including immutable,
       // that would make it impossible for the user to delete.
       try {
-        if (configManager.configExists(configSetName) && copiedToZkPaths.size() > 0) {
+        if (ZkConfigSetService.configExists(zkStateReader.getZkClient(), configSetName) && copiedToZkPaths.size() > 0) {
           deleteConfigSet(configSetName, true);
         }
       } catch (IOException ioe) {
@@ -360,8 +358,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   private void deleteConfigSet(String configSetName, boolean force) throws IOException {
-    ZkConfigManager configManager = new ZkConfigManager(zkStateReader.getZkClient());
-    if (!configManager.configExists(configSetName)) {
+    if (!ZkConfigSetService.configExists(zkStateReader.getZkClient(), configSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet does not exist to delete: " + configSetName);
     }
 
@@ -388,6 +385,6 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Requested delete of immutable ConfigSet: " + configSetName);
       }
     }
-    configManager.deleteConfigDir(configSetName);
+    ZkConfigSetService.deleteConfigDir(zkStateReader.getZkClient(), configSetName);
   }
 }

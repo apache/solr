@@ -16,19 +16,14 @@
  */
 package org.apache.solr.core;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import org.apache.solr.cloud.CloudConfigSetService;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
@@ -74,9 +69,9 @@ public abstract class ConfigSetService {
         throw new RuntimeException("create configSetService instance faild,configSetServiceClass:" + configSetServiceClass, e);
       }
     }else if(zkController == null){
-      return new Standalone(loader, nodeConfig.hasSchemaCache(), nodeConfig.getConfigSetBaseDirectory());
+      return new FileSystemConfigSetService(loader, nodeConfig.hasSchemaCache(), nodeConfig.getConfigSetBaseDirectory());
     }else{
-      return new CloudConfigSetService(loader, nodeConfig.hasSchemaCache(), zkController);
+      return new ZkConfigSetService(loader, nodeConfig.hasSchemaCache(), zkController);
     }
 
   }
@@ -227,61 +222,6 @@ public abstract class ConfigSetService {
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
     schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, SLASH + SCHEMA + SLASH, null);
     return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
-
-  }
-
-  /**
-   * The Solr standalone version of ConfigSetService.
-   *
-   * Loads a ConfigSet defined by the core's configSet property,
-   * looking for a directory named for the configSet property value underneath
-   * a base directory.  If no configSet property is set, loads the ConfigSet
-   * instead from the core's instance directory.
-   */
-  public static class Standalone extends ConfigSetService {
-
-    private final Path configSetBase;
-
-    public Standalone(SolrResourceLoader loader, boolean shareSchema, Path configSetBase) {
-      super(loader, shareSchema);
-      this.configSetBase = configSetBase;
-    }
-
-    @Override
-    public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
-      Path instanceDir = locateInstanceDir(cd);
-      SolrResourceLoader solrResourceLoader = new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
-      return solrResourceLoader;
-    }
-
-    @Override
-    public String configSetName(CoreDescriptor cd) {
-      return (cd.getConfigSet() == null ? "instancedir " : "configset ") + locateInstanceDir(cd);
-    }
-
-    protected Path locateInstanceDir(CoreDescriptor cd) {
-      String configSet = cd.getConfigSet();
-      if (configSet == null)
-        return cd.getInstanceDir();
-      Path configSetDirectory = configSetBase.resolve(configSet);
-      if (!Files.isDirectory(configSetDirectory))
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not load configuration from directory " + configSetDirectory);
-      return configSetDirectory;
-    }
-
-    @Override
-    protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
-      Path schemaFile = Paths.get(solrConfig.getResourceLoader().getConfigDir()).resolve(schemaFileName);
-      try {
-        return Files.getLastModifiedTime(schemaFile).toMillis();
-      } catch (FileNotFoundException e) {
-        return null; // acceptable
-      } catch (IOException e) {
-        log.warn("Unexpected exception when getting modification time of {}", schemaFile, e);
-        return null; // debatable; we'll see an error soon if there's a real problem
-      }
-    }
 
   }
 

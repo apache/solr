@@ -17,7 +17,7 @@
 package org.apache.solr.schema;
 
 
-import org.apache.solr.cloud.CloudConfigSetService;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
@@ -94,9 +94,9 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
 
   @SuppressWarnings("unchecked")
   public static ConfigSetService.ConfigResource getConfigResource(ConfigSetService configSetService, InputStream schemaInputStream, SolrResourceLoader loader, String name) throws IOException {
-    if (configSetService instanceof CloudConfigSetService && schemaInputStream instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+    if (configSetService instanceof ZkConfigSetService && schemaInputStream instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
       ZkSolrResourceLoader.ZkByteArrayInputStream is = (ZkSolrResourceLoader.ZkByteArrayInputStream) schemaInputStream;
-      Map<String, VersionedConfig> configCache = (Map<String, VersionedConfig>) ((CloudConfigSetService) configSetService).getSolrCloudManager().getObjectCache()
+      Map<String, VersionedConfig> configCache = (Map<String, VersionedConfig>) ((ZkConfigSetService) configSetService).getSolrCloudManager().getObjectCache()
               .computeIfAbsent(ConfigSetService.ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
       VersionedConfig cached = configCache.get(is.fileName);
       if (cached != null) {

@@ -26,10 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -217,21 +214,6 @@ public class ZkMaintenanceUtils {
     }
   }
 
-  // This not just a copy operation since the config manager takes care of construction the znode path to configsets
-  public static void downConfig(SolrZkClient zkClient, String confName, Path confPath) throws IOException {
-    ZkConfigManager manager = new ZkConfigManager(zkClient);
-
-    // Try to download the configset
-    manager.downloadConfigDir(confName, confPath);
-  }
-
-  // This not just a copy operation since the config manager takes care of construction the znode path to configsets
-  public static void upConfig(SolrZkClient zkClient, Path confPath, String confName) throws IOException {
-    ZkConfigManager manager = new ZkConfigManager(zkClient);
-
-    // Try to download the configset
-    manager.uploadConfigDir(confPath, confName);
-  }
 
   // yeah, it's recursive :(
   public static void clean(SolrZkClient zkClient, String path) throws InterruptedException, KeeperException {
@@ -371,6 +353,18 @@ public class ZkMaintenanceUtils {
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error downloading files from zookeeper path " + zkPath + " to " + file.toString(),
           SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  public static List<String> listConfigs(SolrZkClient zkClient) throws IOException {
+    try {
+      return zkClient.getChildren(SolrZkClient.CONFIGS_ZKNODE, null, true);
+    }
+    catch (KeeperException.NoNodeException e) {
+      return Collections.emptyList();
+    }
+    catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error listing configs", SolrZkClient.checkInterrupted(e));
     }
   }
 

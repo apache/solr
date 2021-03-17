@@ -31,13 +31,13 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.SolrZkServer;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.UrlScheme;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -158,8 +158,7 @@ public class ZkContainer {
             throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
 
           String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
-          ZkConfigManager configManager = new ZkConfigManager(zkController.getZkClient());
-          configManager.uploadConfigDir(configPath, confName);
+          ZkConfigSetService.uploadConfigDir(zkController.getZkClient(), configPath, confName);
         }
 
         if(boostrapConf) {

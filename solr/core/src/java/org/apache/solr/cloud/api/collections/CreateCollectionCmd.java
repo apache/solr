@@ -42,6 +42,7 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.RefreshCollectionMessage;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -476,7 +477,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // if there is only one conf, use that
       List<String> configNames = null;
       try {
-        configNames = ccc.getZkStateReader().getZkClient().getChildren(ZkConfigManager.CONFIGS_ZKNODE, null, true);
+        configNames = ccc.getZkStateReader().getZkClient().getChildren(ZkConfigSetService.CONFIGS_ZKNODE, null, true);
         if (configNames.contains(DEFAULT_CONFIGSET_NAME)) {
           if (CollectionAdminParams.SYSTEM_COLL.equals(coll)) {
             return coll;
@@ -501,8 +502,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
    * Copies the _default configset to the specified configset name (overwrites if pre-existing)
    */
   private void copyDefaultConfigSetTo(List<String> configNames, String targetConfig) {
-    ZkConfigManager configManager = new ZkConfigManager(ccc.getZkStateReader().getZkClient());
-
     // if a configset named collection exists, re-use it
     if (configNames.contains(targetConfig)) {
       log.info("There exists a configset by the same name as the collection we're trying to create: {}, re-using it.", targetConfig);
@@ -510,7 +509,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     // Copy _default into targetConfig
     try {
-      configManager.copyConfigDir(DEFAULT_CONFIGSET_NAME, targetConfig, new HashSet<>());
+      ZkConfigSetService.copyConfigDir(ccc.getZkStateReader().getZkClient(), DEFAULT_CONFIGSET_NAME, targetConfig, new HashSet<>());
     } catch (Exception e) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Error while copying _default to " + targetConfig, e);
     }
@@ -626,7 +625,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       try {
-        configNames = stateManager.listData(ZkConfigManager.CONFIGS_ZKNODE);
+        configNames = stateManager.listData(ZkConfigSetService.CONFIGS_ZKNODE);
       } catch (NoSuchElementException | NoNodeException e) {
         // just keep trying
       }

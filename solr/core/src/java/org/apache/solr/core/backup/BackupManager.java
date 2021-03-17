@@ -31,12 +31,12 @@ import java.util.Optional;
 import com.google.common.base.Preconditions;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -233,7 +233,7 @@ public class BackupManager {
   public void uploadConfigDir(String sourceConfigName, String targetConfigName)
           throws IOException {
     URI source = getZkStateDir(CONFIG_STATE_DIR, sourceConfigName);
-    String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + targetConfigName;
+    String zkPath = ZkConfigSetService.CONFIGS_ZKNODE + "/" + targetConfigName;
 
     Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
     Preconditions.checkState(repository.getPathType(source) == PathType.DIRECTORY,
@@ -253,7 +253,7 @@ public class BackupManager {
     repository.createDirectory(getZkStateDir(CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
-    downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, dest);
+    downloadFromZK(zkStateReader.getZkClient(), ZkConfigSetService.CONFIGS_ZKNODE + "/" + configName, dest);
   }
 
   public void uploadCollectionProperties(String collectionName) throws IOException {

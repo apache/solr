@@ -22,8 +22,9 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
@@ -56,10 +57,9 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   }
 
   private void clearConfigs() throws Exception {
-    ZkConfigManager manager = new ZkConfigManager(cluster.getZkClient());
-    List<String> configs = manager.listConfigs();
+    List<String> configs = ZkConfigSetService.listConfigs(cluster.getZkClient());
     for (String config : configs) {
-      manager.deleteConfigDir(config);
+      ZkConfigSetService.deleteConfigDir(cluster.getZkClient(), config);
     }
   }
 
@@ -72,8 +72,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
 
     // tag::zk-configset-upload[]
     try (SolrZkClient zkClient = new SolrZkClient(zkConnectionString, ZK_TIMEOUT_MILLIS)) {
-      ZkConfigManager manager = new ZkConfigManager(zkClient);
-      manager.uploadConfigDir(Paths.get(localConfigSetDirectory), "nameForConfigset");
+      ZkConfigSetService.uploadConfigDir(zkClient, Paths.get(localConfigSetDirectory), "nameForConfigset");
     }
     // end::zk-configset-upload[]
 
@@ -83,8 +82,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   private void assertConfigsContainOnly(String... expectedConfigs) throws Exception {
     final int expectedSize = expectedConfigs.length;
 
-    ZkConfigManager manager = new ZkConfigManager(cluster.getZkClient());
-    List<String> actualConfigs = manager.listConfigs();
+    List<String> actualConfigs = ZkMaintenanceUtils.listConfigs(cluster.getZkClient());
 
     assertEquals(expectedSize, actualConfigs.size());
     for (String expectedConfig : expectedConfigs) {

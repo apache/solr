@@ -40,7 +40,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class SolrStandaloneScraperTest extends RestTestBase {
+public class SolrFileSystemConfigSetServiceScraperTest extends RestTestBase {
 
   private static MetricsConfiguration configuration;
   private static SolrStandaloneScraper solrScraper;

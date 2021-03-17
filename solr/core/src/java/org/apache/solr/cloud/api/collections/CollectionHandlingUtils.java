@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -301,7 +302,7 @@ public class CollectionHandlingUtils {
   }
 
   static void validateConfigOrThrowSolrException(SolrCloudManager cloudManager, String configName) throws IOException, KeeperException, InterruptedException {
-    boolean isValid = cloudManager.getDistribStateManager().hasData(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
+    boolean isValid = cloudManager.getDistribStateManager().hasData(ZkConfigSetService.CONFIGS_ZKNODE + "/" + configName);
     if (!isValid) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
     }

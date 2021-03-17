@@ -26,7 +26,6 @@ import java.util.Locale;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -141,7 +140,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("ccjoin"), "ccjoin");
+      cluster.uploadConfigSet(configset("ccjoin"), "ccjoin");
       // reload the cores with the updated allowSolrUrls config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
@@ -221,7 +220,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("ccjoin"), "ccjoin");
+      cluster.uploadConfigSet(configset("ccjoin"), "ccjoin");
       // reload the cores with the updated allowSolrUrls config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);

@@ -96,11 +96,11 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -108,7 +108,6 @@ import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -1543,12 +1542,12 @@ public class SolrCLI implements CLIO {
         if (confname == null || "".equals(confname.trim())) {
           confname = collectionName;
         }
-        Path confPath = ZkConfigManager.getConfigsetPath(confdir,
+        Path confPath = ZkConfigSetService.getConfigsetPath(confdir,
             configsetsDir);
 
         echoIfVerbose("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost(), cli);
-        ((ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider()).uploadConfig(confPath, confname);
+        ZkConfigSetService.uploadConfigDir(cloudSolrClient.getZkStateReader().getZkClient(), confPath, confname);
       }
 
       // since creating a collection is a heavy-weight operation, check for existence first
@@ -1838,11 +1837,12 @@ public class SolrCLI implements CLIO {
       String confName = cli.getOptionValue("confname");
       try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-        Path confPath = ZkConfigManager.getConfigsetPath(cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
+        Path confPath = ZkConfigSetService.getConfigsetPath(cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
 
         echo("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + cli.getOptionValue("confname") + " to ZooKeeper at " + zkHost);
 
+        ZkConfigSetService.uploadConfigDir(zkClient, confPath, confName);
         zkClient.upConfig(confPath, confName);
       } catch (Exception e) {
         log.error("Could not complete upconfig operation for reason: ", e);
