@@ -120,7 +120,7 @@ ext {
          path: 'html-site',
          desc: 'HTML Site for publishing to the Solr website',
          props: [
-            htmlSolrJavadocs: "https://solr.apache.org/${solrGuideVersionPath}_0/",
+            htmlSolrJavadocs: "https://solr.apache.org/docs/${solrGuideVersionPath}_0/",
             htmlLuceneJavadocs: "https://lucene.apache.org/core/${solrGuideVersionPath}_0/"
         ]
     ]
