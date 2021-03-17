@@ -3,7 +3,7 @@ name: Docker Build & Test
 on:
   pull_request:
     branches:
-      - 'master'
+      - 'main'
     paths:
       - '.github/workflows/docker-test.yml'
       - 'solr/bin/**'
@@ -28,6 +28,8 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
+    - name: Install ACL
+      run: sudo apt-get install acl
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - uses: actions/cache@v2
