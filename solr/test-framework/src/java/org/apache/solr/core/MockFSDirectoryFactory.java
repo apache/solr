@@ -63,8 +63,7 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
     Directory cdir = dir;
     if (dir instanceof NRTCachingDirectory) {
       cdir = ((NRTCachingDirectory)dir).getDelegate();
-    }
-    if (dir instanceof TrackingDirectoryWrapper) {
+    } else if (dir instanceof TrackingDirectoryWrapper) {
       cdir = ((TrackingDirectoryWrapper)dir).getDelegate();
     }
     return cdir;

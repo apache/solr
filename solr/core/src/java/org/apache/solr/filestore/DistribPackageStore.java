@@ -581,10 +581,7 @@ public class DistribPackageStore implements PackageStore {
    */
   public static void _persistToFile(Path solrHome, String path, ByteBuffer data, ByteBuffer meta) throws IOException {
     Path realpath = _getRealPath(path, solrHome);
-    Path parent = realpath.getParent();
-    if (!Files.exists(parent)) {
-      Files.createDirectories(realpath.getParent());
-    }
+    Files.createDirectories(realpath.getParent());
     @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
     if (m == null || m.isEmpty()) {

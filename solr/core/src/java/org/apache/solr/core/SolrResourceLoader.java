@@ -923,11 +923,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     // Persist locally
     Path confFile = loader.getConfigPath().resolve(resourceName);
     try {
-      Path parentDir = confFile.getParent();
-      if (!Files.isDirectory(parentDir)) {
-        Files.createDirectories(parentDir);
-      }
-
+      Files.createDirectories(confFile.getParent());
       Files.write(confFile, content);
       log.info("Written conf file {}", resourceName);
     } catch (IOException e) {

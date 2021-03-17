@@ -125,7 +125,7 @@ public class CloudUtil {
   public static String unifiedResourcePath(SolrResourceLoader loader) {
     return (loader instanceof ZkSolrResourceLoader) ?
             ((ZkSolrResourceLoader) loader).getConfigSetZkPath() + "/" :
-            loader.getConfigPath().toString() + File.separator;
+            loader.getConfigPath() + "/";
   }
 
   /**Read the list of public keys from ZK
