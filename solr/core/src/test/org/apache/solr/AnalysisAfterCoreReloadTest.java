@@ -34,6 +34,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   private static String tmpSolrHome;
@@ -127,16 +129,13 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     Path configPath;
-    String configDir;
     try (SolrCore core = h.getCoreContainer().getCore(collection)) {
       configPath = core.getResourceLoader().getConfigPath();
     }
     super.tearDown();
     Path backupFile = configPath.resolve("stopwords.txt.bak");
     if (Files.exists(backupFile)) {
-      Path stopwordsFile = configPath.resolve("stopwords.txt");
-      Files.delete(stopwordsFile);
-      Files.move(backupFile, stopwordsFile);
+      Files.move(backupFile, configPath.resolve("stopwords.txt"), REPLACE_EXISTING);
     }
   }
 
