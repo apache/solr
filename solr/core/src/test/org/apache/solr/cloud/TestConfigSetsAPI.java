@@ -121,7 +121,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     configureCluster(1)
             .withSecurityJson(getSecurityJson())
             .configure();
-    configSetService = cluster.getOpenOverseer().getCoreContainer().getConfigSetService();
+    configSetService = cluster.getCoreContainer().getConfigSetService();
   }
 
   @AfterClass
