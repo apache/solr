@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -43,9 +42,9 @@ public class FileSystemConfigSetService extends ConfigSetService {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private final Path configSetBase;
 
-    public FileSystemConfigSetService(SolrResourceLoader loader, boolean shareSchema, Path configSetBase) {
-        super(loader, shareSchema);
-        this.configSetBase = configSetBase;
+    public FileSystemConfigSetService(CoreContainer cc) {
+        super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
+        this.configSetBase = cc.getConfig().getConfigSetBaseDirectory();
     }
 
     @Override
@@ -58,11 +57,6 @@ public class FileSystemConfigSetService extends ConfigSetService {
     @Override
     public String configSetName(CoreDescriptor cd) {
         return (cd.getConfigSet() == null ? "instancedir " : "configset ") + locateInstanceDir(cd);
-    }
-
-    @Override
-    public boolean checkConfigExists(String configName) throws IOException {
-        return listConfigs().contains(configName);
     }
 
     @Override
@@ -93,8 +87,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     @Override
     public List<String> listConfigs() throws IOException {
         List<String> configs = Files.list(configSetBase)
-                .map(Path::toFile)
-                .map(File::getName)
+                .map(Path::toString)
                 .collect(Collectors.toList());
         return configs;
     }

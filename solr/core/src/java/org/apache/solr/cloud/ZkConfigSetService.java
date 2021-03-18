@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -27,7 +28,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
@@ -37,9 +37,12 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -57,15 +60,20 @@ public class ZkConfigSetService extends ConfigSetService {
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
 
-  public ZkConfigSetService(SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
-    super(loader, shareSchema);
-    this.zkController = zkController;
-    this.zkClient = zkController.getZkClient();
+  public ZkConfigSetService(CoreContainer cc) {
+    super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
+    this.zkController = cc.getZkController();
+    this.zkClient = cc.getZkController().getZkClient();
+    try {
+      bootstrapDefaultConfigSet();
+    } catch (IOException e) {
+      log.error("Error in bootstrapping default config");
+    }
   }
 
-  @VisibleForTesting
-  public ZkConfigSetService(SolrResourceLoader loader, boolean shareSchema, SolrZkClient zkClient) {
-    super(loader, shareSchema);
+  /** This is for ZkCLI and some tests */
+  public ZkConfigSetService(SolrZkClient zkClient) {
+    super(null, false);
     this.zkController = null;
     this.zkClient = zkClient;
   }
@@ -192,6 +200,55 @@ public class ZkConfigSetService extends ConfigSetService {
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error listing configs", SolrZkClient.checkInterrupted(e));
     }
+  }
+
+  private void bootstrapDefaultConfigSet() throws IOException {
+    if (this.checkConfigExists("_default") == false) {
+      String configDirPath = getDefaultConfigDirPath();
+      if (configDirPath == null) {
+        log.warn(
+            "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
+            "intended to be the default. Current 'solr.default.confdir' value:",
+            System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+      } else {
+        this.uploadConfigDir(Paths.get(configDirPath), ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
+      }
+    }
+  }
+
+  /**
+   * Gets the absolute filesystem path of the _default configset to bootstrap from. First tries the
+   * sysprop "solr.default.confdir". If not found, tries to find the _default dir relative to the
+   * sysprop "solr.install.dir". Returns null if not found anywhere.
+   *
+   * @lucene.internal
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   */
+  public static String getDefaultConfigDirPath() {
+    String configDirPath = null;
+    String serverSubPath =
+        "solr"
+            + File.separator
+            + "configsets"
+            + File.separator
+            + "_default"
+            + File.separator
+            + "conf";
+    String subPath = File.separator + "server" + File.separator + serverSubPath;
+    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null
+        && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
+            .exists()) {
+      configDirPath =
+          new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
+              .getAbsolutePath();
+    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null
+        && new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
+            .exists()) {
+      configDirPath =
+          new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
+              .getAbsolutePath();
+    }
+    return configDirPath;
   }
 
   // This method is used by configSetUploadTool and CreateTool to resolve the configset directory.

@@ -34,7 +34,12 @@ import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -157,7 +162,7 @@ public class ZkContainer {
         }
 
         if(boostrapConf) {
-          ZkController.bootstrapConf(cc);
+          ConfigSetService.bootstrapConf(cc);
         }
 
         this.zkController = zkController;

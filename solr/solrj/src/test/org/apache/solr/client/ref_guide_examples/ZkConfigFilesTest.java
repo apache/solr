@@ -36,13 +36,14 @@ import org.junit.Test;
  */
 public class ZkConfigFilesTest extends SolrCloudTestCase {
 
-  private static ConfigSetService configSetService;
-
   @BeforeClass
   public static void setUpCluster() throws Exception {
     configureCluster(1)
         .configure();
-    configSetService = cluster.getCoreContainer().getConfigSetService();
+  }
+
+  private static ConfigSetService getConfigSetService() {
+    return cluster.getOpenOverseer().getCoreContainer().getConfigSetService();
   }
 
   @Before
@@ -53,13 +54,12 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   @After
   public void clearConfigsAfter() throws Exception {
     clearConfigs();
-    configSetService = null;
   }
 
   private void clearConfigs() throws Exception {
-    List<String> configs = configSetService.listConfigs();
+    List<String> configs = getConfigSetService().listConfigs();
     for (String config : configs) {
-      configSetService.deleteConfigDir(config);
+      getConfigSetService().deleteConfigDir(config);
     }
   }
 
@@ -70,7 +70,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
     assertConfigsContainOnly();
 
     // tag::zk-configset-upload[]
-    configSetService.uploadConfigDir(Paths.get(localConfigSetDirectory), "nameForConfigset");
+    getConfigSetService().uploadConfigDir(Paths.get(localConfigSetDirectory), "nameForConfigset");
     // end::zk-configset-upload[]
 
     assertConfigsContainOnly("nameForConfigset");
@@ -79,7 +79,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   private void assertConfigsContainOnly(String... expectedConfigs) throws Exception {
     final int expectedSize = expectedConfigs.length;
 
-    List<String> actualConfigs = configSetService.listConfigs();
+    List<String> actualConfigs = getConfigSetService().listConfigs();
 
     assertEquals(expectedSize, actualConfigs.size());
     for (String expectedConfig : expectedConfigs) {

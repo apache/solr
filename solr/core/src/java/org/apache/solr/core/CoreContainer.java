@@ -2041,6 +2041,10 @@ public class CoreContainer {
     return this.coreConfigService;
   }
 
+  public void setCoreConfigService(ConfigSetService configSetService) {
+    this.coreConfigService = configSetService;
+  }
+
   public String getHostName() {
     return this.hostName;
   }

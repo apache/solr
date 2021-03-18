@@ -21,7 +21,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.core.ConfigSetService;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -68,10 +67,9 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
   public void testUploadConfig() throws IOException {
 
     zkServer.ensurePathExists("/solr");
-    SolrResourceLoader loader = new SolrResourceLoader(createTempDir());
 
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000)) {
-      ConfigSetService configSetService = new ZkConfigSetService(loader, false, zkClient);
+      ConfigSetService configSetService = new ZkConfigSetService(zkClient);
 
       assertEquals(0, configSetService.listConfigs().size());
 
@@ -177,17 +175,16 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     Path configPath = createTempDir("acl-config");
     Files.createFile(configPath.resolve("file1"));
 
-    SolrResourceLoader loader = new SolrResourceLoader(createTempDir());
     // Start with all-access client
     try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
-      ConfigSetService configSetService = new ZkConfigSetService(loader, false, client);
+      ConfigSetService configSetService = new ZkConfigSetService(client);
       configSetService.uploadConfigDir(configPath, "acltest");
       assertEquals(1, configSetService.listConfigs().size());
     }
 
     // Readonly access client can get the list of configs, but can't upload
     try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
-      ConfigSetService configSetService = new ZkConfigSetService(loader, false, client);
+      ConfigSetService configSetService = new ZkConfigSetService(client);
       assertEquals(1, configSetService.listConfigs().size());
       configSetService.uploadConfigDir(configPath, "acltest2");
       fail ("Should have thrown an ACL exception");
@@ -198,7 +195,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
     // Client with no auth whatsoever can't even get the list of configs
     try (SolrZkClient client = new SolrZkClient(zkServer.getZkAddress("/acl"), 10000)) {
-      ConfigSetService configSetService = new ZkConfigSetService(loader, false, client);
+      ConfigSetService configSetService = new ZkConfigSetService(client);
       configSetService.listConfigs();
       fail("Should have thrown an ACL exception");
     }

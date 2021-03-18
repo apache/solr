@@ -31,6 +31,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -72,9 +73,9 @@ public abstract class ConfigSetService {
         throw new RuntimeException("create configSetService instance faild,configSetServiceClass:" + configSetServiceClass, e);
       }
     }else if(zkController == null){
-      return new FileSystemConfigSetService(loader, nodeConfig.hasSchemaCache(), nodeConfig.getConfigSetBaseDirectory());
+      return new FileSystemConfigSetService(coreContainer);
     }else{
-      return new ZkConfigSetService(loader, nodeConfig.hasSchemaCache(), zkController);
+      return new ZkConfigSetService(coreContainer);
     }
 
   }
@@ -83,6 +84,28 @@ public abstract class ConfigSetService {
 
   /** Optional cache of schemas, key'ed by a bunch of concatenated things */
   private final Cache<String, IndexSchema> schemaCache;
+
+  /** If in SolrCloud mode, upload config sets for each SolrCore in solr.xml. */
+  public static void bootstrapConf(CoreContainer cc) throws IOException {
+    // List<String> allCoreNames = cfg.getAllCoreNames();
+    List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
+
+    if (log.isInfoEnabled()) {
+      log.info(
+          "bootstrapping config for {} cores into ZooKeeper using solr.xml from {}",
+          cds.size(),
+          cc.getSolrHome());
+    }
+
+    for (CoreDescriptor cd : cds) {
+      String coreName = cd.getName();
+      String confName = cd.getCollectionName();
+      if (StringUtils.isEmpty(confName)) confName = coreName;
+      Path udir = cd.getInstanceDir().resolve("conf");
+      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
+      cc.getConfigSetService().uploadConfigDir(udir, confName);
+    }
+  }
 
   /**
    * Load the ConfigSet for a core
@@ -221,7 +244,9 @@ public abstract class ConfigSetService {
    * @return whether the config exists or not
    * @throws IOException if an I/O error occurs
    */
-  public abstract boolean checkConfigExists(String configName) throws IOException;
+  public boolean checkConfigExists(String configName) throws IOException {
+    return listConfigs().contains(configName);
+  }
 
   /**
    * Delete a config

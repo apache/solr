@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
@@ -25,8 +24,6 @@ import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,7 +48,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -79,16 +75,13 @@ import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CloudConfig;
-import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -864,47 +857,9 @@ public class ZkController implements Closeable {
     cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
   }
 
-  private static void bootstrapDefaultConfigSet(ConfigSetService configSetService) throws KeeperException, InterruptedException, IOException {
-    if (configSetService.checkConfigExists("_default") == false) {
-      String configDirPath = getDefaultConfigDirPath();
-      if (configDirPath == null) {
-        log.warn("The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}"
-            , "intended to be the default. Current 'solr.default.confdir' value:"
-            , System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
-      } else {
-        configSetService.uploadConfigDir(Paths.get(configDirPath), ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
-      }
-    }
-  }
-
-  /**
-   * Gets the absolute filesystem path of the _default configset to bootstrap from.
-   * First tries the sysprop "solr.default.confdir". If not found, tries to find
-   * the _default dir relative to the sysprop "solr.install.dir".
-   * Returns null if not found anywhere.
-   *
-   * @lucene.internal
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
-   */
-  public static String getDefaultConfigDirPath() {
-    String configDirPath = null;
-    String serverSubPath = "solr" + File.separator +
-        "configsets" + File.separator + "_default" +
-        File.separator + "conf";
-    String subPath = File.separator + "server" + File.separator + serverSubPath;
-    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE)).exists()) {
-      configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE)).getAbsolutePath();
-    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null &&
-        new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).exists()) {
-      configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).getAbsolutePath();
-    }
-    return configDirPath;
-  }
-
   private void init() {
     try {
       createClusterZkNodes(zkClient);
-      bootstrapDefaultConfigSet(cc.getConfigSetService());
       zkStateReader.createClusterStateWatchersAndUpdate();
 
       // this must happen after zkStateReader has initialized the cluster props
@@ -2000,28 +1955,6 @@ public class ZkController implements Closeable {
     // TODO: we should consider using version
     zkClient.setData(path, Utils.toJSON(props), true);
 
-  }
-
-  /**
-   * If in SolrCloud mode, upload config sets for each SolrCore in solr.xml.
-   */
-  public static void bootstrapConf(CoreContainer cc) throws IOException {
-    //List<String> allCoreNames = cfg.getAllCoreNames();
-    List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
-
-    if (log.isInfoEnabled()) {
-      log.info("bootstrapping config for {} cores into ZooKeeper using solr.xml from {}", cds.size(), cc.getSolrHome());
-    }
-
-    for (CoreDescriptor cd : cds) {
-      String coreName = cd.getName();
-      String confName = cd.getCollectionName();
-      if (StringUtils.isEmpty(confName))
-        confName = coreName;
-      Path udir = cd.getInstanceDir().resolve("conf");
-      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
-      cc.getConfigSetService().uploadConfigDir(udir, confName);
-    }
   }
 
   public ZkDistributedQueue getOverseerJobQueue() {

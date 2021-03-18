@@ -42,6 +42,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.CLIO;
 import org.apache.zookeeper.CreateMode;
@@ -206,13 +207,14 @@ public class ZkCLI implements CLIO {
           }
 
           CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+          cc.setCoreConfigService(new ZkConfigSetService(zkClient));
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
 
-          ZkController.bootstrapConf(cc);
+          ConfigSetService.bootstrapConf(cc);
 
           // No need to close the CoreContainer, as it wasn't started
           // up in the first place...
