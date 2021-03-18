@@ -64,7 +64,7 @@ import static org.hamcrest.core.StringContains.containsString;
 /**
  * Tests the in-place updates (docValues updates) for a standalone Solr instance.
  */
-public class TestInPlaceUpdatesFileSystemConfigSetService extends SolrTestCaseJ4 {
+public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   private static SolrClient client;
 
   @BeforeClass
@@ -1064,7 +1064,7 @@ public class TestInPlaceUpdatesFileSystemConfigSetService extends SolrTestCaseJ4
    * @param valField the field to model
    * @param commands A sequence of Commands which can either be SolrInputDocuments 
    *                 (regular or containing atomic update Maps)
-   *                 or one of the {@link TestInPlaceUpdatesFileSystemConfigSetService#HARDCOMMIT} or {@link TestInPlaceUpdatesFileSystemConfigSetService#SOFTCOMMIT} sentinal objects.
+   *                 or one of the {@link TestInPlaceUpdatesStandalone#HARDCOMMIT} or {@link TestInPlaceUpdatesStandalone#SOFTCOMMIT} sentinal objects.
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void checkReplay(final String valField, Object... commands) throws Exception {

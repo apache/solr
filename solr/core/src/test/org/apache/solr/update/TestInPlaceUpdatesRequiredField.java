@@ -21,7 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.update.TestInPlaceUpdatesFileSystemConfigSetService.addAndAssertVersion;
+import static org.apache.solr.update.TestInPlaceUpdatesStandalone.addAndAssertVersion;
 
 public class TestInPlaceUpdatesRequiredField extends SolrTestCaseJ4  {
 

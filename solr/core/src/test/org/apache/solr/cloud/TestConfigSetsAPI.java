@@ -880,7 +880,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private long uploadConfigSet(String configSetName, String suffix, String username,
                                SolrZkClient zkClient, boolean v2) throws IOException {
-    assertFalse(cluster.getJettySolrRunners().get(0).getCoreContainer().getConfigSetService().checkConfigExists(configSetName + suffix));
+    assertFalse(configSetService.checkConfigExists(configSetName + suffix));
     return uploadConfigSet(configSetName, suffix, username, false, false, v2);
   }
 

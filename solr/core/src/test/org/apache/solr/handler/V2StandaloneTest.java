@@ -27,7 +27,7 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
-public class V2FileSystemConfigSetServiceTest extends SolrTestCaseJ4{
+public class V2StandaloneTest extends SolrTestCaseJ4{
 
   @Test
   public void testWelcomeMessage() throws Exception {
