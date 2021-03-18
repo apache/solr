@@ -51,7 +51,7 @@ public class PerReplicaStatesOps {
     /**
      * Persist a set of operations to Zookeeper
      */
-    private static void persist(List<PerReplicaStates.Operation> operations, String znode, SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    private void persist(List<PerReplicaStates.Operation> operations, String znode, SolrZkClient zkClient) throws KeeperException, InterruptedException {
         if (operations == null || operations.isEmpty()) return;
         if (log.isDebugEnabled()) {
             log.debug("Per-replica state being persisted for : '{}', ops: {}", znode, operations);
@@ -65,7 +65,13 @@ public class PerReplicaStatesOps {
                     Op.create(path, null, zkClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT) :
                     Op.delete(path, -1));
         }
-        zkClient.multi(ops, true);
+        try {
+            zkClient.multi(ops, true);
+        } catch (KeeperException e) {
+          log.error("Multi-op exception: {}", zkClient.getChildren(znode, null, true));
+          throw e;
+        }
+
     }
 
     /**

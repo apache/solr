@@ -79,9 +79,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   
   @Override
   public String normalize(String path) throws IOException {
-    String cpath = Path.of(path).toAbsolutePath().normalize().toString();
-
-    return super.normalize(cpath);
+    return super.normalize(Path.of(path).toRealPath().toString());
   }
 
   public boolean isPersistent() {
