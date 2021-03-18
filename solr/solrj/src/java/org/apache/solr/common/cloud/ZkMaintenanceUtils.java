@@ -26,7 +26,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -357,18 +360,6 @@ public class ZkMaintenanceUtils {
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error downloading files from zookeeper path " + zkPath + " to " + file.toString(),
           SolrZkClient.checkInterrupted(e));
-    }
-  }
-
-  public static List<String> listConfigs(SolrZkClient zkClient) throws IOException {
-    try {
-      return zkClient.getChildren(CONFIGS_ZKNODE, null, true);
-    }
-    catch (KeeperException.NoNodeException e) {
-      return Collections.emptyList();
-    }
-    catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error listing configs", SolrZkClient.checkInterrupted(e));
     }
   }
 

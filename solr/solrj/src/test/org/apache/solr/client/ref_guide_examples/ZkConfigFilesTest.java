@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
@@ -54,6 +53,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   @After
   public void clearConfigsAfter() throws Exception {
     clearConfigs();
+    configSetService = null;
   }
 
   private void clearConfigs() throws Exception {
@@ -79,7 +79,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   private void assertConfigsContainOnly(String... expectedConfigs) throws Exception {
     final int expectedSize = expectedConfigs.length;
 
-    List<String> actualConfigs = ZkMaintenanceUtils.listConfigs(cluster.getZkClient());
+    List<String> actualConfigs = configSetService.listConfigs();
 
     assertEquals(expectedSize, actualConfigs.size());
     for (String expectedConfig : expectedConfigs) {

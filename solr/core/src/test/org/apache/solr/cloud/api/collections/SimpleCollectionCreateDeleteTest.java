@@ -20,7 +20,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.OverseerCollectionConfigSetProcessor;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
@@ -114,7 +113,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
             // config for this collection is '.AUTOCREATED', and exists globally
             assertTrue(configName.endsWith(".AUTOCREATED"));
-            assertTrue(ZkMaintenanceUtils.listConfigs(cloudClient.getZkStateReader().getZkClient()).contains(configName));
+            assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
 
             CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(collectionName);
             cloudClient.request(delete);
@@ -122,7 +121,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
             // collection has been deleted
             assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
             // ... and so has its autocreated config set
-            assertFalse("The auto-created config set should have been deleted with its collection", ZkMaintenanceUtils.listConfigs(cloudClient.getZkStateReader().getZkClient()).contains(configName));
+            assertFalse("The auto-created config set should have been deleted with its collection", cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
         }
     }
 
@@ -142,7 +141,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
             // config for this collection is '.AUTOCREATED', and exists globally
             assertTrue(configName.endsWith(".AUTOCREATED"));
-            assertTrue(ZkMaintenanceUtils.listConfigs(cloudClient.getZkStateReader().getZkClient()).contains(configName));
+            assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
 
             // create a second collection, sharing the same configSet
             String collectionNameWithSharedConfig = "SimpleCollectionCreateDeleteTest.collectionSharingAutocreatedConfigSet";
@@ -163,7 +162,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
             // initial collection has been deleted
             assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial, false));
             // ... but not its autocreated config set, since it is shared with another collection
-            assertTrue("The auto-created config set should NOT have been deleted. Another collection is using it.", ZkMaintenanceUtils.listConfigs(cloudClient.getZkStateReader().getZkClient()).contains(configName));
+            assertTrue("The auto-created config set should NOT have been deleted. Another collection is using it.", cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
 
             // delete the second collection - the config set should now be deleted, since it is no longer shared any other collection
             CollectionAdminRequest.Delete deleteSecondCollection = CollectionAdminRequest.deleteCollection(collectionNameWithSharedConfig);
@@ -172,7 +171,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
             // the collection has been deleted
             assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig, false));
             // ... and the config set is now also deleted - once it doesn't get referenced by any collection
-            assertFalse("The auto-created config set should have been deleted now. No collection is referencing it.", ZkMaintenanceUtils.listConfigs(cloudClient.getZkStateReader().getZkClient()).contains(configName));
+            assertFalse("The auto-created config set should have been deleted now. No collection is referencing it.", cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
         }
     }
 
