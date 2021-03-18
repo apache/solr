@@ -299,12 +299,12 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
     String baseConfigSetName = message.getStr(BASE_CONFIGSET, DEFAULT_CONFIGSET_NAME);
 
-    if (cc.getConfigSetService().configExists(configSetName)) {
+    if (cc.getConfigSetService().checkConfigExists(configSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + configSetName);
     }
 
     // is there a base config that already exists
-    if (!cc.getConfigSetService().configExists(baseConfigSetName)) {
+    if (!cc.getConfigSetService().checkConfigExists(baseConfigSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "Base ConfigSet does not exist: " + baseConfigSetName);
     }
@@ -341,7 +341,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       // the entire baseConfig set with the old properties, including immutable,
       // that would make it impossible for the user to delete.
       try {
-        if (cc.getConfigSetService().configExists(configSetName) && copiedToZkPaths.size() > 0) {
+        if (cc.getConfigSetService().checkConfigExists(configSetName) && copiedToZkPaths.size() > 0) {
           deleteConfigSet(configSetName, true);
         }
       } catch (IOException ioe) {
@@ -361,7 +361,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   private void deleteConfigSet(String configSetName, boolean force) throws IOException {
-    if (!cc.getConfigSetService().configExists(configSetName)) {
+    if (!cc.getConfigSetService().checkConfigExists(configSetName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet does not exist to delete: " + configSetName);
     }
 

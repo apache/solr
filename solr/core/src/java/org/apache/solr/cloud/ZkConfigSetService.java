@@ -133,7 +133,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public Boolean configExists(String configName) throws IOException {
+  public boolean checkConfigExists(String configName) throws IOException {
     try {
       return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
     } catch (KeeperException | InterruptedException e) {
@@ -173,11 +173,6 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public void uploadConfigDir(Path dir, String configName) throws IOException {
     zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
-  }
-
-  @Override
-  public void uploadConfigDir(Path dir, String configName, Pattern filenameExclusions) throws IOException {
-    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
   }
 
   @Override

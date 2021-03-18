@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -24,7 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
@@ -60,43 +61,42 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
 
     @Override
-    public Boolean configExists(String configName) throws IOException {
-        return null;
+    public boolean checkConfigExists(String configName) throws IOException {
+        return listConfigs().contains(configName);
     }
 
     @Override
     public void deleteConfigDir(String configName) throws IOException {
-
+        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
     }
 
     @Override
     public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
-
+        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
     }
 
     @Override
     public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
-
+        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
     }
 
     @Override
     public void uploadConfigDir(Path dir, String configName) throws IOException {
-
-    }
-
-    @Override
-    public void uploadConfigDir(Path dir, String configName, Pattern filenameExclusions) throws IOException {
-
+        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
     }
 
     @Override
     public void downloadConfigDir(String configName, Path dir) throws IOException {
-
+        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
     }
 
     @Override
     public List<String> listConfigs() throws IOException {
-        return null;
+        List<String> configs = Files.list(configSetBase)
+                .map(Path::toFile)
+                .map(File::getName)
+                .collect(Collectors.toList());
+        return configs;
     }
 
     protected Path locateInstanceDir(CoreDescriptor cd) {

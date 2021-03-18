@@ -423,12 +423,12 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
           throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
         }
 
-        if (h.coreContainer.getConfigSetService().configExists(newConfigSetName)) {
+        if (h.coreContainer.getConfigSetService().checkConfigExists(newConfigSetName)) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + newConfigSetName);
         }
 
         // is there a base config that already exists
-        if (!h.coreContainer.getConfigSetService().configExists(baseConfigSetName)) {
+        if (!h.coreContainer.getConfigSetService().checkConfigExists(baseConfigSetName)) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
                   "Base ConfigSet does not exist: " + baseConfigSetName);
         }

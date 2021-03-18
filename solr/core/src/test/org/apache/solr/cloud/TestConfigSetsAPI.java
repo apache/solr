@@ -241,11 +241,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
               AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
       try {
-        assertFalse(configSetService.configExists(configSetName));
+        assertFalse(configSetService.checkConfigExists(configSetName));
 
         ConfigSetAdminResponse response = createConfigSet(baseConfigSetName, configSetName, newProps, solrClient, username);
         assertNotNull(response.getResponse());
-        assertTrue(configSetService.configExists(configSetName));
+        assertTrue(configSetService.checkConfigExists(configSetName));
 
         verifyProperties(configSetName, oldProps, newProps, zkClient);
       } finally {
@@ -880,7 +880,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private long uploadConfigSet(String configSetName, String suffix, String username,
                                SolrZkClient zkClient, boolean v2) throws IOException {
-    assertFalse(cluster.getJettySolrRunners().get(0).getCoreContainer().getConfigSetService().configExists(configSetName + suffix));
+    assertFalse(cluster.getJettySolrRunners().get(0).getCoreContainer().getConfigSetService().checkConfigExists(configSetName + suffix));
     return uploadConfigSet(configSetName, suffix, username, false, false, v2);
   }
 
@@ -1152,13 +1152,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
-      assertTrue(configSetService.configExists(configSet));
+      assertTrue(configSetService.checkConfigExists(configSet));
 
       Delete delete = new Delete();
       delete.setConfigSetName(configSet);
       ConfigSetAdminResponse response = delete.process(solrClient);
       assertNotNull(response.getResponse());
-      assertFalse(configSetService.configExists(configSet));
+      assertFalse(configSetService.checkConfigExists(configSet));
     } finally {
       zkClient.close();
     }

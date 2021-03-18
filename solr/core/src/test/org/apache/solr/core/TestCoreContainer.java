@@ -461,8 +461,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public Boolean configExists(String configName) throws IOException {
-      return null;
+    public boolean checkConfigExists(String configName) throws IOException {
+      return false;
     }
 
     @Override
@@ -482,11 +482,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     @Override
     public void uploadConfigDir(Path dir, String configName) throws IOException {
-
-    }
-
-    @Override
-    public void uploadConfigDir(Path dir, String configName, Pattern filenameExclusions) throws IOException {
 
     }
 

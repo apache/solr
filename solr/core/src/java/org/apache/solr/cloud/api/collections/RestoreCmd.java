@@ -275,7 +275,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     private void uploadConfig(String configName, String restoreConfigName, BackupManager backupMgr, CoreContainer container) throws IOException {
-      if (container.getConfigSetService().configExists(restoreConfigName)) {
+      if (container.getConfigSetService().checkConfigExists(restoreConfigName)) {
         log.info("Using existing config {}", restoreConfigName);
         //TODO add overwrite option?
       } else {

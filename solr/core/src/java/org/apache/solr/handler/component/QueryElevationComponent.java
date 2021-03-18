@@ -233,7 +233,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       ZkController zkController = core.getCoreContainer().getZkController();
       if (zkController != null) {
         // TODO : shouldn't have to keep reading the config name when it has been read before
-        configFileExists = zkController.getCoreContainer().getConfigSetService().configExists(configFileName);
+        configFileExists = zkController.getCoreContainer().getConfigSetService().checkConfigExists(configFileName);
       } else {
         File fC = new File(core.getResourceLoader().getConfigDir(), configFileName);
         File fD = new File(core.getDataDir(), configFileName);

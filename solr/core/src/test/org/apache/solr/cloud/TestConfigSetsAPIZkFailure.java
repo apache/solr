@@ -111,13 +111,13 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
 
-      assertFalse(solrCluster.getCoreContainer().getConfigSetService().configExists(CONFIGSET_NAME));
+      assertFalse(solrCluster.getCoreContainer().getConfigSetService().checkConfigExists(CONFIGSET_NAME));
 
       Create create = new Create();
       create.setBaseConfigSetName(BASE_CONFIGSET_NAME).setConfigSetName(CONFIGSET_NAME);
       RemoteSolrException se = expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
       // partial creation should have been cleaned up
-      assertFalse(solrCluster.getCoreContainer().getConfigSetService().configExists(CONFIGSET_NAME));
+      assertFalse(solrCluster.getCoreContainer().getConfigSetService().checkConfigExists(CONFIGSET_NAME));
       assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, se.code());
     } finally {
       zkClient.close();
