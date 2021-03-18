@@ -72,6 +72,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
@@ -233,6 +234,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       ZkController zkController = core.getCoreContainer().getZkController();
       if (zkController != null) {
         // TODO : shouldn't have to keep reading the config name when it has been read before
+        zkController.getZkClient().exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + zkController.getZkStateReader().readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()) + "/" + configFileName, null, true);
         configFileExists = zkController.getCoreContainer().getConfigSetService().checkConfigExists(configFileName);
       } else {
         File fC = new File(core.getResourceLoader().getConfigDir(), configFileName);

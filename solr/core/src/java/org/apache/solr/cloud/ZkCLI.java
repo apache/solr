@@ -212,7 +212,7 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
 
-          ZkController.bootstrapConf(zkClient, cc);
+          ZkController.bootstrapConf(cc);
 
           // No need to close the CoreContainer, as it wasn't started
           // up in the first place...

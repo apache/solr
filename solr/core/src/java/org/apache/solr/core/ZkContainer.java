@@ -157,7 +157,7 @@ public class ZkContainer {
         }
 
         if(boostrapConf) {
-          ZkController.bootstrapConf(zkController.getZkClient(), cc);
+          ZkController.bootstrapConf(cc);
         }
 
         this.zkController = zkController;
