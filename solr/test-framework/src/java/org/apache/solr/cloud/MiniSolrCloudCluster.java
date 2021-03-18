@@ -743,7 +743,12 @@ public class MiniSolrCloudCluster {
 
     return getOpenOverseer(overseers);
   }
-  
+
+  public CoreContainer getCoreContainer() {
+    Overseer overseer = getOpenOverseer();
+    return overseer.getCoreContainer();
+  }
+
   public static Overseer getOpenOverseer(List<Overseer> overseers) {
     ArrayList<Overseer> shuffledOverseers = new ArrayList<Overseer>(overseers);
     Collections.shuffle(shuffledOverseers, LuceneTestCase.random());

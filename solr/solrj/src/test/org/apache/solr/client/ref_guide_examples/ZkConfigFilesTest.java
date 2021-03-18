@@ -42,7 +42,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   public static void setUpCluster() throws Exception {
     configureCluster(1)
         .configure();
-    configSetService = cluster.getOpenOverseer().getCoreContainer().getConfigSetService();
+    configSetService = cluster.getCoreContainer().getConfigSetService();
   }
 
   @Before
