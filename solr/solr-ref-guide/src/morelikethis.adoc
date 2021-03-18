@@ -170,9 +170,14 @@ Adds a section in the response that shows the top terms (based on TF/IDF) used f
 It supports three possible values:
 +
 * `list` lists the terms.
-* `none` lists no terms.
+* `none` lists no terms (the default).
 * `details` lists the terms along with the boost value used for each term.
 Unless `mlt.boost=true`, all terms will have `boost=1.0`.
+
++
+To use this parameter with the <<MoreLikeThis Search Component,search component>>, the query cannot be distributed.
+In order to get interesting terms, the query must be sent to a single shard and limited to that shard only (with the <<distributed-requests.adoc#limiting-which-shards-are-queried,`shards`>> parameter).
+Multi-shard support is, however, available with the MoreLikeThis request handler.
 
 === MoreLikeThis Request Handler
 
