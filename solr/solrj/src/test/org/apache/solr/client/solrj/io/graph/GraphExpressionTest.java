@@ -23,10 +23,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -126,10 +124,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("shortestPath", ShortestPathStream.class);
 
-    @SuppressWarnings({"rawtypes"})
-    Map params = new HashMap();
-    params.put("fq", "predicate_s:knows");
-
     stream = (ShortestPathStream)factory.constructStream("shortestPath(collection1, " +
         "from=\"jim\", " +
         "to=\"steve\"," +
@@ -153,8 +147,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
 
     //Test with batch size of 1
-
-    params.put("fq", "predicate_s:knows");
 
     stream = (ShortestPathStream)factory.constructStream("shortestPath(collection1, " +
         "from=\"jim\", " +
@@ -213,13 +205,12 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 0);
 
     //Take out alex
-    params.put("fq", "predicate_s:knows NOT to_s:alex");
 
     stream = (ShortestPathStream)factory.constructStream("shortestPath(collection1, " +
         "from=\"jim\", " +
         "to=\"steve\"," +
         "edge=\"from_s=to_s\"," +
-        "fq=\" predicate_s:knows NOT to_s:alex\","+
+        "fq=\"predicate_s:knows NOT to_s:alex\","+
         "threads=\"3\","+
         "partitionSize=\"3\","+
         "maxDepth=\"6\")");
