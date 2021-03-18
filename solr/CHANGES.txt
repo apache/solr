@@ -95,6 +95,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   Software doing lots of XML processing can choose to add it or alternatives if they wish.
   (David Smiley)
 
+* SOLR-15203: remove deprecated parameter name jwkUrl in favour of jwksUrl for the JWK Url. (Eric Pugh)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -268,7 +270,7 @@ Improvements
 * SOLR-15191: Enhance hash method of JSON faceting to support EnumFieldType and perhaps some other/custom field types
   too. (Thomas Wöckinger, David Smiley)
 
-* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)  
+* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)
 
 * SOLR-15154: Let Http2SolrClient pass Basic Auth credentials to all requests (Tomás Fernández Löbbe)
 
