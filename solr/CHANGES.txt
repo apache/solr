@@ -98,6 +98,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15161: Don't encourage users to hack JSON response mimetype by documenting in examples how to
   specify wt=json use mimetype of text/plain.  (Eric Pugh)
 
+* SOLR-15203: remove deprecated parameter name jwkUrl in favour of jwksUrl for the JWK Url. (Eric Pugh)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
