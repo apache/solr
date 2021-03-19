@@ -20,15 +20,6 @@ allprojects {
 
   group "org.apache"
 
-  // Repositories to fetch dependencies from.
-  repositories {
-    mavenCentral()
-    maven {
-      name "ApacheSnapshots"
-      url 'https://repository.apache.org/content/repositories/snapshots/'
-    }
-  }
-
   // Artifacts will have names after full gradle project path
   // so :solr:core will have solr-core.jar, etc.
   project.archivesBaseName = project.path.replaceAll("^:", "").replace(':', '-')
@@ -75,6 +66,15 @@ allprojects {
           dummyOutput.createNewFile()
         }
       }
+    }
+  }
+
+  // Repositories to fetch dependencies from.
+  repositories {
+    mavenCentral()
+    maven {
+      name "ApacheSnapshots"
+      url propertyOrDefault('apache-snapshot-repo', 'https://repository.apache.org/content/repositories/snapshots/')
     }
   }
 }
