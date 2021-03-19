@@ -15,37 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.ref_guide_examples;
+package org.apache.solr.util;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
+import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.List;
 
+import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
 import org.junit.BeforeClass;
 
-/**
- * Example SolrJ usage for indexing nested documents
- *
- * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
- */
-public class IndexingNestedDocuments extends SolrCloudTestCase {
+@SolrTestCaseJ4.SuppressSSL
+public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
+  
   public static final String ANON_KIDS_CONFIG = "anon_kids_configset";
   public static final String NESTED_KIDS_CONFIG = "nested_kids_configset";
   @BeforeClass
   public static void setupCluster() throws Exception {
-    Path solrJConfigsets = getFile("solrj").toPath().resolve("solr/configsets");
     configureCluster(1)
-      .addConfig(ANON_KIDS_CONFIG, solrJConfigsets.resolve("nested/anonymous/conf"))
-      .addConfig(NESTED_KIDS_CONFIG, solrJConfigsets.resolve("nested/regular/conf"))
+      .addConfig(ANON_KIDS_CONFIG, configset("nested/anonymous"))
+      .addConfig(NESTED_KIDS_CONFIG, configset("nested/regular"))
       .configure();
   }
 
@@ -55,15 +49,9 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
   }
 
   /**
-   * Syntactic sugar so code snippet doesn't refer to test-framework specific method name 
-   */
-  public static SolrClient getSolrClient() {
-    return cluster.getSolrClient();
-  }
-
-  /**
-   * Demo of using anonymous children when indexing hierarchical documents.
-   * This test code is used as an 'include' from the ref-guide
+   * This test is inspired by the IndexingNestedDocuments.java unit test that 
+   * demonstrates creating Anonymous Children docs, and then confirming the
+   * export format.
    */
   public void testIndexingAnonKids() throws Exception {
     final String collection = "test_anon";
@@ -72,13 +60,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection(collection);
     
-    //
-    // DO NOT MODIFY THESE EXAMPLE DOCS WITH OUT MAKING THE SAME CHANGES TO THE JSON AND XML
-    // EQUIVILENT EXAMPLES IN 'indexing-nested-documents.adoc'
-    //
-
-    // tag::anon-kids[]
-    final SolrClient client = getSolrClient();
+    final SolrClient client = cluster.getSolrClient();
 
     final SolrInputDocument p1 = new SolrInputDocument();
     p1.setField("id", "P11!prod");
@@ -126,32 +108,39 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     }
     
     client.add(p1);
-    // end::anon-kids[]
-    
+ 
     client.commit();
 
-    final SolrDocumentList docs = getSolrClient().query
-      (new SolrQuery("description_t:Cadillac").set("fl", "*,[child parentFilter='type_s:PRODUCT']")).getResults();
+    String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + collection;
     
-    assertEquals(1, docs.getNumFound());
-    assertEquals("P11!prod", docs.get(0).getFieldValue("id"));
-
-    // [child] returns a flat list of all (anon) descendents
-    assertEquals(5, docs.get(0).getChildDocumentCount());
-    assertEquals(5, docs.get(0).getChildDocuments().size());
-
-    // flat list is depth first...
-    final SolrDocument red_stapler_brochure = docs.get(0).getChildDocuments().get(0);
-    assertEquals("P11!D41", red_stapler_brochure.getFieldValue("id"));
+    String tmpFileLoc = new File(cluster.getBaseDir().toFile().getAbsolutePath() +
+        File.separator).getPath();
     
-    final SolrDocument red_stapler = docs.get(0).getChildDocuments().get(1);
-    assertEquals("P11!S21", red_stapler.getFieldValue("id"));
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
+    String absolutePath = tmpFileLoc + collection + random().nextInt(100000) + ".jsonl";
+    info.setOutFormat(absolutePath, "jsonl");
+    info.setLimit("-1");
+    info.query = "description_t:Cadillac";
+    info.fields = "*,[child parentFilter='type_s:PRODUCT']";
+    info.exportDocs();
+    
+    assertEquals(1, info.docsWritten.get());
+    
+    String jsonOutput = Files.readString(new File(info.out).toPath());
+    SolrTestCaseHS.matchJSON(jsonOutput, 
+        "//id=='P11!prod'", 
+        "//type_s==PRODUCT", 
+        "//name_s=='Swingline Stapler'",
+        "//id=='P11!prod'/_childDocuments_/[1]/id=='P11!D41'"
+        );
+        
 
   }
-  
+
   /**
-   * Demo of using <code>NestPath</code> related psuedo-fields when indexing hierarchical documents.
-   * This test code is used as an 'include' from the ref-guide
+   * This test is inspired by the IndexingNestedDocuments.java unit test that 
+   * demonstrates using <code>NestPath</code> related psuedo-fields when indexing hierarchical documents
+   * and then confirms the export format.
    */
   public void testIndexingUsingNestPath() throws Exception {
     final String collection = "test_anon";
@@ -159,14 +148,8 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
     .process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection(collection);
-    
-    //
-    // DO NOT MODIFY THESE EXAMPLE DOCS WITH OUT MAKING THE SAME CHANGES TO THE JSON AND XML
-    // EQUIVILENT EXAMPLES IN 'indexing-nested-documents.adoc'
-    //
-
-    // tag::nest-path[]
-    final SolrClient client = getSolrClient();
+   
+    final SolrClient client = cluster.getSolrClient();
 
     final SolrInputDocument p1 = new SolrInputDocument();
     p1.setField("id", "P11!prod");
@@ -213,7 +196,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     final SolrInputDocument p2 = new SolrInputDocument();
     p2.setField("id", "P22!prod");
     p2.setField("name_s", "Mont Blanc Fountain Pen");
-    p2.setField("description_t", "A Premium Writing Instrument ...");
+    p2.setField("description_t", "The Cadillac of Writing Instruments ...");
     {
       final SolrInputDocument s1 = new SolrInputDocument();
       s1.setField("id", "P22!S22");
@@ -247,35 +230,64 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     }
     
     client.add(Arrays.asList(p1, p2));
-    // end::nest-path[]
-    
+   
     client.commit();
 
-
-    // Now a quick sanity check that the nest path is working properly...
-
-    final SolrDocumentList docs = getSolrClient().query
-      (new SolrQuery("description_t:Writing").set("fl", "*,[child]")).getResults();
     
-    assertEquals(1, docs.getNumFound());
-    assertEquals("P22!prod", docs.get(0).getFieldValue("id"));
+    String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + collection;
     
-    assertEquals(1, docs.get(0).getFieldValues("manuals").size());
-    assertEquals(SolrDocument.class, docs.get(0).getFieldValues("manuals").iterator().next().getClass());
-
-    assertEquals(2, docs.get(0).getFieldValues("skus").size());
-    final List<Object> skus = new ArrayList<>(docs.get(0).getFieldValues("skus"));
+    String tmpFileLoc = new File(cluster.getBaseDir().toFile().getAbsolutePath() +
+        File.separator).getPath();
     
-    assertEquals(SolrDocument.class, skus.get(0).getClass());
-    assertEquals(SolrDocument.class, skus.get(1).getClass());
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
+    String absolutePath = tmpFileLoc + collection + random().nextInt(100000) + ".json";
+    info.setOutFormat(absolutePath, "json");
+    info.setLimit("-1");
+    info.query = "description_t:Cadillac";
+    info.fields = "*,[child]";
+    info.exportDocs();
     
-    final SolrDocument red_pen = (SolrDocument) skus.get(0);
-    assertEquals("P22!S22", red_pen.getFieldValue("id"));
-
-    assertEquals(1, red_pen.getFieldValues("manuals").size());
-    assertEquals(SolrDocument.class, red_pen.getFieldValues("manuals").iterator().next().getClass());
-
-    final SolrDocument red_pen_brochure = (SolrDocument) red_pen.getFieldValues("manuals").iterator().next();
-    assertEquals("P22!D42", red_pen_brochure.getFieldValue("id"));
-  }
+    assertEquals(2, info.docsWritten.get());
+    
+    String jsonOutput = Files.readString(new File(info.out).toPath());
+    
+    System.out.println(jsonOutput);
+    
+    assertTrue("Confirm we have an array of Solr docs", jsonOutput.startsWith("[{"));
+    assertTrue("Confirm we have an array of Solr docs", jsonOutput.endsWith("}\n]"));
+    
+    // Remove the JSON array brackets to feed into matchJSON method below.
+    jsonOutput = jsonOutput.substring(1);
+    jsonOutput = jsonOutput.substring(0, jsonOutput.length());
+    SolrTestCaseHS.matchJSON(jsonOutput, 
+        "//id=='P11!prod'", 
+        "//name_s=='Swingline Stapler'",
+        "//id=='P11!prod'/skus/[1]/id=='P11!S21'",
+        "//id=='P11!prod'/skus/[1]/manuals/[1]/id=='P11!D41'",
+        "//id=='P11!prod'/skus/[2]/id=='P11!S31'",
+        "//id=='P11!prod'/manuals/[1]/id=='P11!D51'"        
+        );
+    
+    info = new ExportTool.MultiThreadedRunner(url);
+    absolutePath = tmpFileLoc + collection + random().nextInt(100000) + ".jsonl";
+    info.setOutFormat(absolutePath, "jsonl");
+    info.setLimit("2");
+    info.query = "description_t:Cadillac";
+    info.fields = "*,[child]";
+    info.exportDocs();   
+    
+    long lines = Files.lines(new File(info.out).toPath()).count();
+    assertEquals(2, lines);
+    
+    // check first line for JSON completeness
+    jsonOutput = Files.readString(new File(info.out).toPath()).split("\\r?\\n")[0];
+    SolrTestCaseHS.matchJSON(jsonOutput, 
+        "//id=='P11!prod'", 
+        "//name_s=='Swingline Stapler'",
+        "//id=='P11!prod'/skus/[1]/id=='P11!S21'",
+        "//id=='P11!prod'/skus/[1]/manuals/[1]/id=='P11!D41'",
+        "//id=='P11!prod'/skus/[2]/id=='P11!S31'",
+        "//id=='P11!prod'/manuals/[1]/id=='P11!D51'"        
+        );    
+  }  
 }

@@ -79,6 +79,7 @@ import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.params.CommonParams.FL;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
+import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.Q;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
@@ -112,7 +113,7 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     public Info(String url) {
       setUrl(url);
-      setOutFormat(null, "jsonl");
+      setOutFormat(null, "json");
 
     }
 
@@ -129,23 +130,51 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
 
     public void setOutFormat(String out, String format) {
-      this.format = format;
-      if (format == null) format = "jsonl";
+      if (format == null) {
+        format = "json";
+      }      
       if (!formats.contains(format)) {
         throw new IllegalArgumentException("format must be one of :" + formats);
       }
+      this.format = format;
 
       this.out = out;
       if (this.out == null) {
-        this.out = JAVABIN.equals(format) ?
-            coll + ".javabin" :
-            coll + ".json";
+        this.out = coll + getOutExtension();
       }
 
     }
+    
+    String getOutExtension() {
+      String extension = null;
+      switch (format) {
+        case JAVABIN: 
+          extension = ".javabin";
+          break;
+        case JSON: 
+          extension = ".json";
+          break;
+        case "jsonl":
+          extension = ".jsonl";
+          break;
+      }
+      return extension;
+    }
 
     DocsSink getSink() {
-      return JAVABIN.equals(format) ? new JavabinSink(this) : new JsonSink(this);
+      DocsSink docSink = null;
+      switch (format) {
+        case JAVABIN: 
+          docSink = new JavabinSink(this);
+          break;
+        case JSON: 
+          docSink = new JsonSink(this);
+          break;
+        case "jsonl":
+          docSink = new JsonlSink(this);
+          break;
+      }
+      return docSink;
     }
 
     abstract void exportDocs() throws Exception;
@@ -177,7 +206,7 @@ public class ExportTool extends SolrCLI.ToolBase {
 
   }
 
-  static Set<String> formats = ImmutableSet.of(JAVABIN, "jsonl");
+  static Set<String> formats = ImmutableSet.of(JAVABIN, JSON, "jsonl");
 
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
@@ -249,6 +278,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     private CharArr charArr = new CharArr(1024 * 2);
     JSONWriter jsonWriter = new JSONWriter(charArr, -1);
     private Writer writer;
+    private boolean firstDoc = true;
 
     public JsonSink(Info info) {
       this.info = info;
@@ -257,7 +287,104 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
+      if(info.out.endsWith(".json.gz")) {
+        fos = new GZIPOutputStream(fos);
+      }    
+      if (info.bufferSize > 0) {
+        fos = new BufferedOutputStream(fos, info.bufferSize);
+      }
+      writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+      writer.append('[');
+
+    }
+
+    @Override
+    public void end() throws IOException {
+      writer.append(']');
+      writer.flush();
+      fos.flush();
+      fos.close();
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public synchronized void accept(SolrDocument doc) throws IOException {
+      charArr.reset();
+      int mapSize = doc._size();
+      if(doc.hasChildDocuments()) {
+        mapSize ++;
+      }
+      Map m = new LinkedHashMap(mapSize);
+      doc.forEach((s, field) -> {
+        if (s.equals("_version_") || s.equals("_root_")) return;
+        if (field instanceof List) {
+          if (((List) field).size() == 1) {
+            field = ((List) field).get(0);
+          }
+        }
+        field = constructDateStr(field);
+        if (field instanceof List) {
+          List list = (List) field;
+          if (hasdate(list)) {
+            ArrayList<Object> listCopy = new ArrayList<>(list.size());
+            for (Object o : list) listCopy.add(constructDateStr(o));
+            field = listCopy;
+          }
+        }
+        m.put(s, field);
+      });
+      if (doc.hasChildDocuments()) {
+        m.put("_childDocuments_", doc.getChildDocuments());
+      }
+
+     
+      if (firstDoc) {
+        firstDoc = false;
+      }
+      else {
+        writer.append(',');
+      }
+      jsonWriter.write(m);
+      writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());   
+      writer.append('\n');
+
+      super.accept(doc);
+    }
+
+    private boolean hasdate(@SuppressWarnings({"rawtypes"})List list) {
+      boolean hasDate = false;
+      for (Object o : list) {
+        if(o instanceof Date){
+          hasDate = true;
+          break;
+        }
+      }
+      return hasDate;
+    }
+
+    private Object constructDateStr(Object field) {
+      if (field instanceof Date) {
+        field = DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
+      }
+      return field;
+    }
+  }
+  
+  static class JsonlSink extends DocsSink {
+    private CharArr charArr = new CharArr(1024 * 2);
+    JSONWriter jsonWriter = new JSONWriter(charArr, -1);
+    private Writer writer;
+
+    public JsonlSink(Info info) {
+      this.info = info;
+    }
+
+    @Override
+    public void start() throws IOException {
+      fos = new FileOutputStream(info.out);
+      if(info.out.endsWith(".jsonl.gz")) {
+        fos = new GZIPOutputStream(fos);
+      }
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
@@ -276,9 +403,14 @@ public class ExportTool extends SolrCLI.ToolBase {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public synchronized void accept(SolrDocument doc) throws IOException {
       charArr.reset();
-      Map m = new LinkedHashMap(doc.size());
+      int mapSize = doc._size();
+      if(doc.hasChildDocuments()) {
+        mapSize ++;
+      }
+      Map m = new LinkedHashMap(mapSize);
+      
       doc.forEach((s, field) -> {
-        if (s.equals("_version_") || s.equals("_roor_")) return;
+        if (s.equals("_version_") || s.equals("_root_")) return;
         if (field instanceof List) {
           if (((List) field).size() == 1) {
             field = ((List) field).get(0);
@@ -295,6 +427,9 @@ public class ExportTool extends SolrCLI.ToolBase {
         }
         m.put(s, field);
       });
+      if (doc.hasChildDocuments()) {
+        m.put("_childDocuments_", doc.getChildDocuments());
+      }
       jsonWriter.write(m);
       writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
       writer.append('\n');
@@ -318,7 +453,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       }
       return field;
     }
-  }
+  }  
 
   static class JavabinSink extends DocsSink {
     JavaBinCodec codec;
@@ -330,7 +465,9 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
+      if(info.out.endsWith(".javabin.gz")) {
+        fos = new GZIPOutputStream(fos);
+      }
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
@@ -409,7 +546,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         addConsumer(consumerlatch);
         addProducers(m);
         if (output != null) {
-          output.println("NO: of shards : " + corehandlers.size());
+          output.println("Number of shards: " + corehandlers.size());
         }
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
         corehandlers.forEach((s, coreHandler) -> producerThreadpool.submit(() -> {
@@ -437,8 +574,8 @@ public class ExportTool extends SolrCLI.ToolBase {
             //ignore
           }
         }
-        System.out.println("\nTotal Docs exported: "+ (docsWritten.get() -1)+
-            ". Time taken: "+( (System.currentTimeMillis() - startTime)/1000) + "secs");
+        System.out.println("\nTotal Docs exported: "+ docsWritten.get() +
+            ". Time elapsed: "+( (System.currentTimeMillis() - startTime)/1000) + " seconds");
       }
     }
 
@@ -447,7 +584,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         Slice slice = entry.getValue();
         Replica replica = slice.getLeader();
         if (replica == null) replica = slice.getReplicas().iterator().next();// get a random replica
-        CoreHandler coreHandler = new CoreHandler(replica);
+        CoreHandler coreHandler = new CoreHandler(replica );
         corehandlers.put(replica.getCoreName(), coreHandler);
       }
     }
@@ -490,7 +627,7 @@ public class ExportTool extends SolrCLI.ToolBase {
           throws IOException, SolrServerException {
         HttpSolrClient client = new HttpSolrClient.Builder(baseurl).build();
         try {
-          expectedDocs = getDocCount(replica.getCoreName(), client);
+          expectedDocs = getDocCount(replica.getCoreName(), client, query);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(Q, query);
@@ -521,11 +658,11 @@ public class ExportTool extends SolrCLI.ToolBase {
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
                 if (output != null)
-                  output.println(StrUtils.formatString("\nExport complete for : {0}, docs : {1}", replica.getCoreName(), receivedDocs.get()));
+                  output.println(StrUtils.formatString("\nExport complete from shard {0}, core {1}, docs received: {2}", replica.getShard(),replica.getCoreName(), receivedDocs.get()));
                 if (expectedDocs != receivedDocs.get()) {
                   if (output != null) {
-                    output.println(StrUtils.formatString("Could not download all docs for core {0} , expected: {1} , actual",
-                        replica.getCoreName(), expectedDocs, receivedDocs));
+                    output.println(StrUtils.formatString("Could not download all docs from core {0}, docs expected: {1}, received: {2}",
+                        replica.getCoreName(), expectedDocs, receivedDocs.get()));
                     return false;
                   }
                 }
@@ -547,8 +684,8 @@ public class ExportTool extends SolrCLI.ToolBase {
   }
 
 
-  static long getDocCount(String coreName, HttpSolrClient client) throws SolrServerException, IOException {
-    SolrQuery q = new SolrQuery("*:*");
+  static long getDocCount(String coreName, HttpSolrClient client, String query) throws SolrServerException, IOException {
+    SolrQuery q = new SolrQuery(query);
     q.setRows(0);
     q.add("distrib", "false");
     GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET,

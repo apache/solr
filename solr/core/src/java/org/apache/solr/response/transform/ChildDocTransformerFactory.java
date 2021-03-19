@@ -16,8 +16,9 @@
  */
 package org.apache.solr.response.transform;
 
-import java.io.IOException;
+import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
+import java.io.IOException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -35,8 +36,6 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
-
-import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
 /**
  * Attaches all descendants (child documents) to each parent document.

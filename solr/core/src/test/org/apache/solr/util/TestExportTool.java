@@ -20,6 +20,7 @@ package org.apache.solr.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -47,6 +49,28 @@ import org.apache.solr.common.util.JsonRecordReader;
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
 
+  
+  public void testOutputFormatToFileNameMapping() throws Exception {
+    String url = "http://example:8983/solr/mycollection";
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
+    
+    info.setOutFormat(null, "json");
+    assertEquals("mycollection.json", info.out);
+    
+    info.setOutFormat(null, "jsonl");
+    assertEquals("mycollection.jsonl", info.out);
+    
+    info.setOutFormat(null, "javabin");
+    assertEquals("mycollection.javabin", info.out);    
+    
+    info.setOutFormat("/tmp/myoutput.json", "json");
+    assertEquals("/tmp/myoutput.json", info.out);  
+    
+    info.setOutFormat("/tmp/myoutput.json.gz", "json");
+    assertEquals("/tmp/myoutput.json.gz", info.out);  
+    
+  }
+  
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4)
@@ -80,22 +104,22 @@ public class TestExportTool extends SolrCloudTestCase {
 
 
       ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
-      String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("200");
       info.fields = "id,desc_s,a_dt";
       info.exportDocs();
 
-      assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
+      assertJsonLinesDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
       info = new ExportTool.MultiThreadedRunner(url);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl.gz";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("-1");
       info.fields = "id,desc_s";
       info.exportDocs();
 
-      assertJsonDocsCount(info, 1000,null);
+      assertJsonLinesDocsCount(info, 1000,null);
 
       info = new ExportTool.MultiThreadedRunner(url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
@@ -113,6 +137,14 @@ public class TestExportTool extends SolrCloudTestCase {
       info.fields = "id,desc_s";
       info.exportDocs();
       assertJavabinDocsCount(info, 1000);
+      
+      info = new ExportTool.MultiThreadedRunner(url);
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      info.setOutFormat(absolutePath, "json");
+      info.setLimit("-1");
+      info.fields = "id,desc_s";
+      info.exportDocs();
+      assertJsonDocsCount(info, 1000);      
 
     } finally {
       cluster.shutdown();
@@ -160,7 +192,7 @@ public class TestExportTool extends SolrCloudTestCase {
       for (Slice slice : coll.getSlices()) {
         Replica replica = slice.getLeader();
         try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getBaseUrl()).build()) {
-          long count = ExportTool.getDocCount(replica.getCoreName(), client);
+          long count = ExportTool.getDocCount(replica.getCoreName(), client, "*:*");
           docCounts.put(replica.getCoreName(), count);
           totalDocsFromCores += count;
         }
@@ -182,14 +214,14 @@ public class TestExportTool extends SolrCloudTestCase {
       }
       info = new ExportTool.MultiThreadedRunner(url);
       info.output = System.out;
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl.gz";
       info.setOutFormat(absolutePath, "jsonl");
       info.fields = "id,desc_s";
       info.setLimit("-1");
       info.exportDocs();
-      long actual = ((ExportTool.JsonSink) info.sink).info.docsWritten.get();
+      long actual = info.docsWritten.get();
       assertTrue("docs written :" + actual + "docs produced : " + info.docsWritten.get(), actual >= docCount);
-      assertJsonDocsCount(info, docCount,null);
+      assertJsonLinesDocsCount(info, docCount,null);
     } finally {
       cluster.shutdown();
 
@@ -214,13 +246,17 @@ public class TestExportTool extends SolrCloudTestCase {
     }
   }
 
-    private void assertJsonDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
+  private void assertJsonLinesDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
     assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
     Reader rdr;
-    jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
-    rdr = new InputStreamReader(new FileInputStream(info.out), StandardCharsets.UTF_8);
+    jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));   
+    InputStream is = new FileInputStream(info.out);
+    if(info.out.endsWith(".gz")) {
+      is = new GZIPInputStream(is);
+    }
+    rdr = new InputStreamReader(is, StandardCharsets.UTF_8);
     try {
       int[] count = new int[]{0};
       jsonReader.streamRecords(rdr, (record, path) -> {
@@ -234,4 +270,8 @@ public class TestExportTool extends SolrCloudTestCase {
       rdr.close();
     }
   }
+  
+  private void assertJsonDocsCount(ExportTool.Info info, int expected) throws IOException {
+    assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+  }  
 }

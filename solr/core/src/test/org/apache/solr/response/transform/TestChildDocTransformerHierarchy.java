@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.Iterables;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
@@ -172,7 +171,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
     // delete toppings path
     assertU(delQ("_nest_path_:\\/toppings"));
     assertU(commit());
-
+    
     try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:\\\\/toppings' limit=1]",
         "fq", fqToExcludeNonTestedDocs)) {
       BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
