@@ -30,8 +30,8 @@ configure(rootProject) {
 
     solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
       if (project.version != project.baseVersion) {
-        // non-release build
-        new File(project('solr:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
+        // non-release build does not cross-link between modules.
+        return null
       } else {
         // release build
         "https://solr.apache.org/docs/${urlVersion}"
