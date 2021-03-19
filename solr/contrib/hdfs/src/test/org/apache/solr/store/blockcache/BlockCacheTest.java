@@ -22,8 +22,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.github.benmanes.caffeine.cache.*;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class BlockCacheTest extends SolrTestCase {
