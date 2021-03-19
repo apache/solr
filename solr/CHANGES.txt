@@ -10028,7 +10028,6 @@ Upgrading from Solr 5.1
     SOLR_SSL_TRUST_STORE_PASSWORD, SOLR_SSL_NEED_CLIENT_AUTH and SOLR_SSL_WANT_CLIENT_AUTH
     have been introduced. The bin/solr scripts configure the SOLR_SSL_OPTS property
     automatically based on the above new properties.
-
     You should *not* configure the SOLR_SSL_OPTS property directly inside solr.in.{sh,cmd}.
 
   - Support for SOLR_SSL_PORT property has been removed. Instead use the regular SOLR_PORT
