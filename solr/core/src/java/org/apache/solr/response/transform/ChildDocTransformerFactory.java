@@ -144,9 +144,9 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       return QParser.getParser(qstr, req).getQuery();
     } catch (SyntaxError syntaxError) {
       throw new SolrException(
-          ErrorCode.BAD_REQUEST,
-          "Failed to parse '" + param + "' param: " + syntaxError.getMessage(),
-          syntaxError);
+              ErrorCode.BAD_REQUEST,
+              "Failed to parse '" + param + "' param: " + syntaxError.getMessage(),
+              syntaxError);
     }
   }
 
@@ -156,11 +156,11 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     // ingredients/name_s:cocoa -> +_nest_path_:*/ingredients +(name_s:cocoa)
     int indexOfFirstColon = queryString.indexOf(':');
     if (indexOfFirstColon <= 0) {
-      return queryString;// give up
+      return queryString; // regular filter, not hierarchy based.
     }
     int indexOfLastPathSepChar = queryString.lastIndexOf(PATH_SEP_CHAR, indexOfFirstColon);
     if (indexOfLastPathSepChar < 0) {
-      return queryString;
+      return queryString; // regular filter, not hierarchy based.
     }
     final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
     String path = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfLastPathSepChar));

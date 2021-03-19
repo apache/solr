@@ -106,8 +106,15 @@ import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.response.RequestStatusState.*;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.*;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_EMPTY;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARDS_PROP;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
@@ -208,8 +215,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       CollectionOperation operation = CollectionOperation.get(action);
       if (log.isDebugEnabled()) {
-        log.debug("Invoked Collection Action :{} with params {} and sendToOCPQueue={}"
-            , action.toLower(), req.getParamString(), operation.sendToOCPQueue);
+        log.debug("Invoked Collection Action: {} with params {}", action.toLower(), req.getParamString());
       }
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
@@ -252,38 +258,22 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
     props.put(QUEUE_OPERATION, operation.action.toLower());
 
-    if (operation.sendToOCPQueue) {
-      ZkNodeProps zkProps = new ZkNodeProps(props);
-      SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
-      rsp.getValues().addAll(overseerResponse.getResponse());
-      Exception exp = overseerResponse.getException();
-      if (exp != null) {
-        rsp.setException(exp);
-      }
-
-      // Even if Overseer does wait for the collection to be created, it sees a different cluster state than this node,
-      // so this wait is required to make sure the local node Zookeeper watches fired and now see the collection.
-      if (action.equals(CollectionAction.CREATE) && asyncId == null) {
-        if (rsp.getException() == null) {
-          waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
-        }
-      }
-
-    } else {
-      if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
-        DistributedClusterStateUpdater.MutatingCommand command = DistributedClusterStateUpdater.MutatingCommand.getCommandFor(operation.action);
-        ZkNodeProps message = new ZkNodeProps(props);
-        // We do the state change synchronously but do not wait for it to be visible in this node's cluster state updated via ZK watches
-        distributedClusterStateUpdater.doSingleStateUpdate(command, message,
-            coreContainer.getZkController().getSolrCloudManager(), coreContainer.getZkController().getZkStateReader());
-      } else {
-        // submits and doesn't wait for anything (no response)
-        coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
-      }
+    ZkNodeProps zkProps = new ZkNodeProps(props);
+    SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
+    rsp.getValues().addAll(overseerResponse.getResponse());
+    Exception exp = overseerResponse.getException();
+    if (exp != null) {
+      rsp.setException(exp);
     }
 
+    // Even if Overseer does wait for the collection to be created, it sees a different cluster state than this node,
+    // so this wait is required to make sure the local node Zookeeper watches fired and now see the collection.
+    if (action.equals(CollectionAction.CREATE) && asyncId == null) {
+      if (rsp.getException() == null) {
+        waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
+      }
+    }
   }
-
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
@@ -692,7 +682,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       return null;
     }),
-    SPLITSHARD_OP(SPLITSHARD, DEFAULT_COLLECTION_OP_TIMEOUT * 5, true, (req, rsp, h) -> {
+    SPLITSHARD_OP(SPLITSHARD, DEFAULT_COLLECTION_OP_TIMEOUT * 5, (req, rsp, h) -> {
       String name = req.getParams().required().get(COLLECTION_PROP);
       // TODO : add support for multiple shards
       String shard = req.getParams().get(SHARD_ID_PROP);
@@ -1084,11 +1074,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       req.getParams().required().check(NAME, COLLECTION_PROP);
 
       final String collectionName = SolrIdentifierValidator.validateCollectionName(req.getParams().get(COLLECTION_PROP));
-      final ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-      //We always want to restore into an collection name which doesn't  exist yet.
-      if (clusterState.hasCollection(collectionName)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' exists, no action taken.");
-      }
       if (h.coreContainer.getZkController().getZkStateReader().getAliases().hasAlias(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' is an existing alias, no action taken.");
       }
@@ -1357,16 +1342,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     public final CollectionOp fun;
     CollectionAction action;
     long timeOut;
-    boolean sendToOCPQueue;
 
     CollectionOperation(CollectionAction action, CollectionOp fun) {
-      this(action, DEFAULT_COLLECTION_OP_TIMEOUT, true, fun);
+      this(action, DEFAULT_COLLECTION_OP_TIMEOUT, fun);
     }
 
-    CollectionOperation(CollectionAction action, long timeOut, boolean sendToOCPQueue, CollectionOp fun) {
+    CollectionOperation(CollectionAction action, long timeOut, CollectionOp fun) {
       this.action = action;
       this.timeOut = timeOut;
-      this.sendToOCPQueue = sendToOCPQueue;
       this.fun = fun;
 
     }

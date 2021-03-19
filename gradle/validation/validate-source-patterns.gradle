@@ -88,13 +88,6 @@ subprojects {
   check.dependsOn validateSourcePatterns
 }
 
-configure(project(':lucene:benchmark')) {
-  project.tasks.withType(ValidateSourcePatternsTask) {
-    sourceFiles.exclude 'temp/**'
-    sourceFiles.exclude 'work/**'
-  }
-}
-
 configure(project(':solr:core')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
     sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'

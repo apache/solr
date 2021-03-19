@@ -144,8 +144,16 @@ _(raw; not yet edited)_
 
 * SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
 
-* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
- of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name.
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to /contrib/scripting/ package instead
+ of shipping as part of Solr, due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name.
+
+* SOLR-15121: XSLTResponseWriter moved to /contrib/scripting/ package instead
+ of shipping as part of Solr, due to security concerns.
+
+* SOLR-15156: Child Doc Transformer's `childFilter` param no longer applies query syntax
+escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
+
+* SOLR-15203: Remove the deprecated `jwkUrl` in favour of `jwksUrl` when configuring JWT authentication.
 
 === Upgrade Prerequisites in Solr 9
 
@@ -153,7 +161,7 @@ _(raw; not yet edited)_
 older format and no longer supports migrating collections from the older format to the current format (previously known
 as stateFormat=2).
 Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a previous version of Solr.
-See for example https://lucene.apache.org/solr/guide/8_5/cluster-node-management.html#migratestateforma[Solr 8.5 Ref Guide].
+See for example https://solr.apache.org/guide/8_8/cluster-node-management.html#migratestateforma[Solr 8.8 Ref Guide].
 // Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
 === Rolling Upgrades with Solr 9
