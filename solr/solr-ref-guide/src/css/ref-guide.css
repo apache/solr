@@ -720,7 +720,11 @@ ol.lowergreek
 
 dl dd
 {
-    margin-left: 1.125em;
+    margin-left: 20px;
+}
+
+dl dd dl {
+  margin-left: 30px;
 }
 
 dl dd:last-child,

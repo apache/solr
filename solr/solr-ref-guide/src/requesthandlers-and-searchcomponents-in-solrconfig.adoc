@@ -208,7 +208,7 @@ All the blocks are optional, especially since parameters can also be provided wi
 
 The defaults/appends/invariants blocks were described <<#defaults-appends-and-invariants,higher>> on the page. All the parameters described in the section  <<query-guide.adoc#,Query Guide>> can be defined as parameters for any of the Search Handlers.
 
-The Search Components blocks are described next, and <<distributed-requests.adoc#configuring-the-shardhandlerfactory,shardHandlerFactory>> is for fine-tuning of the SolrCloud distributed requests.
+The Search Components blocks are described next, and <<solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory,shardHandlerFactory>> is for fine-tuning of the SolrCloud distributed requests.
 
 === Defining Search Components
 The search components themselves are defined outside of the Request Handlers and then are referenced from various Search Handlers that want to use them.

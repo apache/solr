@@ -287,7 +287,7 @@ The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests w
 +
 In SolrCloud mode this whitelist is automatically configured to contain all live nodes.  In standalone mode the whitelist is empty by default.  Upgrading users who use the `shards` parameter in standalone mode can correct this value by setting the `shardsWhitelist` property in any `shardHandler` configurations in their `solrconfig.xml` file.
 +
-For more information, see the <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Distributed Request>> documentation.
+For more information, see the <<solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory,Distributed Request>> documentation.
 
 === Solr 7.6
 

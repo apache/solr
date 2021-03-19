@@ -151,7 +151,7 @@ processing time of the largest update request.
 
 === Cloud Request Routing
 
-The SolrJ `CloudSolrClient` implementations (`CloudSolrClient` and `CloudHttp2SolrClient`) respect the <<distributed-requests.adoc#shards-preference-parameter,shards.preference parameter>>.
+The SolrJ `CloudSolrClient` implementations (`CloudSolrClient` and `CloudHttp2SolrClient`) respect the <<solrcloud-distributed-requests.adoc#shards-preference-parameter,shards.preference parameter>>.
 Therefore requests sent to single-sharded collections, using either of the above clients, will route requests the same way that distributed requests are routed to individual shards.
 If no `shards.preference` parameter is provided, the clients will default to sorting replicas randomly.
 

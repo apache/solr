@@ -483,7 +483,7 @@ If you are using these together, you will need to modify your queries.
 scenarios to ensure multi-shard and single-shard request routing works in the same way.
 +
 See <<using-solrj.adoc#cloud-request-routing,Cloud Request Routing>> and
-<<distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details.
+<<solrcloud-distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details.
 
 * `QueryResponse.getExplainMap()` type has changed from `Map<String, String>` to `Map<String, Object>` in order to support structured explanations.
 +

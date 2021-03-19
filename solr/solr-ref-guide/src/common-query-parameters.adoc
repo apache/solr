@@ -255,7 +255,7 @@ This parameter may be set to either `true` or `false`.
 If set to `true`, this parameter excludes the header from the returned results.
 The header contains information about the request, such as the time it took to complete.
 The default value for this parameter is `false`.
-When using parameters such as <<common-query-parameters.adoc#timeallowed-parameter,`timeAllowed`>>, and <<solrcloud-query-routing-and-read-tolerance.adoc#shards-tolerant-parameter,`shards.tolerant`>>, which can lead to partial results, it is advisable to keep the header, so that the `partialResults` flag can be checked, and values such as `numFound`, `nextCursorMark`, <<faceting.adoc#,Facet>> counts, and result <<stats-component.adoc#,Stats>> can be interpreted in the context of partial results.
+When using parameters such as <<common-query-parameters.adoc#timeallowed-parameter,`timeAllowed`>>, and <<solrcloud-distributed-requests.adoc#shards-tolerant-parameter,`shards.tolerant`>>, which can lead to partial results, it is advisable to keep the header, so that the `partialResults` flag can be checked, and values such as `numFound`, `nextCursorMark`, <<faceting.adoc#,Facet>> counts, and result <<stats-component.adoc#,Stats>> can be interpreted in the context of partial results.
 
 == wt Parameter
 

@@ -52,7 +52,7 @@ By default, SolrCloud scores documents on a per-shard basis.
 
 With multiple collections in an alias this is always a problem, so if you have a use case for which BM25 or
   TF/IDF relevancy is important you will want to turn on one of the
-  <<distributed-requests.adoc#distributedidf,ExactStatsCache>> implementations.
+  <<solrcloud-distributed-requests.adoc#distributedidf,ExactStatsCache>> implementations.
 
 However, for analytical use cases where results are sorted on numeric, date, or alphanumeric field values, rather
   than relevancy calculations, this is not a problem.

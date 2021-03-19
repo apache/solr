@@ -88,7 +88,7 @@ If the PULL replica dies or is unreachable for any other reason, it won't be que
 
 === Queries with Preferred Replica Types
 
-By default all replicas serve queries. See the section <<distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details on how to indicate preferred replica types for queries.
+By default all replicas serve queries. See the section <<solrcloud-distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details on how to indicate preferred replica types for queries.
 
 == Document Routing
 

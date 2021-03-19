@@ -1,8 +1,6 @@
 = Distributed Queries
-:page-children: distributed-requests, \
-    solrcloud-query-routing-and-read-tolerance, \
-    distributed-search-with-index-sharding, \
-    combining-distribution-and-replication
+:page-children: solrcloud-distributed-requests, \
+    user-managed-distributed-search
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -27,10 +25,8 @@
 // tag::shard-queries-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<distributed-requests.adoc#,Distributed Requests>>
-| <<solrcloud-query-routing-and-read-tolerance.adoc#,SolrCloud Query Routing And Read Tolerance>>
-| <<distributed-search-with-index-sharding.adoc#,Distributed Search with Index Sharding>>: Detailed information about implementing distributed searching in Solr.
-| <<combining-distribution-and-replication.adoc#,Combining Distribution and Replication>>: Detailed information about replicating shards in a distributed index.
+| <<solrcloud-distributed-requests.adoc#,SolrCloud Distributed Requests>>
+| <<user-managed-distributed-search.adoc#,User-Managed Distributed Search>>: Detailed information about implementing distributed searching in Solr.
 |===
 // end::shard-queries-sections[]
 ****
