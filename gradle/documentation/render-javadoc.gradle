@@ -46,7 +46,7 @@ allprojects {
     }
 
     task renderJavadoc(type: RenderJavadocTask) {
-      description "Generates Javadoc API documentation for the main source code. This directly invokes javadoc tool."
+      description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
       group "documentation"
 
       taskResources = resources
@@ -82,12 +82,14 @@ def javaJavadocPackages = rootProject.file("${resources}/java11/")
 def junitJavadocPackages = rootProject.file("${resources}/junit/")
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
-    title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
+    title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
         "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
         "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
     ]
+
+    solrDocUrl = provider({ rootProject.solrDocUrl })
 
     // Set up custom doclet.
     dependsOn configurations.missingdoclet
@@ -97,62 +99,60 @@ allprojects {
 
 // Configure project-specific tweaks and to-dos.
 
-if (!skipSolr) {
-  configure(project(":solr").allprojects) {
-    project.tasks.withType(RenderJavadocTask) {
-      // TODO: fix missing javadocs
-      javadocMissingLevel = "package"
-    }
+configure(project(":solr").allprojects) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "package"
   }
+}
 
-  configure(project(":solr:contrib:analysis-extras")) {
-    project.tasks.withType(RenderJavadocTask) {
-      // TODO: clean up split packages
-      javadocMissingIgnore = [
-          "org.apache.solr.schema",
-          "org.apache.solr.update.processor"
-      ]
-    }
+configure(project(":solr:contrib:analysis-extras")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr.schema",
+        "org.apache.solr.update.processor"
+    ]
   }
+}
 
-  configure(project(":solr:contrib:analytics")) {
-    project.tasks.withType(RenderJavadocTask) {
-      // TODO: clean up split packages
-      javadocMissingIgnore = [
-          "org.apache.solr.handler",
-          "org.apache.solr.handler.component",
-          "org.apache.solr.response"
-      ]
-    }
+configure(project(":solr:contrib:analytics")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr.handler",
+        "org.apache.solr.handler.component",
+        "org.apache.solr.response"
+    ]
   }
+}
 
-  configure(project(":solr:contrib:langid")) {
-    project.tasks.withType(RenderJavadocTask) {
-      // TODO: clean up split packages
-      javadocMissingIgnore = ["org.apache.solr.update.processor"]
-    }
+configure(project(":solr:contrib:langid")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = ["org.apache.solr.update.processor"]
   }
+}
 
-  configure(project(":solr:solrj")) {
-    project.tasks.withType(RenderJavadocTask) {
-      // TODO: clean up split packages
-      javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
-    }
+configure(project(":solr:solrj")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
   }
+}
 
-  configure(project(":solr:test-framework")) {
-    project.tasks.withType(RenderJavadocTask) {
-      // TODO: clean up split packages
-      javadocMissingIgnore = [
-          "org.apache.solr",
-          "org.apache.solr.analysis",
-          "org.apache.solr.cloud",
-          "org.apache.solr.core",
-          "org.apache.solr.handler.component",
-          "org.apache.solr.update.processor",
-          "org.apache.solr.util"
-      ]
-    }
+configure(project(":solr:test-framework")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr",
+        "org.apache.solr.analysis",
+        "org.apache.solr.cloud",
+        "org.apache.solr.core",
+        "org.apache.solr.handler.component",
+        "org.apache.solr.update.processor",
+        "org.apache.solr.util"
+    ]
   }
 }
 
@@ -161,16 +161,14 @@ if (!skipSolr) {
 // See: https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106
 
 // Disable Javadoc rendering for these projects.
-if (!skipSolr) {
-  configure(subprojects.findAll {
-    it.path in [
-        ':solr:solr-ref-guide',
-        ':solr:server',
-        ':solr:webapp']
-  }) {
-    project.tasks.withType(RenderJavadocTask) {
-      enabled = false
-    }
+configure(subprojects.findAll {
+  it.path in [
+      ':solr:solr-ref-guide',
+      ':solr:server',
+      ':solr:webapp']
+}) {
+  project.tasks.withType(RenderJavadocTask) {
+    enabled = false
   }
 }
 
@@ -215,11 +213,8 @@ class RenderJavadocTask extends DefaultTask {
   def offlineLinks = [:]
 
   @Input
-  def luceneDocUrl = "${-> project.luceneDocUrl }"
-
-  // SOLR ONLY
-  @Input
-  def solrDocUrl = "${-> project.skipSolr ? null : project.solrDocUrl }"
+  @Optional
+  Property<String> solrDocUrl = project.objects.property(String)
 
   // default is to require full javadocs
   @Input
@@ -232,7 +227,6 @@ class RenderJavadocTask extends DefaultTask {
   // default is not to ignore any elements, should only be used to workaround split packages
   @Input
   List<String> javadocMissingIgnore = []
-
 
   @Nullable
   @Optional
@@ -265,7 +259,7 @@ class RenderJavadocTask extends DefaultTask {
     def opts = []
     opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
     opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
-    opts << [ '-subpackages', project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr' ]
+    opts << [ '-subpackages', 'org.apache.solr' ]
     opts << [ '-d', outputDir ]
     opts << '-protected'
     opts << [ '-encoding', 'UTF-8' ]
@@ -326,8 +320,10 @@ class RenderJavadocTask extends DefaultTask {
               opts << ['-link', relative]
             } else {
               // For absolute links, we determine the target URL by assembling the full URL.
-              def base = otherProject.path.startsWith(":lucene") ? luceneDocUrl : solrDocUrl
-              allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+              def value = solrDocUrl.getOrElse(null)
+              if (value) {
+                allOfflineLinks.put("${value}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+              }
             }
           }
     }
@@ -407,6 +403,7 @@ class RenderJavadocTask extends DefaultTask {
       // Pipe the output to console. Intentionally skips any encoding conversion 
       // and pumps raw bytes.
       System.out.write(outputFile.bytes)
+      System.out.flush()
 
       def cause
       try {

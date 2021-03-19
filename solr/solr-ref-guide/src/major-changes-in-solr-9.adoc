@@ -153,13 +153,15 @@ _(raw; not yet edited)_
 * SOLR-15156: Child Doc Transformer's `childFilter` param no longer applies query syntax
 escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
 
+* SOLR-15203: Remove the deprecated `jwkUrl` in favour of `jwksUrl` when configuring JWT authentication.
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
 older format and no longer supports migrating collections from the older format to the current format (previously known
 as stateFormat=2).
 Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a previous version of Solr.
-See for example https://lucene.apache.org/solr/guide/8_5/cluster-node-management.html#migratestateforma[Solr 8.5 Ref Guide].
+See for example https://solr.apache.org/guide/8_8/cluster-node-management.html#migratestateforma[Solr 8.8 Ref Guide].
 // Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
 === Rolling Upgrades with Solr 9
