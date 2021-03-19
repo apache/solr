@@ -211,9 +211,6 @@ class RenderJavadocTask extends DefaultTask {
   def offlineLinks = [:]
 
   @Input
-  def luceneDocUrl = "${-> project.luceneDocUrl }"
-
-  @Input
   def solrDocUrl = "${-> project.solrDocUrl }"
 
   // default is to require full javadocs
