@@ -133,9 +133,13 @@ ext {
          // NOTE: extra '../' because we'll in a sub-dir of buildDir that will be built later...
          props: [
             htmlSolrJavadocs : 'link:../' + buildDir.toPath().relativize(project(':solr:documentation').docroot.toPath()).toString().replace(File.separator, '/'),
-            // TODO: This isn't viable long term - see SOLR-15262 / SOLR-15264
-            htmlLuceneJavadocs : "https://lucene.apache.org/core/${solrGuideVersionPath}_0/"
-        ]
+            htmlLuceneJavadocs :  'link:../' + buildDir.toPath().relativize(project(':solr:documentation').luceneDocsDir.toPath()).toString().replace(File.separator, '/'),
+         ]
+
+         // TODO: (see full discussion in SOLR-15265)
+         // Ref guide build should really depend on those javadocs it links to - then there would be no awkwardness and, ideally,
+         // you could just sync the resources you need into the final structure (that's why I declared javadocs as an artifact).
+         // This does entail some duplication (syncing between folders) but if it's reused in different places then it's fine.
     ]
 }
 
