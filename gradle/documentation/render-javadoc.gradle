@@ -46,7 +46,7 @@ allprojects {
     }
 
     task renderJavadoc(type: RenderJavadocTask) {
-      description "Generates Javadoc API documentation for the main source code. This directly invokes javadoc tool."
+      description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
       group "documentation"
 
       taskResources = resources
@@ -88,6 +88,8 @@ allprojects {
         "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
         "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
     ]
+
+    solrDocUrl = provider({ rootProject.solrDocUrl })
 
     // Set up custom doclet.
     dependsOn configurations.missingdoclet
@@ -211,10 +213,8 @@ class RenderJavadocTask extends DefaultTask {
   def offlineLinks = [:]
 
   @Input
-  def luceneDocUrl = "${-> project.luceneDocUrl }"
-
-  @Input
-  def solrDocUrl = "${-> project.solrDocUrl }"
+  @Optional
+  Property<String> solrDocUrl = project.objects.property(String)
 
   // default is to require full javadocs
   @Input
@@ -227,7 +227,6 @@ class RenderJavadocTask extends DefaultTask {
   // default is not to ignore any elements, should only be used to workaround split packages
   @Input
   List<String> javadocMissingIgnore = []
-
 
   @Nullable
   @Optional
@@ -321,7 +320,10 @@ class RenderJavadocTask extends DefaultTask {
               opts << ['-link', relative]
             } else {
               // For absolute links, we determine the target URL by assembling the full URL.
-              allOfflineLinks.put("${solrDocUrl}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+              def value = solrDocUrl.getOrElse(null)
+              if (value) {
+                allOfflineLinks.put("${value}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+              }
             }
           }
     }
