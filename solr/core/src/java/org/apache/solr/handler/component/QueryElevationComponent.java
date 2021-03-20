@@ -340,13 +340,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * need not strictly increase.
    */
   protected long getConfigVersion(SolrCore core) {
-    final String configDir = core.getResourceLoader().getConfigDir();
-    if (configDir != null) {
+    // TODO move this mechanism to a SolrResourceLoader.getVersion / getLastModTime
+    try {
+      String configDir = core.getResourceLoader().getConfigDir(); // unsupported in ZK
       Path cfg = Path.of(configDir).resolve(configFileName);
-      try {
-        return Files.getLastModifiedTime(cfg).toMillis();
-      } catch (IOException ignore) {
-      }
+      return Files.getLastModifiedTime(cfg).toMillis();
+    } catch (Exception ignore) {
     }
     return -1; // don't know  (e.g. Zookeeper as of this writing)
   }
