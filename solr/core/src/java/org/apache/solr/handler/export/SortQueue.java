@@ -73,7 +73,7 @@ final class SortQueue {
 
   protected void reset() {
     if (cache != null) {
-      System.arraycopy(cache, 1, heap, 1, heap.length-1);
+      System.arraycopy(cache, 1, heap, 1, heap.length - 1);
       size = maxSize;
     } else {
       populate();

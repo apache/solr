@@ -24,9 +24,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.Counter;
@@ -148,6 +146,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   // local per-segment partitioning filters that are incomplete (still being updated from the current request)
   final Map<IndexReader.CacheKey, FixedBitSet> tempPartitionCaches;
+  // local copy of already cached partitioning filters
+  // (for efficiency, to use int indexes instead of cache lookups)
+  final FixedBitSet[] myPartitionSets;
 
 
 
@@ -187,6 +188,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     } else {
       this.partitionCaches = (SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>) req.getSearcher().getCache(SOLR_CACHE_KEY);
     }
+    // we are running the partitioning filter - prepare local copy of the existing
+    // cached filters
+    if (partitionCaches != null && partitionCacheKey != null) {
+      myPartitionSets = prepareMyPartitionSets(req.getSearcher().getRawReader().leaves());
+    } else {
+      myPartitionSets = null;
+    }
 
     // initialize metrics
     this.writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
@@ -218,7 +226,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           caches = null;
         }
       } finally {
-        searcherRef.decref();
+        if (searcher != null) {
+          searcherRef.decref();
+        }
       }
       map.put("configured", caches != null);
       if (caches != null) {
@@ -226,10 +236,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         if (caches instanceof CaffeineCache) {
           CaffeineCache <IndexReader.CacheKey, SolrCache<String, FixedBitSet>> exportCache = (CaffeineCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>) caches;
           final int[] avgSets = new int[1];
-          exportCache.asMap().forEach((key, setsCache) -> {
-            avgSets[0] += setsCache.size();
-          });
-          avgSets[0] = avgSets[0] / exportCache.size();
+          if (exportCache.size() > 0) {
+            exportCache.asMap().forEach((key, setsCache) -> {
+              avgSets[0] += setsCache.size();
+            });
+            avgSets[0] = avgSets[0] / exportCache.size();
+          } else {
+            avgSets[0] = 0;
+          }
           map.put("avgSetsPerSeg", avgSets[0]);
         }
       }
@@ -1004,22 +1018,31 @@ OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
     }
   }
 
+  private FixedBitSet[] prepareMyPartitionSets(List<LeafReaderContext> leaves) {
+    FixedBitSet[] myPartitionSets = new FixedBitSet[leaves.size()];
+    for (int i = 0; i < leaves.size(); i++) {
+      LeafReaderContext leaf = leaves.get(i);
+      IndexReader.CacheHelper cacheHelper = leaf.reader().getReaderCacheHelper();
+      if (cacheHelper == null) {
+        // leave a null entry in the array
+        continue;
+      }
+      IndexReader.CacheKey cacheKey = cacheHelper.getKey();
+      SolrCache<String, FixedBitSet> perSegmentCaches = partitionCaches.get(cacheKey);
+      if (perSegmentCaches == null) {
+        // no queries yet for this segment - leave a null entry
+        continue;
+      }
+      myPartitionSets[i] = perSegmentCaches.get(partitionCacheKey);
+    }
+    return myPartitionSets;
+  }
+
   private FixedBitSet getMyPartitionSet(LeafReaderContext leaf) {
     if (partitionCaches == null) {
       return null;
     }
-    IndexReader.CacheHelper cacheHelper = leaf.reader().getReaderCacheHelper();
-    if (cacheHelper == null) {
-      return null;
-    }
-    IndexReader.CacheKey cacheKey = cacheHelper.getKey();
-
-    SolrCache<String, FixedBitSet> perSegmentCaches = partitionCaches.get(cacheKey);
-    if (perSegmentCaches == null) {
-      // no queries yet for this segment
-      return null;
-    }
-    return perSegmentCaches.get(partitionCacheKey);
+    return myPartitionSets[leaf.ord];
   }
 
   private static class SegmentIterator {
