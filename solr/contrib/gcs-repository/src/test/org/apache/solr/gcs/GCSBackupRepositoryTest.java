@@ -15,30 +15,26 @@
  * limitations under the License.
  */
 
-rootProject.name = "solr-root"
+package org.apache.solr.gcs;
 
-includeBuild("dev-tools/missing-doclet")
+import java.net.URI;
+import java.net.URISyntaxException;
 
-if (!(System.getProperty("skip.solr") as Boolean)) {
-  include "solr:solrj"
-  include "solr:core"
-  include "solr:server"
-  include "solr:contrib:analysis-extras"
-  include "solr:contrib:analytics"
-  include "solr:contrib:clustering"
-  include "solr:contrib:extraction"
-  include "solr:contrib:langid"
-  include "solr:contrib:jaegertracer-configurator"
-  include "solr:contrib:prometheus-exporter"
-  include "solr:contrib:scripting"
-  include "solr:contrib:ltr"
-  include "solr:contrib:gcs-repository"
-  include "solr:webapp"
-  include "solr:test-framework"
-  include "solr:solr-ref-guide"
-  include "solr:example"
+import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.backup.repository.BackupRepository;
 
-  include "solr:documentation"
-  include "solr:packaging"
-  include "solr:docker"
+public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
+    @Override
+    @SuppressWarnings("rawtypes")
+    protected BackupRepository getRepository() {
+        GCSBackupRepository repository = new GCSBackupRepository();
+        repository.init(new NamedList());
+        return repository;
+    }
+
+    @Override
+    protected URI getBaseUri() throws URISyntaxException {
+        return new URI("/tmp");
+    }
 }
