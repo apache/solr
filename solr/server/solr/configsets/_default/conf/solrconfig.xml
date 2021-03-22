@@ -438,6 +438,13 @@
            autowarmCount="10"
            regenerator="solr.NoOpRegenerator" />
 
+    <!-- custom cache used by the /export handler -->
+    <cache name="exportCache"
+           class="solr.CaffeineCache"
+           size="512"
+           initialSize="0"
+           regenerator="solr.NoOpRegenerator" />
+
     <!-- Field Value Cache
 
          Cache used to hold field values that are quickly accessible

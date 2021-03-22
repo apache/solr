@@ -81,6 +81,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.*;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,9 +202,24 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     if (useHashQuery) {
       useHashQueryCounter.inc();
     }
+    final SolrCore core = req.getCore();
     MetricsMap cacheMetrics = new MetricsMap(map -> {
       // don't use per-instance var here - always check this from the current searcher!
-      SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>> caches = req.getSearcher().getCache(SOLR_CACHE_KEY);
+      // 'req' may no longer be valid when this metric is checked, and referencing
+      // it here could lead to memory leaks
+      SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>> caches;
+      // always get the latest searcher
+      RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
+      SolrIndexSearcher searcher = searcherRef.get();
+      try {
+        if (searcher != null) {
+          caches = searcher.getCache(SOLR_CACHE_KEY);
+        } else {
+          caches = null;
+        }
+      } finally {
+        searcherRef.decref();
+      }
       map.put("configured", caches != null);
       if (caches != null) {
         map.put("numSegments", caches.size());
