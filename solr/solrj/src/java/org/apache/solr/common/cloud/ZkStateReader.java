@@ -240,7 +240,9 @@ public class ZkStateReader implements SolrCloseable {
    * Returns config set name for collection.
    *
    * @param collection to return config set name for
+   * @deprecated as 9.0 use {@link DocCollection#getConfigName()} instead
    */
+  @Deprecated
   public String readConfigName(String collection) throws KeeperException {
 
     String configName = null;

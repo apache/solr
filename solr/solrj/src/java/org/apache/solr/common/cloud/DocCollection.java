@@ -59,7 +59,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final int znodeVersion;
 
   private final String name;
-  private final String configName;
+  private String configName;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final Slice[] activeSlicesArr;
@@ -211,6 +211,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return name;
   }
 
+  public void setConfigName(String configName) {
+    this.configName = configName;
+  }
+
   /**
    * Return config name or null if solr version is 8x or below
    */
@@ -220,17 +224,15 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * Return non-null config name
    */
   public String getConfigName(ZkStateReader zkStateReader) {
-    final String configSetName;
     if (this.configName != null) {
-      configSetName = this.configName;
+      return this.configName;
     } else {
       try {
-        configSetName = zkStateReader.readConfigName(name);
+        return zkStateReader.readConfigName(name);
       } catch (KeeperException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No configName data found at " + COLLECTIONS_ZKNODE + "/" + name);
       }
     }
-    return configSetName;
   }
 
   public Slice getSlice(String sliceName) {
