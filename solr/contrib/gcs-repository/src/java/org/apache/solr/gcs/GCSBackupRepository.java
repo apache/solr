@@ -80,6 +80,8 @@ public class GCSBackupRepository implements BackupRepository {
                 GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
                 builder.setCredentials(credential);
             }
+
+            // TODO JEGERLOW Allow configuration for some/all of these properties?
             storage = builder
                     .setTransportOptions(StorageOptions.getDefaultHttpTransportOptions().toBuilder()
                             .setConnectTimeout(20000)
@@ -117,6 +119,8 @@ public class GCSBackupRepository implements BackupRepository {
                 this.bucketName = System.getenv().getOrDefault("BACKUP_BUCKET","backup-managed-solr");
             }
         }
+
+        // TODO JEGERLOW We should fail early here if the required configuration wasn't provided or was invalid
     }
 
     @Override

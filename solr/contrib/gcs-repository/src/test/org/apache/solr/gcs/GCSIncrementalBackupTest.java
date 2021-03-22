@@ -30,6 +30,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO JEGERLOW won't pass unless I can find library to mock out the 'Storage' class used by GCSBackupRepository
 public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     public static final String SOLR_XML = "<solr>\n" +

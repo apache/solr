@@ -24,6 +24,7 @@ import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 
+// TODO JEGERLOW won't pass unless I can find library to mock out the 'Storage' class used by GCSBackupRepository
 public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Override
     @SuppressWarnings("rawtypes")
