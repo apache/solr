@@ -211,10 +211,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return name;
   }
 
-  public void setConfigName(String configName) {
-    this.configName = configName;
-  }
-
   /**
    * Return config name or null if solr version is 8x or below
    */

@@ -150,6 +150,9 @@ public class CollectionMutator {
       m.put(ZkStateReader.CONFIGNAME_PROP,  message.getStr(CollectionAdminParams.COLL_CONF));
     }
 
+    if (m.containsKey(CollectionAdminParams.COLL_CONF)) {
+      m.remove(CollectionAdminParams.COLL_CONF);
+    }
 
     DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion());
     if (replicaOps == null){

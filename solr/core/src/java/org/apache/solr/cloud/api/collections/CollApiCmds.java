@@ -29,7 +29,6 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.UrlScheme;
@@ -232,11 +231,7 @@ public class CollApiCmds {
 
       if (configName != null) {
         CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getSolrCloudManager(), configName);
-
-        DocCollection docCollection = ccc.getCoreContainer().getZkController().getClusterState().getCollection(collectionName);
-        docCollection.setConfigName(configName);
         CollectionHandlingUtils.createConfNode(ccc.getSolrCloudManager().getDistribStateManager(), configName, collectionName);
-        new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);
       }
 
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
@@ -273,8 +268,8 @@ public class CollApiCmds {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to modify collection", e);
       }
 
-      // if switching to/from read-only mode reload the collection
-      if (message.keySet().contains(ZkStateReader.READ_ONLY)) {
+      // if switching to/from read-only mode or configName is not null reload the collection
+      if (message.keySet().contains(ZkStateReader.READ_ONLY) || configName != null) {
         new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);
       }
     }
