@@ -59,7 +59,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   private void clearConfigs() throws Exception {
     List<String> configs = getConfigSetService().listConfigs();
     for (String config : configs) {
-      getConfigSetService().deleteConfigDir(config);
+      getConfigSetService().deleteConfig(config);
     }
   }
 
@@ -70,7 +70,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
     assertConfigsContainOnly();
 
     // tag::zk-configset-upload[]
-    getConfigSetService().uploadConfigDir(Paths.get(localConfigSetDirectory), "nameForConfigset");
+    getConfigSetService().uploadConfig(Paths.get(localConfigSetDirectory), "nameForConfigset");
     // end::zk-configset-upload[]
 
     assertConfigsContainOnly("nameForConfigset");

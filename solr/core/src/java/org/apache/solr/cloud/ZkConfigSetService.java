@@ -87,7 +87,11 @@ public class ZkConfigSetService extends ConfigSetService {
       if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
         // TODO remove this functionality or maybe move to a CLI mechanism
         log.warn("Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
-        CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), colName, cd.getCloudDescriptor().getParams());
+        CreateCollectionCmd.createCollectionZkNode(
+            zkController.getSolrCloudManager().getDistribStateManager(),
+            colName,
+            cd.getCloudDescriptor().getParams(),
+            zkController.getCoreContainer().getConfigSetService());
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -154,7 +158,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void deleteConfigDir(String configName) throws IOException {
+  public void deleteConfig(String configName) throws IOException {
     try {
       zkClient.clean(CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
@@ -164,12 +168,12 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
-    copyConfigDir(fromConfig, toConfig, null);
+  public void copyConfig(String fromConfig, String toConfig) throws IOException {
+    copyConfig(fromConfig, toConfig, null);
   }
 
   @Override
-  public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
+  public void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
     String fromConfigPath = CONFIGS_ZKNODE + "/" + fromConfig;
     String toConfigPath = CONFIGS_ZKNODE + "/" + toConfig;
     try {
@@ -182,12 +186,29 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void uploadConfigDir(Path dir, String configName) throws IOException {
+  public void uploadConfig(Path dir, String configName) throws IOException {
     zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   @Override
-  public void downloadConfigDir(String configName, Path dir) throws IOException {
+  public void uploadFileToConfig(String fileName, String configName) throws IOException {
+    Path path = Paths.get(fileName);
+    if (!Files.exists(path)) {
+      throw new IOException("File path " + path + " does not exist");
+    }
+    File file = path.toFile();
+    String zkNode = CONFIGS_ZKNODE + "/" + configName + "/" + file.getName();
+    try {
+      zkClient.makePath(zkNode, file, false, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(
+          "Error uploading file " + file.toString() + " to zookeeper path " + zkNode,
+          SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public void downloadConfig(String configName, Path dir) throws IOException {
     zkClient.downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
@@ -211,7 +232,7 @@ public class ZkConfigSetService extends ConfigSetService {
             "intended to be the default. Current 'solr.default.confdir' value:",
             System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
-        this.uploadConfigDir(Paths.get(configDirPath), ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
+        this.uploadConfig(Paths.get(configDirPath), ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
       }
     }
   }

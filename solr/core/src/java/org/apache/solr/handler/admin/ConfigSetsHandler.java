@@ -169,7 +169,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     String configPathInZk = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSetName;
 
-    boolean overwritesExisting = zkClient.exists(configPathInZk, true);
+    boolean overwritesExisting = coreContainer.getConfigSetService().checkConfigExists(configSetName);
 
     boolean requestIsTrusted = isTrusted(req, coreContainer.getAuthenticationPlugin());
 

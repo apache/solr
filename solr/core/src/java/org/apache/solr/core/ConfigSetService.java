@@ -80,11 +80,6 @@ public abstract class ConfigSetService {
 
   }
 
-  protected final SolrResourceLoader parentLoader;
-
-  /** Optional cache of schemas, key'ed by a bunch of concatenated things */
-  private final Cache<String, IndexSchema> schemaCache;
-
   /** If in SolrCloud mode, upload config sets for each SolrCore in solr.xml. */
   public static void bootstrapConf(CoreContainer cc) throws IOException {
     // List<String> allCoreNames = cfg.getAllCoreNames();
@@ -103,8 +98,16 @@ public abstract class ConfigSetService {
       if (StringUtils.isEmpty(confName)) confName = coreName;
       Path udir = cd.getInstanceDir().resolve("conf");
       log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
-      cc.getConfigSetService().uploadConfigDir(udir, confName);
+      cc.getConfigSetService().uploadConfig(udir, confName);
     }
+  }
+
+  public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name) throws IOException, SAXException, ParserConfigurationException {
+    XmlConfigFile schemaConf = null;
+    InputSource inputSource = new InputSource(is);
+    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, SLASH + SCHEMA + SLASH, null);
+    return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
   }
 
   /**
@@ -140,6 +143,11 @@ public abstract class ConfigSetService {
     }
 
   }
+
+  protected final SolrResourceLoader parentLoader;
+
+  /** Optional cache of schemas, key'ed by a bunch of concatenated things */
+  private final Cache<String, IndexSchema> schemaCache;
 
   /**
    * Create a new ConfigSetService
@@ -254,7 +262,7 @@ public abstract class ConfigSetService {
    * @param configName the config to delete
    * @throws IOException if an I/O error occurs
    */
-  public abstract void deleteConfigDir(String configName) throws IOException;
+  public abstract void deleteConfig(String configName) throws IOException;
 
   /**
    * Copy a config
@@ -263,7 +271,7 @@ public abstract class ConfigSetService {
    * @param toConfig   the config to copy to
    * @throws IOException if an I/O error occurs
    */
-  public abstract void copyConfigDir(String fromConfig, String toConfig) throws IOException;
+  public abstract void copyConfig(String fromConfig, String toConfig) throws IOException;
 
   /**
    * Copy a config
@@ -274,16 +282,18 @@ public abstract class ConfigSetService {
    *                        with the paths that were actually copied to.
    * @throws IOException if an I/O error occurs
    */
-  public abstract void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException;
+  public abstract void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException;
 
   /**
-   * Upload files from a given path to a config
+   * Upload files from a given path to a config Zookeeper
    *
    * @param dir        {@link java.nio.file.Path} to the files
    * @param configName the name to give the config
    * @throws IOException if an I/O error occurs or the path does not exist
    */
-  public abstract void uploadConfigDir(Path dir, String configName) throws IOException;
+  public abstract void uploadConfig(Path dir, String configName) throws IOException;
+
+  public abstract void uploadFileToConfig(String fileName, String configName) throws IOException;
 
   /**
    * Download a config from Zookeeper and write it to the filesystem
@@ -292,21 +302,13 @@ public abstract class ConfigSetService {
    * @param dir        the {@link Path} to write files under
    * @throws IOException if an I/O error occurs or the config does not exist
    */
-  public abstract void downloadConfigDir(String configName, Path dir) throws IOException;
+  public abstract void downloadConfig(String configName, Path dir) throws IOException;
 
   public abstract List<String> listConfigs() throws IOException;
 
   public interface ConfigResource {
 
     ConfigNode get() throws Exception;
-
-  }
-  public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name) throws IOException, SAXException, ParserConfigurationException {
-    XmlConfigFile schemaConf = null;
-    InputSource inputSource = new InputSource(is);
-    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
-    schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, SLASH + SCHEMA + SLASH, null);
-    return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
 
   }
 

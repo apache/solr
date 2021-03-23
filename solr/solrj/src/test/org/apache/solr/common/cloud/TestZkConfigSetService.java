@@ -85,7 +85,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       Files.createDirectory(tempConfig.resolve(".ignoreddir"));
       Files.createFile(tempConfig.resolve(".ignoreddir").resolve("ignored"));
 
-      configSetService.uploadConfigDir(tempConfig, "testconfig");
+      configSetService.uploadConfig(tempConfig, "testconfig");
 
       // uploading a directory creates a new config
       List<String> configs = configSetService.listConfigs();
@@ -94,7 +94,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
       // check downloading
       Path downloadPath = createTempDir("download");
-      configSetService.downloadConfigDir( "testconfig", downloadPath);
+      configSetService.downloadConfig( "testconfig", downloadPath);
       assertTrue(Files.exists(downloadPath.resolve("file1")));
       assertTrue(Files.exists(downloadPath.resolve("file2")));
       assertTrue(Files.isDirectory(downloadPath.resolve("subdir")));
@@ -108,21 +108,21 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       // uploading to the same config overwrites
       byte[] overwritten = "new test data".getBytes(StandardCharsets.UTF_8);
       Files.write(tempConfig.resolve("file1"), overwritten);
-      configSetService.uploadConfigDir(tempConfig, "testconfig");
+      configSetService.uploadConfig(tempConfig, "testconfig");
 
       assertEquals(1, configSetService.listConfigs().size());
       Path download2 = createTempDir("download2");
-      configSetService.downloadConfigDir( "testconfig", download2);
+      configSetService.downloadConfig( "testconfig", download2);
       byte[] checkdata2 = Files.readAllBytes(download2.resolve("file1"));
       assertArrayEquals(overwritten, checkdata2);
 
       // uploading same files to a new name creates a new config
-      configSetService.uploadConfigDir(tempConfig, "config2");
+      configSetService.uploadConfig(tempConfig, "config2");
       assertEquals(2, configSetService.listConfigs().size());
 
       // Test copying a config works in both flavors
-      configSetService.copyConfigDir("config2", "config2copy");
-      configSetService.copyConfigDir( "config2", "config2copy2", null);
+      configSetService.copyConfig("config2", "config2copy");
+      configSetService.copyConfig( "config2", "config2copy2", null);
       configs = configSetService.listConfigs();
       assertTrue("config2copy should exist", configs.contains("config2copy"));
       assertTrue("config2copy2 should exist", configs.contains("config2copy2"));
@@ -178,7 +178,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     // Start with all-access client
     try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
-      configSetService.uploadConfigDir(configPath, "acltest");
+      configSetService.uploadConfig(configPath, "acltest");
       assertEquals(1, configSetService.listConfigs().size());
     }
 
@@ -186,7 +186,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
       assertEquals(1, configSetService.listConfigs().size());
-      configSetService.uploadConfigDir(configPath, "acltest2");
+      configSetService.uploadConfig(configPath, "acltest2");
       fail ("Should have thrown an ACL exception");
     }
     catch (IOException e) {

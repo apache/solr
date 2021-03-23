@@ -466,27 +466,32 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void deleteConfigDir(String configName) throws IOException {
+    public void deleteConfig(String configName) throws IOException {
 
     }
 
     @Override
-    public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
+    public void copyConfig(String fromConfig, String toConfig) throws IOException {
 
     }
 
     @Override
-    public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
+    public void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
 
     }
 
     @Override
-    public void uploadConfigDir(Path dir, String configName) throws IOException {
+    public void uploadConfig(Path dir, String configName) throws IOException {
 
     }
 
     @Override
-    public void downloadConfigDir(String configName, Path dir) throws IOException {
+    public void uploadFileToConfig(String fileName, String configName) throws IOException {
+
+    }
+
+    @Override
+    public void downloadConfig(String configName, Path dir) throws IOException {
 
     }
 

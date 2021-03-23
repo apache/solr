@@ -280,7 +280,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         //TODO add overwrite option?
       } else {
         log.info("Uploading config {}", restoreConfigName);
-        backupMgr.uploadConfigDir(configName, restoreConfigName);
+
+        //
+        backupMgr.uploadConfigDir(configName, restoreConfigName, container.getConfigSetService());
       }
     }
 

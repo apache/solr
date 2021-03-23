@@ -141,7 +141,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testCreateErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-      getConfigSetService().uploadConfigDir(configset("configset-2"), "configSet");
+      getConfigSetService().uploadConfig(configset("configset-2"), "configSet");
 
       // no action
       CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
@@ -229,7 +229,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
           getConfigSetProps(oldProps), UTF_8);
     }
-    getConfigSetService().uploadConfigDir(tmpConfigDir.toPath(), baseConfigSetName);
+    getConfigSetService().uploadConfig(tmpConfigDir.toPath(), baseConfigSetName);
   }
 
   private void verifyCreate(String baseConfigSetName, String configSetName,
@@ -1115,7 +1115,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     FileUtils.write(new File(tmpConfigDir, "configsetprops.json"),
         getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")), UTF_8);
-    getConfigSetService().uploadConfigDir(tmpConfigDir.toPath(), "configSet");
+    getConfigSetService().uploadConfig(tmpConfigDir.toPath(), "configSet");
 
     // no ConfigSet name
     DeleteNoErrorChecking delete = new DeleteNoErrorChecking();
@@ -1147,7 +1147,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final String configSet = "testDelete";
-    getConfigSetService().uploadConfigDir(configset("configset-2"), configSet);
+    getConfigSetService().uploadConfig(configset("configset-2"), configSet);
 
     SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
@@ -1184,7 +1184,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Set<String> configSets = new HashSet<String>();
       for (int i = 0; i < 5; ++i) {
         String configSet = "configSet" + i;
-        getConfigSetService().uploadConfigDir(configset("configset-2"), configSet);
+        getConfigSetService().uploadConfig(configset("configset-2"), configSet);
         configSets.add(configSet);
       }
       response = list.process(solrClient);

@@ -60,36 +60,40 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
 
     @Override
-    public void deleteConfigDir(String configName) throws IOException {
-        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
+    public void deleteConfig(String configName) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void copyConfigDir(String fromConfig, String toConfig) throws IOException {
-        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
+    public void copyConfig(String fromConfig, String toConfig) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
-        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
+    public void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void uploadConfigDir(Path dir, String configName) throws IOException {
-        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
+    public void uploadConfig(Path dir, String configName) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void downloadConfigDir(String configName, Path dir) throws IOException {
-        throw new UnsupportedOperationException("Only supported with ZkConfigSetService");
+    public void uploadFileToConfig(String fileName, String configName) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void downloadConfig(String configName, Path dir) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public List<String> listConfigs() throws IOException {
-        List<String> configs = Files.list(configSetBase)
+        return Files.list(configSetBase)
                 .map(Path::toString)
                 .collect(Collectors.toList());
-        return configs;
     }
 
     protected Path locateInstanceDir(CoreDescriptor cd) {

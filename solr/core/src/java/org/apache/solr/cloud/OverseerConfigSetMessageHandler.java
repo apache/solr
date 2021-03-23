@@ -323,7 +323,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
     Set<String> copiedToZkPaths = new HashSet<String>();
     try {
-      cc.getConfigSetService().copyConfigDir(baseConfigSetName, configSetName, copiedToZkPaths);
+      cc.getConfigSetService().copyConfig(baseConfigSetName, configSetName, copiedToZkPaths);
       if (propertyData != null) {
         try {
           zkStateReader.getZkClient().makePath(
@@ -388,6 +388,6 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Requested delete of immutable ConfigSet: " + configSetName);
       }
     }
-    cc.getConfigSetService().deleteConfigDir(configSetName);
+    cc.getConfigSetService().deleteConfig(configSetName);
   }
 }
