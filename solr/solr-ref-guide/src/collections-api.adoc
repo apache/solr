@@ -195,9 +195,16 @@ http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=1000
 ====
 [.tab-label]*V2 API*
 
+Delete a single request response:
 [source,bash]
 ----
 curl -X DELETE http://localhost:8983/api/cluster/command-status/1000 -H 'Content-Type: application/json'
+----
+
+Flush out all stored completed and failed async request response:
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/cluster/command-status -H 'Content-Type: application/json'
 ----
 ====
 --
@@ -209,6 +216,7 @@ The request ID of the asynchronous call whose stored response should be cleared.
 
 `flush`::
 Set to `true` to clear all stored completed and failed async request responses.
+This is required only with the V1 API.  With V2 we DELETE on `/api/cluster/command-status` end point.
 
 === Examples using DELETESTATUS
 
