@@ -80,7 +80,7 @@ configure(project(':solr:documentation')) {
 
     // list all properties used by the template here to allow uptodate checks to be correct:
     inputs.property('version', project.version)
-    inputs.property('solrDocUrl', project.solrDocUrl)
+    inputs.property('solrDocUrl', project.solrDocUrl).optional(true)
   }
 }
 
