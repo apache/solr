@@ -267,6 +267,8 @@ Other Changes
   alternative implementations of where ConfigSets come from.
   (Nazerke Seidan, David Smiley)
 
+* SOLR-15280: Fixed misleading error message in HdfsDirectoryFactory (Andras Salamon via janhoy)
+
 * SOLR-15341: Remove indexHeapUsageBytes info from /admin/segments and /admin/luke because it's no
   longer available in Lucene -- LUCENE-9387. (janhoy, David Smiley)
 
