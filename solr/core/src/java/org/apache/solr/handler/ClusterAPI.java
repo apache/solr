@@ -102,6 +102,14 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = DELETE,
+      path = "/cluster/command-status",
+      permission = COLL_EDIT_PERM)
+  public void flushCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    wrapParams(req, "flush", true);
+    CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, collectionsHandler);
+  }
+
+  @EndPoint(method = DELETE,
       path =   "/cluster/configs/{name}",
       permission = CONFIG_EDIT_PERM
   )
