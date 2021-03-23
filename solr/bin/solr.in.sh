@@ -43,7 +43,7 @@
 #  * For Java 8: if this is set, additional params will be added to specify the log file & rotation
 #  * For Java 9 or higher: each included opt param that starts with '-Xlog:gc', but does not include an
 #    output specifier, will have a 'file' output specifier (as well as formatting & rollover options)
-#    appended, using the effective value of the SOLR_LOGS_DIR.
+#    appended, using the effective value of the SOLR_GC_LOGS_DIR.
 #
 #GC_LOG_OPTS='-Xlog:gc*'  # (Java 9+)
 #GC_LOG_OPTS="-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails \
@@ -121,6 +121,12 @@
 
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
+
+# Location where Solr should write GC logs to. Defaults to SOLR_LOGS_DIR.
+#SOLR_GC_LOGS_DIR=$SOLR_LOGS_DIR
+
+# The GC log file name. Defaults to solr_gc.log if not specified here.
+#SOLR_GC_LOG_FILE=solr_gc.log
 
 # Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
 # start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
