@@ -23,11 +23,12 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.google.common.base.Preconditions;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
@@ -232,7 +233,8 @@ public class BackupManager {
   public void uploadConfigDir(String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
           throws IOException {
     URI source = getZkStateDir(CONFIG_STATE_DIR, sourceConfigName);
-    configSetService.uploadConfig(Paths.get(source.toString()), targetConfigName);
+    Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
+    uploadToZk(configSetService, source, targetConfigName);
   }
 
   /**
@@ -244,7 +246,11 @@ public class BackupManager {
    */
   public void downloadConfigDir(String configName, ConfigSetService configSetService) throws IOException {
     URI dest = getZkStateDir(CONFIG_STATE_DIR, configName);
-    configSetService.downloadConfig(configName, Paths.get(dest.toString()));
+    repository.createDirectory(getZkStateDir());
+    repository.createDirectory(getZkStateDir(CONFIG_STATE_DIR));
+    repository.createDirectory(dest);
+
+    downloadFromZK(configSetService, configName, dest);
   }
 
   public void uploadCollectionProperties(String collectionName) throws IOException {
@@ -284,6 +290,51 @@ public class BackupManager {
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error downloading file from zookeeper path " + zkPath + " to " + dest.toString(),
               SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  private void downloadFromZK(ConfigSetService configSetService, String configName, URI dir) throws IOException {
+    List<String> files = configSetService.listFilesInConfig(configName);
+    for (String file : files) {
+      List<String> children = configSetService.listFilesInConfig(configName, file);
+      if (children.size() == 0) {
+        log.debug("Writing file {}", file);
+        byte[] data = configSetService.getFileFromConfig(configName, file);
+        try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
+          os.write(data);
+        }
+      } else {
+        URI uri = repository.resolve(dir, file);
+        if (!repository.exists(uri)) {
+          repository.createDirectory(uri);
+        }
+        downloadFromZK(configSetService, configName, repository.resolve(dir, file));
+      }
+    }
+  }
+
+  private void uploadToZk(ConfigSetService configSetService, URI sourceDir, String configName) throws IOException {
+    for (String file : repository.listAll(sourceDir)) {
+      URI path = repository.resolve(sourceDir, file);
+      BackupRepository.PathType t = repository.getPathType(path);
+      switch (t) {
+        case FILE: {
+          try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
+            byte[] arr = new byte[(int) is.length()]; // probably ok since the config file should be small.
+            is.readBytes(arr, 0, (int) is.length());
+            configSetService.uploadFileToConfig(configName, file, arr);
+          }
+          break;
+        }
+        case DIRECTORY: {
+          if (!file.startsWith(".")) {
+            uploadToZk(configSetService, path, configName);
+          }
+          break;
+        }
+        default:
+          throw new IllegalStateException("Unknown path type " + t);
+      }
     }
   }
 
