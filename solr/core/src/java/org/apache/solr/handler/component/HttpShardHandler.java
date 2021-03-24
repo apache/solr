@@ -16,14 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
@@ -33,8 +25,8 @@ import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -49,8 +41,17 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @SolrThreadUnsafe
 public class HttpShardHandler extends ShardHandler {
@@ -267,11 +268,13 @@ public class HttpShardHandler extends ShardHandler {
 
     final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
 
-    HttpShardHandlerFactory.WhitelistHostChecker hostChecker = httpShardHandlerFactory.getWhitelistHostChecker();
-    if (shards != null && zkController == null && hostChecker.isWhitelistHostCheckingEnabled() && !hostChecker.hasExplicitWhitelist()) {
-      throw new SolrException(SolrException.ErrorCode.FORBIDDEN, "HttpShardHandlerFactory " + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST
-          + " not configured but required (in lieu of ZkController and ClusterState) when using the '" + ShardParams.SHARDS + "' parameter."
-          + HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
+    AllowListUrlChecker urlChecker = httpShardHandlerFactory.getAllowListUrlChecker();
+    if (shards != null && zkController == null && urlChecker.isEnabled() && !urlChecker.hasExplicitAllowList()) {
+      throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+              "HttpShardHandlerFactory " + HttpShardHandlerFactory.URL_ALLOW_LIST
+                      + " not configured but required (in lieu of ZkController and ClusterState) when using the '"
+                      + ShardParams.SHARDS + "' parameter. "
+                      + HttpShardHandlerFactory.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
     }
 
     ReplicaSource replicaSource;
@@ -281,7 +284,7 @@ public class HttpShardHandler extends ShardHandler {
       replicaSource = new CloudReplicaSource.Builder()
           .params(params)
           .zkStateReader(zkController.getZkStateReader())
-          .whitelistHostChecker(hostChecker)
+          .allowListUrlChecker(urlChecker)
           .replicaListTransformer(replicaListTransformer)
           .collection(cloudDescriptor.getCollectionName())
           .onlyNrt(onlyNrt)
@@ -305,7 +308,7 @@ public class HttpShardHandler extends ShardHandler {
       }
     } else {
       replicaSource = new StandaloneReplicaSource.Builder()
-          .whitelistHostChecker(hostChecker)
+          .allowListUrlChecker(urlChecker)
           .shards(shards)
           .build();
       rb.slices = new String[replicaSource.getSliceCount()];

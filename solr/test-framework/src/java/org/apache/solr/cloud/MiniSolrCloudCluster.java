@@ -88,7 +88,7 @@ public class MiniSolrCloudCluster {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  public static final String SOLR_TESTS_SHARDS_WHITELIST = "solr.tests.shardsWhitelist";
+  public static final String TEST_URL_ALLOW_LIST = "solr.tests.urlAllowList";
 
   public static final int DEFAULT_TIMEOUT = 30;
 
@@ -104,7 +104,7 @@ public class MiniSolrCloudCluster {
       "    <str name=\"urlScheme\">${urlScheme:}</str>\n" +
       "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n" +
       "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n" +
-      "    <str name=\"shardsWhitelist\">${"+SOLR_TESTS_SHARDS_WHITELIST+":}</str>\n" +
+      "    <str name=\"urlAllowList\">${"+ TEST_URL_ALLOW_LIST +":}</str>\n" +
       "  </shardHandlerFactory>\n" +
       "\n" +
       "  <solrcloud>\n" +

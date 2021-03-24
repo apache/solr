@@ -40,18 +40,18 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
+public class ShardsAllowListTest extends MultiSolrCloudTestCase {
 
   /**
-   * The cluster with this key will include an explicit list of host whitelisted (all hosts in both the clusters)
+   * The cluster with this key will include an explicit list of host allowed (all hosts in both the clusters)
    */
   private static final String EXPLICIT_CLUSTER_KEY = "explicitCluster";
   /**
-   * The cluster with this key will not include an explicit list of host whitelisted, will rely on live_nodes
+   * The cluster with this key will not include an explicit list of host allowed, will rely on live_nodes
    */
   private static final String IMPLICIT_CLUSTER_KEY = "implicitCluster";
-  private static final String EXPLICIT_WHITELIST_PROPERTY = "solr.tests.ShardsWhitelistTest.explicitWhitelist.";
-  protected static final String COLLECTION_NAME = "ShardsWhitelistTestCollection";
+  private static final String EXPLICIT_ALLOW_LIST_PROPERTY = "solr.tests.ShardsAllowListTest.explicitAllowList.";
+  protected static final String COLLECTION_NAME = "ShardsAllowListTestCollection";
 
   private static int numShards;
   private static int numReplicas;
@@ -83,7 +83,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
                   createTempDir())
                       .addConfig("conf", configset("cloud-dynamic"))
                       .withSolrXml(MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
-                          MiniSolrCloudCluster.SOLR_TESTS_SHARDS_WHITELIST, EXPLICIT_WHITELIST_PROPERTY + clusterId))
+                          MiniSolrCloudCluster.TEST_URL_ALLOW_LIST, EXPLICIT_ALLOW_LIST_PROPERTY + clusterId))
                       .build();
               return cluster;
             } catch (Exception e) {
@@ -101,7 +101,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           public void accept(String clusterId, MiniSolrCloudCluster cluster) {
             appendClusterNodes(sb, ",", cluster);
             if (clusterId.equals(EXPLICIT_CLUSTER_KEY)) {
-              System.setProperty(EXPLICIT_WHITELIST_PROPERTY + clusterId, sb.toString());
+              System.setProperty(EXPLICIT_ALLOW_LIST_PROPERTY + clusterId, sb.toString());
               for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
                 try {
                   runner.stop();
@@ -118,7 +118,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
   @AfterClass
   public static void afterTests() {
-    System.clearProperty(EXPLICIT_WHITELIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
+    System.clearProperty(EXPLICIT_ALLOW_LIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
   }
 
   private HttpShardHandlerFactory getShardHandlerFactory(String clusterId) {
@@ -128,15 +128,15 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(), notNullValue());
-    assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(), nullValue());
+    assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getAllowListUrlChecker().getHostAllowList(), notNullValue());
+    assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getAllowListUrlChecker().getHostAllowList(), nullValue());
 
-    assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getWhitelistHostChecker().hasExplicitWhitelist(), is(true));
-    assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getWhitelistHostChecker().hasExplicitWhitelist(), is(false));
+    assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getAllowListUrlChecker().hasExplicitAllowList(), is(true));
+    assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getAllowListUrlChecker().hasExplicitAllowList(), is(false));
     for (MiniSolrCloudCluster cluster : clusterId2cluster.values()) {
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
         URI uri = runner.getBaseUrl().toURI();
-        assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(),
+        assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getAllowListUrlChecker().getHostAllowList(),
             hasItem(uri.getHost() + ":" + uri.getPort()));
       }
     }
@@ -176,7 +176,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           numDocs("*:*", getShardUrl("shard1", cluster) + ",shard2", cluster), is(10));
     }
 
-    // explicit whitelist includes all the nodes in both clusters. Requests should be allowed to go through
+    // explicit allow-list includes all the nodes in both clusters. Requests should be allowed to go through
     assertThat("A request to the explicit cluster with shards that point to the implicit one",
         numDocs(
             "id:implicitCluster*",
@@ -224,7 +224,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
   }
 
   private void assertForbidden(String query, String shards, MiniSolrCloudCluster cluster) throws IOException {
-    ignoreException("not on the shards whitelist");
+    ignoreException("not on the shards allow-list");
     try {
       numDocs(
           query,
@@ -234,9 +234,9 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
     } catch (SolrServerException e) {
       assertThat(e.getCause(), instanceOf(SolrException.class));
       assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(((SolrException) e.getCause()).getMessage(), containsString("not on the shards whitelist"));
+      assertThat(((SolrException) e.getCause()).getMessage(), containsString("not on the shards allow-list"));
     }
-    unIgnoreException("not on the shards whitelist");
+    unIgnoreException("not on the shards allow-list");
   }
 
   private String getShardUrl(String shardName, MiniSolrCloudCluster cluster) {

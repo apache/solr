@@ -242,7 +242,7 @@ public class IndexFetcher {
       leaderUrl = leaderUrl.substring(0, leaderUrl.length()-12);
       log.warn("'leaderUrl' must be specified without the {} suffix", ReplicationHandler.PATH);
     }
-    this.leaderUrl = leaderUrl;
+    this.leaderUrl = leaderUrl;//TODO each time leaderUrl is set, check the allowUrls?
 
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);

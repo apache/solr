@@ -49,7 +49,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
     class="HttpShardHandlerFactory">
     <int name="socketTimeout">${socketTimeout:600000}</int>
     <int name="connTimeout">${connTimeout:60000}</int>
-    <str name="shardsWhitelist">${solr.shardsWhitelist:}</str>
+    <str name="urlAllowList">${solr.urlAllowList:}</str>
   </shardHandlerFactory>
 
 </solr>
@@ -228,8 +228,8 @@ If the threadpool uses a backing queue, what is its maximum size to use direct h
 `fairnessPolicy`::
 A boolean to configure if the threadpool favors fairness over throughput. Default is false to favor throughput.
 
-`shardsWhitelist`::
-When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can also be configured in `solr.in.sh`.
+`urlAllowList`::
+When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be allowed or Solr will forbid the request. The allow-list can also be configured in `solr.in.sh`.
 
 `replicaRouting`::
 A NamedList specifying replica routing preference configuration. This may be used to select and configure replica routing preferences. `default=true` may be used to set the default base replica routing preference. Only positive default status assertions are respected; i.e., `default=false` has no effect. If no explicit default base replica routing preference is configured, the implicit default will be `random`.

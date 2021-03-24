@@ -16,20 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
@@ -37,6 +23,14 @@ import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
@@ -49,6 +43,7 @@ public class ClusterState implements JSONWriter.Writable {
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
   private Set<String> liveNodes;
+  private Set<String> hostAllowList;
 
   /**
    * Use this constr when ClusterState is meant for consumption.
@@ -330,6 +325,19 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
+  }
+
+  /**
+   * Gets the set of allowed hosts (host:port) built from the set of live nodes.
+   * The set is cached to be reused.
+   */
+  public Set<String> getHostAllowList() {
+    if (hostAllowList == null) {
+      hostAllowList = getLiveNodes().stream()
+              .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
+              .collect(Collectors.toSet());
+    }
+    return hostAllowList;
   }
 
   /**

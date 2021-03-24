@@ -193,7 +193,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  public static final String SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable.shardsWhitelist";
+  public static final String SYSTEM_PROPERTY_SOLR_DISABLE_URL_ALLOW_LIST = "solr.disable.urlAllowList";
 
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
@@ -2942,12 +2942,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   protected static void systemSetPropertySolrDisableShardsWhitelist(String value) {
-    System.setProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST, value);
+    System.setProperty(SYSTEM_PROPERTY_SOLR_DISABLE_URL_ALLOW_LIST, value);
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   protected static void systemClearPropertySolrDisableShardsWhitelist() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_URL_ALLOW_LIST);
   }
 
   @SuppressWarnings({"unchecked"})
