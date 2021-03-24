@@ -135,6 +135,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
@@ -197,8 +198,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
 
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  public static final String SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable.shardsWhitelist";
+  public static final String TEST_URL_ALLOW_LIST = "solr.tests." + AllowListUrlChecker.URL_ALLOW_LIST;
 
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
@@ -2975,13 +2975,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
   
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertySolrDisableShardsWhitelist(String value) {
-    System.setProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST, value);
+  protected static void systemSetPropertySolrDisableUrlAllowList(String value) {
+    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, value);
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrDisableShardsWhitelist() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
+  protected static void systemClearPropertySolrDisableUrlAllowList() {
+    System.clearProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST);
   }
 
   @SuppressWarnings({"unchecked"})

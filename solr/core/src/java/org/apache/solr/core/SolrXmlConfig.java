@@ -36,9 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -73,6 +74,8 @@ public class SolrXmlConfig {
   public final static String SOLR_DATA_HOME = "solr.data.home";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Pattern COMMA_SEPARATED_PATTERN = Pattern.compile("\\s*,\\s*");
 
   /**
    * Given some node Properties, checks if non-null and a 'zkHost' is alread included.  If so, the Properties are
@@ -327,7 +330,7 @@ public class SolrXmlConfig {
           builder.setSharedLibDirectory(value);
           break;
         case "allowPaths":
-          builder.setAllowPaths(stringToPaths(value));
+          builder.setAllowPaths(separatePaths(value));
           break;
         case "configSetBaseDir":
           builder.setConfigSetBaseDirectory(value);
@@ -344,6 +347,9 @@ public class SolrXmlConfig {
         case "transientCacheSize":
           builder.setTransientCacheSize(parseInt(name, value));
           break;
+        case "allowUrls":
+          builder.setAllowUrls(separateStrings(value));
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration value in solr.xml: " + name);
       }
@@ -352,13 +358,27 @@ public class SolrXmlConfig {
     return builder.build();
   }
 
-  private static Set<Path> stringToPaths(String commaSeparatedString) {
+  private static List<String> separateStrings(String commaSeparatedString) {
+    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+      return Collections.emptyList();
+    }
+    return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
+  }
+
+  private static Set<Path> separatePaths(String commaSeparatedString) {
     if (Strings.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
     }
-    // Parse list of paths. The special value '*' is mapped to _ALL_ to mean all paths
-    return Arrays.stream(commaSeparatedString.split(",\\s?"))
-        .map(p -> Paths.get("*".equals(p) ? "_ALL_" : p)).collect(Collectors.toSet());
+    // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
+    String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);
+    Set<Path> paths = Sets.newHashSetWithExpectedSize(pathStrings.length);
+    for (String p : pathStrings) {
+      if ("*".equals(p) || "_ALL_".equals(p)) {
+        return SolrPaths.ALL_PATHS;
+      }
+      paths.add(Paths.get(p));
+    }
+    return paths;
   }
 
   private static UpdateShardHandlerConfig loadUpdateConfig(NamedList<Object> nl, boolean alwaysDefine) {

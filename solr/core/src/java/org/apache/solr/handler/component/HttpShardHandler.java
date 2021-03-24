@@ -49,6 +49,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
 
 @SolrThreadUnsafe
@@ -266,11 +267,13 @@ public class HttpShardHandler extends ShardHandler {
 
     final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
 
-    HttpShardHandlerFactory.WhitelistHostChecker hostChecker = httpShardHandlerFactory.getWhitelistHostChecker();
-    if (shards != null && zkController == null && hostChecker.isWhitelistHostCheckingEnabled() && !hostChecker.hasExplicitWhitelist()) {
-      throw new SolrException(SolrException.ErrorCode.FORBIDDEN, "HttpShardHandlerFactory " + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST
-          + " not configured but required (in lieu of ZkController and ClusterState) when using the '" + ShardParams.SHARDS + "' parameter."
-          + HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
+    AllowListUrlChecker urlChecker = req.getCore().getCoreContainer().getAllowListUrlChecker();
+    if (shards != null && zkController == null && urlChecker.isEnabled() && !urlChecker.hasExplicitAllowList()) {
+      throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+              "solr.xml property '" + AllowListUrlChecker.URL_ALLOW_LIST
+                      + "' not configured but required (in lieu of ZkController and ClusterState) when using the '"
+                      + ShardParams.SHARDS + "' parameter. "
+                      + AllowListUrlChecker.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
     }
 
     ReplicaSource replicaSource;
@@ -280,7 +283,7 @@ public class HttpShardHandler extends ShardHandler {
       replicaSource = new CloudReplicaSource.Builder()
           .params(params)
           .zkStateReader(zkController.getZkStateReader())
-          .whitelistHostChecker(hostChecker)
+          .allowListUrlChecker(urlChecker)
           .replicaListTransformer(replicaListTransformer)
           .collection(cloudDescriptor.getCollectionName())
           .onlyNrt(onlyNrt)
@@ -304,7 +307,7 @@ public class HttpShardHandler extends ShardHandler {
       }
     } else {
       replicaSource = new StandaloneReplicaSource.Builder()
-          .whitelistHostChecker(hostChecker)
+          .allowListUrlChecker(urlChecker)
           .shards(shards)
           .build();
       rb.slices = new String[replicaSource.getSliceCount()];

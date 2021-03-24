@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,22 +35,23 @@ import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
+public class ShardsAllowListTest extends MultiSolrCloudTestCase {
 
   /**
-   * The cluster with this key will include an explicit list of host whitelisted (all hosts in both the clusters)
+   * The cluster with this key will include an explicit list of host allowed (all hosts in both the clusters)
    */
   private static final String EXPLICIT_CLUSTER_KEY = "explicitCluster";
   /**
-   * The cluster with this key will not include an explicit list of host whitelisted, will rely on live_nodes
+   * The cluster with this key will not include an explicit list of host allowed, will rely on live_nodes
    */
   private static final String IMPLICIT_CLUSTER_KEY = "implicitCluster";
-  private static final String EXPLICIT_WHITELIST_PROPERTY = "solr.tests.ShardsWhitelistTest.explicitWhitelist.";
-  protected static final String COLLECTION_NAME = "ShardsWhitelistTestCollection";
+  private static final String EXPLICIT_ALLOW_LIST_PROPERTY = "solr.tests.ShardsAllowListTest.explicitAllowList.";
+  protected static final String COLLECTION_NAME = "ShardsAllowListTestCollection";
 
   private static int numShards;
   private static int numReplicas;
@@ -83,7 +83,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
                   createTempDir())
                       .addConfig("conf", configset("cloud-dynamic"))
                       .withSolrXml(MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
-                          MiniSolrCloudCluster.SOLR_TESTS_SHARDS_WHITELIST, EXPLICIT_WHITELIST_PROPERTY + clusterId))
+                          MiniSolrCloudCluster.TEST_URL_ALLOW_LIST, EXPLICIT_ALLOW_LIST_PROPERTY + clusterId))
                       .build();
               return cluster;
             } catch (Exception e) {
@@ -101,7 +101,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           public void accept(String clusterId, MiniSolrCloudCluster cluster) {
             appendClusterNodes(sb, ",", cluster);
             if (clusterId.equals(EXPLICIT_CLUSTER_KEY)) {
-              System.setProperty(EXPLICIT_WHITELIST_PROPERTY + clusterId, sb.toString());
+              System.setProperty(EXPLICIT_ALLOW_LIST_PROPERTY + clusterId, sb.toString());
               for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
                 try {
                   runner.stop();
@@ -118,25 +118,20 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
   @AfterClass
   public static void afterTests() {
-    System.clearProperty(EXPLICIT_WHITELIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
-  }
-
-  private HttpShardHandlerFactory getShardHandlerFactory(String clusterId) {
-    return (HttpShardHandlerFactory) clusterId2cluster.get(clusterId).getJettySolrRunner(0).getCoreContainer()
-        .getShardHandlerFactory();
+    System.clearProperty(EXPLICIT_ALLOW_LIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
   }
 
   @Test
   public void test() throws Exception {
-    assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(), notNullValue());
-    assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(), nullValue());
+    assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).getHostAllowList(), notNullValue());
+    assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).getHostAllowList().isEmpty(), is(true));
 
-    assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getWhitelistHostChecker().hasExplicitWhitelist(), is(true));
-    assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getWhitelistHostChecker().hasExplicitWhitelist(), is(false));
+    assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(true));
+    assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(false));
     for (MiniSolrCloudCluster cluster : clusterId2cluster.values()) {
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
         URI uri = runner.getBaseUrl().toURI();
-        assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(),
+        assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).getHostAllowList(),
             hasItem(uri.getHost() + ":" + uri.getPort()));
       }
     }
@@ -176,7 +171,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           numDocs("*:*", getShardUrl("shard1", cluster) + ",shard2", cluster), is(10));
     }
 
-    // explicit whitelist includes all the nodes in both clusters. Requests should be allowed to go through
+    // explicit allow-list includes all the nodes in both clusters. Requests should be allowed to go through
     assertThat("A request to the explicit cluster with shards that point to the implicit one",
         numDocs(
             "id:implicitCluster*",
@@ -223,8 +218,13 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
         is(0));
   }
 
+  private AllowListUrlChecker getAllowListUrlChecker(String clusterId) {
+    return clusterId2cluster.get(clusterId).getJettySolrRunner(0).getCoreContainer().getAllowListUrlChecker();
+  }
+
   private void assertForbidden(String query, String shards, MiniSolrCloudCluster cluster) throws IOException {
-    ignoreException("not on the shards whitelist");
+    String expectedExceptionMessage = "nor in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'";
+    ignoreException(expectedExceptionMessage);
     try {
       numDocs(
           query,
@@ -234,9 +234,10 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
     } catch (SolrServerException e) {
       assertThat(e.getCause(), instanceOf(SolrException.class));
       assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(((SolrException) e.getCause()).getMessage(), containsString("not on the shards whitelist"));
+      assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
+    } finally {
+      unIgnoreException(expectedExceptionMessage);
     }
-    unIgnoreException("not on the shards whitelist");
   }
 
   private String getShardUrl(String shardName, MiniSolrCloudCluster cluster) {
