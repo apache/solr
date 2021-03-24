@@ -35,7 +35,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
@@ -68,7 +67,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   HttpShardHandlerFactory shardHandlerFactory;
   String adminPath;
   ZkStateReader zkStateReader;
-  CoreContainer cc;
   SolrCloudManager cloudManager;
   String myId;
   Stats stats;
@@ -88,13 +86,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private volatile boolean isClosed;
 
   public OverseerCollectionMessageHandler(ZkStateReader zkStateReader, String myId,
-                                        final HttpShardHandlerFactory shardHandlerFactory,
-                                        String adminPath,
-                                        Stats stats,
-                                        Overseer overseer,
-                                        OverseerNodePrioritizer overseerPrioritizer, CoreContainer cc) {
+                                          final HttpShardHandlerFactory shardHandlerFactory,
+                                          String adminPath,
+                                          Stats stats,
+                                          Overseer overseer,
+                                          OverseerNodePrioritizer overseerPrioritizer) {
     this.zkStateReader = zkStateReader;
-    this.cc = cc;
     this.shardHandlerFactory = shardHandlerFactory;
     this.adminPath = adminPath;
     this.myId = myId;
