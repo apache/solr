@@ -79,6 +79,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -131,6 +132,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    systemSetPropertySolrDisableUrlAllowList("true");
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
@@ -160,6 +162,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
+    systemClearPropertySolrDisableUrlAllowList();
     if (null != leaderJetty) {
       leaderJetty.stop();
       leaderJetty = null;
@@ -300,6 +303,24 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Test
   public void doTestHandlerPathUnchanged() throws Exception {
     assertEquals("/replication", ReplicationHandler.PATH);
+  }
+
+  @Test
+  public void testUrlAllowList() throws Exception {
+    // Run another test with URL allow-list enabled and allow-list is empty.
+    // Expect an exception because the leader URL is not allowed.
+    systemClearPropertySolrDisableUrlAllowList();
+    SolrException e = expectThrows(SolrException.class, this::doTestDetails);
+    assertTrue(e.getMessage().contains("nor in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'"));
+
+    // Set the allow-list to allow the leader URL.
+    // Expect the same test to pass now.
+    System.setProperty(TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl() + "," + followerJetty.getBaseUrl());
+    try {
+      doTestDetails();
+    } finally {
+      System.clearProperty(TEST_URL_ALLOW_LIST);
+    }
   }
 
   @Test

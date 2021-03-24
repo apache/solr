@@ -35,6 +35,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
@@ -44,6 +45,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +67,11 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   @Test
   public void test() throws Exception {
-    jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(Path.of("_ALL_"))); // Allow non-standard core instance path
+    jettys.forEach(j -> {
+      Set<Path> allowPath = j.getCoreContainer().getAllowPaths();
+      allowPath.clear();
+      allowPath.addAll(SolrPaths.ALL_PATHS); // Allow non-standard core instance path
+    });
     testCoreUnloadAndLeaders(); // long
     testUnloadLotsOfCores(); // long
 

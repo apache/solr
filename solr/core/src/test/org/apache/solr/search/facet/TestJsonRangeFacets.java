@@ -35,7 +35,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     JSONTestUtil.failRepeatedKeys = true;
 
     // we need DVs on point fields to compute stats & facets
@@ -57,7 +57,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
