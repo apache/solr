@@ -20,6 +20,7 @@ package org.apache.solr.gcs;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import com.google.cloud.storage.Storage;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -29,7 +30,11 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Override
     @SuppressWarnings("rawtypes")
     protected BackupRepository getRepository() {
-        GCSBackupRepository repository = new GCSBackupRepository();
+        GCSBackupRepository repository = new GCSBackupRepository() {
+            protected Storage initStorage(String credentialPath) {
+                return null;
+            }
+        };
         repository.init(new NamedList());
         return repository;
     }

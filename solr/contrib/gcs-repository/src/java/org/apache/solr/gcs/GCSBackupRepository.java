@@ -57,13 +57,13 @@ public class GCSBackupRepository implements BackupRepository {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final int LARGE_BLOB_THRESHOLD_BYTE_SIZE = 5 * 1024 * 1024;
     private static final int BUFFER_SIZE = 16 * 1024 * 1024;
-    private static Storage storage;
+    protected Storage storage;
 
     @SuppressWarnings("rawtypes")
     private NamedList config = null;
     private String bucketName = "backup-managed-solr";
 
-    static synchronized Storage initStorage(String credentialPath) {
+    protected Storage initStorage(String credentialPath) {
         if (storage != null)
             return storage;
 
@@ -200,6 +200,8 @@ public class GCSBackupRepository implements BackupRepository {
 
         final String pathStr = blobName;
         final LinkedList<String> result = new LinkedList<>();
+        // TODO JEGERLOW - LocalStorageHelper used for tests doesn't support fetching bucket.  Can _probably_ be replaced with the commented line below.
+        //storage.list(bucketName, Storage.BlobListOption.currentDirectory(), Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
         storage.get(bucketName).list(
                 Storage.BlobListOption.currentDirectory(),
                 Storage.BlobListOption.prefix(pathStr),
@@ -306,6 +308,8 @@ public class GCSBackupRepository implements BackupRepository {
 
         final List<BlobId> result = new ArrayList<>();
         final String pathStr = blobName;
+        // TODO JEGERLOW - LocalStorageHelper used for tests doesn't support fetching bucket.  Can _probably_ be replaced with the commented line below.
+        //storage.list(bucketName, Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
         storage.get(bucketName).list(
                 Storage.BlobListOption.prefix(pathStr),
                 Storage.BlobListOption.fields()
