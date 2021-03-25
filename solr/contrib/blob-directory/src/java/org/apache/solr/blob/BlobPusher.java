@@ -23,10 +23,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
@@ -104,6 +101,11 @@ public class BlobPusher implements Closeable {
 
   @Override
   public void close() {
-    // TODO
+    executor.shutdown();
+    try {
+      executor.awaitTermination(10, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 }

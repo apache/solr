@@ -17,6 +17,8 @@
 
 package org.apache.solr.blob;
 
+import org.apache.solr.common.params.SolrParams;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +27,11 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public abstract class BlobStore implements Closeable {
+
+  /**
+   * Initializes this {@link BlobStore} based on provided parameters.
+   */
+  public abstract void init(SolrParams params);
 
   /**
    * Creates a file.
@@ -53,16 +60,9 @@ public abstract class BlobStore implements Closeable {
           throws IOException;
 
   /**
-   * Deletes directories from the blob storage.
-   *
-   * @param dirPath The path to the directory in which to delete sub-directories.
-   * @param dirNames The directory names. They are deleted even if they are not empty.
-   */
-  public abstract void deleteDirectories(String dirPath, Collection<String> dirNames)
-          throws IOException;
-
-  /**
    * Lists all files and sub-directories that are selected by the provided filter in a given directory.
+   * The output is in sorted order (UTF-16, java's {@link String#compareTo}).
+   * Returns an empty list if the directory does not exist.
    *
    * @param dirPath The path to the directory in which to list files/sub-directories.
    * @param nameFilter Filters the listed file/directory names (does not include the path).
