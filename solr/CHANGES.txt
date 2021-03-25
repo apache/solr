@@ -304,6 +304,8 @@ Bug Fixes
 * SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
   (Thomas Wöckinger, David Smiley)
 
+* SOLR-15273: Fix Distributed Group Query don't supports rename unique key field name. (limingnihao)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
