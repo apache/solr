@@ -236,8 +236,9 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       assertThat(e.getCause(), instanceOf(SolrException.class));
       assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
       assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
+    } finally {
+      unIgnoreException(expectedExceptionMessage);
     }
-    unIgnoreException(expectedExceptionMessage);
   }
 
   private String getShardUrl(String shardName, MiniSolrCloudCluster cluster) {

@@ -71,6 +71,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     originalTestWait = IndexFetcher.testWait;
     
     super.setUp();
+    systemSetPropertySolrDisableUrlAllowList("true");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     String factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
     System.setProperty("solr.directoryFactory", factory);
@@ -91,6 +92,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
+    systemClearPropertySolrDisableUrlAllowList();
     if (null != leaderJetty) {
       leaderJetty.stop();
       leaderJetty = null;
