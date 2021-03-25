@@ -27,7 +27,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -154,7 +153,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       if (loader instanceof ZkSolrResourceLoader) {
         resource = name;
       } else {
-        resource = Paths.get(loader.getConfigDir()).resolve(name).toString();
+        resource = loader.getConfigPath().resolve(name).toString();
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading solr config from " + resource, e);
     }

@@ -731,6 +731,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   /**
    * Make sure we can connect to the shard leader as currently defined in ZK
    * @param ourUrl if the leader url is the same as our url, we will skip trying to connect
+   * @return the leader replica, or null if closed
    */
   private final Replica pingLeader(String ourUrl, CoreDescriptor coreDesc, boolean mayPutReplicaAsDown)
       throws Exception {
@@ -745,12 +746,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
         zkController.publish(coreDesc, Replica.State.DOWN);
       }
       numTried++;
-      Replica leaderReplica = null;
 
       if (isClosed()) {
-        return leaderReplica;
+        return null;
       }
 
+      Replica leaderReplica;
       try {
         leaderReplica = zkStateReader.getLeaderRetry(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());

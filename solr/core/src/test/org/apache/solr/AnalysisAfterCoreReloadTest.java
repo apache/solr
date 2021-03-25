@@ -30,6 +30,11 @@ import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
@@ -115,24 +120,22 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   private void overwriteStopwords(String stopwords) throws IOException {
     try (SolrCore core = h.getCoreContainer().getCore(collection)) {
-      String configDir = core.getResourceLoader().getConfigDir();
-      FileUtils.moveFile(new File(configDir, "stopwords.txt"), new File(configDir, "stopwords.txt.bak"));
-      File file = new File(configDir, "stopwords.txt");
-      FileUtils.writeStringToFile(file, stopwords, "UTF-8");
-     
+      Path configPath = core.getResourceLoader().getConfigPath();
+      Files.move(configPath.resolve("stopwords.txt"), configPath.resolve("stopwords.txt.bak"));
+      Files.write(configPath.resolve("stopwords.txt"), stopwords.getBytes(StandardCharsets.UTF_8));
     }
   }
   
   @Override
   public void tearDown() throws Exception {
-    String configDir;
+    Path configPath;
     try (SolrCore core = h.getCoreContainer().getCore(collection)) {
-      configDir = core.getResourceLoader().getConfigDir();
+      configPath = core.getResourceLoader().getConfigPath();
     }
     super.tearDown();
-    if (new File(configDir, "stopwords.txt.bak").exists()) {
-      FileUtils.deleteQuietly(new File(configDir, "stopwords.txt"));
-      FileUtils.moveFile(new File(configDir, "stopwords.txt.bak"), new File(configDir, "stopwords.txt"));
+    Path backupFile = configPath.resolve("stopwords.txt.bak");
+    if (Files.exists(backupFile)) {
+      Files.move(backupFile, configPath.resolve("stopwords.txt"), REPLACE_EXISTING);
     }
   }
 
