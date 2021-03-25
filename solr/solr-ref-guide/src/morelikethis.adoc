@@ -231,7 +231,7 @@ It supports faceting, paging, and filtering using common query parameters, but d
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `false`
+|Optional |Default: `true`
 |===
 +
 Specifies if the response should include the matched document.
