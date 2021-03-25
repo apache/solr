@@ -46,7 +46,7 @@ allprojects {
     }
 
     task renderJavadoc(type: RenderJavadocTask) {
-      description "Generates Javadoc API documentation for the main source code. This directly invokes javadoc tool."
+      description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
       group "documentation"
 
       taskResources = resources
@@ -88,6 +88,8 @@ allprojects {
         "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
         "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
     ]
+
+    solrDocUrl = provider({ rootProject.solrDocUrl })
 
     // Set up custom doclet.
     dependsOn configurations.missingdoclet
@@ -211,10 +213,8 @@ class RenderJavadocTask extends DefaultTask {
   def offlineLinks = [:]
 
   @Input
-  def luceneDocUrl = "${-> project.luceneDocUrl }"
-
-  @Input
-  def solrDocUrl = "${-> project.solrDocUrl }"
+  @Optional
+  Property<String> solrDocUrl = project.objects.property(String)
 
   // default is to require full javadocs
   @Input
@@ -228,6 +228,9 @@ class RenderJavadocTask extends DefaultTask {
   @Input
   List<String> javadocMissingIgnore = []
 
+  @Input
+  @Optional
+  ListProperty<String> extraOpts = project.objects.listProperty(String)
 
   @Nullable
   @Optional
@@ -297,6 +300,9 @@ class RenderJavadocTask extends DefaultTask {
 
     opts << [ '-quiet' ]
 
+    // Add all extra options, if any.
+    opts.addAll(extraOpts.orElse([]).get())
+
     def allOfflineLinks = [:]
     allOfflineLinks.putAll(offlineLinks)
 
@@ -321,7 +327,10 @@ class RenderJavadocTask extends DefaultTask {
               opts << ['-link', relative]
             } else {
               // For absolute links, we determine the target URL by assembling the full URL.
-              allOfflineLinks.put("${solrDocUrl}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+              def value = solrDocUrl.getOrElse(null)
+              if (value) {
+                allOfflineLinks.put("${value}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+              }
             }
           }
     }
@@ -339,7 +348,16 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '--release', 11 ]
     opts << '-Xdoclint:all,-missing'
 
-    // Temporary file that holds all javadoc options for the current task.
+    // Increase Javadoc's heap.
+    opts += [ "-J-Xmx512m" ]
+    // Force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
+    opts += [ "-J-Duser.language=en", "-J-Duser.country=US" ]
+
+    // -J options have to be passed on command line, they are not interpreted if passed via args file.
+    def jOpts = opts.findAll { opt -> opt instanceof String && opt.startsWith("-J") }
+    opts.removeAll(jOpts)
+
+    // Temporary file that holds all javadoc options for the current task (except jOpts)
     optionsFile.withWriter("UTF-8", { writer ->
       // escapes an option with single quotes or whitespace to be passed in the options.txt file for
       def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
@@ -387,11 +405,7 @@ class RenderJavadocTask extends DefaultTask {
         errorOutput = wrapped
 
         args += [ "@${optionsFile}" ]
-
-        // -J flags can't be passed via options file... (an error "javadoc: error - invalid flag: -J-Xmx512m" occurs.)
-        args += [ "-J-Xmx512m" ]
-        // force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
-        args += [ "-J-Duser.language=en", "-J-Duser.country=US" ]
+        args += jOpts
 
         ignoreExitValue true
       }

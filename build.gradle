@@ -169,6 +169,7 @@ apply from: file('gradle/ant-compat/misc.gradle')
 apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 
+apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
@@ -179,6 +180,7 @@ apply from: file('gradle/hacks/solr.findbugs.gradle')
 
 apply from: file('gradle/hacks/gradle.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
+apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
 
 apply from: file('gradle/solr-tlp-migration/inaccessible-test-sources.gradle')
 
