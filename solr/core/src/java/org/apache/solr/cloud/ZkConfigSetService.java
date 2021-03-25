@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -35,6 +36,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
@@ -43,6 +45,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -158,11 +161,30 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
+  public boolean checkFileExistsInConfig(String configName, String fileName) throws IOException {
+    try {
+      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName + "/" + fileName, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
   public void deleteConfig(String configName) throws IOException {
     try {
       zkClient.clean(CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error checking whether config exists",
+      throw new IOException("Error deleting config",
+              SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public void deleteFileFromConfig(String configName, String fileName) throws IOException {
+    try {
+      zkClient.clean(CONFIGS_ZKNODE + "/" + configName + "/" + fileName);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error deleting a file in config",
               SolrZkClient.checkInterrupted(e));
     }
   }
@@ -191,19 +213,79 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void uploadFileToConfig(String fileName, String configName) throws IOException {
-    Path path = Paths.get(fileName);
-    if (!Files.exists(path)) {
-      throw new IOException("File path " + path + " does not exist");
-    }
-    File file = path.toFile();
-    String zkNode = CONFIGS_ZKNODE + "/" + configName + "/" + file.getName();
+  public void createFilePathInConfig(String configName, String fileName, boolean failOnExists) throws IOException {
     try {
-      zkClient.makePath(zkNode, file, false, true);
+      zkClient.makePath(CONFIGS_ZKNODE + "/" + configName + "/" + fileName, failOnExists,true);
     } catch (KeeperException | InterruptedException e) {
-      throw new IOException(
-          "Error uploading file " + file.toString() + " to zookeeper path " + zkNode,
-          SolrZkClient.checkInterrupted(e));
+      throw new IOException("Error creating file path in config", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public void uploadFileToConfig(String configName, String fileName, byte[] data) throws IOException {
+    try {
+      zkClient.makePath(CONFIGS_ZKNODE + "/" + configName + "/" + fileName, data, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error creating file in config", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public void uploadFileToConfig(String configName, String fileName, byte[] data, boolean failOnExists) throws IOException {
+    String filePath = CONFIGS_ZKNODE + "/" + configName + "/" + fileName;
+    try {
+      zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, failOnExists, true);
+    } catch (KeeperException.NodeExistsException nodeExistsException) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The path " + filePath + " for configSet " + configName + " already exists. In order to overwrite, provide overwrite=true or use an HTTP PUT with the V2 API.");
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error creating file in config", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public void setConfigMetadata(String configName, Map<Object, Object> data) throws IOException {
+    try {
+      zkClient.makePath(CONFIGS_ZKNODE + "/" + configName, Utils.toJSON(data), true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error setting config metadata", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public void setConfigMetadata(String configName, byte[] data) throws IOException {
+    try {
+      zkClient.makePath(CONFIGS_ZKNODE + "/" + configName, data, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error setting config metadata", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public void updateConfigMetadata(String configName, Map<Object, Object> data) throws IOException {
+    try {
+      zkClient.setData(CONFIGS_ZKNODE + "/" + configName, Utils.toJSON(data), true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error updating config metadata", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public void updateConfigMetadata(String configName, byte[] data) throws IOException {
+    try {
+      zkClient.setData(CONFIGS_ZKNODE + "/" + configName, data, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error updating config metadata", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public byte[] getConfigMetadata(String configName) throws IOException {
+    try {
+      return zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error getting config metadata", SolrZkClient.checkInterrupted(e));
     }
   }
 
@@ -213,6 +295,16 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
+  public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
+    try {
+      return zkClient.getData(CONFIGS_ZKNODE + "/" + configName + "/" + fileName, null, null, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error downloading file from config", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+
+  @Override
   public List<String> listConfigs() throws IOException {
     try {
       return zkClient.getChildren(CONFIGS_ZKNODE, null, true);
@@ -220,6 +312,42 @@ public class ZkConfigSetService extends ConfigSetService {
       return Collections.emptyList();
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error listing configs", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  @Override
+  public List<String> listFilesInConfig(String configName) throws IOException {
+    try {
+      return zkClient.getChildren(CONFIGS_ZKNODE + "/" + configName, null, true);
+    } catch (KeeperException.NoNodeException e) {
+      return Collections.emptyList();
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public List<String> listFilesInConfig(String configName, String fileName) throws IOException {
+    try {
+      return zkClient.getChildren(CONFIGS_ZKNODE + "/" + configName + "/" + fileName, null, true);
+    } catch (KeeperException.NoNodeException e) {
+      return Collections.emptyList();
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+
+  @Override
+  public List<String> getAllConfigFiles(String configName) throws IOException {
+    String zkPath = CONFIGS_ZKNODE + "/" + configName;
+    if (!zkPath.startsWith(ZkConfigSetService.CONFIGS_ZKNODE + "/")) {
+      throw new IllegalArgumentException("\"" + zkPath + "\" not recognized as a configset path");
+    }
+    try {
+      return zkClient.getAllConfigsetFiles(zkPath);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error getting all configset files", SolrZkClient.checkInterrupted(e));
     }
   }
 

@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,8 +61,23 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
 
     @Override
+    public boolean checkConfigExists(String configName) throws IOException {
+        return listConfigs().contains(configName);
+    }
+
+    @Override
+    public boolean checkFileExistsInConfig(String configName, String fileName) throws IOException {
+        return false;
+    }
+
+    @Override
     public void deleteConfig(String configName) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deleteFileFromConfig(String configName, String fileName) throws IOException {
+
     }
 
     @Override
@@ -80,8 +96,43 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
 
     @Override
-    public void uploadFileToConfig(String fileName, String configName) throws IOException {
+    public void createFilePathInConfig(String configName, String fileName, boolean failOnExists) throws IOException {
+
+    }
+
+    @Override
+    public void uploadFileToConfig(String configName, String fileName, byte[] data) throws IOException {
+
+    }
+
+    @Override
+    public void uploadFileToConfig(String configName, String fileName, byte[] data, boolean failOnExists) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setConfigMetadata(String configName, Map<Object, Object> data) throws IOException {
+
+    }
+
+    @Override
+    public void setConfigMetadata(String configName, byte[] data) throws IOException {
+
+    }
+
+    @Override
+    public void updateConfigMetadata(String configName, Map<Object, Object> data) throws IOException {
+
+    }
+
+    @Override
+    public void updateConfigMetadata(String configName, byte[] data) throws IOException {
+
+    }
+
+    @Override
+    public byte[] getConfigMetadata(String configName) throws IOException {
+        return new byte[0];
     }
 
     @Override
@@ -94,6 +145,26 @@ public class FileSystemConfigSetService extends ConfigSetService {
         return Files.list(configSetBase)
                 .map(Path::toString)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> listFilesInConfig(String configName) throws IOException {
+        return null;
+    }
+
+    @Override
+    public List<String> listFilesInConfig(String configName, String fileName) throws IOException {
+        return null;
+    }
+
+    @Override
+    public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
+        return new byte[0];
+    }
+
+    @Override
+    public List<String> getAllConfigFiles(String configName) throws IOException {
+        return null;
     }
 
     protected Path locateInstanceDir(CoreDescriptor cd) {

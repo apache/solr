@@ -466,7 +466,17 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
+    public boolean checkFileExistsInConfig(String configName, String fileName) throws IOException {
+      return false;
+    }
+
+    @Override
     public void deleteConfig(String configName) throws IOException {
+
+    }
+
+    @Override
+    public void deleteFileFromConfig(String configName, String fileName) throws IOException {
 
     }
 
@@ -486,8 +496,43 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void uploadFileToConfig(String fileName, String configName) throws IOException {
+    public void createFilePathInConfig(String configName, String fileName, boolean failOnExists) throws IOException {
 
+    }
+
+    @Override
+    public void uploadFileToConfig(String configName, String fileName, byte[] data) throws IOException {
+
+    }
+
+    @Override
+    public void uploadFileToConfig(String configName, String fileName, byte[] data, boolean failOnExists) throws IOException {
+
+    }
+
+    @Override
+    public void setConfigMetadata(String configName, Map<Object, Object> data) throws IOException {
+
+    }
+
+    @Override
+    public void setConfigMetadata(String configName, byte[] data) throws IOException {
+
+    }
+
+    @Override
+    public void updateConfigMetadata(String configName, Map<Object, Object> data) throws IOException {
+
+    }
+
+    @Override
+    public void updateConfigMetadata(String configName, byte[] data) throws IOException {
+
+    }
+
+    @Override
+    public byte[] getConfigMetadata(String configName) throws IOException {
+      return new byte[0];
     }
 
     @Override
@@ -497,6 +542,26 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     @Override
     public List<String> listConfigs() throws IOException {
+      return null;
+    }
+
+    @Override
+    public List<String> listFilesInConfig(String configName) throws IOException {
+      return null;
+    }
+
+    @Override
+    public List<String> listFilesInConfig(String configName, String fileName) throws IOException {
+      return null;
+    }
+
+    @Override
+    public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
+      return new byte[0];
+    }
+
+    @Override
+    public List<String> getAllConfigFiles(String configName) throws IOException {
       return null;
     }
 

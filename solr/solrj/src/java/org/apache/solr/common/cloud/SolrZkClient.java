@@ -31,7 +31,11 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiFunction;
@@ -779,6 +783,14 @@ public class SolrZkClient implements Closeable {
     } catch (KeeperException|InterruptedException ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to get config from zookeeper", ex);
     }
+  }
+
+  public List<String> getAllConfigsetFiles(String root) throws KeeperException, InterruptedException {
+    final List<String> files = new LinkedList<>();
+    ZkMaintenanceUtils.traverseZkTree(
+        this, root, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, files::add);
+    files.remove(root);
+    return files;
   }
 
   public ZkACLProvider getZkACLProvider() {

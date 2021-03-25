@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -246,23 +247,53 @@ public abstract class ConfigSetService {
   public abstract String configSetName(CoreDescriptor cd);
 
   /**
-   * Check whether a config exists
+   * Upload files from a given path to config
    *
-   * @param configName the config to check existance on
-   * @return whether the config exists or not
-   * @throws IOException if an I/O error occurs
+   * @param dir        {@link java.nio.file.Path} to the files
+   * @param configName the name to give the config
+   * @throws IOException if an I/O error occurs or the path does not exist
    */
-  public boolean checkConfigExists(String configName) throws IOException {
-    return listConfigs().contains(configName);
-  }
+  public abstract void uploadConfig(Path dir, String configName) throws IOException;
 
   /**
-   * Delete a config
+   * Upload a file to config
    *
-   * @param configName the config to delete
-   * @throws IOException if an I/O error occurs
+   * @param configName the name to give the config
+   * @param fileName the name of the file
+   * @param data the content of the file
+   * @throws IOException if an I/O error occurs or the path does not exist
    */
-  public abstract void deleteConfig(String configName) throws IOException;
+  public abstract void uploadFileToConfig(String configName, String fileName, byte[] data) throws IOException;
+
+  /**
+   * Upload a file to config
+   *
+   * @param configName the name to give the config
+   * @param fileName the name of the file
+   * @param data the content of the file
+   * @param failOnExists if file already exists in config then do not upload
+   * @throws IOException if an I/O error occurs or the path does not exist
+   */
+  public abstract void uploadFileToConfig(String configName, String fileName, byte[] data, boolean failOnExists) throws IOException;
+
+  /**
+   * Download from config and write it to the filesystem
+   *
+   * @param configName the config to download
+   * @param dir        the {@link Path} to write files under
+   * @throws IOException if an I/O error occurs or the config does not exist
+   */
+  public abstract void downloadConfig(String configName, Path dir) throws IOException;
+
+  /**
+   * Download a file from config
+   *
+   * @param configName the config to download
+   * @param fileName  the file to download
+   * @return the content of the file
+   * @throws IOException if an I/O error occurs or the config does not exist
+   */
+  public abstract byte[] downloadFileFromConfig(String configName, String fileName) throws IOException;
 
   /**
    * Copy a config
@@ -285,26 +316,123 @@ public abstract class ConfigSetService {
   public abstract void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException;
 
   /**
-   * Upload files from a given path to a config Zookeeper
-   *
-   * @param dir        {@link java.nio.file.Path} to the files
-   * @param configName the name to give the config
-   * @throws IOException if an I/O error occurs or the path does not exist
-   */
-  public abstract void uploadConfig(Path dir, String configName) throws IOException;
-
-  public abstract void uploadFileToConfig(String fileName, String configName) throws IOException;
-
-  /**
-   * Download a config from Zookeeper and write it to the filesystem
+   * Create file path in config
    *
    * @param configName the config to download
-   * @param dir        the {@link Path} to write files under
-   * @throws IOException if an I/O error occurs or the config does not exist
+   * @param fileName  file path to be created
+   * @param failOnExists if file path already exists then do not re-create
+   * @throws IOException if an I/O error occurs
    */
-  public abstract void downloadConfig(String configName, Path dir) throws IOException;
+  public abstract void createFilePathInConfig(String configName, String fileName, boolean failOnExists) throws IOException;
 
+  /**
+   * Check whether a config exists
+   *
+   * @param configName the config to check existance on
+   * @return whether the config exists or not
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract boolean checkConfigExists(String configName) throws IOException ;
+
+  /**
+   * Check whether a file in config exists
+   *
+   * @param configName the name of the config
+   * @param fileName the file to check if it exists
+   * @return whether the file exists in config or not
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract boolean checkFileExistsInConfig(String configName, String fileName) throws IOException;
+
+  /**
+   * Delete a config
+   *
+   * @param configName the config to delete
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract void deleteConfig(String configName) throws IOException;
+
+  /**
+   * Delete a file in config
+   *
+   * @param configName the config to delete
+   * @param fileName the file to delete
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract void deleteFileFromConfig(String configName, String fileName) throws IOException;
+
+  /**
+   * Set config metadata
+   *
+   * @param configName the config
+   * @param data metadata to be set in config
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract void setConfigMetadata(String configName, Map<Object, Object> data) throws IOException;
+
+  /**
+   * Set config metadata
+   *
+   * @param configName the config
+   * @param data metadata to be set in config
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract void setConfigMetadata(String configName, byte[] data) throws IOException;
+
+  /**
+   * Update config metadata
+   *
+   * @param configName the config
+   * @param data metadata to be updated in config
+   * @throws IOException if an I/O error occurs or if config does not exist
+   */
+  public abstract void updateConfigMetadata(String configName, Map<Object, Object> data) throws IOException;
+
+  /**
+   * Update config metadata
+   *
+   * @param configName the config
+   * @param data metadata to be updated in config
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract void updateConfigMetadata(String configName, byte[] data) throws IOException;
+
+  /**
+   * Get config metadata
+   *
+   * @param configName the config
+   * @return the config metadata
+   * @throws IOException if an I/O error occurs or config does not exist
+   */
+  public abstract byte[] getConfigMetadata(String configName) throws IOException;
+
+  /**
+   * List configs but not intermediate files
+   *
+   * @return list of configs
+   * @throws IOException if an I/O error occurs
+   */
   public abstract List<String> listConfigs() throws IOException;
+
+  /**
+   * List files in a given config
+   *
+   * @param configName the config
+   * @return list of configs
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract List<String> listFilesInConfig(String configName) throws IOException;
+
+  /**
+   * List files in a given config
+   *
+   * @param configName the config
+   * @return list of configs
+   * @throws IOException if an I/O error occurs
+   */
+  public abstract List<String> listFilesInConfig(String configName, String fileName) throws IOException;
+
+  public abstract List<String> getAllConfigFiles(String configName) throws IOException;
 
   public interface ConfigResource {
 
