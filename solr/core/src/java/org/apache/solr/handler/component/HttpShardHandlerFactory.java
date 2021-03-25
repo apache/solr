@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -92,7 +91,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   int   permittedLoadBalancerRequestsMinimumAbsolute = 0;
   float permittedLoadBalancerRequestsMaximumFraction = 1.0f;
   boolean accessPolicy = false;
-  private AllowListUrlChecker allowListUrlChecker = null;
   private SolrMetricsContext solrMetricsContext;
 
   private String scheme = null;
@@ -127,26 +125,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
 
-  static final String URL_ALLOW_LIST = "urlAllowList";
-
-  static final String DISABLE_URL_ALLOW_LIST = "solr.disable." + URL_ALLOW_LIST;
-
-  static final String SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE = "Set -D" + DISABLE_URL_ALLOW_LIST + "=true to disable URL allow-list checks.";
-
   /**
    * Get {@link ShardHandler} that uses the default http client.
    */
   @Override
   public ShardHandler getShardHandler() {
     return new HttpShardHandler(this);
-  }
-
-  /**
-   * Returns this Factory's {@link AllowListUrlChecker}.
-   * This method can be overridden to change the checker implementation.
-   */
-  public AllowListUrlChecker getAllowListUrlChecker() {
-    return this.allowListUrlChecker;
   }
 
   private static NamedList<?> getNamedList(Object val) {
@@ -240,8 +224,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         permittedLoadBalancerRequestsMaximumFraction,
         sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
-    this.allowListUrlChecker = createAllowListUrlChecker(args);
-    log.info("Host allow list initialized: {}", this.allowListUrlChecker);
+
+    if (args.get("shardsWhitelist") != null) {
+      log.warn("Property 'shardsWhitelist' is deprecated, please use '" + AllowListUrlChecker.URL_ALLOW_LIST + "' instead.");
+    }
 
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
@@ -283,28 +269,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
     log.debug("created with {}",sb);
-  }
-
-  private AllowListUrlChecker createAllowListUrlChecker(@SuppressWarnings({"rawtypes"}) NamedList args) {
-    if (Boolean.getBoolean(DISABLE_URL_ALLOW_LIST)) {
-      return AllowListUrlChecker.ALLOW_ALL;
-    } else if (System.getProperty("solr.disable.shardsWhitelist") != null) {
-      log.warn("Property 'solr.disable.shardsWhitelist' is deprecated, please use '" + DISABLE_URL_ALLOW_LIST + "' instead.");
-    }
-    String urlAllowList;
-    if (args == null) {
-      urlAllowList = null;
-    } else {
-      urlAllowList = (String) args.get(URL_ALLOW_LIST);
-      if (urlAllowList == null && args.get("shardsWhitelist") != null) {
-        log.warn("Property 'shardsWhitelist' is deprecated, please use '" + URL_ALLOW_LIST + "' instead.");
-      }
-    }
-    try {
-      return new AllowListUrlChecker(urlAllowList);
-    } catch (MalformedURLException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid URL syntax in '" + URL_ALLOW_LIST + "': " + urlAllowList, e);
-    }
   }
 
   @Override

@@ -344,6 +344,9 @@ public class SolrXmlConfig {
         case "transientCacheSize":
           builder.setTransientCacheSize(parseInt(name, value));
           break;
+        case "allowUrls":
+          builder.setAllowUrls(value);
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration value in solr.xml: " + name);
       }

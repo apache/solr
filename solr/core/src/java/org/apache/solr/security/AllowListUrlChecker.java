@@ -21,7 +21,11 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.NodeConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
@@ -33,6 +37,23 @@ import java.util.Set;
  * Validates URLs based on an allow list or a {@link ClusterState} in SolrCloud.
  */
 public class AllowListUrlChecker {
+
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    /**
+     * {@link org.apache.solr.core.SolrXmlConfig} property to configure the allowed URLs.
+     */
+    public static final String URL_ALLOW_LIST = "allowUrls";
+
+    /**
+     * System property to disable URL checking and {@link #ALLOW_ALL} instead.
+     */
+    public static final String DISABLE_URL_ALLOW_LIST = "solr.disable." + URL_ALLOW_LIST;
+
+    /**
+     * Clue given in URL-forbidden exceptions messages.
+     */
+    public static final String SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE = "Set -D" + DISABLE_URL_ALLOW_LIST + "=true to disable URL allow-list checks.";
 
     /**
      * Singleton checker which allows all URLs. {@link #isEnabled()} returns false.
@@ -77,6 +98,23 @@ public class AllowListUrlChecker {
      */
     public AllowListUrlChecker(String urlAllowList) throws MalformedURLException {
         hostAllowList = parseHostPorts(urlAllowList);
+    }
+
+    /**
+     * Creates a URL checker based on the {@link NodeConfig} property to configure the allowed URLs.
+     */
+    public static AllowListUrlChecker create(NodeConfig config) {
+        if (Boolean.getBoolean(DISABLE_URL_ALLOW_LIST)) {
+            return AllowListUrlChecker.ALLOW_ALL;
+        } else if (System.getProperty("solr.disable.shardsWhitelist") != null) {
+            log.warn("Property 'solr.disable.shardsWhitelist' is deprecated, please use '" + DISABLE_URL_ALLOW_LIST + "' instead.");
+        }
+        try {
+            return new AllowListUrlChecker(config.getAllowUrls());
+        } catch (MalformedURLException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                    "Invalid URL syntax in '" + URL_ALLOW_LIST + "' configuration: " + config.getAllowUrls(), e);
+        }
     }
 
     /**

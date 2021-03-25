@@ -45,7 +45,6 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
 
   private static final String LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE = "solr.tests.loadBalancerRequestsMinimumAbsolute";
   private static final String LOAD_BALANCER_REQUESTS_MAX_FRACTION = "solr.tests.loadBalancerRequestsMaximumFraction";
-  private static final String TEST_URL_ALLOW_LIST = "solr.tests." + HttpShardHandlerFactory.URL_ALLOW_LIST;
 
   private static int   expectedLoadBalancerRequestsMinimumAbsolute = 0;
   private static float expectedLoadBalancerRequestsMaximumFraction = 1.0f;
@@ -119,9 +118,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       cc = CoreContainer.createAndLoad(home, home.resolve("solr.xml"));
       factory = cc.getShardHandlerFactory();
       assertTrue(factory instanceof HttpShardHandlerFactory);
-      @SuppressWarnings("resource")
-      final HttpShardHandlerFactory httpShardHandlerFactory = (HttpShardHandlerFactory) factory;
-      assertThat(httpShardHandlerFactory.getAllowListUrlChecker().getHostAllowList(),
+      assertThat(cc.getAllowListUrlChecker().getHostAllowList(),
               equalTo(new HashSet<>(Arrays.asList("abc:8983", "def:8984"))));
     } finally {
       if (factory != null) factory.close();

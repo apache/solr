@@ -128,6 +128,7 @@ import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -269,6 +270,8 @@ public class CoreContainer {
 
   private Set<Path> allowPaths;
 
+  private AllowListUrlChecker allowListUrlChecker;
+
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
   public final static long CORE_DISCOVERY_COMPLETE = 0x2L;
@@ -393,6 +396,9 @@ public class CoreContainer {
         log.info("Allowing use of paths: {}", cfg.getAllowPaths());
       }
     }
+
+    this.allowListUrlChecker = AllowListUrlChecker.create(config);
+    log.info("URL allow-list initialized: {}", this.allowListUrlChecker);
 
     Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
     try {
@@ -1424,6 +1430,13 @@ public class CoreContainer {
   @VisibleForTesting
   public Set<Path> getAllowPaths() {
     return allowPaths;
+  }
+
+  /**
+   * Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml.
+   */
+  public AllowListUrlChecker getAllowListUrlChecker() {
+    return allowListUrlChecker;
   }
 
   /**

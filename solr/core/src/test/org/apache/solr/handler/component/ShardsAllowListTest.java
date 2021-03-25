@@ -36,6 +36,7 @@ import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -121,22 +122,17 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
     System.clearProperty(EXPLICIT_ALLOW_LIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
   }
 
-  private HttpShardHandlerFactory getShardHandlerFactory(String clusterId) {
-    return (HttpShardHandlerFactory) clusterId2cluster.get(clusterId).getJettySolrRunner(0).getCoreContainer()
-        .getShardHandlerFactory();
-  }
-
   @Test
   public void test() throws Exception {
-    assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getAllowListUrlChecker().getHostAllowList(), notNullValue());
-    assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getAllowListUrlChecker().getHostAllowList(), nullValue());
+    assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).getHostAllowList(), notNullValue());
+    assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).getHostAllowList(), nullValue());
 
-    assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getAllowListUrlChecker().hasExplicitAllowList(), is(true));
-    assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getAllowListUrlChecker().hasExplicitAllowList(), is(false));
+    assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(true));
+    assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(false));
     for (MiniSolrCloudCluster cluster : clusterId2cluster.values()) {
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
         URI uri = runner.getBaseUrl().toURI();
-        assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getAllowListUrlChecker().getHostAllowList(),
+        assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).getHostAllowList(),
             hasItem(uri.getHost() + ":" + uri.getPort()));
       }
     }
@@ -223,8 +219,13 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
         is(0));
   }
 
+  private AllowListUrlChecker getAllowListUrlChecker(String clusterId) {
+    return clusterId2cluster.get(clusterId).getJettySolrRunner(0).getCoreContainer().getAllowListUrlChecker();
+  }
+
   private void assertForbidden(String query, String shards, MiniSolrCloudCluster cluster) throws IOException {
-    ignoreException("not on the shards allow-list");
+    String expectedExceptionMessage = "not on the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'";
+    ignoreException(expectedExceptionMessage);
     try {
       numDocs(
           query,
@@ -234,9 +235,9 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
     } catch (SolrServerException e) {
       assertThat(e.getCause(), instanceOf(SolrException.class));
       assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(((SolrException) e.getCause()).getMessage(), containsString("not on the shards allow-list"));
+      assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
     }
-    unIgnoreException("not on the shards allow-list");
+    unIgnoreException(expectedExceptionMessage);
   }
 
   private String getShardUrl(String shardName, MiniSolrCloudCluster cluster) {

@@ -268,13 +268,13 @@ public class HttpShardHandler extends ShardHandler {
 
     final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
 
-    AllowListUrlChecker urlChecker = httpShardHandlerFactory.getAllowListUrlChecker();
+    AllowListUrlChecker urlChecker = req.getCore().getCoreContainer().getAllowListUrlChecker();
     if (shards != null && zkController == null && urlChecker.isEnabled() && !urlChecker.hasExplicitAllowList()) {
       throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
-              "HttpShardHandlerFactory " + HttpShardHandlerFactory.URL_ALLOW_LIST
-                      + " not configured but required (in lieu of ZkController and ClusterState) when using the '"
+              "solr.xml property '" + AllowListUrlChecker.URL_ALLOW_LIST
+                      + "' not configured but required (in lieu of ZkController and ClusterState) when using the '"
                       + ShardParams.SHARDS + "' parameter. "
-                      + HttpShardHandlerFactory.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
+                      + AllowListUrlChecker.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
     }
 
     ReplicaSource replicaSource;

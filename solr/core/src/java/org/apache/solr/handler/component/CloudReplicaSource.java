@@ -128,15 +128,16 @@ class CloudReplicaSource implements ReplicaSource {
     try {
       urlChecker.checkAllowList(urls, clusterState);
     } catch (MalformedURLException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in 'shards' parameter: " + shardsParam, e);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in '" + ShardParams.SHARDS + "' parameter: " + shardsParam, e);
     } catch (SolrException e) {
-      log.warn("The '{}' parameter value '{}' contained value(s) not on the shards allow-list: {}.",
-              ShardParams.SHARDS, shardsParam, e.getMessage());
+      log.warn("The '{}' parameter value '{}' contained value(s) not on the configured '{}': {}.",
+              ShardParams.SHARDS, shardsParam, AllowListUrlChecker.URL_ALLOW_LIST, e.getMessage());
       throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
               "The '" + ShardParams.SHARDS + "' parameter value '" + shardsParam
-                      + "' contained value(s) not on the shards allow-list: "
+                      + "' contained value(s) not on the configured '" +
+                      AllowListUrlChecker.URL_ALLOW_LIST + "': "
                       + e.getMessage() + ". "
-                      + HttpShardHandlerFactory.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
+                      + AllowListUrlChecker.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
     }
   }
 
