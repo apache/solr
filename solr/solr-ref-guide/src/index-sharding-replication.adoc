@@ -1,5 +1,6 @@
 = Index Sharding and Replication
 :page-children: shards-and-indexing-data-in-solrcloud, \
+    solrcloud-recoveries-and-write-tolerance, \
     shard-management, \
     replica-management, \
     user-managed-index-replication
@@ -28,9 +29,11 @@
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
 | [.badge.badge-pill.badge-solrcloud]*SolrCloud* <<shards-and-indexing-data-in-solrcloud.adoc#,Shards and Indexing Data in SolrCloud>>
+| <<solrcloud-recoveries-and-write-tolerance.adoc#,SolrCloud Recoveries and Write Tolerance>>
 | [.badge.badge-pill.badge-solrcloud]*SolrCloud* <<shard-management.adoc#,Shard Management>>: Create and delete a shard; split a shard into two or more additional shards; force a shard leader.
 | [.badge.badge-pill.badge-solrcloud]*SolrCloud* <<replica-management.adoc#,Replica Management>>: Add or delete a replica; set replica properties; move a replica to a different node.
 | [.badge.badge-pill.badge-userManaged]*User-Managed* <<user-managed-index-replication.adoc#,User-Managed Index Replication>>: Detailed information about replicating your Solr indexes.
+|
 |===
 // end::sharding-sections[]
 ****

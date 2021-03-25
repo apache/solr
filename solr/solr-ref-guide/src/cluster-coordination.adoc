@@ -1,6 +1,5 @@
 = Cluster Coordination
-:page-children: solrcloud-recoveries-and-write-tolerance, \
-    cluster-node-management, \
+:page-children: cluster-node-management, \
     setting-up-an-external-zookeeper-ensemble, \
     using-zookeeper-to-manage-configuration-files, \
     zookeeper-utilities, \
@@ -30,12 +29,12 @@
 // tag::coordination-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<solrcloud-recoveries-and-write-tolerance.adoc#,SolrCloud Recoveries and Write Tolerance>>
 |<<cluster-node-management.adoc#,Cluster and Node Management>>: Define properties for the entire cluster; check the status of a cluster; remove replicas from a node; utilize a newly added node; add or remove roles for a node.
 |<<setting-up-an-external-zookeeper-ensemble.adoc#,Setting Up an External ZooKeeper Ensemble>>
 | <<using-zookeeper-to-manage-configuration-files.adoc#,Using ZooKeeper to Manage Configuration Files>>
 | <<zookeeper-utilities.adoc#,ZooKeeper Utilities>>
 | <<cloud-screens.adoc#,Cloud Screens>>: Information about nodes when running in SolrCloud mode.
+|
 |===
 // end::coordination-sections[]
 ****
