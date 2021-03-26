@@ -14,24 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
 
-import java.io.IOException;
-import java.nio.file.Path;
+// LUCENE-9861: tune JVM options for short-lived java subprocesses.
+allprojects {
+    def vmOpts = [
+        '-XX:+UseParallelGC',
+        '-XX:TieredStopAtLevel=1'
+    ]
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NIOFSDirectory;
+    // Inject vm options into custom javadoc rendering. We can't refer
+    // to the task type because it's dynamic.
+    tasks.matching { it.name in ["renderJavadoc", "renderSiteJavadoc"] }.all {
+        extraOpts.addAll(vmOpts.collect {"-J" + it})
+    }
 
-
-/**
- * Factory to instantiate {@link org.apache.lucene.store.NIOFSDirectory}
- *
- **/
-public class NIOFSDirectoryFactory extends StandardDirectoryFactory {
-
-  @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    return new NIOFSDirectory(Path.of(path), lockFactory);
-  }
+    // Inject vm options into any JavaExec task... We could narrow it
+    // down but I don't think there is any harm in keeping it broad.
+    tasks.withType(JavaExec) {
+        jvmArgs += vmOpts
+    }
 }

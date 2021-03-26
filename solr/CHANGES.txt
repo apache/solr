@@ -95,6 +95,14 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   Software doing lots of XML processing can choose to add it or alternatives if they wish.
   (David Smiley)
 
+* SOLR-15161: Don't encourage users to hack JSON response mimetype by documenting in examples how to
+  specify wt=json use mimetype of text/plain.  (Eric Pugh)
+
+* SOLR-15203: remove deprecated parameter name jwkUrl in favour of jwksUrl for the JWK Url. (Eric Pugh)
+
+* SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000". (Eric Pugh)
+
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -167,7 +175,7 @@ Other Changes
 * SOLR-14702: All references to "master" and "slave" replaced with "leader" and "follower" (MarcusSorealheis,
   Erick Erickson, Tomás Fernández Löbbe)
 
-* LUCENE-9433: Remove Ant support from trunk (Erick Erickson, Uwe Schindler et.al.)
+* LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
 
 * SOLR-14783: Remove Data Import Handler (DIH), previously deprecated (Alexandre Rafalovitch)
 
@@ -232,6 +240,8 @@ Bug Fixes
 
 * SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh)
 
+* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -268,9 +278,11 @@ Improvements
 * SOLR-15191: Enhance hash method of JSON faceting to support EnumFieldType and perhaps some other/custom field types
   too. (Thomas Wöckinger, David Smiley)
 
-* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)  
+* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)
 
 * SOLR-15154: Let Http2SolrClient pass Basic Auth credentials to all requests (Tomás Fernández Löbbe)
+
+* SOLR-11233: Add optional JAVA8_GC_LOG_FILE_OPTS for bin/solr. (Pranav Murugappan, Christine Poerschke)
 
 Optimizations
 ---------------------
@@ -291,6 +303,9 @@ Bug Fixes
 
 * SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
   (Thomas Wöckinger, David Smiley)
+
+* SOLR-15273: Fix NullPointerException in StoredFieldsShardResponseProcessor that happened when a field name alias is
+  used for the unique key field in searches with distributed result grouping. (limingnihao via Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -10021,7 +10036,6 @@ Upgrading from Solr 5.1
     SOLR_SSL_TRUST_STORE_PASSWORD, SOLR_SSL_NEED_CLIENT_AUTH and SOLR_SSL_WANT_CLIENT_AUTH
     have been introduced. The bin/solr scripts configure the SOLR_SSL_OPTS property
     automatically based on the above new properties.
-
     You should *not* configure the SOLR_SSL_OPTS property directly inside solr.in.{sh,cmd}.
 
   - Support for SOLR_SSL_PORT property has been removed. Instead use the regular SOLR_PORT

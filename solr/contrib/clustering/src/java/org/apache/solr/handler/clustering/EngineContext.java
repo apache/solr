@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -70,7 +69,7 @@ final class EngineContext {
 
     List<Path> resourceLocations = new ArrayList<>();
 
-    Path configDir = Paths.get(core.getResourceLoader().getConfigDir());
+    Path configDir = core.getResourceLoader().getConfigPath();
     if (resourcesPath != null && !resourcesPath.trim().isEmpty()) {
       configDir = configDir.resolve(resourcesPath);
       resourceLocations.add(configDir);

@@ -103,6 +103,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 /**
  * Handle ZooKeeper interactions.
@@ -854,7 +855,11 @@ public class ZkController implements Closeable {
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
     byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
-    cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, zkClient);
+    if (zkClient.getACL(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, true).equals(OPEN_ACL_UNSAFE)) {
+      log.warn("Contents of zookeeper /security.json are world-readable;" +
+              " consider setting up ACLs as described in https://solr.apache.org/guide/zookeeper-access-control.html");
+    }
   }
 
   private void init() {
@@ -1443,14 +1448,14 @@ public class ZkController implements Closeable {
     return baseURL;
   }
 
-  public void publish(final CoreDescriptor cd, final Replica.State state) throws Exception {
+  public void publish(final CoreDescriptor cd, final Replica.State state) throws KeeperException, InterruptedException {
     publish(cd, state, true, false);
   }
 
   /**
    * Publish core state to overseer.
    */
-  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState, boolean forcePublish) throws Exception {
+  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState, boolean forcePublish) throws KeeperException, InterruptedException {
     if (!forcePublish) {
       try (SolrCore core = cc.getCore(cd.getName())) {
         if (core == null || core.isClosed()) {

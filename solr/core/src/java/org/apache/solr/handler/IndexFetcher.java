@@ -927,7 +927,8 @@ public class IndexFetcher {
   private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, long latestGeneration) throws Exception {
     log.info("Starting download of configuration files from leader: {}", confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
-    File tmpconfDir = new File(solrCore.getResourceLoader().getConfigDir(), "conf." + getDateAsStr(new Date()));
+    Path tmpConfPath = solrCore.getResourceLoader().getConfigPath().resolve("conf." + getDateAsStr(new Date()));
+    File tmpconfDir = tmpConfPath.toFile();
     try {
       boolean status = tmpconfDir.mkdirs();
       if (!status) {
@@ -1296,9 +1297,10 @@ public class IndexFetcher {
    */
   private void copyTmpConfFiles2Conf(File tmpconfDir) {
     boolean status = false;
-    File confDir = new File(solrCore.getResourceLoader().getConfigDir());
+    Path confPath = solrCore.getResourceLoader().getConfigPath();
     for (File file : makeTmpConfDirFileList(tmpconfDir, new ArrayList<>())) {
-      File oldFile = new File(confDir, file.getPath().substring(tmpconfDir.getPath().length(), file.getPath().length()));
+      Path oldPath = confPath.resolve(file.getPath().substring(tmpconfDir.getPath().length()));
+      File oldFile = oldPath.toFile();
       if (!oldFile.getParentFile().exists()) {
         status = oldFile.getParentFile().mkdirs();
         if (!status) {
