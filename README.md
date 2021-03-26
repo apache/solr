@@ -35,7 +35,7 @@ comprehensive documentation, visit <https://solr.apache.org/guide/>
 Firstly, you need to set up your development environment (OpenJDK 11 or greater).
 
 We'll assume that you know how to get and set up the JDK - if you
-don't, then we suggest starting at https://www.oracle.com/java/ and learning
+don't, then we suggest starting at https://jdk.java.net/ and learning
 more about Java, before returning to this README. Solr runs with
 Java 11 and later.
 
