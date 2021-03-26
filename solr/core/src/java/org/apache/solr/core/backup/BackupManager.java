@@ -234,7 +234,7 @@ public class BackupManager {
           throws IOException {
     URI source = getZkStateDir(CONFIG_STATE_DIR, sourceConfigName);
     Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
-    uploadToZk(configSetService, source, targetConfigName);
+    uploadConfig(configSetService, source, targetConfigName);
   }
 
   /**
@@ -250,7 +250,7 @@ public class BackupManager {
     repository.createDirectory(getZkStateDir(CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
-    downloadFromZK(configSetService, configName, dest);
+    downloadConfig(configSetService, configName, dest);
   }
 
   public void uploadCollectionProperties(String collectionName) throws IOException {
@@ -293,27 +293,27 @@ public class BackupManager {
     }
   }
 
-  private void downloadFromZK(ConfigSetService configSetService, String configName, URI dir) throws IOException {
-    List<String> files = configSetService.listFilesInConfig(configName);
-    for (String file : files) {
-      List<String> children = configSetService.listFilesInConfig(configName, file);
-      if (children.size() == 0) {
-        log.debug("Writing file {}", file);
-        byte[] data = configSetService.getFileFromConfig(configName, file);
-        try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
+  private void downloadConfig(ConfigSetService configSetService, String configName, URI dir) throws IOException {
+    List<String> filePaths = configSetService.getAllConfigFiles(configName);
+    String configPath = configSetService.getConfigPath(configName);
+    for (String filePath : filePaths) {
+      URI uri = repository.resolve(dir, filePath.substring(configPath.length() + 1)); // exclude /configs/configName
+      if (!filePath.endsWith("/")) {
+        log.debug("Writing file {}", filePath);
+        byte[] data = configSetService.downloadFileFromConfig(filePath);
+        try (OutputStream os = repository.createOutput(uri)) {
           os.write(data);
         }
       } else {
-        URI uri = repository.resolve(dir, file);
         if (!repository.exists(uri)) {
           repository.createDirectory(uri);
         }
-        downloadFromZK(configSetService, configName, repository.resolve(dir, file));
+        downloadConfig(configSetService, configName, uri);
       }
     }
   }
 
-  private void uploadToZk(ConfigSetService configSetService, URI sourceDir, String configName) throws IOException {
+  private void uploadConfig(ConfigSetService configSetService, URI sourceDir, String configName) throws IOException {
     for (String file : repository.listAll(sourceDir)) {
       URI path = repository.resolve(sourceDir, file);
       BackupRepository.PathType t = repository.getPathType(path);
@@ -322,13 +322,13 @@ public class BackupManager {
           try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
             byte[] arr = new byte[(int) is.length()]; // probably ok since the config file should be small.
             is.readBytes(arr, 0, (int) is.length());
-            configSetService.uploadFileToConfig(configName, file, arr);
+            configSetService.uploadFileToConfig(configName, file, arr, false);
           }
           break;
         }
         case DIRECTORY: {
           if (!file.startsWith(".")) {
-            uploadToZk(configSetService, path, configName);
+            uploadConfig(configSetService, path, configName);
           }
           break;
         }

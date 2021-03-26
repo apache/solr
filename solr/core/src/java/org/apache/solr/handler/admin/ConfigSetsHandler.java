@@ -197,7 +197,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         // Create a node for the configuration in config
         // For creating the baseNode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
         createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
-        configSetService.uploadFileToConfig(configSetName, fixedSingleFilePath, IOUtils.toByteArray(inputStream), !allowOverwrite);
+        configSetService.uploadFileToConfig(configSetName, fixedSingleFilePath, IOUtils.toByteArray(inputStream), allowOverwrite);
       }
       return;
     }
@@ -209,7 +209,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     List<String> filesToDelete;
     if (overwritesExisting && cleanup) {
-      filesToDelete = configSetService.listFilesInConfig(configSetName);
+      filesToDelete = configSetService.getAllConfigFiles(configSetName);
     } else {
       filesToDelete = Collections.emptyList();
     }
@@ -223,16 +223,14 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     boolean hasEntry = false;
     while ((zipEntry = zis.getNextEntry()) != null) {
       hasEntry = true;
-      String file =  zipEntry.getName();
-      if (file.endsWith("/")) {
-        filesToDelete.remove(file.substring(0, file.length() -1));
+      String filePath = configSetService.getConfigPath(configSetName) + "/" + zipEntry.getName();
+      if (filePath.endsWith("/")) {
+        filesToDelete.remove(filePath.substring(0, filePath.length() - 1));
       } else {
-        filesToDelete.remove(file);
+        filesToDelete.remove(filePath);
       }
-      if (zipEntry.isDirectory()) {
-        configSetService.createFilePathInConfig(configSetName, zipEntry.getName(), false);
-      } else {
-        configSetService.uploadFileToConfig(configSetName,zipEntry.getName(), IOUtils.toByteArray(zis), false);
+      if (!zipEntry.isDirectory()) {
+        configSetService.uploadFileToConfig(configSetName, zipEntry.getName(), IOUtils.toByteArray(zis), true);
       }
     }
     zis.close();
@@ -240,17 +238,17 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       throw new SolrException(ErrorCode.BAD_REQUEST,
               "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
     }
-    deleteUnusedFiles(configSetService, configSetName, filesToDelete);
+    deleteUnusedFiles(configSetService, filesToDelete);
 
     // If the request is doing a full trusted overwrite of an untrusted configSet (overwrite=true, cleanup=true), then trust the configSet.
     if (cleanup && requestIsTrusted && overwritesExisting && !isCurrentlyTrusted(configSetService, configSetName)) {
-      byte[] metadata =  ("{\"trusted\": true}").getBytes(StandardCharsets.UTF_8);
-      configSetService.updateConfigMetadata(configSetName, metadata);
+      Map<String, Object> metadata = Collections.singletonMap("trusted", true);
+      configSetService.setConfigMetadata(configSetName, metadata);
     }
   }
 
   private void createBaseNode(ConfigSetService configSetService, boolean overwritesExisting, boolean requestIsTrusted, String configName) throws IOException {
-    byte[] baseZnodeData =  ("{\"trusted\": " + Boolean.toString(requestIsTrusted) + "}").getBytes(StandardCharsets.UTF_8);
+    Map<String, Object> metadata = Collections.singletonMap("trusted", requestIsTrusted);
 
     if (overwritesExisting) {
       if (!requestIsTrusted) {
@@ -258,11 +256,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       }
       // If the request is trusted and cleanup=true, then the configSet will be set to trusted after the overwriting has been done.
     } else {
-      configSetService.setConfigMetadata(configName, baseZnodeData);
+      configSetService.setConfigMetadata(configName, metadata);
     }
   }
 
-  private void deleteUnusedFiles(ConfigSetService configSetService, String configName, List<String> filesToDelete) {
+  private void deleteUnusedFiles(ConfigSetService configSetService, List<String> filesToDelete) throws IOException {
     if (!filesToDelete.isEmpty()) {
       if (log.isInfoEnabled()) {
         log.info("Cleaning up {} unused files", filesToDelete.size());
@@ -270,12 +268,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       if (log.isDebugEnabled()) {
         log.debug("Cleaning up unused files: {}", filesToDelete);
       }
-      for (String f:filesToDelete) {
-        try {
-          configSetService.deleteFileFromConfig(configName, f);
-        } catch (IOException e) {
-        }
-      }
+      configSetService.deleteFilesFromConfig(filesToDelete);
     }
   }
 
@@ -290,12 +283,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   }
 
   private static boolean isCurrentlyTrusted(ConfigSetService configSetService, String configName) throws IOException {
-    byte[] configSetNodeContent = configSetService.getConfigMetadata(configName);
-    if (configSetNodeContent == null || configSetNodeContent.length == 0) {
+    Map<String, Object> contentMap = configSetService.getConfigMetadata(configName);
+    if (contentMap == null || contentMap.size() == 0) {
       return true;
     }
-    @SuppressWarnings("unchecked")
-    Map<Object, Object> contentMap = (Map<Object, Object>) Utils.fromJSON(configSetNodeContent);
     return (boolean) contentMap.getOrDefault("trusted", true);
   }
 

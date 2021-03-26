@@ -85,7 +85,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       Files.createDirectory(tempConfig.resolve(".ignoreddir"));
       Files.createFile(tempConfig.resolve(".ignoreddir").resolve("ignored"));
 
-      configSetService.uploadConfig(tempConfig, "testconfig");
+      configSetService.uploadConfig("testconfig", tempConfig);
 
       // uploading a directory creates a new config
       List<String> configs = configSetService.listConfigs();
@@ -108,7 +108,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       // uploading to the same config overwrites
       byte[] overwritten = "new test data".getBytes(StandardCharsets.UTF_8);
       Files.write(tempConfig.resolve("file1"), overwritten);
-      configSetService.uploadConfig(tempConfig, "testconfig");
+      configSetService.uploadConfig("testconfig", tempConfig);
 
       assertEquals(1, configSetService.listConfigs().size());
       Path download2 = createTempDir("download2");
@@ -117,7 +117,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       assertArrayEquals(overwritten, checkdata2);
 
       // uploading same files to a new name creates a new config
-      configSetService.uploadConfig(tempConfig, "config2");
+      configSetService.uploadConfig("config2", tempConfig);
       assertEquals(2, configSetService.listConfigs().size());
 
       // Test copying a config works in both flavors
@@ -178,7 +178,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     // Start with all-access client
     try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
-      configSetService.uploadConfig(configPath, "acltest");
+      configSetService.uploadConfig("acltest", configPath);
       assertEquals(1, configSetService.listConfigs().size());
     }
 
@@ -186,7 +186,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
       assertEquals(1, configSetService.listConfigs().size());
-      configSetService.uploadConfig(configPath, "acltest2");
+      configSetService.uploadConfig("acltest2", configPath);
       fail ("Should have thrown an ACL exception");
     }
     catch (IOException e) {
