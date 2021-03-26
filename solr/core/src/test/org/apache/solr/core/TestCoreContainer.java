@@ -471,17 +471,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void deleteFilesFromConfig(List<String> filesToDelete) throws IOException {
+    public void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException {
 
     }
 
-    @Override
     public void copyConfig(String fromConfig, String toConfig) throws IOException {
-
-    }
-
-    @Override
-    public void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
 
     }
 
@@ -516,17 +510,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public byte[] downloadFileFromConfig(String filePath) throws IOException {
+    public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
       return new byte[0];
     }
 
     @Override
     public List<String> getAllConfigFiles(String configName) throws IOException {
-      return null;
-    }
-
-    @Override
-    public String getConfigPath(String configName) throws IOException {
       return null;
     }
 

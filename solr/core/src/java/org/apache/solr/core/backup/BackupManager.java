@@ -295,12 +295,11 @@ public class BackupManager {
 
   private void downloadConfig(ConfigSetService configSetService, String configName, URI dir) throws IOException {
     List<String> filePaths = configSetService.getAllConfigFiles(configName);
-    String configPath = configSetService.getConfigPath(configName);
     for (String filePath : filePaths) {
-      URI uri = repository.resolve(dir, filePath.substring(configPath.length() + 1)); // exclude /configs/configName
+      URI uri = repository.resolve(dir, filePath);
       if (!filePath.endsWith("/")) {
         log.debug("Writing file {}", filePath);
-        byte[] data = configSetService.downloadFileFromConfig(filePath);
+        byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
         try (OutputStream os = repository.createOutput(uri)) {
           os.write(data);
         }

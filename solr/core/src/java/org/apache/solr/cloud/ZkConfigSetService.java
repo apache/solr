@@ -23,10 +23,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -171,32 +171,26 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void deleteFilesFromConfig(List<String> filesToDelete) throws IOException {
+  public void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException {
     try {
       for (String fileToDelete : filesToDelete) {
-        zkClient.clean(fileToDelete);
+        zkClient.clean(CONFIGS_ZKNODE + "/" + configName + "/" + fileToDelete);
       }
     } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error deleting a file in config", SolrZkClient.checkInterrupted(e));
+      throw new IOException("Error deleting files in config", SolrZkClient.checkInterrupted(e));
     }
   }
 
-  @Override
   public void copyConfig(String fromConfig, String toConfig) throws IOException {
-    copyConfig(fromConfig, toConfig, null);
-  }
-
-  @Override
-  public void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
     String fromConfigPath = CONFIGS_ZKNODE + "/" + fromConfig;
     String toConfigPath = CONFIGS_ZKNODE + "/" + toConfig;
     try {
-      copyData(copiedToZkPaths, fromConfigPath, toConfigPath);
+      copyData(fromConfigPath, toConfigPath);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error config " + fromConfig + " to " + toConfig,
               SolrZkClient.checkInterrupted(e));
     }
-    copyConfigDirFromZk(fromConfigPath, toConfigPath, copiedToZkPaths);
+    copyConfigDirFromZk(fromConfigPath, toConfigPath);
   }
 
   @Override
@@ -248,9 +242,9 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public byte[] downloadFileFromConfig(String filePath) throws IOException {
+  public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
     try {
-      return zkClient.getData(filePath, null, null, true);
+      return zkClient.getData(CONFIGS_ZKNODE + "/" + configName + "/" + filePath, null, null, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error downloading file from config", SolrZkClient.checkInterrupted(e));
     }
@@ -276,20 +270,11 @@ public class ZkConfigSetService extends ConfigSetService {
       throw new IllegalArgumentException("\"" + zkPath + "\" not recognized as a configset path");
     }
     try {
-      return zkClient.getAllConfigsetFiles(zkPath);
-    } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error getting all configset files", SolrZkClient.checkInterrupted(e));
-    }
-  }
-
-  @Override
-  public String getConfigPath(String configName) throws IOException {
-    try {
-      if (zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
-        return CONFIGS_ZKNODE + "/" + configName;
-      } else {
-        throw new IOException("config does not exist");
+      List<String> filePaths = new LinkedList<>();
+      for (String filePath : zkClient.getAllConfigsetFiles(zkPath)) {
+        filePaths.add(filePath.replaceAll(zkPath + "/", ""));
       }
+      return filePaths;
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error getting all configset files", SolrZkClient.checkInterrupted(e));
     }
@@ -382,15 +367,15 @@ public class ZkConfigSetService extends ConfigSetService {
     ));
   }
 
-  private void copyConfigDirFromZk(String fromZkPath, String toZkPath, Set<String> copiedToZkPaths) throws IOException {
+  private void copyConfigDirFromZk(String fromZkPath, String toZkPath) throws IOException {
     try {
       List<String> files = zkClient.getChildren(fromZkPath, null, true);
       for (String file : files) {
         List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
         if (children.size() == 0) {
-          copyData(copiedToZkPaths, fromZkPath + "/" + file, toZkPath + "/" + file);
+          copyData(fromZkPath + "/" + file, toZkPath + "/" + file);
         } else {
-          copyConfigDirFromZk(fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
+          copyConfigDirFromZk(fromZkPath + "/" + file, toZkPath + "/" + file);
         }
       }
     } catch (KeeperException | InterruptedException e) {
@@ -399,11 +384,10 @@ public class ZkConfigSetService extends ConfigSetService {
     }
   }
 
-  private void copyData(Set<String> copiedToZkPaths, String fromZkFilePath, String toZkFilePath) throws KeeperException, InterruptedException {
+  private void copyData(String fromZkFilePath, String toZkFilePath) throws KeeperException, InterruptedException {
     log.info("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
     byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
     zkClient.makePath(toZkFilePath, data, true);
-    if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
   }
 
   public SolrCloudManager getSolrCloudManager() {

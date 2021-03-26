@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,6 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.RefreshCollectionMessage;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -65,7 +63,6 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -506,7 +503,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     // Copy _default into targetConfig
     try {
-      ccc.getCoreContainer().getConfigSetService().copyConfig(DEFAULT_CONFIGSET_NAME, targetConfig, new HashSet<>());
+      ccc.getCoreContainer().getConfigSetService().copyConfig(DEFAULT_CONFIGSET_NAME, targetConfig);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Error while copying _default to " + targetConfig, e);
     }

@@ -122,7 +122,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
       // Test copying a config works in both flavors
       configSetService.copyConfig("config2", "config2copy");
-      configSetService.copyConfig( "config2", "config2copy2", null);
+      configSetService.copyConfig( "config2", "config2copy2");
       configs = configSetService.listConfigs();
       assertTrue("config2copy should exist", configs.contains("config2copy"));
       assertTrue("config2copy2 should exist", configs.contains("config2copy2"));

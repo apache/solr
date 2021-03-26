@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
@@ -71,17 +70,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
 
     @Override
-    public void deleteFilesFromConfig(List<String> filesToDelete) throws IOException {
+    public void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public void copyConfig(String fromConfig, String toConfig) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -118,18 +111,13 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
 
     @Override
-    public byte[] downloadFileFromConfig(String filePath) throws IOException {
+    public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public List<String> getAllConfigFiles(String configName) throws IOException {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String getConfigPath(String configName) throws IOException {
-        return configSetBase.resolve(configName).toString();
     }
 
     protected Path locateInstanceDir(CoreDescriptor cd) {

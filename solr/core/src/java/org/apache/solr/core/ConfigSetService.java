@@ -23,7 +23,6 @@ import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -263,47 +262,35 @@ public abstract class ConfigSetService {
    * @param fileName the name of the file
    * @param data the content of the file
    * @param overwriteOnExists if true then file will be overwritten
-   * @throws IOException if an I/O error occurs or the path does not exist
+   * @throws SolrException if file exists and overwriteOnExists == false
    */
   public abstract void uploadFileToConfig(String configName, String fileName, byte[] data, boolean overwriteOnExists) throws IOException;
 
   /**
-   * Download from config and write it to the filesystem
+   * Download all files from this config to the filesystem at {@param dir}
    *
    * @param configName the config to download
    * @param dir        the {@link Path} to write files under
-   * @throws IOException if an I/O error occurs or the config does not exist
    */
   public abstract void downloadConfig(String configName, Path dir) throws IOException;
 
   /**
    * Download a file from config
    *
+   *
+   * @param configName the name of the config
    * @param filePath  the file to download
    * @return the content of the file
-   * @throws IOException if an I/O error occurs or the config does not exist
    */
-  public abstract byte[] downloadFileFromConfig(String filePath) throws IOException;
+  public abstract byte[] downloadFileFromConfig(String configName, String filePath) throws IOException;
 
   /**
    * Copy a config
    *
    * @param fromConfig the config to copy from
    * @param toConfig   the config to copy to
-   * @throws IOException if an I/O error occurs
    */
   public abstract void copyConfig(String fromConfig, String toConfig) throws IOException;
-
-  /**
-   * Copy a config
-   *
-   * @param fromConfig      the config to copy from
-   * @param toConfig        the config to copy to
-   * @param copiedToZkPaths should be an empty Set, will be filled in by function
-   *                        with the paths that were actually copied to.
-   * @throws IOException if an I/O error occurs
-   */
-  public abstract void copyConfig(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException;
 
   /**
    * Check whether a config exists
@@ -325,18 +312,18 @@ public abstract class ConfigSetService {
   /**
    * Delete files in config
    *
+   *
+   * @param configName the name of the config
    * @param filesToDelete a list of file paths to delete
-   * @throws IOException if an I/O error occurs
    */
-  public abstract void deleteFilesFromConfig(List<String> filesToDelete) throws IOException;
+  public abstract void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException;
 
   /**
    * Set the config metadata
    * If config does not exist, it will be created and set metadata on it
-   * Else metadata will be updated
+   * Else metadata will be replaced with the provided metadata
    * @param configName the config name
    * @param data the metadata to be set on config
-   * @throws IOException if an I/O error occurs
    */
   public abstract void setConfigMetadata(String configName, Map<String, Object> data) throws IOException;
 
@@ -344,7 +331,7 @@ public abstract class ConfigSetService {
    * Get the config metadata
    *
    * @param configName the config name
-   * @return the config metadata
+   * @return the config metadata (mutable) or null
    * @throws IOException if an I/O error occurs or config does not exist
    */
   public abstract Map<String, Object> getConfigMetadata(String configName) throws IOException;
@@ -352,26 +339,16 @@ public abstract class ConfigSetService {
   /**
    * List the names of configs
    *
-   * @return list the names of configs
-   * @throws IOException if an I/O error occurs
+   * @return list the names of configs or empty list
    */
   public abstract List<String> listConfigs() throws IOException;
 
   /**
-   * Get all files in config
+   * Get the names of the files in config
    * @param configName the config name
-   * @return list of file paths under configName excluding itself
-   * @throws IOException if an I/O error occurs
+   * @return list of file name paths in the config e.g. foo/managed-schema, foo/foo2/solrconfig.xml
    */
   public abstract List<String> getAllConfigFiles(String configName) throws IOException;
-
-  /**
-   * Get config path
-   * @param configName the config name
-   * @return config path if it exists
-   * @throws IOException if an I/O error occurs or it does not exist
-   */
-  public abstract String getConfigPath(String configName) throws IOException;
 
   public interface ConfigResource {
 

@@ -322,9 +322,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     }
     byte[] propertyData = getPropertyData(props);
 
-    Set<String> copiedToZkPaths = new HashSet<String>();
     try {
-      coreContainer.getConfigSetService().copyConfig(baseConfigSetName, configSetName, copiedToZkPaths);
+      coreContainer.getConfigSetService().copyConfig(baseConfigSetName, configSetName);
       if (propertyData != null) {
         try {
           zkStateReader.getZkClient().makePath(
@@ -342,7 +341,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       // the entire baseConfig set with the old properties, including immutable,
       // that would make it impossible for the user to delete.
       try {
-        if (coreContainer.getConfigSetService().checkConfigExists(configSetName) && copiedToZkPaths.size() > 0) {
+        if (coreContainer.getConfigSetService().checkConfigExists(configSetName) && coreContainer.getConfigSetService().getAllConfigFiles(configSetName).size() > 0) {
           deleteConfigSet(configSetName, true);
         }
       } catch (IOException ioe) {

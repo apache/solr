@@ -223,7 +223,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     boolean hasEntry = false;
     while ((zipEntry = zis.getNextEntry()) != null) {
       hasEntry = true;
-      String filePath = configSetService.getConfigPath(configSetName) + "/" + zipEntry.getName();
+      String filePath = zipEntry.getName();
       if (filePath.endsWith("/")) {
         filesToDelete.remove(filePath.substring(0, filePath.length() - 1));
       } else {
@@ -238,7 +238,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       throw new SolrException(ErrorCode.BAD_REQUEST,
               "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
     }
-    deleteUnusedFiles(configSetService, filesToDelete);
+    deleteUnusedFiles(configSetService, configSetName, filesToDelete);
 
     // If the request is doing a full trusted overwrite of an untrusted configSet (overwrite=true, cleanup=true), then trust the configSet.
     if (cleanup && requestIsTrusted && overwritesExisting && !isCurrentlyTrusted(configSetService, configSetName)) {
@@ -260,7 +260,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
   }
 
-  private void deleteUnusedFiles(ConfigSetService configSetService, List<String> filesToDelete) throws IOException {
+  private void deleteUnusedFiles(ConfigSetService configSetService, String configName, List<String> filesToDelete) throws IOException {
     if (!filesToDelete.isEmpty()) {
       if (log.isInfoEnabled()) {
         log.info("Cleaning up {} unused files", filesToDelete.size());
@@ -268,7 +268,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       if (log.isDebugEnabled()) {
         log.debug("Cleaning up unused files: {}", filesToDelete);
       }
-      configSetService.deleteFilesFromConfig(filesToDelete);
+      configSetService.deleteFilesFromConfig(configName, filesToDelete);
     }
   }
 
