@@ -267,7 +267,7 @@ public abstract class ConfigSetService {
   public abstract void uploadFileToConfig(String configName, String fileName, byte[] data, boolean overwriteOnExists) throws IOException;
 
   /**
-   * Download all files from this config to the filesystem at {@param dir}
+   * Download all files from this config to the filesystem at dir
    *
    * @param configName the config to download
    * @param dir        the {@link Path} to write files under
