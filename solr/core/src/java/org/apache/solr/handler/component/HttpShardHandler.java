@@ -47,7 +47,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.apache.solr.util.tracing.TraceUtils;
 
 @NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
@@ -166,7 +165,6 @@ public class HttpShardHandler extends ShardHandler {
 
               @Override
               public void onStart() {
-                TraceUtils.injectContextIntoRequest(req);
                 SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
                 if (requestInfo != null)
                   req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
