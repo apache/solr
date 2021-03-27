@@ -18,18 +18,21 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
+ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.IndexFetcher;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -39,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.OK;
 import static org.apache.solr.common.params.CommonParams.STATUS;
+import static org.apache.solr.handler.ReplicationHandler.GENERATION;
 
 /**
  * Health Check Handler for reporting the health of a specific node.
@@ -52,7 +56,6 @@ import static org.apache.solr.common.params.CommonParams.STATUS;
  *     <li>Node connected to zookeeper.</li>
  *     <li>Node listed in <code>live_nodes</code> in zookeeper.</li>
  *   </ol>
- *
  * <p>
  *   The handler takes an optional request parameter <code>requireHealthyCores=true</code>
  *   which will also require that all local cores that are part of an <b>active shard</b>
@@ -61,14 +64,33 @@ import static org.apache.solr.common.params.CommonParams.STATUS;
  *   is fully initialized and stable before proceeding with restarting the next node, and thus
  *   reduce the risk of restarting the last live replica of a shard.
  * </p>
+ *
+ * <p>
+ *     For the legacy setup the handler returns status <code>200 OK</code> if all the cores configured as follower have
+ *     successfully replicated index from their respective leader after startup. Note that this is a weak check
+ *     i.e. once a follower has caught up with the leader the health check will keep reporting <code>200 OK</code>
+ *     even if the follower starts lagging behind. You should specify max generation within lag follower should with
+ *     respect to its leader using the <code>maxGenerationLag=&lt;max_generation_lag&gt;</code> request parameter.
+ *     If <code>maxGenerationLag</code> is not provided then health check would simply return OK.
+ *  </p>
+ *
+ *  <p>
+*      You can make health check strict by specifying request parameter <code>requireAlwaysBeInSync=true</code>. In this
+*      case for each health check request the Solr server will ensure that all the follower cores are keeping with up
+*      with their respective leader within the specified <code>maxGenerationLag</code> threshold.
+ *  </p>
  */
 public class HealthCheckHandler extends RequestHandlerBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_REQUIRE_HEALTHY_CORES = "requireHealthyCores";
+  public static final String PARAM_MAX_GENERATION_LAG = "maxGenerationLag";
+  public static final String PARAM_REQUIRE_ALWAYS_BE_IN_SYNC = "requireAlwaysBeInSync";
   private static final List<State> UNHEALTHY_STATES = Arrays.asList(State.DOWN, State.RECOVERING);
 
   CoreContainer coreContainer;
+
+  private final ConcurrentHashMap<SolrCore, Boolean> replicatedAfterStartup = new ConcurrentHashMap<>();
 
   public HealthCheckHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
@@ -83,24 +105,62 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-
-    CoreContainer cores = getCoreContainer();
+    CoreContainer coreContainer = getCoreContainer();
     rsp.setHttpCaching(false);
 
     // Core container should not be null and active (redundant check)
-    if(cores == null || cores.isShutDown()) {
+    if(coreContainer == null || coreContainer.isShutDown()) {
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CoreContainer is either not initialized or shutting down"));
       return;
     }
-    if(!cores.isZooKeeperAware()) {
-      //TODO: Support standalone instances
-      rsp.setException(new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Health check is only available when running in SolrCloud mode"));
-      return;
+    if(!coreContainer.isZooKeeperAware()) {
+      Integer maxGenerationLag = req.getParams().getInt(PARAM_MAX_GENERATION_LAG);
+      boolean followerShouldAlwaysBeInSync = req.getParams().getBool(PARAM_REQUIRE_ALWAYS_BE_IN_SYNC, false);
+
+      List<String> coresNotCaughtUpYet = new ArrayList<>();
+      boolean allCoresAreInSync = true;
+
+      // check only if max generation lag is specified
+      if(maxGenerationLag != null) {
+        for(SolrCore core : coreContainer.getCores()) {
+          ReplicationHandler replicationHandler = (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
+          if(replicationHandler.isFollower()) {
+            boolean isCoreReplicated =
+                    replicatedAfterStartup.compute(core, (c, v) ->
+                            {
+                              if (v == null || !v.booleanValue() || followerShouldAlwaysBeInSync) {
+                                return isInSyncWithLeader(c, replicationHandler, maxGenerationLag);
+                              } else {
+                                return v;
+                              }
+                            }
+                    );
+
+            if(!isCoreReplicated) {
+              coresNotCaughtUpYet.add(core.getName());
+            }
+
+            allCoresAreInSync &= isCoreReplicated;
+          }
+        }
+      }
+
+
+      if(allCoresAreInSync) {
+        rsp.add("message", String.format(Locale.ROOT, "All the followers are in sync with leader (within maxGenerationLag: %d) or all the cores are acting as leader", maxGenerationLag));
+        rsp.add(STATUS, OK);
+        return;
+      } else {
+        rsp.add("message", String.format(Locale.ROOT,"Cores [%s] are not in sync with the leader.", String.join(", ", coresNotCaughtUpYet)));
+        rsp.add(STATUS, FAILURE);
+        return;
+      }
     }
+
     if (log.isDebugEnabled()) {
-      log.debug("Invoked HealthCheckHandler on [{}]", coreContainer.getZkController().getNodeName());
+      log.debug("Invoked HealthCheckHandler on [{}]", this.coreContainer.getZkController().getNodeName());
     }
-    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     // Check for isConnected and isClosed
     if(zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isConnected()) {
@@ -110,7 +170,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
     }
 
     // Fail if not in live_nodes
-    if (!clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
+    if (!clusterState.getLiveNodes().contains(coreContainer.getZkController().getNodeName())) {
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk"));
       return;
@@ -118,14 +178,14 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // Optionally require that all cores on this node are active if param 'requireHealthyCores=true'
     if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
-      Collection<CloudDescriptor> coreDescriptors = cores.getCores().stream()
+      Collection<CloudDescriptor> coreDescriptors = coreContainer.getCores().stream()
           .map(c -> c.getCoreDescriptor().getCloudDescriptor()).collect(Collectors.toList());
       long unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
       if (unhealthyCores > 0) {
           rsp.add(STATUS, FAILURE);
           rsp.add("num_cores_unhealthy", unhealthyCores);
           rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, unhealthyCores + " out of "
-              + cores.getNumAllCores() + " replicas are currently initializing or recovering"));
+              + coreContainer.getNumAllCores() + " replicas are currently initializing or recovering"));
           return;
       }
       rsp.add("message", "All cores are healthy");
@@ -133,6 +193,40 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // All lights green, report healthy
     rsp.add(STATUS, OK);
+  }
+
+  private Boolean isInSyncWithLeader(final SolrCore core, ReplicationHandler replicationHandler, Integer maxGenerationLag) {
+    IndexFetcher indexFetcher = null;
+    try {
+      // may not be the best way to get leader's replicableCommit
+      @SuppressWarnings({"rawtypes"})
+      NamedList follower =
+          ReplicationHandler.getObjectWithBackwardCompatibility(replicationHandler.getInitArgs(), "follower",
+                  "slave");
+      indexFetcher = new IndexFetcher(follower, replicationHandler, core);
+
+      @SuppressWarnings({"rawtypes"})
+      NamedList replicableCommitOnLeader = indexFetcher.getLatestVersion();
+      long replicableGeneration = (Long) replicableCommitOnLeader.get(GENERATION);
+
+      // Get our own commit and generation from the commit
+      IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
+      if(commit != null) {
+        long followerGeneration = commit.getGeneration();
+        long generationDiff = replicableGeneration - followerGeneration;
+        // generationDiff should be within the threshold and generationDiff shouldn't be negative
+        if(maxGenerationLag != null &&  (generationDiff < maxGenerationLag && generationDiff >= 0)) {
+            return true;
+        }
+      }
+    } catch (Exception e) {
+      log.error("Failed to check if the follower is in sync with the leader");
+    } finally {
+      if(indexFetcher != null) {
+        indexFetcher.destroy();
+      }
+    }
+    return false;
   }
 
   /**
