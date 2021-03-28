@@ -31,6 +31,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -40,6 +41,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -70,6 +73,8 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
+import io.opentracing.noop.NoopTracerFactory;
+import io.opentracing.util.GlobalTracer;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
@@ -307,6 +312,35 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } else {
       UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
     }
+
+    resetGlobalTracer();
+    ExecutorUtil.resetThreadLocalProviders();
+  }
+
+  /**
+   * GlobalTracer is initialized by org.apache.solr.core.TracerConfigurator by
+   * org.apache.solr.core.CoreContainer.  Tests may need to reset it in the beginning of a test if
+   * it might have differing configuration from other tests in the same suite.
+   * It's also important to call {@link ExecutorUtil#resetThreadLocalProviders()}.
+   */
+  @SuppressForbidden(reason = "Hack to reset internal state of GlobalTracer")
+  public static void resetGlobalTracer() {
+    AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+      try {
+        final Class<GlobalTracer> globalTracerClass = GlobalTracer.class;
+        final Field isRegistered = globalTracerClass.getDeclaredField("isRegistered");
+        isRegistered.setAccessible(true);
+        isRegistered.setBoolean(null, false);
+        final Field tracer = globalTracerClass.getDeclaredField("tracer");
+        tracer.setAccessible(true);
+        tracer.set(null, NoopTracerFactory.create());
+      } catch (NoSuchFieldException | IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
+      return null;
+    });
+
+    assert GlobalTracer.isRegistered() == false;
   }
 
   @AfterClass

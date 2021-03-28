@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import io.opentracing.util.GlobalTracer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -28,11 +29,11 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.GlobalTracer;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.solr.jaeger.JaegerTracerConfigurator.AGENT_HOST;
@@ -43,17 +44,24 @@ import static org.apache.solr.jaeger.JaegerTracerConfigurator.MAX_QUEUE_SIZE;
 
 public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
+  @Before
+  public void doBefore() {
+    // to be safe because this test tests tracing.
+    resetGlobalTracer();
+    ExecutorUtil.resetThreadLocalProviders();
+  }
+
   @Test
   public void testInjected() throws Exception{
     MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(2, createTempDir())
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(getFile("solr/solr.xml").toPath())
         .build();
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "100.0")
-        .process(cluster.getSolrClient());
     try {
       TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);
-      timeOut.waitFor("Waiting for GlobalTracer is registered", () -> GlobalTracer.getTracer() instanceof io.jaegertracing.internal.JaegerTracer);
+      timeOut.waitFor(
+          "Waiting for GlobalTracer is registered",
+          () -> GlobalTracer.get().toString().contains("JaegerTracer"));
 
       //TODO add run Jaeger through Docker and verify spans available after run these commands
       CollectionAdminRequest.createCollection("test", 2, 1).process(cluster.getSolrClient());
