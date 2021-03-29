@@ -240,8 +240,6 @@ Bug Fixes
 
 * SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh)
 
-* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
-
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -305,6 +303,8 @@ Bug Fixes
 
 * SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
   (Thomas Wöckinger, David Smiley)
+
+* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
 
 * SOLR-15273: Fix NullPointerException in StoredFieldsShardResponseProcessor that happened when a field name alias is
   used for the unique key field in searches with distributed result grouping. (limingnihao via Christine Poerschke)
