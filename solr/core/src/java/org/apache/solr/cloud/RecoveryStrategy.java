@@ -221,7 +221,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   final private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops)
       throws SolrServerException, IOException {
 
-    final String leaderUrl = getReplicateLeaderUrl(leaderprops);//TODO?
+    final String leaderUrl = getReplicateLeaderUrl(leaderprops);
 
     log.info("Attempting to replicate from [{}].", leaderUrl);
 

@@ -311,7 +311,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // Expect an exception because the leader URL is not allowed.
     systemClearPropertySolrDisableUrlAllowList();
     SolrException e = expectThrows(SolrException.class, this::doTestDetails);
-    assertTrue(e.getMessage().contains("is not in configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'"));
+    assertTrue(e.getMessage().contains("is not in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'"));
 
     // Set the allow-list to allow the leader URL.
     // Expect the same test to pass now.

@@ -224,7 +224,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   }
 
   private void assertForbidden(String query, String shards, MiniSolrCloudCluster cluster) throws IOException {
-    String expectedExceptionMessage = "not on the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'";
+    String expectedExceptionMessage = "is not in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'";
     ignoreException(expectedExceptionMessage);
     try {
       numDocs(

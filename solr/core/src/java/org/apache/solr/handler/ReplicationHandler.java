@@ -1230,9 +1230,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   @SuppressWarnings({"resource"})
   public void inform(SolrCore core) {
-
-    //TODO core.getCoreContainer().getAllowListUrlChecker()
-
     this.core = core;
     registerCloseHook();
     Object nbtk = initArgs.get(NUMBER_BACKUPS_TO_KEEP_INIT_PARAM);

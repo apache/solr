@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
@@ -44,7 +45,7 @@ public class NodeConfig {
 
   private final Set<Path> allowPaths;
 
-  private final String allowUrls;
+  private final List<String> allowUrls;
 
   private final String sharedLibDirectory;
 
@@ -104,7 +105,7 @@ public class NodeConfig {
                      Path solrHome, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
-                     boolean fromZookeeper, String defaultZkHost, Set<Path> allowPaths, String allowUrls,
+                     boolean fromZookeeper, String defaultZkHost, Set<Path> allowPaths, List<String> allowUrls,
                      String configSetServiceClass) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
@@ -314,9 +315,9 @@ public class NodeConfig {
   public Set<Path> getAllowPaths() { return allowPaths; }
 
   /**
-   * Comma-separated allow-list of Solr nodes URLs.
+   * Allow-list of Solr nodes URLs.
    */
-  public String getAllowUrls() {
+  public List<String> getAllowUrls() {
     return allowUrls;
   }
 
@@ -353,7 +354,7 @@ public class NodeConfig {
     private boolean fromZookeeper = false;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
-    private String allowUrls;
+    private List<String> allowUrls = Collections.emptyList();
 
     private final Path solrHome;
     private final String nodeName;
@@ -528,7 +529,7 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setAllowUrls(String urls) {
+    public NodeConfigBuilder setAllowUrls(List<String> urls) {
       this.allowUrls = urls;
       return this;
     }

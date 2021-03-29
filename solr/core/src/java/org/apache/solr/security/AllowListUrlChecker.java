@@ -20,7 +20,6 @@ package org.apache.solr.security;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +62,7 @@ public class AllowListUrlChecker {
 
     static {
         try {
-            ALLOW_ALL = new AllowListUrlChecker(null) {
+            ALLOW_ALL = new AllowListUrlChecker(Collections.emptyList()) {
                 @Override
                 public void checkAllowList(List<String> urls, ClusterState clusterState) {
                     // Allow.
@@ -91,13 +90,13 @@ public class AllowListUrlChecker {
     private final Set<String> hostAllowList;
 
     /**
-     * @param urlAllowList Comma-separated list of allowed URLs. URLs must be well-formed, missing protocol is tolerated.
-     *                    Empty or null is supported and means there is no explicit allow-list of URLs. In this case no
+     * @param urlAllowList List of allowed URLs. URLs must be well-formed, missing protocol is tolerated.
+     *                    A null or empty list means there is no explicit allow-list of URLs, in this case no
      *                    URL is allowed unless a {@link ClusterState} is provided in
      *                    {@link #checkAllowList(List, ClusterState)}.
      * @throws MalformedURLException If an URL is invalid.
      */
-    public AllowListUrlChecker(@Nullable String urlAllowList) throws MalformedURLException {
+    public AllowListUrlChecker(List<String> urlAllowList) throws MalformedURLException {
         hostAllowList = parseHostPorts(urlAllowList);
     }
 
@@ -146,7 +145,7 @@ public class AllowListUrlChecker {
         for (String url : urls) {
             if (!localHostAllowList.contains(parseHostPort(url))) {
                 throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
-                        "URL " + url + " is not in configured '" + URL_ALLOW_LIST + "' " + localHostAllowList);
+                        "URL " + url + " is not in the configured '" + URL_ALLOW_LIST + "' " + localHostAllowList);
             }
         }
     }
@@ -179,13 +178,12 @@ public class AllowListUrlChecker {
     }
 
     @VisibleForTesting
-    static Set<String> parseHostPorts(String commaSeparatedUrls) throws MalformedURLException {
-        if (commaSeparatedUrls == null || commaSeparatedUrls.isEmpty()) {
+    static Set<String> parseHostPorts(List<String> urls) throws MalformedURLException {
+        if (urls == null || urls.isEmpty()) {
             return null;
         }
-        List<String> urlStrings = StrUtils.splitSmart(commaSeparatedUrls, ',');
-        Set<String> hostPorts = new HashSet<>((int) (urlStrings.size() / 0.7f) + 1);
-        for (String urlString : urlStrings) {
+        Set<String> hostPorts = new HashSet<>((int) (urls.size() / 0.7f) + 1);
+        for (String urlString : urls) {
             hostPorts.add(parseHostPort(urlString));
         }
         return hostPorts;

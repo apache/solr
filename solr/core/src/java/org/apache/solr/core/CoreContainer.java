@@ -398,7 +398,6 @@ public class CoreContainer {
     }
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
-    log.info("URL allow-list initialized: {}", this.allowListUrlChecker);
 
     Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
     try {
