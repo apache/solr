@@ -257,10 +257,9 @@ public class PackageUtils {
     return "/api/collections/" + collection + "/config/params";
   }
 
-  public static void uploadKey(byte bytes[], String path, Path home, HttpSolrClient client) throws IOException {
-    ByteBuffer buf = ByteBuffer.wrap(bytes);
-    PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(buf, null);
-    DistribPackageStore._persistToFile(home, path, buf, ByteBuffer.wrap(Utils.toJSON(meta)));
+  public static void uploadKey(byte[] bytes, String path, Path home, HttpSolrClient client) throws IOException {
+    PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(bytes, null);
+    DistribPackageStore._persistToFile(home, path, ByteBuffer.wrap(bytes), ByteBuffer.wrap(Utils.toJSON(meta)));
   }
 
 }
