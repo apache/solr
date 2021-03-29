@@ -82,7 +82,6 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void set(AtomicReference ctx) {
-      assert tracer.activeSpan() == null : "Pre-existing span unexpected";
       final Span span = (Span) ctx.get();
       if (span != null) {
         log.trace("Thread received span to do async work: {}", span);
