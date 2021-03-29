@@ -137,6 +137,7 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.scripting.Script;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -931,10 +932,49 @@ public class CoreContainer {
 
       clusterSingletons.setReady();
       zkSys.getZkController().checkOverseerDesignate();
-
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
+
+    if (isZooKeeperAware()) {
+      // run init script if needed
+      String resourceName = System.getProperty(Script.INIT_SCRIPT);
+      runScript(resourceName, true);
+    }
+  }
+
+  public void runScript(String resourceName, boolean async) {
+    if (resourceName == null) {
+      return;
+    }
+    CloudSolrClient solrClient = solrClientCache.getCloudSolrClient(zkSys.getZkController().getZkServerAddress());
+    String nodeName = zkSys.zkController.getNodeName();
+    Script script = null;
+    try {
+      script = Script.loadResource(loader, solrClient, nodeName, resourceName);
+    } catch (Exception e) {
+      log.warn("Error loading script, ignoring " + resourceName, e);
+      script = null;
+    }
+    final Script finalScript = script;
+    if (finalScript != null) {
+      Runnable r = () -> {
+        try {
+          finalScript.run();
+        } catch (Exception e) {
+          log.warn("Error running script " + resourceName, e);
+          if (finalScript.getErrorHandling() == Script.ErrorHandling.FATAL) {
+            log.warn("Script error handling set to FATAL - shutting down.");
+            shutdown();
+          }
+        }
+      };
+      if (async) {
+        runAsync(r);
+      } else {
+        r.run();
+      }
+    }
   }
 
   // MetricsHistoryHandler supports both cloud and standalone configs
@@ -1032,6 +1072,9 @@ public class CoreContainer {
     if (zkController != null) {
       OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
       overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+      // run shutdown script if needed
+      String resourceName = System.getProperty(Script.SHUTDOWN_SCRIPT);
+      runScript(resourceName, false);
     }
     if (log.isInfoEnabled()) {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
