@@ -297,15 +297,13 @@ public abstract class ConfigSetService {
    *
    * @param configName the config to check if it exists
    * @return whether the config exists or not
-   * @throws IOException if an I/O error occurs
    */
   public abstract boolean checkConfigExists(String configName) throws IOException ;
 
   /**
-   * Delete a config
+   * Delete a config (recursively deletes its files if not empty)
    *
    * @param configName the config to delete
-   * @throws IOException if an I/O error occurs
    */
   public abstract void deleteConfig(String configName) throws IOException;
 
@@ -328,25 +326,26 @@ public abstract class ConfigSetService {
   public abstract void setConfigMetadata(String configName, Map<String, Object> data) throws IOException;
 
   /**
-   * Get the config metadata
+   * Get the config metadata (mutable) or null
    *
    * @param configName the config name
-   * @return the config metadata (mutable) or null
-   * @throws IOException if an I/O error occurs or config does not exist
+   * @return the config metadata
    */
   public abstract Map<String, Object> getConfigMetadata(String configName) throws IOException;
 
   /**
-   * List the names of configs
+   * List the names of configs (non-null)
    *
-   * @return list the names of configs or empty list
+   * @return list of config names
    */
   public abstract List<String> listConfigs() throws IOException;
 
   /**
-   * Get the names of the files in config
+   * Get the names of the files in config (mutable, non-null)
+   * e.g. solrconfig.xml, lang/stopwords_en.txt, lang/stoptags_en.txt
+   *
    * @param configName the config name
-   * @return list of file name paths in the config e.g. foo/managed-schema, foo/foo2/solrconfig.xml
+   * @return list of file name paths in the config
    */
   public abstract List<String> getAllConfigFiles(String configName) throws IOException;
 

@@ -22,17 +22,19 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.NamedList;
@@ -153,7 +155,9 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
     try {
-      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
+      Boolean existsConfig = zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
+      if (existsConfig == null) return false;
+      return existsConfig;
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
               SolrZkClient.checkInterrupted(e));
@@ -172,6 +176,7 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException {
+    Objects.requireNonNull(filesToDelete);
     try {
       for (String fileToDelete : filesToDelete) {
         zkClient.clean(CONFIGS_ZKNODE + "/" + configName + "/" + fileToDelete);
@@ -266,13 +271,14 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public List<String> getAllConfigFiles(String configName) throws IOException {
     String zkPath = CONFIGS_ZKNODE + "/" + configName;
-    if (!zkPath.startsWith(ZkConfigSetService.CONFIGS_ZKNODE + "/")) {
-      throw new IllegalArgumentException("\"" + zkPath + "\" not recognized as a configset path");
-    }
     try {
-      List<String> filePaths = new LinkedList<>();
-      for (String filePath : zkClient.getAllConfigsetFiles(zkPath)) {
-        filePaths.add(filePath.replaceAll(zkPath + "/", ""));
+      List<String> filePaths = new ArrayList<>();
+      ZkMaintenanceUtils.traverseZkTree(zkClient, zkPath, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, filePaths::add);
+      filePaths.remove(zkPath);
+      for (int i=0; i<filePaths.size(); i++) {
+        String filePath = filePaths.get(i);
+        assert(filePath.startsWith(zkPath + "/"));
+        filePaths.set(i, filePath.replaceAll(zkPath + "/", ""));
       }
       return filePaths;
     } catch (KeeperException | InterruptedException e) {
@@ -385,7 +391,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   private void copyData(String fromZkFilePath, String toZkFilePath) throws KeeperException, InterruptedException {
-    log.info("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
+    log.debug("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
     byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
     zkClient.makePath(toZkFilePath, data, true);
   }
