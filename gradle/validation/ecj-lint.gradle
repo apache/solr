@@ -52,7 +52,7 @@ allprojects {
 
         // We create a task for all source sets but ignore those
         // that don't have any Java source directories.
-        enabled = enabled && !srcDirs.isEmpty()
+        enabled = !srcDirs.isEmpty()
 
         classpath = rootProject.configurations.ecjDeps
         main = "org.eclipse.jdt.internal.compiler.batch.Main"
