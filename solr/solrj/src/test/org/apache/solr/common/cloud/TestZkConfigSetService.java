@@ -60,7 +60,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
   @Test
   public void testConstants() throws Exception {
     assertEquals("/configs", ZkConfigSetService.CONFIGS_ZKNODE);
-    assertEquals("^\\..*$", ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX);
+    assertEquals("^\\..*$", ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX);
   }
 
   @Test

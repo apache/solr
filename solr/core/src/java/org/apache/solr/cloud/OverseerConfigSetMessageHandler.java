@@ -320,7 +320,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       // the entire baseConfig set with the old properties, including immutable,
       // that would make it impossible for the user to delete.
       try {
-        if (coreContainer.getConfigSetService().checkConfigExists(configSetName) && coreContainer.getConfigSetService().getAllConfigFiles(configSetName).size() > 0) {
+        if (coreContainer.getConfigSetService().checkConfigExists(configSetName)) {
           deleteConfigSet(configSetName, true);
         }
       } catch (IOException ioe) {

@@ -133,7 +133,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
     @Override
     protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
-        Path schemaFile = Paths.get(solrConfig.getResourceLoader().getConfigDir()).resolve(schemaFileName);
+        Path schemaFile = solrConfig.getResourceLoader().getConfigPath().resolve(schemaFileName);
         try {
             return Files.getLastModifiedTime(schemaFile).toMillis();
         } catch (FileNotFoundException e) {

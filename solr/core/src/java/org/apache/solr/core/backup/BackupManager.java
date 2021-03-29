@@ -234,7 +234,7 @@ public class BackupManager {
           throws IOException {
     URI source = getZkStateDir(CONFIG_STATE_DIR, sourceConfigName);
     Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
-    uploadConfig(configSetService, source, targetConfigName);
+    uploadConfigToConfigRepo(configSetService, source, targetConfigName, "");
   }
 
   /**
@@ -250,7 +250,7 @@ public class BackupManager {
     repository.createDirectory(getZkStateDir(CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
-    downloadConfig(configSetService, configName, dest);
+    downloadConfigToRepo(configSetService, configName, dest);
   }
 
   public void uploadCollectionProperties(String collectionName) throws IOException {
@@ -293,7 +293,7 @@ public class BackupManager {
     }
   }
 
-  private void downloadConfig(ConfigSetService configSetService, String configName, URI dir) throws IOException {
+  private void downloadConfigToRepo(ConfigSetService configSetService, String configName, URI dir) throws IOException {
     List<String> filePaths = configSetService.getAllConfigFiles(configName);
     for (String filePath : filePaths) {
       URI uri = repository.resolve(dir, filePath);
@@ -307,13 +307,13 @@ public class BackupManager {
         if (!repository.exists(uri)) {
           repository.createDirectory(uri);
         }
-        downloadConfig(configSetService, configName, uri);
       }
     }
   }
 
-  private void uploadConfig(ConfigSetService configSetService, URI sourceDir, String configName) throws IOException {
+  private void uploadConfigToConfigRepo(ConfigSetService configSetService, URI sourceDir, String configName, String filePrefix) throws IOException {
     for (String file : repository.listAll(sourceDir)) {
+      String filePath = filePrefix + "/" + file;
       URI path = repository.resolve(sourceDir, file);
       BackupRepository.PathType t = repository.getPathType(path);
       switch (t) {
@@ -321,13 +321,17 @@ public class BackupManager {
           try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
             byte[] arr = new byte[(int) is.length()]; // probably ok since the config file should be small.
             is.readBytes(arr, 0, (int) is.length());
-            configSetService.uploadFileToConfig(configName, file, arr, false);
+            if(filePath.startsWith("/")) {
+              configSetService.uploadFileToConfig(configName, filePath.substring(1), arr, false);
+            }else {
+              configSetService.uploadFileToConfig(configName, filePath, arr, false);
+            }
           }
           break;
         }
         case DIRECTORY: {
           if (!file.startsWith(".")) {
-            uploadConfig(configSetService, path, configName);
+            uploadConfigToConfigRepo(configSetService, path, configName, filePath);
           }
           break;
         }

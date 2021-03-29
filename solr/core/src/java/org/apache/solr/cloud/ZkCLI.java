@@ -72,7 +72,7 @@ public class ZkCLI implements CLIO {
   static final String UPCONFIG = "upconfig";
   static final String EXCLUDE_REGEX_SHORT = "x";
   static final String EXCLUDE_REGEX = "excluderegex";
-  static final String EXCLUDE_REGEX_DEFAULT = ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX;
+  static final String EXCLUDE_REGEX_DEFAULT = ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX;
   private static final String COLLECTION = "collection";
   private static final String CLEAR = "clear";
   private static final String LIST = "list";

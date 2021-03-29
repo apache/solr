@@ -24,11 +24,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
@@ -62,8 +62,6 @@ public class ZkConfigSetService extends ConfigSetService {
   private final SolrZkClient zkClient;
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";
-  public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
-  public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
 
   public ZkConfigSetService(CoreContainer cc) {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
@@ -200,7 +198,7 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public void uploadConfig(String configName, Path dir) throws IOException {
-    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   @Override
@@ -235,6 +233,7 @@ public class ZkConfigSetService extends ConfigSetService {
       Map<String, Object> data =
           (Map<String, Object>)
               Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true));
+      if (data == null) return new HashMap<>();
       return data;
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error getting config metadata", SolrZkClient.checkInterrupted(e));
@@ -250,6 +249,8 @@ public class ZkConfigSetService extends ConfigSetService {
   public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
     try {
       return zkClient.getData(CONFIGS_ZKNODE + "/" + configName + "/" + filePath, null, null, true);
+    } catch (KeeperException.NoNodeException e) {
+      return null;
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error downloading file from config", SolrZkClient.checkInterrupted(e));
     }
@@ -275,10 +276,17 @@ public class ZkConfigSetService extends ConfigSetService {
       List<String> filePaths = new ArrayList<>();
       ZkMaintenanceUtils.traverseZkTree(zkClient, zkPath, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, filePaths::add);
       filePaths.remove(zkPath);
+
       for (int i=0; i<filePaths.size(); i++) {
         String filePath = filePaths.get(i);
+        // if it is a directory, concatenate '/' to the filePath
+        if (zkClient.getChildren(filePath, null, true).size() != 0) {
+          filePath = filePath + "/";
+        }
+        // stripping /configs/configName/
         assert(filePath.startsWith(zkPath + "/"));
-        filePaths.set(i, filePath.replaceAll(zkPath + "/", ""));
+        filePath = filePath.substring(zkPath.length()+1);
+        filePaths.set(i, filePath);
       }
       return filePaths;
     } catch (KeeperException | InterruptedException e) {

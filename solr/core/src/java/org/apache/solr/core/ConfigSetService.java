@@ -23,6 +23,7 @@ import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -54,6 +55,8 @@ import static org.apache.solr.schema.IndexSchema.SLASH;
  */
 public abstract class ConfigSetService {
 
+  public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+  public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
@@ -276,7 +279,7 @@ public abstract class ConfigSetService {
 
   /**
    * Download a file from config
-   *
+   * If the file does not exist, it returns null
    *
    * @param configName the name of the config
    * @param filePath  the file to download
@@ -326,7 +329,7 @@ public abstract class ConfigSetService {
   public abstract void setConfigMetadata(String configName, Map<String, Object> data) throws IOException;
 
   /**
-   * Get the config metadata (mutable) or null
+   * Get the config metadata (mutable, non-null)
    *
    * @param configName the config name
    * @return the config metadata
@@ -341,7 +344,7 @@ public abstract class ConfigSetService {
   public abstract List<String> listConfigs() throws IOException;
 
   /**
-   * Get the names of the files in config (mutable, non-null)
+   * Get the names of the files in config including dir (mutable, non-null)
    * e.g. solrconfig.xml, lang/stopwords_en.txt, lang/stoptags_en.txt
    *
    * @param configName the config name

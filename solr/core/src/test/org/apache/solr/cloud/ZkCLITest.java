@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -109,7 +110,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals("upconfig", ZkCLI.UPCONFIG);
     assertEquals("x", ZkCLI.EXCLUDE_REGEX_SHORT);
     assertEquals("excluderegex", ZkCLI.EXCLUDE_REGEX);
-    assertEquals(ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
+    assertEquals(ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
   }
 
   @Test
@@ -278,7 +279,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
         String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
         File downloadedFile = new File(confDir,relativePathofFile);
-        if (ZkConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
+        if (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
           assertFalse(sourceFile.getAbsolutePath() + " exists in ZK, downloaded:" + downloadedFile.getAbsolutePath(), downloadedFile.exists());
         } else {
           assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
