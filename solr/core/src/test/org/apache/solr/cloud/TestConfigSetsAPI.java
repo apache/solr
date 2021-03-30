@@ -1212,7 +1212,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    *
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    * @see #setDefaultConfigDirSysPropIfNotSet
-   * @see ZkConfigSetService#getDefaultConfigDirPath
+   * @see ConfigSetService#getDefaultConfigDirPath
    */
   @Test
   public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
@@ -1220,7 +1220,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     assertTrue("_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.exists());
     assertTrue("_default dir isn't a dir: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.isDirectory());
     
-    final String zkBootStrap = ZkConfigSetService.getDefaultConfigDirPath();
+    final String zkBootStrap = ConfigSetService.getDefaultConfigDirPath();
     assertEquals("extPath _default configset dir vs zk bootstrap path",
                  ExternalPaths.DEFAULT_CONFIGSET, zkBootStrap);
   }

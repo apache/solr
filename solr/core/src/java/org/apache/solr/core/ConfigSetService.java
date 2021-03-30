@@ -16,12 +16,16 @@
  */
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -34,8 +38,10 @@ import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.SystemIdResolver;
@@ -60,7 +66,16 @@ public abstract class ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
+    final ConfigSetService configSetService = instantiate(coreContainer);
+    try {
+      bootstrapDefaultConfigSet(configSetService);
+    } catch (IOException e) {
+      log.error("Error in bootstrapping default config");
+    }
+    return configSetService;
+  }
 
+  private static ConfigSetService instantiate(CoreContainer coreContainer) {
     NodeConfig nodeConfig = coreContainer.getConfig();
     SolrResourceLoader loader = coreContainer.getResourceLoader();
     ZkController zkController = coreContainer.getZkController();
@@ -80,7 +95,6 @@ public abstract class ConfigSetService {
     }else{
       return new ZkConfigSetService(coreContainer);
     }
-
   }
 
   /** If in SolrCloud mode, upload config sets for each SolrCore in solr.xml. */
@@ -111,6 +125,87 @@ public abstract class ConfigSetService {
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
     schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, SLASH + SCHEMA + SLASH, null);
     return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
+  }
+
+  private static void bootstrapDefaultConfigSet(ConfigSetService configSetService) throws IOException {
+    if (configSetService.checkConfigExists("_default") == false) {
+      String configDirPath = getDefaultConfigDirPath();
+      if (configDirPath == null) {
+        log.warn(
+                "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
+                "intended to be the default. Current 'solr.default.confdir' value:",
+                System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+      } else {
+        configSetService.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
+      }
+    }
+  }
+
+  /**
+   * Gets the absolute filesystem path of the _default configset to bootstrap from. First tries the
+   * sysprop "solr.default.confdir". If not found, tries to find the _default dir relative to the
+   * sysprop "solr.install.dir". Returns null if not found anywhere.
+   *
+   * @lucene.internal
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   */
+  public static String getDefaultConfigDirPath() {
+    String configDirPath = null;
+    String serverSubPath =
+        "solr"
+            + File.separator
+            + "configsets"
+            + File.separator
+            + "_default"
+            + File.separator
+            + "conf";
+    String subPath = File.separator + "server" + File.separator + serverSubPath;
+    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null
+        && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
+            .exists()) {
+      configDirPath =
+          new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
+              .getAbsolutePath();
+    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null
+        && new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
+            .exists()) {
+      configDirPath =
+          new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
+              .getAbsolutePath();
+    }
+    return configDirPath;
+  }
+
+  // Order is important here since "confDir" may be
+  // 1> a full path to the parent of a solrconfig.xml or parent of /conf/solrconfig.xml
+  // 2> one of the canned config sets only, e.g. _default
+  // and trying to assemble a path for configsetDir/confDir is A Bad Idea. if confDir is a full path.
+  public static Path getConfigsetPath(String confDir, String configSetDir) throws IOException {
+
+    // A local path to the source, probably already includes "conf".
+    Path ret = Paths.get(confDir, "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(confDir).normalize();
+    }
+
+    // a local path to the parent of a "conf" directory
+    ret = Paths.get(confDir, "conf", "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(confDir, "conf").normalize();
+    }
+
+    // one of the canned configsets.
+    ret = Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(configSetDir, confDir, "conf").normalize();
+    }
+
+    throw new IllegalArgumentException(String.format(Locale.ROOT,
+            "Could not find solrconfig.xml at %s, %s or %s",
+            Paths.get(configSetDir, "solrconfig.xml").normalize().toAbsolutePath().toString(),
+            Paths.get(configSetDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
+            Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString()
+    ));
   }
 
   /**

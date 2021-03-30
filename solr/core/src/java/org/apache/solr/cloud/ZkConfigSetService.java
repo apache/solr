@@ -16,17 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -45,8 +41,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -67,11 +61,6 @@ public class ZkConfigSetService extends ConfigSetService {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
     this.zkController = cc.getZkController();
     this.zkClient = cc.getZkController().getZkClient();
-    try {
-      bootstrapDefaultConfigSet();
-    } catch (IOException e) {
-      log.error("Error in bootstrapping default config");
-    }
   }
 
   /** This is for ZkCLI and some tests */
@@ -302,92 +291,11 @@ public class ZkConfigSetService extends ConfigSetService {
     }
   }
 
-  private void bootstrapDefaultConfigSet() throws IOException {
-    if (this.checkConfigExists("_default") == false) {
-      String configDirPath = getDefaultConfigDirPath();
-      if (configDirPath == null) {
-        log.warn(
-            "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
-            "intended to be the default. Current 'solr.default.confdir' value:",
-            System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
-      } else {
-        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
-      }
-    }
-  }
-
-  /**
-   * Gets the absolute filesystem path of the _default configset to bootstrap from. First tries the
-   * sysprop "solr.default.confdir". If not found, tries to find the _default dir relative to the
-   * sysprop "solr.install.dir". Returns null if not found anywhere.
-   *
-   * @lucene.internal
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
-   */
-  public static String getDefaultConfigDirPath() {
-    String configDirPath = null;
-    String serverSubPath =
-        "solr"
-            + File.separator
-            + "configsets"
-            + File.separator
-            + "_default"
-            + File.separator
-            + "conf";
-    String subPath = File.separator + "server" + File.separator + serverSubPath;
-    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null
-        && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
-            .exists()) {
-      configDirPath =
-          new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
-              .getAbsolutePath();
-    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null
-        && new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
-            .exists()) {
-      configDirPath =
-          new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
-              .getAbsolutePath();
-    }
-    return configDirPath;
-  }
-
   // This method is used by configSetUploadTool and CreateTool to resolve the configset directory.
   // Check several possibilities:
   // 1> confDir/solrconfig.xml exists
   // 2> confDir/conf/solrconfig.xml exists
   // 3> configSetDir/confDir/conf/solrconfig.xml exists (canned configs)
-
-  // Order is important here since "confDir" may be
-  // 1> a full path to the parent of a solrconfig.xml or parent of /conf/solrconfig.xml
-  // 2> one of the canned config sets only, e.g. _default
-  // and trying to assemble a path for configsetDir/confDir is A Bad Idea. if confDir is a full path.
-  public static Path getConfigsetPath(String confDir, String configSetDir) throws IOException {
-
-    // A local path to the source, probably already includes "conf".
-    Path ret = Paths.get(confDir, "solrconfig.xml").normalize();
-    if (Files.exists(ret)) {
-      return Paths.get(confDir).normalize();
-    }
-
-    // a local path to the parent of a "conf" directory
-    ret = Paths.get(confDir, "conf", "solrconfig.xml").normalize();
-    if (Files.exists(ret)) {
-      return Paths.get(confDir, "conf").normalize();
-    }
-
-    // one of the canned configsets.
-    ret = Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize();
-    if (Files.exists(ret)) {
-      return Paths.get(configSetDir, confDir, "conf").normalize();
-    }
-
-    throw new IllegalArgumentException(String.format(Locale.ROOT,
-            "Could not find solrconfig.xml at %s, %s or %s",
-            Paths.get(configSetDir, "solrconfig.xml").normalize().toAbsolutePath().toString(),
-            Paths.get(configSetDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
-            Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString()
-    ));
-  }
 
   private void copyConfigDirFromZk(String fromZkPath, String toZkPath) throws IOException {
     try {

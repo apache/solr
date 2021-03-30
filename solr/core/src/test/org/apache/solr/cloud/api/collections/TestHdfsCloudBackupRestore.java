@@ -141,8 +141,8 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     useFactory("solr.StandardDirectoryFactory");
 
     configureCluster(NUM_SHARDS)// nodes
-    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-    .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
+    .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
     .withSolrXml(SOLR_XML)
     .configure();
     cluster.getZkClient().delete(ZkConfigSetService.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
