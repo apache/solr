@@ -177,6 +177,9 @@ public class ZkConfigSetService extends ConfigSetService {
     Objects.requireNonNull(filesToDelete);
     try {
       for (String fileToDelete : filesToDelete) {
+        if (fileToDelete.endsWith("/")) {
+          fileToDelete = fileToDelete.substring(0, fileToDelete.length()-1);
+        }
         zkClient.clean(CONFIGS_ZKNODE + "/" + configName + "/" + fileToDelete);
       }
     } catch (KeeperException | InterruptedException e) {
@@ -277,16 +280,16 @@ public class ZkConfigSetService extends ConfigSetService {
       ZkMaintenanceUtils.traverseZkTree(zkClient, zkPath, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, filePaths::add);
       filePaths.remove(zkPath);
 
-      String prevPath = null;
+      String prevPath = "";
       for (int i = 0; i < filePaths.size(); i++) {
         String currPath = filePaths.get(i);
 
         // stripping /configs/configName/
-        assert (currPath.startsWith(zkPath + "/"));
+        assert currPath.startsWith(zkPath + "/");
         currPath = currPath.substring(zkPath.length() + 1);
 
         // if currentPath is a directory, concatenate '/'
-        if (prevPath != null && prevPath.contains(currPath)) {
+        if (prevPath.startsWith(currPath)) {
           currPath = currPath + "/";
         }
         prevPath = currPath;

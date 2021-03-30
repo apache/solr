@@ -346,7 +346,7 @@ public abstract class ConfigSetService {
   /**
    * Get the names of the files in config including dirs (mutable, non-null)
    * Sorted lexicographically
-   * e.g. solrconfig.xml, lang/, lang/stoptags_en.txt, lang/stopwords_en.txt
+   * e.g. solrconfig.xml, lang/, lang/stopwords_en.txt
    *
    * @param configName the config name
    * @return list of file name paths in the config

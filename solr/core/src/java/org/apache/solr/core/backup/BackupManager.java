@@ -313,7 +313,7 @@ public class BackupManager {
 
   private void uploadConfigToSolrCloud(ConfigSetService configSetService, URI sourceDir, String configName, String filePrefix) throws IOException {
     for (String file : repository.listAll(sourceDir)) {
-      String filePath = filePrefix + "/" + file;
+      String filePath = filePrefix + file;
       URI path = repository.resolve(sourceDir, file);
       BackupRepository.PathType t = repository.getPathType(path);
       switch (t) {
@@ -321,15 +321,13 @@ public class BackupManager {
           try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
             byte[] arr = new byte[(int) is.length()]; // probably ok since the config file should be small.
             is.readBytes(arr, 0, (int) is.length());
-            if(filePath.startsWith("/")) {
-              configSetService.uploadFileToConfig(configName, filePath.substring(1), arr, false);
-            }
+            configSetService.uploadFileToConfig(configName, filePath, arr, false);
           }
           break;
         }
         case DIRECTORY: {
           if (!file.startsWith(".")) {
-            uploadConfigToSolrCloud(configSetService, path, configName, filePath);
+            uploadConfigToSolrCloud(configSetService, path, configName, filePath + "/");
           }
           break;
         }
