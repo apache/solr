@@ -103,8 +103,11 @@ Specifies the path to a common library directory that will be shared across all 
 `allowPaths`::
 Solr will normally only access folders relative to `$SOLR_HOME`, `$SOLR_DATA_HOME` or `coreRootDir`. If you need to e.g., create a core outside of these paths, you can explicitly allow the path with `allowPaths`. It is a comma separated string of file system paths to allow. The special value of `*` will allow any path on the system.
 
-`allowUrls``:
-When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be allowed or Solr will forbid the request. The allow-list can also be configured in `solr.in.sh`.
+[#_allow_urls]
+`allowUrls`::
+Comma-separated list of Solr hosts to allow. The http/https protocol may be omitted, and only the host and port are checked, i.e. `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
+When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be allowed or Solr will forbid the request. In Solr cloud mode, this allow-list is added to the cluster's live nodes to determine which hosts are allowed. The allow-list can also be configured with the `solr.allowUrls` system property (see its use in `solr.in.sh`).
+If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
 
 `shareSchema`::
 This attribute, when set to `true`, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object. Sharing the IndexSchema Object makes loading the core faster. If you use this feature, make sure that no core-specific property is used in your Schema file.

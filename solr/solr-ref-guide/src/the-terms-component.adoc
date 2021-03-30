@@ -344,16 +344,4 @@ Result:
 
 == Distributed Search Support
 
-The TermsComponent also supports distributed indexes. For the `/terms` request handler, you must provide the following two parameters:
-
-`shards`::
-Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#,Distributed Search with Index Sharding>>.
-+
-The `shards` parameter is subject to a host allow-list that has to be configured in the component's parameters using the configuration key `allowUrls` and the list of hosts as values.
-+
-By default the allow-list will be populated with all live nodes when running in SolrCloud mode. If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
-+
-See the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>> for more information about how the allow-list works.
-
-`shards.qt`::
-Specifies the request handler Solr uses for requests to shards.
+The TermsComponent also supports distributed indexes.
