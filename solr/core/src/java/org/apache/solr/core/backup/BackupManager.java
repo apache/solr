@@ -323,8 +323,6 @@ public class BackupManager {
             is.readBytes(arr, 0, (int) is.length());
             if(filePath.startsWith("/")) {
               configSetService.uploadFileToConfig(configName, filePath.substring(1), arr, false);
-            }else {
-              configSetService.uploadFileToConfig(configName, filePath, arr, false);
             }
           }
           break;

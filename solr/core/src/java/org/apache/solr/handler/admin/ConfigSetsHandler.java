@@ -284,9 +284,6 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   private static boolean isCurrentlyTrusted(ConfigSetService configSetService, String configName) throws IOException {
     Map<String, Object> contentMap = configSetService.getConfigMetadata(configName);
-    if (contentMap.size() == 0) {
-      return true;
-    }
     return (boolean) contentMap.getOrDefault("trusted", true);
   }
 

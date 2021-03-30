@@ -344,8 +344,9 @@ public abstract class ConfigSetService {
   public abstract List<String> listConfigs() throws IOException;
 
   /**
-   * Get the names of the files in config including dir (mutable, non-null)
-   * e.g. solrconfig.xml, lang/stopwords_en.txt, lang/stoptags_en.txt
+   * Get the names of the files in config including dirs (mutable, non-null)
+   * Sorted lexicographically
+   * e.g. solrconfig.xml, lang/, lang/stoptags_en.txt, lang/stopwords_en.txt
    *
    * @param configName the config name
    * @return list of file name paths in the config

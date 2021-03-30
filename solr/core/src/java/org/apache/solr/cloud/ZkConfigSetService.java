@@ -277,17 +277,22 @@ public class ZkConfigSetService extends ConfigSetService {
       ZkMaintenanceUtils.traverseZkTree(zkClient, zkPath, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, filePaths::add);
       filePaths.remove(zkPath);
 
-      for (int i=0; i<filePaths.size(); i++) {
-        String filePath = filePaths.get(i);
-        // if it is a directory, concatenate '/' to the filePath
-        if (zkClient.getChildren(filePath, null, true).size() != 0) {
-          filePath = filePath + "/";
-        }
+      String prevPath = null;
+      for (int i = 0; i < filePaths.size(); i++) {
+        String currPath = filePaths.get(i);
+
         // stripping /configs/configName/
-        assert(filePath.startsWith(zkPath + "/"));
-        filePath = filePath.substring(zkPath.length()+1);
-        filePaths.set(i, filePath);
+        assert (currPath.startsWith(zkPath + "/"));
+        currPath = currPath.substring(zkPath.length() + 1);
+
+        // if currentPath is a directory, concatenate '/'
+        if (prevPath != null && prevPath.contains(currPath)) {
+          currPath = currPath + "/";
+        }
+        prevPath = currPath;
+        filePaths.set(i, currPath);
       }
+      Collections.sort(filePaths);
       return filePaths;
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error getting all configset files", SolrZkClient.checkInterrupted(e));
