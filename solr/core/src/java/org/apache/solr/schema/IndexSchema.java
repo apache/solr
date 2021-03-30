@@ -64,7 +64,6 @@ import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -109,7 +108,6 @@ public class IndexSchema {
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";
-  public static final String SLASH = "/";
   public static final String SOURCE = "source";
   public static final String TYPE = "type";
   public static final String TYPES = "types";
@@ -170,7 +168,7 @@ public class IndexSchema {
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(String name, ConfigSetService.ConfigResource schemaResource, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
+  public IndexSchema(String name, IndexSchemaFactory.ConfigResource schemaResource, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
@@ -492,7 +490,7 @@ public class IndexSchema {
     }
   }
 
-  protected void readSchema(ConfigSetService.ConfigResource is) {
+  protected void readSchema(IndexSchemaFactory.ConfigResource is) {
     assert null != is : "schema InputSource should never be null";
     try {
       rootNode = is.get();
