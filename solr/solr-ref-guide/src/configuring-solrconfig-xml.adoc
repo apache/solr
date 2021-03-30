@@ -6,7 +6,7 @@
     requesthandlers-and-searchcomponents-in-solrconfig, \
     implicit-requesthandlers, \
     initparams-in-solrconfig, \
-    updatehandlers-in-solrconfig, \
+    commits-transaction-logs, \
     query-settings-in-solrconfig, \
     requestdispatcher-in-solrconfig, \
     update-request-processors, \
@@ -62,7 +62,7 @@ We've covered the options in the following sections:
 | <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers and SearchComponents in SolrConfig>>: *TODO*
 | <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>>: Request end-points automatically provided by Solr and how to configure them.
 | <<initparams-in-solrconfig.adoc#,InitParams in SolrConfig>>: Default parameters for request handlers.
-| <<updatehandlers-in-solrconfig.adoc#,UpdateHandlers in SolrConfig>>: Update requests and commit settings.
+| <<commits-transaction-logs.adoc#,Commits and Transaction Logs>>: Update requests and commit settings.
 | <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>>: Caches, query warming, and query listeners.
 | <<requestdispatcher-in-solrconfig.adoc#,RequestDispatcher in SolrConfig>>: Advanced settings for how parsing requests and HTTP cache headers.
 | <<update-request-processors.adoc#,Update Request Processors>>: Plugins for update requests. *TODO*

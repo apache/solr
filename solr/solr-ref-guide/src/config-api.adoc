@@ -85,7 +85,9 @@ http://localhost:8983/api/collections/techproducts/config/requestHandler
 ====
 --
 
-The output will be details of each request handler defined in `solrconfig.xml`, all  <<implicit-requesthandlers.adoc#,defined implicitly>> by Solr, and all defined with this Config API stored in `configoverlay.json`. To see the configuration for implicit request handlers, add `expandParams=true` to the request. See the documentation for the implicit request handlers for examples using this command.
+The output will be details of each request handler defined in `solrconfig.xml`, <<implicit-requesthandlers.adoc#,defined implicitly>> by Solr, and defined with this Config API stored in `configoverlay.json`.
+To see the configuration for implicit request handlers, add `expandParams=true` to the request.
+See the documentation for implict request handlers linked above for examples using this command.
 
 The available top-level sections that can be added as path parameters are: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
 
@@ -154,7 +156,7 @@ The properties that can be configured with `set-property` and `unset-property` a
 
 *Update Handler Settings*
 
-See <<updatehandlers-in-solrconfig.adoc#,UpdateHandlers in SolrConfig>> for defaults and acceptable values for these settings.
+See <<commits-transaction-logs.adoc#,Commits and Transaction Logs>> for defaults and acceptable values for these settings.
 
 * `updateHandler.autoCommit.maxDocs`
 * `updateHandler.autoCommit.maxTime`

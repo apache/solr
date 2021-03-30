@@ -268,6 +268,24 @@ http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!
 http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!,user2!
 ----
 
+== Near Real Time (NRT) Use Cases
+
+Near Real Time (NRT) search means that documents are available for search soon after being indexed.
+NRT searching is one of the main features of SolrCloud and is rarely attempted in leader/follower configurations.
+
+Document durability and searchability are controlled by `commits`.
+The "Near" in "Near Real Time" is configurable to meet the needs of your application.
+Commits are either "hard" or "soft" and can be issued by a client (say SolrJ), via a REST call or configured to occur automatically in `solrconfig.xml`.
+The recommendation usually gives is to configure your commit strategy in `solrconfig.xml` (see below) and avoid issuing commits externally.
+
+Typically in NRT applications, hard commits are configured with `openSearcher=false`, and soft commits are configured to make documents visible for search.
+
+When a commit occurs, various background tasks are initiated, segment merging for example.
+These background tasks do not block additional updates to the index nor do they delay the availability of the documents for search.
+
+When configuring for NRT, pay special attention to cache and autowarm settings as they can have a significant impact on NRT performance.
+For extremely short autoCommit intervals, consider disabling caching and autowarming completely.
+
 == Configuring the ShardHandlerFactory
 
 For finer-grained control, you can directly configure and tune aspects of the concurrency and thread-pooling used within distributed search in Solr. The default configuration favors throughput over latency.

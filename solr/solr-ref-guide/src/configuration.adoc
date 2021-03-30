@@ -3,7 +3,6 @@
     configuring-solrconfig-xml, \
     solr-cores-and-solr-xml, \
     configuration-apis, \
-    near-real-time-searching, \
     solr-plugins
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -48,10 +47,6 @@ include::solr-cores-and-solr-xml.adoc[tag=solrxml-sections]
 
 // This pulls the sub-section list from the child page to reduce errors
 include::configuration-apis.adoc[tag=configapi-sections]
-****
-
-****
-<<near-real-time-searching.adoc#,*Near Real Time Searching*>>: How to include documents in search results nearly immediately after they are indexed.
 ****
 
 ****

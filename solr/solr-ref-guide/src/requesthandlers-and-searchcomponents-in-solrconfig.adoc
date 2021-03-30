@@ -321,4 +321,4 @@ Similar to Search Components for Search Handlers, Solr has document-preprocessin
 called <<update-request-processors.adoc#,Update Request Processors>>,
 which also allow for default and custom configuration chains.
 
-Note: Do not confuse Update Request Handlers with <<updatehandlers-in-solrconfig.adoc#,`updateHandler`>> section also defined in `solrconfig.xml`.
+Note: Do not confuse Update Request Handlers with <<commits-transaction-logs.adoc#,`updateHandler`>> section also defined in `solrconfig.xml`.

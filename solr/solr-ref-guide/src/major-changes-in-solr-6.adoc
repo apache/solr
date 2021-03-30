@@ -1,4 +1,4 @@
-= Major Changes from Solr 5 to Solr 6
+= Major Changes in Solr 6
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

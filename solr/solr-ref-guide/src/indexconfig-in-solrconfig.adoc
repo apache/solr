@@ -168,7 +168,8 @@ The defaults for the above attributes are dynamically set based on whether the u
 
 === mergedSegmentWarmer
 
-When using Solr in for <<near-real-time-searching.adoc#,Near Real Time Searching>> a merged segment warmer can be configured to warm the reader on the newly merged segment, before the merge commits. This is not required for near real-time search, but will reduce search latency on opening a new near real-time reader after a merge completes.
+When using Solr for <<solrcloud-distributed-requests.adoc#near-real-time-nrt-use-cases,Near Real Time Use Cases>>, a merged segment warmer can be configured to warm the reader on the newly merged segment, before the merge commits.
+This is not required for near real-time search, but will reduce search latency on opening a new near real-time reader after a merge completes.
 
 [source,xml]
 ----
