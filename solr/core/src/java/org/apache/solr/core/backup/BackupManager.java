@@ -234,7 +234,7 @@ public class BackupManager {
           throws IOException {
     URI source = getZkStateDir(CONFIG_STATE_DIR, sourceConfigName);
     Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
-    uploadConfigToConfigRepo(configSetService, source, targetConfigName, "");
+    uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 
   /**
@@ -311,7 +311,7 @@ public class BackupManager {
     }
   }
 
-  private void uploadConfigToConfigRepo(ConfigSetService configSetService, URI sourceDir, String configName, String filePrefix) throws IOException {
+  private void uploadConfigToSolrCloud(ConfigSetService configSetService, URI sourceDir, String configName, String filePrefix) throws IOException {
     for (String file : repository.listAll(sourceDir)) {
       String filePath = filePrefix + "/" + file;
       URI path = repository.resolve(sourceDir, file);
@@ -329,7 +329,7 @@ public class BackupManager {
         }
         case DIRECTORY: {
           if (!file.startsWith(".")) {
-            uploadConfigToConfigRepo(configSetService, path, configName, filePath);
+            uploadConfigToSolrCloud(configSetService, path, configName, filePath);
           }
           break;
         }
