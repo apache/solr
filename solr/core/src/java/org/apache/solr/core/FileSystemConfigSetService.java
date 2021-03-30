@@ -16,11 +16,13 @@
  */
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -60,7 +62,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
     @Override
     public boolean checkConfigExists(String configName) throws IOException {
-        return listConfigs().contains(configName);
+        return true;
     }
 
     @Override

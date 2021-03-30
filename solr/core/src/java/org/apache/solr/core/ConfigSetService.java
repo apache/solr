@@ -70,7 +70,7 @@ public abstract class ConfigSetService {
     try {
       bootstrapDefaultConfigSet(configSetService);
     } catch (IOException e) {
-      log.error("Error in bootstrapping default config");
+      log.info("_default config couldn't be uploaded");
     }
     return configSetService;
   }
