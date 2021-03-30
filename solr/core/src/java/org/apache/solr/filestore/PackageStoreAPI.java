@@ -50,10 +50,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.CryptoKeys;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -199,14 +197,14 @@ public class PackageStoreAPI {
         validateName(path, true);
         ContentStream stream = streams.iterator().next();
         try {
-          ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
+          byte[] buf = stream.getStream().readAllBytes();
           List<String> signatures = readSignatures(req, buf);
           MetaData meta = _createJsonMetaData(buf, signatures);
           PackageStore.FileType type = packageStore.getType(path, true);
           if(type != PackageStore.FileType.NOFILE) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path already exists "+ path);
           }
-          packageStore.put(new PackageStore.FileEntry(buf, meta, path));
+          packageStore.put(new PackageStore.FileEntry(ByteBuffer.wrap(buf), meta, path));
           rsp.add(CommonParams.FILE, path);
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -226,7 +224,7 @@ public class PackageStoreAPI {
       }
     }
 
-    private List<String> readSignatures(SolrQueryRequest req, ByteBuffer buf)
+    private List<String> readSignatures(SolrQueryRequest req, byte[] buf)
         throws SolrException, IOException {
       String[] signatures = req.getParams().getParams("sig");
       if (signatures == null || signatures.length == 0) return null;
@@ -237,7 +235,7 @@ public class PackageStoreAPI {
     }
 
     private void validate(List<String> sigs,
-                          ByteBuffer buf) throws SolrException, IOException {
+                          byte[] buf) throws SolrException, IOException {
       Map<String, byte[]> keys = packageStore.getKeys();
       if (keys == null || keys.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -251,9 +249,9 @@ public class PackageStoreAPI {
             "Error parsing public keys in Package store");
       }
       for (String sig : sigs) {
-        if (cryptoKeys.verify(sig, buf) == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key : " + sig +" len: "+buf.limit()+  " content sha512: "+
-              DigestUtils.sha512Hex(new ByteBufferInputStream(buf)));
+        if (cryptoKeys.verify(sig, ByteBuffer.wrap(buf)) == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key : " + sig +" len: "+buf.length+  " content sha512: "+
+              DigestUtils.sha512Hex(buf));
         }
 
       }
@@ -262,11 +260,11 @@ public class PackageStoreAPI {
   }
 
   /**
-   * Creates a JSON string with the metadata
+   * Creates a JSON string with the metadata.
    * @lucene.internal
    */
-  public static MetaData _createJsonMetaData(ByteBuffer buf, List<String> signatures) throws IOException {
-    String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(buf));
+  public static MetaData _createJsonMetaData(byte[] buf, List<String> signatures) throws IOException {
+    String sha512 = DigestUtils.sha512Hex(buf);
     Map<String, Object> vals = new HashMap<>();
     vals.put(MetaData.SHA512, sha512);
     if (signatures != null) {
