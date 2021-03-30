@@ -69,7 +69,7 @@ public abstract class ConfigSetService {
     final ConfigSetService configSetService = instantiate(coreContainer);
     try {
       bootstrapDefaultConfigSet(configSetService);
-    } catch (IOException e) {
+    } catch (UnsupportedOperationException | IOException e) {
       log.info("_default config couldn't be uploaded");
     }
     return configSetService;
