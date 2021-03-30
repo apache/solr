@@ -275,8 +275,6 @@ public class IndexFetcher {
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Malformed 'leaderUrl' " + leaderUrl, e);
       } catch (SolrException e) {
-        log.warn("The '{}' parameter value '{}' is not allowed: {}.",
-                LEADER_URL, leaderUrl, e.getMessage());
         throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
                 "The '" + LEADER_URL + "' parameter value '" + leaderUrl
                         + "' is not allowed: "

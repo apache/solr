@@ -14,7 +14,6 @@ import java.util.Set;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 
 /**
  * Tests {@link AllowListUrlChecker}.
@@ -32,7 +31,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
     @Test
     public void testNoInput() throws Exception {
-        assertNull(new AllowListUrlChecker(Collections.emptyList()).getHostAllowList());
+        assertThat(new AllowListUrlChecker(Collections.emptyList()).getHostAllowList().isEmpty(), is(true));
     }
 
     @Test
@@ -98,8 +97,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
     @Test
     public void testHostParsingUnsetEmpty() throws Exception {
-        assertThat(AllowListUrlChecker.parseHostPorts(null), nullValue());
-        assertThat(AllowListUrlChecker.parseHostPorts(Collections.emptyList()), nullValue());
+        assertThat(AllowListUrlChecker.parseHostPorts(Collections.emptyList()).isEmpty(), is(true));
     }
 
     @Test

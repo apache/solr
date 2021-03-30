@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 
 import java.io.IOException;
 import java.net.URI;
@@ -125,7 +124,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   @Test
   public void test() throws Exception {
     assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).getHostAllowList(), notNullValue());
-    assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).getHostAllowList(), nullValue());
+    assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).getHostAllowList().isEmpty(), is(true));
 
     assertThat(getAllowListUrlChecker(EXPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(true));
     assertThat(getAllowListUrlChecker(IMPLICIT_CLUSTER_KEY).hasExplicitAllowList(), is(false));
@@ -224,7 +223,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   }
 
   private void assertForbidden(String query, String shards, MiniSolrCloudCluster cluster) throws IOException {
-    String expectedExceptionMessage = "is not in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'";
+    String expectedExceptionMessage = "nor in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'";
     ignoreException(expectedExceptionMessage);
     try {
       numDocs(

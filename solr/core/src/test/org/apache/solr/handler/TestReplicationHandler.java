@@ -311,12 +311,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // Expect an exception because the leader URL is not allowed.
     systemClearPropertySolrDisableUrlAllowList();
     SolrException e = expectThrows(SolrException.class, this::doTestDetails);
-    assertTrue(e.getMessage().contains("is not in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'"));
+    assertTrue(e.getMessage().contains("nor in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'"));
 
     // Set the allow-list to allow the leader URL.
     // Expect the same test to pass now.
-    System.setProperty(TEST_URL_ALLOW_LIST, "127.0.0.1:" + leaderJetty.getLocalPort()
-            + ",127.0.0.1:" + followerJetty.getLocalPort());
+    System.setProperty(TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl() + "," + followerJetty.getBaseUrl());
     try {
       doTestDetails();
     } finally {

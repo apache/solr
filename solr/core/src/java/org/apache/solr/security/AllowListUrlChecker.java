@@ -91,7 +91,7 @@ public class AllowListUrlChecker {
 
     /**
      * @param urlAllowList List of allowed URLs. URLs must be well-formed, missing protocol is tolerated.
-     *                    A null or empty list means there is no explicit allow-list of URLs, in this case no
+     *                    An empty list means there is no explicit allow-list of URLs, in this case no
      *                    URL is allowed unless a {@link ClusterState} is provided in
      *                    {@link #checkAllowList(List, ClusterState)}.
      * @throws MalformedURLException If an URL is invalid.
@@ -134,18 +134,13 @@ public class AllowListUrlChecker {
      * @throws SolrException         If an URL is not present in the allow-list or in the provided {@link ClusterState}.
      */
     public void checkAllowList(List<String> urls, @Nullable ClusterState clusterState) throws MalformedURLException {
-        Set<String> localHostAllowList;
-        if (hostAllowList != null) {
-            localHostAllowList = hostAllowList;
-        } else if (clusterState != null) {
-            localHostAllowList = clusterState.getHostAllowList();
-        } else {
-            localHostAllowList = Collections.emptySet();
-        }
+        Set<String> clusterHostAllowList = clusterState == null ? Collections.emptySet() : clusterState.getHostAllowList();
         for (String url : urls) {
-            if (!localHostAllowList.contains(parseHostPort(url))) {
-                throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
-                        "URL " + url + " is not in the configured '" + URL_ALLOW_LIST + "' " + localHostAllowList);
+            String hostPort = parseHostPort(url);
+            if (!clusterHostAllowList.contains(hostPort) && !hostAllowList.contains(hostPort)) {
+                throw new SolrException(SolrException.ErrorCode.FORBIDDEN, "URL " + url +
+                        " is neither a live node of the cluster nor in the configured '" +
+                        URL_ALLOW_LIST + "' " + hostAllowList);
             }
         }
     }
@@ -154,7 +149,7 @@ public class AllowListUrlChecker {
      * Whether this checker has been created with a non-empty allow-list of URLs.
      */
     public boolean hasExplicitAllowList() {
-        return hostAllowList != null;
+        return !hostAllowList.isEmpty();
     }
 
     /**
@@ -180,7 +175,7 @@ public class AllowListUrlChecker {
     @VisibleForTesting
     static Set<String> parseHostPorts(List<String> urls) throws MalformedURLException {
         if (urls == null || urls.isEmpty()) {
-            return null;
+            return Collections.emptySet();
         }
         Set<String> hostPorts = new HashSet<>((int) (urls.size() / 0.7f) + 1);
         for (String urlString : urls) {
@@ -193,7 +188,7 @@ public class AllowListUrlChecker {
         url = url.trim();
         URL u;
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            // It doesn't really matter which protocol we set here because we are not going to use it. We just need a full URL.
+            // It doesn't really matter which protocol we set here because we are not going to use it.
             u = new URL("http://" + url);
         } else {
             u = new URL(url);

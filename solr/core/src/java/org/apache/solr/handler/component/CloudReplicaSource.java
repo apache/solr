@@ -130,8 +130,6 @@ class CloudReplicaSource implements ReplicaSource {
     } catch (MalformedURLException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in '" + ShardParams.SHARDS + "' parameter: " + shardsParam, e);
     } catch (SolrException e) {
-      log.warn("The '{}' parameter value '{}' contained value(s) not allowed: {}.",
-              ShardParams.SHARDS, shardsParam, e.getMessage());
       throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
               "The '" + ShardParams.SHARDS + "' parameter value '" + shardsParam
                       + "' contained value(s) not allowed: "
