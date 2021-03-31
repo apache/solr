@@ -225,8 +225,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
 
-    if (args.get("shardsWhitelist") != null) {
-      log.warn("Property 'shardsWhitelist' is deprecated, please use '" + AllowListUrlChecker.URL_ALLOW_LIST + "' instead.");
+    if (args != null && args.get("shardsWhitelist") != null) {
+      log.warn("Property 'shardsWhitelist' is deprecated, please use '{}' instead.", AllowListUrlChecker.URL_ALLOW_LIST);
     }
 
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.

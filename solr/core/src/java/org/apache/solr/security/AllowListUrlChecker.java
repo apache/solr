@@ -107,7 +107,7 @@ public class AllowListUrlChecker {
         if (Boolean.getBoolean(DISABLE_URL_ALLOW_LIST)) {
             return AllowListUrlChecker.ALLOW_ALL;
         } else if (System.getProperty("solr.disable.shardsWhitelist") != null) {
-            log.warn("Property 'solr.disable.shardsWhitelist' is deprecated, please use '" + DISABLE_URL_ALLOW_LIST + "' instead.");
+            log.warn("Property 'solr.disable.shardsWhitelist' is deprecated, please use '{}' instead.", DISABLE_URL_ALLOW_LIST);
         }
         try {
             return new AllowListUrlChecker(config.getAllowUrls());
