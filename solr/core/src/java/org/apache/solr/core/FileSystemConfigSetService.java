@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
@@ -105,10 +106,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public List<String> listConfigs() throws IOException {
-    return Files.list(configSetBase)
-        .map(Path::getFileName)
-        .map(Path::toString)
-        .collect(Collectors.toList());
+    try (Stream<Path> configs = Files.list(configSetBase)) {
+      return configs.map(Path::getFileName)
+              .map(Path::toString)
+              .collect(Collectors.toList());
+    }
   }
 
   @Override

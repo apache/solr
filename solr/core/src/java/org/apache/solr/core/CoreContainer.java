@@ -747,13 +747,7 @@ public class CoreContainer {
     reloadSecurityProperties();
     warnUsersOfInsecureSettings();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
-
-    try {
-      coreConfigService = ConfigSetService.createConfigSetService(this);
-    } catch (IOException e) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "configSetService couldn't be created " + e, e);
-    }
+    coreConfigService = ConfigSetService.createConfigSetService(this);
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);

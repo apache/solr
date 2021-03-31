@@ -52,12 +52,15 @@ public abstract class ConfigSetService {
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static ConfigSetService createConfigSetService(CoreContainer coreContainer) throws IOException {
+  public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
     final ConfigSetService configSetService = instantiate(coreContainer);
     try {
       bootstrapDefaultConfigSet(configSetService);
     } catch (UnsupportedOperationException e) {
       log.info("_default config couldn't be uploaded");
+    } catch (IOException e) {
+      throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "_default config couldn't be uploaded ", e);
     }
     return configSetService;
   }
