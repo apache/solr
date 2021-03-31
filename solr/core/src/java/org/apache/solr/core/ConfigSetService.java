@@ -44,8 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service class used by the CoreContainer to load ConfigSets for use in SolrCore
- * creation.
+ * Service class used by the CoreContainer to load ConfigSets for use in SolrCore creation.
  */
 public abstract class ConfigSetService {
 
@@ -53,57 +52,35 @@ public abstract class ConfigSetService {
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
+  public static ConfigSetService createConfigSetService(CoreContainer coreContainer) throws IOException {
     final ConfigSetService configSetService = instantiate(coreContainer);
     try {
       bootstrapDefaultConfigSet(configSetService);
-    } catch (UnsupportedOperationException | IOException e) {
+    } catch (UnsupportedOperationException e) {
       log.info("_default config couldn't be uploaded");
     }
     return configSetService;
   }
 
   private static ConfigSetService instantiate(CoreContainer coreContainer) {
-    NodeConfig nodeConfig = coreContainer.getConfig();
-    SolrResourceLoader loader = coreContainer.getResourceLoader();
-    ZkController zkController = coreContainer.getZkController();
+    final NodeConfig nodeConfig = coreContainer.getConfig();
+    final SolrResourceLoader loader = coreContainer.getResourceLoader();
+    final ZkController zkController = coreContainer.getZkController();
 
-    String configSetServiceClass = nodeConfig.getConfigSetServiceClass();
+    final String configSetServiceClass = nodeConfig.getConfigSetServiceClass();
 
-    if(configSetServiceClass != null){
+    if (configSetServiceClass != null) {
       try {
         Class<? extends ConfigSetService> clazz = loader.findClass(configSetServiceClass, ConfigSetService.class);
         Constructor<? extends ConfigSetService> constructor = clazz.getConstructor(CoreContainer.class);
         return constructor.newInstance(coreContainer);
       } catch (Exception e) {
-        throw new RuntimeException("create configSetService instance faild,configSetServiceClass:" + configSetServiceClass, e);
+        throw new RuntimeException("create configSetService instance failed, configSetServiceClass:" + configSetServiceClass, e);
       }
-    }else if(zkController == null){
+    } else if (zkController == null) {
       return new FileSystemConfigSetService(coreContainer);
-    }else{
+    } else {
       return new ZkConfigSetService(coreContainer);
-    }
-  }
-
-  /** If in SolrCloud mode, upload config sets for each SolrCore in solr.xml. */
-  public static void bootstrapConf(CoreContainer cc) throws IOException {
-    // List<String> allCoreNames = cfg.getAllCoreNames();
-    List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
-
-    if (log.isInfoEnabled()) {
-      log.info(
-          "bootstrapping config for {} cores into ZooKeeper using solr.xml from {}",
-          cds.size(),
-          cc.getSolrHome());
-    }
-
-    for (CoreDescriptor cd : cds) {
-      String coreName = cd.getName();
-      String confName = cd.getCollectionName();
-      if (StringUtils.isEmpty(confName)) confName = coreName;
-      Path udir = cd.getInstanceDir().resolve("conf");
-      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
-      cc.getConfigSetService().uploadConfig(confName, udir);
     }
   }
 
@@ -188,8 +165,31 @@ public abstract class ConfigSetService {
     ));
   }
 
+  /** If in SolrCloud mode, upload configSets for each SolrCore in solr.xml. */
+  public static void bootstrapConf(CoreContainer cc) throws IOException {
+    // List<String> allCoreNames = cfg.getAllCoreNames();
+    List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
+
+    if (log.isInfoEnabled()) {
+      log.info(
+          "bootstrapping config for {} cores into ZooKeeper using solr.xml from {}",
+          cds.size(),
+          cc.getSolrHome());
+    }
+
+    for (CoreDescriptor cd : cds) {
+      String coreName = cd.getName();
+      String confName = cd.getCollectionName();
+      if (StringUtils.isEmpty(confName)) confName = coreName;
+      Path udir = cd.getInstanceDir().resolve("conf");
+      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
+      cc.getConfigSetService().uploadConfig(confName, udir);
+    }
+  }
+
   /**
    * Load the ConfigSet for a core
+   *
    * @param dcore the core's CoreDescriptor
    * @return a ConfigSet
    */
@@ -229,6 +229,7 @@ public abstract class ConfigSetService {
 
   /**
    * Create a new ConfigSetService
+   *
    * @param loader the CoreContainer's resource loader
    * @param shareSchema should we share the IndexSchema among cores of same config?
    */
@@ -239,6 +240,7 @@ public abstract class ConfigSetService {
 
   /**
    * Create a SolrConfig object for a core
+   *
    * @param cd the core's CoreDescriptor
    * @param loader the core's resource loader
    * @param isTrusted is the configset trusted?
@@ -250,6 +252,7 @@ public abstract class ConfigSetService {
 
   /**
    * Create an IndexSchema object for a core.  It might be a cached lookup.
+   *
    * @param cd the core's CoreDescriptor
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
@@ -336,6 +339,7 @@ public abstract class ConfigSetService {
    * Upload a file to config
    * If file does not exist, it will be uploaded
    * If createNew param is set to true then file be overwritten
+   *
    * @param configName the name to give the config
    * @param fileName the name of the file
    * @param data the content of the file
@@ -388,7 +392,6 @@ public abstract class ConfigSetService {
   /**
    * Delete files in config
    *
-   *
    * @param configName the name of the config
    * @param filesToDelete a list of file paths to delete
    */
@@ -398,6 +401,7 @@ public abstract class ConfigSetService {
    * Set the config metadata
    * If config does not exist, it will be created and set metadata on it
    * Else metadata will be replaced with the provided metadata
+   *
    * @param configName the config name
    * @param data the metadata to be set on config
    */
@@ -420,7 +424,7 @@ public abstract class ConfigSetService {
 
   /**
    * Get the names of the files in config including dirs (mutable, non-null)
-   * Sorted lexicographically
+   * sorted lexicographically
    * e.g. solrconfig.xml, lang/, lang/stopwords_en.txt
    *
    * @param configName the config name

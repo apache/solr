@@ -248,7 +248,6 @@ public class ZkConfigSetService extends ConfigSetService {
     }
   }
 
-
   @Override
   public List<String> listConfigs() throws IOException {
     try {
@@ -259,7 +258,6 @@ public class ZkConfigSetService extends ConfigSetService {
       throw new IOException("Error listing configs", SolrZkClient.checkInterrupted(e));
     }
   }
-
 
   @Override
   public List<String> getAllConfigFiles(String configName) throws IOException {
