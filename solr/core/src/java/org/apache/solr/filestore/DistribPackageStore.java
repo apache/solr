@@ -52,7 +52,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -95,7 +94,8 @@ public class DistribPackageStore implements PackageStore {
     if (!path.isEmpty() && path.charAt(0) != File.separatorChar) {
       path = File.separator + path;
     }
-    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY).resolve(path);
+    // Use concat because path might start with a slash and be incorrectly interpreted as absolute
+    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY + path);
   }
 
   class FileInfo {
@@ -196,11 +196,13 @@ public class DistribPackageStore implements PackageStore {
         ByteBuffer filedata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
                 baseUrl + "/node/files" + path,
                 Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+        filedata.mark();
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
         String expected = (String) m.get("sha512");
         if (!sha512.equals(expected)) {
           throw new SolrException(SERVER_ERROR, "sha512 mismatch downloading : " + path + " from node : " + fromNode);
         }
+        filedata.reset();
         persistToFile(filedata, metadata);
         return true;
       } catch (SolrException e) {
@@ -589,12 +591,12 @@ public class DistribPackageStore implements PackageStore {
     }
 
     Path metadataPath = _getRealPath(_getMetapath(path), solrHome);
-    try (SeekableByteChannel channel = Files.newByteChannel(metadataPath, StandardOpenOption.WRITE)) {
+    try (SeekableByteChannel channel = Files.newByteChannel(metadataPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
       channel.write(meta);
     }
     IOUtils.fsync(metadataPath, false);
 
-    try (SeekableByteChannel channel = Files.newByteChannel(realpath, StandardOpenOption.WRITE)) {
+    try (SeekableByteChannel channel = Files.newByteChannel(realpath, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
       channel.write(data);
     }
     IOUtils.fsync(realpath, false);
@@ -615,9 +617,7 @@ public class DistribPackageStore implements PackageStore {
     if (keyFiles == null) return result;
     for (File keyFile : keyFiles) {
       if (keyFile.isFile() && !isMetaDataFile(keyFile.getName())) {
-        try (InputStream fis = new FileInputStream(keyFile)) {
-          result.put(keyFile.getName(), SimplePostTool.inputStreamToByteArray(fis).array());
-        }
+        result.put(keyFile.getName(), Files.readAllBytes(keyFile.toPath()));
       }
     }
     return result;

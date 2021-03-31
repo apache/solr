@@ -233,6 +233,9 @@ Other Changes
 
 * SOLR-15121: Move XSLT (tr param) response writer and update request handler to scripting contrib.  (Eric Pugh, David Smiley)
 
+* SOLR-15292: SignatureUpdateProcessorFactory will fail to initialize if it is used in a SolrCloud cluster in a way that is
+  known to be problematic with multiple replicas.  (hossman)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -312,6 +315,10 @@ Bug Fixes
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
+
+* SOLR-15292: An ERROR is logged if SignatureUpdateProcessorFactory is used in SolrCloud cluster in a way that is known to
+  be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
+
 
 ==================  8.8.1 ==================
 
