@@ -35,6 +35,8 @@ New Features
 * SOLR-15130: Support for per-collection replica placement node sets, a.k.a "node type"
   placements. (ab, ilan)
 
+* SOLR-15208: Add the countDist aggregation to the stats, facet and timeseries Streaming Expressions (Joel Bernstein)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
