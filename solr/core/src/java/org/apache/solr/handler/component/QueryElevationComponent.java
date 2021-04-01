@@ -16,11 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
@@ -43,7 +38,10 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
-
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.google.common.annotations.VisibleForTesting;
@@ -97,7 +95,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -141,7 +138,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   protected boolean forceElevation;
   /** @see QueryElevationParams#USE_CONFIGURED_ELEVATED_ORDER */
   protected boolean useConfiguredElevatedOrder;
-
+  /** If {@link #inform(SolrCore)} completed without error. */
   protected boolean initialized;
 
   private final Object LOCK = new Object(); // for cache*
@@ -262,7 +259,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   /**
-   * Handles the exception that occurred while initializing this component.
+   * Handles the exception that occurred while initializing this component or when
+   * parsing a new config file at runtime.
    * If this method does not throw an exception, this component silently fails to initialize
    * and is muted with field {@link #initialized} which becomes {@code false}.
    */
@@ -289,8 +287,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       log.error(msg, e);
       return cacheElevationProvider;
     } else {
-      if (e instanceof SolrException || e instanceof InitializationException) {
-        throw (RuntimeException) e;
+      if (e instanceof SolrException) {
+        throw (SolrException) e;
       } else {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -353,21 +351,18 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   /**
    * Loads the {@link ElevationProvider}.
    *
-   * @return The loaded {@link ElevationProvider}.
-   * @throws java.io.IOException                  If the configuration resource cannot be found, or if an I/O error occurs while analyzing the triggering queries.
-   * @throws org.xml.sax.SAXException                 If the configuration resource is not a valid XML content.
-   * @throws javax.xml.parsers.ParserConfigurationException If the configuration resource is not a valid XML configuration.
-   * @throws RuntimeException             If the configuration resource is not an XML content of the expected format
-   *                                      (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
+   * @return The loaded {@link ElevationProvider}; not null.
    */
-  private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException, ParserConfigurationException, InitializationException {
+  private ElevationProvider loadElevationProvider(SolrCore core) throws Exception {
     XmlConfigFile cfg;
     try {
       cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
     } catch (SolrResourceNotFoundException e) {
-      throw new InitializationException(
-          "Missing config file \"" + configFileName + "\"",
-          InitializationExceptionCause.MISSING_CONFIG_FILE);
+      String msg = "Missing config file \"" + configFileName + "\"";
+      if (Files.exists(Path.of(core.getDataDir(), configFileName))) {
+        msg += ". Found it in the data dir but this is no longer supported since 9.0.";
+      }
+      throw new InitializationException(msg, InitializationExceptionCause.MISSING_CONFIG_FILE);
     } catch (Exception e) {
       // See if it's because the file is empty; wrap it if so.
       boolean isEmpty = false;
@@ -775,16 +770,17 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   // Exception
   //---------------------------------------------------------------------------------
 
-  private static class InitializationException extends RuntimeException {
+  private static class InitializationException extends SolrException {
 
     private final InitializationExceptionCause exceptionCause;
 
     InitializationException(String message, InitializationExceptionCause exceptionCause) {
-      super(message);
+      super(ErrorCode.SERVER_ERROR, message);
       this.exceptionCause = exceptionCause;
     }
   }
 
+  /** @see #handleInitializationException(Exception, InitializationExceptionCause) */
   protected enum InitializationExceptionCause {
     /**
      * The component parameter {@link #FIELD_TYPE} defines an unknown field type.
