@@ -19,10 +19,12 @@ package org.apache.solr;
 
 import java.lang.invoke.MethodHandles;
 import java.io.File;
+import java.util.regex.Pattern;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.util.VerifyTestClassNamingConvention;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -75,9 +77,19 @@ public class SolrTestCase extends LuceneTestCase {
    */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Pattern NAMING_CONVENTION_TEST_SUFFIX = Pattern.compile("(.+\\.)([^.]+)(Test)");
+
+  private static final Pattern NAMING_CONVENTION_TEST_PREFIX = Pattern.compile("(.+\\.)(Test)([^.]+)");
+
   @ClassRule
   public static TestRule solrClassRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule())
+             .around(
+                 new VerifyTestClassNamingConvention(
+                     "org.apache.solr.analytics", NAMING_CONVENTION_TEST_SUFFIX))
+             .around(
+                 new VerifyTestClassNamingConvention(
+                     "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
              .around(new RevertDefaultThreadHandlerRule());
 
   /**
