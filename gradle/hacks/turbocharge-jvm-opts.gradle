@@ -13,39 +13,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 
-// See LUCENE-9471. We redirect temporary location for gradle
-// so that it doesn't pollute user's tmp. Wipe it during a clean though.
-
-configure(rootProject) {
-  task cleanGradleTmp(type: Delete) {
-    delete fileTree(".gradle/tmp").matching {
-      include "gradle-worker-classpath*"
-    }
-  }
-
-  clean.dependsOn cleanGradleTmp
-}
-
-// Make sure we clean up after running tests.
+// LUCENE-9861: tune JVM options for short-lived java subprocesses.
 allprojects {
-  plugins.withType(JavaPlugin) {
-    def temps = []
+    def vmOpts = [
+        '-XX:+UseParallelGC',
+        '-XX:TieredStopAtLevel=1'
+    ]
 
-    task cleanTaskTmp() {
-      doLast {
-        temps.each { temp ->
-          project.delete fileTree(temp).matching {
-            include "jar_extract*"
-          }
-        }
-      }
+    // Inject vm options into custom javadoc rendering. We can't refer
+    // to the task type because it's dynamic.
+    tasks.matching { it.name in ["renderJavadoc", "renderSiteJavadoc"] }.all {
+        extraOpts.addAll(vmOpts.collect {"-J" + it})
     }
 
-    tasks.withType(Test) {
-      finalizedBy rootProject.cleanGradleTmp, cleanTaskTmp
-      temps += temporaryDir
+    // Inject vm options into any JavaExec task... We could narrow it
+    // down but I don't think there is any harm in keeping it broad.
+    tasks.withType(JavaExec) {
+        jvmArgs += vmOpts
     }
-  }
 }

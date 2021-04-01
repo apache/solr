@@ -189,9 +189,10 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = GET,
-      path = "/cluster/command-status",
+      path = "/cluster/command-status/{id}",
       permission = COLL_READ_PERM)
   public void getCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    wrapParams(req, REQUESTID, req.getPathTemplateValues().get("id"));
     CollectionsHandler.CollectionOperation.REQUESTSTATUS_OP.execute(req, rsp, collectionsHandler);
   }
 

@@ -13,25 +13,37 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ */ 
 
-// Source test classes from Lucene won't be accessible anymore after the split.
+// See LUCENE-9471. We redirect temporary location for gradle
+// so that it doesn't pollute user's tmp. Wipe it during a clean though.
 
-configure(project(":solr:core")) {
-  afterEvaluate {
-    sourceSets {
-      test {
-        java {
-          exclude '**/TestLuceneIndexBackCompat.java'
-          exclude '**/TestXmlQParser.java'
-          exclude '**/TestCodecSupport.java'
+configure(rootProject) {
+  gradle.buildFinished {
+    rootProject.delete fileTree(".gradle/tmp").matching {
+      include "gradle-worker-classpath*"
+    }
+  }
+}
+
+// Make sure we clean up after running tests.
+allprojects {
+  plugins.withType(JavaPlugin) {
+    def temps = []
+
+    task wipeTaskTemp() {
+      doLast {
+        temps.each { temp ->
+          project.delete fileTree(temp).matching {
+            include "jar_extract*"
+          }
         }
       }
     }
-  }
 
-  // disable for now because individual file excludes cannot be applied to ecj.
-  tasks.matching { it.name == "ecjLintTest" }.all { task ->
-    task.enabled = false
+    tasks.withType(Test) {
+      finalizedBy wipeTaskTemp
+      temps += temporaryDir
+    }
   }
 }

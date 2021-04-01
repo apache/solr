@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import org.apache.lucene.util.Constants;
@@ -50,14 +51,12 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
+  private static final Charset DATA_ENCODING = StandardCharsets.UTF_8;
 
   protected ZkTestServer zkServer;
 
   @BeforeClass
   public static void beforeClass() {
-    assumeFalse("FIXME: This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8052)", Constants.JRE_IS_MINIMUM_JAVA9);
-    
     assumeFalse("FIXME: SOLR-7040: This test fails under IBM J9",
                 Constants.JAVA_VENDOR.startsWith("IBM"));
     System.setProperty("solrcloud.skip.autorecovery", "true");
@@ -122,7 +121,6 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13075")
   public void testSaslZkACLProvider() throws Exception {
     // Test with Sasl enabled
     SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
@@ -182,7 +180,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
    * A ZkTestServer with Sasl support
    */
   public static class SaslZkTestServer extends ZkTestServer {
-    private Path kdcDir;
+    private final Path kdcDir;
     private KerberosTestServices kerberosTestServices;
 
     public SaslZkTestServer(Path zkDir, Path kdcDir) throws Exception {
@@ -204,7 +202,6 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         kerberosTestServices = KerberosTestServices.builder()
             .withKdc(kdcDir.toFile())
             .withJaasConfiguration(zkClientPrincipal, keytabFile, zkServerPrincipal, keytabFile)
-           
             .build();
         kerberosTestServices.start();
 
@@ -221,7 +218,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
       System.clearProperty("zookeeper.kerberos.removeRealmFromPrincipal");
       System.clearProperty("zookeeper.kerberos.removeHostFromPrincipal");
       super.shutdown();
-      kerberosTestServices.stop();
+      if (kerberosTestServices != null)
+        kerberosTestServices.stop();
     }
   }
 }
