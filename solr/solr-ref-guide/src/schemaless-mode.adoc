@@ -180,7 +180,7 @@ Once the UpdateRequestProcessorChain has been defined, you must instruct your Up
 
 There are two ways to do this. The update chain shown above has a `default=true` attribute which will use it for any update handler.
 
-An alternative, more explicit way is to use <<initparams-in-solrconfig.adoc#,InitParams>> to set the defaults on all `/update` request handlers:
+An alternative, more explicit way is to use <<initparams.adoc#,InitParams>> to set the defaults on all `/update` request handlers:
 
 [source,xml]
 ----

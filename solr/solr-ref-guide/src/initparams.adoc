@@ -1,4 +1,5 @@
-= InitParams in SolrConfig
+= InitParams
+:page-show-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -20,12 +21,15 @@ The `<initParams>` section of `solrconfig.xml` allows you to define request hand
 
 There are a couple of use cases where this might be desired:
 
-* Some handlers are implicitly defined in code - see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>> - and there should be a way to add/append/override some of the implicitly defined properties.
-* There are a few properties that are used across handlers. This helps you keep only a single definition of those properties and apply them over multiple handlers.
+* Some handlers are implicitly defined in code (see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>) and there should be a way to add/append/override some of the implicitly defined properties.
+* There are a few properties that are used across handlers.
+This helps you keep only a single definition of those properties and apply them over multiple handlers.
 
-For example, if you want several of your search handlers to return the same list of fields, you can create an `<initParams>` section without having to define the same set of parameters in each request handler definition. If you have a single request handler that should return different fields, you can define the overriding parameters in individual `<requestHandler>` sections as usual.
+For example, if you want several of your search handlers to return the same list of fields, you can create an `<initParams>` section without having to define the same set of parameters in each request handler definition.
+If you have a single request handler that should return different fields, you can define the overriding parameters in individual `<requestHandler>` sections as usual.
 
-The properties and configuration of an `<initParams>` section mirror the properties and configuration of a request handler. It can include sections for defaults, appends, and invariants, the same as any request handler.
+The properties and configuration of an `<initParams>` section mirror the properties and configuration of a request handler.
+It can include sections for defaults, appends, and invariants, the same as any request handler.
 
 For example, here is one of the `<initParams>` sections defined by default in the `_default` example:
 
@@ -38,15 +42,19 @@ For example, here is one of the `<initParams>` sections defined by default in th
 </initParams>
 ----
 
-This sets the default search field ("df") to be "_text_" for all of the request handlers named in the path section. If we later want to change the `/query` request handler to search a different field by default, we could override the `<initParams>` by defining the parameter in the `<requestHandler>` section for `/query`.
+This sets the default search field ("df") to be "_text_" for all of the request handlers named in the path section.
+If we later want to change the `/query` request handler to search a different field by default, we could override the `<initParams>` by defining the parameter in the `<requestHandler>` section for `/query`.
 
 The syntax and semantics are similar to that of a `<requestHandler>`. The following are the attributes:
 
 `path`::
-A comma-separated list of paths which will use the parameters. Wildcards can be used in paths to define nested paths, as described below.
+A comma-separated list of paths which will use the parameters.
+Wildcards can be used in paths to define nested paths, as described below.
 
 `name`::
-The name of this set of parameters. The name can be used directly in a requestHandler definition if a path is not explicitly named. If you give your `<initParams>` a name, you can refer to the parameters in a `<requestHandler>` that is not defined as a path.
+The name of this set of parameters.
+The name can be used directly in a requestHandler definition if a path is not explicitly named.
+If you give your `<initParams>` a name, you can refer to the parameters in a `<requestHandler>` that is not defined as a path.
 +
 For example, if an `<initParams>` section has the name "myParams", you can call the name when defining your request handler:
 +
@@ -55,7 +63,9 @@ For example, if an `<initParams>` section has the name "myParams", you can call 
 
 == Wildcards in initParams
 
-An `<initParams>` section can support wildcards to define nested paths that should use the parameters defined. A single asterisk (\*) denotes that a nested path one level deeper should use the parameters. Double asterisks (**) denote all nested paths no matter how deep should use the parameters.
+An `<initParams>` section can support wildcards to define nested paths that should use the parameters defined.
+A single asterisk (`\*`) denotes that a nested path one level deeper should use the parameters.
+Double asterisks (`**`) denote all nested paths no matter how deep should use the parameters.
 
 For example, if we have an `<initParams>` that looks like this:
 
@@ -96,7 +106,8 @@ Next we have a request handler named `/root/search5`:
 <requestHandler name="/root/search5" class="SearchHandler"/>
 ----
 
-We defined a wildcard for nested paths that are one level deeper than `/root`, so this request handler will use the parameters. This one, however, will not, because `/root/search5/test` is more than one level deep from `/root`:
+We defined a wildcard for nested paths that are one level deeper than `/root`, so this request handler will use the parameters.
+This one, however, will not, because `/root/search5/test` is more than one level deep from `/root`:
 
 [source,xml]
 ----

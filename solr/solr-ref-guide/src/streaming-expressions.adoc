@@ -49,7 +49,7 @@ Some streaming functions act as stream sources to originate the stream flow. Oth
 
 === Streaming Requests and Responses
 
-Solr has a `/stream` request handler that takes streaming expression requests and returns the tuples as a JSON stream. This request handler is implicitly defined, meaning there is nothing that has to be defined in `solrconfig.xml` - see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>>.
+Solr has a `/stream` request handler that takes streaming expression requests and returns the tuples as a JSON stream. This request handler is implicitly defined, meaning there is nothing that has to be defined in `solrconfig.xml` - see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>.
 
 The `/stream` request handler takes one parameter, `expr`, which is used to specify the streaming expression. For example, this curl command encodes and POSTs a simple `search()` expression to the `/stream` handler:
 

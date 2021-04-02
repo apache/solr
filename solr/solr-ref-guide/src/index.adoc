@@ -2,7 +2,7 @@
 :page-children: about-this-guide, \
     getting-started, \
     deployment-guide, \
-    configuration, \
+    configuration-guide, \
     schema-and-indexing, \
     query-guide, \
     solr-upgrade-notes, \
@@ -78,7 +78,7 @@ This section includes information about installing Solr, taking it to production
 .Configuration Guide
 [sidebar.col]
 ****
-*<<configuration.adoc#,Configuration Guide>>*
+*<<configuration-guide.adoc#,Configuration Guide>>*
 
 Covers tuning Solr's configuration files for your use case. Includes sections on securing Solr, scaling Solr, and integrating plugins.
 ****

@@ -29,7 +29,7 @@ All the fields being sorted and exported must have docValues set to true. For mo
 
 == The /export RequestHandler
 
-The `/export` request handler with the appropriate configuration is one of Solr's out-of-the-box request handlers - see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>> for more information.
+The `/export` request handler with the appropriate configuration is one of Solr's out-of-the-box request handlers - see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>> for more information.
 
 Note that this request handler's properties are defined as "invariants", which means they cannot be overridden by other properties passed at another time (such as at query time).
 

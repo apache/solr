@@ -135,7 +135,7 @@ It will be equivalent to a standard request handler definition such as this one:
 
 === Implicit RequestHandlers with the Request Parameters API
 
-Solr ships with many out-of-the-box request handlers that may only be configured via the Request Parameters API, because their configuration is not present in `solrconfig.xml`. See <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>> for the paramset to use when configuring an implicit request handler.
+Solr ships with many out-of-the-box request handlers that may only be configured via the Request Parameters API, because their configuration is not present in `solrconfig.xml`. See <<implicit-requesthandlers.adoc#,Implicit Request Handlers>> for the paramset to use when configuring an implicit request handler.
 
 === Viewing Expanded Paramsets and Effective Parameters with RequestHandlers
 

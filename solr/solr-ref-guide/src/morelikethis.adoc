@@ -220,7 +220,7 @@ curl -X POST -H 'Content-type:application/json' -d {
 Both of the above examples set the `mlt.fl` parameter to "body" for the request handler.
 This means that all requests to the handler will use that value for the parameter unless specifically overridden in an individual request.
 
-For more about request handler configuration in general, see the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#default-components,RequestHandlers and SearchComponents in Solrconfig>>.
+For more about request handler configuration in general, see the section <<requesthandlers-searchcomponents.adoc#default-components,Request Handlers and SearchComponents>>.
 
 ==== Request Handler Parameters
 
@@ -338,7 +338,7 @@ It's important to note this could incur a cost to search performance so should o
 
 ==== Search Component Configuration
 
-The MoreLikeThis search component is a default search component that works with all search handlers (see also <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#default-components,Default Components>>).
+The MoreLikeThis search component is a default search component that works with all search handlers (see also <<requesthandlers-searchcomponents.adoc#default-components,Default Components>>).
 
 Since it is configured already, it doesn't need any additional configuration unless you'd like to set parameters for a particular collection that override the MoreLikeThis defaults.
 To do this, you could configure it like this:
@@ -355,7 +355,7 @@ The above example would always enable MoreLikeThis for all queries and will alwa
 This is probably not something you really want!
 But the example serves to show how you might define whichever parameters you would like to be default for MoreLikeThis.
 
-If you gave the search component a name other than "mlt" as in the above example, you would need to explicitly add it to a request handler as described in the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#referencing-search-components,Referencing Search Components>>.
+If you gave the search component a name other than "mlt" as in the above example, you would need to explicitly add it to a request handler as described in the section <<requesthandlers-searchcomponents.adoc#referencing-search-components,Referencing Search Components>>.
 Because the above example uses the same name as the default, the parameters defined there override Solr's default.
 
 ==== Search Component Parameters

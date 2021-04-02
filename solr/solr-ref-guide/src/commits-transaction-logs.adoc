@@ -37,7 +37,7 @@ The `_default` configset included with Solr has this section defined already, bu
 </config>
 ----
 
-Note that `<updateHandler>` configurations do not affect the higher level configuration of <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,request handlers>> that process client update requests.
+Note that `<updateHandler>` configurations do not affect the higher level configuration of <<requesthandlers-searchcomponents.adoc#,request handlers>> that process client update requests.
 
 == Commits
 

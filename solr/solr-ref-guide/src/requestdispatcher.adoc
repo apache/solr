@@ -1,4 +1,4 @@
-= RequestDispatcher in SolrConfig
+= RequestDispatcher
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -33,7 +33,7 @@ It governs how Solr responds to requests such as `/select?qt=XXX`.
 The default value "false" will ignore requests to `/select` if a request handler is not explicitly registered with the name `/select`.
 A value of "true" will route query requests to the parser defined with the `qt` value if a request handler is not explicitly registered with the name `/select`.
 
-In recent versions of Solr, a `/select` request handler is defined by default, so a value of "false" will work fine. See the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers and SearchComponents in SolrConfig>> for more information.
+In recent versions of Solr, a `/select` request handler is defined by default, so a value of "false" will work fine. See the section <<requesthandlers-searchcomponents.adoc#,Request Handlers and Search Components>> for more information.
 
 [source,xml]
 ----
@@ -47,7 +47,9 @@ In recent versions of Solr, a `/select` request handler is defined by default, s
 The `<requestParsers>` sub-element controls values related to parsing requests. This is an empty XML element that doesn't have any content, only attributes.
 
 `enableRemoteStreaming`::
-This attribute controls whether remote streaming of content is allowed. If omitted or set to `false` (the default), streaming will not be allowed. Setting it to `true` lets you specify the location of content to be streamed using `stream.file` or `stream.url` parameters.
+This attribute controls whether remote streaming of content is allowed.
+If omitted or set to `false` (the default), streaming will not be allowed.
+Setting it to `true` lets you specify the location of content to be streamed using `stream.file` or `stream.url` parameters.
 
 `enableStreamBody`::
 This attribute controls whether streaming content from the HTTP parameter `stream.body` is allowed. If omitted or set to `false` (the default), streaming will not be allowed. Setting it to `true` lets you pass data in the `stream.body` parameter.

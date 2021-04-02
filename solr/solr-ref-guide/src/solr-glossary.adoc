@@ -146,13 +146,13 @@ A <<core,Core>> that acts as a physical copy of a <<shard,Shard>> in a <<solrclo
 
 A method of copying a leader index from one server to one or more "follower" or "child" servers.
 
-[[requesthandler]]<<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandler>>::
+[[requesthandler]]<<requesthandlers-searchcomponents.adoc#,RequestHandler>>::
 Logic and configuration parameters that tell Solr how to handle incoming "requests", whether the requests are to return search results, to index documents, or to handle other custom situations.
 
 [[SolrGlossary-S]]
 === S
 
-[[searchcomponent]]<<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,SearchComponent>>::
+[[searchcomponent]]<<requesthandlers-searchcomponents.adoc#,SearchComponent>>::
 Logic and configuration parameters used by request handlers to process query requests. Examples of search components include faceting, highlighting, and "more like this" functionality.
 
 [[shard]]Shard::

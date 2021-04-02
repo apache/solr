@@ -1,4 +1,4 @@
-= Request Handlers and Search Components in SolrConfig
+= Request Handlers and Search Components
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,11 +18,13 @@
 
 After the `<query>` section of `solrconfig.xml`, request handlers and search components are configured.
 
-A _request handler_ processes requests coming to Solr. These might be query requests, index update requests or specialized interactions such as <<ping.adoc#,ping>>.
+A _request handler_ processes requests coming to Solr.
+These might be query requests, index update requests or specialized interactions such as <<ping.adoc#,ping>>.
 
-Not all handlers are defined explicitly in `solrconfig.xml`, many essential ones are actually defined <<implicit-requesthandlers.adoc#,implicitly>>.
+Not all handlers are defined explicitly in `solrconfig.xml`, many are defined implicitly.
+See <<implicit-requesthandlers.adoc#,Implicit Request Handlers>> for details.
 
-Additionally, handlers can be defined - or even overridden - in `configoverlay.json` by using <<config-api.adoc#,Config API>>.
+Additionally, handlers can be defined or overridden in `configoverlay.json` by using <<config-api.adoc#,Config API>>.
 Finally, independent parameter sets can be also defined by <<request-parameters-api.adoc#,Request Parameters API>>.
 They will be stored in `params.json` file and referenced with <<#paramsets-and-useparams,useParams>>.
 
@@ -33,7 +35,8 @@ At the same time, using every single option explained in this guide, will most c
 
 == Defining and Calling Request Handlers
 
-Every request handler is defined with a name and a class. The name of the request handler is referenced with the request to Solr, typically as a path.
+Every request handler is defined with a name and a class.
+The name of the request handler is referenced with the request to Solr, typically as a path.
 For example, if Solr is installed at `\http://localhost:8983/solr/`, and you have a collection named "gettingstarted", you can make a request that looks like this:
 
 [source,text]
@@ -163,7 +166,7 @@ these are the only facets they will be able to see counts for; regardless of wha
 It is also possible to configure defaults for request handlers with a section called `initParams`.
 These defaults can be used when you want to have common properties that will be used by each separate handler.
 For example, if you intend to create several request handlers that will all request the same list of fields in the response, you can configure an `initParams` section with your list of fields.
-For more information about `initParams`, see the section <<initparams-in-solrconfig.adoc#,InitParams in SolrConfig>>.
+For more information about `initParams`, see the section <<initparams.adoc#,InitParams>>.
 
 === Paramsets and UseParams
 If you are expecting to change the parameters often, or if you want define sets of parameters that you can apply on the fly,

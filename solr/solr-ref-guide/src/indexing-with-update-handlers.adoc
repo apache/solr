@@ -21,7 +21,7 @@ Update handlers are request handlers designed to add, delete and update document
 In addition to having plugins for importing rich documents <<indexing-with-tika.adoc#,Indexing with Solr Cell and Apache Tika>>, Solr natively supports indexing structured documents in XML, CSV, and JSON.
 
 The recommended way to configure and use request handlers is with path based names that map to paths in the request URL.
-However, request handlers can also be specified with the `qt` (query type) parameter if the <<requestdispatcher-in-solrconfig.adoc#,`requestDispatcher`>> is appropriately configured. It is possible to access the same handler using more than one name, which can be useful if you wish to specify different sets of default options.
+However, request handlers can also be specified with the `qt` (query type) parameter if the <<requestdispatcher.adoc#,`requestDispatcher`>> is appropriately configured. It is possible to access the same handler using more than one name, which can be useful if you wish to specify different sets of default options.
 
 A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the <<content-streams.adoc#,ContentStream>>.
 
@@ -192,14 +192,16 @@ For posting XML messages contained in a file, you can use the alternative form:
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" --data-binary @myfile.xml
 ----
 
-The approach above works well, but using the `--data-binary` option causes `curl` to load the whole `myfile.xml` into memory before posting it to server. This may be problematic when dealing with multi-gigabyte files. This alternative `curl` command performs equivalent operations but with minimal `curl` memory usage:
+The approach above works well, but using the `--data-binary` option causes `curl` to load the whole `myfile.xml` into memory before posting it to server.
+This may be problematic when dealing with multi-gigabyte files.
+This alternative `curl` command performs equivalent operations but with minimal `curl` memory usage:
 
 [source,bash]
 ----
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
 
-Short requests can also be sent using a HTTP GET command, if enabled in <<requestdispatcher-in-solrconfig.adoc#requestparsers-element,RequestDispatcher in SolrConfig>> element, URL-encoding the request, as in the following. Note the escaping of "<" and ">":
+Short requests can also be sent using a HTTP GET command, if enabled in <<requestdispatcher.adoc#requestparsers-element,`requestParsers`>> element of `solrconfig.xml`, URL-encoding the request, as in the following. Note the escaping of "<" and ">":
 
 [source,bash]
 ----

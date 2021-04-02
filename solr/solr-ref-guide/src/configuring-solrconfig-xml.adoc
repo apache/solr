@@ -1,12 +1,4 @@
 = Configuring solrconfig.xml
-:page-children: requesthandlers-and-searchcomponents-in-solrconfig, \
-    implicit-requesthandlers, \
-    initparams-in-solrconfig, \
-    requestdispatcher-in-solrconfig, \
-    update-request-processors, \
-    script-update-processor, \
-    codec-factory, \
-    resource-loading
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -42,39 +34,18 @@ In `solrconfig.xml`, you configure important features such as:
 
 The `solrconfig.xml` file is located in the `conf/` directory for each collection. Several well-commented example files can be found in the `server/solr/configsets/` directories demonstrating best practices for many different types of installations.
 
-We've covered the options in the following sections:
-
-****
-// This tags the below list so it can be used in the parent page section list
-// tag::solrconfig-sections[]
-[cols="1,1",frame=none,grid=none,stripes=none]
-|===
-| <<index-location-format.adoc#,Index Location and Format>>: Where and how Solr's indexes are stored.
-| <<index-segments-merging.adoc#,Index Segments and Merging>>: Options for Lucene index writers, including segment management, merges, and locks.
-| <<schema-factory.adoc#,Schema Factory>>: Schema file formats.
-| <<commits-transaction-logs.adoc#,Commits and Transaction Logs>>: Update requests and commit settings.
-| <<caches-warming.adoc#,Caches and Query Warming>>: Caches, query warming, and query listeners.
-| <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers and SearchComponents in SolrConfig>>: *TODO*
-| <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>>: Request end-points automatically provided by Solr and how to configure them.
-| <<initparams-in-solrconfig.adoc#,InitParams in SolrConfig>>: Default parameters for request handlers.
-| <<requestdispatcher-in-solrconfig.adoc#,RequestDispatcher in SolrConfig>>: Advanced settings for how parsing requests and HTTP cache headers.
-| <<update-request-processors.adoc#,Update Request Processors>>: Plugins for update requests. *TODO*
-| <<script-update-processor.adoc#,Script Update Processor>>: Java scripting engines during document updates.
-| <<codec-factory.adoc#,Codec Factory>>: The Lucene codec to use when writing data to disk.
-| <<resource-loading.adoc#,Resource Loading>>: Describes how word lists, model files, and other related data are resolved by the components that need them.
-|
-|===
-//end::solrconfig-sections[]
-****
-
 Some SolrConfig aspects are covered in other sections.
 See <<libs.adoc#lib-directives-in-solrconfig,lib directives in SolrConfig>>, which can be used for both Plugins and Resources.
 
 == Substituting Properties in Solr Config Files
 
-Solr supports variable substitution of property values in configuration files, which allows runtime specification of various configuration options in `solrconfig.xml`. The syntax is `${propertyname[:option default value]`}. This allows defining a default that can be overridden when Solr is launched. If a default value is not specified, then the property _must_ be specified at runtime or the configuration file will generate an error when parsed.
+Solr supports variable substitution of property values in configuration files, which allows runtime specification of various configuration options in `solrconfig.xml`.
+The syntax is `${propertyname[:option default value]`}.
+This allows defining a default that can be overridden when Solr is launched.
+If a default value is not specified, then the property _must_ be specified at runtime or the configuration file will generate an error when parsed.
 
-There are multiple methods for specifying properties that can be used in configuration files. Of those below, strongly consider "config overlay" as the preferred approach, as it stays local to the configset and is easy to modify.
+There are multiple methods for specifying properties that can be used in configuration files.
+Of those below, strongly consider "config overlay" as the preferred approach, as it stays local to the configset and is easy to modify.
 
 === JVM System Properties
 
@@ -94,11 +65,15 @@ Which means the lock type defaults to "native" but when starting Solr, you could
 bin/solr start -Dsolr.lock.type=none
 ----
 
-In general, any Java system property that you want to set can be passed through the `bin/solr` script using the standard `-Dproperty=value` syntax. Alternatively, you can add common system properties to the `SOLR_OPTS` environment variable defined in the Solr include file (`bin/solr.in.sh` or `bin/solr.in.cmd`). For more information about how the Solr include file works, refer to: <<taking-solr-to-production.adoc#,Taking Solr to Production>>.
+In general, any Java system property that you want to set can be passed through the `bin/solr` script using the standard `-Dproperty=value` syntax.
+Alternatively, you can add common system properties to the `SOLR_OPTS` environment variable defined in the Solr include file (`bin/solr.in.sh` or `bin/solr.in.cmd`).
+For more information about how the Solr include file works, refer to: <<taking-solr-to-production.adoc#,Taking Solr to Production>>.
 
 === Config API to Override solrconfig.xml
 
-The <<config-api.adoc#,Config API>> allows you to use an API to modify Solr's configuration, specifically user defined properties. Changes made with this API are stored in a file named `configoverlay.json`. This file should only be edited with the API, but will look like this example:
+The <<config-api.adoc#,Config API>> allows you to use an API to modify Solr's configuration, specifically user defined properties.
+Changes made with this API are stored in a file named `configoverlay.json`.
+This file should only be edited with the API, but will look like this example:
 
 [source,json]
 ----
@@ -117,9 +92,10 @@ For more details, see the section <<config-api.adoc#,Config API>>.
 
 === solrcore.properties
 
-If the configuration directory for a Solr core contains a file named `solrcore.properties` that file can contain any arbitrary user-defined property names and values using the Java https://en.wikipedia.org/wiki/.properties[properties file format]. Those properties can then be used as variables in other configuration files for that Solr core.
+If the configuration directory for a Solr core contains a file named `solrcore.properties` that file can contain any arbitrary user-defined property names and values using the Java https://en.wikipedia.org/wiki/.properties[properties file format].
+Those properties can then be used as variables in other configuration files for that Solr core.
 
-For example, the following `solrcore.properties` file could be created in the `conf/` directory of a collection using one of the example configurations, to override the lockType used.
+For example, the following `solrcore.properties` file could be created in the `conf/` directory of a collection using one of the example configurations, to override the `lockType` used.
 
 [source,properties]
 ----
@@ -130,19 +106,20 @@ solr.lock.type=none
 .Deprecation
 [WARNING]
 ====
-`solrcore.properties` won't work in SolrCloud mode (it is not read from ZooKeeper). This feature is likely to be removed in the future. Instead, use another mechanism like a config overlay.
+`solrcore.properties` won't work in SolrCloud mode (it is not read from ZooKeeper).
+This feature is likely to be removed in the future.
+Instead, use another mechanism like a config overlay.
 ====
 
 [IMPORTANT]
 ====
-
 The path and name of the `solrcore.properties` file can be overridden using the `properties` property in <<defining-core-properties.adoc#,`core.properties`>>.
-
 ====
 
 === User-Defined Properties in core.properties
 
-Every Solr core has a `core.properties` file, automatically created when using the APIs. When you create a SolrCloud collection, you can pass through custom parameters by prefixing the parameter name with `_property.name_` as a parameter.
+Every Solr core has a `core.properties` file, automatically created when using the APIs.
+When you create a SolrCloud collection, you can pass through custom parameters by prefixing the parameter name with `_property.name_` as a parameter.
 
 For example, to add a property named "my.custom.prop":
 

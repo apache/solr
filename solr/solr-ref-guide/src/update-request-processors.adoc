@@ -225,7 +225,7 @@ In the first example, Solr will dynamically create a chain which has "signature"
 
 We can also specify a custom chain to be used by default for all requests sent to specific update handlers instead of specifying the names in request parameters for each request.
 
-This can be done by adding either "update.chain" or "processor" and "post-processor" as default parameter for a given path which can be done either via <<initparams-in-solrconfig.adoc#,initParams>> or by adding them in a <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,"defaults" section>> which is supported by all request handlers.
+This can be done by adding either "update.chain" or "processor" and "post-processor" as default parameter for a given path which can be done either via <<initparams.adoc#,initParams>> or by adding them in a <<requesthandlers-searchcomponents.adoc#,"defaults" section>> which is supported by all request handlers.
 
 The following is an `initParam` defined in the <<schemaless-mode.adoc#,schemaless configuration>> which applies a custom update chain to all request handlers starting with "/update/".
 

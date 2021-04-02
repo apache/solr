@@ -212,7 +212,7 @@ See <<circuit-breakers.adoc#,Circuit Breakers in Solr>> for more details
 
 *RequestDispatcher Settings*
 
-See <<requestdispatcher-in-solrconfig.adoc#,RequestDispatcher in SolrConfig>> for defaults and acceptable values for these settings.
+See <<requestdispatcher.adoc#,RequestDispatcher>> for defaults and acceptable values for these settings.
 
 * `requestDispatcher.handleSelect`
 * `requestDispatcher.requestParsers.enableRemoteStreaming`

@@ -1,4 +1,4 @@
-= Implicit RequestHandlers
+= Implicit Request Handlers
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr ships with many out-of-the-box RequestHandlers, which are called implicit because they do not need to be  configured in `solrconfig.xml` before you are able to use them.
+Solr ships with many out-of-the-box request handlers, which are called implicit because they do not need to be configured in `solrconfig.xml` before you are able to use them.
 
 These handlers have pre-defined default parameters, known as _paramsets_, which can be modified if necessary.
 
@@ -29,7 +29,7 @@ NOTE: All endpoint paths listed below should be placed after Solr's host and por
 Many of these handlers are used throughout the Admin UI to show information about Solr.
 
 [horizontal]
-File:: Returns content of files in `${solr.home}/conf/`. This handler must have a collection name in the path to the endpoint.
+File:: Return content of files in `${solr.home}/conf/`. This handler must have a collection name in the path to the endpoint.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -37,7 +37,7 @@ File:: Returns content of files in `${solr.home}/conf/`. This handler must have 
 |`solr/<collection>/admin/file` |{solr-javadocs}/core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
 |===
 
-Health:: Reporting the health of the node (_available only in SolrCloud mode_)
+Health:: Report the health of the node (_available only in SolrCloud mode_)
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -68,7 +68,6 @@ Luke:: Expose the internal Lucene index. This handler must have a collection nam
 |API Endpoint |Class & Javadocs |Paramset
 |`solr/<collection>/admin/luke` |{solr-javadocs}/core/org/apache/solr/handler/admin/LukeRequestHandler.html[LukeRequestHandler] |`_ADMIN_LUKE`
 |===
-
 
 MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans]. This handler must have a collection name in the path to the endpoint.
 +
@@ -312,8 +311,9 @@ Custom JSON Updates:: Add and update custom JSON-formatted documents.
 
 You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#,Config API>>.
 
-To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request parameter. For the `/export` request handler, you can make a request like this:
+To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request parameter.
 
+For example, for the `/export` request handler, you can make a request like this:
 
 [.dynamic-tabs]
 --
@@ -374,4 +374,6 @@ The response will look similar to:
 
 == How to Edit Implicit Handler Paramsets
 
-Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the <<request-parameters-api.adoc#, Request Parameters API>> using the paramset listed in the above table. However, other parameters, including SearchHandler components, may not be modified. The invariants and appends specified in the implicit configuration cannot be overridden.
+Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the <<request-parameters-api.adoc#, Request Parameters API>> using the paramset listed in the above table.
+However, other parameters, including SearchHandler components, may not be modified.
+The invariants and appends specified in the implicit configuration cannot be overridden.

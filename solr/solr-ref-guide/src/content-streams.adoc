@@ -84,4 +84,4 @@ Gzip doesn't apply to `stream.body`.
 
 == Debugging Requests
 
-The implicit "dump" RequestHandler (see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>>) simply outputs the contents of the Solr QueryRequest using the specified writer type `wt`. This is a useful tool to help understand what streams are available to the RequestHandlers.
+The implicit "dump" RequestHandler (see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>) simply outputs the contents of the Solr QueryRequest using the specified writer type `wt`. This is a useful tool to help understand what streams are available to the RequestHandlers.

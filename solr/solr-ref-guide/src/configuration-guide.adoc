@@ -1,0 +1,90 @@
+= Configuration Guide
+:page-children: configuration-files, \
+    configuring-solrconfig-xml, \
+    solr-cores-and-solr-xml, \
+    configuration-apis, \
+    solr-plugins, \
+    index-location-format, \
+    index-segments-merging, \
+    schema-factory, \
+    commits-transaction-logs, \
+    caches-warming, \
+    requesthandlers-searchcomponents, \
+    implicit-requesthandlers, \
+    initparams, \
+    requestdispatcher, \
+    update-request-processors, \
+    script-update-processor, \
+    codec-factory, \
+    resource-loading
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+This section covers configuration files and options for customizing your Solr installation.
+
+****
+<<configuration-files.adoc#,*Solr Configuration Files*>>: Overview of the installation layout and major configuration files.
+****
+
+****
+<<configuring-solrconfig-xml.adoc#,*Configuring solrconfig.xml*>>: Describes how to work with the main configuration file for Solr, `solrconfig.xml`.
+****
+
+****
+<<solr-cores-and-solr-xml.adoc#,*Solr Cores and solr.xml*>>: Describes how to work with `solr.xml` and `core.properties` to configure your Solr core, or multiple Solr cores within a single instance.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::solr-cores-and-solr-xml.adoc[tag=solrxml-sections]
+****
+
+****
+<<configuration-apis.adoc#,*Configuration APIs*>>: Configuration APIs available.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::configuration-apis.adoc[tag=configapi-sections]
+****
+
+****
+<<solr-plugins.adoc#,*Solr Plugins*>>:
+
+// This pulls the sub-section list from the child page to reduce errors
+include::solr-plugins.adoc[tag=plugin-sections]
+****
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::solrconfig-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<index-location-format.adoc#,Index Location and Format>>: Where and how Solr's indexes are stored.
+| <<index-segments-merging.adoc#,Index Segments and Merging>>: Options for Lucene index writers, including segment management, merges, and locks.
+| <<schema-factory.adoc#,Schema Factory>>: Schema file formats.
+| <<commits-transaction-logs.adoc#,Commits and Transaction Logs>>: Update requests and commit settings.
+| <<caches-warming.adoc#,Caches and Query Warming>>: Caches, query warming, and query listeners.
+| <<requesthandlers-searchcomponents.adoc#,Request Handlers and Search Components>>: *TODO*
+| <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>: Request end-points automatically provided by Solr and how to configure them.
+| <<initparams.adoc#,InitParams>>: Default parameters for request handlers.
+| <<requestdispatcher.adoc#,RequestDispatcher>>: Advanced settings for how parsing requests and HTTP cache headers.
+| <<update-request-processors.adoc#,Update Request Processors>>: Plugins for update requests. *TODO*
+| <<script-update-processor.adoc#,Script Update Processor>>: Java scripting engines during document updates.
+| <<codec-factory.adoc#,Codec Factory>>: The Lucene codec to use when writing data to disk.
+| <<resource-loading.adoc#,Resource Loading>>: Describes how word lists, model files, and other related data are resolved by the components that need them.
+|
+|===
+//end::solrconfig-sections[]
+****
