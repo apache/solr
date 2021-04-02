@@ -252,6 +252,8 @@ Bug Fixes
 
 * SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh)
 
+* SOLR-15233: Set doAs param in ConfigurableInternodeAuthHadoopPlugin (Geza Nagy, Jason Gerlowski, Mike Drob)
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
