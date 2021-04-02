@@ -104,6 +104,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000". (Eric Pugh)
 
+* SOLR-15274: The QueryElevationComponent now supports loading elevation file changes on commits.
+  This doesn't work in SolrCloud (but may someday).  QEC no longer supports a config file in
+  the data dir. (David Smiley)
 
 Other Changes
 ----------------------
