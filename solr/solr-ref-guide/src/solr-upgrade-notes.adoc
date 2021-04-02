@@ -1,5 +1,8 @@
 = Solr Upgrade Notes
-:page-children: major-changes-in-solr-9, major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
+:page-children: major-changes-in-solr-9, \
+    major-changes-in-solr-8, \
+    major-changes-in-solr-7, \
+    major-changes-in-solr-6
 :toclevels: 3
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -541,7 +544,7 @@ Since caching has a direct impact on the performance of your Solr
 
 * A new parameter, `maxIdleTime`, allows automatic eviction of cache items that have not been used in the defined amount of time. This allows the cache to release some memory and should aid those who want or need to fine-tune their caches.
 
-See the section <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>> for more details about these and other cache options and parameters.
+See the section <<caches-warming.adoc#,Caches and Query Warming>> for more details about these and other cache options and parameters.
 
 === Solr 8.2
 
@@ -650,4 +653,4 @@ Users upgrading from versions of Solr prior to 7.x are strongly encouraged to co
 
 The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#,Major Changes in Solr 7>> before starting your upgrade.
 
-A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-from-solr-5-to-solr-6.adoc#,Major Changes from Solr 5 to Solr 6>>.
+A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-in-solr-6.adoc#,Major Changes in Solr 6>>.

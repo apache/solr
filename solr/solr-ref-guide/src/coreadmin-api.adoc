@@ -83,7 +83,7 @@ The directory where files for this core should be stored. Same as `instanceDir` 
 Name of the config file (i.e., `solrconfig.xml`) relative to `instanceDir`.
 
 `schema`::
-Name of the schema file to use for the core. Please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>> for details.
+Name of the schema file to use for the core. Please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for details.
 
 `dataDir`::
 Name of the data directory relative to `instanceDir`. If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.

@@ -162,7 +162,7 @@ here are sections throughout the Guide describing each screen of the Admin UI:
 | <<ping.adoc#,Ping>>: Ping a named core to determine whether it is active.
 | <<plugins-stats-screen.adoc#,Plugins/Stats Screen>>: Statistics for request handlers, search components, plugins, and other installed components.
 | <<user-managed-index-replication.adoc#replication-screen,Replication Screen>>: The current replication status for the core, and lets you enable/disable replication.
-| <<segments-info.adoc#,Segments Info>>: A visualization of the underlying Lucene index segments.
+| <<index-segments-merging.adoc#segments-info-screen,Segments Info Screen>>: A visualization of the underlying Lucene index segments.
 |===
 // end::ui-core-tools[]
 ****

@@ -169,7 +169,7 @@ The Merge Scheduler is configured in `solrconfig.xml` and defaults to `Concurren
 
 By default, the `ConcurrentMergeScheduler` auto-detects defaults for `maxThreadCount` and `maxMergeCount` accordingly. `maxThreadCount` is set to 4 or half the number of processors available to the JVM whichever is greater and `maxMergeCount` is set to `maxThreadCount+5`.
 
-If you have a spinning disk, it is best to explicitly set values for `maxThreadCount` and `maxMergeCount` in the <<indexconfig-in-solrconfig.adoc#mergescheduler, IndexConfig section of SolrConfig.xml>> so that values appropriate to your hardware are used.
+If you have a spinning disk, it is best to explicitly set values for `maxThreadCount` and `maxMergeCount` in the <<index-segments-merging.adoc#mergescheduler, IndexConfig section of SolrConfig.xml>> so that values appropriate to your hardware are used.
 
 === Memory and GC Settings
 

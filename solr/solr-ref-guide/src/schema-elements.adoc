@@ -23,8 +23,8 @@ The name and location of Solr's schema file may vary depending on how you initia
 
 * `managed-schema` is the name for the schema file Solr uses by default to support making schema changes at runtime via the <<schema-api.adoc#,Schema API>>, or <<schemaless-mode.adoc#,Schemaless Mode>> features.
 +
-You may <<schema-factory-definition-in-solrconfig.adoc#,explicitly configure the managed schema features>> to use an alternative filename if you choose, but the contents of the files are still updated automatically by Solr.
-* `schema.xml` is the traditional name for a schema file which can be edited manually by users who use the <<schema-factory-definition-in-solrconfig.adoc#,`ClassicIndexSchemaFactory`>>.
+You may <<schema-factory.adoc#,explicitly configure the managed schema features>> to use an alternative filename if you choose, but the contents of the files are still updated automatically by Solr.
+* `schema.xml` is the traditional name for a schema file which can be edited manually by users who use the <<schema-factory.adoc#,`ClassicIndexSchemaFactory`>>.
 * If you are using SolrCloud you may not be able to find any file by these names on the local filesystem.
 You will only be able to see the schema through the Schema API (if enabled) or through the Solr Admin UI's <<cloud-screens.adoc#,Cloud Screens>>.
 

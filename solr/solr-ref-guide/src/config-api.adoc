@@ -168,7 +168,7 @@ See <<commits-transaction-logs.adoc#,Commits and Transaction Logs>> for defaults
 
 *Query Settings*
 
-See <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>> for defaults and acceptable values for these settings.
+See <<caches-warming.adoc#,Caches and Query Warming>> for defaults and acceptable values for these settings.
 
 _Caches and Cache Sizes_
 

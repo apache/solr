@@ -112,7 +112,7 @@ curl -X POST -H 'Content-Type: application/json' --data-binary '{"delete":{"quer
 It's important to verify that *all* documents have been deleted, as that ensures the Lucene index segments have been
 deleted as well.
 
-To verify that there are no segments in your index, look in the data/index directory and confirm it has no segments files.  Since the data directory can be customized, see the section <<datadir-and-directoryfactory-in-solrconfig.adoc#specifying-a-location-for-index-data-with-the-datadir-parameter,Specifying a Location for Index Data with the dataDir Parameter>> for the location of your index files.
+To verify that there are no segments in your index, look in the data/index directory and confirm it has no segments files.  Since the data directory can be customized, see the section <<index-location-format.adoc#specifying-a-location-for-index-data-with-the-datadir-parameter,Specifying a Location for Index Data with the dataDir Parameter>> for the location of your index files.
 
 Note you will need to verify the indexes have been removed in every shard and every replica on every node of a cluster.
 It is not sufficient to only query for the number of documents because you may have no documents but still have index

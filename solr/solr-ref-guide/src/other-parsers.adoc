@@ -168,7 +168,7 @@ You may need to increase MaxBooleanClauses in `solrconfig.xml` as a result of th
 <maxBooleanClauses>4096</maxBooleanClauses>
 ----
 
-This property is described in more detail in the section <<query-settings-in-solrconfig.adoc#query-sizing-and-warming,Query Sizing and Warming>>.
+This property is described in more detail in the section <<caches-warming.adoc#query-sizing-and-warming,Query Sizing and Warming>>.
 
 ==== Stopwords with Complex Phrase Parser
 

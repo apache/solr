@@ -65,14 +65,14 @@ Solr 6 has no support for reading Lucene/Solr 4.x and earlier indexes. Be sure t
 
 == Managed Schema is now the Default
 
-Solr's default behavior when a `solrconfig.xml` does not explicitly define a `<schemaFactory/>` is now dependent on the `luceneMatchVersion` specified in that `solrconfig.xml`. When `luceneMatchVersion < 6.0`, `ClassicIndexSchemaFactory` will continue to be used for back compatibility, otherwise an instance of <<schema-factory-definition-in-solrconfig.adoc#,`ManagedIndexSchemaFactory`>> will be used.
+Solr's default behavior when a `solrconfig.xml` does not explicitly define a `<schemaFactory/>` is now dependent on the `luceneMatchVersion` specified in that `solrconfig.xml`. When `luceneMatchVersion < 6.0`, `ClassicIndexSchemaFactory` will continue to be used for back compatibility, otherwise an instance of <<schema-factory.adoc#,`ManagedIndexSchemaFactory`>> will be used.
 
 The most notable impacts of this change are:
 
 * Existing `solrconfig.xml` files that are modified to use `luceneMatchVersion >= 6.0`, but do _not_ have an explicitly configured `ClassicIndexSchemaFactory`, will have their `schema.xml` file automatically upgraded to a `managed-schema` file.
 * Schema modifications via the <<schema-api.adoc#,Schema API>> will now be enabled by default.
 
-Please review the <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>> section for more details.
+Please review the <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> section for more details.
 
 == Default Similarity Changes
 

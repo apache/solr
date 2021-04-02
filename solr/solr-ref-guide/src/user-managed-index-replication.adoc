@@ -512,6 +512,6 @@ No query followers need to be taken out of service.
 The optimized index can be distributed in the background as queries are being normally serviced.
 The optimization can occur at any time convenient to the application providing index updates.
 
-While optimizing may have some benefits in some situations, a rapidly changing index will not retain those benefits for long, and since optimization is an intensive process, it may be better to consider other options, such as lowering the merge factor (discussed in the section on <<indexconfig-in-solrconfig.adoc#merge-factors,Index Configuration>>).
+While optimizing may have some benefits in some situations, a rapidly changing index will not retain those benefits for long, and since optimization is an intensive process, it may be better to consider other options, such as lowering the merge factor (discussed in the section on <<index-segments-merging.adoc#merge-factors,Index Configuration>>).
 
 TIP: Do not elect to optimize your index unless you have tangible evidence that it will significantly improve your search performance.

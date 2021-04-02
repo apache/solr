@@ -18,7 +18,7 @@
 
 The Schema API allows you to use an HTTP API to manage many of the elements of your schema.
 
-The Schema API utilizes the ManagedIndexSchemaFactory class, which is the default schema factory in modern Solr versions. See the section <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>> for more information about choosing a schema factory for your index.
+The Schema API utilizes the ManagedIndexSchemaFactory class, which is the default schema factory in modern Solr versions. See the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for more information about choosing a schema factory for your index.
 
 This API provides read and write access to the Solr schema for each collection (or core, when using standalone Solr). Read access to all schema elements is supported. Fields, dynamic fields, field types and copyField rules may be added, removed or replaced. Future Solr releases will extend write access to allow more schema elements to be modified.
 

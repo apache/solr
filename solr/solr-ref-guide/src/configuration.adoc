@@ -1,5 +1,10 @@
 = Configuration Guide
 :page-children: configuration-files, \
+    index-location-format, \
+    index-segments-merging, \
+    schema-factory, \
+    commits-transaction-logs, \
+    caches-warming, \
     configuring-solrconfig-xml, \
     solr-cores-and-solr-xml, \
     configuration-apis, \

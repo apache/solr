@@ -58,7 +58,7 @@ The keys listed in this file do not need to be unique. The file does not need to
 
 === Reloading an External File
 
-It's possible to define an event listener to reload an external file when either a searcher is reloaded or when a new searcher is started. See the section <<query-settings-in-solrconfig.adoc#query-related-listeners,Query-Related Listeners>> for more information, but a sample definition in `solrconfig.xml` might look like this:
+It's possible to define an event listener to reload an external file when either a searcher is reloaded or when a new searcher is started. See the section <<caches-warming.adoc#query-related-listeners,Query-Related Listeners>> for more information, but a sample definition in `solrconfig.xml` might look like this:
 
 [source,xml]
 ----

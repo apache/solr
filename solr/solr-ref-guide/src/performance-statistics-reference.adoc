@@ -220,4 +220,4 @@ When eviction by heap usage is enabled, the following additional statistics are 
 |evictionsRamUsage| Number of cache evictions for the current index searcher because heap usage exceeded maxRamMB.
 |===
 
-More information on Solr caches is available in the section <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>>.
+More information on Solr caches is available in the section <<caches-warming.adoc#,Caches and Query Warming>>.

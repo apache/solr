@@ -344,7 +344,7 @@ While most users are still encouraged to use the `NRTCachingDirectoryFactory`, w
 +
 For more information about the new directory factory, see the Jira issue https://issues.apache.org/jira/browse/LUCENE-8438[LUCENE-8438].
 +
-For more information about the directory factory configuration in Solr, see the section <<datadir-and-directoryfactory-in-solrconfig.adoc#,DataDir and DirectoryFactory in SolrConfig>>.
+For more information about the directory factory configuration in Solr, see the section <<index-location-format.adoc#,DataDir and DirectoryFactory in SolrConfig>>.
 
 === Solr 7.5
 
@@ -359,7 +359,7 @@ When upgrading to Solr 7.5, users should be aware of the following major changes
 
 *Index Merge Policy*
 
-* When using the <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,`TieredMergePolicy`>>, the default merge policy for Solr, `optimize` and `expungeDeletes` now respect the `maxMergedSegmentMB` configuration parameter, which defaults to `5000` (5GB).
+* When using the <<index-segments-merging.adoc#mergepolicyfactory,`TieredMergePolicy`>>, the default merge policy for Solr, `optimize` and `expungeDeletes` now respect the `maxMergedSegmentMB` configuration parameter, which defaults to `5000` (5GB).
 +
 If it is absolutely necessary to control the number of segments present after optimize, specify `maxSegments` as a positive integer. Setting `maxSegments` higher than `1` are honored on a "best effort" basis.
 +
