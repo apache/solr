@@ -22,8 +22,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
@@ -37,12 +36,14 @@ import org.junit.Test;
  */
 public class ZkConfigFilesTest extends SolrCloudTestCase {
 
-  private static final int ZK_TIMEOUT_MILLIS = 10000;
-
   @BeforeClass
   public static void setUpCluster() throws Exception {
     configureCluster(1)
         .configure();
+  }
+
+  private static ConfigSetService getConfigSetService() {
+    return cluster.getOpenOverseer().getCoreContainer().getConfigSetService();
   }
 
   @Before
@@ -56,25 +57,20 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   }
 
   private void clearConfigs() throws Exception {
-    ZkConfigManager manager = new ZkConfigManager(cluster.getZkClient());
-    List<String> configs = manager.listConfigs();
+    List<String> configs = getConfigSetService().listConfigs();
     for (String config : configs) {
-      manager.deleteConfigDir(config);
+      getConfigSetService().deleteConfig(config);
     }
   }
 
   @Test
   public void testCanUploadConfigToZk() throws Exception {
-    final String zkConnectionString = cluster.getZkClient().getZkServerAddress();
     final String localConfigSetDirectory = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).getAbsolutePath();
 
     assertConfigsContainOnly();
 
     // tag::zk-configset-upload[]
-    try (SolrZkClient zkClient = new SolrZkClient(zkConnectionString, ZK_TIMEOUT_MILLIS)) {
-      ZkConfigManager manager = new ZkConfigManager(zkClient);
-      manager.uploadConfigDir(Paths.get(localConfigSetDirectory), "nameForConfigset");
-    }
+    getConfigSetService().uploadConfig("nameForConfigset", Paths.get(localConfigSetDirectory));
     // end::zk-configset-upload[]
 
     assertConfigsContainOnly("nameForConfigset");
@@ -83,8 +79,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   private void assertConfigsContainOnly(String... expectedConfigs) throws Exception {
     final int expectedSize = expectedConfigs.length;
 
-    ZkConfigManager manager = new ZkConfigManager(cluster.getZkClient());
-    List<String> actualConfigs = manager.listConfigs();
+    List<String> actualConfigs = getConfigSetService().listConfigs();
 
     assertEquals(expectedSize, actualConfigs.size());
     for (String expectedConfig : expectedConfigs) {

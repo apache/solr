@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -456,6 +457,65 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     @Override
     public String configSetName(CoreDescriptor cd){
+      return null;
+    }
+
+    @Override
+    public boolean checkConfigExists(String configName) throws IOException {
+      return false;
+    }
+
+    @Override
+    public void deleteConfig(String configName) throws IOException {
+
+    }
+
+    @Override
+    public void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException {
+
+    }
+
+    public void copyConfig(String fromConfig, String toConfig) throws IOException {
+
+    }
+
+    @Override
+    public void uploadConfig(String configName, Path dir) throws IOException {
+
+    }
+
+    @Override
+    public void uploadFileToConfig(String configName, String fileName, byte[] data, boolean overwriteOnExists) throws IOException {
+
+    }
+
+    @Override
+    public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
+
+    }
+
+    @Override
+    public Map<String, Object> getConfigMetadata(String configName) throws IOException {
+      return null;
+    }
+
+    @Override
+    public void downloadConfig(String configName, Path dir) throws IOException {
+
+    }
+
+    @Override
+    public List<String> listConfigs() throws IOException {
+      return null;
+    }
+
+    @Override
+    public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
+      return new byte[0];
+    }
+
+    @Override
+    public List<String> getAllConfigFiles(String configName) throws IOException {
       return null;
     }
 

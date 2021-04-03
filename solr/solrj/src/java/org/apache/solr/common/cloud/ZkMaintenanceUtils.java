@@ -45,6 +45,11 @@ import org.slf4j.LoggerFactory;
  * in bin/solr it made sense to keep the individual transfer methods in a central place, so here it is.
  */
 public class ZkMaintenanceUtils {
+  /** ZkNode where named configs are stored */
+  public static final String CONFIGS_ZKNODE = "/configs";
+  public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+  /** files matching this pattern will not be uploaded to ZkNode /configs */
+  public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String ZKNODE_DATA_FILE = "zknode.data";
 
@@ -217,21 +222,6 @@ public class ZkMaintenanceUtils {
     }
   }
 
-  // This not just a copy operation since the config manager takes care of construction the znode path to configsets
-  public static void downConfig(SolrZkClient zkClient, String confName, Path confPath) throws IOException {
-    ZkConfigManager manager = new ZkConfigManager(zkClient);
-
-    // Try to download the configset
-    manager.downloadConfigDir(confName, confPath);
-  }
-
-  // This not just a copy operation since the config manager takes care of construction the znode path to configsets
-  public static void upConfig(SolrZkClient zkClient, Path confPath, String confName) throws IOException {
-    ZkConfigManager manager = new ZkConfigManager(zkClient);
-
-    // Try to download the configset
-    manager.uploadConfigDir(confPath, confName);
-  }
 
   // yeah, it's recursive :(
   public static void clean(SolrZkClient zkClient, String path) throws InterruptedException, KeeperException {
