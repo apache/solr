@@ -22,6 +22,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,7 +40,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.FileUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -89,13 +89,6 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   private void init(String config, String schema) throws Exception {
-    //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
-    File parent = new File(TEST_HOME() + "/collection1", "conf");
-    File elevateFile = new File(parent, "elevate.xml");
-    File elevateDataFile = new File(initAndGetDataDir(), "elevate-data.xml");
-    FileUtils.copyFile(elevateFile, elevateDataFile);
-
-
     initCore(config,schema);
     clearIndex();
     assertU(commit());
@@ -714,15 +707,21 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testElevationReloading() throws Exception {
+    // need a mutable solr home.  Copying all collection1 is a lot but this is only one test.
+    final Path solrHome = createTempDir();
+    copyMinConf(solrHome.resolve("collection1").toFile(), null, "solrconfig-elevate.xml");
+
+    File configFile =
+        solrHome.resolve("collection1").resolve("conf").resolve("elevate.xml").toFile();
+    writeElevationConfigFile(configFile, "aaa", "A");
+
+    initCore("solrconfig.xml", "schema.xml", solrHome.toString());
+
     try {
-      init("schema12.xml");
-      String testfile = "data-elevation.xml";
-      File configFile = new File(h.getCore().getDataDir(), testfile);
-      writeElevationConfigFile(configFile, "aaa", "A");
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       NamedList<String> args = new NamedList<>();
-      args.add(QueryElevationComponent.CONFIG_FILE, testfile);
+      args.add(QueryElevationComponent.CONFIG_FILE, configFile.getName());
       comp.init(args);
       comp.inform(h.getCore());
 

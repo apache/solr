@@ -166,6 +166,11 @@ Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a pre
 See for example https://solr.apache.org/guide/8_8/cluster-node-management.html#migratestateforma[Solr 8.8 Ref Guide].
 // Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
+* If you're using Solr in standalone mode with the <<the-query-elevation-component.adoc#,Query Elevation Component>> with it's elevation file in the data directory, you'll have to move it to the <<config-sets.adoc#,Configset>> instead.
+The only reason QEC supported the data directory was to support loading its changes on a commit instead of a more expensive core reload.
+That feature now works from the configset dir too.
+SolrCloud doesn't support that but may sometime.
+
 === Rolling Upgrades with Solr 9
 
 === Reindexing After Upgrades in Solr 9
