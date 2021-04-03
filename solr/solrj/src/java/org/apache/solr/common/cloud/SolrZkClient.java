@@ -837,7 +837,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void upConfig(Path confPath, String confName) throws IOException {
-    ZkMaintenanceUtils.upConfig(this, confPath, confName);
+    ZkMaintenanceUtils.uploadToZK(this, confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   public String listZnode(String path, Boolean recurse) throws KeeperException, InterruptedException, SolrServerException {
@@ -845,7 +845,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void downConfig(String confName, Path confPath) throws IOException {
-    ZkMaintenanceUtils.downConfig(this, confName, confPath);
+    ZkMaintenanceUtils.downloadFromZK(this, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, confPath);
   }
 
   public void zkTransfer(String src, Boolean srcIsZk,

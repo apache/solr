@@ -28,9 +28,9 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -64,7 +64,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
         .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(solrXml)
         .configure();
-    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + "/" + "confFaulty" + "/" + "solrconfig.xml", -1, true);
+    cluster.getZkClient().delete(ZkConfigSetService.CONFIGS_ZKNODE + "/" + "confFaulty" + "/" + "solrconfig.xml", -1, true);
 
     boolean whitespacesInPath = random().nextBoolean();
     if (whitespacesInPath) {

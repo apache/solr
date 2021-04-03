@@ -18,7 +18,9 @@ package org.apache.solr.common.cloud;
 
 import com.google.common.base.Throwables;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -37,7 +39,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class TestZkConfigManager extends SolrTestCaseJ4 {
+public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
   private static ZkTestServer zkServer;
 
@@ -57,8 +59,8 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
 
   @Test
   public void testConstants() throws Exception {
-    assertEquals("/configs", ZkConfigManager.CONFIGS_ZKNODE);
-    assertEquals("^\\..*$", ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX);
+    assertEquals("/configs", ZkConfigSetService.CONFIGS_ZKNODE);
+    assertEquals("^\\..*$", ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX);
   }
 
   @Test
@@ -67,9 +69,9 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
     zkServer.ensurePathExists("/solr");
 
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000)) {
+      ConfigSetService configSetService = new ZkConfigSetService(zkClient);
 
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertEquals(0, configManager.listConfigs().size());
+      assertEquals(0, configSetService.listConfigs().size());
 
       byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
 
@@ -83,16 +85,16 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       Files.createDirectory(tempConfig.resolve(".ignoreddir"));
       Files.createFile(tempConfig.resolve(".ignoreddir").resolve("ignored"));
 
-      configManager.uploadConfigDir(tempConfig, "testconfig");
+      configSetService.uploadConfig("testconfig", tempConfig);
 
       // uploading a directory creates a new config
-      List<String> configs = configManager.listConfigs();
+      List<String> configs = configSetService.listConfigs();
       assertEquals(1, configs.size());
       assertEquals("testconfig", configs.get(0));
 
       // check downloading
       Path downloadPath = createTempDir("download");
-      configManager.downloadConfigDir("testconfig", downloadPath);
+      configSetService.downloadConfig( "testconfig", downloadPath);
       assertTrue(Files.exists(downloadPath.resolve("file1")));
       assertTrue(Files.exists(downloadPath.resolve("file2")));
       assertTrue(Files.isDirectory(downloadPath.resolve("subdir")));
@@ -106,22 +108,22 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       // uploading to the same config overwrites
       byte[] overwritten = "new test data".getBytes(StandardCharsets.UTF_8);
       Files.write(tempConfig.resolve("file1"), overwritten);
-      configManager.uploadConfigDir(tempConfig, "testconfig");
+      configSetService.uploadConfig("testconfig", tempConfig);
 
-      assertEquals(1, configManager.listConfigs().size());
+      assertEquals(1, configSetService.listConfigs().size());
       Path download2 = createTempDir("download2");
-      configManager.downloadConfigDir("testconfig", download2);
+      configSetService.downloadConfig( "testconfig", download2);
       byte[] checkdata2 = Files.readAllBytes(download2.resolve("file1"));
       assertArrayEquals(overwritten, checkdata2);
 
       // uploading same files to a new name creates a new config
-      configManager.uploadConfigDir(tempConfig, "config2");
-      assertEquals(2, configManager.listConfigs().size());
+      configSetService.uploadConfig("config2", tempConfig);
+      assertEquals(2, configSetService.listConfigs().size());
 
       // Test copying a config works in both flavors
-      configManager.copyConfigDir("config2", "config2copy");
-      configManager.copyConfigDir("config2", "config2copy2", null);
-      configs = configManager.listConfigs();
+      configSetService.copyConfig("config2", "config2copy");
+      configSetService.copyConfig( "config2", "config2copy2");
+      configs = configSetService.listConfigs();
       assertTrue("config2copy should exist", configs.contains("config2copy"));
       assertTrue("config2copy2 should exist", configs.contains("config2copy2"));
     }
@@ -175,16 +177,16 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
 
     // Start with all-access client
     try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
-      ZkConfigManager configManager = new ZkConfigManager(client);
-      configManager.uploadConfigDir(configPath, "acltest");
-      assertEquals(1, configManager.listConfigs().size());
+      ConfigSetService configSetService = new ZkConfigSetService(client);
+      configSetService.uploadConfig("acltest", configPath);
+      assertEquals(1, configSetService.listConfigs().size());
     }
 
     // Readonly access client can get the list of configs, but can't upload
     try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
-      ZkConfigManager configManager = new ZkConfigManager(client);
-      assertEquals(1, configManager.listConfigs().size());
-      configManager.uploadConfigDir(configPath, "acltest2");
+      ConfigSetService configSetService = new ZkConfigSetService(client);
+      assertEquals(1, configSetService.listConfigs().size());
+      configSetService.uploadConfig("acltest2", configPath);
       fail ("Should have thrown an ACL exception");
     }
     catch (IOException e) {
@@ -193,8 +195,8 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
 
     // Client with no auth whatsoever can't even get the list of configs
     try (SolrZkClient client = new SolrZkClient(zkServer.getZkAddress("/acl"), 10000)) {
-      ZkConfigManager configManager = new ZkConfigManager(client);
-      configManager.listConfigs();
+      ConfigSetService configSetService = new ZkConfigSetService(client);
+      configSetService.listConfigs();
       fail("Should have thrown an ACL exception");
     }
     catch (IOException e) {
