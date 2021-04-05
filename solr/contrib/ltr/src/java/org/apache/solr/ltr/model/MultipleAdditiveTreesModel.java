@@ -176,7 +176,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
           return regressionTreeNode.value;
         }
         // unsupported feature (tree is looking for a feature that does not exist)
-        if  ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
           return 0f;
         }
 
@@ -184,6 +184,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
           regressionTreeNode = regressionTreeNode.left;
         } else {
           regressionTreeNode = regressionTreeNode.right;
+        }
       }
     }
 
