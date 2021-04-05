@@ -170,19 +170,20 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public float score(float[] featureVector) {
-      if (isLeaf()) {
-        return value;
-      }
+      RegressionTreeNode regressionTreeNode = this;
+      while (true) {
+        if (regressionTreeNode.isLeaf()) {
+          return regressionTreeNode.value;
+        }
+        // unsupported feature (tree is looking for a feature that does not exist)
+        if  ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
+          return 0f;
+        }
 
-      // unsupported feature (tree is looking for a feature that does not exist)
-      if  ((featureIndex < 0) || (featureIndex >= featureVector.length)) {
-        return 0f;
-      }
-
-      if (featureVector[featureIndex] <= threshold) {
-        return left.score(featureVector);
-      } else {
-        return right.score(featureVector);
+        if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+          regressionTreeNode = regressionTreeNode.left;
+        } else {
+          regressionTreeNode = regressionTreeNode.right;
       }
     }
 
