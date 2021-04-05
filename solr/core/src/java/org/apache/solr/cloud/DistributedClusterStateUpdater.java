@@ -795,7 +795,7 @@ public class DistributedClusterStateUpdater {
     @Override
     public void computeUpdates(ClusterState clusterState) {
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
-      Optional<ZkWriteCommand> result = docCollection != null ? NodeMutator.computeCollectionUpdate(nodeName, collectionName, docCollection) : Optional.empty();
+      Optional<ZkWriteCommand> result = docCollection != null ? NodeMutator.computeCollectionUpdate(nodeName, collectionName, docCollection, null) : Optional.empty();
 
       if (docCollection == null) {
         // This is possible but should be rare. Logging warn in case it is seen often and likely a sign of another issue
