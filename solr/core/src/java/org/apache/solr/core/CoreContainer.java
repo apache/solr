@@ -952,7 +952,9 @@ public class CoreContainer {
     try {
       script = Script.parseResource(loader, solrClient, nodeName, resourceName);
     } catch (Exception e) {
-      log.warn("Error loading script, ignoring " + resourceName, e);
+      if (log.isWarnEnabled()) {
+        log.warn("Error loading script, ignoring {}: {}", resourceName, e);
+      }
       script = null;
     }
     final Script finalScript = script;
@@ -960,9 +962,13 @@ public class CoreContainer {
       try {
         finalScript.run();
       } catch (Exception e) {
-        log.warn("Error running script " + resourceName, e);
+        if (log.isWarnEnabled()) {
+          log.warn("Error running script {}: {}", resourceName, e);
+        }
         if (!inShutdown && finalScript.getErrorHandling() == Script.ErrorHandling.FATAL) {
-          log.warn("Script error handling set to FATAL - shutting down.");
+          if (log.isWarnEnabled()) {
+            log.warn("Script error handling set to FATAL - shutting down.");
+          }
           shutdown();
         }
       }

@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -122,7 +121,6 @@ public class Script implements Closeable {
   public final List<OpResult> opResults = new ArrayList<>();
   private ExecutorService executorService;
   private final boolean shouldCloseExecutor;
-  public PrintStream console = System.err;
   public boolean verbose;
   public boolean abortLoop;
   public boolean abortScript;
@@ -374,18 +372,25 @@ public class Script implements Closeable {
       }
       for (int i = 0; i < iterations; i++) {
         if (script.abortLoop) {
-          log.info("        -- abortLoop requested, aborting after {} iterations.", i);
+          if (log.isDebugEnabled()) {
+            log.debug("        -- abortLoop requested, aborting after {} iterations.", i);
+          }
           return Map.of("iterations", i, "state", "aborted");
         }
         script.context.put(LOOP_ITER_PROP, String.valueOf(i));
-        log.debug("   * iter {} :", i + 1); // logOK
+        int k = i + 1; // can't use a plus in a logging stmt :)
+        if (log.isDebugEnabled()) {
+          log.debug("   * iter {} :", k);
+        }
         for (ScriptOp op : ops) {
           if (log.isInfoEnabled()) {
             log.info("     - {}\t{})", op.getClass().getSimpleName(), op.params);
           }
           script.execOp(op);
           if (script.abortLoop) {
-            log.info("        -- abortLoop requested, aborting after {} iterations.", i);
+            if (log.isDebugEnabled()) {
+              log.debug("        -- abortLoop requested, aborting after {} iterations.", i);
+            }
             return Map.of("iterations", i, "state", "aborted");
           }
         }
@@ -473,44 +478,50 @@ public class Script implements Closeable {
    */
   public static class DumpOp extends ScriptOp {
 
+    private void logLine(String format, Object... params) {
+      if (log.isInfoEnabled()) {
+        log.info(format, params);
+      }
+    }
+
     @Override
     public Object execute(Script script) throws Exception {
-      log.info("========= START script dump ==========");
-      log.info("------    Script Operations    --------");
+      logLine("========= START script dump ==========");
+      logLine("------    Script Operations    --------");
       for (int i = 0; i < script.ops.size(); i++) {
-        log.info("{}.\t{}", i + 1, script.ops.get(i));
+        logLine("{}.\t{}", i + 1, script.ops.get(i));
       }
-      log.info("------    Script Execution     --------");
+      logLine("------    Script Execution     --------");
       for (int i = 0; i < script.opResults.size(); i++) {
         OpResult res = script.opResults.get(i);
         dumpResult(res, i + 1, 0);
       }
-      log.info("------  Final Script Context   --------");
+      logLine("------  Final Script Context   --------");
       TreeMap<String, Object> map = new TreeMap<>(script.context);
       map.forEach((key, value) -> {
         if (value instanceof Collection) {
           @SuppressWarnings("unchecked")
           Collection<Object> collection = (Collection<Object>) value;
-          log.info("{} size={}", key, collection.size());
+          logLine("{} size={}", key, collection.size());
           int i = 1;
           for (Object o : collection) {
-            log.info("\t{}.\t{}", i, o);
+            logLine("\t{}.\t{}", i, o);
             i++;
           }
         } else if (value instanceof Map) {
           @SuppressWarnings("unchecked")
           Map<String, Object> m = (Map<String, Object>) value;
-          log.info("{} size={}", key, m.size());
-          m.forEach((k, v) -> log.info("\t{}\t{}", k, v));
+          logLine("{} size={}", key, m.size());
+          m.forEach((k, v) -> logLine("\t{}\t{}", k, v));
         } else {
           if (value instanceof OpResult) {
             dumpResult((OpResult) value, 0, 0);
           } else {
-            log.info("{}\t{}", key, value);
+            logLine("{}\t{}", key, value);
           }
         }
       });
-      log.info("=========  END script dump  ==========");
+      logLine("=========  END script dump  ==========");
       return null;
     }
 
@@ -520,35 +531,35 @@ public class Script implements Closeable {
         indentSb.append('\t');
       }
       String indentStr = indentSb.toString();
-      log.info("{}{}.\t{}", indentStr, index, res.op);
+      logLine("{}{}.\t{}", indentStr, index, res.op);
       if (res.result == null) {
         return;
       }
       if (res.result instanceof Collection) {
         @SuppressWarnings("unchecked")
         Collection<Object> col = (Collection<Object>) res.result;
-        log.info("{}\tRes: size={}", indentStr, col.size());
+        logLine("{}\tRes: size={}", indentStr, col.size());
         int k = 1;
         for (Object o : col) {
           if (o instanceof OpResult) { // LOOP op results
             dumpResult((OpResult) o, k, indent + 1);
           } else {
-            log.info("{}\t-\t{}. {}", indentStr, k, o);
+            logLine("{}\t-\t{}. {}", indentStr, k, o);
           }
           k++;
         }
       } else if (res.result instanceof Map) {
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) res.result;
-        log.info("{}\tRes: size={}", indentStr, map.size());
-        map.forEach((k, v) -> log.info("{}\t-\t{}\t{}", indentStr, k, v));
+        logLine("{}\tRes: size={}", indentStr, map.size());
+        map.forEach((k, v) -> logLine("{}\t-\t{}\t{}", indentStr, k, v));
       } else if (res.result instanceof MapWriter) {
         @SuppressWarnings("unchecked")
         MapWriter mw = (MapWriter) res.result;
-        log.info("{}\tRes: size={}", indentStr, mw._size());
-        log.info("{}\t{}", indentStr, mw.jsonStr());
+        logLine("{}\tRes: size={}", indentStr, mw._size());
+        logLine("{}\t{}", indentStr, mw.jsonStr());
       } else {
-        log.info("{}\tRes: {}", indentStr, res.result);
+        logLine("{}\tRes: {}", indentStr, res.result);
       }
     }
   }
@@ -885,12 +896,15 @@ public class Script implements Closeable {
     try {
       for (int i = 0; i < ops.size(); i++) {
         if (abortScript) {
-          log.info("-- abortScript requested, aborting after {} ops.", i);
+          if (log.isInfoEnabled()) {
+            log.info("-- abortScript requested, aborting after {} ops.", i);
+          }
           return;
         }
         ScriptOp op = ops.get(i);
+        int k = i + 1; // can't use a plus in a logging stmt
         if (log.isInfoEnabled()) {
-          log.info("{}.\t{}\t{}", i + 1, op.getClass().getSimpleName(), op.initParams); // logOk
+          log.info("{}.\t{}\t{}", k, op.getClass().getSimpleName(), op.initParams);
         }
         execOp(op);
       }
