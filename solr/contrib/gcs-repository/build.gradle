@@ -50,5 +50,6 @@ dependencies {
     runtimeOnly ('io.opencensus:opencensus-api') { transitive = false }
     runtimeOnly ('io.opencensus:opencensus-contrib-http-util') { transitive = false }
 
+    testImplementation "com.google.cloud:google-cloud-nio"
     testImplementation project(':solr:test-framework')
 }

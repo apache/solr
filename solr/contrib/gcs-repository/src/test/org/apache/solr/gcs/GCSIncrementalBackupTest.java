@@ -23,7 +23,10 @@ import java.util.stream.Collectors;
 
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
+import com.google.cloud.storage.testing.RemoteStorageHelper;
 import com.google.common.collect.Lists;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.junit.BeforeClass;
@@ -60,7 +63,9 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
             "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n" +
             "      <str name=\"delegateRepoName\">localfs</str>\n" +
             "    </repository>\n" +
-            "    <repository name=\"localfs\" class=\"org.apache.solr.gcs.GCSBackupRepository\"> \n" +
+            "    <repository name=\"localfs\" class=\"org.apache.solr.gcs.LocalStorageGCSBackupRepository\"> \n" +
+            "      <str name=\"bucket\">someBucketName</str>\n" +
+            "      <str name=\"location\">/backup1</str>\n" +
             "    </repository>\n" +
             "  </backup>\n" +
             "  \n" +
@@ -70,14 +75,10 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        Storage storage = GCSBackupRepository.initStorage(null);
-        List<BlobId> existingBlobs = Lists.newArrayList(storage.list("backup-managed-solr").iterateAll())
-                .stream()
-                .map(BlobInfo::getBlobId)
-                .collect(Collectors.toList());
-        if (!existingBlobs.isEmpty()) {
-            storage.delete(existingBlobs);
-        }
+        // Initialize the bucket and location expected by the repository configuration
+        Storage storage = LocalStorageHelper.customOptions(false).getService();
+        //storage.create(BucketInfo.of("someBucketName"));
+        storage.create(BlobInfo.newBuilder("someBucketName", "/backup1/").build());
 
         configureCluster(NUM_SHARDS)// nodes
                 .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())

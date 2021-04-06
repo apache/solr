@@ -61,7 +61,7 @@ public class GCSBackupRepository implements BackupRepository {
 
     @SuppressWarnings("rawtypes")
     private NamedList config = null;
-    private String bucketName = "backup-managed-solr";
+    protected String bucketName = "backup-managed-solr";
 
     protected Storage initStorage(String credentialPath) {
         if (storage != null)
@@ -167,11 +167,10 @@ public class GCSBackupRepository implements BackupRepository {
         if (path.toString().endsWith("/")) {
             return storage.get(bucketName, path.toString(), Storage.BlobGetOption.fields()) != null;
         } else {
-            List<BlobId> req = Arrays.asList(
-                    BlobId.of(bucketName, path.toString()),
-                    BlobId.of(bucketName, path.toString() + "/"));
-            List<Blob> rs = storage.get(req);
-            return rs.get(0) != null || rs.get(1) != null;
+            final String filePath = path.toString();
+            final String directoryPath = path.toString() + "/";
+            return storage.get(bucketName, filePath, Storage.BlobGetOption.fields()) != null ||
+                    storage.get(bucketName, directoryPath, Storage.BlobGetOption.fields()) != null;
         }
 
     }
@@ -201,12 +200,13 @@ public class GCSBackupRepository implements BackupRepository {
         final String pathStr = blobName;
         final LinkedList<String> result = new LinkedList<>();
         // TODO JEGERLOW - LocalStorageHelper used for tests doesn't support fetching bucket.  Can _probably_ be replaced with the commented line below.
-        //storage.list(bucketName, Storage.BlobListOption.currentDirectory(), Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
-        storage.get(bucketName).list(
-                Storage.BlobListOption.currentDirectory(),
-                Storage.BlobListOption.prefix(pathStr),
-                Storage.BlobListOption.fields()
-        ).iterateAll().forEach(
+        storage.list(bucketName, Storage.BlobListOption.currentDirectory(), Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
+        //storage.get(bucketName).list(
+        //        Storage.BlobListOption.currentDirectory(),
+        //        Storage.BlobListOption.prefix(pathStr),
+        //        Storage.BlobListOption.fields()
+        //)
+        .iterateAll().forEach(
                 blob -> {
                     assert blob.getName().startsWith(pathStr);
                     final String suffixName = blob.getName().substring(pathStr.length());
@@ -309,11 +309,12 @@ public class GCSBackupRepository implements BackupRepository {
         final List<BlobId> result = new ArrayList<>();
         final String pathStr = blobName;
         // TODO JEGERLOW - LocalStorageHelper used for tests doesn't support fetching bucket.  Can _probably_ be replaced with the commented line below.
-        //storage.list(bucketName, Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
-        storage.get(bucketName).list(
-                Storage.BlobListOption.prefix(pathStr),
-                Storage.BlobListOption.fields()
-        ).iterateAll().forEach(
+        storage.list(bucketName, Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
+        //storage.get(bucketName).list(
+        //        Storage.BlobListOption.prefix(pathStr),
+        //        Storage.BlobListOption.fields()
+        //)
+        .iterateAll().forEach(
                 blob -> result.add(blob.getBlobId())
         );
 
