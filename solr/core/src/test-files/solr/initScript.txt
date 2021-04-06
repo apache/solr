@@ -1,0 +1,19 @@
+# simple comment
+// another comment
+      
+set key=myNode&value=${_random_node_}
+request /admin/collections?action=CREATE&name=ScriptingTest_collection&numShards=2&nrtReplicas=2
+set key=oneCore&value=${_last_result_/result/success[0]/value/core}
+wait_collection collection=ScriptingTest_collection&shards=2&replicas=2
+set key=myNode&value=${_random_node_}
+request /admin/collections?action=ADDREPLICA&collection=ScriptingTest_collection&shard=shard1&node=${myNode}
+set key=myNode&value=${_live_nodes_[0]}
+request /admin/collections?action=ADDREPLICA&collection=ScriptingTest_collection&shard=shard1&node=${myNode}
+loop iterations=2
+  request /admin/collections?action=ADDREPLICA&collection=ScriptingTest_collection&shard=shard2&node=${myNode}
+  set key=oneCore&value=${_last_result_/result/success[0]/value/core}
+  wait_replica collection=ScriptingTest_collection&core=${oneCore}&state=ACTIVE
+  log key=_last_result_/result[0]/key&format=******%20Replica%20name:%20{}%20******
+end
+dump
+

@@ -939,11 +939,11 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       // run init script if needed
       String resourceName = System.getProperty(Script.INIT_SCRIPT);
-      runScript(resourceName, true);
+      runScript(resourceName, false);
     }
   }
 
-  public void runScript(String resourceName, boolean async) {
+  public void runScript(String resourceName, boolean inShutdown) {
     if (resourceName == null) {
       return;
     }
@@ -951,28 +951,21 @@ public class CoreContainer {
     String nodeName = zkSys.zkController.getNodeName();
     Script script = null;
     try {
-      script = Script.loadResource(loader, solrClient, nodeName, resourceName);
+      script = Script.parseResource(loader, solrClient, nodeName, resourceName);
     } catch (Exception e) {
       log.warn("Error loading script, ignoring " + resourceName, e);
       script = null;
     }
     final Script finalScript = script;
     if (finalScript != null) {
-      Runnable r = () -> {
-        try {
-          finalScript.run();
-        } catch (Exception e) {
-          log.warn("Error running script " + resourceName, e);
-          if (finalScript.getErrorHandling() == Script.ErrorHandling.FATAL) {
-            log.warn("Script error handling set to FATAL - shutting down.");
-            shutdown();
-          }
+      try {
+        finalScript.run();
+      } catch (Exception e) {
+        log.warn("Error running script " + resourceName, e);
+        if (!inShutdown && finalScript.getErrorHandling() == Script.ErrorHandling.FATAL) {
+          log.warn("Script error handling set to FATAL - shutting down.");
+          shutdown();
         }
-      };
-      if (async) {
-        runAsync(r);
-      } else {
-        r.run();
       }
     }
   }
@@ -1074,7 +1067,7 @@ public class CoreContainer {
       overseerCollectionQueue.allowOverseerPendingTasksToComplete();
       // run shutdown script if needed
       String resourceName = System.getProperty(Script.SHUTDOWN_SCRIPT);
-      runScript(resourceName, false);
+      runScript(resourceName, true);
     }
     if (log.isInfoEnabled()) {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));

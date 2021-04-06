@@ -1,0 +1,4 @@
+set key=_error_handling_&value=${testErrorHandling:fatal}
+request /admin/collections?action=DELETE&name=_nonexistent_
+request /admin/collections?action=CREATE&name=foobar&numShards=1&nrtReplicas=1
+wait_collection collection=foobar&shards=1&replicas=1
