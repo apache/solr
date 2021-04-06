@@ -102,13 +102,19 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       log.warn("Multiple login modules are specified in the configuration file");
       return authentication;
     }
+
     Map<String, ?> options = entries[0].getOptions();
+    setAuthenticationOptions(authentication, options, (String) options.get("principal"));
+    return authentication;
+  }
+
+  static void setAuthenticationOptions(SPNEGOAuthentication authentication, Map<String, ?> options, String username) {
     String keyTab = (String)options.get("keyTab");
     if (keyTab != null) {
-      authentication.setUserKeyTabPath(Paths.get(keyTab, new String[0]));
+      authentication.setUserKeyTabPath(Paths.get(keyTab));
     }
     authentication.setServiceName("HTTP");
-    authentication.setUserName((String)options.get("principal"));
+    authentication.setUserName(username);
     if ("true".equalsIgnoreCase((String)options.get("useTicketCache"))) {
       authentication.setUseTicketCache(true);
       String ticketCachePath = (String)options.get("ticketCache");
@@ -117,7 +123,6 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       }
       authentication.setRenewTGT("true".equalsIgnoreCase((String)options.get("renewTGT")));
     }
-    return authentication;
   }
 
   @Override
@@ -202,7 +207,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     }
   };
 
-  private static class SolrJaasConfiguration extends javax.security.auth.login.Configuration {
+  public static class SolrJaasConfiguration extends javax.security.auth.login.Configuration {
 
     private javax.security.auth.login.Configuration baseConfig;
 

@@ -95,10 +95,6 @@
     <str name="queryFieldType">string</str>
     <str name="config-file">foo.xml</str>
   </searchComponent>-->
-  <searchComponent name="dataElevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
-    <str name="queryFieldType">string</str>
-    <str name="config-file">${elevate.data.file:elevate-data.xml}</str>
-  </searchComponent>
 
   <requestHandler name="/elevate" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
@@ -106,15 +102,6 @@
     </lst>
     <arr name="last-components">
       <str>elevate</str>
-    </arr>
-  </requestHandler>
-
-  <requestHandler name="/dataElevate" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-    <arr name="last-components">
-      <str>dataElevate</str>
     </arr>
   </requestHandler>
 

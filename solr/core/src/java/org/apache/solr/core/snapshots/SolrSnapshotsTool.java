@@ -18,15 +18,12 @@
 package org.apache.solr.core.snapshots;
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -183,26 +180,29 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
   }
 
-  public Map<String, List<String>> getIndexFilesPathForSnapshot(String collectionName,  String snapshotName, Optional<String> pathPrefix)
+  /**
+   * @param pathPrefix optional
+   */
+  public Map<String, List<String>> getIndexFilesPathForSnapshot(String collectionName,  String snapshotName, String pathPrefix)
       throws SolrServerException, IOException {
     Map<String, List<String>> result = new HashMap<>();
 
     Collection<CollectionSnapshotMetaData> snaps = listCollectionSnapshots(collectionName);
-    Optional<CollectionSnapshotMetaData> meta = Optional.empty();
+    CollectionSnapshotMetaData meta = null;
     for (CollectionSnapshotMetaData m : snaps) {
       if (snapshotName.equals(m.getName())) {
-        meta = Optional.of(m);
+        meta = m;
       }
     }
 
-    if (!meta.isPresent()) {
+    if (meta != null) {
       throw new IllegalArgumentException("The snapshot named " + snapshotName
           + " is not found for collection " + collectionName);
     }
 
     DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
     for (Slice s : collectionState.getSlices()) {
-      List<CoreSnapshotMetaData> replicaSnaps = meta.get().getReplicaSnapshotsForShard(s.getName());
+      List<CoreSnapshotMetaData> replicaSnaps = meta.getReplicaSnapshotsForShard(s.getName());
       // Prepare a list of *existing* replicas (since one or more replicas could have been deleted after the snapshot creation).
       List<CoreSnapshotMetaData> availableReplicas = new ArrayList<>();
       for (CoreSnapshotMetaData m : replicaSnaps) {
@@ -226,10 +226,9 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       }
 
       String indexDirPath = coreSnap.getIndexDirPath();
-      if (pathPrefix.isPresent()) {
+      if (pathPrefix != null) {
         // If the path prefix is specified, rebuild the path to the index directory.
-        Path t = new Path(coreSnap.getIndexDirPath());
-        indexDirPath = (new Path(pathPrefix.get(), t.toUri().getPath())).toString();
+        indexDirPath = new Path(pathPrefix, coreSnap.getIndexDirPath()).toString();
       }
 
       List<String> paths = new ArrayList<>();
@@ -244,20 +243,16 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     return result;
   }
 
-  public void buildCopyListings(String collectionName, String snapshotName, String localFsPath, Optional<String> pathPrefix)
+  /**
+   * @param pathPrefix optional
+   */
+  public void buildCopyListings(String collectionName, String snapshotName, String localFsPath, String pathPrefix)
       throws SolrServerException, IOException {
     Map<String, List<String>> paths = getIndexFilesPathForSnapshot(collectionName, snapshotName, pathPrefix);
     for (Map.Entry<String,List<String>> entry : paths.entrySet()) {
-      StringBuilder filesBuilder = new StringBuilder();
-      for (String filePath : entry.getValue()) {
-        filesBuilder.append(filePath);
-        filesBuilder.append("\n");
-      }
-
-      String files = filesBuilder.toString().trim();
-      try (Writer w = new OutputStreamWriter(new FileOutputStream(new File(localFsPath, entry.getKey())), StandardCharsets.UTF_8)) {
-        w.write(files);
-      }
+      // TODO: this used to trim - check if that's needed
+      // Using Paths.get instead of Path.of because of conflict with o.a.hadoop.fs.Path
+      Files.write(Paths.get(localFsPath, entry.getKey()), entry.getValue());
     }
   }
 
@@ -270,7 +265,10 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     Preconditions.checkState(resp.getStatus() == 0, "The request failed. The status code is " + resp.getStatus());
   }
 
-  public void prepareForExport(String collectionName, String snapshotName, String localFsPath, Optional<String> pathPrefix, String destPath) {
+  /**
+   * @param pathPrefix optional
+   */
+  public void prepareForExport(String collectionName, String snapshotName, String localFsPath, String pathPrefix, String destPath) {
     try {
       buildCopyListings(collectionName, snapshotName, localFsPath, pathPrefix);
       CLIO.out("Successfully prepared copylisting for the snapshot export.");
@@ -376,14 +374,14 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
           String collectionName = requiredArg(options, cmd, COLLECTION);
           String localFsDir = requiredArg(options, cmd, TEMP_DIR);
           String hdfsOpDir = requiredArg(options, cmd, DEST_DIR);
-          Optional<String> pathPrefix = Optional.ofNullable(cmd.getOptionValue(HDFS_PATH_PREFIX));
+          String pathPrefix = cmd.getOptionValue(HDFS_PATH_PREFIX);
 
-          if (pathPrefix.isPresent()) {
+          if (pathPrefix != null) {
             try {
-              new URI(pathPrefix.get());
+              new URI(pathPrefix);
             } catch (URISyntaxException e) {
               CLIO.out(
-                  "The specified File system path prefix " + pathPrefix.get()
+                  "The specified File system path prefix " + pathPrefix
                       + " is invalid. The error is " + e.getLocalizedMessage());
               System.exit(1);
             }

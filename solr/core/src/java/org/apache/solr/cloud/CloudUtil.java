@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -125,7 +124,7 @@ public class CloudUtil {
   public static String unifiedResourcePath(SolrResourceLoader loader) {
     return (loader instanceof ZkSolrResourceLoader) ?
             ((ZkSolrResourceLoader) loader).getConfigSetZkPath() + "/" :
-            loader.getConfigDir() + File.separator;
+            loader.getConfigPath() + "/";
   }
 
   /**Read the list of public keys from ZK
