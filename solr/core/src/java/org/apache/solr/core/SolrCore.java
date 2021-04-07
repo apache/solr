@@ -478,7 +478,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       if (directoryFactory.exists(getIndexDir())) {
         dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
         try {
-          size = DirectoryFactory.sizeOfDirectory(dir);
+          size = directoryFactory.size(dir);
         } finally {
           directoryFactory.release(dir);
         }
