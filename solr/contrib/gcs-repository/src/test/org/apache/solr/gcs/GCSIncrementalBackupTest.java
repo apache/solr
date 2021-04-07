@@ -65,7 +65,7 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
             "    </repository>\n" +
             "    <repository name=\"localfs\" class=\"org.apache.solr.gcs.LocalStorageGCSBackupRepository\"> \n" +
             "      <str name=\"bucket\">someBucketName</str>\n" +
-            "      <str name=\"location\">/backup1</str>\n" +
+            "      <str name=\"location\">backup1</str>\n" +
             "    </repository>\n" +
             "  </backup>\n" +
             "  \n" +
@@ -76,9 +76,9 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
     @BeforeClass
     public static void setupClass() throws Exception {
         // Initialize the bucket and location expected by the repository configuration
-        Storage storage = LocalStorageHelper.customOptions(false).getService();
+//        Storage storage = LocalStorageHelper.customOptions(false).getService();
         //storage.create(BucketInfo.of("someBucketName"));
-        storage.create(BlobInfo.newBuilder("someBucketName", "/backup1/").build());
+//        storage.create(BlobInfo.newBuilder("someBucketName", "/backup1/").build());
 
         configureCluster(NUM_SHARDS)// nodes
                 .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
@@ -91,9 +91,10 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
         return "backuprestore";
     }
 
+    // TODO JEGERLOW: I removed the leading '/' here
     @Override
     public String getBackupLocation() {
-        return "/backup1";
+        return "backup1";
     }
 
 }

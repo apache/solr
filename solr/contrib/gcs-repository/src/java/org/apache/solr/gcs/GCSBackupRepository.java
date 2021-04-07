@@ -109,7 +109,6 @@ public class GCSBackupRepository implements BackupRepository {
     @Override
     public void init(@SuppressWarnings("rawtypes") NamedList args) {
         this.config = args;
-        initStorage((String)args.get("credential"));
 
         if (args.get("bucket") != null) {
             this.bucketName = args.get("bucket").toString();
@@ -120,6 +119,7 @@ public class GCSBackupRepository implements BackupRepository {
             }
         }
 
+        initStorage((String)args.get("credential"));
         // TODO JEGERLOW We should fail early here if the required configuration wasn't provided or was invalid
     }
 
@@ -211,7 +211,12 @@ public class GCSBackupRepository implements BackupRepository {
                     assert blob.getName().startsWith(pathStr);
                     final String suffixName = blob.getName().substring(pathStr.length());
                     if (!suffixName.isEmpty()) {
-                        result.add(suffixName);
+                        // Remove trailing '/' if present
+                        if (suffixName.endsWith("/")) {
+                            result.add(suffixName.substring(0, suffixName.length() - 1));
+                        } else {
+                            result.add(suffixName);
+                        }
                     }
                 });
 
@@ -301,7 +306,7 @@ public class GCSBackupRepository implements BackupRepository {
         }
     }
 
-    private List<BlobId> allBlobsAtDir(URI path) throws IOException {
+    protected List<BlobId> allBlobsAtDir(URI path) throws IOException {
         String blobName = path.toString();
         if (!blobName.endsWith("/"))
             blobName += "/";

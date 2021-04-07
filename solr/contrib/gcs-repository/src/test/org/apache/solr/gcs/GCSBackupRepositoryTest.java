@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 
 import com.google.cloud.storage.Storage;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 
@@ -30,17 +31,18 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Override
     @SuppressWarnings("rawtypes")
     protected BackupRepository getRepository() {
-        GCSBackupRepository repository = new GCSBackupRepository() {
-            protected Storage initStorage(String credentialPath) {
-                return null;
-            }
-        };
-        repository.init(new NamedList());
+        final NamedList<Object> config = new NamedList<>();
+        config.add(CoreAdminParams.BACKUP_LOCATION, "backup1");
+        final GCSBackupRepository repository = new LocalStorageGCSBackupRepository();
+        repository.init(config);
+
         return repository;
     }
 
+    // TODO JEGERLOW I removed the leading '/' here to get around the '/' prefix removal issue in FakeStorageRpc
+    // Need a better solution here.
     @Override
     protected URI getBaseUri() throws URISyntaxException {
-        return new URI("/tmp");
+        return new URI("tmp");
     }
 }

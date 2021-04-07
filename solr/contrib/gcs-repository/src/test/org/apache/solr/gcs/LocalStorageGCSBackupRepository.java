@@ -14,7 +14,8 @@ import java.util.stream.Collectors;
 
 public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
 
-  private static Storage stashedStorage = null;
+  // TODO JEGERLOW: Will need a 'clear' method for tests to call in their 'AFterClass' so that multiple GCSREpository test classes don't inherit state
+  protected static Storage stashedStorage = null;
 
     @Override
     public Storage initStorage(String credentialPath) {
@@ -46,8 +47,18 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
       }
     }
 
+    @Override
+    public void deleteDirectory(URI path) throws IOException {
+      List<BlobId> blobIds = allBlobsAtDir(path);
+      if (!blobIds.isEmpty()) {
+        for (BlobId blob : blobIds) {
+          storage.delete(blob);
+        }
+      }
+    }
+
     // Should only be called after locking on 'stashedStorage'
-    private synchronized void setupSingletonStorageInstanceIfNecessary() {
+    protected synchronized void setupSingletonStorageInstanceIfNecessary() {
       if (stashedStorage != null) {
         return;
       }
@@ -56,7 +67,9 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
       storage = stashedStorage;
       // Bootstrap 'location' on first creation
       try {
-        createDirectory(createURI(getBackupLocation(null)));
+        final String baseLocation = getBackupLocation(null);
+        final URI baseLocationUri = createURI(baseLocation);
+        createDirectory(baseLocationUri);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
