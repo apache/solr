@@ -165,13 +165,6 @@ grant {
 
   // used by solr to create sandboxes (e.g. script execution)
   permission java.security.SecurityPermission "createAccessControlContext";
-
-  // used by gcs-repository
-  permission java.net.SocketPermission "metadata.google.internal:80", "connect,resolve";
-  permission java.net.SocketPermission "www.googleapis.com:443", "connect,resolve";
-  permission java.net.SocketPermission "oauth2.googleapis.com:443", "connect,resolve";
-  // used on jenkins for loading credentials
-  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}-", "read";
 };
 
 // additional permissions based on system properties set by /bin/solr
