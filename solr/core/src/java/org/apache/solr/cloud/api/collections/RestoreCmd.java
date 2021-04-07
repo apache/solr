@@ -39,6 +39,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
@@ -224,8 +225,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       // Avoiding passing RestoreContext around
       uploadConfig(rc.backupProperties.getConfigName(),
               rc.restoreConfigName,
-              rc.zkStateReader,
-              rc.backupManager);
+              rc.backupManager,
+              rc.container.getConfigSetService());
 
       log.info("Starting restore into collection={} with backup_name={} at location={}", rc.restoreCollectionName, rc.backupName,
               rc.location);
@@ -274,13 +275,14 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       assert totalReplicasPerShard > 0;
     }
 
-    private void uploadConfig(String configName, String restoreConfigName, ZkStateReader zkStateReader, BackupManager backupMgr) throws IOException {
-      if (zkStateReader.getConfigManager().configExists(restoreConfigName)) {
+    private void uploadConfig(String configName, String restoreConfigName, BackupManager backupMgr, ConfigSetService configSetService) throws IOException {
+      if (configSetService.checkConfigExists(restoreConfigName)) {
         log.info("Using existing config {}", restoreConfigName);
         //TODO add overwrite option?
       } else {
         log.info("Uploading config {}", restoreConfigName);
-        backupMgr.uploadConfigDir(configName, restoreConfigName);
+
+        backupMgr.uploadConfigDir(configName, restoreConfigName, configSetService);
       }
     }
 

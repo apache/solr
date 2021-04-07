@@ -63,7 +63,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -543,8 +543,7 @@ public class MiniSolrCloudCluster {
   public void uploadConfigSet(Path configDir, String configName) throws IOException, KeeperException, InterruptedException {
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null)) {
-      ZkConfigManager manager = new ZkConfigManager(zkClient);
-      manager.uploadConfigDir(configDir, configName);
+      ZkMaintenanceUtils.uploadToZK(zkClient, configDir, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + configName, ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
     }
   }
 
@@ -611,7 +610,7 @@ public class MiniSolrCloudCluster {
       }
       try {
         // cleanup any property before removing the configset
-        getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1, true);
+        getZkClient().delete(ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1, true);
       } catch (KeeperException.NoNodeException nne) { }
       new ConfigSetAdminRequest.Delete()
           .setConfigSetName(configSet)
@@ -752,7 +751,7 @@ public class MiniSolrCloudCluster {
 
     return getOpenOverseer(overseers);
   }
-  
+
   public static Overseer getOpenOverseer(List<Overseer> overseers) {
     ArrayList<Overseer> shuffledOverseers = new ArrayList<Overseer>(overseers);
     Collections.shuffle(shuffledOverseers, LuceneTestCase.random());

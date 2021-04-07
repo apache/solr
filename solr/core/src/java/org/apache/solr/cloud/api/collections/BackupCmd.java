@@ -121,7 +121,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       log.info("Starting to backup ZK data for backupName={}", backupName);
 
       //Download the configs
-      backupMgr.downloadConfigDir(configName);
+      backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
 
       //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
       //Since we don't want to distinguish we extract the state and back it up as a separate json

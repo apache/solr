@@ -18,10 +18,8 @@ package org.apache.solr.core;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -298,8 +296,16 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     });
   }
 
+  public Path getConfigPath() {
+    return instanceDir.resolve("conf");
+  }
+
+  /**
+   * @deprecated use {@link #getConfigPath()}
+   */
+  @Deprecated(since="9.0.0")
   public String getConfigDir() {
-    return instanceDir.resolve("conf").toString();
+    return getConfigPath().toString();
   }
 
   /**
@@ -915,27 +921,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
-    File confFile = new File(loader.getConfigDir(), resourceName);
+    Path confFile = loader.getConfigPath().resolve(resourceName);
     try {
-      File parentDir = confFile.getParentFile();
-      if (!parentDir.isDirectory()) {
-        if (!parentDir.mkdirs()) {
-          final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
-          log.error(msg);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
-        }
-      }
-      try (OutputStream out = new FileOutputStream(confFile);) {
-        out.write(content);
-      }
-      log.info("Written confile {}", resourceName);
+      Files.createDirectories(confFile.getParent());
+      Files.write(confFile, content);
+      log.info("Written conf file {}", resourceName);
     } catch (IOException e) {
       final String msg = "Error persisting conf file " + resourceName;
       log.error(msg, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
     } finally {
       try {
-        IOUtils.fsync(confFile.toPath(), false);
+        IOUtils.fsync(confFile, false);
       } catch (IOException e) {
         final String msg = "Error syncing conf file " + resourceName;
         log.error(msg, e);

@@ -226,12 +226,14 @@ public class CollApiCmds {
 
       final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
       //the rest of the processing is based on writing cluster state properties
-      //configName will be put in collectionProps so that it will appear in state.json
-      String configName = (String) message.getProperties().get(CollectionAdminParams.COLL_CONF);
+      //remove the property here to avoid any errors down the pipeline due to this property appearing
+      String configName = (String) message.getProperties().remove(CollectionAdminParams.COLL_CONF);
 
       if (configName != null) {
-        CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getSolrCloudManager(), configName);
+        CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getCoreContainer().getConfigSetService(), configName);
+
         CollectionHandlingUtils.createConfNode(ccc.getSolrCloudManager().getDistribStateManager(), configName, collectionName);
+        new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);
       }
 
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
@@ -268,8 +270,8 @@ public class CollApiCmds {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to modify collection", e);
       }
 
-      // if switching to/from read-only mode or configName is not null reload the collection
-      if (message.keySet().contains(ZkStateReader.READ_ONLY) || configName != null) {
+      // if switching to/from read-only mode reload the collection
+      if (message.keySet().contains(ZkStateReader.READ_ONLY)) {
         new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);
       }
     }
