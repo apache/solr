@@ -122,11 +122,11 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
                 assertEquals(expectedNumBytes, is.length());
                 is.readBytes(retrievedBytes, 0, expectedNumBytes);
             }
-            assertEquals(storedBytes, retrievedBytes);
+            assertArrayEquals(storedBytes, retrievedBytes);
         }
     }
 
-    // TODO JEGERLOW, comment out creation of nest2 and see whether creation of nest3 and 4 succeed
+    // TODO JEGERLOW, create separate test for creation of nested directory when parent doesn't exist
     @Test
     public void testCanDeleteEmptyOrFullDirectories() throws Exception {
         try (BackupRepository repo = getRepository()) {
@@ -216,58 +216,6 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
             assertEquals(2, otherDir3Children.size());
             assertTrue(otherDir3Children.contains("file1.txt"));
             assertTrue(otherDir3Children.contains("file2.txt"));
-        }
-    }
-
-
-    @Test
-    public void test() throws IOException, URISyntaxException {
-        try (BackupRepository repo = getRepository()) {
-            URI baseUri = repo.resolve(getBaseUri(), "tmp");
-            if (repo.exists(baseUri)) {
-                repo.deleteDirectory(baseUri);
-            }
-            assertFalse(repo.exists(baseUri));
-            repo.createDirectory(baseUri);
-            assertTrue(repo.exists(baseUri));
-            assertEquals(0, repo.listAll(baseUri).length);
-
-            // test nested structure
-            URI tmpFolder = repo.resolve(baseUri, "tmpDir");
-            repo.createDirectory(tmpFolder);
-            assertEquals(repo.getPathType(tmpFolder), BackupRepository.PathType.DIRECTORY);
-            addFile(repo, repo.resolve(tmpFolder, "file1"));
-            addFile(repo, repo.resolve(tmpFolder, "file2"));
-            assertEquals(repo.getPathType(repo.resolve(tmpFolder, "file1")), BackupRepository.PathType.FILE);
-            String[] files = repo.listAll(tmpFolder);
-            assertEquals(new HashSet<>(Arrays.asList("file1", "file2")), new HashSet<>(Arrays.asList(files)));
-
-            URI tmpFolder2 = repo.resolve(tmpFolder, "tmpDir2");
-            repo.createDirectory(tmpFolder2);
-            addFile(repo, repo.resolve(tmpFolder2, "file3"));
-            addFile(repo, repo.resolve(tmpFolder2, "file4"));
-            addFile(repo, repo.resolve(tmpFolder2, "file5"));
-            //2 files + 1 folder
-            assertEquals(3, repo.listAll(tmpFolder).length);
-            // create same directory must be a no-op
-            repo.createDirectory(tmpFolder2);
-            assertEquals(3, repo.listAll(tmpFolder2).length);
-            assertTrue(repo.exists(tmpFolder2));
-            assertTrue(repo.exists(repo.resolve(tmpFolder2, "file3")));
-            try {
-                repo.delete(tmpFolder2, Arrays.asList("file7", "file6"), false);
-                fail("Delete non existence file leads to success");
-            } catch (NoSuchFileException e) {
-                // expected
-            }
-            repo.delete(tmpFolder2, Arrays.asList("file7", "file6"), true);
-            repo.delete(tmpFolder2, Arrays.asList("file3", "file4"), true);
-            assertEquals(1, repo.listAll(tmpFolder2).length);
-            assertFalse(repo.exists(repo.resolve(tmpFolder2, "file3")));
-            repo.deleteDirectory(tmpFolder);
-            assertFalse(repo.exists(tmpFolder));
-            assertFalse(repo.exists(repo.resolve(tmpFolder2, "file5")));
-            assertFalse(repo.exists(repo.resolve(tmpFolder, "file1")));
         }
     }
 
