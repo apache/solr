@@ -236,6 +236,8 @@ Other Changes
 
 * SOLR-14928: Allow cluster state updates to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
 
+* SOLR-15002: Upgrade httpclient to 4.5.13 and httpcore to 4.4.13 (Andras Salamon via janhoy)
+
 * SOLR-15121: Move XSLT (tr param) response writer and update request handler to scripting contrib.  (Eric Pugh, David Smiley)
 
 * SOLR-15292: SignatureUpdateProcessorFactory will fail to initialize if it is used in a SolrCloud cluster in a way that is
