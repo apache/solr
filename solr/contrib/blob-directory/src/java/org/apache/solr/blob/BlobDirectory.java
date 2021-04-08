@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.store.AlreadyClosedException;
@@ -119,13 +120,13 @@ public class BlobDirectory extends FilterDirectory {
     for (String fileName : synchronizedFileNames) {
       BlobFileSupplier blobFileSupplier = blobFileSupplierMap.get(fileName);
       if (blobFileSupplier != null) {
-        // Only sync files that were synced since this directory was released. Previous files don't
-        // need to be synced.
+        // Only sync files that were synced since this directory was released.
+        // Previous files don't need to be synced.
         writes.add(blobFileSupplier.getBlobFile());
       }
     }
 
-    log.debug("Sync to BlobStore writes={} deleted={}", writes, deletedFileNames);
+    log.debug("Sync to BackupRepository writes={} deleted={}", writes, deletedFileNames);
     blobPusher.push(blobDirPath, writes, this::openInputStream, deletedFileNames);
 
     synchronizedFileNames.clear();
@@ -181,7 +182,12 @@ public class BlobDirectory extends FilterDirectory {
     @Override
     public void close() throws IOException {
       // Free the reference to the IndexOutput.
-      blobFileSupplier.indexOutput = null;
+      blobFileSupplier.getBlobFile();
+      // TODO
+      //  It could be possible to start pushing the file asynchronously with BlobPusher at this time,
+      //  provided that the file size is larger than a threshold (to avoid sending small intermediate
+      //  files that could be removed later before the sync, e.g. merge-on-commit). We would have to
+      //  wait for the completion of the push in the BlobPusher when sync()/syncMetadata() is called.
       super.close();
     }
   }
@@ -208,6 +214,7 @@ public class BlobDirectory extends FilterDirectory {
       name = dest;
       if (blobFile != null) {
         blobFile = new BlobFile(name, blobFile.size(), blobFile.checksum());
+        assert indexOutput == null;
       }
     }
 
@@ -218,6 +225,7 @@ public class BlobDirectory extends FilterDirectory {
         // Free the reference to the IndexOutput.
         indexOutput = null;
       }
+      assert indexOutput == null;
       return blobFile;
     }
   }

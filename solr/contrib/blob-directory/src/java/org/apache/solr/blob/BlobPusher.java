@@ -17,36 +17,56 @@
 
 package org.apache.solr.blob;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
-
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Pushes a set of files to Blob, and works with listings. */
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+/**
+ * Pushes a set of files to Blob, and works with listings.
+ */
 public class BlobPusher implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final String PATH_SEPARATOR = "/";
+  private static final Pattern PATH_SPLITTER = Pattern.compile(PATH_SEPARATOR);
+
+  /**
+   * Size of the buffer used to transfer input-output stream to the {@link BackupRepository}.
+   * The appropriate size depends on the {@link BackupRepository}.
+   */
+  public static final int STREAM_COPY_DEFAULT_BUFFER_SIZE = 16384;
+
   // WORK IN PROGRESS!!
 
-  private final BlobStore blobStore;
+  private final BackupRepository backupRepository;
+  private final URI backupLocation;
+  private final int streamCopyBufferSize;
   private final ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("blobPusher");
 
-  public BlobPusher(BlobStore blobStore) {
-    this.blobStore = blobStore;
+  public BlobPusher(BackupRepository backupRepository, URI backupLocation, int streamCopyBufferSize) {
+    this.backupRepository = Objects.requireNonNull(backupRepository);
+    this.backupLocation = Objects.requireNonNull(backupLocation);
+    this.streamCopyBufferSize = streamCopyBufferSize;
   }
 
   public void push(
-          String blobDirPath,
+      String blobDirPath,
       Collection<BlobFile> writes,
       IOUtils.IOFunction<BlobFile, InputStream> inputStreamSupplier,
       Collection<String> deletes)
@@ -55,7 +75,7 @@ public class BlobPusher implements Closeable {
     // update "foreign" listings
     //      TODO David
 
-    // send files to BlobStore and delete our files too
+    // Send files to BackupRepository and delete our files too.
     log.debug("Pushing {}", writes);
     executeAll(pushFiles(blobDirPath, writes, inputStreamSupplier));
     log.debug("Deleting {}", deletes);
@@ -79,24 +99,48 @@ public class BlobPusher implements Closeable {
   }
 
   private List<Callable<Void>> pushFiles(
-          String blobDirPath,
+      String blobDirPath,
       Collection<BlobFile> blobFiles,
-      IOUtils.IOFunction<BlobFile, InputStream> inputStreamSupplier) {
+      IOUtils.IOFunction<BlobFile, InputStream> inputStreamSupplier)
+      throws IOException {
+    URI blobDirUri = backupRepository.resolve(backupLocation, blobDirPath);
+    createDirectories(blobDirUri, blobDirPath);
     return blobFiles.stream()
         .map(
             (blobFile) ->
                 (Callable<Void>)
                     () -> {
-                      try (InputStream in = inputStreamSupplier.apply(blobFile)) {
-                        blobStore.create(blobDirPath, blobFile.fileName(), in, blobFile.size());
+                      try (InputStream in = inputStreamSupplier.apply(blobFile);
+                           OutputStream out = backupRepository.createOutput(backupRepository.resolve(blobDirUri, blobFile.fileName()))) {
+                        int bufferSize = (int) Math.min(blobFile.size(), streamCopyBufferSize);
+                        org.apache.commons.io.IOUtils.copy(in, out, bufferSize);
                       }
                       return null;
                     })
         .collect(Collectors.toList());
   }
 
+  private void createDirectories(URI blobDirUri, String blobDirPath) throws IOException {
+    // Create the parent directories if needed.
+    // The goal is to have a minimal number of calls to the backup repository in most cases.
+    // Common case: the directory exists or the parent directory exists.
+    // Try a direct call to 'createDirectory', avoiding a call to 'exists' in many cases.
+    // The API says if the directory already exists, it is a no-op.
+    try {
+      backupRepository.createDirectory(blobDirUri);
+    } catch (IOException e) {
+      // Create the parent directories.
+      URI pathUri = backupLocation;
+      for (String pathElement : PATH_SPLITTER.split(blobDirPath)) {
+        pathUri = backupRepository.resolve(pathUri, pathElement);
+        backupRepository.createDirectory(pathUri);
+      }
+    }
+  }
+
   private void deleteFiles(String blobDirPath, Collection<String> fileNames) throws IOException {
-    blobStore.delete(blobDirPath, fileNames);
+    URI blobDirUri = backupRepository.resolve(backupLocation, blobDirPath);
+    backupRepository.delete(blobDirUri, fileNames, true);
   }
 
   @Override
