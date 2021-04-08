@@ -54,10 +54,9 @@ import java.util.*;
 
 
 /**
- * Test for ReplicationHandler
+ * Base code for orchestrating legacy replication based tests
  *
  *
- * @since 1.4
  */
 public abstract class AbstractReplicationTestBase extends SolrTestCaseJ4 {
 
@@ -93,6 +92,12 @@ public abstract class AbstractReplicationTestBase extends SolrTestCaseJ4 {
     leader.setUp();
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort(), true);
+
+    follower = new SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+    follower.setUp();
+    followerJetty = createAndStartJetty(follower);
+    followerClient = createNewSolrClient(followerJetty.getLocalPort(), true);
+
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
 
@@ -138,6 +143,9 @@ public abstract class AbstractReplicationTestBase extends SolrTestCaseJ4 {
     return jetty;
   }
 
+  protected static HttpSolrClient createNewSolrClient(int port) {
+    return createNewSolrClient(port, true);
+  }
   protected static HttpSolrClient createNewSolrClient(int port, boolean includeCore) {
     try {
       // setup the client...

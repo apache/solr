@@ -21,7 +21,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -48,6 +48,7 @@ public class TestHealthCheckHandlerLegacyMode extends AbstractReplicationTestBas
   public void setUp() throws Exception {
     super.setUp();
     leaderClientHealthCheck = createNewSolrClient(leaderJetty.getLocalPort(), false);
+    followerClientHealthCheck = createNewSolrClient(followerJetty.getLocalPort(), false);
   }
 
   public void clearIndexWithReplication() throws Exception {
@@ -83,6 +84,9 @@ public class TestHealthCheckHandlerLegacyMode extends AbstractReplicationTestBas
 
     //clearIndexWithReplication();
 
+    // stop replication so that the follower doesn't pull the index
+    invokeReplicationCommand(followerJetty.getLocalPort(), "disablepoll");
+
     nDocs--;
     // create multiple commits
     int docsAdded = 0;
@@ -98,43 +102,32 @@ public class TestHealthCheckHandlerLegacyMode extends AbstractReplicationTestBas
     assertNumFoundWithQuery(leaderClient, docsAdded);
 
     //ensure that the leader is always happy
+    //first try without specifying maxGenerationLag lag
     ModifiableSolrParams solrParamsLeaderHealthCheck = new ModifiableSolrParams();
     SolrRequest healthCheckRequestLeader = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, solrParamsLeaderHealthCheck);
     assertEquals(CommonParams.OK, healthCheckRequestLeader.process(leaderClientHealthCheck).getResponse().get(CommonParams.STATUS));
 
-    // now try adding generation lag
+    // now try adding maxGenerationLag request param
     solrParamsLeaderHealthCheck.add(HealthCheckHandler.PARAM_MAX_GENERATION_LAG, "2");
     assertEquals(CommonParams.OK, healthCheckRequestLeader.process(leaderClientHealthCheck).getResponse().get(CommonParams.STATUS));
-    // now ry with always be in sync
-    solrParamsLeaderHealthCheck.add(HealthCheckHandler.PARAM_REQUIRE_ALWAYS_BE_IN_SYNC, "true");
-    assertEquals(CommonParams.OK, healthCheckRequestLeader.process(leaderClientHealthCheck).getResponse().get(CommonParams.STATUS));
 
+    //follower should report healthy if maxGenerationLag is not specified
+    SolrRequest healthCheckRequestFollower = new HealthCheckRequest();
+            new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, new ModifiableSolrParams());
+    assertEquals(CommonParams.OK, healthCheckRequestFollower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
 
-    follower = new SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
-    follower.setUp();
-    followerJetty = createAndStartJetty(follower);
-    followerClient = createNewSolrClient(followerJetty.getLocalPort(), true);
-    followerClientHealthCheck = createNewSolrClient(followerJetty.getLocalPort(), false);
-
-    // stop replication so that the follower doesn't pull the index
-    invokeReplicationCommand(followerJetty.getLocalPort(), "disablepoll");
-
-    //follower should report health if maxGenerationLag is not specified
-    SolrRequest healthCheckRequestFolllower = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, new ModifiableSolrParams());
-    assertEquals(CommonParams.OK, healthCheckRequestFolllower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
-
-    //ensure follower is unhealthy
+    //ensure follower is unhealthy when maxGenerationLag is specified
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(HealthCheckHandler.PARAM_MAX_GENERATION_LAG, "2");
-    healthCheckRequestFolllower = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, params);
-    assertEquals(CommonParams.FAILURE, healthCheckRequestFolllower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
+    healthCheckRequestFollower = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, params);
+    assertEquals(CommonParams.FAILURE, healthCheckRequestFollower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
 
     //enable polling, force replication and ensure that the follower is healthy
     pullFromLeaderToFollower();
 
     // check replicated and is healthy
     assertNumFoundWithQuery(followerClient, docsAdded);
-    assertEquals(CommonParams.OK, healthCheckRequestFolllower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
+    assertEquals(CommonParams.OK, healthCheckRequestFollower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
     assertVersions(leaderClient, followerClient);
 
     //index more docs on the leader
@@ -148,24 +141,19 @@ public class TestHealthCheckHandlerLegacyMode extends AbstractReplicationTestBas
 
     assertNumFoundWithQuery(leaderClient, docsAdded);
 
-    // check without always be in sync. We synced at the start so the weak check should be OK
-    assertEquals(CommonParams.OK, healthCheckRequestFolllower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
-
-    // check with always be in sync, we have added docs to the leader and polling is disabled, this should fail
-    params.add(HealthCheckHandler.PARAM_REQUIRE_ALWAYS_BE_IN_SYNC, "true");
-    healthCheckRequestFolllower = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, params);
-    assertEquals(CommonParams.FAILURE, healthCheckRequestFolllower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
+    // we have added docs to the leader and polling is disabled, this should fail
+    healthCheckRequestFollower = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, params);
+    assertEquals(CommonParams.FAILURE, healthCheckRequestFollower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
 
     //force replication and ensure that the follower is healthy
     pullFromLeaderToFollower();
-    assertEquals(CommonParams.OK, healthCheckRequestFolllower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
+    assertEquals(CommonParams.OK, healthCheckRequestFollower.process(followerClientHealthCheck).getResponse().get(CommonParams.STATUS));
     assertNumFoundWithQuery(followerClient, docsAdded);
     assertVersions(leaderClient, followerClient);
   }
 
   private void assertNumFoundWithQuery(HttpSolrClient client, int nDocs) throws Exception {
     NamedList queryRsp = rQuery(nDocs, "*:*", client);
-    SolrDocumentList leaderQueryResult = (SolrDocumentList) queryRsp.get("response");
     assertEquals(nDocs, numFound(queryRsp));
   }
 }

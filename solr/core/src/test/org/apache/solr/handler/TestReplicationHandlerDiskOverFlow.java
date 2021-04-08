@@ -77,12 +77,12 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     leader = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
     leader.setUp();
     leaderJetty = createAndStartJetty(leader);
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort(), true);
+    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
 
     follower = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
     follower.setUp();
     followerJetty = createAndStartJetty(follower);
-    followerClient = createNewSolrClient(followerJetty.getLocalPort(), true);
+    followerClient = createNewSolrClient(followerJetty.getLocalPort());
 
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
