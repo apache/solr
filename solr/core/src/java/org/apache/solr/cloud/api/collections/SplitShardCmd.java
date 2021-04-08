@@ -189,7 +189,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 
       @SuppressWarnings("deprecation")
-      ShardHandler shardHandler = ccc.getShardHandler();
+      ShardHandler shardHandler = ccc.newShardHandler();
 
 
       if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, false)) {

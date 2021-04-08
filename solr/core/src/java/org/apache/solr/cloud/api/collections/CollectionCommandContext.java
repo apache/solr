@@ -37,7 +37,7 @@ import java.util.concurrent.ExecutorService;
  * distributed way, unrelated to and not depending upon Overseer abstractions (including overseer collection message handling).
  */
 public interface CollectionCommandContext {
-  ShardHandler getShardHandler();
+  ShardHandler newShardHandler();
 
   SolrCloudManager getSolrCloudManager();
   ZkStateReader getZkStateReader();
@@ -46,7 +46,7 @@ public interface CollectionCommandContext {
   CoreContainer getCoreContainer();
 
   default ShardRequestTracker asyncRequestTracker(String asyncId) {
-    return new ShardRequestTracker(asyncId, getAdminPath(), getZkStateReader(), getShardHandler().getShardHandlerFactory());
+    return new ShardRequestTracker(asyncId, getAdminPath(), getZkStateReader(), newShardHandler().getShardHandlerFactory());
   }
 
   /**
