@@ -40,7 +40,7 @@ public class OcmhCollectionCommandContext implements CollectionCommandContext {
   }
 
   @Override
-  public ShardHandler getShardHandler() {
+  public ShardHandler newShardHandler() {
     return ocmh.shardHandlerFactory.getShardHandler();
   }
 
