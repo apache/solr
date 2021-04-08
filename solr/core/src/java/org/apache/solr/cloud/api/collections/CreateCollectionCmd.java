@@ -221,7 +221,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             collectionName, shardNames, message));
       }
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
-      ShardHandler shardHandler = ccc.getShardHandler();
+      ShardHandler shardHandler = ccc.newShardHandler();
       final DistributedClusterStateUpdater.StateChangeRecorder scr;
 
       // PRS collections update Zookeeper directly, so even if we run in distributed state update,

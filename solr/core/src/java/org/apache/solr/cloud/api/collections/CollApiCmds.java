@@ -138,7 +138,7 @@ public class CollApiCmds {
       sreq.shards = new String[]{baseUrl};
       sreq.actualShards = sreq.shards;
       sreq.params = params;
-      ShardHandler shardHandler = ccc.getShardHandler();
+      ShardHandler shardHandler = ccc.newShardHandler();
       shardHandler.submit(sreq, baseUrl, sreq.params);
     }
   }
