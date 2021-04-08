@@ -44,7 +44,6 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -59,47 +58,24 @@ public class GCSBackupRepository implements BackupRepository {
     private static final int BUFFER_SIZE = 16 * 1024 * 1024;
     protected Storage storage;
 
-    @SuppressWarnings("rawtypes")
-    private NamedList config = null;
-    protected String bucketName = "backup-managed-solr";
+    private NamedList<Object> config = null;
+    protected String bucketName = null;
+    protected String credentialPath = null;
+    protected StorageOptions.Builder storageOptionsBuilder = null;
 
-    protected Storage initStorage(String credentialPath) {
+    protected Storage initStorage() {
         if (storage != null)
             return storage;
 
         try {
             if (credentialPath == null) {
-                credentialPath = System.getenv("GCS_CREDENTIAL");
-                if (credentialPath == null) {
-                    credentialPath = System.getenv("BACKUP_CREDENTIAL");
-                }
-            }
-            StorageOptions.Builder builder = StorageOptions.newBuilder();
-            if (credentialPath != null) {
-                log.info("Creating GCS client using credential at {}", credentialPath);
-                GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
-                builder.setCredentials(credential);
+                throw new IllegalArgumentException(GCSConfigParser.missingCredentialErrorMsg());
             }
 
-            // TODO JEGERLOW Allow configuration for some/all of these properties?
-            storage = builder
-                    .setTransportOptions(StorageOptions.getDefaultHttpTransportOptions().toBuilder()
-                            .setConnectTimeout(20000)
-                            .setReadTimeout(20000)
-                            .build())
-                    .setRetrySettings(RetrySettings.newBuilder().setMaxAttempts(10)
-                            //http requests
-                            .setInitialRetryDelay(Duration.ofSeconds(1))
-                            .setMaxRetryDelay(Duration.ofSeconds(30))
-                            .setRetryDelayMultiplier(1.0)
-                            //rpc requests
-                            .setInitialRpcTimeout(Duration.ofSeconds(10))
-                            .setMaxRpcTimeout(Duration.ofSeconds(30))
-                            .setRpcTimeoutMultiplier(1.0)
-                            //total retry timeout
-                            .setTotalTimeout(Duration.ofSeconds(300))
-                            .build())
-                    .build().getService();
+            log.info("Creating GCS client using credential at {}", credentialPath);
+            GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
+            storageOptionsBuilder.setCredentials(credential);
+            storage = storageOptionsBuilder.build().getService();
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
@@ -109,18 +85,14 @@ public class GCSBackupRepository implements BackupRepository {
     @Override
     public void init(@SuppressWarnings("rawtypes") NamedList args) {
         this.config = args;
+        final GCSConfigParser configReader = new GCSConfigParser();
+        final GCSConfigParser.GCSConfig parsedConfig = configReader.parseConfiguration(config);
 
-        if (args.get("bucket") != null) {
-            this.bucketName = args.get("bucket").toString();
-        } else {
-            this.bucketName = System.getenv("GCS_BUCKET");
-            if (this.bucketName == null) {
-                this.bucketName = System.getenv().getOrDefault("BACKUP_BUCKET","backup-managed-solr");
-            }
-        }
+        this.bucketName = parsedConfig.getBucketName();
+        this.credentialPath = parsedConfig.getCredentialPath();
+        this.storageOptionsBuilder = parsedConfig.getStorageOptionsBuilder();
 
-        initStorage((String)args.get("credential"));
-        // TODO JEGERLOW We should fail early here if the required configuration wasn't provided or was invalid
+        initStorage();
     }
 
     @Override
@@ -199,13 +171,11 @@ public class GCSBackupRepository implements BackupRepository {
 
         final String pathStr = blobName;
         final LinkedList<String> result = new LinkedList<>();
-        // TODO JEGERLOW - LocalStorageHelper used for tests doesn't support fetching bucket.  Can _probably_ be replaced with the commented line below.
-        storage.list(bucketName, Storage.BlobListOption.currentDirectory(), Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
-        //storage.get(bucketName).list(
-        //        Storage.BlobListOption.currentDirectory(),
-        //        Storage.BlobListOption.prefix(pathStr),
-        //        Storage.BlobListOption.fields()
-        //)
+        storage.list(
+                bucketName,
+                Storage.BlobListOption.currentDirectory(),
+                Storage.BlobListOption.prefix(pathStr),
+                Storage.BlobListOption.fields())
         .iterateAll().forEach(
                 blob -> {
                     assert blob.getName().startsWith(pathStr);
@@ -313,12 +283,10 @@ public class GCSBackupRepository implements BackupRepository {
 
         final List<BlobId> result = new ArrayList<>();
         final String pathStr = blobName;
-        // TODO JEGERLOW - LocalStorageHelper used for tests doesn't support fetching bucket.  Can _probably_ be replaced with the commented line below.
-        storage.list(bucketName, Storage.BlobListOption.prefix(pathStr), Storage.BlobListOption.fields())
-        //storage.get(bucketName).list(
-        //        Storage.BlobListOption.prefix(pathStr),
-        //        Storage.BlobListOption.fields()
-        //)
+        storage.list(
+                bucketName,
+                Storage.BlobListOption.prefix(pathStr),
+                Storage.BlobListOption.fields())
         .iterateAll().forEach(
                 blob -> result.add(blob.getBlobId())
         );

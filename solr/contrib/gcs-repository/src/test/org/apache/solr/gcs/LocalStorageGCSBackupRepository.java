@@ -14,51 +14,58 @@ import java.util.stream.Collectors;
 
 public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
 
-  // TODO JEGERLOW: Will need a 'clear' method for tests to call in their 'AFterClass' so that multiple GCSREpository test classes don't inherit state
   protected static Storage stashedStorage = null;
 
-    @Override
-    public Storage initStorage(String credentialPath) {
-      // LocalStorageHelper produces 'Storage' objects that track blob store state in non-static memory unique to each
-      // Storage instance.  For various components in Solr to have a coherent view of the blob-space then, they need to
-      // share a single 'Storage' object.
-      setupSingletonStorageInstanceIfNecessary();
-      storage = stashedStorage;
-      return storage;
+  @Override
+  public Storage initStorage() {
+    // LocalStorageHelper produces 'Storage' objects that track blob store state in non-static memory unique to each
+    // Storage instance.  For various components in Solr to have a coherent view of the blob-space then, they need to
+    // share a single 'Storage' object.
+    setupSingletonStorageInstanceIfNecessary();
+    storage = stashedStorage;
+    return storage;
+  }
+
+  // TODO JEGERLOW USE THIS CLEAR METHOD AND RUN TESTS AGAIN FOR GCS
+  public static void clearStashedStorage() {
+    synchronized (LocalStorageGCSBackupRepository.class) {
+      stashedStorage = null;
+    }
+  }
+
+  // A reimplementation of delete functionality that avoids batching.  Batching is ideal in production use cases, but
+  // isn't supported by the in-memory Storage implementation provided by LocalStorageHelper
+  @Override
+  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
+    final List<Boolean> results = Lists.newArrayList();
+
+    final List<String> filesOrdered = files.stream().collect(Collectors.toList());
+    for (String file : filesOrdered) {
+      final String prefix = path.toString().endsWith("/") ? path.toString() : path.toString() + "/";
+      results.add(storage.delete(BlobId.of(bucketName, prefix + file)));
     }
 
-    // A reimplementation of delete functionality that avoids batching.  Batching is ideal in production use cases, but
-    // isn't supported by the in-memory Storage implementation provided by LocalStorageHelper
-    @Override
-    public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
-      final List<Boolean> results = Lists.newArrayList();
-
-      final List<String> filesOrdered = files.stream().collect(Collectors.toList());
-      for (String file : filesOrdered) {
-        final String prefix = path.toString().endsWith("/") ? path.toString() : path.toString() + "/";
-        results.add(storage.delete(BlobId.of(bucketName, prefix + file)));
-      }
-
-      if (!ignoreNoSuchFileException) {
-        int failedDelete = results.indexOf(Boolean.FALSE);
-        if (failedDelete != -1) {
-          throw new NoSuchFileException("File " + filesOrdered.get(failedDelete) + " was not found");
-        }
+    if (!ignoreNoSuchFileException) {
+      int failedDelete = results.indexOf(Boolean.FALSE);
+      if (failedDelete != -1) {
+        throw new NoSuchFileException("File " + filesOrdered.get(failedDelete) + " was not found");
       }
     }
+  }
 
-    @Override
-    public void deleteDirectory(URI path) throws IOException {
-      List<BlobId> blobIds = allBlobsAtDir(path);
-      if (!blobIds.isEmpty()) {
-        for (BlobId blob : blobIds) {
-          storage.delete(blob);
-        }
+  @Override
+  public void deleteDirectory(URI path) throws IOException {
+    List<BlobId> blobIds = allBlobsAtDir(path);
+    if (!blobIds.isEmpty()) {
+      for (BlobId blob : blobIds) {
+        storage.delete(blob);
       }
     }
+  }
 
-    // Should only be called after locking on 'stashedStorage'
-    protected synchronized void setupSingletonStorageInstanceIfNecessary() {
+  // Should only be called after locking on 'stashedStorage'
+  protected void setupSingletonStorageInstanceIfNecessary() {
+    synchronized (LocalStorageGCSBackupRepository.class) {
       if (stashedStorage != null) {
         return;
       }
@@ -74,4 +81,5 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
         throw new RuntimeException(e);
       }
     }
+  }
 }

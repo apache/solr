@@ -23,33 +23,33 @@ description = 'GCS Backup Repository'
 dependencies {
     api project(':solr:core')
 
-    implementation ('com.google.api:api-common') { transitive = false }
-    implementation ('com.google.api:gax') { transitive = false }
+    implementation ('com.google.api:api-common') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation ('com.google.api:gax') { exclude group: 'com.google.guava', module: 'guava' }
     implementation ('com.google.api:gax-httpjson') { transitive = false }
-    implementation ('com.google.cloud:google-cloud-core') { transitive = false }
+    implementation ('com.google.cloud:google-cloud-core') { exclude group: 'com.google.guava', module: 'guava' }
     implementation ('com.google.cloud:google-cloud-core-http') { transitive = false }
-    implementation ('com.google.cloud:google-cloud-storage') { transitive = false }
-    implementation ('com.google.auth:google-auth-library-oauth2-http') { transitive = false }
+    implementation ('com.google.cloud:google-cloud-storage') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation ('com.google.auth:google-auth-library-oauth2-http') { exclude group: 'com.google.guava', module: 'guava' }
     implementation ('com.google.auth:google-auth-library-credentials') { transitive = false }
     implementation ('org.threeten:threetenbp') { transitive = false }
 
-    runtimeOnly ('com.google.apis:google-api-services-storage') { transitive = false }
-    runtimeOnly ('com.google.api-client:google-api-client') { transitive = false }
-    runtimeOnly ('com.google.api.grpc:proto-google-common-protos') { transitive = false }
-    runtimeOnly ('com.google.api.grpc:proto-google-iam-v1') { transitive = false }
-    runtimeOnly ('com.google.code.findbugs:jsr305') { transitive = false }
-    runtimeOnly ('com.google.code.gson:gson') { transitive = false }
-    runtimeOnly ('com.google.http-client:google-http-client') { transitive = false }
-    runtimeOnly ('com.google.http-client:google-http-client-appengine') { transitive = false }
-    runtimeOnly ('com.google.http-client:google-http-client-jackson2') { transitive = false }
-    runtimeOnly ('com.google.j2objc:j2objc-annotations') { transitive = false }
-    runtimeOnly ('com.google.oauth-client:google-oauth-client') { transitive = false }
-    runtimeOnly ('com.google.protobuf:protobuf-java') { transitive = false }
-    runtimeOnly ('com.google.protobuf:protobuf-java-util') { transitive = false }
-    runtimeOnly ('io.grpc:grpc-context') { transitive = false }
-    runtimeOnly ('io.opencensus:opencensus-api') { transitive = false }
-    runtimeOnly ('io.opencensus:opencensus-contrib-http-util') { transitive = false }
+    implementation('com.google.apis:google-api-services-storage') { transitive = false }
+    implementation('com.google.api-client:google-api-client') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation('com.google.api.grpc:proto-google-common-protos') { transitive = false }
+    implementation('com.google.api.grpc:proto-google-iam-v1') { transitive = false }
+    implementation('com.google.code.findbugs:jsr305') { transitive = false }
+    implementation('com.google.code.gson:gson') { transitive = false }
+    implementation('com.google.http-client:google-http-client') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation('com.google.http-client:google-http-client-appengine') { transitive = false }
+    implementation('com.google.http-client:google-http-client-jackson2') { transitive = false }
+    implementation('com.google.j2objc:j2objc-annotations') { transitive = false }
+    implementation('com.google.oauth-client:google-oauth-client') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation('com.google.protobuf:protobuf-java') { transitive = false }
+    implementation('com.google.protobuf:protobuf-java-util') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation('io.grpc:grpc-context') { transitive = false }
+    implementation('io.opencensus:opencensus-api') { transitive = false }
+    implementation('io.opencensus:opencensus-contrib-http-util') { exclude group: 'com.google.guava', module: 'guava' }
 
-    testImplementation "com.google.cloud:google-cloud-nio"
+    testImplementation("com.google.cloud:google-cloud-nio") { exclude group: 'com.google.guava', module: 'guava' }
     testImplementation project(':solr:test-framework')
 }

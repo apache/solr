@@ -25,8 +25,18 @@ import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.junit.AfterClass;
 
+/**
+ * Unit tests for {@link GCSBackupRepository} that use an in-memory Storage object
+ */
 public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
+
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+        LocalStorageGCSBackupRepository.clearStashedStorage();
+    }
+
     @Override
     @SuppressWarnings("rawtypes")
     protected BackupRepository getRepository() {
@@ -38,8 +48,6 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
         return repository;
     }
 
-    // TODO JEGERLOW I removed the leading '/' here to get around the '/' prefix removal issue in FakeStorageRpc
-    // Need a better solution here.
     @Override
     protected URI getBaseUri() throws URISyntaxException {
         return new URI("tmp");

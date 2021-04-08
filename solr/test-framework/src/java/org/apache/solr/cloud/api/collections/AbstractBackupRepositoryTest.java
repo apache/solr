@@ -18,13 +18,9 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.NoSuchFileException;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -45,9 +41,18 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
 
     protected abstract URI getBaseUri() throws URISyntaxException;
 
+    /**
+     * Provide a base {@link BackupRepository} configuration for use by any tests that call {@link BackupRepository#init(NamedList)} explicitly.
+     *
+     * Useful for setting configuration properties required for specific BackupRepository implementations.
+     */
+    protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
+        return new NamedList<>();
+    }
+
     @Test
     public void testCanReadProvidedConfigValues() throws Exception {
-        final NamedList<Object> config = new NamedList<>();
+        final NamedList<Object> config = getBaseBackupRepositoryConfiguration();
         config.add("configKey1", "configVal1");
         config.add("configKey2", "configVal2");
         try (BackupRepository repo = getRepository()) {
@@ -59,7 +64,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
 
     @Test
     public void testCanChooseDefaultOrOverrideLocationValue() throws Exception {
-        final NamedList<Object> config = new NamedList<>();
+        final NamedList<Object> config = getBaseBackupRepositoryConfiguration();
         config.add(CoreAdminParams.BACKUP_LOCATION, "someLocation");
         try (BackupRepository repo = getRepository()) {
             repo.init(config);
@@ -157,6 +162,16 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
             assertTrue(repo.exists(level2DeeplyNestedUri));
             assertFalse(repo.exists(level3DeeplyNestedUri));
             assertFalse(repo.exists(level4DeeplyNestedUri));
+        }
+    }
+
+    @Test
+    public void testDirectoryCreationFailsIfParentDoesntExist() throws Exception {
+        try (BackupRepository repo = getRepository()) {
+            final URI nonExistentParentUri = repo.resolve(getBaseUri(), "nonExistentParent");
+            final URI nestedUri = repo.resolve(nonExistentParentUri, "childDirectoryToCreate");
+
+            repo.createDirectory(nestedUri);
         }
     }
 

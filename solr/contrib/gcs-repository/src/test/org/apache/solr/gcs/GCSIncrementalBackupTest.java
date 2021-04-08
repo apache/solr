@@ -18,22 +18,13 @@
 package org.apache.solr.gcs;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.stream.Collectors;
 
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.BucketInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
-import com.google.cloud.storage.testing.RemoteStorageHelper;
-import com.google.common.collect.Lists;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO JEGERLOW won't pass unless I can find library to mock out the 'Storage' class used by GCSBackupRepository
 public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     public static final String SOLR_XML = "<solr>\n" +
@@ -75,10 +66,6 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        // Initialize the bucket and location expected by the repository configuration
-//        Storage storage = LocalStorageHelper.customOptions(false).getService();
-        //storage.create(BucketInfo.of("someBucketName"));
-//        storage.create(BlobInfo.newBuilder("someBucketName", "/backup1/").build());
 
         configureCluster(NUM_SHARDS)// nodes
                 .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
@@ -86,12 +73,16 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
                 .configure();
     }
 
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+        LocalStorageGCSBackupRepository.clearStashedStorage();
+    }
+
     @Override
     public String getCollectionNamePrefix() {
         return "backuprestore";
     }
 
-    // TODO JEGERLOW: I removed the leading '/' here
     @Override
     public String getBackupLocation() {
         return "backup1";
