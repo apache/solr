@@ -48,6 +48,11 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   @Test
   //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void test() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cloudClient).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
+
     waitForRecoveriesToFinish(false);
 
     restartWithRolesTest();

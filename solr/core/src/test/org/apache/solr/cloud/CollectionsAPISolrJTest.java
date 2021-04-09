@@ -1031,6 +1031,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testOverseerStatus() throws IOException, SolrServerException {
     CollectionAdminResponse response = new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
+    // When running with Distributed Collection API, no real data in Overseer status, but the Collection API call above shouldn't fail
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      return;
+    }
     assertNotNull("overseer_operations shouldn't be null", response.getResponse().get("overseer_operations"));
   }
 

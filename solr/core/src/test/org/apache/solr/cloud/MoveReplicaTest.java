@@ -53,6 +53,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   // used by MoveReplicaHDFSTest
   protected boolean inPlaceMove = true;
+  protected boolean isCollectionApiDistributed = false;
 
   protected String getConfigSet() {
     return "cloud-dynamic";
@@ -67,6 +68,11 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         .addConfig("conf2", configset(getConfigSet()))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
+
+    // If Collection API is distributed let's not wait for Overseer.
+    if (isCollectionApiDistributed = new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      return;
+    }
 
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     JettySolrRunner overseerJetty = null;
@@ -267,7 +273,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     Collections.shuffle(l, random());
     String targetNode = null;
     for (String node : liveNodes) {
-      if (!replica.getNodeName().equals(node) && !overseerLeader.equals(node)) {
+      if (!replica.getNodeName().equals(node) && (isCollectionApiDistributed || !overseerLeader.equals(node))) {
         targetNode = node;
         break;
       }

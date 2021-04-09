@@ -24,9 +24,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -35,6 +37,7 @@ import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -55,16 +58,15 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
- * This class contains "smaller" Collection API commands implementation as well as the interface implemented by all commands.
- * Previously these implementations in {@link OverseerCollectionMessageHandler} were relying on methods implementing the
- * functional interface.
+ * This class contains "smaller" Collection API commands implementation, the interface implemented by all commands and the
+ * class mapping a collection action to the actual command.
+ * Previously the "smaller" command implementations in {@link OverseerCollectionMessageHandler} were relying on methods
+ * implementing the functional interface.
  */
 public class CollApiCmds {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -74,6 +76,75 @@ public class CollApiCmds {
    */
   protected interface CollectionApiCommand {
     void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception;
+  }
+
+  /**
+   * Map {@link org.apache.solr.common.params.CollectionParams.CollectionAction} to instances of {@link CollApiCmds.CollectionApiCommand} and
+   * being usable by both {@link OverseerCollectionMessageHandler} and {@link DistributedCollectionConfigSetCommandRunner} so that
+   * the mappings do not have to be maintained in two places.
+   */
+  protected static class CommandMap {
+    final private Map<CollectionParams.CollectionAction, CollApiCmds.CollectionApiCommand> commandMap;
+
+    /**
+     * Constructor used when Collection API is run on the Overseer. Called by {@link OverseerCollectionMessageHandler}
+     */
+    CommandMap(CollectionCommandContext ccc, OverseerNodePrioritizer overseerPrioritizer) {
+      this(overseerPrioritizer, ccc);
+      assert !ccc.isDistributedCollectionAPI();
+    }
+
+    /**
+     * Constructor used when Collection API execution is distributed
+     */
+    CommandMap(CollectionCommandContext ccc) {
+      // Overseer prioritizer will not be used. Running in distributed Collection API mode
+      this(null, ccc);
+      assert ccc.isDistributedCollectionAPI();
+    }
+
+    private CommandMap(OverseerNodePrioritizer overseerPrioritizer, CollectionCommandContext ccc) {
+      commandMap = new ImmutableMap.Builder<CollectionParams.CollectionAction, CollApiCmds.CollectionApiCommand>()
+          .put(REPLACENODE, new ReplaceNodeCmd(ccc))
+          .put(DELETENODE, new DeleteNodeCmd(ccc))
+          .put(BACKUP, new BackupCmd(ccc))
+          .put(RESTORE, new RestoreCmd(ccc))
+          .put(DELETEBACKUP, new DeleteBackupCmd(ccc))
+          .put(CREATESNAPSHOT, new CreateSnapshotCmd(ccc))
+          .put(DELETESNAPSHOT, new DeleteSnapshotCmd(ccc))
+          .put(SPLITSHARD, new SplitShardCmd(ccc))
+          .put(ADDROLE, new OverseerRoleCmd(ccc, ADDROLE, overseerPrioritizer))
+          .put(REMOVEROLE, new OverseerRoleCmd(ccc, REMOVEROLE, overseerPrioritizer))
+          .put(MOCK_COLL_TASK, new CollApiCmds.MockOperationCmd())
+          .put(MOCK_SHARD_TASK, new CollApiCmds.MockOperationCmd())
+          .put(MOCK_REPLICA_TASK, new CollApiCmds.MockOperationCmd())
+          .put(CREATESHARD, new CreateShardCmd(ccc))
+          .put(MIGRATE, new MigrateCmd(ccc))
+          .put(CREATE, new CreateCollectionCmd(ccc))
+          .put(MODIFYCOLLECTION, new CollApiCmds.ModifyCollectionCmd(ccc))
+          .put(ADDREPLICAPROP, new CollApiCmds.AddReplicaPropCmd(ccc))
+          .put(DELETEREPLICAPROP, new CollApiCmds.DeleteReplicaPropCmd(ccc))
+          .put(BALANCESHARDUNIQUE, new CollApiCmds.BalanceShardsUniqueCmd(ccc))
+          .put(REBALANCELEADERS, new CollApiCmds.RebalanceLeadersCmd(ccc))
+          .put(RELOAD, new CollApiCmds.ReloadCollectionCmd(ccc))
+          .put(DELETE, new DeleteCollectionCmd(ccc))
+          .put(CREATEALIAS, new CreateAliasCmd(ccc))
+          .put(DELETEALIAS, new DeleteAliasCmd(ccc))
+          .put(ALIASPROP, new SetAliasPropCmd(ccc))
+          .put(MAINTAINROUTEDALIAS, new MaintainRoutedAliasCmd(ccc))
+          .put(OVERSEERSTATUS, new OverseerStatusCmd(ccc))
+          .put(DELETESHARD, new DeleteShardCmd(ccc))
+          .put(DELETEREPLICA, new DeleteReplicaCmd(ccc))
+          .put(ADDREPLICA, new AddReplicaCmd(ccc))
+          .put(MOVEREPLICA, new MoveReplicaCmd(ccc))
+          .put(REINDEXCOLLECTION, new ReindexCollectionCmd(ccc))
+          .put(RENAME, new RenameCmd(ccc))
+          .build();
+    }
+
+    CollApiCmds.CollectionApiCommand getActionCommand(CollectionParams.CollectionAction action) {
+      return commandMap.get(action);
+    }
   }
 
   static public class MockOperationCmd implements CollectionApiCommand {

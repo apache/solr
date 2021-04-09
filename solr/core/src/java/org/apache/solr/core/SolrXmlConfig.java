@@ -491,6 +491,9 @@ public class SolrXmlConfig {
         case "distributedClusterStateUpdates":
           builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
           break;
+        case "distributedCollectionConfigSetExecution":
+          builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
       }

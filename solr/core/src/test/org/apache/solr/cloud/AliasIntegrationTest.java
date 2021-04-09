@@ -552,17 +552,17 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     // Now delete one of the collections, should fail since an alias points to it.
     RequestStatusState delResp = CollectionAdminRequest.deleteCollection("collection_one").processAndWait(cluster.getSolrClient(), 60);
     // failed because the collection is a part of a compound alias
-    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+    assertEquals("Should have failed to delete collection: ", RequestStatusState.FAILED, delResp);
 
     CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection("collection_alias_pair");
     delResp = delete.processAndWait(cluster.getSolrClient(), 60);
     // failed because we tried to delete an alias with followAliases=false
-    assertEquals("Should have failed to delete alias: ", delResp, RequestStatusState.FAILED);
+    assertEquals("Should have failed to delete alias: ", RequestStatusState.FAILED, delResp);
 
     delete.setFollowAliases(true);
     delResp = delete.processAndWait(cluster.getSolrClient(), 60);
     // failed because we tried to delete compound alias
-    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+    assertEquals("Should have failed to delete collection: ", RequestStatusState.FAILED, delResp);
 
     CollectionAdminRequest.createAlias("collection_alias_one", "collection_one").process(cluster.getSolrClient());
     lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
@@ -570,13 +570,13 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     delete = CollectionAdminRequest.deleteCollection("collection_one");
     delResp = delete.processAndWait(cluster.getSolrClient(), 60);
     // failed because we tried to delete collection referenced by multiple aliases
-    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+    assertEquals("Should have failed to delete collection: ", RequestStatusState.FAILED, delResp);
 
     delete = CollectionAdminRequest.deleteCollection("collection_alias_one");
     delete.setFollowAliases(true);
     delResp = delete.processAndWait(cluster.getSolrClient(), 60);
     // failed because we tried to delete collection referenced by multiple aliases
-    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+    assertEquals("Should have failed to delete collection: ", RequestStatusState.FAILED, delResp);
 
     CollectionAdminRequest.deleteAlias("collection_alias_one").process(cluster.getSolrClient());
     lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
@@ -588,7 +588,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     //Delete collection_one.
     delResp = CollectionAdminRequest.deleteCollection("collection_one").processAndWait(cluster.getSolrClient(), 60);
 
-    assertEquals("Should not have failed to delete collection, it was removed from the alias: ", delResp, RequestStatusState.COMPLETED);
+    assertEquals("Should not have failed to delete collection, it was removed from the alias: ", RequestStatusState.COMPLETED, delResp);
 
     // Should only see two docs now in second collection
     res = cluster.getSolrClient().query("collection_alias_pair", new SolrQuery("*:*"));
