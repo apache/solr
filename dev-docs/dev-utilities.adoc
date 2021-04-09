@@ -4,7 +4,7 @@
 
 == Solr
 
-=== Cluster on localhost
+=== Run a Solr Cluster on localhost
 
 At times, it is important to do manual testing on a running server, and in many
 cases it is a good idea to test in a clustered environment to ensure that features
@@ -29,6 +29,4 @@ The command in the final step will:
 5. Each solr instance will place its data and solr.log in a corresponding directory such as `./2021-02-21/n1`, `./2021-02-21/n2` etc.
 
 The script supports `start`, `stop` and `restart` commands, and a variety of options
-detailed in the extensive introductory comment in cloud.sh. You should expect that
-comment to contain the latest information and if it contradicts this document it
-likely is more correct.
+detailed in the extensive introductory comment in cloud.sh.
