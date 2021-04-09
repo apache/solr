@@ -11,7 +11,7 @@
 #
 # This is also NOT meant to be run from this directory within a solr
 # working copy. Typical usage is to copy it out to a separate workspace
-# such as (<GIT_CHECKOUT>/../testing) and edit then either use the -w option
+# such as (<GIT_CHECKOUT>/../solr-testing) and edit then either use the -w option
 # or edit the definition of DEFAULT_VCS_WORKSPACE variable below.
 #
 # Usage:
@@ -90,7 +90,7 @@
 #
 ##################################################################################
 
-DEFAULT_VCS_WORKSPACE='../code/solr'
+DEFAULT_VCS_WORKSPACE='../solr'
 
 ############## Normally  no need to edit below this line ##############
 
