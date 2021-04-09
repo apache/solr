@@ -63,6 +63,7 @@ import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -331,6 +332,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void doReplicateOnlyRecovery(SolrCore core) throws InterruptedException {
     boolean successfulRecovery = false;
+    final RTimer timer = new RTimer();
 
     // if (core.getUpdateHandler().getUpdateLog() != null) {
     // SolrException.log(log, "'replicate-only' recovery strategy should only be used if no update logs are present, but
@@ -356,7 +358,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           assert cloudDesc.getReplicaType() != Replica.Type.PULL;
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader!");
-          log.info("Finished recovery process.");
+          log.info("Finished recovery process in {} ms.", timer.getTime());
           zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
           return;
         }
@@ -419,7 +421,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
     }
     // We skip core.seedVersionBuckets(); We don't have a transaction log
-    log.info("Finished recovery process, successful=[{}]", successfulRecovery);
+    log.info("Finished recovery process, successful=[{}] in {} ms.", successfulRecovery, timer.getTime());
   }
 
   /**
@@ -478,6 +480,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
   public final void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
     boolean successfulRecovery = false;
+    final RTimer timer = new RTimer();
 
     UpdateLog ulog;
     ulog = core.getUpdateHandler().getUpdateLog();
@@ -574,7 +577,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         if (cloudDesc.isLeader()) {
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader!");
-          log.info("Finished recovery process.");
+          log.info("Finished recovery process in {} ms.", timer.getTime());
           zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
           return;
         }
@@ -725,7 +728,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       core.seedVersionBuckets();
     }
 
-    log.info("Finished recovery process, successful=[{}]", successfulRecovery);
+    log.info("Finished recovery process, successful=[{}] in {} ms.", successfulRecovery, timer.getTime());
   }
 
   /**
