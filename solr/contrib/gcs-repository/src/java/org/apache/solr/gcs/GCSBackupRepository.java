@@ -94,7 +94,8 @@ public class GCSBackupRepository implements BackupRepository {
     }
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes", "unchecked"}) NamedList args) {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void init(NamedList args) {
         this.config = (NamedList<Object>) args;
         final GCSConfigParser configReader = new GCSConfigParser();
         final GCSConfigParser.GCSConfig parsedConfig = configReader.parseConfiguration(config);
