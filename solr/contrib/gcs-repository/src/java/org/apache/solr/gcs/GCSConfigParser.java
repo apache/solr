@@ -37,12 +37,12 @@ public class GCSConfigParser {
   private static final String HTTP_READ_TIMEOUT_MILLIS_NAME = "gcsClientHttpReadTimeoutMillis";
   private static final String MAX_REQUEST_RETRIES_NAME = "gcsClientMaxRetries";
   private static final String TOTAL_TIMEOUT_MILLIS_NAME = "gcsClientMaxRequestTimeoutMillis";
-  private static final String HTTP_INITIAL_RETRY_DELAY_MILLIS_NAME = "gcsClientInitalHttpRetryDelayMillis";
-  private static final String HTTP_MAX_RETRY_DELAY_MILLIS_NAME = "gcsClientMaxHttpRetryDelayMillis";
-  private static final String HTTP_SUBSEQUENT_RETRY_DELAY_MULTIPLIER_NAME = "gcsClientHttpRetryDelayMultiplierMillis";
-  private static final String RPC_INITIAL_TIMEOUT_MILLIS_NAME = "gcsClientInitialRpcTimeoutMillis";
-  private static final String RPC_MAX_TIMEOUT_MILLIS_NAME = "gcsClientMaxRpcTimeoutMillis";
-  private static final String RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER_NAME = "gcsClientRpcTimeoutMultiplierMillis";
+  private static final String HTTP_INITIAL_RETRY_DELAY_MILLIS_NAME = "gcsClientHttpInitialRetryDelayMillis";
+  private static final String HTTP_SUBSEQUENT_RETRY_DELAY_MULTIPLIER_NAME = "gcsClientHttpRetryDelayMultiplier";
+  private static final String HTTP_MAX_RETRY_DELAY_MILLIS_NAME = "gcsClientHttpMaxRetryDelayMillis";
+  private static final String RPC_INITIAL_TIMEOUT_MILLIS_NAME = "gcsClientRpcInitialTimeoutMillis";
+  private static final String RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER_NAME = "gcsClientRpcTimeoutMultiplier";
+  private static final String RPC_MAX_TIMEOUT_MILLIS_NAME = "gcsClientRpcMaxTimeoutMillis";
 
   private static final String DEFAULT_GCS_BUCKET_VALUE = "solrBackupsBucket";
   private static final int DEFAULT_HTTP_CONNECT_TIMEOUT_MILLIS = 20000;
