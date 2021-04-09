@@ -46,6 +46,18 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /**
+   * Default maximum number of threads that push files concurrently to the backup repository.
+   */
+  private static final int DEFAULT_MAX_THREADS = 20;
+
+  /**
+   * Default size of the buffer used to transfer input-output stream to the {@link BackupRepository}, in bytes.
+   * The appropriate size depends on the {@link BackupRepository}.
+   * There is one buffer per thread.
+   */
+  public static final int DEFAULT_STREAM_BUFFER_SIZE = 32_768;
+
   private static final Pattern INDEX_NAME_PATTERN = Pattern.compile("index(?:\\.[0-9]{17})?");
 
   private String localRootPath;
@@ -81,10 +93,16 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     }
     backupLocation = backupRepository.createURI(location);
 
-    // 'streamBufferSize' defines the size of the stream copy buffer. It is optional.
-    int streamBufferSize = params.getInt("streamBufferSize", BlobPusher.STREAM_COPY_DEFAULT_BUFFER_SIZE);
+    // 'threads' defines the maximum number of threads that push files concurrently to the backup repository.
+    int maxThreads = params.getInt("threads", DEFAULT_MAX_THREADS);
 
-    blobPusher = new BlobPusher(backupRepository, backupLocation, streamBufferSize);
+    // 'streamBufferSize' defines the size of the stream copy buffer.
+    // This determines the size of the chunk of data sent to the BackupRepository during files transfer.
+    // It is optional but recommended to set the appropriate size for the selected BackupRepository.
+    // There is one buffer per thread.
+    int streamBufferSize = params.getInt("streamBufferSize", DEFAULT_STREAM_BUFFER_SIZE);
+
+    blobPusher = new BlobPusher(backupRepository, backupLocation, maxThreads, streamBufferSize);
 
     // Filesystem MMapDirectory used as a local file cache.
     mMapParams = new MMapParams(params);

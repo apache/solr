@@ -19,6 +19,7 @@ package org.apache.solr.blob;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,23 +47,30 @@ public class BlobPusher implements Closeable {
   private static final String PATH_SEPARATOR = "/";
   private static final Pattern PATH_SPLITTER = Pattern.compile(PATH_SEPARATOR);
 
-  /**
-   * Size of the buffer used to transfer input-output stream to the {@link BackupRepository}.
-   * The appropriate size depends on the {@link BackupRepository}.
-   */
-  public static final int STREAM_COPY_DEFAULT_BUFFER_SIZE = 16384;
-
   // WORK IN PROGRESS!!
 
   private final BackupRepository backupRepository;
   private final URI backupLocation;
-  private final int streamCopyBufferSize;
-  private final ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("blobPusher");
+  private final ExecutorService executor;
+  // Pool of stream buffers, one per executor thread, to reuse them as the buffer size may be large
+  // to have efficient stream transfer to the remote backup repository.
+  private final ThreadLocal<byte[]> streamBuffers;
 
-  public BlobPusher(BackupRepository backupRepository, URI backupLocation, int streamCopyBufferSize) {
+  /**
+   * @param backupRepository The {@link BackupRepository} to push files to.
+   * @param backupLocation   Base location in the {@link BackupRepository}. This is used to build the URIs.
+   * @param maxThreads       Maximum number of threads to push files concurrently.
+   * @param streamBufferSize Size of the stream copy buffer, in bytes. This determines the size of the chunk
+   *                         of data sent to the BackupRepository during files transfer. There is one buffer
+   *                         per thread.
+   */
+  public BlobPusher(BackupRepository backupRepository, URI backupLocation, int maxThreads, int streamBufferSize) {
     this.backupRepository = Objects.requireNonNull(backupRepository);
     this.backupLocation = Objects.requireNonNull(backupLocation);
-    this.streamCopyBufferSize = streamCopyBufferSize;
+    executor = ExecutorUtil.newMDCAwareCachedThreadPool(
+        maxThreads,
+        new SolrNamedThreadFactory(BlobPusher.class.getSimpleName()));
+    streamBuffers = ThreadLocal.withInitial(() -> new byte[streamBufferSize]);
   }
 
   public void push(
@@ -112,12 +120,19 @@ public class BlobPusher implements Closeable {
                     () -> {
                       try (InputStream in = inputStreamSupplier.apply(blobFile);
                            OutputStream out = backupRepository.createOutput(backupRepository.resolve(blobDirUri, blobFile.fileName()))) {
-                        int bufferSize = (int) Math.min(blobFile.size(), streamCopyBufferSize);
-                        org.apache.commons.io.IOUtils.copy(in, out, bufferSize);
+                        copyStream(in, out);
                       }
                       return null;
                     })
         .collect(Collectors.toList());
+  }
+
+  private void copyStream(InputStream input, OutputStream output) throws IOException {
+    byte[] buffer = streamBuffers.get();
+    int n;
+    while ((n = input.read(buffer)) != -1) {
+      output.write(buffer, 0, n);
+    }
   }
 
   private void createDirectories(URI blobDirUri, String blobDirPath) throws IOException {
