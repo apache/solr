@@ -1353,7 +1353,7 @@ public class RealTimeGetComponent extends SearchComponent
     /** 
      * true if the params provided by the user indicate that a single doc response structure 
      * should be used.  
-     * Value is meaninless if <code>ids</code> is empty.
+     * Value is meaningless if <code>ids</code> is empty.
      */
     public final boolean useSingleDocResponse;
     private IdsRequested(List<String> allIds, boolean useSingleDocResponse) {
