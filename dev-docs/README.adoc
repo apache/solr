@@ -23,3 +23,6 @@ development of Solr in the various documentation files for Gradle commands
 in the `help/` directory.
 
 Don't forget that Solr Reference Guide, which provides end user oriented documentation.
+
+There are a number of tools related to doing development on Solr available in the `/dev-tools`
+directory.
