@@ -344,7 +344,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       subt.stop();
     }
 
-    { // Once all of our components have been prepared, check if this requset involves a SortSpec.
+    { // Once all of our components have been prepared, check if this request involves a SortSpec.
       // If it does, and if our request includes a cursorMark param, then parse & init the CursorMark state
       // (This must happen after the prepare() of all components, because any component may have modified the SortSpec)
       final SortSpec spec = rb.getSortSpec();

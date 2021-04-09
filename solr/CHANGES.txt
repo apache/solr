@@ -48,6 +48,8 @@ Improvements
 
 * SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
 
+* SOLR-15327: Fix typos in the code base (Edward Ribeiro via Eric Pugh)
+
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
 
 * SOLR-7683 Introduce support to identify Solr internal request types (Atri Sharma, Hrishikesh Gadre)
@@ -7446,7 +7448,7 @@ Other Changes
 
 * SOLR-8787: TestAuthenticationFramework should not extend TestMiniSolrCloudCluster. (Trey Cahill via shalin)
 
-* SOLR-9180: More comprehensive tests of psuedo-fields for RTG and SolrCloud requests (hossman)
+* SOLR-9180: More comprehensive tests of pseudo-fields for RTG and SolrCloud requests (hossman)
 
 * SOLR-7930: Comment out trappy references to example docs in elevate.xml files (Erick Erickson)
 
@@ -7842,8 +7844,8 @@ Other Changes
 * SOLR-5776,SOLR-9068,SOLR-8970:
   - Refactor SSLConfig so that SSLTestConfig can provide SSLContexts using a NullSecureRandom
     to prevent SSL tests from blocking on entropy starved machines.
-  - SSLTestConfig: Alternate (psuedo random) NullSecureRandom for Constants.SUN_OS.
-  - SSLTestConfig: Replace NullSecureRandom w/ NotSecurePsuedoRandom.
+  - SSLTestConfig: Alternate (pseudo random) NullSecureRandom for Constants.SUN_OS.
+  - SSLTestConfig: Replace NullSecureRandom w/ NotSecurePseudoRandom.
   - Change SSLTestConfig to use a keystore file that is included as a resource in the
     test-framework jar so users subclassing SolrTestCaseJ4 don't need to preserve magic paths.
   (hossman)
@@ -16553,7 +16555,7 @@ Bug Fixes
   empty index. (Adrien Grand via Mark Miller)
 
 * SOLR-2352: Fixed TermVectorComponent so that it will not fail if the fl
-  param contains globs or psuedo-fields (hossman)
+  param contains globs or pseudo-fields (hossman)
 
 * SOLR-3541: add missing solrj dependencies to binary packages.
   (Thijs Vonk via siren)
