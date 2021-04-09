@@ -17,20 +17,28 @@
 
 package org.apache.solr.gcs;
 
-import com.google.api.gax.retrying.RetrySettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.WriteChannel;
-import com.google.cloud.storage.*;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageException;
+import com.google.cloud.storage.StorageOptions;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.threeten.bp.Duration;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -52,6 +60,9 @@ import java.util.stream.Collectors;
 
 import static java.net.HttpURLConnection.HTTP_PRECON_FAILED;
 
+/**
+ * {@link BackupRepository} implementation that stores files in Google Cloud Storage ("GCS").
+ */
 public class GCSBackupRepository implements BackupRepository {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final int LARGE_BLOB_THRESHOLD_BYTE_SIZE = 5 * 1024 * 1024;

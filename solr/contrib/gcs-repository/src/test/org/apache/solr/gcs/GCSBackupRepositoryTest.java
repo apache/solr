@@ -17,15 +17,14 @@
 
 package org.apache.solr.gcs;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import com.google.cloud.storage.Storage;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.AfterClass;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Unit tests for {@link GCSBackupRepository} that use an in-memory Storage object

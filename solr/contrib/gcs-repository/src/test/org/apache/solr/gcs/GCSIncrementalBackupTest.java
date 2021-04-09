@@ -17,13 +17,13 @@
 
 package org.apache.solr.gcs;
 
-import java.lang.invoke.MethodHandles;
-
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

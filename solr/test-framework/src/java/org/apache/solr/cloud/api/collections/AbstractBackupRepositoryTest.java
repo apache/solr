@@ -17,12 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-
 import com.google.common.collect.Lists;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -31,6 +25,12 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
 
 public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
 
