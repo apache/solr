@@ -106,7 +106,7 @@ public class HdfsBackupRepositoryIntegrationTest extends AbstractBackupRepositor
 
     @Override
     protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
-        NamedList<Object> config = new NamedList();
+        NamedList<Object> config = new NamedList<>();
         config.add(HdfsDirectoryFactory.HDFS_HOME, hdfsUri + "/solr");
         return config;
     }
