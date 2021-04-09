@@ -48,7 +48,7 @@ Improvements
 
 * SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
 
-* SOLR-15327: Fix typos in the code base (Edward Ribeiro)
+* SOLR-15327: Fix typos in the code base (Edward Ribeiro via Eric Pugh)
 
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
 
