@@ -1,17 +1,19 @@
 = Developer Utilities
 :toc: left
-// This is probably going to get split soon, but for the moment, since we only have one dev-docs directory...
 
-== Lucene
-TODO: add something here :)
 
 == Solr
 
 === Cluster on localhost
 
-At times, it is important to do manual testing on a running server, and in many cases it is a good idea to test in a clustered environment to ensure that features play nice both locally and across nodes. To lower the barrier for realistic local testing, there is a script at `solr/cloud-dev/cloud.sh`. Typical usage of the script is:
+At times, it is important to do manual testing on a running server, and in many
+cases it is a good idea to test in a clustered environment to ensure that features
+play nice both locally and across nodes. To lower the barrier for realistic local
+testing, there is a script at `solr/cloud-dev/cloud.sh`.
 
 NOTE: This script only supports POSIX environments. There is no similar .bat script at this time.
+
+Typical usage of the script is:
 
 1. Copy the script to a location outside the lucene-solr working copy. Trying to use it from within the working copy will leave you fighting version control to avoid checking in files.
 2. Edit the script to provide a proper back reference to your working copy for `DEFAULT_VCS_WORKSPACE` (the default is `../code/lucene-solr`)
