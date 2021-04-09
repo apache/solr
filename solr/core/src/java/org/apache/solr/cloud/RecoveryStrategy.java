@@ -306,8 +306,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       log.info("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
 
+      final RTimer timer = new RTimer();
+      Boolean successfulRecovery = null;
       try {
-        doRecovery(core);
+        successfulRecovery = doRecovery(core);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         SolrException.log(log, "", e);
@@ -316,23 +318,28 @@ public class RecoveryStrategy implements Runnable, Closeable {
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
+
+      if (successfulRecovery != null) {
+        log.info("Finished recovery process, successful=[{}] in {} ms.", successfulRecovery, timer.getTime());
+      } else {
+        log.info("Finished recovery process in {} ms.", timer.getTime());
+      }
     }
   }
 
-  final public void doRecovery(SolrCore core) throws Exception {
+  final public Boolean doRecovery(SolrCore core) throws Exception {
     // we can lose our core descriptor, so store it now
     this.coreDescriptor = core.getCoreDescriptor();
 
     if (this.coreDescriptor.getCloudDescriptor().requiresTransactionLog()) {
-      doSyncOrReplicateRecovery(core);
+      return doSyncOrReplicateRecovery(core);
     } else {
-      doReplicateOnlyRecovery(core);
+      return doReplicateOnlyRecovery(core);
     }
   }
 
-  final private void doReplicateOnlyRecovery(SolrCore core) throws InterruptedException {
+  final private Boolean doReplicateOnlyRecovery(SolrCore core) throws InterruptedException {
     boolean successfulRecovery = false;
-    final RTimer timer = new RTimer();
 
     // if (core.getUpdateHandler().getUpdateLog() != null) {
     // SolrException.log(log, "'replicate-only' recovery strategy should only be used if no update logs are present, but
@@ -358,9 +365,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
           assert cloudDesc.getReplicaType() != Replica.Type.PULL;
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader!");
-          log.info("Finished recovery process in {} ms.", timer.getTime());
           zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
-          return;
+          return null;
         }
 
         if (log.isInfoEnabled()) {
@@ -421,7 +427,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
     }
     // We skip core.seedVersionBuckets(); We don't have a transaction log
-    log.info("Finished recovery process, successful=[{}] in {} ms.", successfulRecovery, timer.getTime());
+    return successfulRecovery;
   }
 
   /**
@@ -478,9 +484,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
-  public final void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
+  public final Boolean doSyncOrReplicateRecovery(SolrCore core) throws Exception {
     boolean successfulRecovery = false;
-    final RTimer timer = new RTimer();
 
     UpdateLog ulog;
     ulog = core.getUpdateHandler().getUpdateLog();
@@ -488,7 +493,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       SolrException.log(log, "No UpdateLog found - cannot recover.");
       recoveryFailed(zkController,
               this.coreDescriptor);
-      return;
+      return null;
     }
 
     // we temporary ignore peersync for tlog replicas
@@ -577,9 +582,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
         if (cloudDesc.isLeader()) {
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader!");
-          log.info("Finished recovery process in {} ms.", timer.getTime());
           zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
-          return;
+          return null;
         }
 
         log.info("Begin buffering updates. core=[{}]", coreName);
@@ -728,7 +732,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       core.seedVersionBuckets();
     }
 
-    log.info("Finished recovery process, successful=[{}] in {} ms.", successfulRecovery, timer.getTime());
+    return successfulRecovery;
   }
 
   /**
