@@ -9,7 +9,7 @@
 At times, it is important to do manual testing on a running server, and in many
 cases it is a good idea to test in a clustered environment to ensure that features
 play nice both locally and across nodes. To lower the barrier for realistic local
-testing, there is a script at `solr/cloud-dev/cloud.sh`.
+testing, there is a script at `dev-tools/scripts/cloud.sh`.
 
 NOTE: This script only supports POSIX environments. There is no similar .bat script at this time.
 
