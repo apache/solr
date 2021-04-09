@@ -1,10 +1,10 @@
-= Developer Utilities
+= Cloud Script
 :toc: left
 
 
 == Solr
 
-=== Running a local Solr Cluster
+=== Running a local SolrCloud Cluster
 
 At times, it is important to do manual testing on a running server, and in many
 cases it is a good idea to test in a clustered environment to ensure that features
