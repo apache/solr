@@ -242,6 +242,8 @@ Other Changes
 
 * SOLR-15121: Move XSLT (tr param) response writer and update request handler to scripting contrib.  (Eric Pugh, David Smiley)
 
+* SOLR-15169: SolrPaths.assertPathAllowed normalization problem (Andras Salamon via janhoy)
+
 * SOLR-15292: SignatureUpdateProcessorFactory will fail to initialize if it is used in a SolrCloud cluster in a way that is
   known to be problematic with multiple replicas.  (hossman)
 
