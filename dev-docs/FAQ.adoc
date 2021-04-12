@@ -8,4 +8,4 @@ This document provides a quick reference for frequently questioned concepts and 
 
 === What do I do with NOTICE.txt if I don't have one to satisfy Gradle?
 
-You create a empty file, similar to the `/solr/licenses/antlr4-runtime-NOTICE.txt`
+You create an empty file, similar to the `/solr/licenses/antlr4-runtime-NOTICE.txt`
