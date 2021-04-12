@@ -16,14 +16,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This directory includes information for Solr developers.
+This directory includes information for Solr developers.   There are some other
+sources of information for learning about developing on Solr:
 
-You may also find the information you are looking for to help you do
-development of Solr in the various documentation files for Gradle commands
-in the `help/` directory.
+1. The help .txt files for the Gradle commands in the `help/` directory.
 
-Don't forget the Solr Reference Guide, which provides end user oriented documentation.
-The Ref Guide hosts it's own documentation on how to write Ref Guide content.
+2. Information on how to handle adding dependencies and related licensing
+details, see the information in `/solr/licenses/README.committers.txt`.
+
+3. The Solr Reference Guide, which provides primarily end user oriented documentation.
+However, the Ref Guide hosts it's own documentation on how to write Ref Guide content.
 
 There are a number of tools related to doing development on Solr available in the `/dev-tools`
 directory.
