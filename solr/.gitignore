@@ -20,6 +20,8 @@
 /server/solr-webapp
 /server/start.jar
 
+/zeppelin
+
 *.out
 *.err
 

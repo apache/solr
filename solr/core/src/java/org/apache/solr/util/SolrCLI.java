@@ -23,10 +23,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -59,6 +63,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -84,8 +89,11 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.Version;
@@ -143,6 +151,7 @@ public class SolrCLI implements CLIO {
   public interface Tool {
     String getName();
     Option[] getOptions();
+    void printHelpText();
     int runTool(CommandLine cli) throws Exception;
   }
 
@@ -162,6 +171,11 @@ public class SolrCLI implements CLIO {
       if (cli.hasOption("verbose")) {
         echo(msg);
       }
+    }
+
+    public void printHelpText() {
+      HelpFormatter formatter = new HelpFormatter();
+      formatter.printHelp(getName(), getToolOptions(this));
     }
 
     protected void echo(final String msg) {
@@ -280,7 +294,7 @@ public class SolrCLI implements CLIO {
     SSLConfigurationsFactory.current().init();
 
     Tool tool = findTool(args);
-    CommandLine cli = parseCmdLine(args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     System.exit(tool.runTool(cli));
   }
 
@@ -289,7 +303,9 @@ public class SolrCLI implements CLIO {
     return newTool(toolType);
   }
 
-  public static CommandLine parseCmdLine(String[] args, Option[] toolOptions) throws Exception {
+  public static CommandLine parseCmdLine(Tool tool, String[] args) throws Exception {
+    final Option[] toolOptions = tool.getOptions();
+
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<String>();
     List<String> dashDList = new ArrayList<String>();
@@ -305,7 +321,7 @@ public class SolrCLI implements CLIO {
 
     // process command-line args to configure this application
     CommandLine cli =
-        processCommandLineArgs(joinCommonAndToolOptions(toolOptions), toolArgs);
+        processCommandLineArgs(tool, joinCommonAndToolOptions(toolOptions), toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -397,6 +413,8 @@ public class SolrCLI implements CLIO {
       return new ExportTool();
     else if ("package".equals(toolType))
       return new PackageTool();
+    else if ("zeppelin".equals(toolType))
+      return new ZeppelinTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -411,24 +429,15 @@ public class SolrCLI implements CLIO {
   }
 
   private static void displayToolOptions() throws Exception {
-    HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
-    formatter.printHelp("status", getToolOptions(new StatusTool()));
-    formatter.printHelp("api", getToolOptions(new ApiTool()));
-    formatter.printHelp("create_collection", getToolOptions(new CreateCollectionTool()));
-    formatter.printHelp("create_core", getToolOptions(new CreateCoreTool()));
-    formatter.printHelp("create", getToolOptions(new CreateTool()));
-    formatter.printHelp("delete", getToolOptions(new DeleteTool()));
-    formatter.printHelp("config", getToolOptions(new ConfigTool()));
-    formatter.printHelp("run_example", getToolOptions(new RunExampleTool()));
-    formatter.printHelp("upconfig", getToolOptions(new ConfigSetUploadTool()));
-    formatter.printHelp("downconfig", getToolOptions(new ConfigSetDownloadTool()));
-    formatter.printHelp("rm", getToolOptions(new ZkRmTool()));
-    formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
-    formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
-    formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
-    formatter.printHelp("export", getToolOptions(new ExportTool()));
-    formatter.printHelp("package", getToolOptions(new PackageTool()));
+    final HelpFormatter formatter = new HelpFormatter();
+    // TODO This list should be a class constant that is reused elsewhere that all tools need checked/iterated over.
+    final List<Tool> ootbToolList = Lists.newArrayList(new HealthcheckTool(), new StatusTool(), new ApiTool(),
+            new CreateCollectionTool(), new CreateCoreTool(), new CreateTool(), new DeleteTool(), new ConfigTool(),
+            new RunExampleTool(), new ConfigSetUploadTool(), new ConfigSetDownloadTool(), new ZkRmTool(), new ZkCpTool(),
+            new ZkMvTool(), new ZkLsTool(), new ExportTool(), new PackageTool(), new ZeppelinTool());
+    for (Tool t : ootbToolList) {
+      t.printHelpText();
+    }
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -470,7 +479,7 @@ public class SolrCLI implements CLIO {
   /**
    * Parses the command-line arguments passed by the user.
    */
-  public static CommandLine processCommandLineArgs(Option[] customOptions, String[] args) {
+  public static CommandLine processCommandLineArgs(Tool tool, Option[] customOptions, String[] args) {
     Options options = new Options();
 
     options.addOption("help", false, "Print this message");
@@ -498,14 +507,12 @@ public class SolrCLI implements CLIO {
         CLIO.err("Failed to parse command-line arguments due to: "
             + exp.getMessage());
       }
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(SolrCLI.class.getName(), options);
+      tool.printHelpText();
       exit(1);
     }
 
     if (cli.hasOption("help")) {
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(SolrCLI.class.getName(), options);
+      tool.printHelpText();
       exit(0);
     }
 
@@ -2816,7 +2823,7 @@ public class SolrCLI implements CLIO {
         };
         CreateTool createTool = new CreateTool(stdout);
         int createCode =
-            createTool.runTool(processCommandLineArgs(joinCommonAndToolOptions(createTool.getOptions()), createArgs));
+            createTool.runTool(processCommandLineArgs(createTool, joinCommonAndToolOptions(createTool.getOptions()), createArgs));
         if (createCode != 0)
           throw new Exception("Failed to create "+collectionName+" using command: "+ Arrays.asList(createArgs));
       }
@@ -2954,7 +2961,7 @@ public class SolrCLI implements CLIO {
 
       // let's not fail if we get this far ... just report error and finish up
       try {
-        configTool.runTool(processCommandLineArgs(joinCommonAndToolOptions(configTool.getOptions()), configArgs));
+        configTool.runTool(processCommandLineArgs(configTool, joinCommonAndToolOptions(configTool.getOptions()), configArgs));
       } catch (Exception exc) {
         CLIO.err("Failed to update '"+propName+"' property due to: "+exc);
       }
@@ -3212,7 +3219,9 @@ public class SolrCLI implements CLIO {
       CreateCollectionTool createCollectionTool = new CreateCollectionTool(stdout);
       int createCode =
           createCollectionTool.runTool(
-              processCommandLineArgs(joinCommonAndToolOptions(createCollectionTool.getOptions()), createArgs));
+              processCommandLineArgs(createCollectionTool,
+                      joinCommonAndToolOptions(createCollectionTool.getOptions()),
+                      createArgs));
 
       if (createCode != 0)
         throw new Exception("Failed to create collection using command: "+ Arrays.asList(createArgs));
@@ -3688,6 +3697,308 @@ public class SolrCLI implements CLIO {
   public static class AssertionFailureException extends Exception {
     public AssertionFailureException(String message) {
       super(message);
+    }
+  }
+
+  public static class ZeppelinTool extends ToolBase {
+    private static final String ZEPP_VERSION = "0.9.0";
+    private static final String ZEPP_INSTALL_TYPE = "netinst";
+    private static final String ZEPP_UNPACK_DIR_NAME = "zeppelin-" + ZEPP_VERSION + "-bin-" + ZEPP_INSTALL_TYPE;
+    private static final String MIRROR_BASE = "http://apache.cs.utah.edu/zeppelin/zeppelin-" + ZEPP_VERSION + "/";
+    private static final String ZEPP_ARCHIVE = ZEPP_UNPACK_DIR_NAME + ".tgz";
+    private static final String ZEPP_ARCHIVE_URL = MIRROR_BASE + ZEPP_ARCHIVE;
+    private static final int PROCESS_WAIT_TIME_SECONDS = 90;
+
+    private static final String SOLR_INSTALL_DIR = System.getProperty("solr.install.dir");
+    private static final String ZEPP_INTERPRETER_TEMPLATE_ABS_PATH = Paths.get(SOLR_INSTALL_DIR, "server", "resources", "zeppelin-solr-interpreter.json.template").toAbsolutePath().toString();
+    private static final String ZEPP_INTERPRETER_ABS_PATH = Paths.get(SOLR_INSTALL_DIR, "server", "resources", "zeppelin-solr-interpreter.json").toAbsolutePath().toString();
+    private static final String ZEPP_BASE_ABS_PATH = Paths.get(SOLR_INSTALL_DIR, "zeppelin").toAbsolutePath().toString();
+    private static final String ZEPP_UNPACK_LOG_ABS_PATH = Paths.get(ZEPP_BASE_ABS_PATH, "logs.txt").toAbsolutePath().toString();
+    private static final String ZEPP_ARCHIVE_ABS_PATH = Paths.get(ZEPP_BASE_ABS_PATH, ZEPP_ARCHIVE).toAbsolutePath().toString();
+    private static final String ZEPP_UNPACKED_ABS_PATH = Paths.get(ZEPP_BASE_ABS_PATH, ZEPP_UNPACK_DIR_NAME).toAbsolutePath().toString();
+    private static final String ZEPP_DAEMON_EXE_NAME = (SystemUtils.IS_OS_WINDOWS) ? "zeppelin-daemon.cmd" : "zeppelin-daemon.sh";
+    private static final String ZEPP_INTERP_EXE_NAME = (SystemUtils.IS_OS_WINDOWS) ? "install-interpreter.cmd" : "install-interpreter.sh";
+    private static final String ZEPP_DAEMON_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_DAEMON_EXE_NAME).toAbsolutePath().toString();
+    private static final String ZEPP_INTERP_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_INTERP_EXE_NAME).toAbsolutePath().toString();
+
+    @Override
+    public String getName() { return "zeppelin"; }
+
+    @Override
+    public Option[] getOptions() {
+      return new Option[] {
+              Option.builder("z")
+                      .desc("Only valid for action=update-interpreter.  The Zeppelin URL to update.  Defaults to http://localhost:8080")
+                      .longOpt("zeppelinUrl")
+                      .hasArg()
+                      .argName("url")
+                      .build(),
+              Option.builder("s")
+                      .desc("The URL of a valid Solr instance.  Used to configure the Zeppelin interpreter.  Defaults to values read from solr.in.sh")
+                      .longOpt("solrUrl")
+                      .hasArg()
+                      .argName("url")
+                      .required()
+                      .build()
+      };
+    }
+
+    /*
+     * Since ZeppelinTool uses positional arguments not represented in getOptions, the help text generated from those
+     * values alone doesn't really cover the tool appropriately.  This method returns custom help text, similar to that
+     * hardcoded in the solr/solr.cmd scripts themselves.
+     */
+    @Override
+    public void printHelpText() {
+      stdout.println();
+      stdout.println("Usage: solr zeppelin bootstrap [--zeppelinUrl <url>] [--solrUrl <url>]");
+      stdout.println("       solr zeppelin clean");
+      stdout.println("       solr zeppelin start");
+      stdout.println("       solr zeppelin stop");
+      stdout.println("       solr zeppelin update_interpreter [--zeppelinUrl <url>] [--solrUrl <url>]");
+      stdout.println();
+      stdout.println("  Sets up and manages an Apache Zeppelin installation configured for use with a local Solr.");
+      stdout.println("    - 'bootstrap' downloads and starts Zeppelin in a 'zeppelin' folder within the Solr install");
+      stdout.println("    - 'clean' stops Zeppelin (if necessary) and removes the install created by 'bootstrap'.");
+      stdout.println("    - 'start' starts Zeppelin if not already running.");
+      stdout.println("    - 'stop' stops Zeppelin if not already stopped.");
+      stdout.println("    - 'update_interpreter' reinstalls the Zeppelin interpreter used to talk to Solr.  Useful for");
+      stdout.println("       pointing Zeppelin to a different Solr cluster or changing other settings.");
+      stdout.println();
+
+      // Append option information to help text
+      final HelpFormatter helpFormatter = new HelpFormatter();
+      try (final PrintWriter writer = new PrintWriter(stdout, true, StandardCharsets.UTF_8)) {
+        helpFormatter.printOptions(writer, 100, getToolOptions(this), helpFormatter.getLeftPadding(),
+                helpFormatter.getDescPadding());
+      }
+    }
+
+    enum Action {
+      bootstrap, clean, start, stop, update_interpreter
+    }
+
+    private boolean isValidAction(String userAction) {
+      echo("In isValidAction");
+      try {
+        return Action.valueOf(userAction) != null;
+      } catch (IllegalArgumentException e) { // Thrown when the user-specified action is unrepresented in enum.
+        return false;
+      }
+    }
+
+    @Override
+    protected void runImpl(CommandLine cli) throws Exception {
+      final String zeppelinUrl = cli.getOptionValue("zeppelinUrl", "http://localhost:8080");
+      final String solrUrl = cli.getOptionValue("solrUrl");
+      final String[] positionalArgs = cli.getArgs();
+
+      if (cli.hasOption("help")) {
+        echo("In ZTool's own help block");
+        printHelpText();
+        exit(0);
+      }
+
+      // Validate provided action
+      final String validActions = Arrays.stream(Action.values()).map(x -> x.toString()).collect(Collectors.joining(",", "[", "]"));
+      if (positionalArgs.length != 1) {
+        echo("Zeppelin action not provided.  Valid values are " + validActions);
+        exit(1);
+      } else if (! isValidAction(positionalArgs[0])) {
+        echo("Invalid zeppelin action [" + positionalArgs[0] + "] provided.  Valid values are " + validActions);
+        exit(1);
+      }
+      echo("Finished inValidAction");
+      final Action action = Action.valueOf(positionalArgs[0].toLowerCase(Locale.ROOT));
+      echo("Finished parsing action");
+      switch (action) {
+        case bootstrap:
+          bootstrapZeppelinInstallation(zeppelinUrl, solrUrl);
+          break;
+        case clean:
+          cleanZeppelinInstallation(cli);
+          break;
+        case start:
+          startZeppelinInstall();
+          break;
+        case stop:
+          stopZeppelin(cli);
+          break;
+        case update_interpreter:
+          updateSolrInterpreter(zeppelinUrl, solrUrl);
+          break;
+        default:
+          echo("Invalid action value [" + action + "]; unable to proceed");
+          exit(1);
+      }
+    }
+
+    private void bootstrapZeppelinInstallation(String zeppelinUrl, String solrUrl) throws Exception {
+      final File zeppelinBaseDirFile = new File(ZEPP_BASE_ABS_PATH);
+      if (! zeppelinBaseDirFile.exists()) {
+        final boolean result = zeppelinBaseDirFile.mkdir();
+        if (! result) {
+          echo("Unable to create base directory [" + ZEPP_BASE_ABS_PATH + "]for Zeppelin install; exiting.");
+          exit(1);
+        }
+      }
+      echo("Zeppelin base dir created successfully at " + ZEPP_BASE_ABS_PATH);
+
+      final File zeppelinArchiveFile = new File(ZEPP_ARCHIVE_ABS_PATH);
+      if (! zeppelinArchiveFile.exists()) {
+        echo("Downloading zeppelin; this may take a few minutes");
+        FileUtils.copyURLToFile(new URL(ZEPP_ARCHIVE_URL), zeppelinArchiveFile);
+      }
+
+      final File unpackedZeppelinArchiveFile = new File(ZEPP_UNPACKED_ABS_PATH);
+      if (! unpackedZeppelinArchiveFile.exists()) {
+        // TODO consider replacing with commons-compress?
+        final File unpackLogs = new File(ZEPP_UNPACK_LOG_ABS_PATH);
+        Process ps = new ProcessBuilder().command("tar", "-xvf", ZEPP_ARCHIVE_ABS_PATH)
+            .redirectError(unpackLogs)
+            .redirectOutput(unpackLogs)
+            .directory(zeppelinBaseDirFile)
+            .start();
+        final boolean completed = ps.waitFor(PROCESS_WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+        if (! completed) {
+          echo("Zeppelin could not be unpacked within " + PROCESS_WAIT_TIME_SECONDS + "s; unable to install Zeppelin");
+          exit(1);
+        }
+
+        if (0 != ps.exitValue()) {
+          echo("Attempt to unpack Zeppelin archive failed with code " + ps.exitValue() + "; exiting");
+          exit(1);
+        } else {
+          echo("Zeppelin successfully downloaded and unpacked to " + zeppelinBaseDirFile.getAbsolutePath());
+        }
+
+        if (unpackLogs.exists()) {
+          unpackLogs.delete();
+        }
+      }
+
+      echo("Finished initializing Zeppelin sandbox, attempting to start zeppelin...");
+      startZeppelinInstall();
+      echo("Finished starting zeppelin, attempting to update zeppelin-solr plugin");
+      runCommand(ZEPP_INTERP_ABS_PATH, "--name", "solr", "--artifact", "com.lucidworks.zeppelin:zeppelin-solr:0.1.6");
+      echo("Finished installing zeppelin-solr plugin, attempting to restart zepplin");
+      runCommand(ZEPP_DAEMON_ABS_PATH, "restart");
+      echo("Finished restarting zeppelin, attempting to update 'solr' interpreter (sleeping for a few first)");
+
+      //TODO do a spin-wait until Zeppelin starts responding to requests instead of sleeping.
+      //Thread.sleep(60 * 1000);
+      //updateSolrInterpreter(zeppelinUrl, solrUrl);
+    }
+
+    private void cleanZeppelinInstallation(CommandLine cli) throws Exception {
+      if (new File(ZEPP_DAEMON_ABS_PATH).exists() && isZeppelinRunning()) {
+        echo("Stopping zeppelin prior to 'clean'");
+        stopZeppelin(cli);
+      }
+
+      FileUtils.deleteDirectory(new File(ZEPP_BASE_ABS_PATH));
+    }
+
+    private void startZeppelinInstall() throws Exception {
+      runCommand(ZEPP_DAEMON_ABS_PATH, "start");
+    }
+
+    private void stopZeppelin(CommandLine cli) throws Exception {
+      if (! new File(ZEPP_DAEMON_ABS_PATH).exists()) {
+        echoIfVerbose("No Zeppelin sandbox exists to stop; done.", cli);
+        exit(0);
+      }
+
+      if (! isZeppelinRunning()) {
+        echoIfVerbose("Zeppelin was already stopped", cli);
+        exit(0);
+      }
+
+      echoIfVerbose("Stopping Zeppelin using executable: " + ZEPP_DAEMON_ABS_PATH, cli);
+      runCommand(ZEPP_DAEMON_ABS_PATH, "stop");
+    }
+
+    private void updateSolrInterpreter(String zeppelinUrl, String solrUrl) throws Exception {
+      final File interpreterEntityFile = createInterpreterFromTemplate(solrUrl);
+      // TODO Check whether we need to create or update instead of always creating
+      try (final CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams())) {
+        final HttpPost request = new HttpPost();
+        final URI requestURI = new URI(zeppelinUrl + "/api/interpreter/setting");
+        echo ("POSTing solr interpreter update to " + requestURI.toString());
+        request.setURI(requestURI);
+
+        echo ("POST entity will be file: " + interpreterEntityFile.getAbsolutePath());
+        request.setEntity(new FileEntity(interpreterEntityFile, ContentType.APPLICATION_JSON));
+        final HttpResponse response = httpClient.execute(request);
+        if (response.getStatusLine().getStatusCode() > 299) {
+          echo("Received [" + response.getStatusLine().getStatusCode() + "] status when creating Solr interpreter; aborting.");
+          response.getEntity().writeTo(System.err);
+          exit(1);
+        }
+      } catch (Exception e) {
+        echo("Error encountered creating/updating Solr interpreter " + e.getMessage());
+        e.printStackTrace(System.err);
+      }
+
+      interpreterEntityFile.delete();
+      echo("Successfully created Solr interpreter");
+    }
+
+    private File createInterpreterFromTemplate(String solrUrl) throws IOException {
+      final File interpreterTemplateFile = new File(ZEPP_INTERPRETER_TEMPLATE_ABS_PATH);
+      final String interpreterTemplate = FileUtils.readFileToString(interpreterTemplateFile, StandardCharsets.UTF_8);
+      final String interpreter = interpreterTemplate.replaceAll("@@SOLR_URL@@", solrUrl);
+
+      final File interpreterFile = new File(ZEPP_INTERPRETER_ABS_PATH);
+      FileUtils.writeStringToFile(interpreterFile, interpreter, StandardCharsets.UTF_8, false);
+      return interpreterFile;
+    }
+
+    private boolean isZeppelinRunning() throws Exception {
+      final int cmdStatus = runCommandForStatus(ZEPP_DAEMON_ABS_PATH, "restart");
+      return cmdStatus == 0;
+    }
+
+    private void ensureZeppelinInstallationBootstrapped(String action) {
+      final File zeppelinScriptFile = new File(ZEPP_DAEMON_ABS_PATH);
+      if (! zeppelinScriptFile.exists()) {
+        echo("Unable to " + action + " Zeppelin installation; no bootstrapped install exists.");
+      }
+    }
+
+    private int runCommandForStatus(String executable, String... args) throws Exception {
+      final List<String> allArgs = new ArrayList<>();
+      allArgs.add(executable);
+      for (String arg : args) allArgs.add(arg);
+
+      final Process ps = new ProcessBuilder().command(allArgs).start();
+      final boolean completed = ps.waitFor(PROCESS_WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+      if (! completed) {
+        echo("Command [" + buildDebugCommandString(executable, args) + "] did not finish within " + PROCESS_WAIT_TIME_SECONDS + " seconds; aborting");
+        exit(1);
+      }
+
+      return ps.exitValue();
+    }
+
+    private void runCommand(int expectedStatus, String executable, String... args) throws Exception{
+      final int cmdStatus = runCommandForStatus(executable, args);
+
+      if (expectedStatus != cmdStatus) {
+        echo("Command [" + buildDebugCommandString(executable, args) + "] failed with code: " + cmdStatus + ".  Aborting.");
+        exit(1);
+      }
+    }
+
+    private void runCommand(String executable, String... args) throws Exception {
+      runCommand(0, executable,  args);
+    }
+
+    private String buildDebugCommandString(String executable, String... args) {
+      final List<String> allArgs = new ArrayList<>();
+      allArgs.add(executable);
+      for (String arg : args) allArgs.add(arg);
+      return String.join(" ", allArgs);
     }
   }
 

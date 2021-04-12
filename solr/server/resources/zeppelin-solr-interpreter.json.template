@@ -1,0 +1,45 @@
+{
+  "id": "solr",
+  "name": "solr",
+  "group": "solr",
+  "properties": {
+    "jdbc.url": {
+      "name": "jdbc.url",
+      "value": "jdbc:hive2://localhost:8768/default;transportMode=http;httpPath=fusion;user=admin;password=password123"
+    },
+    "jdbc.driver": {
+      "name": "jdbc.driver",
+      "value": "org.apache.hive.jdbc.HiveDriver"
+    },
+    "solr.collection": {
+      "value": "foo",
+      "type": "textarea"
+    },
+    "solr.baseUrl": {
+      "value": "@@SOLR_URL@@",
+      "type": "textarea"
+    }
+  },
+  "status": "READY",
+  "interpreterGroup": [
+    {
+      "name": "solr",
+      "class": "com.lucidworks.zeppelin.solr.SolrInterpreter",
+      "defaultInterpreter": false,
+        "editor": {
+          "editOnDblClick": false
+        }
+    }
+  ],
+  "dependencies": [],
+  "option": {
+    "remote": true,
+    "port": -1,
+    "perNote": "shared",
+    "perUser": "shared",
+    "isExistingProcess": false,
+    "setPermission": false,
+    "owners": [],
+    "isUserImpersonate": false
+  }
+}
