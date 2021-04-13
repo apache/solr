@@ -568,9 +568,10 @@ Solr lets users templatize the `solrconfig.xml` using the place holder format `$
 * `set-user-property`: Set a user-defined property. If the property has already been set, this command will overwrite the previous setting.
 * `unset-user-property`: Remove a user-defined property.
 
-The structure of the request is similar to the structure of requests using other commands, in the format of `"command":{"variable_name": "property_value"}`. You can add more than one variable at a time if necessary.
+The structure of the request is similar to the structure of requests using other commands, in the format of `"command":{"variable_name": "property_value"}`.
+You can add more than one variable at a time if necessary.
 
-For more information about user-defined properties, see the section <<configuring-solrconfig-xml.adoc#user-defined-properties-in-core-properties,User defined properties in core.properties>>.
+For more information about user-defined properties, see the section <<property-substitution.adoc#user-defined-properties-in-core-properties,User defined properties in core.properties>>.
 
 See also the section <<Creating and Updating User-Defined Properties>> below for examples of how to use this type of command.
 
