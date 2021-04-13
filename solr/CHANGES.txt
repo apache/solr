@@ -110,6 +110,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   This doesn't work in SolrCloud (but may someday).  QEC no longer supports a config file in
   the data dir. (David Smiley)
 
+* SOLR-15322: Solr releases now contain everything needed to build runable docker images (Houston Putman, hossman)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
