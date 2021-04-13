@@ -98,14 +98,6 @@ elif [ -r "$SOLR_INCLUDE" ]; then
 fi
 
 # Setup defaults for common startup properties
-if [ -z "$SOLR_PORT" ]; then
-  SOLR_PORT=8983
-fi
-
-if [ -z "$SOLR_HOST" ]; then
-  SOLR_HOST="localhost"
-fi
-
 if [ -z "$SOLR_PID_DIR" ]; then
   SOLR_PID_DIR="$SOLR_TIP/bin"
 fi
@@ -946,8 +938,14 @@ if [ "$SCRIPT_CMD" == "assert" ]; then
 fi
 
 if [ "$SCRIPT_CMD" == "zeppelin" ]; then
-  echo "In script: $SOLR_HOST and $SOLR_PORT"
-  run_tool zeppelin --solrUrl "$SOLR_URL_SCHEME://$SOLR_HOST:$SOLR_PORT/solr" $*
+  if [[ "$*" == *"-s"* ]]
+  then
+    # User provided an explicit solrUrl, pass through as-is
+    run_tool zeppelin $*
+  else
+    # No explicit solrUrl - build one from solr.in.sh values/defaults
+    run_tool zeppelin --solrUrl "$SOLR_URL_SCHEME://${SOLR_HOST:-localhost}:${SOLR_PORT:-8983}/solr" $*
+  fi
   exit $?
 fi
 

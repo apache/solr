@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
+import java.io.ByteArrayOutputStream;
 import java.io.Console;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,8 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -89,7 +88,7 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.entity.ContentType;
@@ -3720,6 +3719,7 @@ public class SolrCLI implements CLIO {
     private static final String ZEPP_INTERP_EXE_NAME = (SystemUtils.IS_OS_WINDOWS) ? "install-interpreter.cmd" : "install-interpreter.sh";
     private static final String ZEPP_DAEMON_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_DAEMON_EXE_NAME).toAbsolutePath().toString();
     private static final String ZEPP_INTERP_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_INTERP_EXE_NAME).toAbsolutePath().toString();
+    private static final String ZEPP_SOLR_INTERPRETER_ID = "solr";
 
     @Override
     public String getName() { return "zeppelin"; }
@@ -3734,7 +3734,8 @@ public class SolrCLI implements CLIO {
                       .argName("url")
                       .build(),
               Option.builder("s")
-                      .desc("The URL of a valid Solr instance.  Used to configure the Zeppelin interpreter.  Defaults to values read from solr.in.sh")
+                      .desc("The URL of a valid Solr instance. (e.g. http://localhost:7574/solr)  Used to configure the" +
+                              " Zeppelin interpreter.  Defaults to values read from solr.in.sh")
                       .longOpt("solrUrl")
                       .hasArg()
                       .argName("url")
@@ -3779,7 +3780,6 @@ public class SolrCLI implements CLIO {
     }
 
     private boolean isValidAction(String userAction) {
-      echo("In isValidAction");
       try {
         return Action.valueOf(userAction) != null;
       } catch (IllegalArgumentException e) { // Thrown when the user-specified action is unrepresented in enum.
@@ -3793,27 +3793,23 @@ public class SolrCLI implements CLIO {
       final String solrUrl = cli.getOptionValue("solrUrl");
       final String[] positionalArgs = cli.getArgs();
 
-      if (cli.hasOption("help")) {
-        echo("In ZTool's own help block");
-        printHelpText();
-        exit(0);
-      }
-
       // Validate provided action
       final String validActions = Arrays.stream(Action.values()).map(x -> x.toString()).collect(Collectors.joining(",", "[", "]"));
       if (positionalArgs.length != 1) {
         echo("Zeppelin action not provided.  Valid values are " + validActions);
         exit(1);
+      } else if ("help".equals(positionalArgs[0])) {
+        printHelpText();
+        exit(0);
       } else if (! isValidAction(positionalArgs[0])) {
         echo("Invalid zeppelin action [" + positionalArgs[0] + "] provided.  Valid values are " + validActions);
         exit(1);
       }
-      echo("Finished inValidAction");
+
       final Action action = Action.valueOf(positionalArgs[0].toLowerCase(Locale.ROOT));
-      echo("Finished parsing action");
       switch (action) {
         case bootstrap:
-          bootstrapZeppelinInstallation(zeppelinUrl, solrUrl);
+          bootstrapZeppelinInstallation(cli, zeppelinUrl, solrUrl);
           break;
         case clean:
           cleanZeppelinInstallation(cli);
@@ -3825,7 +3821,7 @@ public class SolrCLI implements CLIO {
           stopZeppelin(cli);
           break;
         case update_interpreter:
-          updateSolrInterpreter(zeppelinUrl, solrUrl);
+          updateSolrInterpreter(cli, zeppelinUrl, solrUrl);
           break;
         default:
           echo("Invalid action value [" + action + "]; unable to proceed");
@@ -3833,16 +3829,16 @@ public class SolrCLI implements CLIO {
       }
     }
 
-    private void bootstrapZeppelinInstallation(String zeppelinUrl, String solrUrl) throws Exception {
+    private void bootstrapZeppelinInstallation(CommandLine cli, String zeppelinUrl, String solrUrl) throws Exception {
       final File zeppelinBaseDirFile = new File(ZEPP_BASE_ABS_PATH);
       if (! zeppelinBaseDirFile.exists()) {
         final boolean result = zeppelinBaseDirFile.mkdir();
         if (! result) {
-          echo("Unable to create base directory [" + ZEPP_BASE_ABS_PATH + "]for Zeppelin install; exiting.");
+          echo("Unable to create base directory [" + ZEPP_BASE_ABS_PATH + "] for Zeppelin install; exiting.");
           exit(1);
         }
       }
-      echo("Zeppelin base dir created successfully at " + ZEPP_BASE_ABS_PATH);
+      echoIfVerbose("Zeppelin base dir created successfully at " + ZEPP_BASE_ABS_PATH, cli);
 
       final File zeppelinArchiveFile = new File(ZEPP_ARCHIVE_ABS_PATH);
       if (! zeppelinArchiveFile.exists()) {
@@ -3869,7 +3865,7 @@ public class SolrCLI implements CLIO {
           echo("Attempt to unpack Zeppelin archive failed with code " + ps.exitValue() + "; exiting");
           exit(1);
         } else {
-          echo("Zeppelin successfully downloaded and unpacked to " + zeppelinBaseDirFile.getAbsolutePath());
+          echoIfVerbose("Zeppelin successfully downloaded and unpacked to " + zeppelinBaseDirFile.getAbsolutePath(), cli);
         }
 
         if (unpackLogs.exists()) {
@@ -3877,22 +3873,19 @@ public class SolrCLI implements CLIO {
         }
       }
 
-      echo("Finished initializing Zeppelin sandbox, attempting to start zeppelin...");
+      echoIfVerbose("Finished initializing Zeppelin sandbox, attempting to start zeppelin...", cli);
       startZeppelinInstall();
-      echo("Finished starting zeppelin, attempting to update zeppelin-solr plugin");
+      echoIfVerbose("Finished starting zeppelin, attempting to update zeppelin-solr plugin", cli);
       runCommand(ZEPP_INTERP_ABS_PATH, "--name", "solr", "--artifact", "com.lucidworks.zeppelin:zeppelin-solr:0.1.6");
-      echo("Finished installing zeppelin-solr plugin, attempting to restart zepplin");
+      echoIfVerbose("Finished installing zeppelin-solr plugin, attempting to restart zepplin", cli);
       runCommand(ZEPP_DAEMON_ABS_PATH, "restart");
-      echo("Finished restarting zeppelin, attempting to update 'solr' interpreter (sleeping for a few first)");
-
-      //TODO do a spin-wait until Zeppelin starts responding to requests instead of sleeping.
-      //Thread.sleep(60 * 1000);
-      //updateSolrInterpreter(zeppelinUrl, solrUrl);
+      echoIfVerbose("Finished restarting zeppelin, updating 'solr' interpreter to point to Solr URL: " + solrUrl, cli);
+      updateSolrInterpreter(cli, zeppelinUrl, solrUrl);
     }
 
     private void cleanZeppelinInstallation(CommandLine cli) throws Exception {
       if (new File(ZEPP_DAEMON_ABS_PATH).exists() && isZeppelinRunning()) {
-        echo("Stopping zeppelin prior to 'clean'");
+        echoIfVerbose("Stopping zeppelin prior to 'clean'", cli);
         stopZeppelin(cli);
       }
 
@@ -3918,16 +3911,48 @@ public class SolrCLI implements CLIO {
       runCommand(ZEPP_DAEMON_ABS_PATH, "stop");
     }
 
-    private void updateSolrInterpreter(String zeppelinUrl, String solrUrl) throws Exception {
-      final File interpreterEntityFile = createInterpreterFromTemplate(solrUrl);
-      // TODO Check whether we need to create or update instead of always creating
-      try (final CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams())) {
-        final HttpPost request = new HttpPost();
-        final URI requestURI = new URI(zeppelinUrl + "/api/interpreter/setting");
-        echo ("POSTing solr interpreter update to " + requestURI.toString());
-        request.setURI(requestURI);
+    private void ensureZeppelinAvailableAtUrl(CommandLine cli, String zeppelinUrl) throws Exception {
+      final HttpGet request = new HttpGet(new URI(zeppelinUrl + "/api/interpreter"));
+      final int maxAttempts = 30;
+      boolean success = false;
+      String lastErrorMessage = null;
 
-        echo ("POST entity will be file: " + interpreterEntityFile.getAbsolutePath());
+
+      try (final CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams())) {
+        for (int i = 0; i < maxAttempts; i++) {
+          try {
+            final HttpResponse response = httpClient.execute(request);
+            if (response.getStatusLine().getStatusCode() <= 299) {
+              success = true;
+              break;
+            } else {
+              final ByteArrayOutputStream entityStream = new ByteArrayOutputStream();
+              response.getEntity().writeTo(entityStream);
+              lastErrorMessage = new String(entityStream.toByteArray(), StandardCharsets.UTF_8);
+            }
+          } catch (ConnectException e) {
+            lastErrorMessage = e.getMessage();
+          }
+          echoIfVerbose("Failed to reach zeppelin at url [" + zeppelinUrl + "]; error was: " + lastErrorMessage + ", retrying.", cli);
+          Thread.sleep(1000);
+        }
+
+        if (! success) {
+          echo("Failed to find Zeppelin at URL [" + zeppelinUrl + "].  Last error was: " + lastErrorMessage);
+          exit(-1);
+        }
+      }
+    }
+
+    private void updateSolrInterpreter(CommandLine cli, String zeppelinUrl, String solrUrl) throws Exception {
+      final File interpreterEntityFile = createInterpreterFromTemplate(solrUrl);
+      echoIfVerbose("Updating interpreter to have solrUrl: " + solrUrl, cli);
+      ensureZeppelinAvailableAtUrl(cli, zeppelinUrl);
+      // Zeppelin-solr creates the 'solr' interpreter setting upon install, so it always exists for a 'PUT' here.
+      try (final CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams())) {
+        final HttpPut request = new HttpPut();
+        final URI requestURI = new URI(zeppelinUrl + "/api/interpreter/setting/" + ZEPP_SOLR_INTERPRETER_ID);
+        request.setURI(requestURI);
         request.setEntity(new FileEntity(interpreterEntityFile, ContentType.APPLICATION_JSON));
         final HttpResponse response = httpClient.execute(request);
         if (response.getStatusLine().getStatusCode() > 299) {
@@ -3938,10 +3963,11 @@ public class SolrCLI implements CLIO {
       } catch (Exception e) {
         echo("Error encountered creating/updating Solr interpreter " + e.getMessage());
         e.printStackTrace(System.err);
+        exit(1);
       }
 
       interpreterEntityFile.delete();
-      echo("Successfully created Solr interpreter");
+      echoIfVerbose("Successfully created Solr interpreter", cli);
     }
 
     private File createInterpreterFromTemplate(String solrUrl) throws IOException {
@@ -3957,13 +3983,6 @@ public class SolrCLI implements CLIO {
     private boolean isZeppelinRunning() throws Exception {
       final int cmdStatus = runCommandForStatus(ZEPP_DAEMON_ABS_PATH, "restart");
       return cmdStatus == 0;
-    }
-
-    private void ensureZeppelinInstallationBootstrapped(String action) {
-      final File zeppelinScriptFile = new File(ZEPP_DAEMON_ABS_PATH);
-      if (! zeppelinScriptFile.exists()) {
-        echo("Unable to " + action + " Zeppelin installation; no bootstrapped install exists.");
-      }
     }
 
     private int runCommandForStatus(String executable, String... args) throws Exception {

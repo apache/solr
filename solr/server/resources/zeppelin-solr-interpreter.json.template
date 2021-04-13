@@ -5,14 +5,14 @@
   "properties": {
     "jdbc.url": {
       "name": "jdbc.url",
-      "value": "jdbc:hive2://localhost:8768/default;transportMode=http;httpPath=fusion;user=admin;password=password123"
+      "value": ""
     },
     "jdbc.driver": {
       "name": "jdbc.driver",
-      "value": "org.apache.hive.jdbc.HiveDriver"
+      "value": ""
     },
     "solr.collection": {
-      "value": "foo",
+      "value": "techproducts",
       "type": "textarea"
     },
     "solr.baseUrl": {
