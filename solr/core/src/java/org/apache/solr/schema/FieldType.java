@@ -861,7 +861,7 @@ public abstract class FieldType extends FieldProperties {
    * different semantics.
    * <p>
    * By default range queries with '*'s or nulls on either side are treated as existence queries and are created with {@link #getExistenceQuery}.
-   * If unbounded range queries should not be treated as existence queries for a certain fieldType, then {@link #treatUnboundedRangeAsExistence} should be overriden.
+   * If unbounded range queries should not be treated as existence queries for a certain fieldType, then {@link #treatUnboundedRangeAsExistence} should be overridden.
    * <p>
    * Sub-classes should override the {@link #getSpecializedRangeQuery} method to provide their own range query implementation.
    *
@@ -933,8 +933,8 @@ public abstract class FieldType extends FieldProperties {
    * Returns a Query instance for doing existence searches for a field.
    * If the field does not have docValues or norms, this method will call {@link #getSpecializedExistenceQuery}, which defaults to an unbounded rangeQuery.
    * <p>
-   * This method should only be overriden whenever a fieldType does not support {@link org.apache.lucene.search.DocValuesFieldExistsQuery} or {@link org.apache.lucene.search.NormsFieldExistsQuery}.
-   * If a fieldType does not support an unbounded rangeQuery as an existenceQuery (such as <code>double</code> or <code>float</code> fields), {@link #getSpecializedExistenceQuery} should be overriden.
+   * This method should only be overridden whenever a fieldType does not support {@link org.apache.lucene.search.DocValuesFieldExistsQuery} or {@link org.apache.lucene.search.NormsFieldExistsQuery}.
+   * If a fieldType does not support an unbounded rangeQuery as an existenceQuery (such as <code>double</code> or <code>float</code> fields), {@link #getSpecializedExistenceQuery} should be overridden.
    *
    * @param parser The {@link org.apache.solr.search.QParser} calling the method
    * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
@@ -954,7 +954,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Returns a Query instance for doing existence searches for a field without certain options, such as docValues or norms.
    * <p>
-   * This method can be overriden to implement specialized existence logic for fieldTypes.
+   * This method can be overridden to implement specialized existence logic for fieldTypes.
    * The default query returned is an unbounded range query.
    *
    * @param parser The {@link org.apache.solr.search.QParser} calling the method

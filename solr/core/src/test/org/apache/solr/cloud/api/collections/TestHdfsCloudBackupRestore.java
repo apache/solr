@@ -39,9 +39,9 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
@@ -141,11 +141,11 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     useFactory("solr.StandardDirectoryFactory");
 
     configureCluster(NUM_SHARDS)// nodes
-    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-    .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
+    .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
     .withSolrXml(SOLR_XML)
     .configure();
-    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
+    cluster.getZkClient().delete(ZkConfigSetService.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
   }
 
   @AfterClass

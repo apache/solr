@@ -191,7 +191,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
         if (!configSetIsUsedByOtherCollection) {
           // delete the config set
-          zkStateReader.getConfigManager().deleteConfigDir(configSetName);
+          ccc.getCoreContainer().getConfigSetService().deleteConfig(configSetName);
         }
       }
 

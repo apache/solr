@@ -28,13 +28,13 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -67,7 +67,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     if (log.isInfoEnabled()) {
       log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
     }
-    String confPath = ZkConfigManager.CONFIGS_ZKNODE+"/conf1/";
+    String confPath = ZkConfigSetService.CONFIGS_ZKNODE+"/conf1/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
     checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"config", "/config");
 

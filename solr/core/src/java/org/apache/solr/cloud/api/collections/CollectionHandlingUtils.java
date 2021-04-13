@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -58,6 +57,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.component.ShardHandler;
@@ -300,8 +300,8 @@ public class CollectionHandlingUtils {
     return new AddReplicaCmd(ccc).addReplica(clusterState, message, results, onComplete);
   }
 
-  static void validateConfigOrThrowSolrException(SolrCloudManager cloudManager, String configName) throws IOException, KeeperException, InterruptedException {
-    boolean isValid = cloudManager.getDistribStateManager().hasData(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
+  static void validateConfigOrThrowSolrException(ConfigSetService configSetService, String configName) throws IOException {
+    boolean isValid = configSetService.checkConfigExists(configName);
     if (!isValid) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
     }
@@ -336,7 +336,7 @@ public class CollectionHandlingUtils {
                                      CollectionCommandContext ccc, ClusterState clusterState) {
     log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
     DocCollection coll = clusterState.getCollection(collectionName);
     List<Replica> notLivesReplicas = new ArrayList<>();
     final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker = asyncRequestTracker(asyncId, ccc);
@@ -463,7 +463,7 @@ public class CollectionHandlingUtils {
   }
 
   public static ShardRequestTracker asyncRequestTracker(String asyncId, CollectionCommandContext ccc) {
-    return new ShardRequestTracker(asyncId, ccc.getAdminPath(), ccc.getZkStateReader(), ccc.getShardHandler().getShardHandlerFactory());
+    return new ShardRequestTracker(asyncId, ccc.getAdminPath(), ccc.getZkStateReader(), ccc.newShardHandler().getShardHandlerFactory());
   }
 
   public static class ShardRequestTracker {

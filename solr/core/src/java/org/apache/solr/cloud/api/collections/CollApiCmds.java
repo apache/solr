@@ -138,7 +138,7 @@ public class CollApiCmds {
       sreq.shards = new String[]{baseUrl};
       sreq.actualShards = sreq.shards;
       sreq.params = params;
-      ShardHandler shardHandler = ccc.getShardHandler();
+      ShardHandler shardHandler = ccc.newShardHandler();
       shardHandler.submit(sreq, baseUrl, sreq.params);
     }
   }
@@ -230,7 +230,7 @@ public class CollApiCmds {
       String configName = (String) message.getProperties().remove(CollectionAdminParams.COLL_CONF);
 
       if (configName != null) {
-        CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getSolrCloudManager(), configName);
+        CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getCoreContainer().getConfigSetService(), configName);
 
         CollectionHandlingUtils.createConfNode(ccc.getSolrCloudManager().getDistribStateManager(), configName, collectionName);
         new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);

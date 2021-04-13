@@ -81,7 +81,11 @@ Here is the corresponding example of field type (traditionally in `managed-schem
 For example, to unescape only non-alphanumeric, the pattern could be `\\([^\p\{IsAlphabetic}\p\{Digit}])`.
 
 `config-file`::
-Path to the file that defines query elevation. This file must exist in `<instanceDir>/conf/<config-file>` or `<dataDir>/<config-file>`. If the file exists in the `conf/` directory it will be loaded once at startup. If it exists in the `data/` directory, it will be reloaded for each IndexReader.
+Path to the file that defines the elevation rules.
+This file must exist in the <<config-sets.adoc#,Configset>>.
+Unlike most configuration, this component will re-read its configuration if the file changed following a commit.
+However, that doesn't work in SolrCloud, and there has to be an actual index change for a commit to have an effect for it to be used as a way to pick up changes.
+In all cases, you can reload affected cores/collections to use any new configuration in a configset.
 
 `forceElevation`::
 By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true`, results will first return the boosted docs, then order by date. This defaults to `false`.
