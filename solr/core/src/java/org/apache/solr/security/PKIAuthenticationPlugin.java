@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
@@ -102,7 +103,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     List<String> authInfo = StrUtils.splitWS(header, false);
     if (authInfo.size() != 2) {
       numErrors.mark();
-      throw new RuntimeException("Invalid SolrAuth Header " + header);
+      log.error("Invalid SolrAuth header: {}", header);
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, HEADER);
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid SolrAuth header");
+      return false;
     }
 
     String nodeName = authInfo.get(0);
@@ -112,12 +116,17 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     if (decipher == null) {
       numMissingCredentials.inc();
       log.error("Could not load principal from SolrAuth header.");
-      throw new RuntimeException("Could not decipher SolrAuth header, no principal set");
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, HEADER);
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Could not load principal from SolrAuth header.");
+      return false;
     }
     long elapsed = receivedTime - decipher.timestamp;
     if (elapsed > MAX_VALIDITY) {
       numErrors.mark();
-      throw new RuntimeException("Expired key request timestamp, elapsed=" + elapsed + " TTL=" + MAX_VALIDITY);
+      log.error("Expired key request timestamp, elapsed={}, TTL={}", elapsed, MAX_VALIDITY);
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, HEADER);
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Expired key request timestamp");
+      return false;
     }
 
     final Principal principal = "$".equals(decipher.userName) ?
