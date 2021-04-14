@@ -153,6 +153,20 @@
         "echoParams": "explicit",
         "echoHandler": true
       }
+    },
+    "/tasks/cancel": {
+      "class": "solr.QueryCancellationHandler",
+      "useParams":"_TASK_CANCELLATION",
+      "components": [
+        "querycancellation"
+      ]
+    },
+    "/tasks/list": {
+      "class": "solr.ActiveTasksListHandler",
+      "useParams":"_LIST_TASKS",
+      "components": [
+        "activetaskslist"
+      ]
     }
   }
 }
