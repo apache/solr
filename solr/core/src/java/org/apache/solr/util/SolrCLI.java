@@ -3729,6 +3729,7 @@ public class SolrCLI implements CLIO {
     private static final String ZEPP_DAEMON_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_DAEMON_EXE_NAME).toAbsolutePath().toString();
     private static final String ZEPP_EXE_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_EXE_NAME).toAbsolutePath().toString();
     private static final String ZEPP_INTERP_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_INTERP_EXE_NAME).toAbsolutePath().toString();
+    private static final String ZEPP_LOGS_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "logs", "zeppelin.log").toAbsolutePath().toString();
     private static final String ZEPP_SOLR_INTERPRETER_ID = "solr";
 
     @Override
@@ -4066,10 +4067,10 @@ public class SolrCLI implements CLIO {
     private void startZeppelinInBackgroundOnWindows() throws Exception {
       final Process p = new ProcessBuilder()
               .command(ZEPP_EXE_ABS_PATH)
-              .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-              .redirectError(ProcessBuilder.Redirect.DISCARD)
+              .redirectOutput(ProcessBuilder.Redirect.appendTo(new File(ZEPP_LOGS_ABS_PATH)))
+              .redirectError(ProcessBuilder.Redirect.appendTo(new File(ZEPP_LOGS_ABS_PATH)))
               .start();
-      echo("Zeppelin process is alive: " + p.isAlive());
+      echo("Zeppelin process is alive: " + p.isAlive() + " with pid: " + p.pid());
     }
 
     private String buildDebugCommandString(String executable, String... args) {
