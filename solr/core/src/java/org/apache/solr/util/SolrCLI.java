@@ -3724,12 +3724,9 @@ public class SolrCLI implements CLIO {
     private static final String ZEPP_ARCHIVE_ABS_PATH = Paths.get(ZEPP_BASE_ABS_PATH, ZEPP_ARCHIVE).toAbsolutePath().toString();
     private static final String ZEPP_UNPACKED_ABS_PATH = Paths.get(ZEPP_BASE_ABS_PATH, ZEPP_UNPACK_DIR_NAME).toAbsolutePath().toString();
     private static final String ZEPP_DAEMON_EXE_NAME = "zeppelin-daemon.sh"; // Only valid on *nix
-    private static final String ZEPP_EXE_NAME = (SystemUtils.IS_OS_WINDOWS) ? "zeppelin.cmd" : "zeppelin.sh";
     private static final String ZEPP_INTERP_EXE_NAME = "install-interpreter.sh"; // Only valid on *nix
     private static final String ZEPP_DAEMON_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_DAEMON_EXE_NAME).toAbsolutePath().toString();
-    private static final String ZEPP_EXE_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_EXE_NAME).toAbsolutePath().toString();
     private static final String ZEPP_INTERP_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "bin", ZEPP_INTERP_EXE_NAME).toAbsolutePath().toString();
-    private static final String ZEPP_LOGS_ABS_PATH = Paths.get(ZEPP_UNPACKED_ABS_PATH, "logs", "zeppelin.log").toAbsolutePath().toString();
     private static final String ZEPP_SOLR_INTERPRETER_ID = "solr";
 
     @Override
@@ -3777,10 +3774,7 @@ public class SolrCLI implements CLIO {
       stdout.println("       pointing Zeppelin to a different Solr cluster or changing other settings.");
       stdout.println();
       stdout.println("  This tool relies on management scripts that ship with Zeppelin - several of which are not");
-      stdout.println("  available on Windows.  As a result this tool has only limited support on Windows.  'bootstrap'");
-      stdout.println("  still installs and starts Zeppelin in its sandbox- but it doesn't install the interpreter");
-      stdout.println("  required to talk to Solr.  'clean' deletes the Zeppelin sandbox, but requires users to stop");
-      stdout.println("  Zeppelin first themselves.  The 'stop' and 'update_interpreter' sub-commands are unsupported.");
+      stdout.println("  available on Windows.  As a result this tool isn't supported in Windows environments at this time");
       stdout.println();
 
       // Append option information to help text
@@ -3834,22 +3828,15 @@ public class SolrCLI implements CLIO {
           startZeppelinInstall();
           break;
         case stop:
-          if (SystemUtils.IS_OS_WINDOWS) logUnsupportedWindowsOperationAndExit(action);
           stopZeppelin(cli);
           break;
         case update_interpreter:
-          if (SystemUtils.IS_OS_WINDOWS) logUnsupportedWindowsOperationAndExit(action);
           updateSolrInterpreter(cli, zeppelinUrl, solrUrl);
           break;
         default:
           echo("Invalid action value [" + action + "]; unable to proceed");
           exit(1);
       }
-    }
-
-    private void logUnsupportedWindowsOperationAndExit(Action a) {
-      echo("Sub-command '" + a.name() + "' is unsupported on Windows");
-      exit(-1);
     }
 
     private void bootstrapZeppelinInstallation(CommandLine cli, String zeppelinUrl, String solrUrl) throws Exception {
@@ -3876,14 +3863,7 @@ public class SolrCLI implements CLIO {
 
       echoIfVerbose("Finished initializing Zeppelin sandbox, attempting to start zeppelin...", cli);
       startZeppelinInstall();
-      echoIfVerbose("Finished starting zeppelin", cli);
-
-      if (SystemUtils.IS_OS_WINDOWS) {
-        echoIfVerbose("Zeppelin installed and started, but interpreter must be installed manually on Windows", cli);
-        exit(0);
-      }
-
-      echoIfVerbose("Attempting to update zeppelin-solr plugin", cli);
+      echoIfVerbose("Finished starting zeppelin, attempting to update zeppelin-solr plugin", cli);
       runCommand(ZEPP_INTERP_ABS_PATH, "--name", "solr", "--artifact", "com.lucidworks.zeppelin:zeppelin-solr:0.1.6");
       echoIfVerbose("Finished installing zeppelin-solr plugin, attempting to restart zepplin", cli);
       runCommand(ZEPP_DAEMON_ABS_PATH, "restart");
@@ -3923,10 +3903,7 @@ public class SolrCLI implements CLIO {
     }
 
     private void cleanZeppelinInstallation(CommandLine cli) throws Exception {
-      if (SystemUtils.IS_OS_WINDOWS) {
-        echo("Cleanup requires Zeppelin be stopped, but programmatic stopping is unsupported on Windows.");
-        echo("Cleanup will be attempted but may fail if Zeppelin is currently running");
-      } else if (new File(ZEPP_DAEMON_ABS_PATH).exists() && isZeppelinRunning()) {
+     if (new File(ZEPP_DAEMON_ABS_PATH).exists() && isZeppelinRunning()) {
         echoIfVerbose("Stopping zeppelin prior to 'clean'", cli);
         stopZeppelin(cli);
       }
@@ -3935,11 +3912,7 @@ public class SolrCLI implements CLIO {
     }
 
     private void startZeppelinInstall() throws Exception {
-      if (SystemUtils.IS_OS_WINDOWS) {
-        startZeppelinInBackgroundOnWindows();
-      } else {
         runCommand(ZEPP_DAEMON_ABS_PATH, "start");
-      }
     }
 
     private void stopZeppelin(CommandLine cli) throws Exception {
@@ -4057,20 +4030,6 @@ public class SolrCLI implements CLIO {
 
     private void runCommand(String executable, String... args) throws Exception {
       runCommand(0, executable,  args);
-    }
-
-    /*
-     * On non-Windows systems, zeppelin-daemon.sh can be run by the JVM, which starts Zeppelin in the background and
-     * then exits. But that script is unavailable on Windows, so the JVM must start the process on its own and redirect
-     * its stdout and stderr so that it can outlive the JVM.
-     */
-    private void startZeppelinInBackgroundOnWindows() throws Exception {
-      final Process p = new ProcessBuilder()
-              .command(ZEPP_EXE_ABS_PATH)
-              .redirectOutput(ProcessBuilder.Redirect.appendTo(new File(ZEPP_LOGS_ABS_PATH)))
-              .redirectError(ProcessBuilder.Redirect.appendTo(new File(ZEPP_LOGS_ABS_PATH)))
-              .start();
-      echo("Zeppelin process is alive: " + p.isAlive() + " with pid: " + p.pid());
     }
 
     private String buildDebugCommandString(String executable, String... args) {

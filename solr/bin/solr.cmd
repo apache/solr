@@ -226,7 +226,6 @@ IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
 IF "%1"=="assert" goto run_assert
-IF "%1"=="zeppelin" goto run_zeppelin
 IF "%1"=="export" goto run_export
 IF "%1"=="package" goto run_package
 
@@ -305,7 +304,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, zeppelin
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -1463,30 +1462,6 @@ if errorlevel 1 (
 )
 goto done
 
-:run_zeppelin
-SET "all_args=%*"
-@echo all args is: !all_args!
-IF "%all_args%"=="!all_args:-s=!" (
-@echo Looks like args doesnt contain dash s
-  IF NOT DEFINED SOLR_URL_SCHEME set "SOLR_URL_SCHEME=http"
-  IF NOT DEFINED SOLR_HOST set "SOLR_HOST=locahost"
-  IF NOT DEFINED SOLR_PORT set "SOLR_PORT=8983"
-  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-    -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI %* --solrUrl %SOLR_URL_SCHEME%://%SOLR_HOST%:%SOLR_PORT%
-) else (
-@echo Looks like args DOES contain dash s
-  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-    -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI %*
-)
-
-if errorlevel 1 (
-   exit /b 1
-)
-goto done
 
 :run_export
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
@@ -1956,7 +1931,6 @@ IF "!ZK_OP!"=="upconfig" (
   goto zk_short_usage
 )
 goto done
-
 
 :run_auth
 IF "%1"=="-help" goto usage
