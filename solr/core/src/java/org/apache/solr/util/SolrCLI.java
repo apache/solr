@@ -17,17 +17,12 @@
 package org.apache.solr.util;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Console;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
@@ -74,9 +69,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
@@ -84,7 +76,6 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpEntity;
@@ -3721,6 +3712,7 @@ public class SolrCLI implements CLIO {
     private static final String ZEPP_INTERPRETER_TEMPLATE_ABS_PATH = Paths.get(SOLR_INSTALL_DIR, "server", "resources", "zeppelin-solr-interpreter.json.template").toAbsolutePath().toString();
     private static final String ZEPP_INTERPRETER_ABS_PATH = Paths.get(SOLR_INSTALL_DIR, "server", "resources", "zeppelin-solr-interpreter.json").toAbsolutePath().toString();
     private static final String ZEPP_BASE_ABS_PATH = Paths.get(SOLR_INSTALL_DIR, "zeppelin").toAbsolutePath().toString();
+    private static final String ZEPP_UNPACK_LOG_ABS_PATH = Paths.get(ZEPP_BASE_ABS_PATH, "untar-logs.txt").toAbsolutePath().toString();
     private static final String ZEPP_ARCHIVE_ABS_PATH = Paths.get(ZEPP_BASE_ABS_PATH, ZEPP_ARCHIVE).toAbsolutePath().toString();
     private static final String ZEPP_UNPACKED_ABS_PATH = Paths.get(ZEPP_BASE_ABS_PATH, ZEPP_UNPACK_DIR_NAME).toAbsolutePath().toString();
     private static final String ZEPP_DAEMON_EXE_NAME = "zeppelin-daemon.sh"; // Only valid on *nix
@@ -3858,7 +3850,28 @@ public class SolrCLI implements CLIO {
 
       final File unpackedZeppelinArchiveFile = new File(ZEPP_UNPACKED_ABS_PATH);
       if (! unpackedZeppelinArchiveFile.exists()) {
-        unpackZeppelinAndExitOnFailure(cli, zeppelinBaseDirFile);
+        final File unpackLogs = new File(ZEPP_UNPACK_LOG_ABS_PATH);
+        Process ps = new ProcessBuilder().command("tar", "-xvf", ZEPP_ARCHIVE_ABS_PATH)
+            .redirectError(unpackLogs)
+            .redirectOutput(unpackLogs)
+            .directory(zeppelinBaseDirFile)
+            .start();
+        final boolean completed = ps.waitFor(PROCESS_WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+        if (! completed) {
+          echo("Zeppelin could not be unpacked within " + PROCESS_WAIT_TIME_SECONDS + "s; unable to install Zeppelin");
+          exit(1);
+        }
+
+        if (0 != ps.exitValue()) {
+          echo("Attempt to unpack Zeppelin archive failed with code " + ps.exitValue() + "; exiting");
+          exit(1);
+        } else {
+          echoIfVerbose("Zeppelin successfully downloaded and unpacked to " + zeppelinBaseDirFile.getAbsolutePath(), cli);
+        }
+
+        if (unpackLogs.exists()) {
+          unpackLogs.delete();
+        }
       }
 
       echoIfVerbose("Finished initializing Zeppelin sandbox, attempting to start zeppelin...", cli);
@@ -3869,37 +3882,6 @@ public class SolrCLI implements CLIO {
       runCommand(ZEPP_DAEMON_ABS_PATH, "restart");
       echoIfVerbose("Finished restarting zeppelin, updating 'solr' interpreter to point to Solr URL: " + solrUrl, cli);
       updateSolrInterpreter(cli, zeppelinUrl, solrUrl);
-    }
-
-    private void unpackZeppelinAndExitOnFailure(CommandLine cli, File zeppelinBaseDirFile) throws Exception {
-      try (final TarArchiveInputStream inputTarGzStream = new TarArchiveInputStream(
-              new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(ZEPP_ARCHIVE_ABS_PATH))))) {
-
-        TarArchiveEntry entry;
-        while ((entry = inputTarGzStream.getNextTarEntry()) != null) {
-          final File fsFile = new File(zeppelinBaseDirFile, entry.getName());
-          if (entry.isDirectory()) {
-            if (! fsFile.mkdirs()) {
-              throw new IOException("While extracting Zeppelin, failed to create directory " + fsFile.getAbsolutePath());
-            }
-          } else {
-            // This blob/entry is a file, store it in the parent directory
-            final File parentDir = fsFile.getParentFile();
-            if (!parentDir.isDirectory() && !parentDir.mkdirs()) {
-              throw new IOException("While extracting Zeppelin, failed to create directory " + parentDir.getAbsolutePath());
-            }
-            try (final OutputStream outputFileStream = new BufferedOutputStream(new FileOutputStream(fsFile))) {
-              IOUtils.copy(inputTarGzStream, outputFileStream);
-            }
-            if ((entry.getMode() & 0111) != 0) {
-              fsFile.setExecutable(true);
-            }
-          }
-        }
-      } catch (Exception e) {
-        echo("Encountered error extracting Zeppelin: " + e.getMessage());
-        exit(-1);
-      }
     }
 
     private void cleanZeppelinInstallation(CommandLine cli) throws Exception {

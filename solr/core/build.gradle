@@ -111,7 +111,7 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
-  implementation 'org.apache.commons:commons-compress' // required for customized hadoop classes, ZeppelinTool
+  testImplementation 'org.apache.commons:commons-compress' // required for customized hadoop classes
 
   implementation ('net.hydromatic:eigenbase-properties') { transitive = false }
 
