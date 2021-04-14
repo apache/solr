@@ -199,6 +199,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public final UUID uniqueId = UUID.randomUUID();
 
+  private final CancellableQueryTracker cancellableQueryTracker = new CancellableQueryTracker();
+
   private boolean isReloaded = false;
 
   private final CoreDescriptor coreDescriptor;
@@ -3242,6 +3244,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     });
     return blobRef;
+  }
+
+  public CancellableQueryTracker getCancellableQueryTracker() {
+    return cancellableQueryTracker;
   }
 
   /**
