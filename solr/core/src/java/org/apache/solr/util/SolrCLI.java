@@ -3935,7 +3935,7 @@ public class SolrCLI implements CLIO {
 
     private void startZeppelinInstall() throws Exception {
       if (SystemUtils.IS_OS_WINDOWS) {
-        runCommand(ZEPP_EXE_ABS_PATH);
+        startZeppelinInBackgroundOnWindows();
       } else {
         runCommand(ZEPP_DAEMON_ABS_PATH, "start");
       }
@@ -4056,6 +4056,20 @@ public class SolrCLI implements CLIO {
 
     private void runCommand(String executable, String... args) throws Exception {
       runCommand(0, executable,  args);
+    }
+
+    /*
+     * On non-Windows systems, zeppelin-daemon.sh can be run by the JVM, which starts Zeppelin in the background and
+     * then exits. But that script is unavailable on Windows, so the JVM must start the process on its own and redirect
+     * its stdout and stderr so that it can outlive the JVM.
+     */
+    private void startZeppelinInBackgroundOnWindows() throws Exception {
+      final Process p = new ProcessBuilder()
+              .command(ZEPP_EXE_ABS_PATH)
+              .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+              .redirectError(ProcessBuilder.Redirect.DISCARD)
+              .start();
+      echo("Zeppelin process is alive: " + p.isAlive());
     }
 
     private String buildDebugCommandString(String executable, String... args) {
