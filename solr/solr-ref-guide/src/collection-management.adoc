@@ -1250,32 +1250,7 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
                                     "_i_Lucene50_0.pos": "11.1 MB",
                                     "_i_Lucene50_0.doc": "10 MB",
                                     "_i_Lucene50_0.tim": "4.3 MB"
-                                },
-                                "ramBytesUsed": {
-                                    "total": 49153,
-                                    "postings [PerFieldPostings(segment=_i formats=1)]": {
-                                        "total": 31023,
-                                "fields": {
-                                    "dc": {
-                                        "flags": "I-----------",
-                                        "schemaType": "text_general"
-                                    },
-                                    "dc_str": {
-                                        "flags": "-Dsrs-------",
-                                        "schemaType": "strings"
-                                    },
-                                    "dc.title": {
-                                        "flags": "I-----------",
-                                        "docCount": 70958,
-                                        "sumDocFreq": 646756,
-                                        "sumTotalTermFreq": 671817,
-                                        "schemaType": "text_general"
-                                    },
-                                    "dc.date": {
-                                        "flags": "-Dsrn-------:1:1:8",
-                                        "schemaType": "pdates"
-                                    }
-                                  }}}}}}}}}}}
+                                }}}}}}}}}
 ----
 
 Example of using the raw index data analysis tool:

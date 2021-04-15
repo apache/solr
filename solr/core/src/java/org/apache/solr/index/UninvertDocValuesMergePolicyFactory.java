@@ -179,11 +179,6 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
         @Override
         public void close() throws IOException {
         }
-
-        @Override
-        public long ramBytesUsed() {
-          return 0;
-        }
       };
     }
     

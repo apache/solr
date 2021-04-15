@@ -255,6 +255,9 @@ Other Changes
   alternative implementations of where ConfigSets come from.
   (Nazerke Seidan, David Smiley)
 
+* SOLR-15341: Lucene has removed CodecReader#ramBytesUsed in LUCENE-9387, so ramBytesUsed will no longer be reported
+  in SegmentsInfo handler (janhoy)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
