@@ -1,4 +1,6 @@
+com.adobe.testing:s3mock-junit4=2.1.29
 com.adobe.xmp:xmpcore=5.1.3
+com.amazonaws:*=1.11.1007
 com.carrotsearch.randomizedtesting:*=2.7.6
 com.carrotsearch:hppc=0.8.2
 com.cybozu.labs:langdetect=1.1-20120112
@@ -60,6 +62,7 @@ io.opentracing:*=0.33.0
 io.prometheus:*=0.2.0
 io.sgr:s2-geometry-library-java=1.0.0
 javax.servlet:javax.servlet-api=3.1.0
+javax.xml.bind:jaxb-api=2.3.1
 junit:junit=4.13.1
 net.arnx:jsonic=1.2.7
 net.bytebuddy:byte-buddy=1.9.3
