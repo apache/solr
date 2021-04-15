@@ -242,7 +242,8 @@ public class QueryComponent extends SearchComponent
     }
     if(rb.getSortSpec().getCount() > ROWS_WARN_THRESHOLD && shouldLogPeriodically("rowsWarn", 60)) {
       log.warn("Very high 'rows' parameter detected. This may lead to performance- and memory problems. " +
-          "Consider pagination, see https://solr.apache.org/guide/pagination-of-results.html");
+          "Consider pagination, see https://solr.apache.org/guide/pagination-of-results.html. " +
+          "This warning will mute for 60s.");
     }
   }
 
