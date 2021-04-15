@@ -308,6 +308,8 @@ Improvements
 
 * SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
 
+* SOLR-15252: Solr should log WARN log when a query requests huge rows number (janhoy)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.

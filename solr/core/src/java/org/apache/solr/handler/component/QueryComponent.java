@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -128,6 +130,8 @@ public class QueryComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "query";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final int ROWS_WARN_THRESHOLD = 100000;
+  private static Map<String,Instant> lastLoggedMap = new ConcurrentHashMap<>();
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
@@ -236,6 +240,20 @@ public class QueryComponent extends SearchComponent
     if (rb.getSortSpec().getOffset() < 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' parameter cannot be negative");
     }
+    if(rb.getSortSpec().getCount() > ROWS_WARN_THRESHOLD && shouldLogPeriodically("rowsWarn", 60)) {
+      log.warn("Very high 'rows' parameter detected. This may lead to performance- and memory problems. " +
+          "Consider pagination, see https://solr.apache.org/guide/pagination-of-results.html");
+    }
+  }
+
+  // Decides whether to log again based on key and interval
+  private static boolean shouldLogPeriodically(String key, int intervalSeconds) {
+    Instant lastLog = lastLoggedMap.get(key);
+    if (lastLog != null && Instant.now().minusSeconds(intervalSeconds).isBefore(lastLog)) {
+      return false;
+    }
+    lastLoggedMap.put(key, Instant.now());
+    return true;
   }
 
   protected void prepareGrouping(ResponseBuilder rb) throws IOException {
