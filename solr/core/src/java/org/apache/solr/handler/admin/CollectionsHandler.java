@@ -916,6 +916,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       NamedList<Object> results = new NamedList<>();
       Map<String, DocCollection> collections = h.coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionsMap();
       List<String> collectionList = new ArrayList<>(collections.keySet());
+      Collections.sort(collectionList);
       // XXX should we add aliases here?
       results.add("collections", collectionList);
       SolrResponse response = new OverseerSolrResponse(results);
