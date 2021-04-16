@@ -455,7 +455,28 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 [[listaliases]]
 == LISTALIASES: List of all aliases in the cluster
 
-`/admin/collections?action=LISTALIASES`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listaliases]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8982/solr/admin/collections?action=LISTALIASES
+----
+====
+
+[example.tab-pane#v2listaliases]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster/aliases
+----
+====
+--
 
 The LISTALIASES action does not take any parameters.
 
@@ -501,7 +522,37 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
 
 The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
 
-`/admin/collections?action=ALIASPROP&name=_name_&property.someKey=somevalue`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1aliasprop]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/admin/collections?action=ALIASPROP&name=somename&property.someKey=somevalue
+----
+====
+
+[example.tab-pane#v2aliasprop]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+{
+  "set-alias-property":{
+    "name":"techproducts_alias",
+    "properties": {"foo":"bar"}
+  }
+}
+'
+----
+
+====
+--
+
 
 WARNING: This command allows you to revise any property. No alias specific validation is performed.
          Routed aliases may cease to function, function incorrectly or cause errors if property values
@@ -512,8 +563,11 @@ WARNING: This command allows you to revise any property. No alias specific valid
 `name`::
 The alias name on which to set properties. This parameter is required.
 
-`property.*`::
+`property.*` (v1)::
 The name of the property to be modified replaces '*', the value for the parameter is passed as the value for the property.
+
+`"properties":{"name":"value"}` (v2)::
+A dictionary of name/value pairs of properties to be set.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -550,7 +604,35 @@ http://localhost:8983/solr/admin/collections?action=ALIASPROP&name=testalias2&pr
 [[deletealias]]
 == DELETEALIAS: Delete a Collection Alias
 
-`/admin/collections?action=DELETEALIAS&name=_name_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletealias]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=somename
+----
+====
+
+[example.tab-pane#v2deletealias]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+{
+  "delete-alias":{
+    "name":"testalias"
+  }
+}
+'
+----
+====
+--
+
 
 === DELETEALIAS Parameters
 
