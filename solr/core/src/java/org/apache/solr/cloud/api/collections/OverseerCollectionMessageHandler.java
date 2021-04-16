@@ -86,11 +86,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private volatile boolean isClosed;
 
   public OverseerCollectionMessageHandler(ZkStateReader zkStateReader, String myId,
-                                        final HttpShardHandlerFactory shardHandlerFactory,
-                                        String adminPath,
-                                        Stats stats,
-                                        Overseer overseer,
-                                        OverseerNodePrioritizer overseerPrioritizer) {
+                                          final HttpShardHandlerFactory shardHandlerFactory,
+                                          String adminPath,
+                                          Stats stats,
+                                          Overseer overseer,
+                                          OverseerNodePrioritizer overseerPrioritizer) {
     this.zkStateReader = zkStateReader;
     this.shardHandlerFactory = shardHandlerFactory;
     this.adminPath = adminPath;

@@ -155,6 +155,8 @@ escaping because it's inconsistent with the rest of Solr and was limiting.  This
 
 * SOLR-15203: Remove the deprecated `jwkUrl` in favour of `jwksUrl` when configuring JWT authentication.
 
+* SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000".
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
@@ -163,6 +165,11 @@ as stateFormat=2).
 Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a previous version of Solr.
 See for example https://solr.apache.org/guide/8_8/cluster-node-management.html#migratestateforma[Solr 8.8 Ref Guide].
 // Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
+
+* If you're using Solr in standalone mode with the <<the-query-elevation-component.adoc#,Query Elevation Component>> with it's elevation file in the data directory, you'll have to move it to the <<config-sets.adoc#,Configset>> instead.
+The only reason QEC supported the data directory was to support loading its changes on a commit instead of a more expensive core reload.
+That feature now works from the configset dir too.
+SolrCloud doesn't support that but may sometime.
 
 === Rolling Upgrades with Solr 9
 

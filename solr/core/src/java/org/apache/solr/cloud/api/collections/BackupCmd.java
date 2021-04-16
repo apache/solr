@@ -121,7 +121,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       log.info("Starting to backup ZK data for backupName={}", backupName);
 
       //Download the configs
-      backupMgr.downloadConfigDir(configName);
+      backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
 
       //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
       //Since we don't want to distinguish we extract the state and back it up as a separate json
@@ -210,7 +210,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
 
     log.info("Starting backup of collection={} with backupName={} at location={}", collectionName, backupName,
             backupUri);
@@ -293,7 +293,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
 
     String commitName = request.getStr(CoreAdminParams.COMMIT_NAME);
     Optional<CollectionSnapshotMetaData> snapshotMeta = Optional.empty();

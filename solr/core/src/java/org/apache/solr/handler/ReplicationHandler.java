@@ -771,11 +771,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                                                      final Map<String, FileInfo> confFileInfoCache) {
     List<Map<String, Object>> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
-      File confDir = new File(core.getResourceLoader().getConfigDir());
       Checksum checksum = null;
       for (int i = 0; i < nameAndAlias.size(); i++) {
         String cf = nameAndAlias.getName(i);
-        File f = new File(confDir, cf);
+        File f = new File(core.getResourceLoader().getConfigDir(), cf);
         if (!f.exists() || f.isDirectory()) continue; //must not happen
         FileInfo info = confFileInfoCache.get(cf);
         if (info == null || info.lastmodified != f.lastModified() || info.size != f.length()) {
@@ -1499,7 +1498,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     protected String tlogFileName;
     protected String sOffset;
     protected String sLen;
-    protected String compress;
+    protected final boolean compress;
     protected boolean useChecksum;
 
     protected long offset = -1;
@@ -1521,7 +1520,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       
       sOffset = params.get(OFFSET);
       sLen = params.get(LEN);
-      compress = params.get(COMPRESSION);
+      compress = Boolean.parseBoolean(params.get(COMPRESSION));
       useChecksum = params.getBool(CHECKSUM, false);
       indexGen = params.getLong(GENERATION);
       if (useChecksum) {
@@ -1565,7 +1564,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     protected void createOutputStream(OutputStream out) {
       out = new CloseShieldOutputStream(out); // DeflaterOutputStream requires a close call, but don't close the request outputstream
-      if (Boolean.parseBoolean(compress)) {
+      if (compress) {
         fos = new FastOutputStream(new DeflaterOutputStream(out));
       } else {
         fos = new FastOutputStream(out);
@@ -1726,7 +1725,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     protected File initFile() {
       //if it is a conf file read from config directory
-      return new File(core.getResourceLoader().getConfigDir(), cfileName);
+      return core.getResourceLoader().getConfigPath().resolve(cfileName).toFile();
     }
 
   }

@@ -17,7 +17,9 @@
 package org.apache.solr.schema;
 
 
-import org.apache.solr.cloud.CloudConfigSetService;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
@@ -26,15 +28,23 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.util.DOMConfigNode;
+import org.apache.solr.util.DataConfigNode;
+import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.apache.solr.schema.IndexSchema.SCHEMA;
 
 /** Base class for factories for IndexSchema implementations */
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
@@ -93,11 +103,11 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   }
 
   @SuppressWarnings("unchecked")
-  public static ConfigSetService.ConfigResource getConfigResource(ConfigSetService configSetService, InputStream schemaInputStream, SolrResourceLoader loader, String name) throws IOException {
-    if (configSetService instanceof CloudConfigSetService && schemaInputStream instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+  public static ConfigResource getConfigResource(ConfigSetService configSetService, InputStream schemaInputStream, SolrResourceLoader loader, String name) throws IOException {
+    if (configSetService instanceof ZkConfigSetService && schemaInputStream instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
       ZkSolrResourceLoader.ZkByteArrayInputStream is = (ZkSolrResourceLoader.ZkByteArrayInputStream) schemaInputStream;
-      Map<String, VersionedConfig> configCache = (Map<String, VersionedConfig>) ((CloudConfigSetService) configSetService).getSolrCloudManager().getObjectCache()
-              .computeIfAbsent(ConfigSetService.ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
+      Map<String, VersionedConfig> configCache = (Map<String, VersionedConfig>) ((ZkConfigSetService) configSetService).getSolrCloudManager().getObjectCache()
+              .computeIfAbsent(ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
       VersionedConfig cached = configCache.get(is.fileName);
       if (cached != null) {
         if (cached.version != is.getStat().getVersion()) {
@@ -107,13 +117,27 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
         }
       }
       return () -> {
-        ConfigNode data = ConfigSetService.getParsedSchema(schemaInputStream, loader, name);// either missing or stale. create a new one
+        ConfigNode data = getParsedSchema(schemaInputStream, loader, name);// either missing or stale. create a new one
         configCache.put(is.fileName, new VersionedConfig(is.getStat().getVersion(), data));
         return data;
       };
     }
     //this is not cacheable as it does not come from ZK
-    return () -> ConfigSetService.getParsedSchema(schemaInputStream,loader, name);
+    return () -> getParsedSchema(schemaInputStream,loader, name);
+  }
+
+  public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name) throws IOException, SAXException, ParserConfigurationException {
+    XmlConfigFile schemaConf = null;
+    InputSource inputSource = new InputSource(is);
+    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, "/" + SCHEMA + "/", null);
+    return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
+  }
+
+  public interface ConfigResource {
+
+    ConfigNode get() throws Exception;
+
   }
 
   public static class VersionedConfig {

@@ -26,14 +26,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
@@ -176,29 +176,24 @@ class SolrZkServerProps extends QuorumPeerConfig {
   /**
    * Parse a ZooKeeper configuration file
    * @param path the patch of the configuration file
+   * @throws IllegalArgumentException if a config file does not exist at the given path
    * @throws ConfigException error processing configuration
    */
   public static Properties getProperties(String path) throws ConfigException {
-    File configFile = new File(path);
-
-    log.info("Reading configuration from: {}", configFile);
+    Path configPath = Path.of(path);
+    log.info("Reading configuration from: {}", configPath);
 
     try {
-      if (!configFile.exists()) {
-        throw new IllegalArgumentException(configFile.toString()
+      if (!Files.exists(configPath)) {
+        throw new IllegalArgumentException(configPath.toString()
             + " file is missing");
       }
 
-      Properties cfg = new Properties();
-      FileInputStream in = new FileInputStream(configFile);
-      try {
-        cfg.load(new InputStreamReader(in, StandardCharsets.UTF_8));
-      } finally {
-        in.close();
+      try (Reader reader = Files.newBufferedReader(configPath)) {
+        Properties cfg = new Properties();
+        cfg.load(reader);
+        return cfg;
       }
-
-      return cfg;
-
     } catch (IOException | IllegalArgumentException e) {
       throw new ConfigException("Error processing " + path, e);
     }

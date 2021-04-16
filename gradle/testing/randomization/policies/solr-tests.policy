@@ -147,6 +147,10 @@ grant {
 
   // SASL/Kerberos related properties for Solr tests
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KerberosTicket * \"*\"", "read";
+
+  // Needed by zookeeper to configure SASL Auth in tests
+  permission javax.security.auth.AuthPermission "createLoginContext.Server";
+  permission javax.security.auth.AuthPermission "createLoginContext.Client";
   
   // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";

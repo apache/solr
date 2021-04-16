@@ -16,7 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.zookeeper.ZooDefs;
@@ -32,20 +33,18 @@ import org.apache.zookeeper.data.Id;
  */
 public class SaslZkACLProvider extends SecurityAwareZkACLProvider {
 
-  private static String superUser = System.getProperty("solr.authorization.superuser", "solr");
+  private static final String superUser = System.getProperty("solr.authorization.superuser", "solr");
 
   @Override
   protected List<ACL> createNonSecurityACLsToAdd() {
-    List<ACL> ret = new ArrayList<ACL>();
-    ret.add(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
-    ret.add(new ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE));
-    return ret;
+    return Arrays.asList(
+      new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)),
+      new ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE)
+    );
   }
 
   @Override
   protected List<ACL> createSecurityACLsToAdd() {
-    List<ACL> ret = new ArrayList<ACL>();
-    ret.add(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
-    return ret;
+    return Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
   }
 }
