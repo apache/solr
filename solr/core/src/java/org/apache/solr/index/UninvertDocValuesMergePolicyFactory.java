@@ -45,16 +45,16 @@ import org.apache.solr.uninverting.UninvertingReader;
 /**
  * A merge policy that can detect schema changes and  write docvalues into merging segments when a field has docvalues enabled
  * Using UninvertingReader.
- *
+ * 
  * This merge policy will delegate to the wrapped merge policy for selecting merge segments
- *
+ * 
  */
 public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
-
+  
   final private boolean skipIntegrityCheck;
 
   /**
-   * Whether or not the wrapped docValues producer should check consistency
+   * Whether or not the wrapped docValues producer should check consistency 
    */
   public boolean getSkipIntegrityCheck() {
     return skipIntegrityCheck;
@@ -77,10 +77,10 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
   protected MergePolicy getMergePolicyInstance(MergePolicy wrappedMP) {
     return new OneMergeWrappingMergePolicy(wrappedMP, (merge) -> new UninvertDocValuesOneMerge(merge.segments));
   }
-
+  
   private UninvertingReader.Type getUninversionType(FieldInfo fi) {
     SchemaField sf = schema.getFieldOrNull(fi.name);
-
+    
     if (null != sf &&
         sf.hasDocValues() &&
         fi.getDocValuesType() == DocValuesType.NONE &&
@@ -90,21 +90,21 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
       return null;
     }
   }
-
+    
   private class UninvertDocValuesOneMerge extends MergePolicy.OneMerge {
 
     public UninvertDocValuesOneMerge(List<SegmentCommitInfo> segments) {
       super(segments);
     }
-
+    
     @Override
     public CodecReader wrapForMerge(CodecReader reader) throws IOException {
-      // Wrap the reader with an uninverting reader if any of the fields have no docvalues but the
+      // Wrap the reader with an uninverting reader if any of the fields have no docvalues but the 
       // Schema says there should be
-
-
+      
+      
       Map<String,UninvertingReader.Type> uninversionMap = null;
-
+      
       for(FieldInfo fi: reader.getFieldInfos()) {
         final UninvertingReader.Type type = getUninversionType(fi);
         if (type != null) {
@@ -113,23 +113,23 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
           }
           uninversionMap.put(fi.name, type);
         }
-
+        
       }
-
+      
       if(uninversionMap == null) {
         return reader; // Default to normal reader if nothing to uninvert
       } else {
         return new UninvertingFilterCodecReader(reader, uninversionMap);
       }
-
+      
     }
-
+    
   }
-
-
+  
+  
   /**
    * Delegates to an Uninverting for fields with docvalues
-   *
+   * 
    * This is going to blow up FieldCache, look into an alternative implementation that uninverts without
    * fieldcache
    */
@@ -179,9 +179,14 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
         @Override
         public void close() throws IOException {
         }
+
+        @Override
+        public long ramBytesUsed() {
+          return 0;
+        }
       };
     }
-
+    
     @Override
     protected void doClose() throws IOException {
       docValuesProducer.close();
@@ -193,7 +198,7 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
     public DocValuesProducer getDocValuesReader() {
       return docValuesProducer;
     }
-
+    
     @Override
     public FieldInfos getFieldInfos() {
       return uninvertingReader.getFieldInfos();
@@ -208,7 +213,7 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
     public CacheHelper getReaderCacheHelper() {
       return in.getReaderCacheHelper();
     }
-
+    
   }
 
 }

@@ -159,7 +159,7 @@ is created (possibly several seconds). Preemptive creation reduces these hiccups
 an hour or more) then if there are problems creating a collection, this window of time might be enough to take
 corrective action. However after a successful preemptive creation,  the collection is consuming resources without
 being used, and new documents will tend to be routed through it only to be routed elsewhere. Also, note that
-`router.autoDeleteAge` is currently evaluated relative to the date of a newly created collection, and so you may
+router.autoDeleteAge is currently evaluated relative to the date of a newly created collection, and so you may
 want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
 soon. Note that it has to be possible to subtract the interval specified from a date, so if prepending a
 minus sign creates invalid date math, this will cause an error. Also note that a document that is itself
@@ -213,6 +213,34 @@ Create an alias named "testalias" and link it to the collections named "foo" and
 
 [.dynamic-tabs]
 --
+
+[example.tab-pane#v2createAlias]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,json]
+----
+{
+  "create-alias":{
+    "name":"testalias",
+    "collections":["foo","bar"]
+  }
+}
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
+}
+----
+====
+
 [example.tab-pane#v1createAlias]
 ====
 [.tab-label]*V1 API*
@@ -236,35 +264,6 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 </response>
 ----
 ====
-[example.tab-pane#v2createAlias]
-====
-[.tab-label]*V2 API*
-
-*Input*
-
-[source,bash]
-----
-curl -X POST http://localhost:8983/v2/collections -H 'Content-Type: application/json' -d'
-  {
-    "create-alias":{
-      "name":"testalias",
-      "collections":["foo","bar"]
-    }
-  }
-'
-----
-*Output*
-
-[source,json]
-----
-{
-  "responseHeader": {
-    "status": 0,
-    "QTime": 125
-  }
-}
-----
-====
 --
 
 A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
@@ -272,6 +271,57 @@ Notice that the collection creation parameters follow the v2 API naming conventi
 
 [.dynamic-tabs]
 --
+
+[example.tab-pane#v2createTRA]
+====
+[.tab-label]*V2 API*
+
+*Input*
+
+POST /api/c
+
+[source,json]
+----
+{
+  "create-alias" : {
+    "name": "somethingTemporalThisWayComes",
+    "router" : {
+      "name": "time",
+      "field": "evt_dt",
+      "start":"NOW/MINUTE",
+      "interval":"+2HOUR",
+      "maxFutureMs":"14400000"
+    },
+    "create-collection" : {
+      "config":"_default",
+      "router": {
+        "name":"implicit",
+        "field":"foo_s"
+      },
+      "shards":"foo,bar,baz",
+      "numShards": 3,
+      "tlogReplicas":1,
+      "pullReplicas":1,
+      "properties" : {
+        "foobar":"bazbam"
+      }
+    }
+  }
+}
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 1234
+    }
+}
+----
+====
 
 [example.tab-pane#v1createTRA]
 ====
@@ -310,47 +360,45 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 </response>
 ----
 ====
+--
 
-[example.tab-pane#v2createTRA]
+Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
+individual dimensions
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v2createDRA]
 ====
 [.tab-label]*V2 API*
 
 *Input*
 
-
-
-[source,bash]
+POST /api/c
+[source,json]
 ----
-curl -X POST http://localhost:8983/v2/collections -H 'Content-Type: application/json' -d'
-  {
-    "create-alias" : {
-      "name": "somethingTemporalThisWayComes",
-      "router" : {
-        "name": "time",
-        "field": "evt_dt",
-        "start":"NOW/MINUTE",
-        "interval":"+2HOUR",
-        "maxFutureMs":"14400000"
-      },
-      "create-collection" : {
-        "config":"_default",
-        "router": {
-          "name":"implicit",
-          "field":"foo_s"
-        },
-        "shards":"foo,bar,baz",
-        "numShards": 3,
-        "tlogReplicas":1,
-        "pullReplicas":1,
-        "properties" : {
-          "foobar":"bazbam"
-        }
-      }
+{
+  "create-alias":{
+    "name":"dra_test1",
+    "router": {
+      "name": "Dimensional[time,category]",
+      "routerList" : [ {
+            "field":"myDate_tdt",
+            "start":"2019-01-01T00:00:00Z",
+            "interval":"+1MONTH",
+            "maxFutureMs":600000
+        },{
+             "field":"myCategory_s",
+             "maxCardinality":20
+        }]
+    },
+    "create-collection": {
+      "config":"_default",
+      "numShards":2
     }
   }
-'
+}
 ----
-
 *Output*
 
 [source,json]
@@ -363,13 +411,6 @@ curl -X POST http://localhost:8983/v2/collections -H 'Content-Type: application/
 }
 ----
 ====
---
-
-Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
-individual dimensions
-
-[.dynamic-tabs]
---
 
 [example.tab-pane#v1createDRA]
 ====
@@ -404,52 +445,6 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 </response>
 ----
 ====
-
-[example.tab-pane#v2createDRA]
-====
-[.tab-label]*V2 API*
-
-*Input*
-
-[source,bash]
-----
-curl -X POST http://localhost:8983/v2/collections -H 'Content-Type: application/json' -d'
-  {
-    "create-alias":{
-      "name":"dra_test1",
-      "router": {
-        "name": "Dimensional[time,category]",
-        "routerList" : [ {
-              "field":"myDate_tdt",
-              "start":"2019-01-01T00:00:00Z",
-              "interval":"+1MONTH",
-              "maxFutureMs":600000
-          },{
-               "field":"myCategory_s",
-               "maxCardinality":20
-          }]
-      },
-      "create-collection": {
-        "config":"_default",
-        "numShards":2
-      }
-    }
-  }
-'
-----
-*Output*
-
-[source,json]
-----
-{
-    "responseHeader": {
-        "status": 0,
-        "QTime": 1234
-    }
-}
-----
-====
-
 --
 
 [[listaliases]]
