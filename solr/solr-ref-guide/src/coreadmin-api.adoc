@@ -100,7 +100,7 @@ WARNING: While it's possible to create a core for a non-existent collection, thi
 The shard id this core represents. Normally you want to be auto-assigned a shard id.
 
 `property._name_=_value_`::
-Sets the core property _name_ to _value_. See the section on defining <<defining-core-properties.adoc#defining-core-properties-files,core.properties file contents>>.
+Sets the core property _name_ to _value_. See the section on defining <<core-discovery.adoc#defining-core-properties-files,core.properties file contents>>.
 
 `async`::
 Request ID to track this action which will be processed asynchronously.

@@ -1,4 +1,4 @@
-= Format of solr.xml
+= Configuring solr.xml
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,7 +18,7 @@
 
 The `solr.xml` file defines some global configuration options that apply to all or many cores.
 
-This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<defining-core-properties.adoc#,Defining core.properties>>.
+This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<core-discovery.adoc#,Core Discovery>>.
 
 == Defining solr.xml
 

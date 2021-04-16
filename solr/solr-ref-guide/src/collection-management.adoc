@@ -127,7 +127,7 @@ Please note that <<realtime-get.adoc#,RealTime Get>> or retrieval by document ID
 If `true` the states of individual replicas will be maintained as individual child of the `state.json`. default is `false`
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#,Defining core.properties>> for details on supported properties and values.
+Set core property _name_ to _value_. See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
 
 [WARNING]
 ====
@@ -696,7 +696,7 @@ The routing key prefix. For example, if the uniqueKey of a document is "a!123", 
 The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard. The default is 60 seconds.
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#,Defining core.properties>> for details on supported properties and values.
+Set core property _name_ to _value_. See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.

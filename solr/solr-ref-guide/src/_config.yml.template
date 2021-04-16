@@ -79,6 +79,7 @@ solr-attributes: &solr-attributes-ref
   build-year: '${buildYear}'
   ivy-commons-codec-version: '${ivyCommonsCodec}'
   ivy-dropwizard-version: '${ivyDropwizardMetrics}'
+  ivy-hadoop-version: '${ivyHadoop}'
   ivy-log4j-version: '${ivyLog4j}'
   ivy-opennlp-version: '${ivyOpennlpTools}'
   ivy-tika-version: '${ivyTika}'

@@ -1,4 +1,4 @@
-= Defining core.properties
+= Core Discovery
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,9 +18,21 @@
 
 Core discovery means that creating a core is as simple as a `core.properties` file located on disk.
 
+== The core.properties File
+
+In Solr, the term _core_ is used to refer to a single index and associated transaction log and configuration files (including the `solrconfig.xml` and schema files, among others).
+Your Solr installation can have multiple cores if needed, which allows you to index data with different structures in the same server, and maintain control over how your data is presented to different audiences.
+In SolrCloud mode you will be more familiar with the term _collection_.
+Behind the scenes a collection consists of one or more cores.
+
+Cores can be created using `bin/solr` script or as part of SolrCloud collection creation using the APIs.
+Core-specific properties (such as the directories to use for the indexes or configuration files, the core name, and other options) are defined in a `core.properties` file.
+Any `core.properties` file in any directory of your Solr installation (or in a directory under where `solr_home` is defined) will be found by Solr and the defined properties will be used for the core named in the file.
+
 The `core.properties` file is a simple Java Properties file where each line is just a key=value pair, e.g., `name=core1`.
 Notice that no quotes are required.
 
+==
 A minimal `core.properties` file looks like the example below.
 However, it can also be empty, see information on placement of `core.properties` below.
 

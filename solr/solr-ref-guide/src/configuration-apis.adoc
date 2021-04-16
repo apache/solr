@@ -4,6 +4,7 @@
     managed-resources, \
     collections-api, \
     configsets-api, \
+    coreadmin-api, \
     v2-api
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -24,6 +25,8 @@
 
 Solr includes several APIs that can be used to modify settings in `solrconfig.xml`.
 
+*TODO* add descriptions below
+
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::configapi-sections[]
@@ -34,7 +37,9 @@ Solr includes several APIs that can be used to modify settings in `solrconfig.xm
 | <<managed-resources.adoc#,Managed Resources>>
 | <<collections-api.adoc#,Collections API>>
 | <<configsets-api.adoc#,Configsets API>>
+| <<coreadmin-api.adoc#,CoreAdmin API>>
 | <<v2-api.adoc#,V2 API>>: Describes how to use the new V2 APIs, a redesigned API framework covering most Solr APIs.
+|
 |===
 // end::configapi-sections[]
 ****

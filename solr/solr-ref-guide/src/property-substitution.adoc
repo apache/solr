@@ -1,4 +1,4 @@
-= Property Substitution in solrconfig.xml
+= Property Substitution in Configuration Files
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// *TODO* merge this page with defining-core-properties.adoc?
+// *TODO* merge this page with core-discovery.adoc?
 
 Solr supports variable substitution of property values in configuration files, which allows runtime specification of various configuration options in `solrconfig.xml`.
 
@@ -70,32 +70,6 @@ This file should only be edited with the API, but will look like this example:
 ----
 
 For more details, see the section <<config-api.adoc#,Config API>>.
-
-== solrcore.properties
-
-If the configuration directory for a Solr core contains a file named `solrcore.properties` that file can contain any arbitrary user-defined property names and values using the Java https://en.wikipedia.org/wiki/.properties[properties file format].
-Those properties can then be used as variables in other configuration files for that Solr core.
-
-For example, the following `solrcore.properties` file could be created in the `conf/` directory of a collection using one of the example configurations, to override the `lockType` used.
-
-[source,properties]
-----
-#conf/solrcore.properties
-solr.lock.type=none
-----
-
-.Deprecation
-[WARNING]
-====
-`solrcore.properties` does not work in SolrCloud mode as it is not read from ZooKeeper.
-This feature is likely to be removed in the future.
-Instead, use another mechanism like <<Config API to Override solrconfig.xml,`configoverlay.json`>>.
-====
-
-[IMPORTANT]
-====
-The path and name of the `solrcore.properties` file can be overridden using the `properties` property in <<defining-core-properties.adoc#,`core.properties`>>.
-====
 
 == User-Defined Properties in core.properties
 
@@ -162,7 +136,7 @@ For example, regardless of whether the name for a particular Solr core is explic
 </requestHandler>
 ----
 
-All implicit properties use the `solr.core.` name prefix, and reflect the runtime value of the equivalent <<defining-core-properties.adoc#,`core.properties` property>>:
+All implicit properties use the `solr.core.` name prefix, and reflect the runtime value of the equivalent <<core-discovery.adoc#,`core.properties` property>>:
 
 * `solr.core.name`
 * `solr.core.config`

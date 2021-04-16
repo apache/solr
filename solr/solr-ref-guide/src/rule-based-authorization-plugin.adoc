@@ -50,7 +50,8 @@ Administrators can use permissions from a list of predefined options or define t
 
 == Configuring the Rule-Based Authorization Plugins
 
-Like all of Solr's security plugins, configuration for RBAP lives in a file or ZooKeeper node with the name `security.json`.  See <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,here>> for more information on how to setup `security.json` in your cluster.
+Like all of Solr's security plugins, configuration for RBAP lives in a file or ZooKeeper node with the name `security.json`.
+See <<authentication-and-authorization-plugins.adoc#configuring-security-json,Configuring security.json>> for more information on how to setup `security.json` in your cluster.
 
 Solr offers an <<Authorization API>> for making changes to RBAP configuration.  Authorized administrators should use this to make changes under most circumstances.  Users may also make edits to `security.json` directly if it is stored in ZooKeeper, but this is an expert-level feature and is discouraged in most circumstances.  The API simplifies some aspects of configuration, and provides error feedback that isn't provided when editing ZooKeeper directly.
 

@@ -48,7 +48,7 @@ The structure should look something like this:
             /solrconfig.xml
 ----
 
-The default base directory is `$SOLR_HOME/configsets`. This path can be configured in `solr.xml` (see <<format-of-solr-xml.adoc#,Format of solr.xml>> for details).
+The default base directory is `$SOLR_HOME/configsets`. This path can be configured in `solr.xml` (see <<configuring-solr-xml.adoc#,Format of solr.xml>> for details).
 
 To create a new core using a configset, pass `configSet` as one of the core properties. For example, if you do this via the CoreAdmin API:
 

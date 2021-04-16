@@ -1,12 +1,13 @@
 = Configuration Guide
 :page-children: configuration-files, \
     property-substitution, \
+    core-discovery, \
+    configuring-solr-xml, \
     configuring-solrconfig-xml, \
-    solr-cores-and-solr-xml, \
     configuration-apis, \
     config-sets, \
-    solr-plugins, \
-    resource-loading
+    resource-loading, \
+    solr-plugins
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -28,21 +29,26 @@
 This section covers configuration files and options for customizing your Solr installation.
 
 ****
-<<configuration-files.adoc#,*Solr Configuration Files*>>: Overview of the installation layout and major configuration files.
+<<configuration-files.adoc#,*Solr Configuration Files*>>: Solr's major configuration files.
 ****
 
 ****
-<<configuring-solrconfig-xml.adoc#,*Configuring solrconfig.xml*>>: Describes how to work with the main configuration file for Solr, `solrconfig.xml`.
+<<property-substitution.adoc#,*Property Substitution in Configuration Files*>>: Provide property values at startup or in shared property files.
+****
+
+****
+<<core-discovery.adoc#,*Core Discovery*>>: Placement of `core.properties` and available property options.
+****
+
+****
+<<configuring-solr-xml.adoc#,*Configuring solr.xml*>>: Define `solr.xml`, including the acceptable parameters for the `solr.xml` file.
+****
+
+****
+<<configuring-solrconfig-xml.adoc#,*Configuring solrconfig.xml*>>: Options for the main configuration file for Solr, `solrconfig.xml`.
 
 // This pulls the sub-section list from the child page to reduce errors
 include::configuring-solrconfig-xml.adoc[tag=solrconfig-sections]
-****
-
-****
-<<solr-cores-and-solr-xml.adoc#,*Solr Cores and solr.xml*>>: Describes how to work with `solr.xml` and `core.properties` to configure your Solr core, or multiple Solr cores within a single instance.
-
-// This pulls the sub-section list from the child page to reduce errors
-include::solr-cores-and-solr-xml.adoc[tag=solrxml-sections]
 ****
 
 ****
@@ -53,16 +59,16 @@ include::configuration-apis.adoc[tag=configapi-sections]
 ****
 
 ****
-<<config-sets.adoc#,Configsets>>: Use configsets to avoid duplicating effort when defining a new core.
+<<config-sets.adoc#,*Configsets*>>: Use configsets to avoid duplicating effort when defining a new core.
 ****
 
 ****
-<<solr-plugins.adoc#,*Solr Plugins*>>:
+<<resource-loading.adoc#,*Resource Loading*>>: Describes how word lists, model files, and other related data are resolved by the components that need them.
+****
+
+****
+<<solr-plugins.adoc#,*Solr Plugins*>>: Solr's plugin framework for add-on functionality.
 
 // This pulls the sub-section list from the child page to reduce errors
 include::solr-plugins.adoc[tag=plugin-sections]
-****
-
-****
-<<resource-loading.adoc#,Resource Loading>>: Describes how word lists, model files, and other related data are resolved by the components that need them.
 ****

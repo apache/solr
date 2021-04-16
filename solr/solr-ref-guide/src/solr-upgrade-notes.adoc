@@ -252,7 +252,7 @@ When using the `solr.xml` file that ships with 8.6, you can configure the list o
 Please see `bin/solr.in.sh` or `bin\solr.in.cmd` for example usage.
 Using the value `*` will allow any path as in earlier versions.
 +
-For more on this, see the section <<format-of-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>.
+For more on this, see the section <<configuring-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>.
 +
 Windows SMB shares on the UNC format, such as `\\myhost\myshare\mypath` are now always disallowed.
 Please use drive letter mounts instead, i.e., `S:\mypath`.
@@ -358,7 +358,7 @@ In Solr 9.0, this will be the default.
 
 Solr has two new parameters to allow you to restrict access to Solr using IP addresses. Use `SOLR_IP_WHITELIST` to configure a whitelist, and `SOLR_IP_BLACKLIST` to configure a blacklist. These properties are defined in `solr.in.sh` or `solr.in.cmd`.
 
-See also the section <<securing-solr.adoc#enable-ip-access-control,Enable IP Access Control>>.
+See also the section <<securing-solr.adoc#ip-access-control,Enable IP Access Control>>.
 
 *BlockJoin Facet Deprecation*
 
@@ -600,7 +600,7 @@ An identical parameter is available in `solrconfig.xml` for limiting the size of
 +
 If your use case demands that you a lot of OR or AND clauses in your queries, upon upgrade to 8.1 you may need to adjust the global `maxBooleanClauses` parameter since between 7.0 and 8.1 the limit was effectively unbounded.
 +
-For more information about the new parameter, see the section <<format-of-solr-xml.adoc#global-maxbooleanclauses,Format of solr.xml: maxBooleanClauses>>.
+For more information about the new parameter, see the section <<configuring-solr-xml.adoc#global-maxbooleanclauses,Format of solr.xml: maxBooleanClauses>>.
 
 *Security*
 
