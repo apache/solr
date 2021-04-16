@@ -1619,13 +1619,14 @@ http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=myBackupName
 
 [source,bash]
 ----
-POST http://localhost:8983/v2/collections/backups
-{
-  "list-backups" : {
-    "name": "myBackupName",
-    "location": "/path/to/my/shared/drive"
+curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d'
+  {
+    "list-backups" : {
+      "name": "myBackupName",
+      "location": "/path/to/my/shared/drive"
+    }
   }
-}
+'
 ----
 ====
 --
@@ -1788,14 +1789,15 @@ http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupNa
 
 [source,bash]
 ----
-POST http://localhost:8983/v2/collections/backups
-{
-  "delete-backups" : {
-    "name": "myBackupName",
-    "location": "/path/to/my/shared/drive",
-    "backupId": 0
+curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d'
+  {
+    "delete-backups" : {
+      "name": "myBackupName",
+      "location": "/path/to/my/shared/drive",
+      "backupId": 0
+    }
   }
-}
+'
 ----
 ====
 --
