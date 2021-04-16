@@ -19,7 +19,7 @@
 
 A collection is a single logical index that uses a single Solr configuration file (`solrconfig.xml`) and a single index schema.
 
-The examples assume you have started Solr via `solr/bin start -c -e techproducts`.
+The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
 
 [[create]]
 == CREATE: Create a Collection
@@ -520,6 +520,13 @@ http://localhost:8983/solr/admin/collections?action=DELETE&name=techproducts_v2
 [source,bash]
 ----
 curl -X DELETE http://localhost:8983/api/collections/techproducts_v2
+----
+
+To run a DELETE asynchronously then append the `async` parameter:
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts_v2?async=aaaa
 ----
 ====
 --
