@@ -11,7 +11,8 @@
     thread-dump, \
     solr-tracing, \
     circuit-breakers, \
-    rate-limiters
+    rate-limiters, \
+    task-management
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -50,7 +51,7 @@ This section covers tools and approaches for monitoring Solr via the web-based a
 | <<solr-tracing.adoc#,Distributed Solr Tracing>>: Distributed tracing for Solr requests.
 | <<circuit-breakers.adoc#,Circuit Breakers>>: Limit loads based on Java heap usage or CPU utilization to prevent system instability.
 | <<rate-limiters.adoc#,Request Rate Limiters>> Limit concurrent requests by type to ensure availability of resources for other requests.
-|
+| <<task-management.adoc#,Task Management>> *TODO*
 |===
 // end::monitoring-sections[]
 ****

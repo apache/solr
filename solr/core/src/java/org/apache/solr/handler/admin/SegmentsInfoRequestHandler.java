@@ -16,36 +16,10 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.LeafMetaData;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.MergePolicy.MergeSpecification;
 import org.apache.lucene.index.MergePolicy.OneMerge;
-import org.apache.lucene.index.MergeTrigger;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.luke.FieldFlag;
@@ -63,9 +37,15 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.index.IndexOptions.DOCS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.apache.lucene.index.IndexOptions.*;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
@@ -169,7 +149,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
         }
       }
     }
-    SimpleOrderedMap<Object> segmentInfo = null;
+    SimpleOrderedMap<Object> segmentInfo;
     List<SegmentCommitInfo> sortable = new ArrayList<>(infos.asList());
     // Order by the number of live docs. The display is logarithmic so it is a little jumbled visually
     sortable.sort((s1, s2) ->
@@ -291,14 +271,6 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
         segmentInfoMap.add("largestFiles", topFiles);
       }
     }
-    if (seg != null && withSizeInfo) {
-      SimpleOrderedMap<Object> ram = new SimpleOrderedMap<>();
-      ram.add("total", seg.ramBytesUsed());
-      for (Accountable ac : seg.getChildResources()) {
-        accountableToMap(ac, ram::add);
-      }
-      segmentInfoMap.add("ramBytesUsed", ram);
-    }
     if (withFieldInfos) {
       if (seg == null) {
         log.debug("Skipping segment info - not available as a SegmentReader: {}", segmentCommitInfo);
@@ -313,20 +285,6 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     }
 
     return segmentInfoMap;
-  }
-
-  private void accountableToMap(Accountable accountable, BiConsumer<String, Object> consumer) {
-    Collection<Accountable> children = accountable.getChildResources();
-    if (children != null && !children.isEmpty()) {
-      LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-      map.put("total", accountable.ramBytesUsed());
-      for (Accountable child : children) {
-        accountableToMap(child, map::put);
-      }
-      consumer.accept(accountable.toString(), map);
-    } else {
-      consumer.accept(accountable.toString(), accountable.ramBytesUsed());
-    }
   }
 
   private SimpleOrderedMap<Object> getFieldInfo(SegmentReader reader, FieldInfo fi, IndexSchema schema) {
