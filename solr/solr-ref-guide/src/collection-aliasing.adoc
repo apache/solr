@@ -243,14 +243,16 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 [.tab-label]*V2 API*
 *Input*
 
-[source,json]
+[source,bash]
 ----
-{
-  "create-alias":{
-    "name":"testalias",
-    "collections":["foo","bar"]
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "create-alias":{
+      "name":"testalias",
+      "collections":["foo","bar"]
+    }
   }
-}
+'
 ----
 *Output*
 
@@ -316,36 +318,37 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 
 *Input*
 
-POST /api/c
 
-[source,json]
+[source,bash]
 ----
-{
-  "create-alias" : {
-    "name": "somethingTemporalThisWayComes",
-    "router" : {
-      "name": "time",
-      "field": "evt_dt",
-      "start":"NOW/MINUTE",
-      "interval":"+2HOUR",
-      "maxFutureMs":"14400000"
-    },
-    "create-collection" : {
-      "config":"_default",
-      "router": {
-        "name":"implicit",
-        "field":"foo_s"
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "create-alias" : {
+      "name": "somethingTemporalThisWayComes",
+      "router" : {
+        "name": "time",
+        "field": "evt_dt",
+        "start":"NOW/MINUTE",
+        "interval":"+2HOUR",
+        "maxFutureMs":"14400000"
       },
-      "shards":"foo,bar,baz",
-      "numShards": 3,
-      "tlogReplicas":1,
-      "pullReplicas":1,
-      "properties" : {
-        "foobar":"bazbam"
+      "create-collection" : {
+        "config":"_default",
+        "router": {
+          "name":"implicit",
+          "field":"foo_s"
+        },
+        "shards":"foo,bar,baz",
+        "numShards": 3,
+        "tlogReplicas":1,
+        "pullReplicas":1,
+        "properties" : {
+          "foobar":"bazbam"
+        }
       }
     }
   }
-}
+'
 ----
 
 *Output*
@@ -409,30 +412,31 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 
 *Input*
 
-POST /api/c
-[source,json]
+[source,bash]
 ----
-{
-  "create-alias":{
-    "name":"dra_test1",
-    "router": {
-      "name": "Dimensional[time,category]",
-      "routerList" : [ {
-            "field":"myDate_tdt",
-            "start":"2019-01-01T00:00:00Z",
-            "interval":"+1MONTH",
-            "maxFutureMs":600000
-        },{
-             "field":"myCategory_s",
-             "maxCardinality":20
-        }]
-    },
-    "create-collection": {
-      "config":"_default",
-      "numShards":2
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "create-alias":{
+      "name":"dra_test1",
+      "router": {
+        "name": "Dimensional[time,category]",
+        "routerList" : [ {
+              "field":"myDate_tdt",
+              "start":"2019-01-01T00:00:00Z",
+              "interval":"+1MONTH",
+              "maxFutureMs":600000
+          },{
+               "field":"myCategory_s",
+               "maxCardinality":20
+          }]
+      },
+      "create-collection": {
+        "config":"_default",
+        "numShards":2
+      }
     }
   }
-}
+'
 ----
 *Output*
 
