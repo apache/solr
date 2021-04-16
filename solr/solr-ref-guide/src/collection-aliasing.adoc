@@ -269,7 +269,6 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 --
 
 A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
-Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
 
 [.dynamic-tabs]
 --
