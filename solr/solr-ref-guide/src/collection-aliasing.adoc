@@ -159,7 +159,7 @@ is created (possibly several seconds). Preemptive creation reduces these hiccups
 an hour or more) then if there are problems creating a collection, this window of time might be enough to take
 corrective action. However after a successful preemptive creation,  the collection is consuming resources without
 being used, and new documents will tend to be routed through it only to be routed elsewhere. Also, note that
-router.autoDeleteAge is currently evaluated relative to the date of a newly created collection, and so you may
+`router.autoDeleteAge` is currently evaluated relative to the date of a newly created collection, and so you may
 want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
 soon. Note that it has to be possible to subtract the interval specified from a date, so if prepending a
 minus sign creates invalid date math, this will cause an error. Also note that a document that is itself
@@ -214,6 +214,30 @@ Create an alias named "testalias" and link it to the collections named "foo" and
 [.dynamic-tabs]
 --
 
+[example.tab-pane#v1createAlias]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=foo,bar&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">122</int>
+  </lst>
+</response>
+----
+====
+
 [example.tab-pane#v2createAlias]
 ====
 [.tab-label]*V2 API*
@@ -240,8 +264,15 @@ Create an alias named "testalias" and link it to the collections named "foo" and
 }
 ----
 ====
+--
 
-[example.tab-pane#v1createAlias]
+A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
+Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1createTRA]
 ====
 [.tab-label]*V1 API*
 
@@ -249,7 +280,21 @@ Create an alias named "testalias" and link it to the collections named "foo" and
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=foo,bar&wt=xml
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS
+    &name=somethingTemporalThisWayComes
+    &router.name=time
+    &router.start=NOW/MINUTE
+    &router.field=evt_dt
+    &router.interval=%2B2HOUR
+    &router.maxFutureMs=14400000
+    &create-collection.collection.configName=_default
+    &create-collection.router.name=implicit
+    &create-collection.router.field=foo_s
+    &create-collection.numShards=3
+    &create-collection.shards=foo,bar,baz
+    &create-collection.tlogReplicas=1
+    &create-collection.pullReplicas=1
+    &create-collection.property.foobar=bazbam
 ----
 
 *Output*
@@ -259,18 +304,11 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 <response>
   <lst name="responseHeader">
     <int name="status">0</int>
-    <int name="QTime">122</int>
+    <int name="QTime">1234</int>
   </lst>
 </response>
 ----
 ====
---
-
-A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
-Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
-
-[.dynamic-tabs]
---
 
 [example.tab-pane#v2createTRA]
 ====
@@ -323,7 +361,15 @@ POST /api/c
 ----
 ====
 
-[example.tab-pane#v1createTRA]
+--
+
+Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
+individual dimensions
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1createDRA]
 ====
 [.tab-label]*V1 API*
 
@@ -332,20 +378,16 @@ POST /api/c
 [source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=CREATEALIAS
-    &name=somethingTemporalThisWayComes
-    &router.name=time
-    &router.start=NOW/MINUTE
-    &router.field=evt_dt
-    &router.interval=%2B2HOUR
-    &router.maxFutureMs=14400000
+    &name=dra_test1
+    &router.name=Dimensional[time,category]
+    &router.0.start=2019-01-01T00:00:00Z
+    &router.0.field=myDate_tdt
+    &router.0.interval=%2B1MONTH
+    &router.0.maxFutureMs=600000
     &create-collection.collection.configName=_default
-    &create-collection.router.name=implicit
-    &create-collection.router.field=foo_s
-    &create-collection.numShards=3
-    &create-collection.shards=foo,bar,baz
-    &create-collection.tlogReplicas=1
-    &create-collection.pullReplicas=1
-    &create-collection.property.foobar=bazbam
+    &create-collection.numShards=2
+    &router.1.maxCardinality=20
+    &router.1.field=myCategory_s
 ----
 
 *Output*
@@ -360,13 +402,6 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 </response>
 ----
 ====
---
-
-Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
-individual dimensions
-
-[.dynamic-tabs]
---
 
 [example.tab-pane#v2createDRA]
 ====
@@ -412,39 +447,6 @@ POST /api/c
 ----
 ====
 
-[example.tab-pane#v1createDRA]
-====
-[.tab-label]*V1 API*
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=CREATEALIAS
-    &name=dra_test1
-    &router.name=Dimensional[time,category]
-    &router.0.start=2019-01-01T00:00:00Z
-    &router.0.field=myDate_tdt
-    &router.0.interval=%2B1MONTH
-    &router.0.maxFutureMs=600000
-    &create-collection.collection.configName=_default
-    &create-collection.numShards=2
-    &router.1.maxCardinality=20
-    &router.1.field=myCategory_s
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">1234</int>
-  </lst>
-</response>
-----
-====
 --
 
 [[listaliases]]
