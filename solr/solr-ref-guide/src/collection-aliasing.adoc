@@ -563,8 +563,8 @@ WARNING: This command allows you to revise any property. No alias specific valid
 `name`::
 The alias name on which to set properties. This parameter is required.
 
-`property.*` (v1)::
-The name of the property to be modified replaces '*', the value for the parameter is passed as the value for the property.
+`property._name_=_value_` (v1)::
+Set property _name_ to _value_. 
 
 `"properties":{"name":"value"}` (v2)::
 A dictionary of name/value pairs of properties to be set.
