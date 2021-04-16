@@ -7,11 +7,11 @@
 # previous testing. It also enables redeployment of the code for such testing
 # clusters without erasing the data previously indexed.
 #
-# It is for dev testing only NOT for production use.
+# It is for dev testing only, NOT for production use.
 #
-# This is also NOT meant to be run from this directory within a lucene-solr
+# This is also NOT meant to be run from this directory within a solr
 # working copy. Typical usage is to copy it out to a separate workspace
-# such as (<GIT_CHECKOUT>/../testing) and edit then either use the -w option
+# such as (<GIT_CHECKOUT>/../solr-testing) and edit then either use the -w option
 # or edit the definition of DEFAULT_VCS_WORKSPACE variable below.
 #
 # Usage:
@@ -19,7 +19,7 @@
 #
 # Options:
 #  -c                clean the data & zk collections erasing all indexed data
-#  -r                recompile server with 'ant clean server create-package'
+#  -r                recompile server with 'gradlew clean assembleDist'
 #  -m <mem>          memory per node
 #  -a <args>         additional JVM options
 #  -n <num>          number of nodes to create/start if this doesn't match error
@@ -53,10 +53,10 @@
 # directory as this script. Distant  paths with slashes or funny characters
 # *might* work, but are not well tested, YMMV.
 #
-# PEREQ: 1. Zookeeper on localhost:2181 (or as specified by -z option) where
+# PREREQ:   Zookeeper on localhost:2181 (or as specified by -z option) where
 #           it is ok to create a lot of top level directories named for
 #           the absolute path of the [name] directory (for example:
-#           /solr_home_myuser_projects_solr_testing_2019-01-01) Note
+#           /solr_home_myuser_projects_solr_testing_2019-01-01). Note
 #           that not using the embedded zookeeper is key to being able
 #           switch between testing setups and to test vs alternate versions
 #           of zookeeper if desired.
@@ -65,7 +65,6 @@
 #           testing installations of solr.
 #        2. Edit DEFAULT_VCS_WORKSPACE if the present value does not suit
 #           your purposes.
-#        3. chmod +x cloud.sh
 #
 # EXAMPLES:
 #
@@ -91,7 +90,7 @@
 #
 ##################################################################################
 
-DEFAULT_VCS_WORKSPACE='../code/lucene-solr'
+DEFAULT_VCS_WORKSPACE='../solr'
 
 ############## Normally  no need to edit below this line ##############
 

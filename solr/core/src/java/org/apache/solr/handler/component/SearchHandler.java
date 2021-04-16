@@ -236,7 +236,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     return result;
   }
 
-  private ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
+  public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCore().getCoreContainer();
@@ -449,6 +449,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
               params.set(CommonParams.OMIT_HEADER, false);
+
+              // Distributed request -- need to send queryID as a part of the distributed request
+              params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
