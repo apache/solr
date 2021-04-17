@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -33,8 +34,12 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestSkipOverseerOperations extends SolrCloudTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
   public void setupCluster() throws Exception {
@@ -53,6 +58,10 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
   }
   
   public void testSkipLeaderOperations() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
 
     String overseerLeader = getOverseerLeader();
     
@@ -136,6 +145,11 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSkipDownOperations() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
+
     String overseerLeader = getOverseerLeader();
     List<JettySolrRunner> notOverseerNodes = cluster.getJettySolrRunners()
         .stream()

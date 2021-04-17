@@ -37,6 +37,11 @@ import java.util.concurrent.ExecutorService;
  * distributed way, unrelated to and not depending upon Overseer abstractions (including overseer collection message handling).
  */
 public interface CollectionCommandContext {
+  /**
+   * When this method returns {@code true}, Overseer specific actions do not make sense and commands should not be doing them.
+   */
+  boolean isDistributedCollectionAPI();
+
   ShardHandler newShardHandler();
 
   SolrCloudManager getSolrCloudManager();
@@ -61,11 +66,12 @@ public interface CollectionCommandContext {
   ExecutorService getExecutorService();
 
   /**
-   * This method enables the commands to enqueue to the overseer cluster state update. This should only be used when the command
-   * is running in the Overseer (and will throw an exception if called when Collection API is distributed)
+   * This method enables the commands to enqueue to the overseer cluster state update. This should only be used when the
+   * cluster state update is running in the Overseer (and will throw an exception if called when Collection API is distributed
+   * given that distributed Collection API implies distributed Cluster State Update)
    */
   default void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
-    throw new IllegalStateException("Bug! offerStateUpdate() should not be called when distributed state updates are enabled");
+    throw new IllegalStateException("Bug! offerStateUpdate() should not be called when distributed cluster state updates are enabled");
   }
 
   default String getOverseerId() {

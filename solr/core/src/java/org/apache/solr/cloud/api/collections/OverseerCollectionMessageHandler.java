@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.LockTree;
 import org.apache.solr.cloud.Overseer;
@@ -43,20 +42,19 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * A {@link OverseerMessageHandler} that handles Collections API related overseer messages.<p>
  *
- * A lot of the content that was in this class got moved to {@link CollectionHandlingUtils} and {@link CollApiCmds}.
+ * A lot of the content that was in this class got moved to {@link CollectionHandlingUtils} and {@link CollApiCmds}.<p>
+ * The equivalent of this class for distributed Collection API command execution is {@link DistributedCollectionConfigSetCommandRunner}.
  */
 public class OverseerCollectionMessageHandler implements OverseerMessageHandler, SolrCloseable {
 
@@ -71,7 +69,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   String myId;
   Stats stats;
   TimeSource timeSource;
-  private final CollectionCommandContext ccc;
 
   // Set that tracks collections that are currently being processed by a running task.
   // This is used for handling mutual exclusion of the tasks.
@@ -81,7 +78,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       new SynchronousQueue<>(),
       new SolrNamedThreadFactory("OverseerCollectionMessageHandlerThreadFactory"));
 
-  final private Map<CollectionAction, CollApiCmds.CollectionApiCommand> commandMap;
+  final private CollApiCmds.CommandMap commandMapper;
 
   private volatile boolean isClosed;
 
@@ -100,44 +97,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     this.cloudManager = overseer.getSolrCloudManager();
     this.timeSource = cloudManager.getTimeSource();
     this.isClosed = false;
-    ccc = new OcmhCollectionCommandContext(this);
-    commandMap = new ImmutableMap.Builder<CollectionAction, CollApiCmds.CollectionApiCommand>()
-        .put(REPLACENODE, new ReplaceNodeCmd(ccc))
-        .put(DELETENODE, new DeleteNodeCmd(ccc))
-        .put(BACKUP, new BackupCmd(ccc))
-        .put(RESTORE, new RestoreCmd(ccc))
-        .put(DELETEBACKUP, new DeleteBackupCmd(ccc))
-        .put(CREATESNAPSHOT, new CreateSnapshotCmd(ccc))
-        .put(DELETESNAPSHOT, new DeleteSnapshotCmd(ccc))
-        .put(SPLITSHARD, new SplitShardCmd(ccc))
-        .put(ADDROLE, new OverseerRoleCmd(ccc, ADDROLE, overseerPrioritizer))
-        .put(REMOVEROLE, new OverseerRoleCmd(ccc, REMOVEROLE, overseerPrioritizer))
-        .put(MOCK_COLL_TASK, new CollApiCmds.MockOperationCmd())
-        .put(MOCK_SHARD_TASK, new CollApiCmds.MockOperationCmd())
-        .put(MOCK_REPLICA_TASK, new CollApiCmds.MockOperationCmd())
-        .put(CREATESHARD, new CreateShardCmd(ccc))
-        .put(MIGRATE, new MigrateCmd(ccc))
-        .put(CREATE, new CreateCollectionCmd(ccc))
-        .put(MODIFYCOLLECTION, new CollApiCmds.ModifyCollectionCmd(ccc))
-        .put(ADDREPLICAPROP, new CollApiCmds.AddReplicaPropCmd(ccc))
-        .put(DELETEREPLICAPROP, new CollApiCmds.DeleteReplicaPropCmd(ccc))
-        .put(BALANCESHARDUNIQUE, new CollApiCmds.BalanceShardsUniqueCmd(ccc))
-        .put(REBALANCELEADERS, new CollApiCmds.RebalanceLeadersCmd(ccc))
-        .put(RELOAD, new CollApiCmds.ReloadCollectionCmd(ccc))
-        .put(DELETE, new DeleteCollectionCmd(ccc))
-        .put(CREATEALIAS, new CreateAliasCmd(ccc))
-        .put(DELETEALIAS, new DeleteAliasCmd(ccc))
-        .put(ALIASPROP, new SetAliasPropCmd(ccc))
-        .put(MAINTAINROUTEDALIAS, new MaintainRoutedAliasCmd(ccc))
-        .put(OVERSEERSTATUS, new OverseerStatusCmd(ccc))
-        .put(DELETESHARD, new DeleteShardCmd(ccc))
-        .put(DELETEREPLICA, new DeleteReplicaCmd(ccc))
-        .put(ADDREPLICA, new AddReplicaCmd(ccc))
-        .put(MOVEREPLICA, new MoveReplicaCmd(ccc))
-        .put(REINDEXCOLLECTION, new ReindexCollectionCmd(ccc))
-        .put(RENAME, new RenameCmd(ccc))
-        .build()
-    ;
+    commandMapper = new CollApiCmds.CommandMap(new OcmhCollectionCommandContext(this), overseerPrioritizer);
   }
 
   @Override
@@ -152,7 +112,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     NamedList results = new NamedList();
     try {
       CollectionAction action = getCollectionAction(operation);
-      CollApiCmds.CollectionApiCommand command = commandMap.get(action);
+      CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);
       if (command != null) {
         command.call(cloudManager.getClusterStateProvider().getClusterState(), message, results);
       } else {
