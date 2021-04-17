@@ -41,6 +41,18 @@ import org.slf4j.LoggerFactory;
  * <b>within the current Overseer node</b> (this is important because distributed operations occurring on other nodes
  * are <b>not included</b> in these stats, for example distributed cluster state updates or Per Replica States updates).<p>
  *
+ * More fundamentally, when the Collection API command execution is distributed, this specific command is <b>not</b> being
+ * run on the Overseer anyway (but then not much is running on the overseer as cluster state updates are distributed as well)
+ * so Overseer stats and status can't be returned and actually do not even make sense. Zookeeper based queue metrics do not
+ * make sense either because Zookeeper queues are then not used.<p>
+ *
+ * The {@link Stats} instance returned by {@link CollectionCommandContext#getOverseerStats()} when running in the Overseer
+ * is created in Overseer.start() and passed to the cluster state updater from where it is also propagated to the various
+ * Zookeeper queues to register various events. This class is the only place where it is used in the Collection API implementation,
+ * and only to return results.
+ *
+ * TODO: create a new command returning node specific Collection API/Config set API/cluster state updates stats such as success and failures?<p>
+ *
  * The structure of the returned results is as follows:
  * <ul>
  *   <li><b>{@code leader}:</b> {@code ID} of the current overseer leader node</li>
@@ -59,8 +71,8 @@ import org.slf4j.LoggerFactory;
  *       (not all of them!) and {@link org.apache.solr.cloud.overseer.OverseerAction} (the complete list: {@code create},
  *       {@code delete}, {@code createshard}, {@code deleteshard}, {@code addreplica}, {@code addreplicaprop}, {@code deletereplicaprop},
  *       {@code balanceshardunique}, {@code modifycollection}, {@code state}, {@code leader}, {@code deletecore}, {@code addroutingrule},
- *       {@code removeroutingrule}, {@code updateshardstate}, {@code downnode} and {@code quit} with this like one unlikely
- *       to be observed since the Overseer is existing right away)</li>
+ *       {@code removeroutingrule}, {@code updateshardstate}, {@code downnode} and {@code quit} with this last one unlikely
+ *       to be observed since the Overseer is exiting right away)</li>
  *       <li>{@code update_state} (when Overseer cluster state updater persists changes in Zookeeper)</li>
  *     </ul>
  *     For each key, the value is a map composed of:
@@ -137,6 +149,13 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
   @Override
   @SuppressWarnings("unchecked")
   public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+    // If Collection API execution is distributed, we're not running on the Overseer node so can't return any Overseer stats.
+    if (ccc.getCoreContainer().getDistributedCollectionCommandRunner().isPresent()) {
+      // TODO: introduce a per node status command allowing insight into how Cluster state updates, Collection API and
+      //  config set API execution went on that node...
+      return;
+    }
+
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
