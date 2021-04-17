@@ -407,6 +407,9 @@ public class SortedIntDocSet extends DocSet {
         int doc = docs[i];
         if (other.exists(doc)) arr[icount++] = doc;
       }
+      if (icount == docs.length) {
+        return this; // no change
+      }
       return new SortedIntDocSet(arr,icount);
     }
 
@@ -414,6 +417,9 @@ public class SortedIntDocSet extends DocSet {
     int maxsz = Math.min(docs.length, otherDocs.length);
     int[] arr = new int[maxsz];
     int sz = intersection(docs, docs.length, otherDocs, otherDocs.length, arr);
+    if (sz == docs.length) {
+      return this; // no change
+    }
     return new SortedIntDocSet(arr,sz);
   }
 
@@ -535,12 +541,18 @@ public class SortedIntDocSet extends DocSet {
         int doc = docs[i];
         if (!other.exists(doc)) arr[count++] = doc;
       }
+      if (count == docs.length) {
+        return this; // no change
+      }
       return new SortedIntDocSet(arr,count);
     }
 
     int[] otherDocs = ((SortedIntDocSet)other).docs;
     int[] arr = new int[docs.length];
     int sz = andNot(docs, docs.length, otherDocs, otherDocs.length, arr);
+    if (sz == docs.length) {
+      return this; // no change
+    }
     return new SortedIntDocSet(arr,sz);
   }
 
