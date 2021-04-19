@@ -49,24 +49,23 @@ public class BlobPusher implements Closeable {
 
   // WORK IN PROGRESS!!
 
-  private final BackupRepository backupRepository;
-  private final URI backupLocation;
+  private final BackupRepository repository;
+  private final URI repositoryLocation;
   private final ExecutorService executor;
   // Pool of stream buffers, one per executor thread, to reuse them as the buffer size may be large
-  // to have efficient stream transfer to the remote backup repository.
+  // to have efficient stream transfer to the remote repository.
   private final ThreadLocal<byte[]> streamBuffers;
 
   /**
-   * @param backupRepository The {@link BackupRepository} to push files to.
-   * @param backupLocation   Base location in the {@link BackupRepository}. This is used to build the URIs.
+   * @param repository The repository to push files to.
+   * @param repositoryLocation Base location in the repository. This is used to build the URIs.
    * @param maxThreads       Maximum number of threads to push files concurrently.
    * @param streamBufferSize Size of the stream copy buffer, in bytes. This determines the size of the chunk
-   *                         of data sent to the BackupRepository during files transfer. There is one buffer
-   *                         per thread.
+   *                         of data sent to the repository during files transfer. There is one buffer per thread.
    */
-  public BlobPusher(BackupRepository backupRepository, URI backupLocation, int maxThreads, int streamBufferSize) {
-    this.backupRepository = Objects.requireNonNull(backupRepository);
-    this.backupLocation = Objects.requireNonNull(backupLocation);
+  public BlobPusher(BackupRepository repository, URI repositoryLocation, int maxThreads, int streamBufferSize) {
+    this.repository = Objects.requireNonNull(repository);
+    this.repositoryLocation = Objects.requireNonNull(repositoryLocation);
     executor = ExecutorUtil.newMDCAwareCachedThreadPool(
         maxThreads,
         new SolrNamedThreadFactory(BlobPusher.class.getSimpleName()));
@@ -83,7 +82,7 @@ public class BlobPusher implements Closeable {
     // update "foreign" listings
     //      TODO David
 
-    // Send files to BackupRepository and delete our files too.
+    // Send files to repository and delete our files too.
     log.debug("Pushing {}", writes);
     executeAll(pushFiles(blobDirPath, writes, inputStreamSupplier));
     log.debug("Deleting {}", deletes);
@@ -111,7 +110,7 @@ public class BlobPusher implements Closeable {
       Collection<BlobFile> blobFiles,
       IOUtils.IOFunction<BlobFile, InputStream> inputStreamSupplier)
       throws IOException {
-    URI blobDirUri = backupRepository.resolve(backupLocation, blobDirPath);
+    URI blobDirUri = repository.resolve(repositoryLocation, blobDirPath);
     createDirectories(blobDirUri, blobDirPath);
     return blobFiles.stream()
         .map(
@@ -119,7 +118,7 @@ public class BlobPusher implements Closeable {
                 (Callable<Void>)
                     () -> {
                       try (InputStream in = inputStreamSupplier.apply(blobFile);
-                           OutputStream out = backupRepository.createOutput(backupRepository.resolve(blobDirUri, blobFile.fileName()))) {
+                           OutputStream out = repository.createOutput(repository.resolve(blobDirUri, blobFile.fileName()))) {
                         copyStream(in, out);
                       }
                       return null;
@@ -137,25 +136,25 @@ public class BlobPusher implements Closeable {
 
   private void createDirectories(URI blobDirUri, String blobDirPath) throws IOException {
     // Create the parent directories if needed.
-    // The goal is to have a minimal number of calls to the backup repository in most cases.
+    // The goal is to have a minimal number of calls to the repository in most cases.
     // Common case: the directory exists or the parent directory exists.
     // Try a direct call to 'createDirectory', avoiding a call to 'exists' in many cases.
     // The API says if the directory already exists, it is a no-op.
     try {
-      backupRepository.createDirectory(blobDirUri);
+      repository.createDirectory(blobDirUri);
     } catch (IOException e) {
       // Create the parent directories.
-      URI pathUri = backupLocation;
+      URI pathUri = repositoryLocation;
       for (String pathElement : PATH_SPLITTER.split(blobDirPath)) {
-        pathUri = backupRepository.resolve(pathUri, pathElement);
-        backupRepository.createDirectory(pathUri);
+        pathUri = repository.resolve(pathUri, pathElement);
+        repository.createDirectory(pathUri);
       }
     }
   }
 
   private void deleteFiles(String blobDirPath, Collection<String> fileNames) throws IOException {
-    URI blobDirUri = backupRepository.resolve(backupLocation, blobDirPath);
-    backupRepository.delete(blobDirUri, fileNames, true);
+    URI blobDirUri = repository.resolve(repositoryLocation, blobDirPath);
+    repository.delete(blobDirUri, fileNames, true);
   }
 
   @Override

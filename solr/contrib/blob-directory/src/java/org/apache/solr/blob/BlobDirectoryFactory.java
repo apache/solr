@@ -47,13 +47,13 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Default maximum number of threads that push files concurrently to the backup repository.
+   * Default maximum number of threads that push files concurrently to the repository.
    */
   private static final int DEFAULT_MAX_THREADS = 20;
 
   /**
-   * Default size of the buffer used to transfer input-output stream to the {@link BackupRepository}, in bytes.
-   * The appropriate size depends on the {@link BackupRepository}.
+   * Default size of the buffer used to transfer input-output stream to the repository, in bytes.
+   * The appropriate size depends on the repository.
    * There is one buffer per thread.
    */
   public static final int DEFAULT_STREAM_BUFFER_SIZE = 32_768;
@@ -61,8 +61,8 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   private static final Pattern INDEX_NAME_PATTERN = Pattern.compile("index(?:\\.[0-9]{17})?");
 
   private String localRootPath;
-  private BackupRepository backupRepository;
-  private URI backupLocation;
+  private BackupRepository repository;
+  private URI repositoryLocation;
   private BlobPusher blobPusher;
   private MMapParams mMapParams;
 
@@ -78,42 +78,42 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     super.init(args);
     SolrParams params = args.toSolrParams();
 
-    // BackupRepository where files are persisted.
+    // Repository where files are persisted.
     // 'repository' parameter must be defined, we don't want to use a default one.
     String repositoryName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     if (repositoryName == null) {
       throw new IllegalArgumentException("Parameter '" + CoreAdminParams.BACKUP_REPOSITORY + "' is required");
     }
-    backupRepository = coreContainer.newBackupRepository(repositoryName);
+    repository = coreContainer.newBackupRepository(repositoryName);
 
     // 'location' parameter must be defined, we don't want to use a default one.
-    String location = backupRepository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
+    String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
     if (location == null) {
       throw new IllegalArgumentException("Parameter '" + CoreAdminParams.BACKUP_LOCATION + "' is required");
     }
-    backupLocation = backupRepository.createURI(location);
+    repositoryLocation = repository.createURI(location);
 
-    // 'threads' defines the maximum number of threads that push files concurrently to the backup repository.
+    // 'threads' defines the maximum number of threads that push files concurrently to the repository.
     int maxThreads = params.getInt("threads", DEFAULT_MAX_THREADS);
 
     // 'streamBufferSize' defines the size of the stream copy buffer.
-    // This determines the size of the chunk of data sent to the BackupRepository during files transfer.
-    // It is optional but recommended to set the appropriate size for the selected BackupRepository.
+    // This determines the size of the chunk of data sent to the repository during files transfer.
+    // It is optional but recommended to set the appropriate size for the selected repository.
     // There is one buffer per thread.
     int streamBufferSize = params.getInt("streamBufferSize", DEFAULT_STREAM_BUFFER_SIZE);
 
-    blobPusher = new BlobPusher(backupRepository, backupLocation, maxThreads, streamBufferSize);
+    blobPusher = new BlobPusher(repository, repositoryLocation, maxThreads, streamBufferSize);
 
     // Filesystem MMapDirectory used as a local file cache.
     mMapParams = new MMapParams(params);
   }
 
-  BackupRepository getBackupRepository() {
-    return backupRepository;
+  BackupRepository getRepository() {
+    return repository;
   }
 
-  URI getBackupLocation() {
-    return backupLocation;
+  URI getRepositoryLocation() {
+    return repositoryLocation;
   }
 
   MMapParams getMMapParams() {
@@ -130,7 +130,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   @Override
   public void close() throws IOException {
     log.debug("close");
-    IOUtils.closeQuietly(backupRepository);
+    IOUtils.closeQuietly(repository);
     IOUtils.closeQuietly(blobPusher);
     super.close();
   }
@@ -197,7 +197,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   }
 
   URI resolveBlobPath(String blobPath) {
-    return backupRepository.resolve(backupLocation, blobPath);
+    return repository.resolve(repositoryLocation, blobPath);
   }
 
   @Override
@@ -213,7 +213,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     File dirFile = new File(cacheValue.path);
     FileUtils.deleteDirectory(dirFile);
     String blobDirPath = getLocalRelativePath(cacheValue.path);
-    backupRepository.deleteDirectory(resolveBlobPath(blobDirPath));
+    repository.deleteDirectory(resolveBlobPath(blobDirPath));
   }
 
   @Override
@@ -285,7 +285,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     URI blobDirUri = resolveBlobPath(blobDirPath);
     String[] dirEntries;
     try {
-      dirEntries = backupRepository.listAll(blobDirUri);
+      dirEntries = repository.listAll(blobDirUri);
     } catch (IOException e) {
       log.error("Failed to delete old index directories in {} due to: ", blobDirPath, e);
       return;
@@ -307,7 +307,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     }
     try {
       for (String oldIndexDir : oldIndexDirs) {
-        backupRepository.deleteDirectory(backupRepository.resolve(blobDirUri, oldIndexDir));
+        repository.deleteDirectory(repository.resolve(blobDirUri, oldIndexDir));
       }
     } catch (IOException e) {
       log.error("Failed to delete old index directories {} in {} due to: ", oldIndexDirs, blobDirPath, e);

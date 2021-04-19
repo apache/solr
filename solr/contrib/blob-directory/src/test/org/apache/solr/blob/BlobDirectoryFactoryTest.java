@@ -87,9 +87,9 @@ public class BlobDirectoryFactoryTest extends SolrTestCaseJ4 {
         // When the factory is initialized.
         blobDirectoryFactory.init(args);
         // Then the BackupRepository is correctly initialized.
-        assertTrue(blobDirectoryFactory.getBackupRepository() instanceof LocalFileSystemRepository);
+        assertTrue(blobDirectoryFactory.getRepository() instanceof LocalFileSystemRepository);
         // Then the backup location is correctly initialized.
-        assertEquals(blobRootDir, Paths.get(blobDirectoryFactory.getBackupLocation()));
+        assertEquals(blobRootDir, Paths.get(blobDirectoryFactory.getRepositoryLocation()));
         // Then the optional MMapDirectory params are correctly initialized.
         assertEquals(10, blobDirectoryFactory.getMMapParams().maxChunk);
         assertFalse(blobDirectoryFactory.getMMapParams().unmap);

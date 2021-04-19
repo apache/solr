@@ -175,7 +175,7 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
         assertEquals(Arrays.asList(expectedFileNames), Arrays.asList(directory.listAll()));
         // Check the file listing in the blob store.
         URI blobDirUri = directoryFactory.resolveBlobPath(directoryFactory.getLocalRelativePath(directoryPath));
-        assertEquals(Arrays.asList(expectedFileNames), Arrays.asList(directoryFactory.getBackupRepository()
+        assertEquals(Arrays.asList(expectedFileNames), Arrays.asList(directoryFactory.getRepository()
                 .listAll(blobDirUri)));
     }
 
@@ -186,7 +186,7 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
         }
         // Check the file content in the blob store.
         URI blobDirUri = directoryFactory.resolveBlobPath(directoryFactory.getLocalRelativePath(directoryPath));
-        try (IndexInput input = directoryFactory.getBackupRepository().openInput(blobDirUri, name, IOContext.READ)) {
+        try (IndexInput input = directoryFactory.getRepository().openInput(blobDirUri, name, IOContext.READ)) {
             assertEquals(expectedContent, input.readString());
         }
     }
