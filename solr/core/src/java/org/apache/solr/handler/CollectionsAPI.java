@@ -217,15 +217,4 @@ public class CollectionsAPI {
             toFlatten.forEach((k, v) -> destination.put(additionalPrefix + k, v));
         }
   }
-
-  @EndPoint(path = {"/c/{collection}", "/collections/{collection}"},
-      method = DELETE,
-      permission = COLL_EDIT_PERM)
-  public void deleteCollection(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req = wrapParams(req, ACTION,
-        CollectionAction.DELETE.toString(),
-        NAME, req.getPathTemplateValues().get(ZkStateReader.COLLECTION_PROP));
-    collectionsHandler.handleRequestBody(req, rsp);
-  }
-
 }

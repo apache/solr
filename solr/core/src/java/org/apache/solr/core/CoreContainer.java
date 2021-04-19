@@ -100,6 +100,7 @@ import org.apache.solr.handler.CollectionBackupsAPI;
 import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.handler.SpecificCollectionAPI;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
@@ -763,6 +764,9 @@ public class CoreContainer {
     final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
     containerHandlers.getApiBag().registerObject(collectionsAPI);
     containerHandlers.getApiBag().registerObject(collectionsAPI.collectionsCommands);
+    final SpecificCollectionAPI specificCollectionAPI = new SpecificCollectionAPI(collectionsHandler);
+    containerHandlers.getApiBag().registerObject(specificCollectionAPI);
+    containerHandlers.getApiBag().registerObject(specificCollectionAPI.specificCollectionCommands);
     final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
     containerHandlers.getApiBag().registerObject(collectionBackupsAPI);
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
