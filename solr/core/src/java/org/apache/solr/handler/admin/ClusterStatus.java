@@ -62,7 +62,7 @@ public class ClusterStatus {
     public static final float ORANGE_LEVEL = 0.66f;
     public static final float RED_LEVEL = 0.33f;
 
-    public static Health calcShardState(float fractionReplicasUp, boolean hasLeader) {
+    public static Health calcShardHealth(float fractionReplicasUp, boolean hasLeader) {
       if (hasLeader) {
         if (fractionReplicasUp == 1.0f) {
           return GREEN;
@@ -292,7 +292,7 @@ public class ClusterStatus {
     final Map<String, Map<String,Object>> shards = collection != null
         ? (Map<String, Map<String,Object>>)collection.getOrDefault("shards", Collections.emptyMap())
         : Collections.emptyMap();
-    List<Health> healthStates = new ArrayList<>(shards.size());
+    final List<Health> healthStates = new ArrayList<>(shards.size());
     shards.forEach((shardName, s) -> {
       final Map<String, Map<String,Object>> replicas =
           (Map<String, Map<String,Object>>)s.getOrDefault("replicas", Collections.emptyMap());
@@ -320,7 +320,7 @@ public class ClusterStatus {
       } else {
         ratioActive = (float) totalVsActive[1] / totalVsActive[0];
       }
-      Health health = Health.calcShardState(ratioActive, hasLeader);
+      Health health = Health.calcShardHealth(ratioActive, hasLeader);
       s.put("health", health.toString());
       healthStates.add(health);
     });
