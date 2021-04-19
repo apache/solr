@@ -17,19 +17,36 @@
 
 package org.apache.solr.gcs;
 
+import com.google.common.collect.Lists;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Unit tests for {@link GCSBackupRepository} that use an in-memory Storage object
  */
 public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
+
+    // Locale langs unsupported by google-cloud-nio's 'Storage' drop-in.  May need added to as Jenkins finds fails.
+    // (Note that the issue here is in the test-stub, actual GCS use is fine with these locales).
+    private static final List<String> INCOMPATIBLE_LOCALE_LANGS = Lists.newArrayList("ar", "dz", "uz", "ne", "mzn", "pa",
+            "sd", "mr", "ig", "as", "fa", "my", "bn", "lrc", "ur", "ks", "th", "ckb", "ja", "ps");
+
+    @BeforeClass
+    public static void ensureCompatibleLocale() {
+        final String defaultLang = Locale.getDefault().getLanguage();
+
+        assumeFalse("This test uses a GCS mock library that is incompatible with the current default locale " + defaultLang,
+                INCOMPATIBLE_LOCALE_LANGS.contains(defaultLang));
+    }
 
     @AfterClass
     public static void tearDownClass() throws Exception {

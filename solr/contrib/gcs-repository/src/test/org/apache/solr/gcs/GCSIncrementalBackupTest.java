@@ -65,6 +65,11 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
     private static String backupLocation;
 
     @BeforeClass
+    public static void ensureCompatibleLocale() {
+        GCSBackupRepositoryTest.ensureCompatibleLocale();
+    }
+
+    @BeforeClass
     public static void setupClass() throws Exception {
 
         configureCluster(NUM_SHARDS)// nodes
