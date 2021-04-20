@@ -57,7 +57,6 @@ import org.apache.solr.search.DocSetBuilder;
 import org.apache.solr.search.DocSetProducer;
 import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.ExtendedQueryBase;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /** @lucene.experimental */
@@ -333,6 +332,22 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     }
   }
 
+  private static class SegmentDocIdSet extends DocIdSet {
+    private final DocSet docs;
+    private final LeafReaderContext ctx;
+    private SegmentDocIdSet(DocSet docs, LeafReaderContext ctx) {
+      this.docs = docs;
+      this.ctx = ctx;
+    }
+    @Override
+    public long ramBytesUsed() {
+      return docs.ramBytesUsed();
+    }
+    @Override
+    public DocIdSetIterator iterator() throws IOException {
+      return docs.iterator(ctx);
+    }
+  }
   // adapted from MultiTermQueryConstantScoreWrapper
   class ConstWeight extends ConstantScoreWeight {
 
@@ -341,7 +356,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     final IndexSearcher searcher;
     final ScoreMode scoreMode;
     boolean checkedFilterCache;
-    Filter filter;
+    DocSet answer;
     final SegState[] segStates;
 
 
@@ -400,17 +415,14 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
           doCheck = false;
         } else {
           solrSearcher = (SolrIndexSearcher)searcher;
-          DocSet answer = solrSearcher.getFilterCache().get(SolrRangeQuery.this);
-          if (answer != null) {
-            filter = answer.getTopFilter();
-          }
+          answer = solrSearcher.getFilterCache().get(SolrRangeQuery.this);
         }
       } else {
         doCheck = false;
       }
       
-      if (filter != null) {
-        return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
+      if (answer != null) {
+        return segStates[context.ord] = new SegState(new SegmentDocIdSet(answer, context));
       }
 
       final Terms terms = context.reader().terms(SolrRangeQuery.this.getField());
@@ -439,10 +451,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       // Too many terms for boolean query...
 
       if (doCheck) {
-        DocSet answer = createDocSet(solrSearcher, count);
+        answer = createDocSet(solrSearcher, count);
         solrSearcher.getFilterCache().put(SolrRangeQuery.this, answer);
-        filter = answer.getTopFilter();
-        return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
+        return segStates[context.ord] = new SegState(new SegmentDocIdSet(answer, context));
       }
 
       /* FUTURE: reuse term states in the future to help build DocSet, use collected count so far...
