@@ -980,7 +980,17 @@ table thead tr th
 table tr td,
 table tr th
 {
-    padding: .5625em .625em;
+    padding: 9px 10px;
+    color: rgba(0,0,0,.8);
+    font-size: inherit;
+}
+
+/** Used on some tables to tighten up space between cells
+    Add [.lowpadding] as a role to the table to use this **/
+.tableblock.lowpadding table tr td,
+.tableblock.lowpadding table tr th
+{
+    padding: 2px 3px;
     color: rgba(0,0,0,.8);
     font-size: inherit;
 }
