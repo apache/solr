@@ -2034,7 +2034,7 @@ if [ "$GC_LOG_OPTS" != "" ]; then
       GC_LOG_OPTS+=($JAVA8_GC_LOG_FILE_OPTS)
     fi
   else
-    # http://openjdk.java.net/jeps/158
+    # https://openjdk.java.net/jeps/158
     for i in "${!GC_LOG_OPTS[@]}";
     do
       # for simplicity, we only look at the prefix '-Xlog:gc'
