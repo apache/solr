@@ -300,7 +300,7 @@ C:\> bin\solr.cmd -cloud -s cloud\node1 -z server1:2181,server2:2181,server3:218
 
 [IMPORTANT]
 ====
-curl on OS X Mavericks (10.9) has degraded SSL support. For more information and workarounds to allow one-way SSL, see http://curl.haxx.se/mail/archive-2013-10/0036.html. curl on OS X Yosemite (10.10) is improved - 2-way SSL is possible - see http://curl.haxx.se/mail/archive-2014-10/0053.html.
+curl on OS X Mavericks (10.9) has degraded SSL support. For more information and workarounds to allow one-way SSL, see https://curl.se/mail/archive-2013-10/0036.html. curl on OS X Yosemite (10.10) is improved - 2-way SSL is possible - see https://curl.se/mail/archive-2014-10/0053.html.
 
 The curl commands in the following sections will not work with the system `curl` on OS X Yosemite (10.10). Instead, the certificate supplied with the `-E` parameter must be in PKCS12 format, and the file supplied with the `--cacert` parameter must contain only the CA certificate, and no key (see <<Convert the Certificate and Key to PEM Format for Use with curl,above>> for instructions on creating this file):
 
@@ -309,7 +309,7 @@ $ curl -E solr-ssl.keystore.p12:secret --cacert solr-ssl.cacert.pem ...
 
 ====
 
-NOTE: If your operating system does not include curl, you can download binaries here: http://curl.haxx.se/download.html
+NOTE: If your operating system does not include curl, you can download binaries here: https://curl.se/download.html
 
 === Create a SolrCloud Collection using bin/solr
 

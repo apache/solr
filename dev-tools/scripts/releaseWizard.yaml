@@ -280,10 +280,10 @@ groups:
       voting rules, create a PGP/GPG key for use with signing and more. Please familiarise
       yourself with the resources listed below.
     links:
-    - http://www.apache.org/dev/release-publishing.html
-    - http://www.apache.org/legal/release-policy.html
-    - http://www.apache.org/dev/release-signing.html
-    - https://wiki.apache.org/lucene-java/ReleaseTodo
+    - https://infra.apache.org/release-publishing.html
+    - https://www.apache.org/legal/release-policy.html
+    - https://infra.apache.org/release-signing.html
+    - https://cwiki.apache.org/confluence/display/LUCENE/ReleaseTodo
   - !Todo
     id: tools
     title: Necessary tools are installed
@@ -321,7 +321,7 @@ groups:
         fingerprint for the key.
     function: configure_pgp
     links:
-    - http://www.apache.org/dev/release-signing.html
+    - https://infra.apache.org/release-signing.html
     - http://www.apache.org/dev/openpgp.html#apache-wot
     - https://id.apache.org
     - https://dist.apache.org/repos/dist/release/lucene/KEYS
@@ -1041,10 +1041,9 @@ groups:
     description: |
       Ensure your refrigerator has at least 2 beers - the svn import operation can take a while,
       depending on your upload bandwidth. We'll publish this directly to the production tree.
-      At the end of the task, the two links below shall work.
+      At the end of the task, the link below shall work.
     links:
-    - http://lucene.apache.org/core/{{ version }}
-    - http://lucene.apache.org/solr/{{ version }}
+    - https://solr.apache.org/{{ version }}
     vars:
       release_tag: releases/lucene-solr/{{ release_version }}
       version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
@@ -1250,15 +1249,13 @@ groups:
     post_description: |
       Wait a few minutes for the build to happen. You can follow the site build at https://ci2.apache.org/#/builders/3
 
-      Verify on https://lucene.apache.org that the site is OK.
+      Verify on https://solr.apache.org that the site is OK.
 
-      You can now also verify that http://lucene.apache.org/solr/api/solr-core/ and http://lucene.apache.org/core/api/core/
-      redirects to the latest version
+      You can now also verify that https://solr.apache.org/api/solr-core/ redirects to the latest version
     links:
       - https://ci2.apache.org/#/builders/3
-      - https://lucene.apache.org
-      - http://lucene.apache.org/solr/api/solr-core/
-      - http://lucene.apache.org/core/api/core/
+      - https://solr.apache.org
+      - https://solr.apache.org/api/solr-core/
   - !Todo
     id: update_doap
     title: Update the DOAP files

@@ -148,7 +148,7 @@ example/
 dist/solr-<component>-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,
   one or more of these will be required.  The core library is
-  required at a minimum. (see http://wiki.apache.org/solr/SolrPlugins
+  required at a minimum. (see https://solr.apache.org/guide/solr-plugins.html
   for more information).
 
 docs/index.html
