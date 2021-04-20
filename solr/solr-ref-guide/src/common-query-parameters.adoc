@@ -123,6 +123,11 @@ fq=+popularity:[10 TO *] +section:0
 
 * As with all parameters: special characters in an URL need to be properly escaped and encoded as hex values. Online tools are available to help you with URL-encoding. For example: http://meyerweb.com/eric/tools/dencoder/.
 
+== fq.qparser (Filter Query Query Parser) Parameter
+
+The default query parser for use with filter queries (`fq` parameter). The default value of this
+parameter, for consistency with all previous Solr versions, is `lucene`.
+
 == fl (Field List) Parameter
 
 The `fl` parameter limits the information included in a query response to a specified list of fields. The fields must be either `stored="true"` or `docValues="true"``.`

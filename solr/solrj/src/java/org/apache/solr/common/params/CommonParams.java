@@ -156,6 +156,18 @@ public interface CommonParams {
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
   /**
+   * Default parser for parsing filter queries ({@code fq}.
+   */
+  String FQ_QPARSER = CommonParams.FQ + ".qparser";
+
+  /**
+   * Default parser for parsing filter queries ({@code fq}. This is an
+   * alias to {@link #FQ_QPARSER} which is aligned with the legacy {@code defType}
+   * parameter. {@link #FQ_QPARSER} should be preferred over this syntax.
+   */
+  String FQ_DEFPARSER = CommonParams.FQ + ".defType";
+
+  /**
    * Timeout value in milliseconds.  If not set, or the value is &gt; 0, there is no timeout.
    */
   String TIME_ALLOWED = "timeAllowed";
@@ -316,6 +328,5 @@ public interface CommonParams {
   String FILES = "files";
 
   String CHILDDOC = "_childDocuments_";
-
 }
 

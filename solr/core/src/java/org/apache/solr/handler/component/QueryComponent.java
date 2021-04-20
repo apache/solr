@@ -201,13 +201,19 @@ public class QueryComponent extends SearchComponent
       rb.setQparser(parser);
 
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
-      if (fqs!=null && fqs.length!=0) {
+      if (fqs != null && fqs.length != 0) {
+        // Get the default query parser to use with filter queries.
+        String fqQueryParser = req.getParams().get(CommonParams.FQ_QPARSER);
+        if (fqQueryParser == null) {
+          fqQueryParser = req.getParams().get(CommonParams.FQ_DEFPARSER, QParserPlugin.DEFAULT_QTYPE);
+        }
+
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
-            QParser fqp = QParser.getParser(fq, req);
+            QParser fqp = QParser.getParser(fq, fqQueryParser, req);
             fqp.setIsFilter(true);
             filters.add(fqp.getQuery());
           }

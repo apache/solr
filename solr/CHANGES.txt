@@ -11,6 +11,10 @@ Docker and contrib modules have separate CHANGES.md files.
 
 New Features
 ---------------------
+
+* SOLR-15345: Added a new search component parameter to specify the default query parser to parse filter queries:
+  "fq.qparser=..."; a legacy alias of "fq.defType=..." is also available. (Dawid Weiss)
+
 * SOLR-14789: Migrate docker image creation from docker-solr repo to solr/docker. (Houston Putman, Martijn Koster, Tim Potter, David Smiley, janhoy, Mike Drob)
 
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
