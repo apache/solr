@@ -561,21 +561,16 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   @Override
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
-      Filter filter;
+      DocSet docs;
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        if (filter == null) {
-          DocSet set = getDocSet(searcher);
-          filter = set.getTopFilter();
+        if (docs == null) {
+          docs = getDocSet(searcher);
         }
 
         // Although this set only includes live docs, other filters can be pushed down to queries.
-        DocIdSet readerSet = filter.getDocIdSet(context, null);
-        if (readerSet == null) {
-          return null;
-        }
-        DocIdSetIterator readerSetIterator = readerSet.iterator();
+        DocIdSetIterator readerSetIterator = docs.iterator(context);
         if (readerSetIterator == null) {
           return null;
         }
