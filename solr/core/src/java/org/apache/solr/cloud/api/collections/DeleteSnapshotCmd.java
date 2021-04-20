@@ -77,7 +77,7 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     String asyncId = message.getStr(ASYNC);
     @SuppressWarnings({"rawtypes"})
     NamedList shardRequestResults = new NamedList();
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
     SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
 
     Optional<CollectionSnapshotMetaData> meta = SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);

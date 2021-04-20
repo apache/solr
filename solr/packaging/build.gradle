@@ -39,6 +39,7 @@ configurations {
   example
   server
   docs
+  docker
 }
 
 dependencies {
@@ -59,6 +60,7 @@ dependencies {
   }
 
   distSolr project(":solr:core")
+  distSolr project(":solr:server")
   distSolr project(":solr:solrj")
   distSolr project(":solr:test-framework")
 
@@ -67,6 +69,8 @@ dependencies {
 
   // Copy files from documentation output
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
+
+  docker project(path: ':solr:docker', configuration: 'packaging')
 }
 
 distributions {
@@ -83,6 +87,7 @@ distributions {
           "**/bin/solr",
           "**/bin/init.d/solr",
           "**/bin/solr-exporter",
+          "**/docker/scripts/*",
       ]) { copy ->
         copy.setMode(0755)
       }
@@ -128,6 +133,11 @@ distributions {
       from(configurations.docs, {
         into "docs"
       })
+
+      from(configurations.docker, {
+        into "docker"
+      })
+
     }
   }
 }

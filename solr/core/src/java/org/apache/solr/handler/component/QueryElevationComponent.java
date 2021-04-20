@@ -16,15 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.ref.WeakReference;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,9 +37,11 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.WeakHashMap;
 import java.util.function.Consumer;
-
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.google.common.annotations.VisibleForTesting;
@@ -72,7 +70,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
@@ -81,6 +78,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceNotFoundException;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
@@ -92,14 +90,11 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.VersionedFile;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -132,22 +127,39 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   private static final boolean DEFAULT_SUBSET_MATCH = false;
   private static final String DEFAULT_EXCLUDE_MARKER_FIELD_NAME = "excluded";
   private static final String DEFAULT_EDITORIAL_MARKER_FIELD_NAME = "elevated";
+  private static final WeakReference<IndexReader> NULL_REF = new WeakReference<>(null);
 
   protected SolrParams initArgs;
+  protected String configFileName;
+
   protected Analyzer queryAnalyzer;
   protected SchemaField uniqueKeyField;
   /** @see QueryElevationParams#FORCE_ELEVATION */
   protected boolean forceElevation;
   /** @see QueryElevationParams#USE_CONFIGURED_ELEVATED_ORDER */
   protected boolean useConfiguredElevatedOrder;
-
+  /** If {@link #inform(SolrCore)} completed without error. */
   protected boolean initialized;
 
+  private final Object LOCK = new Object(); // for cache*
   /**
-   * For each IndexReader, keep an ElevationProvider when the configuration is loaded from the data directory.
-   * The key is null if loaded from the config directory, and is never re-loaded.
+   * Cached IndexReader associated with {@link #cacheElevationProvider}. Must be accessed under
+   * lock.
    */
-  private final Map<IndexReader, ElevationProvider> elevationProviderCache = new WeakHashMap<>();
+  private WeakReference<IndexReader> cacheIndexReader = NULL_REF;
+  /**
+   * Cached elevation provider. Must be accessed under lock. {@link
+   * #handleConfigLoadingException(Exception)} has the lock when called and may access this if it
+   * wishes to return a previous good result.
+   */
+  protected ElevationProvider cacheElevationProvider = null; // keep null
+  /**
+   * Cached version / timestamp of the data underlying {@link #cacheElevationProvider}. -1 means
+   * unsupported. Must be accessed under lock.
+   *
+   * @see #getConfigVersion(SolrCore)
+   */
+  protected long cacheVersion;
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
@@ -218,66 +230,37 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @return The number of elevation rules parsed.
    */
   protected int loadElevationConfiguration(SolrCore core) throws Exception {
-    synchronized (elevationProviderCache) {
-      elevationProviderCache.clear();
-      String configFileName = initArgs.get(CONFIG_FILE);
+    synchronized (LOCK) {
+      clearElevationProviderCache();
+
+      this.configFileName = initArgs.get(CONFIG_FILE);
       if (configFileName == null) {
         // Throw an exception which is handled by handleInitializationException().
         // If not overridden handleInitializationException() simply skips this exception.
         throw new InitializationException("Missing component parameter " + CONFIG_FILE + " - it has to define the path to the elevation configuration file", InitializationExceptionCause.NO_CONFIG_FILE_DEFINED);
       }
-      boolean configFileExists = false;
-      ElevationProvider elevationProvider = NO_OP_ELEVATION_PROVIDER;
 
-      // check if using ZooKeeper
-      ZkController zkController = core.getCoreContainer().getZkController();
-      if (zkController != null) {
-        // TODO : shouldn't have to keep reading the config name when it has been read before
-        configFileExists = zkController.configFileExists(zkController.getZkStateReader().readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), configFileName);
-      } else {
-        File fC = new File(core.getResourceLoader().getConfigDir(), configFileName);
-        File fD = new File(core.getDataDir(), configFileName);
-        if (fC.exists() == fD.exists()) {
-          InitializationException e = new InitializationException("Missing config file \"" + configFileName + "\" - either " + fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both", InitializationExceptionCause.MISSING_CONFIG_FILE);
-          elevationProvider = handleConfigLoadingException(e, true);
-          elevationProviderCache.put(null, elevationProvider);
-        } else if (fC.exists()) {
-          if (fC.length() == 0) {
-            InitializationException e = new InitializationException("Empty config file \"" + configFileName + "\" - " + fC.getAbsolutePath(), InitializationExceptionCause.EMPTY_CONFIG_FILE);
-            elevationProvider = handleConfigLoadingException(e, true);
-          } else {
-            configFileExists = true;
-            if (log.isInfoEnabled()) {
-              log.info("Loading QueryElevation from: {}", fC.getAbsolutePath());
-            }
-            XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
-            elevationProvider = loadElevationProvider(cfg);
-          }
-          elevationProviderCache.put(null, elevationProvider);
+      // preload the first data
+      RefCounted<SolrIndexSearcher> searchHolder = null;
+      try {
+        searchHolder = core.getNewestSearcher(false);
+        if (searchHolder != null) {
+          IndexReader reader = searchHolder.get().getIndexReader();
+          getElevationProvider(reader, core); // computes and caches or throws
+          return cacheElevationProvider.size();
         }
+      } finally {
+        if (searchHolder != null) searchHolder.decref();
       }
-      //in other words, we think this is in the data dir, not the conf dir
-      if (!configFileExists) {
-        // preload the first data
-        RefCounted<SolrIndexSearcher> searchHolder = null;
-        try {
-          searchHolder = core.getNewestSearcher(false);
-          if (searchHolder == null) {
-            elevationProvider = NO_OP_ELEVATION_PROVIDER;
-          } else {
-            IndexReader reader = searchHolder.get().getIndexReader();
-            elevationProvider = getElevationProvider(reader, core);
-          }
-        } finally {
-          if (searchHolder != null) searchHolder.decref();
-        }
-      }
-      return elevationProvider.size();
+
+      assert false : "No Searcher; does this happen?"; // probably okay; lazy load
+      return 0;
     }
   }
 
   /**
-   * Handles the exception that occurred while initializing this component.
+   * Handles the exception that occurred while initializing this component or when
+   * parsing a new config file at runtime.
    * If this method does not throw an exception, this component silently fails to initialize
    * and is muted with field {@link #initialized} which becomes {@code false}.
    */
@@ -290,93 +273,111 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   /**
    * Handles an exception that occurred while loading the configuration resource.
+   * The default implementation will return {@link #cacheElevationProvider} if present, while
+   * also logging the error.  If that is null (e.g. on startup) then the exception is thrown.
+   * When re-throwing, wrap in a {@link SolrException}.
    *
-   * @param e                   The exception caught.
-   * @param resourceAccessIssue <code>true</code> if the exception has been thrown
-   *                            because the resource could not be accessed (missing or cannot be read)
-   *                            or the config file is empty; <code>false</code> if the resource has
-   *                            been found and accessed but the error occurred while loading the resource
-   *                            (invalid format, incomplete or corrupted).
-   * @return The {@link ElevationProvider} to use if the exception is absorbed. If {@code null}
-   *         is returned, the {@link #NO_OP_ELEVATION_PROVIDER} is used but not cached in
-   *         the {@link ElevationProvider} cache.
-   * @throws E If the exception is not absorbed.
+   * @param e The exception caught.  It will extend {@link IOException} if there was a resource
+   *          access issue.
+   * @return The {@link ElevationProvider} to use if the exception is absorbed (vs re-thrown).
    */
-  protected <E extends Exception> ElevationProvider handleConfigLoadingException(E e, boolean resourceAccessIssue) throws E {
-    throw e;
+  protected <E extends Exception> ElevationProvider handleConfigLoadingException(E e) {
+    if (cacheElevationProvider != null) { // thus at runtime (a search is in-progress)
+      String msg = e.toString(); // declare to avoid log isEnabled check
+      log.error(msg, e);
+      return cacheElevationProvider;
+    } else {
+      if (e instanceof SolrException) {
+        throw (SolrException) e;
+      } else {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Problem loading query elevation: " + e.toString(),
+            e);
+      }
+    }
   }
 
   /**
-   * Gets the {@link ElevationProvider} from the data dir or from the cache.
+   * Gets the {@link ElevationProvider}; typically cached.
+   * If there was a problem, it might return a previously cached or dummy entry, or possibly
+   * rethrow the exception.
    *
    * @return The cached or loaded {@link ElevationProvider}.
-   * @throws java.io.IOException                  If the configuration resource cannot be found, or if an I/O error occurs while analyzing the triggering queries.
-   * @throws org.xml.sax.SAXException                 If the configuration resource is not a valid XML content.
-   * @throws javax.xml.parsers.ParserConfigurationException If the configuration resource is not a valid XML configuration.
-   * @throws RuntimeException             If the configuration resource is not an XML content of the expected format
-   *                                      (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
    */
   @VisibleForTesting
-  ElevationProvider getElevationProvider(IndexReader reader, SolrCore core) throws Exception {
-    synchronized (elevationProviderCache) {
-      ElevationProvider elevationProvider;
-      elevationProvider = elevationProviderCache.get(null);
-      if (elevationProvider != null) return elevationProvider;
+  ElevationProvider getElevationProvider(IndexReader reader, SolrCore core) {
+    synchronized (LOCK) {
+      if (cacheElevationProvider != null && cacheIndexReader.get() == reader) {
+        return cacheElevationProvider; // cache hit !
+      }
 
-      elevationProvider = elevationProviderCache.get(reader);
-      if (elevationProvider == null) {
-        Exception loadingException = null;
-        boolean resourceAccessIssue = false;
+      final long version = getConfigVersion(core);
+      try {
+        // check version to see if should re-use
+        if (cacheVersion != -1 && cacheVersion == version) {
+          return cacheElevationProvider; // cache hit !
+        }
+
         try {
-          elevationProvider = loadElevationProvider(core);
-        } catch (IOException e) {
-          loadingException = e;
-          resourceAccessIssue = true;
+          return cacheElevationProvider = loadElevationProvider(core);
         } catch (Exception e) {
-          loadingException = e;
+          return cacheElevationProvider = handleConfigLoadingException(e);
         }
-        boolean shouldCache = true;
-        if (loadingException != null) {
-          elevationProvider = handleConfigLoadingException(loadingException, resourceAccessIssue);
-          if (elevationProvider == null) {
-            elevationProvider = NO_OP_ELEVATION_PROVIDER;
-            shouldCache = false;
-          }
-        }
-        if (shouldCache) {
-          elevationProviderCache.put(reader, elevationProvider);
+      } finally {
+        if (cacheElevationProvider != null) { // could be null if re-throwing
+          cacheIndexReader = new WeakReference<>(reader); // cache the decision
+          cacheVersion = version;
         }
       }
-      assert elevationProvider != null;
-      return elevationProvider;
     }
   }
 
   /**
-   * Loads the {@link ElevationProvider} from the data dir.
-   *
-   * @return The loaded {@link ElevationProvider}.
-   * @throws java.io.IOException                  If the configuration resource cannot be found, or if an I/O error occurs while analyzing the triggering queries.
-   * @throws org.xml.sax.SAXException                 If the configuration resource is not a valid XML content.
-   * @throws javax.xml.parsers.ParserConfigurationException If the configuration resource is not a valid XML configuration.
-   * @throws RuntimeException             If the configuration resource is not an XML content of the expected format
-   *                                      (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
+   * Returns a version number for the config file, or -1 if not supported. It can be a timestamp; it
+   * need not strictly increase.
    */
-  private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException, ParserConfigurationException {
-    String configFileName = initArgs.get(CONFIG_FILE);
-    if (configFileName == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "QueryElevationComponent must specify argument: " + CONFIG_FILE);
+  protected long getConfigVersion(SolrCore core) {
+    // TODO move this mechanism to a SolrResourceLoader.getVersion / getLastModTime
+    try {
+      String configDir = core.getResourceLoader().getConfigDir(); // unsupported in ZK
+      Path cfg = Path.of(configDir).resolve(configFileName);
+      return Files.getLastModifiedTime(cfg).toMillis();
+    } catch (Exception ignore) {
     }
-    log.info("Loading QueryElevation from data dir: {}", configFileName);
+    return -1; // don't know  (e.g. Zookeeper as of this writing)
+  }
 
+  /**
+   * Loads the {@link ElevationProvider}.
+   *
+   * @return The loaded {@link ElevationProvider}; not null.
+   */
+  private ElevationProvider loadElevationProvider(SolrCore core) throws Exception {
     XmlConfigFile cfg;
-    ZkController zkController = core.getCoreContainer().getZkController();
-    if (zkController != null) {
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null);
-    } else {
-      InputStream is = VersionedFile.getLatestFile(core.getDataDir(), configFileName);
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null);
+    try {
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
+    } catch (SolrResourceNotFoundException e) {
+      String msg = "Missing config file \"" + configFileName + "\"";
+      if (Files.exists(Path.of(core.getDataDir(), configFileName))) {
+        msg += ". Found it in the data dir but this is no longer supported since 9.0.";
+      }
+      throw new InitializationException(msg, InitializationExceptionCause.MISSING_CONFIG_FILE);
+    } catch (Exception e) {
+      // See if it's because the file is empty; wrap it if so.
+      boolean isEmpty = false;
+      try (var input = core.getResourceLoader().openResource(configFileName)) {
+        if (input.read() == -1) { // thus empty file
+          isEmpty = true;
+        }
+      } catch (Exception ignored) {
+      }
+      if (isEmpty) {
+        throw new InitializationException(
+            "Empty config file \"" + configFileName + "\"",
+            InitializationExceptionCause.EMPTY_CONFIG_FILE);
+      }
+      throw e;
     }
     ElevationProvider elevationProvider = loadElevationProvider(cfg);
     assert elevationProvider != null;
@@ -384,7 +385,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   /**
-   * Loads the {@link ElevationProvider}.
+   * Loads the {@link ElevationProvider}. Not null.
    *
    * @throws RuntimeException If the config does not provide an XML content of the expected format
    *                          (either {@link RuntimeException} or {@link org.apache.solr.common.SolrException}).
@@ -485,17 +486,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     SolrParams params = rb.req.getParams();
     String paramElevatedIds = params.get(QueryElevationParams.IDS);
     String paramExcludedIds = params.get(QueryElevationParams.EXCLUDE);
-    try {
-      if (paramElevatedIds != null || paramExcludedIds != null) {
-        List<String> elevatedIds = paramElevatedIds != null ? StrUtils.splitSmart(paramElevatedIds,",", true) : Collections.emptyList();
-        List<String> excludedIds = paramExcludedIds != null ? StrUtils.splitSmart(paramExcludedIds, ",", true) : Collections.emptyList();
-        return new ElevationBuilder().addElevatedIds(elevatedIds).addExcludedIds(excludedIds).build();
-      } else {
-        IndexReader reader = rb.req.getSearcher().getIndexReader();
-        return getElevationProvider(reader, rb.req.getCore()).getElevationForQuery(queryString);
-      }
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error loading elevation", e);
+    if (paramElevatedIds != null || paramExcludedIds != null) {
+      List<String> elevatedIds = paramElevatedIds != null ? StrUtils.splitSmart(paramElevatedIds,",", true) : Collections.emptyList();
+      List<String> excludedIds = paramExcludedIds != null ? StrUtils.splitSmart(paramExcludedIds, ",", true) : Collections.emptyList();
+      return new ElevationBuilder().addElevatedIds(elevatedIds).addExcludedIds(excludedIds).build();
+    } else {
+      IndexReader reader = rb.req.getSearcher().getIndexReader();
+      return getElevationProvider(reader, rb.req.getCore()).getElevationForQuery(queryString);
     }
   }
 
@@ -753,15 +750,19 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     elevationBuilder.addElevatedIds(elevatedIds == null ? Collections.emptyList() : Arrays.asList(elevatedIds));
     elevationBuilder.addExcludedIds(excludedIds == null ? Collections.emptyList() : Arrays.asList(excludedIds));
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = ImmutableMap.of(elevatingQuery, elevationBuilder);
-    synchronized (elevationProviderCache) {
-      elevationProviderCache.computeIfAbsent(reader, k -> createElevationProvider(elevationBuilderMap));
+    synchronized (LOCK) {
+      cacheIndexReader = new WeakReference<>(reader);
+      cacheElevationProvider = createElevationProvider(elevationBuilderMap);
+      cacheVersion = -1;
     }
   }
 
   @VisibleForTesting
   void clearElevationProviderCache() {
-    synchronized (elevationProviderCache) {
-        elevationProviderCache.clear();
+    synchronized (LOCK) {
+      cacheIndexReader = NULL_REF;
+      cacheElevationProvider = null;
+      cacheVersion = -1;
     }
   }
 
@@ -769,16 +770,17 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   // Exception
   //---------------------------------------------------------------------------------
 
-  private static class InitializationException extends Exception {
+  private static class InitializationException extends SolrException {
 
     private final InitializationExceptionCause exceptionCause;
 
     InitializationException(String message, InitializationExceptionCause exceptionCause) {
-      super(message);
+      super(ErrorCode.SERVER_ERROR, message);
       this.exceptionCause = exceptionCause;
     }
   }
 
+  /** @see #handleInitializationException(Exception, InitializationExceptionCause) */
   protected enum InitializationExceptionCause {
     /**
      * The component parameter {@link #FIELD_TYPE} defines an unknown field type.

@@ -19,10 +19,46 @@
 
 A collection is a single logical index that uses a single Solr configuration file (`solrconfig.xml`) and a single index schema.
 
+The examples assume you have started Solr via `solr/bin start -c -e techproducts`.
+
 [[create]]
 == CREATE: Create a Collection
 
-`/admin/collections?action=CREATE&name=_name_`
+The CREATE action is used to create new collection of data.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1createcollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&collection.configName=techproducts&numShards=1
+
+----
+====
+
+[example.tab-pane#v2createcollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `create` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "create": {
+      "name": "techproducts_v2",
+      "config": "techproducts",
+      "numShards": 1
+    }
+  }
+'
+----
+====
+--
 
 === CREATE Parameters
 
@@ -62,27 +98,27 @@ The number of TLOG replicas to create for this collection. This type of replica 
 `pullReplicas`::
 The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
-`createNodeSet`::
+`createNodeSet` (v1), `nodeSet` (v2)::
 Allows defining the nodes to spread the new collection across. The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 +
 If not provided, the CREATE operation will create shard-replicas spread across all live Solr nodes.
 +
 Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<replica-management.adoc#addreplica,ADDREPLICA>> operation to add shard-replicas when and where required.
 
-`createNodeSet.shuffle`::
+`createNodeSet.shuffle` (v1), `shuffleNodes` (v2)::
 Controls whether or not the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
 +
 A `false` value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but `true` can be a better choice for ensuring replicas are distributed evenly across nodes. The default is `true`.
 +
 This parameter is ignored if `createNodeSet` is not also specified.
 
-`collection.configName`::
+`collection.configName` (v1), `config` (v2)::
 Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection.
 +
 If not provided, Solr will use the configuration of `_default` configset to create a new (and mutable) configset named `<collectionName>.AUTOCREATED` and will use it for the new collection.
 When such a collection is deleted, its autocreated configset will be deleted by default when it is not in use by any other collection.
 
-`router.field`::
+`router.field` (v1), `router` (v2)::
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
 +
 Please note that <<realtime-get.adoc#,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
@@ -122,7 +158,7 @@ The response will include the status of the request and the new core names. If t
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1&wt=xml
+http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&collection.configName=techproducts&numShards=2&replicationFactor=1&wt=xml
 ----
 
 *Output*
@@ -140,14 +176,14 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
         <int name="status">0</int>
         <int name="QTime">3450</int>
       </lst>
-      <str name="core">newCollection_shard1_replica1</str>
+      <str name="core">techproducts_v2_shard1_replica_n1</str>
     </lst>
     <lst>
       <lst name="responseHeader">
         <int name="status">0</int>
         <int name="QTime">3597</int>
       </lst>
-      <str name="core">newCollection_shard2_replica1</str>
+      <str name="core">techproducts_v2_shard2_replica_n2</str>
     </lst>
   </lst>
 </response>
@@ -156,14 +192,60 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
 [[reload]]
 == RELOAD: Reload a Collection
 
-`/admin/collections?action=RELOAD&name=_name_`
+The RELOAD action is used when you have changed a configuration file in ZooKeeper, like uploading a new `schema.xml`.
+Solr automatically reloads collections when certain files, monitored via a watch in ZooKeeper are changed,
+such as `security.json`.  However, for changes to files in configsets, like uploading a new `schema.xml`, you
+will need to manually trigger the RELOAD.
 
-The RELOAD action is used when you have changed a configuration in ZooKeeper.
+[.dynamic-tabs]
+--
+[example.tab-pane#v1reloadcollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
+
+----
+====
+
+[example.tab-pane#v2reloadcollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `reload` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
+  {
+    "reload": {}
+  }
+'
+----
+
+Additional parameters can be passed in via the the `reload` key:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
+  {
+    "reload": {
+      "async": "reload1"
+    }
+  }
+'
+----
+====
+--
+
+
 
 === RELOAD Parameters
 
 `name`::
-The name of the collection to reload. This parameter is required.
+The name of the collection to reload. This parameter is required by the V1 API.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -178,7 +260,7 @@ The response will include the status of the request and the cores that were relo
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt=xml
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2&wt=xml
 ----
 
 *Output*
@@ -210,11 +292,45 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt
 [[modifycollection]]
 == MODIFYCOLLECTION: Modify Attributes of a Collection
 
-`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>_&__<attribute-name>__=__<attribute-value>__&__<another-attribute-name>__=__<another-value>__&__<yet_another_attribute_name>__=`
-
-It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+It's possible to edit multiple attributes at a time. Changing these values only updates the znode on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
 
 An attribute can be deleted by passing an empty value. For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1modifycollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=techproducts_v2&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>&<yet_another_attribute_name>=
+
+http://localhost:8983/solr/admin/collections?action=modifycollection&collection=techproducts_v2&replicationFactor=2
+
+----
+====
+
+[example.tab-pane#v2modifycollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `modify` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
+  {
+    "modify": {
+      "replicationFactor": 2
+    }
+  }
+'
+----
+====
+--
+
+
 
 === MODIFYCOLLECTION Parameters
 
@@ -230,9 +346,6 @@ The attributes that can be modified are:
 
 * replicationFactor
 * collection.configName
-* rule
-* snitch
-* policy
 * readOnly
 * other custom properties that use a `property.` prefix
 
@@ -264,16 +377,31 @@ processing of updates and reloads the collection.
 
 Fetch the names of the collections in the cluster.
 
-`/admin/collections?action=LIST`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listcollection]
+====
+[.tab-label]*V1 API*
 
-=== Examples using LIST
-
-*Input*
-
-[source,text]
+[source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=LIST
 ----
+====
+
+[example.tab-pane#v2listcollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `list` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/collections
+----
+====
+--
+
 
 *Output*
 
@@ -291,8 +419,6 @@ http://localhost:8983/solr/admin/collections?action=LIST
 [[rename]]
 == RENAME: Rename a Collection
 
-`/admin/collections?action=RENAME&name=_existingName_&target=_targetName_`
-
 Renaming a collection sets up a standard alias that points to the underlying collection, so
 that the same (unmodified) collection can now be referred to in query, index and admin operations
 using the new name.
@@ -308,6 +434,28 @@ The following limitations apply:
 Aliases that refer to more than 1 collection are not supported.
 * the existing name must not be a Routed Alias.
 * the target name must not be an existing alias.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1renamecollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=renamedCollection
+----
+====
+
+[example.tab-pane#v2renamecollection]
+====
+[.tab-label]*V2 API*
+
+We do not currently have a V2 equivalent.
+
+====
+--
+
 
 === RENAME Command Parameters
 
@@ -350,7 +498,31 @@ update commands, which are directed now to `collection2`.
 [[delete]]
 == DELETE: Delete a Collection
 
-`/admin/collections?action=DELETE&name=_collection_`
+The DELETE action is used to delete a collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletecollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETE&name=techproducts_v2
+----
+====
+
+[example.tab-pane#v2deletecollection]
+====
+[.tab-label]*V2 API*
+
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts_v2
+----
+====
+--
 
 === DELETE Parameters
 
@@ -363,17 +535,6 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 === DELETE Response
 
 The response will include the status of the request and the cores that were deleted. If the status is anything other than "success", an error message will explain why the request failed.
-
-=== Examples using DELETE
-
-*Input*
-
-Delete the collection named "newCollection".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection&wt=xml
-----
 
 *Output*
 
@@ -406,17 +567,48 @@ http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection&wt
 
 Add, edit or delete a collection property.
 
-`/admin/collections?action=COLLECTIONPROP&name=_collectionName_&propertyName=_propertyName_&propertyValue=_propertyValue_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1collectionproperty]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techproducts_v2&propertyName=propertyName&propertyValue=propertyValue
+----
+====
+
+[example.tab-pane#v2collectionproperty]
+====
+[.tab-label]*V2 API*
+
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
+  {
+    "set-collection-property": {
+      "name": "foo",
+      "value": "bar"
+    }
+  }
+'
+----
+====
+--
+
+
 
 === COLLECTIONPROP Parameters
 
 `name`::
 The name of the collection for which the property would be set.
 
-`propertyName`::
+`propertyName` (v1), `name` (v2)::
 The name of the property.
 
-`propertyValue`::
+`propertyValue` (v1), `value` (v2)::
 The value of the property. When not provided, the property is deleted.
 
 === COLLECTIONPROP Response
@@ -447,9 +639,39 @@ http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&pro
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
 
-`/admin/collections?action=MIGRATE&collection=_name_&split.key=_key1!_&target.collection=_target_collection_&forward.timeout=60`
-
 The MIGRATE command is used to migrate all documents having a given routing key to another collection. The source collection will continue to have the same data as-is but it will start re-routing write requests to the target collection for the number of seconds specified by the `forward.timeout` parameter. It is the responsibility of the user to switch to the target collection for reads and writes after the MIGRATE action completes.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1migratecollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=techproducts_v2&split.key=key1!&target.collection=postMigrationCollection&forward.timeout=60
+----
+====
+
+[example.tab-pane#v2migratecollection]
+====
+[.tab-label]*V2 API*
+
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
+  {
+    "migrate-docs": {
+      "target": "postMigrationCollection",
+      "splitKey": "key1!"
+    }
+  }
+'
+----
+====
+--
+
 
 The routing key specified by the `split.key` parameter may span multiple shards on both the source and the target collections. The migration is performed shard-by-shard in a single thread. One or more temporary collections may be created by this command during the ‘migrate’ process but they are cleaned up at the end automatically.
 
@@ -464,13 +686,13 @@ Please note that the MIGRATE API does not perform any de-duplication on the docu
 `collection`::
 The name of the source collection from which documents will be split. This parameter is required.
 
-`target.collection`::
+`target.collection` (v1), `target` (v2)::
 The name of the target collection to which documents will be migrated. This parameter is required.
 
-`split.key`::
+`split.key` (v1), `splitKey` (v2)::
 The routing key prefix. For example, if the uniqueKey of a document is "a!123", then you would use `split.key=a!`. This parameter is required.
 
-`forward.timeout`::
+`forward.timeout` (v1), `forwardTimeout` (v2)::
 The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard. The default is 60 seconds.
 
 `property._name_=_value_`::
@@ -507,7 +729,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1</int>
       </lst>
-      <str name="core">test2_shard1_0_replica1</str>
+      <str name="core">test2_shard1_0_replica_n1</str>
       <str name="status">BUFFERING</str>
     </lst>
     <lst>
@@ -515,7 +737,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">2479</int>
       </lst>
-      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica1</str>
+      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica_n1</str>
     </lst>
     <lst>
       <lst name="responseHeader">
@@ -534,7 +756,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1655</int>
       </lst>
-      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica2</str>
+      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica_n2</str>
     </lst>
     <lst>
       <lst name="responseHeader">
@@ -553,7 +775,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1</int>
       </lst>
-      <str name="core">test2_shard1_0_replica1</str>
+      <str name="core">test2_shard1_0_replica_n1</str>
       <str name="status">EMPTY_BUFFER</str>
     </lst>
     <lst name="192.168.43.52:8983_solr">
@@ -573,7 +795,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1</int>
       </lst>
-      <str name="core">test2_shard1_1_replica1</str>
+      <str name="core">test2_shard1_1_replica_n1</str>
       <str name="status">BUFFERING</str>
     </lst>
     <lst>
@@ -581,7 +803,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1742</int>
       </lst>
-      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica1</str>
+      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica_n1</str>
     </lst>
     <lst>
       <lst name="responseHeader">
@@ -600,7 +822,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1917</int>
       </lst>
-      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica2</str>
+      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica_n2</str>
     </lst>
     <lst>
       <lst name="responseHeader">
@@ -619,7 +841,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1</int>
       </lst>
-      <str name="core">test2_shard1_1_replica1</str>
+      <str name="core">test2_shard1_1_replica_n1</str>
       <str name="status">EMPTY_BUFFER</str>
     </lst>
     <lst name="192.168.43.52:8983_solr">
@@ -641,10 +863,30 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
 [[reindexcollection]]
 == REINDEXCOLLECTION: Re-Index a Collection
 
-`/admin/collections?action=REINDEXCOLLECTION&name=_name_`
-
 The REINDEXCOLLECTION command reindexes a collection using existing data from the
 source collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1reindexcollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=techproducts_v2
+----
+====
+
+[example.tab-pane#v2reindexcollection]
+====
+[.tab-label]*V2 API*
+
+We do not currently have a V2 equivalent.
+
+====
+--
+
 
 NOTE: Reindexing is potentially a lossy operation - some of the existing indexed data that is not
 available as stored fields may be lost, so users should use this command
@@ -726,12 +968,12 @@ state of the source collection's read-only flag.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCollection&numShards=3&configName=conf2&q=id:aa*&fl=id,string_s
+http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=techproducts_v2&numShards=3&configName=conf2&q=id:aa*&fl=id,string_s
 ----
 This request specifies a different schema for the target collection, copies only some of the fields, selects only the documents
 matching a query, and also potentially re-shapes the collection by explicitly specifying 3 shards. Since the target collection
-hasn't been specified in the parameters, a collection with a unique name, e.g., `.rx_newCollection_2`, will be created and on success
-an alias pointing from `newCollection` to `.rx_newCollection_2` will be created, effectively replacing the source collection
+hasn't been specified in the parameters, a collection with a unique name, e.g., `.rx_techproducts_v2_2`, will be created and on success
+an alias pointing from `techproducts_v2` to `.rx_techproducts_v2_2` will be created, effectively replacing the source collection
 for the purpose of indexing and searching. The source collection is assumed to be small so a synchronous request was made.
 
 *Output*
@@ -746,22 +988,47 @@ for the purpose of indexing and searching. The source collection is assumed to b
     "phase":"done",
     "inputDocs":13416,
     "processedDocs":376,
-    "actualSourceCollection":".rx_newCollection_1",
+    "actualSourceCollection":".rx_techproducts_v2_1",
     "state":"finished",
-    "actualTargetCollection":".rx_newCollection_2",
-    "checkpointCollection":".rx_ck_newCollection"
+    "actualTargetCollection":".rx_techproducts_v2_2",
+    "checkpointCollection":".rx_ck_techproducts_v2"
   }
 }
 ----
-As a result a new collection `.rx_newCollection_2` has been created, with selected documents reindexed to 3 shards, and
-with an alias pointing from `newCollection` to this one. The status also shows that the source collection
-was already an alias to `.rx_newCollection_1`, which was likely a result of a previous reindexing.
+As a result a new collection `.rx_techproducts_v2_2` has been created, with selected documents reindexed to 3 shards, and
+with an alias pointing from `techproducts_v2` to this one. The status also shows that the source collection
+was already an alias to `.rx_techproducts_v2_1`, which was likely a result of a previous reindexing.
 
 [[colstatus]]
 == COLSTATUS: Detailed Status of a Collection's Indexes
 
 The COLSTATUS command provides a detailed description of the collection status, including low-level index
-information about segments and field data.
+information about segments and field data.  There isn't a good equivalent V2 API that supports all the parameters below.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1collectionstatus]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=techproducts_v2&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true
+----
+====
+
+[example.tab-pane#v2collectionstatus]
+====
+[.tab-label]*V2 API*
+
+The closest V2 API is this one, but doesn't support all the features of the V1 equivalent.
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/collections/techproducts_v2
+----
+====
+--
 
 This command also checks the compliance of Lucene index field types with the current Solr collection
 schema and indicates the names of non-compliant fields, i.e., Lucene fields with field types incompatible
@@ -769,7 +1036,7 @@ schema and indicates the names of non-compliant fields, i.e., Lucene fields with
 result from incompatible schema changes or after migration of
 data to a different major Solr release.
 
-`/admin/collections?action=COLSTATUS&collection=coll&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true`
+
 
 === COLSTATUS Parameters
 
@@ -983,32 +1250,7 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
                                     "_i_Lucene50_0.pos": "11.1 MB",
                                     "_i_Lucene50_0.doc": "10 MB",
                                     "_i_Lucene50_0.tim": "4.3 MB"
-                                },
-                                "ramBytesUsed": {
-                                    "total": 49153,
-                                    "postings [PerFieldPostings(segment=_i formats=1)]": {
-                                        "total": 31023,
-                                "fields": {
-                                    "dc": {
-                                        "flags": "I-----------",
-                                        "schemaType": "text_general"
-                                    },
-                                    "dc_str": {
-                                        "flags": "-Dsrs-------",
-                                        "schemaType": "strings"
-                                    },
-                                    "dc.title": {
-                                        "flags": "I-----------",
-                                        "docCount": 70958,
-                                        "sumDocFreq": 646756,
-                                        "sumTotalTermFreq": 671817,
-                                        "schemaType": "text_general"
-                                    },
-                                    "dc.date": {
-                                        "flags": "-Dsrn-------:1:1:8",
-                                        "schemaType": "pdates"
-                                    }
-                                  }}}}}}}}}}}
+                                }}}}}}}}}
 ----
 
 Example of using the raw index data analysis tool:
@@ -1207,7 +1449,39 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
 
 Backs up Solr collections and associated configurations to a shared filesystem - for example a Network File System.
 
-`/admin/collections?action=BACKUP&name=myBackupName&collection=myCollectionName&location=/path/to/my/shared/drive`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1backupcollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=BACKUP&name=techproducts_backup&collection=techproducts&location=file:///path/to/my/shared/drive
+
+----
+====
+
+[example.tab-pane#v2backupcollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `backup-collection` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "backup-collection": {
+      "name": "techproducts_backup",
+      "collection": "techproducts",
+      "location": "file:///path/to/my/shared/drive"
+    }
+  }
+'
+----
+====
+--
 
 The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command <<making-and-restoring-backups.adoc#,takes one copy from each shard for the indexes>>. For configurations, it backs up the configset that was associated with the collection and metadata.
 
@@ -1362,7 +1636,39 @@ POST http://localhost:8983/v2/collections/backups
 
 Restores Solr indexes and associated configurations to a specified collection.
 
-`/admin/collections?action=RESTORE&name=myBackupName&location=/path/to/my/shared/drive&collection=myRestoredCollectionName`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1restorecollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3
+
+----
+====
+
+[example.tab-pane#v2restorecollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `restore-collection` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "restore-collection": {
+      "name": "techproducts_backup",
+      "collection": "techproducts_v3",
+      "location": "file:///path/to/my/shared/drive"
+    }
+  }
+'
+----
+====
+--
 
 The RESTORE operation will replace the content of a collection with files from the specified backup.
 
@@ -1514,7 +1820,37 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 
 Reassigns leaders in a collection according to the preferredLeader property across active nodes.
 
-`/admin/collections?action=REBALANCELEADERS&collection=collectionName`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1rebalanceleaders]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=techproducts
+
+----
+====
+
+[example.tab-pane#v2rebalanceleaders]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `rebalance-leaders` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+  {
+    "rebalance-leaders": {
+      "maxAtOnce": 3
+    }
+  }
+'
+----
+====
+--
 
 Leaders are assigned in a collection according to the `preferredLeader` property on active nodes. This command should be run after the preferredLeader property has been assigned via the BALANCESHARDUNIQUE or ADDREPLICAPROP commands.
 

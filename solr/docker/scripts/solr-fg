@@ -7,7 +7,7 @@ if [[ "$VERBOSE" == "yes" ]]; then
     set -x
 fi
 
-echo "Starting Solr $SOLR_VERSION"
+echo "Starting Solr"
 # determine TINI default. If it is already set, assume the user knows what they want
 if [[ -z "${TINI:-}" ]]; then
   if [[ "$$" == 1 ]]; then

@@ -51,11 +51,11 @@ import org.slf4j.LoggerFactory;
 /**
  * This class implements a generic plugin which can use authentication schemes exposed by the
  * Hadoop framework. This plugin supports following features
- * - integration with authentication mehcanisms (e.g. kerberos)
+ * - integration with authentication mechanisms (e.g. kerberos)
  * - Delegation token support
  * - Proxy users (or secure impersonation) support
  *
- * This plugin enables defining configuration parameters required by the undelying Hadoop authentication
+ * This plugin enables defining configuration parameters required by the underlying Hadoop authentication
  * mechanism. These configuration parameters can either be specified as a Java system property or the default
  * value can be specified as part of the plugin configuration.
  *
@@ -121,6 +121,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
   private AuthenticationFilter authFilter;
   private final Locale defaultLocale = Locale.getDefault();
   protected final CoreContainer coreContainer;
+  private boolean delegationTokenEnabled;
 
   public HadoopAuthPlugin(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
@@ -129,8 +130,8 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
   @Override
   public void init(Map<String,Object> pluginConfig) {
     try {
-      String delegationTokenEnabled = (String)pluginConfig.getOrDefault(DELEGATION_TOKEN_ENABLED_PROPERTY, "false");
-      authFilter = (Boolean.parseBoolean(delegationTokenEnabled)) ? new HadoopAuthFilter() : new AuthenticationFilter() {
+      delegationTokenEnabled = Boolean.parseBoolean((String) pluginConfig.get(DELEGATION_TOKEN_ENABLED_PROPERTY));
+      authFilter = delegationTokenEnabled ? new HadoopAuthFilter() : new AuthenticationFilter() {
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
           // A hack until HADOOP-15681 get committed
@@ -182,6 +183,10 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
       if (configVal != null) {
         params.put(configName, configVal);
       }
+    }
+    if (delegationTokenEnabled) {
+      // This is the only kind we support right now anyway
+      params.putIfAbsent("delegation-token.token-kind", KerberosPlugin.DELEGATION_TOKEN_TYPE_DEFAULT);
     }
 
     // Configure proxy user settings.

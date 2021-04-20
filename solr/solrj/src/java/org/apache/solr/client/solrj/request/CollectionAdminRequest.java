@@ -848,14 +848,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
-   * Return a SolrRequest for low-level detailed status of the specified collection. 
+   * Return a SolrRequest for low-level detailed status of the specified collection.
    * @param collection the collection to get the status of.
    */
   public static ColStatus collectionStatus(String collection) {
     checkNotNull(CoreAdminParams.COLLECTION, collection);
     return new ColStatus(collection);
   }
-  
+
   /**
    * Return a SolrRequest for low-level detailed status of all collections on the cluster.
    */
@@ -878,7 +878,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.COLSTATUS);
       this.collection = collection;
     }
-    
+
     private ColStatus() {
       super(CollectionAction.COLSTATUS);
     }
@@ -1338,6 +1338,35 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
 
+  }
+
+  /**
+   * Returns a SolrRequest to run a mock task. For tests only.
+   */
+  public static MockCollTask mockCollTask(String collection) {
+    return new MockCollTask(collection);
+  }
+
+  // MOCK_COLL_TASK request
+  public static class MockCollTask extends AsyncCollectionAdminRequest {
+    protected final String collection;
+    protected String sleep;
+
+    private MockCollTask(String collection) {
+      super(CollectionAction.MOCK_COLL_TASK);
+      this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
+
+    }
+
+    public MockCollTask setSleep(String sleep) { this.sleep = sleep; return this; }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.add(CoreAdminParams.COLLECTION, collection);
+      params.setNonNull("sleep", sleep);
+      return params;
+    }
   }
 
   /**
@@ -2603,6 +2632,30 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.OVERSEERSTATUS);
     }
 
+  }
+
+  // DISTRIBUTEDAPIPROCESSING request for verifying if Collection API execution is distributed
+  public static class RequestApiDistributedProcessing extends CollectionAdminRequest<RequestApiDistributedProcessingResponse> {
+
+    public RequestApiDistributedProcessing() {
+      super(CollectionAction.DISTRIBUTEDAPIPROCESSING);
+    }
+
+    @Override
+    protected RequestApiDistributedProcessingResponse createResponse(SolrClient client) {
+      return new RequestApiDistributedProcessingResponse();
+    }
+  }
+
+  /**
+   * A response object for {@link RequestApiDistributedProcessing} requests
+   */
+  public static class RequestApiDistributedProcessingResponse extends CollectionAdminResponse {
+    public boolean getIsCollectionApiDistributed() {
+      @SuppressWarnings({"rawtypes"})
+      Boolean isDistributedApi = (Boolean) getResponse().get("isDistributedApi");
+      return isDistributedApi;
+    }
   }
 
   /**

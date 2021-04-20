@@ -38,6 +38,7 @@ public class KerberosUtils {
     System.setProperty("solr.jaas.debug", "true");
     Path kdcDir = baseDir.resolve("minikdc");
     String solrClientPrincipal = "solr";
+    String solrAltClientPrincipal = "solr_alt"; // An alternate principal that can be handled differently by authz tests
     File keytabFile = kdcDir.resolve("keytabs").toFile();
     KerberosTestServices tmp = KerberosTestServices.builder()
             .withKdc(kdcDir.toFile())
@@ -45,7 +46,7 @@ public class KerberosUtils {
             .build();
     String solrServerPrincipal = "HTTP/127.0.0.1";
     tmp.start();
-    tmp.getKdc().createPrincipal(keytabFile, solrServerPrincipal, solrClientPrincipal);
+    tmp.getKdc().createPrincipal(keytabFile, solrServerPrincipal, solrAltClientPrincipal, solrClientPrincipal);
 
     String appName = "SolrClient";
     String jaas = appName + " {\n"

@@ -206,9 +206,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = postFilter;
     }
 
+    if (cmd.isQueryCancellable()) {
+      collector = new CancellableCollector(collector);
+
+      // Add this to the local active queries map
+      core.getCancellableQueryTracker().addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);
+    }
+
     try {
       super.search(query, collector);
-    } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
+    } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException |
+            CancellableCollector.QueryCancelledException x) {
       log.warn("Query: [{}]; ", query, x);
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
@@ -220,10 +228,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (earlyTerminatingSortingCollector != null) {
         qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
       }
+
+      if (cmd.isQueryCancellable()) {
+        core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
+      }
     }
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
     }
+
     return collector;
   }
 
@@ -1177,7 +1190,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns the set of document ids matching both the query and the filter. This method is cache-aware and attempts to
    * retrieve the answer from the cache if possible. If the answer was not cached, it may have been inserted into the
    * cache as a result of this call.
-   * <p>
    *
    * @param filter
    *          may be null

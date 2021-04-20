@@ -122,7 +122,7 @@ public class TextField extends FieldType {
                                  // historical behavior based on how the early versions of the FieldCache
                                  // would deal with multiple indexed terms in a singled valued field...
                                  //
-                                 // Always use the 'min' value from the (Uninverted) "psuedo doc values"
+                                 // Always use the 'min' value from the (Uninverted) "pseudo doc values"
                                  SortedSetSelector.Type.MIN,
                                  reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }

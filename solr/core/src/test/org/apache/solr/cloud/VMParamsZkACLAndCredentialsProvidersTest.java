@@ -34,11 +34,13 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
+
 public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
+  private static final Charset DATA_ENCODING = StandardCharsets.UTF_8;
   
   protected ZkTestServer zkServer;
   
@@ -111,28 +113,22 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Test
   public void testNoCredentials() throws Exception {
     useNoCredentials();
-    
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    try {
+
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
       doTest(zkClient,
-          false, false, false, false, false,
-          false, false, false, false, false);
-    } finally {
-      zkClient.close();
+              false, false, false, false, false,
+              false, false, false, false, false);
     }
   }
 
   @Test
   public void testWrongCredentials() throws Exception {
     useWrongCredentials();
-    
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    try {
+
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
       doTest(zkClient,
-          false, false, false, false, false,
-          false, false, false, false, false);
-    } finally {
-      zkClient.close();
+              false, false, false, false, false,
+              false, false, false, false, false);
     }
   }
 
@@ -140,13 +136,10 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void testAllCredentials() throws Exception {
     useAllCredentials();
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    try {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
       doTest(zkClient,
-          true, true, true, true, true,
-          true, true, true, true, true);
-    } finally {
-      zkClient.close();
+              true, true, true, true, true,
+              true, true, true, true, true);
     }
   }
   
@@ -154,13 +147,36 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void testReadonlyCredentials() throws Exception {
     useReadonlyCredentials();
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    try {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
       doTest(zkClient,
-          true, true, false, false, false,
-          false, false, false, false, false);
-    } finally {
-      zkClient.close();
+              true, true, false, false, false,
+              false, false, false, false, false);
+    }
+  }
+
+  @Test
+  public void testRepairACL() throws Exception {
+    clearSecuritySystemProperties();
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      // Currently no credentials on ZK connection, because those same VM-params are used for adding ACLs, and here we want
+      // no (or completely open) ACLs added. Therefore hack your way into being authorized for creating anyway
+      zkClient.getSolrZooKeeper().addAuthInfo("digest", ("connectAndAllACLUsername:connectAndAllACLPassword")
+          .getBytes(StandardCharsets.UTF_8));
+
+      zkClient.create("/security.json", "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, false);
+      assertEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null, false));
+    }
+
+    setSecuritySystemProperties();
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      ZkController.createClusterZkNodes(zkClient);
+      assertNotEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null, false));
+    }
+
+    useReadonlyCredentials();
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      NoAuthException e = assertThrows(NoAuthException.class, () -> zkClient.getData("/security.json", null, null, false));
+      assertEquals("/security.json", e.getPath());
     }
   }
     
@@ -176,65 +192,35 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   }
   
   protected static void doTest(SolrZkClient zkClient, String path, boolean getData, boolean list, boolean create, boolean setData, boolean delete) throws Exception {
-    try {
-      zkClient.getData(path, null, null, false);
-      if (!getData) fail("NoAuthException expected ");
-    } catch (NoAuthException nae) {
-      if (getData) fail("No NoAuthException expected");
-      // expected
-    }
-    
-    try {
-      zkClient.getChildren(path, null, false);
-      if (!list) fail("NoAuthException expected ");
-    } catch (NoAuthException nae) {
-      if (list) fail("No NoAuthException expected");
-      // expected
-    }
-    
-    try {
+    doTest(getData, () -> zkClient.getData(path, null, null, false));
+    doTest(list, () -> zkClient.getChildren(path, null, false));
+
+    doTest(create, () -> {
       zkClient.create(path + "/subnode", null, CreateMode.PERSISTENT, false);
-      if (!create) fail("NoAuthException expected ");
-      else {
-        zkClient.delete(path + "/subnode", -1, false);
-      }
-    } catch (NoAuthException nae) {
-      if (create) {
-        nae.printStackTrace();
-        fail("No NoAuthException expected");
-      }
-      // expected
-    }
-    
-    try {
+      zkClient.delete(path + "/subnode", -1, false);
+    });
+    doTest(create, () -> {
       zkClient.makePath(path + "/subnode/subsubnode", false);
-      if (!create) fail("NoAuthException expected ");
-      else {
-        zkClient.delete(path + "/subnode/subsubnode", -1, false);
-        zkClient.delete(path + "/subnode", -1, false);
-      }
-    } catch (NoAuthException nae) {
-      if (create) fail("No NoAuthException expected");
-      // expected
-    }
-    
-    try {
-      zkClient.setData(path, (byte[])null, false);
-      if (!setData) fail("NoAuthException expected ");
-    } catch (NoAuthException nae) {
-      if (setData) fail("No NoAuthException expected");
-      // expected
-    }
+      zkClient.delete(path + "/subnode/subsubnode", -1, false);
+      zkClient.delete(path + "/subnode", -1, false);
+    });
 
-    try {
-      // Actually about the ACLs on /solr, but that is protected
-      zkClient.delete(path, -1, false);
-      if (!delete) fail("NoAuthException expected ");
-    } catch (NoAuthException nae) {
-      if (delete) fail("No NoAuthException expected");
-      // expected
-    }
+    doTest(setData, () -> zkClient.setData(path, (byte[])null, false));
 
+    // Actually about the ACLs on /solr, but that is protected
+    doTest(delete, () -> zkClient.delete(path, -1, false));
+  }
+
+  interface ExceptingRunnable {
+    void run() throws Exception;
+  }
+
+  private static void doTest(boolean shouldSucceed, ExceptingRunnable action) throws Exception {
+    if (shouldSucceed) {
+      action.run();
+    } else {
+      expectThrows(NoAuthException.class, action::run);
+    }
   }
   
   private void useNoCredentials() {
@@ -244,7 +230,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   private void useWrongCredentials() {
     clearSecuritySystemProperties();
     
-    System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, VMParamsSingleSetCredentialsDigestZkCredentialsProvider.class.getName());
+    System.setProperty(SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME, VMParamsSingleSetCredentialsDigestZkCredentialsProvider.class.getName());
     System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "connectAndAllACLUsername");
     System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, "connectAndAllACLPasswordWrong");
   }
