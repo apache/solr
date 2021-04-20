@@ -55,6 +55,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
         final NamedList<Object> config = getBaseBackupRepositoryConfiguration();
         config.add("configKey1", "configVal1");
         config.add("configKey2", "configVal2");
+        config.add("location", "foo");
         try (BackupRepository repo = getRepository()) {
             repo.init(config);
             assertEquals("configVal1", repo.getConfigProperty("configKey1"));

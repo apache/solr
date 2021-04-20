@@ -33,6 +33,8 @@ public class GCSConfigParser {
 
   private static final String GCS_BUCKET_PARAM_NAME = "bucket";
   private static final String GCS_CREDENTIAL_PARAM_NAME = "gcsCredentialPath";
+  private static final String GCS_WRITE_BUFFER_SIZE_PARAM_NAME = "gcsWriteBufferSizeBytes";
+  private static final String GCS_READ_BUFFER_SIZE_PARAM_NAME = "gcsReadBufferSizeBytes";
   private static final String HTTP_CONNECT_TIMEOUT_MILLIS_NAME = "gcsClientHttpConnectTimeoutMillis";
   private static final String HTTP_READ_TIMEOUT_MILLIS_NAME = "gcsClientHttpReadTimeoutMillis";
   private static final String MAX_REQUEST_RETRIES_NAME = "gcsClientMaxRetries";
@@ -45,6 +47,8 @@ public class GCSConfigParser {
   private static final String RPC_MAX_TIMEOUT_MILLIS_NAME = "gcsClientRpcMaxTimeoutMillis";
 
   private static final String DEFAULT_GCS_BUCKET_VALUE = "solrBackupsBucket";
+  private static final int DEFAULT_GCS_WRITE_BUFFER_SIZE_VALUE = 16 * 1024 * 1024;
+  private static final int DEFAULT_GCS_READ_BUFFER_SIZE_VALUE = 2 * 1024 * 1024;
   private static final int DEFAULT_HTTP_CONNECT_TIMEOUT_MILLIS = 20000;
   private static final int DEFAULT_HTTP_READ_TIMEOUT_MILLIS = 20000;
   private static final int DEFAULT_MAX_RETRIES = 10;
@@ -63,8 +67,10 @@ public class GCSConfigParser {
   public GCSConfig parseConfiguration(NamedList<Object> repoConfig, Map<String, String> envVars) {
     final String bucketName = parseBucket(repoConfig, envVars);
     final String credentialPathStr = parseCredentialPath(repoConfig, envVars);
+    final int writeBufferSizeBytes = getIntOrDefault(repoConfig, GCS_WRITE_BUFFER_SIZE_PARAM_NAME, DEFAULT_GCS_WRITE_BUFFER_SIZE_VALUE);
+    final int readBufferSizeBytes = getIntOrDefault(repoConfig, GCS_READ_BUFFER_SIZE_PARAM_NAME, DEFAULT_GCS_READ_BUFFER_SIZE_VALUE);
     final StorageOptions.Builder storageOptionsBuilder = parseStorageOptions(repoConfig);
-    return new GCSConfig(bucketName, credentialPathStr, storageOptionsBuilder);
+    return new GCSConfig(bucketName, credentialPathStr, writeBufferSizeBytes, readBufferSizeBytes, storageOptionsBuilder);
   }
 
   /*
@@ -135,10 +141,14 @@ public class GCSConfigParser {
     private final StorageOptions.Builder optionsBuilder;
     private final String bucketName;
     private final String gcsCredentialPath;
+    private final int writeBufferSizeBytes;
+    private final int readBufferSizeBytes;
 
-    public GCSConfig(String bucketName, String gcsCredentialPath, StorageOptions.Builder optionsBuilder) {
+    public GCSConfig(String bucketName, String gcsCredentialPath, int writeBufferSizeBytes, int readBufferSizeBytes, StorageOptions.Builder optionsBuilder) {
       this.bucketName = bucketName;
       this.gcsCredentialPath = gcsCredentialPath;
+      this.writeBufferSizeBytes = writeBufferSizeBytes;
+      this.readBufferSizeBytes = readBufferSizeBytes;
       this.optionsBuilder = optionsBuilder;
     }
 
@@ -152,6 +162,14 @@ public class GCSConfigParser {
 
     public String getCredentialPath() {
       return gcsCredentialPath;
+    }
+
+    public int getWriteBufferSize() {
+      return writeBufferSizeBytes;
+    }
+
+    public int getReadBufferSize() {
+      return readBufferSizeBytes;
     }
   }
 }

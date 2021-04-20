@@ -38,12 +38,13 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
     // LocalStorageHelper produces 'Storage' objects that track blob store state in non-static memory unique to each
     // Storage instance.  For various components in Solr to have a coherent view of the blob-space then, they need to
     // share a single 'Storage' object.
-    setupSingletonStorageInstanceIfNecessary();
-    storage = stashedStorage;
+    synchronized (LocalStorageGCSBackupRepository.class) {
+      storage = getSingletonStorage();
+      initializeBackupLocation();
+    }
     return storage;
   }
 
-  // TODO JEGERLOW USE THIS CLEAR METHOD AND RUN TESTS AGAIN FOR GCS
   public static void clearStashedStorage() {
     synchronized (LocalStorageGCSBackupRepository.class) {
       stashedStorage = null;
@@ -80,23 +81,22 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
     }
   }
 
-  // Should only be called after locking on 'stashedStorage'
-  protected void setupSingletonStorageInstanceIfNecessary() {
-    synchronized (LocalStorageGCSBackupRepository.class) {
-      if (stashedStorage != null) {
-        return;
-      }
+  protected Storage getSingletonStorage() {
+    if (stashedStorage != null) {
+      return stashedStorage;
+    }
 
-      stashedStorage = LocalStorageHelper.customOptions(false).getService();
-      storage = stashedStorage;
-      // Bootstrap 'location' on first creation
-      try {
-        final String baseLocation = getBackupLocation(null);
-        final URI baseLocationUri = createURI(baseLocation);
-        createDirectory(baseLocationUri);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+    stashedStorage = LocalStorageHelper.customOptions(false).getService();
+    return stashedStorage;
+  }
+
+  protected void initializeBackupLocation() {
+    try {
+      final String baseLocation = getBackupLocation(null);
+      final URI baseLocationUri = createURI(baseLocation);
+      createDirectory(baseLocationUri);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 }

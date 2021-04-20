@@ -34,6 +34,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -66,12 +67,14 @@ import static java.net.HttpURLConnection.HTTP_PRECON_FAILED;
 public class GCSBackupRepository implements BackupRepository {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final int LARGE_BLOB_THRESHOLD_BYTE_SIZE = 5 * 1024 * 1024;
-    private static final int BUFFER_SIZE = 16 * 1024 * 1024;
+
     protected Storage storage;
 
     private NamedList<Object> config = null;
     protected String bucketName = null;
     protected String credentialPath = null;
+    protected int writeBufferSizeBytes;
+    protected int readBufferSizeBytes;
     protected StorageOptions.Builder storageOptionsBuilder = null;
 
     protected Storage initStorage() {
@@ -84,6 +87,7 @@ public class GCSBackupRepository implements BackupRepository {
             }
 
             log.info("Creating GCS client using credential at {}", credentialPath);
+            // 'GoogleCredentials.fromStream' closes the input stream, so we don't
             GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
             storageOptionsBuilder.setCredentials(credential);
             storage = storageOptionsBuilder.build().getService();
@@ -102,6 +106,8 @@ public class GCSBackupRepository implements BackupRepository {
 
         this.bucketName = parsedConfig.getBucketName();
         this.credentialPath = parsedConfig.getCredentialPath();
+        this.writeBufferSizeBytes = parsedConfig.getWriteBufferSize();
+        this.readBufferSizeBytes = parsedConfig.getReadBufferSize();
         this.storageOptionsBuilder = parsedConfig.getStorageOptionsBuilder();
 
         initStorage();
@@ -144,7 +150,7 @@ public class GCSBackupRepository implements BackupRepository {
 
     @Override
     public boolean exists(URI path) throws IOException {
-        if (path.toString().equals(getConfigProperty("location"))) {
+        if (path.toString().equals(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))) {
             return true;
         }
 
@@ -171,15 +177,9 @@ public class GCSBackupRepository implements BackupRepository {
         return PathType.FILE;
     }
 
-    private String toBlobName(URI path) {
-        return path.toString();
-    }
-
     @Override
     public String[] listAll(URI path) throws IOException {
-        String blobName = path.toString();
-        if (!blobName.endsWith("/"))
-            blobName += "/";
+        final String blobName = appendTrailingSeparatorIfNecessary(path.toString());
 
         final String pathStr = blobName;
         final LinkedList<String> result = new LinkedList<>();
@@ -207,14 +207,12 @@ public class GCSBackupRepository implements BackupRepository {
 
     @Override
     public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
-        return openInput(dirPath, fileName, ctx, 2 * 1024 * 1024);
+        return openInput(dirPath, fileName, ctx, readBufferSizeBytes);
     }
 
     private IndexInput openInput(URI dirPath, String fileName, IOContext ctx, int bufferSize) {
         String blobName = dirPath.toString();
-        if (!blobName.endsWith("/")) {
-            blobName += "/";
-        }
+        blobName = appendTrailingSeparatorIfNecessary(blobName);
         blobName += fileName;
 
         final BlobId blobId = BlobId.of(bucketName, blobName);
@@ -248,9 +246,8 @@ public class GCSBackupRepository implements BackupRepository {
 
     @Override
     public OutputStream createOutput(URI path) throws IOException {
-        final BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, toBlobName(path)).build();
-        final Storage.BlobWriteOption[] writeOptions = new Storage.BlobWriteOption[0];
-        final WriteChannel writeChannel = storage.writer(blobInfo, writeOptions);
+        final BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, path.toString()).build();
+        final WriteChannel writeChannel = storage.writer(blobInfo, getDefaultBlobWriteOptions());
 
         return Channels.newOutputStream(new WritableByteChannel() {
             @Override
@@ -272,9 +269,7 @@ public class GCSBackupRepository implements BackupRepository {
 
     @Override
     public void createDirectory(URI path) throws IOException {
-        String name = path.toString();
-        if (!name.endsWith("/"))
-            name += "/";
+        final String name = appendTrailingSeparatorIfNecessary(path.toString());
         storage.create(BlobInfo.newBuilder(bucketName, name).build()) ;
     }
 
@@ -284,14 +279,12 @@ public class GCSBackupRepository implements BackupRepository {
         if (!blobIds.isEmpty()) {
             storage.delete(blobIds);
         } else {
-            log.info("Path:{} doesn't have any blobs", path);
+            log.debug("Path:{} doesn't have any blobs", path);
         }
     }
 
     protected List<BlobId> allBlobsAtDir(URI path) throws IOException {
-        String blobName = path.toString();
-        if (!blobName.endsWith("/"))
-            blobName += "/";
+        final String blobName = appendTrailingSeparatorIfNecessary(path.toString());
 
         final List<BlobId> result = new ArrayList<>();
         final String pathStr = blobName;
@@ -312,12 +305,7 @@ public class GCSBackupRepository implements BackupRepository {
         if (files.isEmpty()) {
             return;
         }
-        String prefix;
-        if (path.toString().endsWith("/")) {
-            prefix = path.toString();
-        } else {
-            prefix = path.toString() + "/";
-        }
+        final String prefix = appendTrailingSeparatorIfNecessary(path.toString());
         List<BlobId> blobDeletes = files.stream()
                 .map(file -> BlobId.of(bucketName, prefix + file))
                 .collect(Collectors.toList());
@@ -333,8 +321,7 @@ public class GCSBackupRepository implements BackupRepository {
     @Override
     public void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI destDir, String destFileName) throws IOException {
         String blobName = destDir.toString();
-        if (!blobName.endsWith("/"))
-            blobName += "/";
+        blobName = appendTrailingSeparatorIfNecessary(blobName);
         blobName += destFileName;
         final BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, blobName).build();
         try (ChecksumIndexInput input = sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
@@ -351,22 +338,24 @@ public class GCSBackupRepository implements BackupRepository {
 
     @Override
     public void copyIndexFileTo(URI sourceRepo, String sourceFileName, Directory dest, String destFileName) throws IOException {
-        String blobName = sourceRepo.toString();
-        if (!blobName.endsWith("/"))
-            blobName += "/";
-        blobName += sourceFileName;
-        final BlobId blobId = BlobId.of(bucketName, blobName);
-        try (final ReadChannel readChannel = storage.reader(blobId);
-             IndexOutput output = dest.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
-            ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024 * 8);
-            while (readChannel.read(buffer) > 0) {
-                buffer.flip();
-                byte[] arr = buffer.array();
-                output.writeBytes(arr, buffer.position(), buffer.limit() - buffer.position());
-                buffer.clear();
+        try {
+            String blobName = sourceRepo.toString();
+            blobName = appendTrailingSeparatorIfNecessary(blobName);
+            blobName += sourceFileName;
+            final BlobId blobId = BlobId.of(bucketName, blobName);
+            try (final ReadChannel readChannel = storage.reader(blobId);
+                 IndexOutput output = dest.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+                ByteBuffer buffer = ByteBuffer.allocate(readBufferSizeBytes);
+                while (readChannel.read(buffer) > 0) {
+                    buffer.flip();
+                    byte[] arr = buffer.array();
+                    output.writeBytes(arr, buffer.position(), buffer.limit() - buffer.position());
+                    buffer.clear();
+                }
             }
+        } catch (Exception e) {
+            log.info("Here's an exception e", e);
         }
-
     }
 
 
@@ -394,11 +383,10 @@ public class GCSBackupRepository implements BackupRepository {
 
     private void writeBlobResumable(BlobInfo blobInfo, ChecksumIndexInput indexInput) throws IOException {
         try {
-            final Storage.BlobWriteOption[] writeOptions = new Storage.BlobWriteOption[0];
-            final WriteChannel writeChannel = storage.writer(blobInfo, writeOptions);
+            final WriteChannel writeChannel = storage.writer(blobInfo, getDefaultBlobWriteOptions());
 
-            ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-            writeChannel.setChunkSize(BUFFER_SIZE);
+            ByteBuffer buffer = ByteBuffer.allocate(writeBufferSizeBytes);
+            writeChannel.setChunkSize(writeBufferSizeBytes);
 
             long remain = indexInput.length() - CodecUtil.footerLength();
             while (remain > 0) {
@@ -463,4 +451,14 @@ public class GCSBackupRepository implements BackupRepository {
         buffer.flip();
     }
 
+    protected Storage.BlobWriteOption[] getDefaultBlobWriteOptions() {
+        return new Storage.BlobWriteOption[0];
+    }
+
+    private String appendTrailingSeparatorIfNecessary(String blobName) {
+        if (! blobName.endsWith("/")) {
+            return blobName + "/";
+        }
+        return blobName;
+    }
 }
