@@ -37,9 +37,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -75,7 +75,7 @@ public class SolrXmlConfig {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Pattern COMMA_SEPARATED_PATTERN = Pattern.compile(",\\s*");
+  private static final Pattern COMMA_SEPARATED_PATTERN = Pattern.compile("\\s*,\\s*");
 
   /**
    * Given some node Properties, checks if non-null and a 'zkHost' is alread included.  If so, the Properties are
@@ -369,9 +369,16 @@ public class SolrXmlConfig {
     if (Strings.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
     }
-    // Parse list of paths. The special value '*' is mapped to _ALL_ to mean all paths
-    return Arrays.stream(COMMA_SEPARATED_PATTERN.split(commaSeparatedString))
-        .map(p -> Paths.get("*".equals(p) ? "_ALL_" : p)).collect(Collectors.toSet());
+    // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
+    String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);
+    Set<Path> paths = Sets.newHashSetWithExpectedSize(pathStrings.length);
+    for (String p : pathStrings) {
+      if ("*".equals(p) || "_ALL_".equals(p)) {
+        return SolrPaths.ALL_PATHS;
+      }
+      paths.add(Paths.get(p));
+    }
+    return paths;
   }
 
   private static UpdateShardHandlerConfig loadUpdateConfig(NamedList<Object> nl, boolean alwaysDefine) {

@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Validates URLs based on an allow list or a {@link ClusterState} in SolrCloud.
@@ -83,6 +85,12 @@ public class AllowListUrlChecker {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
     }
+
+    /**
+     * Regex pattern to match any protocol, e.g. http:// https:// s3://.
+     * After a match, regex group 1 contains the protocol and group 2 the rest.
+     */
+    private static final Pattern PROTOCOL_PATTERN = Pattern.compile("(\\w+)(://.*)");
 
     /**
      * Allow list of hosts. Elements in the list will be host:port (no protocol or context).
@@ -177,7 +185,7 @@ public class AllowListUrlChecker {
         if (urls == null || urls.isEmpty()) {
             return Collections.emptySet();
         }
-        Set<String> hostPorts = new HashSet<>((int) (urls.size() / 0.7f) + 1);
+        Set<String> hostPorts = new HashSet<>();
         for (String urlString : urls) {
             hostPorts.add(parseHostPort(urlString));
         }
@@ -185,13 +193,19 @@ public class AllowListUrlChecker {
     }
 
     private static String parseHostPort(String url) throws MalformedURLException {
+        // Parse the host and port.
+        // It doesn't really matter which protocol we set here because we are not going to use it.
         url = url.trim();
         URL u;
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            // It doesn't really matter which protocol we set here because we are not going to use it.
-            u = new URL("http://" + url);
-        } else {
+        Matcher protocolMatcher = PROTOCOL_PATTERN.matcher(url);
+        if (protocolMatcher.matches()) {
+            // Replace any protocol unsupported by URL.
+            if (!protocolMatcher.group(1).startsWith("http")) {
+                url = "http" + protocolMatcher.group(2);
+            }
             u = new URL(url);
+        } else {
+            u = new URL("http://" + url);
         }
         if (u.getHost() == null || u.getPort() < 0) {
             throw new MalformedURLException("Invalid host or port in '" + url + "'");

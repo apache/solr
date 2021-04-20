@@ -87,15 +87,16 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
     }
 
     @Test
-    public void testProtocolHttps() throws Exception {
+    public void testProtocols() throws Exception {
         AllowListUrlChecker checker = new AllowListUrlChecker(urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://abc-3.com:8983"));
         checker.checkAllowList(urls("https://abc-1.com:8983/solr", "https://abc-2.com:8983/solr"));
+        checker.checkAllowList(urls("s3://abc-1.com:8983/solr"));
     }
 
     @Test
     public void testInvalidUrlInConstructor() {
-        MalformedURLException e = expectThrows(MalformedURLException.class, () -> new AllowListUrlChecker(urls("h://abc-1.com:8983")));
-        assertThat(e.getMessage(), containsString("h://abc-1.com:8983"));
+        MalformedURLException e = expectThrows(MalformedURLException.class, () -> new AllowListUrlChecker(urls("http/abc-1.com:8983")));
+        assertThat(e.getMessage(), containsString("http/abc-1.com:8983"));
     }
 
     @Test

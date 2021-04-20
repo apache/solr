@@ -341,7 +341,3 @@ Result:
   }
 }
 ----
-
-== Distributed Search Support
-
-The TermsComponent also supports distributed indexes.
