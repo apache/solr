@@ -63,8 +63,6 @@
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" docValues="true" required="true"/>
 
-  <field name="text_np" type="text_np" indexed="true" stored="false"/>
-
   <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <field name="payload" type="sortable_binary" indexed="false"
@@ -83,11 +81,6 @@
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
-  <dynamicField name="t_*" type="text" indexed="true" stored="true"/>
-  <dynamicField name="tv_*" type="text" indexed="true" stored="true"
-                termVectors="true" termPositions="true" termOffsets="true"/>
-  <dynamicField name="tv_mv_*" type="text" indexed="true" stored="true" multiValued="true"
-                termVectors="true" termPositions="true" termOffsets="true"/>
 
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
 
@@ -97,9 +90,6 @@
   <dynamicField name="*_s" type="string" indexed="true" stored="true" docValues="true" multiValued="false"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
   <dynamicField name="*_ll" type="long" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
-  <dynamicField name="*_u" type="unstemmed" indexed="true" stored="true"/>
-  <dynamicField name="*_ws" type="nametext" indexed="true" stored="true"/>
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_f" type="float" indexed="true" stored="true"/>
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
@@ -113,7 +103,6 @@
   <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
 
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
-  <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>
 
   <dynamicField name="random_*" type="random"/>
 
