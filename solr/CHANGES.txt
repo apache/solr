@@ -266,6 +266,7 @@ Other Changes
 
 * SOLR-15146: Allow Collection API and Config Set API to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
 
+* SOLR-15356: "mergeindexes" should not use UninvertingReader (FieldCache). (David Smiley)
 
 Bug Fixes
 ---------------------
