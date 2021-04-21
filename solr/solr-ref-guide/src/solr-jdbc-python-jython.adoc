@@ -84,7 +84,7 @@ jython [solr_java_native.py | solr_zxjdbc.py]
 ----
 #!/usr/bin/env jython
 
-# http://www.jython.org/jythonbook/en/1.0/DatabasesAndJython.html
+# https://jython.readthedocs.io/en/latest/DatabasesAndJython/
 # https://wiki.python.org/jython/DatabaseExamples#SQLite_using_JDBC
 
 import sys
@@ -118,7 +118,7 @@ if __name__ == '__main__':
 ----
 #!/usr/bin/env jython
 
-# http://www.jython.org/jythonbook/en/1.0/DatabasesAndJython.html
+# https://jython.readthedocs.io/en/latest/DatabasesAndJython/
 # https://wiki.python.org/jython/DatabaseExamples#SQLite_using_ziclix
 
 import sys
