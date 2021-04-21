@@ -715,7 +715,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   @Override
   public String getDescription() {
-    return "Lucene Index Browser.  Inspired and modeled after Luke: http://www.getopt.org/luke/";
+    return "Lucene Index Browser.  Inspired and modeled after Luke: https://code.google.com/archive/p/luke/";
   }
 
   @Override

@@ -99,7 +99,7 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
           licenses {
             license {
               name = 'Apache 2'
-              url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+              url = 'https://apache.org/licenses/LICENSE-2.0.txt'
             }
           }
 
