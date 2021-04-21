@@ -1,0 +1,33 @@
+GPG Signing
+===========
+
+GPG Signing of distribution files (typically by a release manager) is done with the 'signDist' command.
+
+The only required configuration property gradle needs is the 'signing.gnupg.keyName' (aka: the fingerprint) of
+the key you wish to use:
+
+./gradlew signDist -Psigning.gnupg.keyName=4DDFABAF68C0F906B76CD9A09C784577F8F58E19
+
+By default when you run this command, gradle will delegate to the `gpg2` command for managine the signing of each file,
+which (should) in turn use the `gpg-agent` (if configured on your system) to prompt you for your secret key only as
+needed based on your gpg-agent prefrences.
+
+You may wish to put the `signing.gnupg.keyName` in your `~/.gradle/gradle.properties` so it is set automatically any time you use gradle
+
+Additional Configuration
+------------------------
+
+The following additional properties may be useful/neccessary in your system:
+
+signing.gnupg.useLegacyGpg=true                    # Controls wgether GnuPG v1 (`gpg`) or v2 (`gpg2`) is used
+signing.gnupg.executable=gpg.exe                   # Allows explicit control over what command executable used
+signing.gnupg.homeDir=/tmp/gnupg-home              # overrides GnuPG's default home directory
+signing.gnupg.optionsFile=/tmp/gnupg-home/my.conf  # overrides GnuPG's default configuration file
+
+
+Note About Error Messages
+-------------------------
+
+If you see an error message that says: `No value has been specified for property 'signatory.keyId'.` please read below...
+
+Do not bother attempting to set a command line (or gradle.properties) property named `signatory.keyId`.  This is evidently the name of an internal property that the gradle `SigningPlugin` expects the `GnupgSignatory` plugin we use to provide -- which it does as long as you have specified a valid value for `signing.gnupg.keyName`
