@@ -27,7 +27,6 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
@@ -39,7 +38,6 @@ import org.apache.solr.handler.component.StatsValuesFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -108,17 +106,11 @@ public class DocValuesStats {
     // going to collect counts for.
     final int[] counts = new int[nTerms];
     
-    Filter filter = docs.getTopFilter();
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     
     for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
       LeafReaderContext leaf = leaves.get(subIndex);
-      DocIdSet dis = filter.getDocIdSet(leaf, null); // solr docsets already exclude any deleted docs
-      DocIdSetIterator disi = null;
-      
-      if (dis != null) {
-        disi = dis.iterator();
-      }
+      final DocIdSetIterator disi = docs.iterator(leaf); // solr docsets already exclude any deleted docs
       if (disi != null) {
         int docBase = leaf.docBase;
         

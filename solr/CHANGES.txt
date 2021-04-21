@@ -116,6 +116,10 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15322: Solr releases now contain everything needed to build runable docker images (Houston Putman, hossman)
 
+* SOLR-14185: Added DocSet.iterator(LeafReaderContext) and some related changes that may add
+  a minor performance boost to some cases (e.g. interval facets).  Reduced need for Filter.java.
+  (Michael Gibney, David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -262,6 +266,7 @@ Other Changes
 
 * SOLR-15146: Allow Collection API and Config Set API to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
 
+* SOLR-15356: "mergeindexes" should not use UninvertingReader (FieldCache). (David Smiley)
 
 Bug Fixes
 ---------------------
@@ -271,6 +276,8 @@ Bug Fixes
 * SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh)
 
 * SOLR-15317: Correctly handle user principals with whitespace in PKIAuthPlugin (Dominik Dresel, Mike Drob)
+
+* SOLR-15334: Return error response when failing auth in PKIAuthPlugin (Mike Drob)
 
 ==================  8.9.0 ==================
 
