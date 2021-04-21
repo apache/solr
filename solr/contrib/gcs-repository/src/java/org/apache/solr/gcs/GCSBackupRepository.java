@@ -67,6 +67,7 @@ import static java.net.HttpURLConnection.HTTP_PRECON_FAILED;
 public class GCSBackupRepository implements BackupRepository {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final int LARGE_BLOB_THRESHOLD_BYTE_SIZE = 5 * 1024 * 1024;
+    private static final Storage.BlobWriteOption[] NO_WRITE_OPTIONS = new Storage.BlobWriteOption[0];
 
     protected Storage storage;
 
@@ -452,7 +453,7 @@ public class GCSBackupRepository implements BackupRepository {
     }
 
     protected Storage.BlobWriteOption[] getDefaultBlobWriteOptions() {
-        return new Storage.BlobWriteOption[0];
+        return NO_WRITE_OPTIONS;
     }
 
     private String appendTrailingSeparatorIfNecessary(String blobName) {

@@ -55,7 +55,7 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
             "      <str name=\"delegateRepoName\">localfs</str>\n" +
             "    </repository>\n" +
             "    <repository name=\"localfs\" class=\"org.apache.solr.gcs.LocalStorageGCSBackupRepository\"> \n" +
-            "      <str name=\"bucket\">someBucketName</str>\n" +
+            "      <str name=\"gcsBucket\">someBucketName</str>\n" +
             "      <str name=\"location\">backup1</str>\n" +
             "    </repository>\n" +
             "  </backup>\n" +

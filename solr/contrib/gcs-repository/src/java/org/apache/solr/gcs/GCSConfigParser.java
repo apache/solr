@@ -31,7 +31,7 @@ public class GCSConfigParser {
   private static final String GCS_BUCKET_ENV_VAR_NAME = "GCS_BUCKET";
   private static final String GCS_CREDENTIAL_ENV_VAR_NAME = "GCS_CREDENTIAL_PATH";
 
-  private static final String GCS_BUCKET_PARAM_NAME = "bucket";
+  private static final String GCS_BUCKET_PARAM_NAME = "gcsBucket";
   private static final String GCS_CREDENTIAL_PARAM_NAME = "gcsCredentialPath";
   private static final String GCS_WRITE_BUFFER_SIZE_PARAM_NAME = "gcsWriteBufferSizeBytes";
   private static final String GCS_READ_BUFFER_SIZE_PARAM_NAME = "gcsReadBufferSizeBytes";

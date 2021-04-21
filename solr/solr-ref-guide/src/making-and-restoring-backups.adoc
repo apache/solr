@@ -307,9 +307,9 @@ An example configuration using these properties can be found below:
 
 Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
 
-GCSBackupRepsoitory accepts the following configuration options for overall configuration:
+GCSBackupRepsoitory accepts the following options for overall configuration:
 
-`bucket`::
+`gcsBucket`::
 The GCS bucket to read and write all backup files to.
 If not specified, GCSBackupRepository will use the value of the `GCS_BUCKET` environment variable.
 If both values are absent, the value `solrBackupsBucket` will be used as a default.
@@ -329,13 +329,21 @@ These properties are unlikely to interest most users, but may be valuable for th
 
 GCSBackupRepository accepts the following advanced client-configuration options:
 
+`gcsWriteBufferSizeBytes`::
+The buffer size, in bytes, to use when sending data to GCS.
+16777216 bytes (i.e. 16 MB) is used by default if not specified.
+
+`gcsReadBufferSizeBytes`::
+The buffer size, in bytes, to use when copying data from GCS.
+2097152 bytes (i.e. 2 MB) is used by default if not specified.
+
 `gcsClientHttpConnectTimeoutMillis`::
 The connection timeout, in milliseconds, for all HTTP requests made by the GCS client.
 "0" may be used to request an infinite timeout.
 A negative integer, or not specifying a value at all, will result in a value of 20000 (or 20 seconds).
 
 `gcsClientHttpReadTimeoutMillis`::
-The read timeout, in milliseconds, for reading data on an established connection. 
+The read timeout, in milliseconds, for reading data on an established connection.
 "0" may be used to request an infinite timeout.
 A negative integer, or not specifying a value at all, will result in a value of 20000 (or 20 seconds).
 
