@@ -175,6 +175,10 @@ SolrCloud doesn't support that but may sometime.
 
 === Reindexing After Upgrades in Solr 9
 
+In Solr 8, it's possible to add docValues to a schema without re-indexing via UninvertDocValuesMergePolicy, an advanced/expert utility.
+Due to changes in Lucene 9, that isn't possible any more; the component was removed.
+If re-indexing is too onerous, use this mechanism in Solr 8.
+
 == New Features & Enhancements in Solr 9
 
 == Configuration and Default Parameter Changes in Solr 9

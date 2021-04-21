@@ -268,6 +268,9 @@ Other Changes
 
 * SOLR-15356: "mergeindexes" should not use UninvertingReader (FieldCache). (David Smiley)
 
+* SOLR-15356: UninvertDocValuesMergePolicy was removed because it's incompatible with Lucene 9.
+  (David Smiley, Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
