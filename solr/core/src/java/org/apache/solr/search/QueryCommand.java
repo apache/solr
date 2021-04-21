@@ -223,6 +223,7 @@ public class QueryCommand {
     return (flags & SolrIndexSearcher.SEGMENT_TERMINATE_EARLY) != 0;
   }
 
+  @Deprecated
   public QueryCommand setSegmentTerminateEarly(boolean segmentSegmentTerminateEarly) {
     if (segmentSegmentTerminateEarly) {
       return setFlags(SolrIndexSearcher.SEGMENT_TERMINATE_EARLY);

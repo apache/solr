@@ -175,20 +175,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private Collector buildAndRunCollectorChain(QueryResult qr, Query query, Collector collector, QueryCommand cmd,
       DelegatingCollector postFilter) throws IOException {
 
-    EarlyTerminatingSortingCollector earlyTerminatingSortingCollector = null;
-    if (cmd.getSegmentTerminateEarly()) {
-      final Sort cmdSort = cmd.getSort();
-      final int cmdLen = cmd.getLen();
-      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
-
-      if (cmdSort == null || cmdLen <= 0 || mergeSort == null ||
-          !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
-        log.warn("unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}", cmdSort, cmdLen, mergeSort);
-      } else {
-        collector = earlyTerminatingSortingCollector = new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen());
-      }
-    }
-
     final boolean terminateEarly = cmd.getTerminateEarly();
     if (terminateEarly) {
       collector = new EarlyTerminatingCollector(collector, cmd.getLen());
@@ -223,10 +209,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       throw etce;
     } finally {
-      if (earlyTerminatingSortingCollector != null) {
-        qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
-      }
-
       if (cmd.isQueryCancellable()) {
         core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
       }
@@ -1500,6 +1482,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
+      if (cmd.getSegmentTerminateEarly()) {
+        minNumFound = 0;
+      }
       return TopFieldCollector.create(weightedSort, len, searchAfter, minNumFound);
     }
   }
@@ -1589,6 +1574,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         hitsRelation = TotalHits.Relation.EQUAL_TO;
       } else {
         hitsRelation = topDocs.totalHits.relation;
+      }
+      if (cmd.getSegmentTerminateEarly()) {
+        qr.setSegmentTerminatedEarly(hitsRelation == Relation.GREATER_THAN_OR_EQUAL_TO);
       }
       if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);

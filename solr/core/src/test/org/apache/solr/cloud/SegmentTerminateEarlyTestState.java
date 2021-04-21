@@ -254,8 +254,9 @@ class SegmentTerminateEarlyTestState {
     query.setRows(1);
     query.set(CommonParams.SEGMENT_TERMINATE_EARLY, true);
     final QueryResponse rsp = cloudSolrClient.query(query);
-    // check correctness of the results count
-    TestSegmentSorting.assertEquals("numFound", numDocs/2, rsp.getResults().getNumFound());
+    // When using minExactCount (replacement for segmentTerminateEarly), the collector will still attempt to skip over non-competitive
+    // documents (even with a different sort order). See SOLR-15390
+//    TestSegmentSorting.assertEquals("numFound", numDocs/2, rsp.getResults().getNumFound());
     // check correctness of the first result
     if (rsp.getResults().getNumFound() > 0) {
       final SolrDocument solrDocument0 = rsp.getResults().get(0);
@@ -268,8 +269,9 @@ class SegmentTerminateEarlyTestState {
     // check segmentTerminatedEarly flag
     TestSegmentSorting.assertNotNull("responseHeader.segmentTerminatedEarly missing in "+rsp.getResponseHeader(),
         rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
-    // segmentTerminateEarly cannot be used with incompatible sort orders
-    TestSegmentSorting.assertTrue("responseHeader.segmentTerminatedEarly missing/true in "+rsp.getResponseHeader(),
-        Boolean.FALSE.equals(rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY)));
+    // When using minExactCount (replacement for segmentTerminateEarly), the collector will still attempt to skip over non-competitive
+    // documents (even with a different sort order). See SOLR-15390
+//    TestSegmentSorting.assertTrue("responseHeader.segmentTerminatedEarly missing/true in "+rsp.getResponseHeader(),
+//        Boolean.FALSE.equals(rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY)));
   }
 }
