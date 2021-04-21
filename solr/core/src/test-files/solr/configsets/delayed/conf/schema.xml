@@ -41,54 +41,6 @@
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
 
-  <!-- Field type demonstrating an Analyzer failure -->
-  <fieldType name="failtype1" class="solr.TextField">
-    <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
-              catenateNumbers="0" catenateAll="0"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.FlattenGraphFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
-  <!-- Demonstrating ignoreCaseChange -->
-  <fieldType name="wdf_nocase" class="solr.TextField">
-    <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
-              catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="0"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.FlattenGraphFilterFactory"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0"
-              catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="0"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
-  <fieldType name="wdf_preserve" class="solr.TextField">
-    <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="1" catenateWords="0"
-              catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="1"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.FlattenGraphFilterFactory"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="0" generateNumberParts="1" catenateWords="0"
-              catenateNumbers="0" catenateAll="0" splitOnCaseChange="0" preserveOriginal="1"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
-
-  <!-- HighlitText optimizes storage for (long) columns which will be highlit -->
-  <fieldType name="highlittext" class="solr.TextField"/>
-
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
@@ -98,73 +50,10 @@
   <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" sortMissingLast="true"/>
   <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" sortMissingLast="true" precisionStep="6"/>
 
-  <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true">
-    <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
-              catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.PorterStemFilterFactory"/>
-      <filter class="solr.FlattenGraphFilterFactory"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
-              catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.PorterStemFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
-  <fieldType name="unstemmed" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true">
-    <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
-  <!-- field type that doesn't generate phrases from unquoted multiple tokens per analysis unit -->
-  <fieldType name="text_np" class="solr.TextField" positionIncrementGap="100">
-    <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
-              catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.PorterStemFilterFactory"/>
-      <filter class="solr.FlattenGraphFilterFactory"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
-              catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.PorterStemFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
-  <fieldType name="nametext" class="solr.TextField">
-    <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
-  </fieldType>
-
-  <fieldType name="unstored" class="solr.StrField" indexed="true" stored="false"/>
-
-  <fieldType name="textgap" class="solr.TextField" multiValued="true" positionIncrementGap="100">
-    <analyzer>
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
   <fieldType name="uuid" class="solr.UUIDField"/>
   <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false"/>
 
-
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
-
-  <!-- Poly field -->
-  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
 
   <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
   <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
@@ -173,62 +62,8 @@
   <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" docValues="true" required="true"/>
-  <field name="signatureField" type="string" indexed="true" stored="false"/>
-  <field name="uuid" type="uuid" stored="true"/>
-  <field name="name" type="nametext" indexed="true" stored="true"/>
-  <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
-  <field name="subject" type="text" indexed="true" stored="true"/>
-  <field name="title" type="nametext" indexed="true" stored="true"/>
-  <field name="weight" type="float" indexed="true" stored="true"/>
-  <field name="bday" type="date" indexed="true" stored="true"/>
 
   <field name="text_np" type="text_np" indexed="true" stored="false"/>
-
-  <!-- to test property inheritance and overriding -->
-  <field name="shouldbeunstored" type="unstored"/>
-  <field name="shouldbestored" type="unstored" stored="true"/>
-  <field name="shouldbeunindexed" type="unstored" indexed="false" stored="true"/>
-
-
-  <!-- test different combinations of indexed and stored -->
-  <field name="bind" type="boolean" indexed="true" stored="false"/>
-  <field name="bsto" type="boolean" indexed="false" stored="true"/>
-  <field name="bindsto" type="boolean" indexed="true" stored="true"/>
-  <field name="isto" type="int" indexed="false" stored="true"/>
-  <field name="iind" type="int" indexed="true" stored="false"/>
-  <field name="ssto" type="string" indexed="false" stored="true"/>
-  <field name="sind" type="string" indexed="true" stored="false"/>
-  <field name="sindsto" type="string" indexed="true" stored="true"/>
-
-  <!-- test combinations of term vector settings -->
-  <field name="test_basictv" type="text" termVectors="true"/>
-  <field name="test_notv" type="text" termVectors="false"/>
-  <field name="test_postv" type="text" termVectors="true" termPositions="true"/>
-  <field name="test_offtv" type="text" termVectors="true" termOffsets="true"/>
-  <field name="test_posofftv" type="text" termVectors="true"
-         termPositions="true" termOffsets="true"/>
-
-  <!-- test highlit field settings -->
-  <field name="test_hlt" type="highlittext" indexed="true"/>
-  <field name="test_hlt_off" type="highlittext" indexed="true"/>
-
-  <!--
-  <field name="timestamp" type="date" indexed="true" stored="true" default="NOW"/>
-  -->
-  <field name="timestamp" type="date" indexed="true" stored="true"/>
-
-  <!-- Test a point field for distances -->
-  <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
-
-  <!-- to test uniq fields -->
-  <field name="uniq" type="string" indexed="true" stored="true" multiValued="true"/>
-  <field name="uniq2" type="string" indexed="true" stored="true" multiValued="true"/>
-  <field name="uniq3" type="string" indexed="true" stored="true"/>
-  <field name="nouniq" type="string" indexed="true" stored="true" multiValued="true"/>
-
 
   <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
 
@@ -282,12 +117,5 @@
 
   <dynamicField name="random_*" type="random"/>
 
-
   <uniqueKey>id</uniqueKey>
-
-  <!-- example of a custom similarity -->
-  <similarity class="solr.CustomSimilarityFactory">
-    <str name="echo">I am your default sim</str>
-  </similarity>
-
 </schema>
