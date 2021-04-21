@@ -257,6 +257,6 @@ public class TestTaskManagement extends SolrCloudTestCase {
             } catch (Exception e) {
                 throw new CompletionException(e);
             }
-        });
+        }, executorService);
     }
 }
