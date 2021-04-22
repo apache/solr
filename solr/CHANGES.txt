@@ -271,6 +271,12 @@ Other Changes
 * SOLR-15356: UninvertDocValuesMergePolicy was removed because it's incompatible with Lucene 9.
   (David Smiley, Christine Poerschke)
 
+* SOLR-15238: Overhaul distributed-tracing.  Solr's "samplePercentage" is gone; tracing is either
+  enabled and you always have trace IDs or it isn't, based on wether you configure a tracing plugin.
+  Reporting of traces to a server like Zipkin is a configuration matter of the tracing plugin you
+  use.  The Jaeger plugin is now completely configurable via system properties or environment vars,
+  not by values in solr.xml.
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
