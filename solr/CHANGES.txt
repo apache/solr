@@ -39,6 +39,8 @@ New Features
 
 * SOLR-15164: Implement Task Management Interface (Atri Sharma, with extensive review and perf testing by Anshum Gupta, Mike Drob and Houston Putman)
 
+* SOLR-15365: Improved Grafana dashboard for Prometheus Exporter (janhoy)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
