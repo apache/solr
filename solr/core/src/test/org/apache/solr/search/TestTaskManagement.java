@@ -141,7 +141,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
         // There is a very small window where we can successfully cancel the query because QueryComponent will
         // aggressively deregister, and even if we use DelayingSearchComponent these queries are not around
         // assertFalse("Should have canceled at least one query", queryIdsSet.isEmpty());
-        log.info("Cancelled {} queries", queryIdsSet.size());
+        if (log.isInfoEnabled()) {
+            log.info("Cancelled {} queries", queryIdsSet.size());
+        }
 
         assertEquals("Total query count did not match the expected value",
                 queryIdsSet.size() + notFoundIdsSet.size(), 100);
