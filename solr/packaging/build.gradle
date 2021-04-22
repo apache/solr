@@ -21,7 +21,6 @@
 plugins {
   id 'base'
   id 'distribution'
-  id 'signing'
 }
 
 description = 'Solr distribution packaging'
@@ -41,11 +40,6 @@ configurations {
   server
   docs
   docker
-}
-
-signing {
-  useGpgCmd() // so gpg-agent can be used
-  sign distTar, distZip
 }
 
 dependencies {
@@ -161,9 +155,3 @@ task dev(type: Copy) {
 }
 
 assemble.dependsOn installDist
-
-task signDist {
-  group = 'Distribution'
-  description = 'GPG Signs the main distributions'
-  dependsOn signDistTar, signDistZip
-}
