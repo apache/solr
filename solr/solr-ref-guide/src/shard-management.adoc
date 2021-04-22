@@ -181,79 +181,6 @@ Current implementation details and limitations:
 
 The output will include the status of the request and the new shard names, which will use the original shard as their basis, adding an underscore and a number. For example, "shard1" will become "shard1_0" and "shard1_1". If the status is anything other than "success", an error message will explain why the request failed.
 
-=== Examples using SPLITSHARD
-
-*Input*
-
-Split shard1 of the "anotherCollection" collection.
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=anotherCollection&shard=shard1&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">6120</int>
-  </lst>
-  <lst name="success">
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">3673</int>
-      </lst>
-      <str name="core">anotherCollection_shard1_1_replica1</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">3681</int>
-      </lst>
-      <str name="core">anotherCollection_shard1_0_replica1</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">6008</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">6007</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">71</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">0</int>
-      </lst>
-      <str name="core">anotherCollection_shard1_1_replica1</str>
-      <str name="status">EMPTY_BUFFER</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">0</int>
-      </lst>
-      <str name="core">anotherCollection_shard1_0_replica1</str>
-      <str name="status">EMPTY_BUFFER</str>
-    </lst>
-  </lst>
-</response>
-----
-
 [[createshard]]
 == CREATESHARD: Create a Shard
 
@@ -354,29 +281,6 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 
 The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
 
-=== Examples using CREATESHARD
-
-*Input*
-
-Create 'shard-z' for the "anImplicitCollection" collection.
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImplicitCollection&shard=shard-z&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">558</int>
-  </lst>
-</response>
-----
-
 [[deleteshard]]
 == DELETESHARD: Delete a Shard
 
@@ -437,37 +341,6 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 === DELETESHARD Response
 
 The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
-
-=== Examples using DELETESHARD
-
-*Input*
-
-Delete 'shard1' of the "anotherCollection" collection.
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anotherCollection&shard=shard1&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">558</int>
-  </lst>
-  <lst name="success">
-    <lst name="10.0.1.4:8983_solr">
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">27</int>
-      </lst>
-    </lst>
-  </lst>
-</response>
-----
 
 [[forceleader]]
 == FORCELEADER: Force Shard Leader

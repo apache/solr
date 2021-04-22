@@ -156,37 +156,7 @@ If `true`, the request will complete only when all affected replicas become acti
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
 
-=== Examples using ADDREPLICA
-
-*Input*
-
-Create a replica for the "test" collection on the node "192.167.1.2:8983_solr".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&shard=shard2&node=192.167.1.2:8983_solr&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">3764</int>
-  </lst>
-  <lst name="success">
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">3450</int>
-      </lst>
-      <str name="core">test2_shard2_replica4</str>
-    </lst>
-  </lst>
-</response>
-----
+=== Additional Examples using ADDREPLICA
 
 *Input*
 
@@ -390,27 +360,6 @@ When set to `true`, no action will be taken if the replica is active. Default `f
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
-=== Examples using DELETEREPLICA
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=test2&shard=shard2&replica=core_node3&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">110</int>
-  </lst>
-</response>
-----
-
 [[addreplicaprop]]
 == ADDREPLICAPROP: Add Replica Property
 
@@ -489,28 +438,7 @@ There is one pre-defined property `preferredLeader` for which `shardUnique` is f
 
 The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
 
-=== Examples using ADDREPLICAPROP
-
-*Input*
-
-This command would set the "preferredLeader" property (`property.preferredLeader`) to "true" on "core_node1", and remove that property from any other replica in the shard.
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&property.value=true&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">46</int>
-  </lst>
-</response>
-----
+=== Additional Examples using ADDREPLICAPROP
 
 *Input*
 
@@ -598,26 +526,3 @@ and
 === DELETEREPLICAPROP Response
 
 The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
-
-=== Examples using DELETEREPLICAPROP
-
-*Input*
-
-This command would delete the preferredLeader (`property.preferredLeader`) from core_node1.
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">9</int>
-  </lst>
-</response>
-----

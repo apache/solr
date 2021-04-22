@@ -296,6 +296,7 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
     &create-collection.tlogReplicas=1
     &create-collection.pullReplicas=1
     &create-collection.property.foobar=bazbam
+    &wt=xml
 ----
 
 *Output*
@@ -390,6 +391,7 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
     &create-collection.numShards=2
     &router.1.maxCardinality=20
     &router.1.field=myCategory_s
+    &wt=xml
 ----
 
 *Output*
@@ -530,7 +532,7 @@ The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key 
 
 [source,bash]
 ----
-http://localhost:8983/admin/collections?action=ALIASPROP&name=somename&property.someKey=somevalue
+http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias&property.foo=bar
 ----
 ====
 
@@ -564,7 +566,7 @@ WARNING: This command allows you to revise any property. No alias specific valid
 The alias name on which to set properties. This parameter is required.
 
 `property._name_=_value_` (v1)::
-Set property _name_ to _value_. 
+Set property _name_ to _value_.
 
 `"properties":{"name":"value"}` (v2)::
 A dictionary of name/value pairs of properties to be set.
@@ -578,29 +580,6 @@ The output will simply be a responseHeader with details of the time it took to p
 To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and
 find the `aliases.json` file or use the LISTALIASES api command.
 
-=== Examples using ALIASPROP
-
-*Input*
-
-For an alias named "testalias2" and set the value "someValue" for a property of "someKey" and "otherValue" for "otherKey".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=ALIASPROP&name=testalias2&property.someKey=someValue&property.otherKey=otherValue&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">122</int>
-  </lst>
-</response>
-----
-
 [[deletealias]]
 == DELETEALIAS: Delete a Collection Alias
 
@@ -612,7 +591,7 @@ http://localhost:8983/solr/admin/collections?action=ALIASPROP&name=testalias2&pr
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=somename
+http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
 ----
 ====
 
@@ -647,26 +626,3 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 The output will simply be a responseHeader with details of the time it took to process the request.
 To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and
 find the `aliases.json` file.
-
-=== Examples using DELETEALIAS
-
-*Input*
-
-Remove the alias named "testalias".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">117</int>
-  </lst>
-</response>
-----
