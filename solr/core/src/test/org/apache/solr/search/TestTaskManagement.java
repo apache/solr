@@ -59,7 +59,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
     @BeforeClass
     public static void setupCluster() throws Exception {
         configureCluster(4)
-                .addConfig("conf", configset("delayed"))
+                .addConfig("conf", configset("sql"))
                 .configure();
     }
 
@@ -107,15 +107,10 @@ public class TestTaskManagement extends SolrCloudTestCase {
     @Test
     public void testNonExistentQuery() throws Exception {
         ModifiableSolrParams params = new ModifiableSolrParams();
-
         params.set("queryUUID", "foobar");
-        @SuppressWarnings({"rawtypes"})
-        SolrRequest request = new QueryRequest(params);
-        request.setPath("/tasks/cancel");
 
-        NamedList<Object> queryResponse;
-
-        queryResponse = cluster.getSolrClient().request(request);
+        GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/cancel", params);
+        NamedList<Object> queryResponse = cluster.getSolrClient().request(request);
 
         assertEquals("Query with queryID foobar not found", queryResponse.get("status"));
         assertEquals(404, queryResponse.get("responseCode"));
@@ -129,28 +124,24 @@ public class TestTaskManagement extends SolrCloudTestCase {
         List<CompletableFuture<Void>> queryFutures = new ArrayList<>();
 
         for (int i = 0; i < 100; i++) {
-            CompletableFuture<Void> future = executeQueryAsync(Integer.toString(i));
-
-            queryFutures.add(future);
+            queryFutures.add(executeQueryAsync(Integer.toString(i)));
         }
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<CompletableFuture<Void>> cancelFutures = new ArrayList<>();
 
         NamedList<String> tasks = listTasks();
 
         for (int i = 0; i < 100; i++) {
-            CompletableFuture<Void> future = cancelQuery(Integer.toString(i), 400, queryIdsSet, notFoundIdsSet);
-
-            futures.add(future);
+            cancelFutures.add(cancelQuery(Integer.toString(i), 0, queryIdsSet, notFoundIdsSet));
         }
 
-        futures.forEach(CompletableFuture::join);
-
+        cancelFutures.forEach(CompletableFuture::join);
         queryFutures.forEach(CompletableFuture::join);
 
         // There is a very small window where we can successfully cancel the query because QueryComponent will
-        // aggressively deregister, and even though we are using DelayingSearchComponent, these queries are not around
-        // assertNotEquals("Should have canceled at least one query", 0, queryIdsSet.size());
+        // aggressively deregister, and even if we use DelayingSearchComponent these queries are not around
+        // assertFalse("Should have canceled at least one query", queryIdsSet.isEmpty());
+        log.info("Cancelled {} queries", queryIdsSet.size());
 
         assertEquals("Total query count did not match the expected value",
                 queryIdsSet.size() + notFoundIdsSet.size(), 100);
@@ -191,14 +182,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
     @Test
     public void testCheckSpecificQueryStatus() throws Exception {
         ModifiableSolrParams params = new ModifiableSolrParams();
-
         params.set("taskUUID", "25");
 
-        @SuppressWarnings({"rawtypes"})
-        SolrRequest request = new QueryRequest(params);
-
-        request.setPath("/tasks/list");
-
+        GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", params);
         NamedList<Object> queryResponse = cluster.getSolrClient().request(request);
 
         @SuppressWarnings({"unchecked"})
@@ -213,8 +199,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
             ModifiableSolrParams params = new ModifiableSolrParams();
 
             params.set("queryUUID", queryID);
-            @SuppressWarnings({"rawtypes"})
-            SolrRequest request = new QueryRequest(params);
+            SolrRequest<?> request = new QueryRequest(params);
             request.setPath("/tasks/cancel");
 
             // Wait for some time to let the query start
@@ -255,8 +240,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
             params.set("queryUUID", queryId);
         }
 
-        @SuppressWarnings({"rawtypes"})
-        SolrRequest request = new QueryRequest(params);
+        SolrRequest<?> request = new QueryRequest(params);
 
         cluster.getSolrClient().request(request);
     }
