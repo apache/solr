@@ -42,14 +42,14 @@ http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=techpr
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">122</int>
-  </lst>
-</response>
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 137
+  }
+}
 ----
 ====
 
@@ -272,19 +272,19 @@ Use SPLITSHARD for collections created with the 'compositeId' router (`router.ke
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATESHARD&shard=_shardName_&collection=_name_
+http://localhost:8983/solr/admin/collections?action=CREATESHARD&shard=newShardName&collection=techproducts
 ----
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">122</int>
-  </lst>
-</response>
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 120
+  }
+}
 ----
 ====
 
@@ -490,14 +490,14 @@ http://localhost:8983/solr/admin/collections?action=FORCELEADER&collection=techp
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">122</int>
-  </lst>
-</response>
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 78
+  }
+}
 ----
 ====
 

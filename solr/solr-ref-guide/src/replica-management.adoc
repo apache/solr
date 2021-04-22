@@ -38,19 +38,23 @@ Add one or more replicas to a shard in a collection. The node name can be specif
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=techproducts&shard=shard&node=localhost:8983_solr
+http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=techproducts&shard=shard1&node=localhost:8983_solr
 ----
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">122</int>
-  </lst>
-</response>
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":482},
+  "success":{
+    "localhost:8983_solr":{
+      "responseHeader":{
+        "status":0,
+        "QTime":396},
+      "core":"techproducts_shard1_replica_n3"}}}
 ----
 ====
 
@@ -423,7 +427,7 @@ Assign an arbitrary property to a particular replica and give it the value speci
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&collection=collectionName&shard=shardName&replica=replicaName&property=propertyName&property.value=value
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&collection=techproducts&shard=shard1&replica=core_node2&property=preferredLeader&property.value=true
 ----
 
 ====
@@ -546,7 +550,7 @@ Deletes an arbitrary property from a particular replica.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&collection=collectionName&shard=_shardName_&replica=_replicaName_&property=_propertyName_
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&collection=techproducts&shard=shard1&replica=core_node2&property=preferredLeader
 ----
 
 ====
