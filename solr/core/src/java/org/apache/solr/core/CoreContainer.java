@@ -48,6 +48,9 @@ import java.util.stream.Collectors;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import io.opentracing.Tracer;
+import io.opentracing.noop.NoopTracer;
+import io.opentracing.noop.NoopTracerFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
@@ -165,6 +168,12 @@ public class CoreContainer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  {
+    // Declared up top to ensure this is present before anything else.
+    // note: will not be re-added if already there
+    ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
+  }
+
   final SolrCores solrCores = new SolrCores(this);
 
   public static class CoreLoadFailure {
@@ -244,6 +253,8 @@ public class CoreContainer {
   protected volatile String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
 
   protected volatile SolrMetricsContext solrMetricsContext;
+
+  protected volatile Tracer tracer = NoopTracerFactory.create();
 
   protected MetricsHandler metricsHandler;
 
@@ -647,6 +658,11 @@ public class CoreContainer {
     return metricsHistoryHandler;
   }
 
+  /** Never null but may implement {@link NoopTracer}. */
+  public Tracer getTracer() {
+    return tracer;
+  }
+
   public OrderedExecutor getReplayUpdatesExecutor() {
     return replayUpdatesExecutor;
   }
@@ -719,6 +735,8 @@ public class CoreContainer {
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 
+    tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
+
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor, null,
         metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
@@ -751,7 +769,6 @@ public class CoreContainer {
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       // use deprecated API for back-compat, remove in 9.0
       pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
-      TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
       packageLoader = new PackageLoader(this);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().readAPI);
@@ -1240,6 +1257,8 @@ public class CoreContainer {
       org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
+
+    tracer.close();
   }
 
   public void cancelCoreRecoveries() {
@@ -2245,10 +2264,6 @@ public class CoreContainer {
 
   public Optional<DistributedCollectionConfigSetCommandRunner> getDistributedCollectionCommandRunner() {
     return this.distributedCollectionCommandRunner;
-  }
-
-  static {
-    ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
   }
 
   /**
