@@ -68,7 +68,7 @@ This attribute does not need to be set.
 +
 If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from ConfigSetService , and you must provide a constructor with one param which the type is `org.apache.solr.core.CoreContainer` . For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
-If this attribute isn't set, Solr uses the default configSetService , with zookeeper aware of `org.apache.solr.cloud.CloudConfigSetService`, without zookeeper aware of `org.apache.solr.core.ConfigSetService.Standalone`.
+If this attribute isn't set, Solr uses the default configSetService , with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
 
 `adminHandler`::
 This attribute does not need to be set.

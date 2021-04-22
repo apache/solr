@@ -39,9 +39,9 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.Watcher;
@@ -60,7 +60,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.solr.common.cloud.ZkConfigManager.CONFIGS_ZKNODE;
+import static org.apache.solr.cloud.ZkConfigSetService.CONFIGS_ZKNODE;
 
 /**
  * Test the ConfigSets API under ZK failure.  In particular,
@@ -104,6 +104,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   public void testCreateZkFailure() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
+    final ConfigSetService configSetService = solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
 
     final Map<String, String> oldProps = ImmutableMap.of("immutable", "true");
     setupBaseConfigSet(BASE_CONFIGSET_NAME, oldProps);
@@ -111,14 +112,14 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertFalse(configManager.configExists(CONFIGSET_NAME));
+
+      assertFalse(configSetService.checkConfigExists(CONFIGSET_NAME));
 
       Create create = new Create();
       create.setBaseConfigSetName(BASE_CONFIGSET_NAME).setConfigSetName(CONFIGSET_NAME);
       RemoteSolrException se = expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
       // partial creation should have been cleaned up
-      assertFalse(configManager.configExists(CONFIGSET_NAME));
+      assertFalse(configSetService.checkConfigExists(CONFIGSET_NAME));
       assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, se.code());
     } finally {
       zkClient.close();

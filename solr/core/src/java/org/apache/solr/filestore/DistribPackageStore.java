@@ -20,13 +20,15 @@ package org.apache.solr.filestore;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -50,7 +52,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -93,8 +94,8 @@ public class DistribPackageStore implements PackageStore {
     if (!path.isEmpty() && path.charAt(0) != File.separatorChar) {
       path = File.separator + path;
     }
-    return new File(solrHome +
-            File.separator + PackageStoreAPI.PACKAGESTORE_DIRECTORY + path).toPath();
+    // Use concat because path might start with a slash and be incorrectly interpreted as absolute
+    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY + path);
   }
 
   class FileInfo {
@@ -109,9 +110,7 @@ public class DistribPackageStore implements PackageStore {
 
     ByteBuffer getFileData(boolean validate) throws IOException {
       if (fileData == null) {
-        try (FileInputStream fis = new FileInputStream(getRealpath(path).toFile())) {
-          fileData = SimplePostTool.inputStreamToByteArray(fis);
-        }
+        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealpath(path)));
       }
       return fileData;
     }
@@ -138,8 +137,8 @@ public class DistribPackageStore implements PackageStore {
 
 
     public boolean exists(boolean validateContent, boolean fetchMissing) throws IOException {
-      File file = getRealpath(path).toFile();
-      if (!file.exists()) {
+      Path file = getRealpath(path);
+      if (!Files.exists(file)) {
         if (fetchMissing) {
           return fetchFromAnyNode();
         } else {
@@ -150,7 +149,7 @@ public class DistribPackageStore implements PackageStore {
       if (validateContent) {
         MetaData metaData = readMetaData();
         if (metaData == null) return false;
-        try (InputStream is = new FileInputStream(getRealpath(path).toFile())) {
+        try (InputStream is = Files.newInputStream(file)) {
           if (!Objects.equals(DigestUtils.sha512Hex(is), metaData.sha512)) {
             deleteFile();
           } else {
@@ -197,11 +196,13 @@ public class DistribPackageStore implements PackageStore {
         ByteBuffer filedata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
                 baseUrl + "/node/files" + path,
                 Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+        filedata.mark();
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
         String expected = (String) m.get("sha512");
         if (!sha512.equals(expected)) {
           throw new SolrException(SERVER_ERROR, "sha512 mismatch downloading : " + path + " from node : " + fromNode);
         }
+        filedata.reset();
         persistToFile(filedata, metadata);
         return true;
       } catch (SolrException e) {
@@ -582,29 +583,23 @@ public class DistribPackageStore implements PackageStore {
    */
   public static void _persistToFile(Path solrHome, String path, ByteBuffer data, ByteBuffer meta) throws IOException {
     Path realpath = _getRealPath(path, solrHome);
-    File file = realpath.toFile();
-    File parent = file.getParentFile();
-    if (!parent.exists()) {
-      parent.mkdirs();
-    }
+    Files.createDirectories(realpath.getParent());
     @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
     if (m == null || m.isEmpty()) {
       throw new SolrException(SERVER_ERROR, "invalid metadata , discarding : " + path);
     }
 
-
-    File metdataFile = _getRealPath(_getMetapath(path), solrHome).toFile();
-
-    try (FileOutputStream fos = new FileOutputStream(metdataFile)) {
-      fos.write(meta.array(), 0, meta.limit());
+    Path metadataPath = _getRealPath(_getMetapath(path), solrHome);
+    try (SeekableByteChannel channel = Files.newByteChannel(metadataPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+      channel.write(meta);
     }
-    IOUtils.fsync(metdataFile.toPath(), false);
+    IOUtils.fsync(metadataPath, false);
 
-    try (FileOutputStream fos = new FileOutputStream(file)) {
-      fos.write(data.array(), 0, data.limit());
+    try (SeekableByteChannel channel = Files.newByteChannel(realpath, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+      channel.write(data);
     }
-    IOUtils.fsync(file.toPath(), false);
+    IOUtils.fsync(realpath, false);
   }
 
   @Override
@@ -622,9 +617,7 @@ public class DistribPackageStore implements PackageStore {
     if (keyFiles == null) return result;
     for (File keyFile : keyFiles) {
       if (keyFile.isFile() && !isMetaDataFile(keyFile.getName())) {
-        try (InputStream fis = new FileInputStream(keyFile)) {
-          result.put(keyFile.getName(), SimplePostTool.inputStreamToByteArray(fis).array());
-        }
+        result.put(keyFile.getName(), Files.readAllBytes(keyFile.toPath()));
       }
     }
     return result;

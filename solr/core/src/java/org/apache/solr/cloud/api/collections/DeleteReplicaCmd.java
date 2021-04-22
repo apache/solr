@@ -257,7 +257,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
       assignStrategy.verifyDeleteReplicas(ccc.getSolrCloudManager(), coll, shardId, Set.of(replica));
     }
 
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
     String asyncId = message.getStr(ASYNC);
 

@@ -102,6 +102,10 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   @Test
   public void testOverseerRole() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
 
     logOverseerState();
     List<String> nodes = OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
@@ -169,6 +173,10 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   @Test
   public void testDesignatedOverseerRestarts() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
     logOverseerState();
     // Remove the OVERSEER role, in case it was already assigned by another test in this suite
     for (String node: OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient())) {

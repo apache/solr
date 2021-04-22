@@ -26,7 +26,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
 import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
-import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
+import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -131,7 +131,7 @@ public class ClusterAPI {
       Map<String, Object> mapVals = obj.get().toMap(new HashMap<>());
       Map<String,Object> customProps = (Map<String, Object>) mapVals.remove("properties");
       if(customProps!= null) {
-        customProps.forEach((k, o) -> mapVals.put(OverseerConfigSetMessageHandler.PROPERTY_PREFIX+"."+ k, o));
+        customProps.forEach((k, o) -> mapVals.put(ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX + k, o));
       }
       mapVals.put("action", ConfigSetParams.ConfigSetAction.CREATE.toString());
       configSetsHandler.handleRequestBody(wrapParams(obj.getRequest(), mapVals), obj.getResponse());
@@ -189,9 +189,10 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = GET,
-      path = "/cluster/command-status",
+      path = "/cluster/command-status/{id}",
       permission = COLL_READ_PERM)
   public void getCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    wrapParams(req, REQUESTID, req.getPathTemplateValues().get("id"));
     CollectionsHandler.CollectionOperation.REQUESTSTATUS_OP.execute(req, rsp, collectionsHandler);
   }
 

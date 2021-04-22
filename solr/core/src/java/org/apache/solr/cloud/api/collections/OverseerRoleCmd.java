@@ -56,6 +56,11 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+    if (ccc.isDistributedCollectionAPI()) {
+      // No Overseer (not accessible from Collection API command execution in any case) so this command can't be run...
+      log.error("Cluster is running with distributed Collection API execution. Ignoring Collection API operation " + operation); // nowarn
+      return;
+    }
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     SolrZkClient zkClient = zkStateReader.getZkClient();
     Map roles = null;

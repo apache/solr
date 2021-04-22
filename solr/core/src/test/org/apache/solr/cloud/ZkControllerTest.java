@@ -29,7 +29,6 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -183,7 +182,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       String actualConfigName = "firstConfig";
 
-      zkClient.makePath(ZkConfigManager.CONFIGS_ZKNODE + "/" + actualConfigName, true);
+      zkClient.makePath(ZkConfigSetService.CONFIGS_ZKNODE + "/" + actualConfigName, true);
       
       Map<String,Object> props = new HashMap<>();
       props.put("configName", actualConfigName);

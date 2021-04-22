@@ -1963,8 +1963,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       if (outDoc.hasChildDocuments()) {
         for (SolrDocument kid : outDoc.getChildDocuments()) {
           String kidId = (String)kid.getFieldValue("id");
-          SolrInputDocument origChild = findDecendent(origDoc, kidId);
-          assertNotNull(docId + " doesn't have decendent " + kidId,
+          SolrInputDocument origChild = findDescendant(origDoc, kidId);
+          assertNotNull(docId + " doesn't have descendant " + kidId,
                         origChild);
         }
       }
@@ -2004,8 +2004,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
             String kidId = (String)kid.getFieldValue("id");
             assertEquals("kid is the wrong level",
                          kidLevel, (int)kid.getFieldValue("level_i"));
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
         }
@@ -2031,8 +2031,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         if (outDoc.hasChildDocuments()) {
           for (SolrDocument kid : outDoc.getChildDocuments()) {
             String kidId = (String)kid.getFieldValue("id");
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
           // the total number of kids should be our direct kids and our grandkids
@@ -2086,8 +2086,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
                        kidLevel <= kidLevelMax);
             assertTrue("kid level to low: " + kidLevelMin + ">" + kidLevel,
                        kidLevelMin <= kidLevel);
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
         }
@@ -2241,10 +2241,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   /** 
-   * Depth first search of a SolrInputDocument looking for a decendent by id, 
-   * returns null if it's not a decendent 
+   * Depth first search of a SolrInputDocument looking for a descendant by id,
+   * returns null if it's not a descendant
    */
-  private SolrInputDocument findDecendent(SolrInputDocument parent, String childId) {
+  private SolrInputDocument findDescendant(SolrInputDocument parent, String childId) {
     if (childId.equals(parent.getFieldValue("id"))) {
       return parent;
     }
@@ -2252,7 +2252,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       return null;
     }
     for (SolrInputDocument kid : parent.getChildDocuments()) {
-      SolrInputDocument result = findDecendent(kid, childId);
+      SolrInputDocument result = findDescendant(kid, childId);
       if (null != result) {
         return result;
       }
@@ -2268,7 +2268,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   /**
    * recursive method for generating a document, which may also have child documents;
-   * adds all documents constructed (including decendents) to allDocs via their id 
+   * adds all documents constructed (including descendants) to allDocs via their id
    */
   private SolrInputDocument genNestedDocuments(Map<String,SolrInputDocument> allDocs, 
                                                int thisLevel,

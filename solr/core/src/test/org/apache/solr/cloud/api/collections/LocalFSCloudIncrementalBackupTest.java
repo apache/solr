@@ -17,8 +17,10 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackupTest {
     private static final String SOLR_XML = "<solr>\n" +
             "\n" +

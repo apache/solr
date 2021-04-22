@@ -96,7 +96,7 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     @SuppressWarnings({"rawtypes"})
     NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
 
     final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
     for (Slice slice : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {

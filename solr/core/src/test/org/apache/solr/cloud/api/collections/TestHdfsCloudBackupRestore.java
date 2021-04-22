@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
@@ -38,9 +39,9 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
@@ -60,6 +61,7 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
 /**
  * This class implements the tests for HDFS integration for Solr backup/restore capability.
  */
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 @ThreadLeakFilters(defaultFilters = true, filters = {
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class,
@@ -139,11 +141,11 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     useFactory("solr.StandardDirectoryFactory");
 
     configureCluster(NUM_SHARDS)// nodes
-    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-    .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
+    .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
     .withSolrXml(SOLR_XML)
     .configure();
-    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
+    cluster.getZkClient().delete(ZkConfigSetService.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
   }
 
   @AfterClass

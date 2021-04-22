@@ -25,11 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
@@ -38,6 +41,10 @@ import org.slf4j.LoggerFactory;
 public class NodeMutator {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected SolrZkClient zkClient;
+  public NodeMutator(SolrCloudManager cloudManager) {
+    zkClient = SliceMutator.getZkClient(cloudManager);
+  }
 
   public List<ZkWriteCommand> downNode(ClusterState clusterState, ZkNodeProps message) {
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
@@ -51,7 +58,7 @@ public class NodeMutator {
       String collectionName = entry.getKey();
       DocCollection docCollection = entry.getValue();
 
-      Optional<ZkWriteCommand> zkWriteCommand = computeCollectionUpdate(nodeName, collectionName, docCollection);
+      Optional<ZkWriteCommand> zkWriteCommand = computeCollectionUpdate(nodeName, collectionName, docCollection, zkClient);
 
       if (zkWriteCommand.isPresent()) {
         zkWriteCommands.add(zkWriteCommand.get());
@@ -67,7 +74,7 @@ public class NodeMutator {
    *    The returned write command might be for per replica state updates or for an update to state.json, depending on the
    *    configuration of the collection.
    */
-  public static Optional<ZkWriteCommand> computeCollectionUpdate(String nodeName, String collectionName, DocCollection docCollection) {
+  public static Optional<ZkWriteCommand> computeCollectionUpdate(String nodeName, String collectionName, DocCollection docCollection, SolrZkClient client) {
     boolean needToUpdateCollection = false;
     List<String> downedReplicas = new ArrayList<>();
     Map<String,Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
@@ -99,8 +106,13 @@ public class NodeMutator {
 
     if (needToUpdateCollection) {
       if (docCollection.isPerReplicaState()) {
+        PerReplicaStates prs = client == null ?
+            docCollection.getPerReplicaStates() :
+            PerReplicaStates.fetch(docCollection.getZNode(), client, docCollection.getPerReplicaStates());
+
         return Optional.of(new ZkWriteCommand(collectionName, docCollection.copyWithSlices(slicesCopy),
-            PerReplicaStatesOps.downReplicas(downedReplicas, docCollection.getPerReplicaStates()), false));
+            PerReplicaStatesOps.downReplicas(downedReplicas,
+                prs), false));
       } else {
         return Optional.of(new ZkWriteCommand(collectionName, docCollection.copyWithSlices(slicesCopy)));
       }
