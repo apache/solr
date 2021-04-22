@@ -192,6 +192,14 @@ set `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url
 
 Support for the `solr.storeBaseUrl` system property will be removed in Solr 10.x and `base_url` will no longer be stored.
 
+* Solr's distributed tracing no longer incorporates a special `samplePercentage` SolrCloud cluster property.
+Instead, consult the documentation for the tracing system you use on how to sample the traces.
+Consequently, if you use a Tracer at all, you will always have traces and thus trace IDs in logs.
+What percentage of them get reported to a tracing server is up to you.
+
+* JaegerTracerConfigurator no longer recognizes any configuration in solr.xml.
+  It is now completely configured via System properties and/or Environment variables as documented by Jaeger.
+
 === Schema Changes in 9
 
 === Authentication & Security Changes in Solr 9

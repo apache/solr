@@ -41,6 +41,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import io.opentracing.Span;
+import io.opentracing.noop.NoopSpan;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -59,7 +61,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
@@ -169,8 +170,10 @@ public class SolrRequestParsers {
     // Pick the parser from the request...
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
-    if (GlobalTracer.get().tracing()) {
-      GlobalTracer.getTracer().activeSpan().setTag("params", params.toString());
+
+    Span span = (Span) req.getAttribute(Span.class.getName()); // not null but maybe in some tests?
+    if (span != null && !(span instanceof NoopSpan)) {
+      span.setTag("params", params.toString());
     }
     SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 
