@@ -528,7 +528,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "solr_collections_replica_state{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\"}",
+          "expr": "1 - solr_collections_replica_state{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\"}",
           "interval": "",
           "legendFormat": "{{collection}} {{shard}} {{replica}} ({{node_name}})={{state}}",
           "refId": "A"
@@ -539,6 +539,7 @@
       "timeRegions": [],
       "timeShift": null,
       "title": "Replica state history",
+      "description": "Active replicas have value 0. Non-active replicas will show stacked in the graph.",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -556,10 +557,10 @@
         {
           "decimals": 0,
           "format": "short",
-          "label": "State = active",
+          "label": "Non-active states",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": 0,
           "show": true
         },
         {
@@ -7711,7 +7712,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "Solr Dashboard main fixed",
+  "title": "Solr Dashboard",
   "uid": "yt5eXHbMz5",
   "version": 2
 }
