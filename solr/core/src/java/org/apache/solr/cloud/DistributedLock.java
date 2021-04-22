@@ -13,39 +13,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 
-// See LUCENE-9471. We redirect temporary location for gradle
-// so that it doesn't pollute user's tmp. Wipe it during a clean though.
+package org.apache.solr.cloud;
 
-configure(rootProject) {
-  task cleanGradleTmp(type: Delete) {
-    delete fileTree(".gradle/tmp").matching {
-      include "gradle-worker-classpath*"
-    }
-  }
-
-  clean.dependsOn cleanGradleTmp
-}
-
-// Make sure we clean up after running tests.
-allprojects {
-  plugins.withType(JavaPlugin) {
-    def temps = []
-
-    task cleanTaskTmp() {
-      doLast {
-        temps.each { temp ->
-          project.delete fileTree(temp).matching {
-            include "jar_extract*"
-          }
-        }
-      }
-    }
-
-    tasks.withType(Test) {
-      finalizedBy rootProject.cleanGradleTmp, cleanTaskTmp
-      temps += temporaryDir
-    }
-  }
+/**
+ * A lock that can be used across cluster nodes.
+ */
+public interface DistributedLock {
+  void waitUntilAcquired();
+  void release();
+  boolean isAcquired();
 }

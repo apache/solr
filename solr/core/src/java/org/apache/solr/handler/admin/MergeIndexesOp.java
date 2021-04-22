@@ -103,7 +103,7 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
           // record the searchers so that we can decref
           RefCounted<SolrIndexSearcher> searcher = solrCore.getSearcher();
           searchers.add(searcher);
-          readers.add(searcher.get().getIndexReader());
+          readers.add(searcher.get().getRawReader());
         }
       }
 

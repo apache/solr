@@ -419,7 +419,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType","edismax", "mm","0", "q","movies_t:Terminator 100", "qf","movies_t foo_i"),
             twor);
     
-    // special psuedo-fields like _query_ and _val_
+    // special pseudo-fields like _query_ and _val_
 
     // _query_ should be excluded by default
     assertQ(req("defType", "edismax", 

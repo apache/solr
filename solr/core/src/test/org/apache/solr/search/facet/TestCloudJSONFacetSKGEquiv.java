@@ -214,7 +214,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
   /**
    * Given a (random) field number, returns a random (integer based) value for that field.
-   * NOTE: The number of unique values in each field is constant acording to {@link #UNIQUE_FIELD_VALS}
+   * NOTE: The number of unique values in each field is constant according to {@link #UNIQUE_FIELD_VALS}
    * but the precise <em>range</em> of values will vary for each unique field number, such that cross field joins 
    * will match fewer documents based on how far apart the field numbers are.
    *

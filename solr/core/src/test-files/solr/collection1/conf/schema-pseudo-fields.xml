@@ -25,7 +25,7 @@
 
   <dynamicField name="*_srpt" type="location_rpt" indexed="true" stored="true"/>  
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
-  <!-- for testing if score psuedofield is erroneously treated as multivalued
+  <!-- for testing if score pseudofield is erroneously treated as multivalued
        when a matching dynamic field exists 
   -->
   <dynamicField name="*core" type="ignored" multiValued="true"/>

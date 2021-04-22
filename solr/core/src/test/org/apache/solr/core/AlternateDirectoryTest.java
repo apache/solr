@@ -16,8 +16,8 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -58,8 +58,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
       openCalled = true;
 
-      // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-      return dir = newFSDirectory(new File(path).toPath(), lockFactory);
+      return dir = newFSDirectory(Path.of(path), lockFactory);
     }
 
   }

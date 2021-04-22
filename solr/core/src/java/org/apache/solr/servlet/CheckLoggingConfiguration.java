@@ -29,7 +29,7 @@ final class CheckLoggingConfiguration {
       throw new NoClassDefFoundError("Failed to initialize Apache Solr: "
           +"Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in "
           +"the jetty lib/ext directory. For other containers, the corresponding directory should be used. "
-          +"For more information, see: http://wiki.apache.org/solr/SolrLogging");
+          +"For more information, see: https://cwiki.apache.org/confluence/display/solr/SolrLogging#SolrLogging-UsingtheexampleloggingsetupincontainersotherthanJetty");
     }  
   }
   

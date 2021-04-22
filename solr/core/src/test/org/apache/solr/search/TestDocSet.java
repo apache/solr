@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
@@ -390,43 +392,147 @@ public class TestDocSet extends SolrTestCase {
     return mr;
   }
 
-  public void doTestIteratorEqual(DocIdSet a, DocIdSet b) throws IOException {
-    DocIdSetIterator ia = a.iterator();
-    DocIdSetIterator ib = b.iterator();
-
-    // test for next() equivalence
-    for(;;) {
-      int da = ia.nextDoc();
-      int db = ib.nextDoc();
-      assertEquals(da, db);
-      assertEquals(ia.docID(), ib.docID());
-      if (da==DocIdSetIterator.NO_MORE_DOCS) break;
-    }
-
-    for (int i=0; i<10; i++) {
-      // test random skipTo() and next()
-      ia = a.iterator();
-      ib = b.iterator();
-      int doc = -1;
-      for (;;) {
-        int da,db;
-        if (rand.nextBoolean()) {
-          da = ia.nextDoc();
-          db = ib.nextDoc();
-        } else {
-          int target = doc + rand.nextInt(10) + 1;  // keep in mind future edge cases like probing (increase if necessary)
-          da = ia.advance(target);
-          db = ib.advance(target);
+  private static boolean checkNullOrEmpty(DocIdSetIterator[] disis) throws IOException {
+    for (DocIdSetIterator disi : disis) {
+      if (disi == null) {
+        for (DocIdSetIterator check : disis) {
+          if (check != null) {
+            assertEquals(DocIdSetIterator.NO_MORE_DOCS, check.nextDoc());
+          }
         }
+        return true;
+      }
+    }
+    return false;
+  }
 
-        assertEquals(da, db);
-        assertEquals(ia.docID(), ib.docID());
-        if (da==DocIdSetIterator.NO_MORE_DOCS) break;
-        doc = da;
+  private static Supplier<DocIdSetIterator> disiSupplier(final DocIdSet docs) {
+    return () -> {
+      try {
+        return docs.iterator();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    };
+  }
+
+  @SafeVarargs
+  private static void populateDisis(NoThrowDocIdSetIterator[] disis, Supplier<DocIdSetIterator>... suppliers) {
+    for (int i = 0; i < suppliers.length; i++) {
+      DocIdSetIterator disi = suppliers[i].get();
+      disis[i] = disi == null ? null : new NoThrowDocIdSetIterator(disi);
+    }
+  }
+
+  private static void populateDocs(NoThrowDocIdSetIterator[] disis, int[] docs, ToIntFunction<NoThrowDocIdSetIterator> toDocId) throws IOException {
+    for (int i = 0; i < docs.length; i++) {
+      docs[i] = toDocId.applyAsInt(disis[i]);
+    }
+  }
+
+  private static void assertAll(int expected, int[] docs) {
+    for (int doc : docs) {
+      assertEquals(expected, doc);
+    }
+  }
+
+  /**
+   * By wrapping exceptions (which we don't expect to have thrown in this context anyway), we allow for
+   * more transparent/readable inline functions.
+   */
+  private static class NoThrowDocIdSetIterator extends DocIdSetIterator {
+    private final DocIdSetIterator backing;
+    private NoThrowDocIdSetIterator(DocIdSetIterator backing) {
+      this.backing = backing;
+    }
+    @Override
+    public int advance(int target) {
+      try {
+        return backing.advance(target);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    @Override
+    public long cost() {
+      return backing.cost();
+    }
+    @Override
+    public int docID() {
+      return backing.docID();
+    }
+    @Override
+    public int nextDoc() {
+      try {
+        return backing.nextDoc();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
   }
 
+  @SafeVarargs
+  private void doTestIteratorEqual(Bits bits, Supplier<DocIdSetIterator>... disiSuppliers) throws IOException {
+    NoThrowDocIdSetIterator[] disis = new NoThrowDocIdSetIterator[disiSuppliers.length];
+    int[] docs = new int[disiSuppliers.length];
+    populateDisis(disis, disiSuppliers);
+    if (checkNullOrEmpty(disis)) {
+      // both iterators are empty or null (equivalent), so there's nothing more to check
+      return;
+    }
+
+    // test for next() equivalence
+    final int bitsLength = bits == null ? -1 : bits.length();
+    int bitsDoc = -1;
+    for(;;) {
+      populateDocs(disis, docs, (disi) -> disi.nextDoc());
+      final int expected = docs[0]; // arbitrarily pick the first as "expected"
+      assertAll(expected, docs);
+      populateDocs(disis, docs, (disi) -> disi.docID());
+      assertAll(expected, docs);
+      while (++bitsDoc < expected && bitsDoc < bitsLength) {
+        assertFalse(bits.get(bitsDoc));
+      }
+      if (expected==DocIdSetIterator.NO_MORE_DOCS) break;
+      assertTrue(bits.get(expected));
+    }
+
+    for (int i=0; i<10; i++) {
+      // test random skipTo() and next()
+      populateDisis(disis, disiSuppliers);
+      bitsDoc = -1;
+      int doc = -1;
+      for (;;) {
+        final int target;
+        if (rand.nextBoolean()) {
+          target = doc + 1;
+          populateDocs(disis, docs, (disi) -> disi.nextDoc());
+        } else {
+          target = doc + rand.nextInt(10) + 1;  // keep in mind future edge cases like probing (increase if necessary)
+          populateDocs(disis, docs, (disi) -> disi.advance(target));
+        }
+
+        final int expected = docs[0]; // arbitrarily pick the first as "expected"
+        assertAll(expected, docs);
+        populateDocs(disis, docs, (disi) -> disi.docID());
+        assertAll(expected, docs);
+        for (int j = target; j < expected && j < bitsLength; j++) {
+          assertFalse(bits.get(j));
+        }
+        if (expected==DocIdSetIterator.NO_MORE_DOCS) break;
+        assertTrue(bits.get(expected));
+        doc = expected;
+      }
+    }
+  }
+
+  /**
+   * Tests equivalence among {@link DocIdSetIterator} instances retrieved from {@link BitDocSet} and {@link SortedIntDocSet}
+   * implementations, via {@link DocSet#getTopFilter()}/{@link Filter#getDocIdSet(LeafReaderContext, Bits)} and directly
+   * via {@link DocSet#iterator(LeafReaderContext)}.
+   * Also tests corresponding random-access {@link Bits} instances retrieved via {@link DocSet#getTopFilter()}/
+   * {@link Filter#getDocIdSet(LeafReaderContext, Bits)}/{@link DocIdSet#bits()}.
+   */
   public void doFilterTest(IndexReader reader) throws IOException {
     IndexReaderContext topLevelContext = reader.getContext();
     FixedBitSet bs = getRandomSet(reader.maxDoc(), rand.nextInt(reader.maxDoc()+1));
@@ -451,7 +557,12 @@ public class TestDocSet extends SolrTestCase {
     for (LeafReaderContext readerContext : leaves) {
       da = fa.getDocIdSet(readerContext, null);
       db = fb.getDocIdSet(readerContext, null);
-      doTestIteratorEqual(da, db);
+
+      // there are various ways that disis can be retrieved for each leafReader; they should all be equivalent.
+      doTestIteratorEqual(da.bits(), disiSupplier(da), disiSupplier(db), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
+
+      // set b is SortedIntDocSet, so derivatives should not support random-access via Bits
+      assertNull(db.bits());
     }  
 
     int nReaders = leaves.size();
@@ -460,7 +571,8 @@ public class TestDocSet extends SolrTestCase {
       LeafReaderContext readerContext = leaves.get(rand.nextInt(nReaders));
       da = fa.getDocIdSet(readerContext, null);
       db = fb.getDocIdSet(readerContext, null);
-      doTestIteratorEqual(da, db);
+      doTestIteratorEqual(da.bits(), disiSupplier(da), disiSupplier(db), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
+      assertNull(db.bits());
     }
   }
 

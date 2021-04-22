@@ -53,6 +53,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
@@ -927,7 +928,8 @@ public class IndexFetcher {
   private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, long latestGeneration) throws Exception {
     log.info("Starting download of configuration files from leader: {}", confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
-    File tmpconfDir = new File(solrCore.getResourceLoader().getConfigDir(), "conf." + getDateAsStr(new Date()));
+    Path tmpConfPath = solrCore.getResourceLoader().getConfigPath().resolve("conf." + getDateAsStr(new Date()));
+    File tmpconfDir = tmpConfPath.toFile();
     try {
       boolean status = tmpconfDir.mkdirs();
       if (!status) {
@@ -944,7 +946,7 @@ public class IndexFetcher {
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
       terminateAndWaitFsyncService();
-      copyTmpConfFiles2Conf(tmpconfDir);
+      copyTmpConfFiles2Conf(tmpConfPath);
     } finally {
       delTree(tmpconfDir);
     }
@@ -1278,35 +1280,36 @@ public class IndexFetcher {
 
   /**
    * Make file list
+   * TODO: return the stream directly
    */
-  private List<File> makeTmpConfDirFileList(File dir, List<File> fileList) {
-    File[] files = dir.listFiles();
-    for (File file : files) {
-      if (file.isFile()) {
-        fileList.add(file);
-      } else if (file.isDirectory()) {
-        fileList = makeTmpConfDirFileList(file, fileList);
-      }
+  private List<Path> makeTmpConfDirFileList(Path dir) {
+    try {
+      return Files.walk(dir)
+              .filter(Files::isRegularFile)
+              .collect(Collectors.toList());
+    } catch (IOException e) {
+      log.warn("Could not walk file tree", e);
+      return Collections.emptyList();
     }
-    return fileList;
   }
 
   /**
    * The conf files are copied to the tmp dir to the conf dir. A backup of the old file is maintained
    */
-  private void copyTmpConfFiles2Conf(File tmpconfDir) {
+  private void copyTmpConfFiles2Conf(Path tmpconfDir) {
     boolean status = false;
-    File confDir = new File(solrCore.getResourceLoader().getConfigDir());
-    for (File file : makeTmpConfDirFileList(tmpconfDir, new ArrayList<>())) {
-      File oldFile = new File(confDir, file.getPath().substring(tmpconfDir.getPath().length(), file.getPath().length()));
-      if (!oldFile.getParentFile().exists()) {
-        status = oldFile.getParentFile().mkdirs();
-        if (!status) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-                  "Unable to mkdirs: " + oldFile.getParentFile());
-        }
+    Path confPath = solrCore.getResourceLoader().getConfigPath();
+    int numTempPathElements = tmpconfDir.getNameCount();
+    for (Path path : makeTmpConfDirFileList(tmpconfDir)) {
+      Path oldPath = confPath.resolve(path.subpath(numTempPathElements, path.getNameCount()));
+      try {
+        Files.createDirectories(oldPath.getParent());
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+                "Unable to mkdirs: " + oldPath.getParent(), e);
       }
-      if (oldFile.exists()) {
+      if (Files.exists(oldPath)) {
+        File oldFile = oldPath.toFile(); // TODO drop this
         File backupFile = new File(oldFile.getPath() + "." + getDateAsStr(new Date(oldFile.lastModified())));
         if (!backupFile.getParentFile().exists()) {
           status = backupFile.getParentFile().mkdirs();
@@ -1321,10 +1324,11 @@ public class IndexFetcher {
                   "Unable to rename: " + oldFile + " to: " + backupFile);
         }
       }
-      status = file.renameTo(oldFile);
-      if (!status) {
+      try {
+        Files.move(path, oldPath);
+      } catch (IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
-                "Unable to rename: " + file + " to: " + oldFile);
+                "Unable to rename: " + path + " to: " + oldPath, e);
       }
     }
   }

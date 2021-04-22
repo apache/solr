@@ -62,6 +62,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   private String gap;
   private String field;
   private String format;
+  private String split;
+  private String limit;
   private DateTimeFormatter formatter;
 
   private Metric[] metrics;
@@ -82,7 +84,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
                           String end,
                           String gap,
                           String format) throws IOException {
-    init(collection, params, field, metrics, start, end, gap, format, zkHost);
+    init(collection, params, field, metrics, start, end, gap, format, null, null, zkHost);
   }
 
   public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -99,6 +101,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     StreamExpressionNamedParameter fieldExpression = factory.getNamedOperand(expression, "field");
     StreamExpressionNamedParameter gapExpression = factory.getNamedOperand(expression, "gap");
     StreamExpressionNamedParameter formatExpression = factory.getNamedOperand(expression, "format");
+    StreamExpressionNamedParameter splitExpression = factory.getNamedOperand(expression, "split");
+    StreamExpressionNamedParameter limitExpression = factory.getNamedOperand(expression, "limit");
 
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
     List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
@@ -134,6 +138,21 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     String format = null;
     if(formatExpression != null) {
       format = ((StreamExpressionValue)formatExpression.getParameter()).getValue();
+    }
+
+    String split = null;
+    if(splitExpression != null) {
+      split = ((StreamExpressionValue)splitExpression.getParameter()).getValue();
+    }
+
+    String limit = "10";
+    if(limitExpression != null) {
+      limit = ((StreamExpressionValue)limitExpression.getParameter()).getValue();
+      try {
+        Integer.parseInt(limit);
+      } catch (Exception e) {
+        throw new IOException(String.format(Locale.ROOT,"invalid limit %s, integer expected", limit));
+      }
     }
 
     // Collection Name
@@ -186,12 +205,14 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     }
 
     // We've got all the required items
-    init(collectionName, params, field, metrics, start, end, gap, format, zkHost);
+    init(collectionName, params, field, metrics, start, end, gap, format, split, limit, zkHost);
   }
 
   public String getCollection() {
     return this.collection;
   }
+
+
 
   private void init(String collection,
                     SolrParams params,
@@ -201,6 +222,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
                     String end,
                     String gap,
                     String format,
+                    String split,
+                    String limit,
                     String zkHost) throws IOException {
     this.zkHost  = zkHost;
     this.collection = collection;
@@ -212,6 +235,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     this.metrics = metrics;
     this.field = field;
     this.params = params;
+    this.split = split;
+    this.limit = limit;
     this.end = end;
     if(format != null) {
       this.format = format;
@@ -355,21 +380,65 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     buf.append(",\"gap\":\"").append(gap).append('"');
 
     buf.append(",\"facet\":{");
-    int metricCount = 0;
-    for(Metric metric : _metrics) {
-      String identifier = metric.getIdentifier();
-      if(!identifier.startsWith("count(")) {
-        if(metricCount>0) {
-          buf.append(",");
+
+
+    // Add the split here:
+    if(split != null) {
+      buf.append('"');
+      buf.append("split");
+      buf.append('"');
+      buf.append(":{");
+      buf.append("\"type\":\"terms\"");
+      buf.append(",\"field\":\"").append(split.toString()).append('"');
+      buf.append(",\"limit\":").append(limit);
+      buf.append(",\"overrequest\":100");
+      if(_metrics[0].getIdentifier().startsWith("count(")) {
+        buf.append(",\"sort\":\"").append("count").append(" desc\"");
+      } else {
+        buf.append(",\"sort\":\"").append("facet_0").append(" desc\"");
+      }
+      buf.append(",\"facet\":{");
+      //Add the aggregations.
+      int metricCount = 0;
+      for(Metric metric : _metrics) {
+        String identifier = metric.getIdentifier();
+        if(!identifier.startsWith("count(")) {
+          if(metricCount>0) {
+            buf.append(",");
+          }
+          if(identifier.startsWith("per(")) {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
+          } else if(identifier.startsWith("std(")) {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+          }  else if (identifier.startsWith("countDist(")) {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("countDist", "unique")).append('"');
+          } else {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+          }
+          ++metricCount;
         }
-        if(identifier.startsWith("per(")) {
-          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
-        } else if(identifier.startsWith("std(")) {
-          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
-        } else {
-          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+      }
+      buf.append("}}");
+    } else {
+      //No split so simply append the aggregations.
+      int metricCount = 0;
+      for(Metric metric : _metrics) {
+        String identifier = metric.getIdentifier();
+        if(!identifier.startsWith("count(")) {
+          if(metricCount>0) {
+            buf.append(",");
+          }
+          if(identifier.startsWith("per(")) {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
+          } else if(identifier.startsWith("std(")) {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+          }  else if (identifier.startsWith("countDist(")) {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("countDist", "unique")).append('"');
+          } else {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+          }
+          ++metricCount;
         }
-        ++metricCount;
       }
     }
     buf.append("}}");
@@ -396,42 +465,83 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     if(nl == null) {
       return;
     }
-
     @SuppressWarnings({"rawtypes"})
     List allBuckets = (List)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
       @SuppressWarnings({"rawtypes"})
       NamedList bucket = (NamedList)allBuckets.get(b);
       Object val = bucket.get("val");
+      Tuple tx = currentTuple.clone();
 
       if(formatter != null) {
         LocalDateTime localDateTime = LocalDateTime.ofInstant(((java.util.Date) val).toInstant(), ZoneOffset.UTC);
         val = localDateTime.format(formatter);
       }
 
-      Tuple t = currentTuple.clone();
-      t.put(field, val);
-      int m = 0;
-      for(Metric metric : _metrics) {
-        String identifier = metric.getIdentifier();
-        if(!identifier.startsWith("count(")) {
-          if(bucket.get("facet_"+m) != null) {
-            Number d = (Number) bucket.get("facet_" + m);
-            if (metric.outputLong) {
-              t.put(identifier, Math.round(d.doubleValue()));
-            } else {
-              t.put(identifier, d.doubleValue());
-            }
-          } else {
-            t.put(identifier, 0);
-          }
-          ++m;
-        } else {
-          long l = ((Number)bucket.get("count")).longValue();
-          t.put("count(*)", l);
+      tx.put(field, val);
+
+      if(split != null) {
+        @SuppressWarnings({"rawtypes"})
+        NamedList splitBuckets = (NamedList) bucket.get("split");
+        if(splitBuckets == null) {
+          continue;
         }
+        @SuppressWarnings({"rawtypes"})
+        List sbuckets = (List)splitBuckets.get("buckets");
+        for (int d = 0; d < sbuckets.size(); d++) {
+          @SuppressWarnings({"rawtypes"})
+          NamedList bucketS = (NamedList) sbuckets.get(d);
+          Object valS = bucketS.get("val");
+          if (valS instanceof Integer) {
+            valS = ((Integer) valS).longValue();
+          }
+          Tuple splitT = tx.clone();
+          splitT.put(split, valS);
+          int m = 0;
+          for(Metric metric : _metrics) {
+            String identifier = metric.getIdentifier();
+            if(!identifier.startsWith("count(")) {
+              if(bucketS.get("facet_"+m) != null) {
+                Number n = (Number) bucketS.get("facet_" + m);
+                if (metric.outputLong) {
+                  splitT.put(identifier, Math.round(n.doubleValue()));
+                } else {
+                  splitT.put(identifier, n.doubleValue());
+                }
+              } else {
+                splitT.put(identifier, 0);
+              }
+              ++m;
+            } else {
+              long l = ((Number)bucketS.get("count")).longValue();
+              splitT.put("count(*)", l);
+            }
+          }
+          tuples.add(splitT);
+        }
+      } else {
+        int m = 0;
+        for(Metric metric : _metrics) {
+          String identifier = metric.getIdentifier();
+          if(!identifier.startsWith("count(")) {
+            if(bucket.get("facet_"+m) != null) {
+              Number d = (Number) bucket.get("facet_" + m);
+              if (metric.outputLong) {
+                tx.put(identifier, Math.round(d.doubleValue()));
+              } else {
+                tx.put(identifier, d.doubleValue());
+              }
+            } else {
+              tx.put(identifier, 0);
+            }
+            ++m;
+          } else {
+            long l = ((Number)bucket.get("count")).longValue();
+            tx.put("count(*)", l);
+          }
+        }
+        tuples.add(tx);
       }
-      tuples.add(t);
     }
   }
 

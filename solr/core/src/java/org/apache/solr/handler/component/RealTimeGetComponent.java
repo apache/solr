@@ -191,7 +191,7 @@ public class RealTimeGetComponent extends SearchComponent
       return;
     }
 
-    final IdsRequsted reqIds = IdsRequsted.parseParams(req);
+    final IdsRequested reqIds = IdsRequested.parseParams(req);
     
     if (reqIds.allIds.isEmpty()) {
       return;
@@ -967,7 +967,7 @@ public class RealTimeGetComponent extends SearchComponent
 
   public int createSubRequests(ResponseBuilder rb) throws IOException {
     
-    final IdsRequsted reqIds = IdsRequsted.parseParams(rb.req);
+    final IdsRequested reqIds = IdsRequested.parseParams(rb.req);
     if (reqIds.allIds.isEmpty()) {
       return ResponseBuilder.STAGE_DONE;
     }
@@ -1100,7 +1100,7 @@ public class RealTimeGetComponent extends SearchComponent
     assert null != docList;
     
     final SolrQueryResponse rsp = rb.rsp;
-    final IdsRequsted reqIds = IdsRequsted.parseParams(rb.req);
+    final IdsRequested reqIds = IdsRequested.parseParams(rb.req);
     
     if (reqIds.useSingleDocResponse) {
       assert docList.size() <= 1;
@@ -1345,18 +1345,18 @@ public class RealTimeGetComponent extends SearchComponent
 
   /** 
    * Simple struct for tracking what ids were requested and what response format is expected 
-   * acording to the request params
+   * according to the request params
    */
-  private final static class IdsRequsted {
+  private final static class IdsRequested {
     /** An List (which may be empty but will never be null) of the uniqueKeys requested. */
     public final List<String> allIds;
     /** 
      * true if the params provided by the user indicate that a single doc response structure 
      * should be used.  
-     * Value is meaninless if <code>ids</code> is empty.
+     * Value is meaningless if <code>ids</code> is empty.
      */
     public final boolean useSingleDocResponse;
-    private IdsRequsted(List<String> allIds, boolean useSingleDocResponse) {
+    private IdsRequested(List<String> allIds, boolean useSingleDocResponse) {
       assert null != allIds;
       this.allIds = allIds;
       this.useSingleDocResponse = useSingleDocResponse;
@@ -1364,21 +1364,21 @@ public class RealTimeGetComponent extends SearchComponent
     
     /**
      * Parsers the <code>id</code> and <code>ids</code> params attached to the specified request object, 
-     * and returns an <code>IdsRequsted</code> struct to use for this request.
-     * The <code>IdsRequsted</code> is cached in the {@link SolrQueryRequest#getContext} so subsequent 
+     * and returns an <code>IdsRequested</code> struct to use for this request.
+     * The <code>IdsRequested</code> is cached in the {@link SolrQueryRequest#getContext} so subsequent
      * method calls on the same request will not re-parse the params.
      */
-    public static IdsRequsted parseParams(SolrQueryRequest req) {
-      final String contextKey = IdsRequsted.class.toString() + "_PARSED_ID_PARAMS";
+    public static IdsRequested parseParams(SolrQueryRequest req) {
+      final String contextKey = IdsRequested.class.toString() + "_PARSED_ID_PARAMS";
       if (req.getContext().containsKey(contextKey)) {
-        return (IdsRequsted)req.getContext().get(contextKey);
+        return (IdsRequested)req.getContext().get(contextKey);
       }
       final SolrParams params = req.getParams();
       final String id[] = params.getParams(ID);
       final String ids[] = params.getParams("ids");
       
       if (id == null && ids == null) {
-        IdsRequsted result = new IdsRequsted(Collections.<String>emptyList(), true);
+        IdsRequested result = new IdsRequested(Collections.<String>emptyList(), true);
         req.getContext().put(contextKey, result);
         return result;
       }
@@ -1396,7 +1396,7 @@ public class RealTimeGetComponent extends SearchComponent
       }
       // if the client specified a single id=foo, then use "doc":{
       // otherwise use a standard doclist
-      IdsRequsted result = new IdsRequsted(allIds, (ids == null && allIds.size() <= 1));
+      IdsRequested result = new IdsRequested(allIds, (ids == null && allIds.size() <= 1));
       req.getContext().put(contextKey, result);
       return result;
     }

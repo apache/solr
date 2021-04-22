@@ -84,7 +84,7 @@ import org.jsoup.select.Elements;
  *      <li>Jekyll Mode:
  *        <ul>
  *          <li>Requires all html pages have a "content" div; ignores all DOM Nodes that are
- *              <em>not</em> decendents of this div (to exclude redundent template based header, footer,
+ *              <em>not</em> descendants of this div (to exclude redundant template based header, footer,
  *              &amp; sidebar links)
  *          </li>
  *          <li>Expects that the <code>&lt;body/&gt;</code> tag will have an <code>id</code> matching
@@ -318,15 +318,15 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
     int problems = 0;
 
     for (Element tab : mainContent.select(".dynamic-tabs")) {
-      // must be at least two tab-pane decendents of each dynamic-tabs
+      // must be at least two tab-pane descendants of each dynamic-tabs
       final Elements panes = tab.select(".tab-pane");
       final int numPanes = panes.size();
       if (numPanes < 2) {
-        System.err.println(file + " contains a 'dynamic-tabs' with "+ numPanes+" 'tab-pane' decendents -- must be at least 2");
+        System.err.println(file + " contains a 'dynamic-tabs' with "+ numPanes+" 'tab-pane' descendants -- must be at least 2");
         problems++;
       }
 
-      // must not have any decendents of a dynamic-tabs that are not part of tab-pane
+      // must not have any descendants of a dynamic-tabs that are not part of tab-pane
       //
       // this is kind of tricky, because asciidoctor creates wrapper divs around the tab-panes
       // so we can't make assumptions about direct children
@@ -335,11 +335,11 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       for (Element pane : panes) {
         elementsToIgnore.addAll(pane.select("*"));
       }
-      final Elements nonPaneDecendents = tab.select("*");
-      nonPaneDecendents.removeAll(elementsToIgnore);
-      if (0 != nonPaneDecendents.size()) {
+      final Elements nonPaneDescendants = tab.select("*");
+      nonPaneDescendants.removeAll(elementsToIgnore);
+      if (0 != nonPaneDescendants.size()) {
         System.err.println(file + " contains a 'dynamic-tabs' with content outside of a 'tab-pane': " +
-                           shortStr(nonPaneDecendents.text()));
+                           shortStr(nonPaneDescendants.text()));
         problems++;
       }
     }
@@ -363,16 +363,16 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         problems++;
       }
 
-      // every tab-pane must be a decendent of a dynamic-tabs
+      // every tab-pane must be a descendant of a dynamic-tabs
       if (! validPanes.contains(pane)) {
-        System.err.println(file + " contains " + debug + " that is not a decendent of a 'dynamic-tabs'");
+        System.err.println(file + " contains " + debug + " that is not a dependent of a 'dynamic-tabs'");
         problems++;
       }
 
       // every tab-pane must have exactly 1 tab-label which is <strong>
       Elements labels = pane.select(".tab-label");
       if (1 != labels.size()) {
-        System.err.println(file + " contains " + debug + " with " + labels.size() + " 'tab-label' decendents -- must be exactly 1");
+        System.err.println(file + " contains " + debug + " with " + labels.size() + " 'tab-label' descendants -- must be exactly 1");
         problems++;
       } else {
         Element label = labels.first();

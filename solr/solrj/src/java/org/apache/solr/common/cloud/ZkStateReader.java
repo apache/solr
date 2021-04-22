@@ -183,8 +183,6 @@ public class ZkStateReader implements SolrCloseable {
 
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
-  private final ZkConfigManager configManager;
-
   private ConfigData securityData;
 
   private final Runnable securityNodeListener;
@@ -284,7 +282,6 @@ public class ZkStateReader implements SolrCloseable {
 
   public ZkStateReader(SolrZkClient zkClient, Runnable securityNodeListener) {
     this.zkClient = zkClient;
-    this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = false;
     this.securityNodeListener = securityNodeListener;
     assert ObjectReleaseTracker.track(this);
@@ -310,15 +307,10 @@ public class ZkStateReader implements SolrCloseable {
             }
           }
         });
-    this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
     this.securityNodeListener = null;
 
     assert ObjectReleaseTracker.track(this);
-  }
-
-  public ZkConfigManager getConfigManager() {
-    return configManager;
   }
 
   /**

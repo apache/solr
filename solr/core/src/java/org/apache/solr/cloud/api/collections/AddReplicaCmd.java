@@ -148,7 +148,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
         .collect(Collectors.toList());
 
 
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
     ZkStateReader zkStateReader = ccc.getZkStateReader();
 
     final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);

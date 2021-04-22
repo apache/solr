@@ -29,6 +29,8 @@ import org.apache.lucene.search.Sort;
 public class QueryCommand {
   
   private Query query;
+  private String queryID;
+  private boolean isQueryCancellable;
   private List<Query> filterList;
   private DocSet filter;
   private Sort sort;
@@ -228,5 +230,17 @@ public class QueryCommand {
       return clearFlags(SolrIndexSearcher.SEGMENT_TERMINATE_EARLY);
     }
   }
+
+  public void setQueryID(String queryID) {
+    this.queryID = queryID;
+  }
+
+  public String getQueryID() {
+    return queryID;
+  }
+
+  public void setQueryCancellable(boolean isQueryCancellable) { this.isQueryCancellable = isQueryCancellable; }
+
+  public boolean isQueryCancellable() { return isQueryCancellable; }
 
 }
