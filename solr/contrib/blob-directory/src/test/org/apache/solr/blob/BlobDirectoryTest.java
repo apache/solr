@@ -3,22 +3,31 @@ package org.apache.solr.blob;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.store.*;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.*;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
 
 public class BlobDirectoryTest extends SolrTestCaseJ4 {
 
-    private static final String SOLR_CONFIG = "<solr></solr>";
+    private static final String REPOSITORY_NAME = "local";
+
+    private static final String SOLR_CONFIG = "<solr>" +
+        " <backup>" +
+        "  <repository name=\"" + REPOSITORY_NAME + "\"" +
+        "   class=\"" + LocalFileSystemRepository.class.getName() + "\"/>" +
+        " </backup>" +
+        "</solr>";
 
     private static Path blobRootDir;
     private static NodeConfig nodeConfig;
@@ -49,8 +58,8 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
         directoryFactory = new BlobDirectoryFactory();
         directoryFactory.initCoreContainer(coreContainer);
         NamedList<String> args = new NamedList<>();
-        args.add("blobStore.class", LocalBlobStore.class.getName());
-        args.add("blobStore.rootDir", blobRootDir.toString());
+        args.add(CoreAdminParams.BACKUP_REPOSITORY, REPOSITORY_NAME);
+        args.add(CoreAdminParams.BACKUP_LOCATION, blobRootDir.toString());
         directoryFactory.init(args);
         directoryPath = nodeConfig.getCoreRootDirectory()
                 .resolve("core").resolve("data").resolve("index").toAbsolutePath().toString();
@@ -165,8 +174,9 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
         // Check the file listing in the local filesystem directory.
         assertEquals(Arrays.asList(expectedFileNames), Arrays.asList(directory.listAll()));
         // Check the file listing in the blob store.
-        assertEquals(Arrays.asList(expectedFileNames), directoryFactory.getBlobStore()
-                .listInDirectory(directoryFactory.getLocalRelativePath(directoryPath), __ -> true));
+        URI blobDirUri = directoryFactory.resolveBlobPath(directoryFactory.getLocalRelativePath(directoryPath));
+        assertEquals(Arrays.asList(expectedFileNames), Arrays.asList(directoryFactory.getRepository()
+                .listAll(blobDirUri)));
     }
 
     private void checkFileContent(String name, String expectedContent) throws IOException {
@@ -175,9 +185,9 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
             assertEquals(expectedContent, input.readString());
         }
         // Check the file content in the blob store.
-        try (InputStream input = directoryFactory.getBlobStore()
-                .read(directoryFactory.getLocalRelativePath(directoryPath), name)) {
-            assertEquals(expectedContent, new InputStreamDataInput(input).readString());
+        URI blobDirUri = directoryFactory.resolveBlobPath(directoryFactory.getLocalRelativePath(directoryPath));
+        try (IndexInput input = directoryFactory.getRepository().openInput(blobDirUri, name, IOContext.READ)) {
+            assertEquals(expectedContent, input.readString());
         }
     }
 }

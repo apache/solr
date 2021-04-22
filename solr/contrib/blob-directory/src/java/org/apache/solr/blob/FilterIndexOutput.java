@@ -24,6 +24,9 @@ import java.util.Set;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexOutput;
 
+/**
+ * Delegates to another {@link IndexOutput}.
+ */
 public class FilterIndexOutput extends IndexOutput {
 
   protected final IndexOutput delegate;

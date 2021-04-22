@@ -6,18 +6,28 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.*;
+import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
 public class BlobDirectoryFactoryTest extends SolrTestCaseJ4 {
 
-    private static final String SOLR_CONFIG = "<solr></solr>";
+    private static final String REPOSITORY_NAME = "local";
+
+    private static final String SOLR_CONFIG = "<solr>" +
+            " <backup>" +
+            "  <repository name=\"" + REPOSITORY_NAME + "\"" +
+            "   class=\"" + LocalFileSystemRepository.class.getName() + "\"/>" +
+            " </backup>" +
+            "</solr>";
 
     private static Path blobRootDir;
     private static NodeConfig nodeConfig;
@@ -62,24 +72,24 @@ public class BlobDirectoryFactoryTest extends SolrTestCaseJ4 {
         // Then it throws an exception.
         expectThrows(IllegalArgumentException.class, () -> blobDirectoryFactory.init(args));
 
-        // Given only the LocalBlobStore class arg.
-        args.add("blobStore.class", LocalBlobStore.class.getName());
+        // Given only the 'repository' arg.
+        args.add(CoreAdminParams.BACKUP_REPOSITORY, REPOSITORY_NAME);
         // When the factory is initialized.
         // Then it throws an exception.
         expectThrows(IllegalArgumentException.class, () -> blobDirectoryFactory.init(args));
 
-        // Given the LocalBlobStore root dir args is provided.
-        args.add("blobStore.rootDir", blobRootDir.toString());
+        // Given the 'location' args is provided.
+        args.add(CoreAdminParams.BACKUP_LOCATION, blobRootDir.toString());
         // Given other optional MMapDirectory params are provided.
         args.add("mmap.maxChunkSize", Integer.toString(10));
         args.add("mmap.unmap", Boolean.toString(false));
         args.add("mmap.preload", Boolean.toString(true));
         // When the factory is initialized.
         blobDirectoryFactory.init(args);
-        // Then the BlobStore is correctly initialized.
-        assertTrue(blobDirectoryFactory.getBlobStore() instanceof LocalBlobStore);
-        // Then the LocalBlobStore root dir is correctly initialized.
-        assertEquals(blobRootDir.toString(), ((LocalBlobStore) blobDirectoryFactory.getBlobStore()).getBlobRootDir());
+        // Then the BackupRepository is correctly initialized.
+        assertTrue(blobDirectoryFactory.getRepository() instanceof LocalFileSystemRepository);
+        // Then the backup location is correctly initialized.
+        assertEquals(blobRootDir, Paths.get(blobDirectoryFactory.getRepositoryLocation()));
         // Then the optional MMapDirectory params are correctly initialized.
         assertEquals(10, blobDirectoryFactory.getMMapParams().maxChunk);
         assertFalse(blobDirectoryFactory.getMMapParams().unmap);
@@ -90,8 +100,8 @@ public class BlobDirectoryFactoryTest extends SolrTestCaseJ4 {
     public void testCleanupOldIndexDirectories() throws Exception {
         // Given a correctly initialized BlobDirectoryFactory.
         NamedList<String> args = new NamedList<>();
-        args.add("blobStore.class", LocalBlobStore.class.getName());
-        args.add("blobStore.rootDir", blobRootDir.toString());
+        args.add(CoreAdminParams.BACKUP_REPOSITORY, REPOSITORY_NAME);
+        args.add(CoreAdminParams.BACKUP_LOCATION, blobRootDir.toString());
         blobDirectoryFactory.init(args);
 
         // Given a mock Core with 3 mock indexes. The last one is the active index.

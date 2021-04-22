@@ -20,13 +20,17 @@ package org.apache.solr.blob;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -34,6 +38,7 @@ import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,10 +46,23 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /**
+   * Default maximum number of threads that push files concurrently to the repository.
+   */
+  private static final int DEFAULT_MAX_THREADS = 20;
+
+  /**
+   * Default size of the buffer used to transfer input-output stream to the repository, in bytes.
+   * The appropriate size depends on the repository.
+   * There is one buffer per thread.
+   */
+  public static final int DEFAULT_STREAM_BUFFER_SIZE = 32_768;
+
   private static final Pattern INDEX_NAME_PATTERN = Pattern.compile("index(?:\\.[0-9]{17})?");
 
   private String localRootPath;
-  private BlobStore blobStore;
+  private BackupRepository repository;
+  private URI repositoryLocation;
   private BlobPusher blobPusher;
   private MMapParams mMapParams;
 
@@ -60,26 +78,42 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     super.init(args);
     SolrParams params = args.toSolrParams();
 
-    // BlobStore where files are persisted.
-    blobStore = initBlobStore(params);
-    blobPusher = new BlobPusher(blobStore);
+    // Repository where files are persisted.
+    // 'repository' parameter must be defined, we don't want to use a default one.
+    String repositoryName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
+    if (repositoryName == null) {
+      throw new IllegalArgumentException("Parameter '" + CoreAdminParams.BACKUP_REPOSITORY + "' is required");
+    }
+    repository = coreContainer.newBackupRepository(repositoryName);
+
+    // 'location' parameter must be defined, we don't want to use a default one.
+    String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
+    if (location == null) {
+      throw new IllegalArgumentException("Parameter '" + CoreAdminParams.BACKUP_LOCATION + "' is required");
+    }
+    repositoryLocation = repository.createURI(location);
+
+    // 'threads' defines the maximum number of threads that push files concurrently to the repository.
+    int maxThreads = params.getInt("threads", DEFAULT_MAX_THREADS);
+
+    // 'streamBufferSize' defines the size of the stream copy buffer.
+    // This determines the size of the chunk of data sent to the repository during files transfer.
+    // It is optional but recommended to set the appropriate size for the selected repository.
+    // There is one buffer per thread.
+    int streamBufferSize = params.getInt("streamBufferSize", DEFAULT_STREAM_BUFFER_SIZE);
+
+    blobPusher = new BlobPusher(repository, repositoryLocation, maxThreads, streamBufferSize);
 
     // Filesystem MMapDirectory used as a local file cache.
     mMapParams = new MMapParams(params);
   }
 
-  private BlobStore initBlobStore(SolrParams params) {
-    String blobStoreClass = params.get("blobStore.class");
-    if (blobStoreClass == null) {
-      throw new IllegalArgumentException("blobStore.class is required");
-    }
-    BlobStore blobStore = coreContainer.getResourceLoader().newInstance(blobStoreClass, BlobStore.class);
-    blobStore.init(params);
-    return blobStore;
+  BackupRepository getRepository() {
+    return repository;
   }
 
-  BlobStore getBlobStore() {
-    return blobStore;
+  URI getRepositoryLocation() {
+    return repositoryLocation;
   }
 
   MMapParams getMMapParams() {
@@ -96,7 +130,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   @Override
   public void close() throws IOException {
     log.debug("close");
-    IOUtils.closeQuietly(blobStore);
+    IOUtils.closeQuietly(repository);
     IOUtils.closeQuietly(blobPusher);
     super.close();
   }
@@ -152,14 +186,18 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
 
   private String getRelativePath(String path, String referencePath) {
     if (!path.startsWith(referencePath)) {
-      throw new IllegalArgumentException("Path=" + path + " is expected to start with referencePath="
-              + referencePath + " otherwise we have to adapt the code");
+      throw new IllegalArgumentException("Path '" + path + "' is expected to start with referencePath '"
+              + referencePath + "' otherwise we have to adapt the code");
     }
     String relativePath = path.substring(referencePath.length());
     if (relativePath.startsWith("/")) {
       relativePath = relativePath.substring(1);
     }
     return relativePath;
+  }
+
+  URI resolveBlobPath(String blobPath) {
+    return repository.resolve(repositoryLocation, blobPath);
   }
 
   @Override
@@ -175,7 +213,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     File dirFile = new File(cacheValue.path);
     FileUtils.deleteDirectory(dirFile);
     String blobDirPath = getLocalRelativePath(cacheValue.path);
-    blobStore.deleteDirectory(blobDirPath);
+    repository.deleteDirectory(resolveBlobPath(blobDirPath));
   }
 
   @Override
@@ -241,18 +279,21 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
       currentIndexDirPath = normalize(currentIndexDirPath);
     } catch (IOException e) {
       log.error("Failed to delete old index directories in {} due to: ", dataDirPath, e);
+      return;
     }
     String blobDirPath = getLocalRelativePath(dataDirPath);
-    String currentIndexDirName = getRelativePath(currentIndexDirPath, dataDirPath);
-    List<String> oldIndexDirs;
+    URI blobDirUri = resolveBlobPath(blobDirPath);
+    String[] dirEntries;
     try {
-      oldIndexDirs = blobStore.listInDirectory(blobDirPath,
-              (name) -> !name.equals(currentIndexDirName)
-                      && INDEX_NAME_PATTERN.matcher(name).matches());
+      dirEntries = repository.listAll(blobDirUri);
     } catch (IOException e) {
       log.error("Failed to delete old index directories in {} due to: ", blobDirPath, e);
       return;
     }
+    String currentIndexDirName = getRelativePath(currentIndexDirPath, dataDirPath);
+    List<String> oldIndexDirs = Arrays.stream(dirEntries)
+            .filter((name) -> !name.equals(currentIndexDirName) && INDEX_NAME_PATTERN.matcher(name).matches())
+            .collect(Collectors.toList());
     if (oldIndexDirs.isEmpty()) {
       return;
     }
@@ -266,7 +307,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     }
     try {
       for (String oldIndexDir : oldIndexDirs) {
-        blobStore.deleteDirectory(blobDirPath + '/' + oldIndexDir);
+        repository.deleteDirectory(repository.resolve(blobDirUri, oldIndexDir));
       }
     } catch (IOException e) {
       log.error("Failed to delete old index directories {} in {} due to: ", oldIndexDirs, blobDirPath, e);

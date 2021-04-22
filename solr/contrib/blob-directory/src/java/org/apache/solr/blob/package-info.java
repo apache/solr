@@ -17,7 +17,7 @@
 
 /**
  * A {@link org.apache.solr.core.DirectoryFactory} for storing every directories in a remote
- * {@link org.apache.solr.blob.BlobStore}, while keeping a local
+ * {@link org.apache.solr.core.backup.repository.BackupRepository}, while keeping a local
  * {@link org.apache.solr.core.MMapDirectoryFactory} as a cache for fast read/write access.
  */
 package org.apache.solr.blob;
