@@ -276,7 +276,7 @@
         {
           "expr": "solr_collections_shard_leader{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\"}",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{collection}} {{shard}} {{replica}} ({{node_name}})",
           "refId": "A"
         }
       ],
@@ -528,7 +528,7 @@
         {
           "expr": "solr_collections_replica_state{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\"}",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{collection}} {{shard}} {{replica}} ({{node_name}})={{state}}",
           "refId": "A"
         }
       ],
