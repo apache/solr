@@ -75,8 +75,8 @@ curl -X GET http://localhost:8983/api/cores?indexInfo=false
 
 === STATUS Parameters
 
-`core` (v1)::
-The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`.
+`core`::
+The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required in v1, and part of the url in the v2 API.
 
 `indexInfo`::
 If `false`, information about the index will not be returned with a core STATUS request. In Solr implementations with a large number of cores (i.e., more than hundreds), retrieving the index information for each core can take a lot of time and isn't always required. The default is `true`.
@@ -157,7 +157,33 @@ http://localhost:8983/solr/admin/cores?action=CREATE&name=my_core&collection=my_
 
 The RELOAD action loads a new core from the configuration of an existing, registered Solr core. While the new core is initializing, the existing one will continue to handle requests. When the new Solr core is ready, it takes over and the old core is unloaded.
 
-`admin/cores?action=RELOAD&core=_core-name_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-reload]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=RELOAD&core=techproducts
+
+----
+====
+
+[example.tab-pane#v2coreadmin-reload]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/techproducts -H 'Content-Type: application/json' -d'
+  {
+    "reload": {}
+  }
+'
+----
+====
+--
 
 This is useful when you've made changes to a Solr core's configuration on disk, such as adding new field definitions. Calling the RELOAD action lets you apply the new configuration without having to restart Solr.
 
@@ -169,7 +195,7 @@ RELOAD performs "live" reloads of SolrCore, reusing some existing objects. Some 
 === RELOAD Core Parameters
 
 `core`::
-The name of the core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required.
+The name of the core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required in v1, and part of the url in the v2 API.
 
 [[coreadmin-rename]]
 == RENAME
