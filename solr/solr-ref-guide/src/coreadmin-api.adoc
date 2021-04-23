@@ -27,16 +27,55 @@ CoreAdmin actions can be executed by via HTTP requests that specify an `action` 
 
 All action names are uppercase, and are defined in depth in the sections below.
 
+The examples assume you have started Solr via `bin/solr start -e techproducts`.
+
 [[coreadmin-status]]
 == STATUS
 
 The `STATUS` action returns the status of all running Solr cores, or status for only the named core.
 
-`admin/cores?action=STATUS&core=_core-name_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-status]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=STATUS&core=techproducts
+
+----
+====
+
+[example.tab-pane#v2coreadmin-status]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cores/
+----
+
+To get the status for a single core:
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cores/techproducts
+----
+
+To skip returning information about the index:
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cores?indexInfo=false
+----
+
+====
+--
 
 === STATUS Parameters
 
-`core`::
+`core` (v1)::
 The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`.
 
 `indexInfo`::
