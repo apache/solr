@@ -71,7 +71,6 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   final AtomicReference<ServletRequest> wrappedRequestByFilter = new AtomicReference<>();
 
   final FilterChain filterChain = (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
-  final HttpServletRequest mockReq = createMockRequest(header);
   final String nodeName = "node_x_233";
 
   final LocalSolrQueryRequest localSolrQueryRequest = new LocalSolrQueryRequest(null, new ModifiableSolrParams()) {
@@ -81,6 +80,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     }
   };
 
+  HttpServletRequest mockReq;
   MockPKIAuthenticationPlugin mock;
   BasicHttpRequest request;
 
@@ -93,6 +93,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     header.set(null);
     wrappedRequestByFilter.set(null);
 
+    mockReq = createMockRequest(header);
     mock = new MockPKIAuthenticationPlugin(null, nodeName);
     request = new BasicHttpRequest("GET", "http://localhost:56565");
   }
