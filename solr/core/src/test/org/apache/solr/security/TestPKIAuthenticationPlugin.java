@@ -100,7 +100,9 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    mock.close();
+    if (mock != null) {
+      mock.close();
+    }
     super.tearDown();
   }
 
