@@ -314,6 +314,8 @@ New Features
 
 * SOLR-15132: Add temporal graph query to the nodes Streaming Expression (Joel Bernstein)
 
+* SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with new Solr Cluster row (janhoy)
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
