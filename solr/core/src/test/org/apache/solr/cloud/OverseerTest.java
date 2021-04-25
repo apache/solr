@@ -532,7 +532,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
             ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr");
-        List<ZkWriteCommand> commands = new NodeMutator().downNode(reader.getClusterState(), m);
+        List<ZkWriteCommand> commands = new NodeMutator(null).downNode(reader.getClusterState(), m);
 
         ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
 
@@ -751,7 +751,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
       Overseer overseer = new Overseer((HttpShardHandler) httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, zkController,
-          new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").setUseDistributedClusterStateUpdates(false).build());
+          new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").setUseDistributedClusterStateUpdates(false).
+              setUseDistributedCollectionConfigSetExecution(false).build());
       overseers.add(overseer);
       ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
           server.getZkAddress().replaceAll("/", "_"));

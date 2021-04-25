@@ -609,6 +609,28 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertPathBlocked("\\\\unc-server\\share\\path");
   }
 
+  @Test
+  public void assertAllowPathNormalization() throws Exception {
+    Assume.assumeFalse(OS.isFamilyWindows());
+    System.setProperty("solr.allowPaths", "/var/solr/../solr");
+    CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    cc.assertPathAllowed(Paths.get("/var/solr/foo"));
+    assertThrows("Path /tmp should not be allowed", SolrException.class, () -> { cc.assertPathAllowed(Paths.get("/tmp")); });
+    cc.shutdown();
+    System.clearProperty("solr.allowPaths");
+  }
+
+  @Test
+  public void assertAllowPathNormalizationWin() throws Exception {
+    Assume.assumeTrue(OS.isFamilyWindows());
+    System.setProperty("solr.allowPaths", "C:\\solr\\..\\solr");
+    CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    cc.assertPathAllowed(Paths.get("C:\\solr\\foo"));
+    assertThrows("Path C:\\tmp should not be allowed", SolrException.class, () -> { cc.assertPathAllowed(Paths.get("C:\\tmp")); });
+    cc.shutdown();
+    System.clearProperty("solr.allowPaths");
+  }
+
   private static Set<Path> ALLOWED_PATHS = Set.of(Path.of("/var/solr"));
   private static Set<Path> ALLOWED_PATHS_WIN = Set.of(Path.of("C:\\var\\solr"));
 

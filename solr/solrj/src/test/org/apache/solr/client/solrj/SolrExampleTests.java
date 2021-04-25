@@ -1765,22 +1765,24 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testUpdateField() throws Exception {
     //no versions
+    // Use a simple float field.  "price"->"price_c" has problems: SOLR-15357 & SOLR-15358
+    final String field = "price_f";
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("name", "gadget");
-    doc.addField("price", 1);
+    doc.addField(field, 1);
     client.add(doc);
     client.commit();
     SolrQuery q = new SolrQuery("*:*");
-    q.setFields("id","price","name", "_version_");
+    q.setFields("id", field,"name", "_version_");
     QueryResponse resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     Long version = (Long)resp.getResults().get(0).getFirstValue("_version_");
     assertNotNull("no version returned", version);
-    assertEquals(1.0f, resp.getResults().get(0).getFirstValue("price"));
+    assertEquals(1.0f, resp.getResults().get(0).getFirstValue(field));
 
     //update "price" with incorrect version (optimistic locking)
     HashMap<String, Object> oper = new HashMap<>();  //need better api for this???
@@ -1789,7 +1791,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("_version_", version+1);
-    doc.addField("price", oper);
+    doc.addField(field, oper);
     try {
       client.add(doc);
       if(client instanceof HttpSolrClient) { //XXX concurrent client reports exceptions differently
@@ -1813,24 +1815,24 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("_version_", version);
-    doc.addField("price", oper);
+    doc.addField(field, oper);
     client.add(doc);
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue("price"));
+    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue(field));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
 
     //update "price", no version
     oper.put("set", 200);
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
-    doc.addField("price", oper);
+    doc.addField(field, oper);
     client.add(doc);
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price"));
+    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue(field));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
   }
 
@@ -1963,8 +1965,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       if (outDoc.hasChildDocuments()) {
         for (SolrDocument kid : outDoc.getChildDocuments()) {
           String kidId = (String)kid.getFieldValue("id");
-          SolrInputDocument origChild = findDecendent(origDoc, kidId);
-          assertNotNull(docId + " doesn't have decendent " + kidId,
+          SolrInputDocument origChild = findDescendant(origDoc, kidId);
+          assertNotNull(docId + " doesn't have descendant " + kidId,
                         origChild);
         }
       }
@@ -2004,8 +2006,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
             String kidId = (String)kid.getFieldValue("id");
             assertEquals("kid is the wrong level",
                          kidLevel, (int)kid.getFieldValue("level_i"));
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
         }
@@ -2031,8 +2033,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         if (outDoc.hasChildDocuments()) {
           for (SolrDocument kid : outDoc.getChildDocuments()) {
             String kidId = (String)kid.getFieldValue("id");
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
           // the total number of kids should be our direct kids and our grandkids
@@ -2086,8 +2088,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
                        kidLevel <= kidLevelMax);
             assertTrue("kid level to low: " + kidLevelMin + ">" + kidLevel,
                        kidLevelMin <= kidLevel);
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
         }
@@ -2241,10 +2243,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   /** 
-   * Depth first search of a SolrInputDocument looking for a decendent by id, 
-   * returns null if it's not a decendent 
+   * Depth first search of a SolrInputDocument looking for a descendant by id,
+   * returns null if it's not a descendant
    */
-  private SolrInputDocument findDecendent(SolrInputDocument parent, String childId) {
+  private SolrInputDocument findDescendant(SolrInputDocument parent, String childId) {
     if (childId.equals(parent.getFieldValue("id"))) {
       return parent;
     }
@@ -2252,7 +2254,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       return null;
     }
     for (SolrInputDocument kid : parent.getChildDocuments()) {
-      SolrInputDocument result = findDecendent(kid, childId);
+      SolrInputDocument result = findDescendant(kid, childId);
       if (null != result) {
         return result;
       }
@@ -2268,7 +2270,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   /**
    * recursive method for generating a document, which may also have child documents;
-   * adds all documents constructed (including decendents) to allDocs via their id 
+   * adds all documents constructed (including descendants) to allDocs via their id
    */
   private SolrInputDocument genNestedDocuments(Map<String,SolrInputDocument> allDocs, 
                                                int thisLevel,

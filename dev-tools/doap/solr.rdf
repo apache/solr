@@ -27,7 +27,7 @@
 
   Note that the canonical URL may redirect to other non-canonical locations.
 -->
-  <Project rdf:about="http://lucene.apache.org/solr/">
+  <Project rdf:about="https://solr.apache.org/">
     <created>2006-01-17</created>
     <license rdf:resource="http://www.apache.org/licenses/LICENSE-2.0"/>
     <name>Apache Solr</name>
@@ -68,6 +68,13 @@
     </maintainer>
 
     <!-- NOTE: please insert releases in numeric order, NOT chronologically. -->
+    <release>
+         <Version>
+           <name>solr-8.8.2</name>
+           <created>2021-04-12</created>
+           <revision>8.8.2</revision>
+         </Version>
+    </release>
     <release>
          <Version>
            <name>solr-8.8.1</name>

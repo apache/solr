@@ -107,6 +107,7 @@ public class KerberosTestServices {
   private static MiniKdc getKdc(File workDir) throws Exception {
     Properties conf = MiniKdc.createConf();
     conf.setProperty("kdc.port", "0");
+    conf.setProperty("debug", "true");
     return new MiniKdc(conf, workDir);
   }
 

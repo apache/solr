@@ -2738,7 +2738,7 @@ $ => DIGIT
 . => DIGIT
 \u002C => DIGIT
 
-# Don't split on ZWJ: http://en.wikipedia.org/wiki/Zero-width_joiner
+# Don't split on ZWJ: https://en.wikipedia.org/wiki/Zero-width_joiner
 \u200D => ALPHANUM
 ----
 

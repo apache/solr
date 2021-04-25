@@ -175,6 +175,10 @@ SolrCloud doesn't support that but may sometime.
 
 === Reindexing After Upgrades in Solr 9
 
+In Solr 8, it's possible to add docValues to a schema without re-indexing via UninvertDocValuesMergePolicy, an advanced/expert utility.
+Due to changes in Lucene 9, that isn't possible any more; the component was removed.
+If re-indexing is too onerous, use this mechanism in Solr 8.
+
 == New Features & Enhancements in Solr 9
 
 == Configuration and Default Parameter Changes in Solr 9
@@ -187,6 +191,14 @@ persisted in stored state. However, if you are not able to upgrade SolrJ to 8.8.
 set `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url` in Zookeeper. For background, see: SOLR-12182 and SOLR-15145.
 
 Support for the `solr.storeBaseUrl` system property will be removed in Solr 10.x and `base_url` will no longer be stored.
+
+* Solr's distributed tracing no longer incorporates a special `samplePercentage` SolrCloud cluster property.
+Instead, consult the documentation for the tracing system you use on how to sample the traces.
+Consequently, if you use a Tracer at all, you will always have traces and thus trace IDs in logs.
+What percentage of them get reported to a tracing server is up to you.
+
+* JaegerTracerConfigurator no longer recognizes any configuration in solr.xml.
+  It is now completely configured via System properties and/or Environment variables as documented by Jaeger.
 
 === Schema Changes in 9
 

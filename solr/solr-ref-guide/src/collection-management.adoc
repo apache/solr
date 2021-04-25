@@ -19,7 +19,7 @@
 
 A collection is a single logical index that uses a single Solr configuration file (`solrconfig.xml`) and a single index schema.
 
-The examples assume you have started Solr via `solr/bin start -c -e techproducts`.
+The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
 
 [[create]]
 == CREATE: Create a Collection
@@ -152,43 +152,6 @@ mode using the <<collection-management.adoc#modifycollection,MODIFYCOLLECTION>> 
 
 The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
 
-=== Examples using CREATE
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&collection.configName=techproducts&numShards=2&replicationFactor=1&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">3764</int>
-  </lst>
-  <lst name="success">
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">3450</int>
-      </lst>
-      <str name="core">techproducts_v2_shard1_replica_n1</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">3597</int>
-      </lst>
-      <str name="core">techproducts_v2_shard2_replica_n2</str>
-    </lst>
-  </lst>
-</response>
-----
-
 [[reload]]
 == RELOAD: Reload a Collection
 
@@ -253,41 +216,6 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 === RELOAD Response
 
 The response will include the status of the request and the cores that were reloaded. If the status is anything other than "success", an error message will explain why the request failed.
-
-=== Examples using RELOAD
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">1551</int>
-  </lst>
-  <lst name="success">
-    <lst name="10.0.1.6:8983_solr">
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">761</int>
-      </lst>
-    </lst>
-    <lst name="10.0.1.4:8983_solr">
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1527</int>
-      </lst>
-    </lst>
-  </lst>
-</response>
-----
 
 [[modifycollection]]
 == MODIFYCOLLECTION: Modify Attributes of a Collection
@@ -521,6 +449,13 @@ http://localhost:8983/solr/admin/collections?action=DELETE&name=techproducts_v2
 ----
 curl -X DELETE http://localhost:8983/api/collections/techproducts_v2
 ----
+
+To run a DELETE asynchronously then append the `async` parameter:
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts_v2?async=aaaa
+----
 ====
 --
 
@@ -615,27 +550,6 @@ The value of the property. When not provided, the property is deleted.
 
 The response will include the status of the request and the properties that were updated or removed. If the status is anything other than "0", an error message will explain why the request failed.
 
-=== Examples using COLLECTIONPROP
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&propertyName=foo&propertyValue=bar&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">0</int>
-  </lst>
-</response>
-----
-
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
 
@@ -704,161 +618,6 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 === MIGRATE Response
 
 The response will include the status of the request.
-
-=== Examples using MIGRATE
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&split.key=a!&target.collection=test2&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">19014</int>
-  </lst>
-  <lst name="success">
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1</int>
-      </lst>
-      <str name="core">test2_shard1_0_replica_n1</str>
-      <str name="status">BUFFERING</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">2479</int>
-      </lst>
-      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica_n1</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1002</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">21</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1655</int>
-      </lst>
-      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica_n2</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">4006</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">17</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1</int>
-      </lst>
-      <str name="core">test2_shard1_0_replica_n1</str>
-      <str name="status">EMPTY_BUFFER</str>
-    </lst>
-    <lst name="192.168.43.52:8983_solr">
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">31</int>
-      </lst>
-    </lst>
-    <lst name="192.168.43.52:8983_solr">
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">31</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1</int>
-      </lst>
-      <str name="core">test2_shard1_1_replica_n1</str>
-      <str name="status">BUFFERING</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1742</int>
-      </lst>
-      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica_n1</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1002</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">15</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1917</int>
-      </lst>
-      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica_n2</str>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">5007</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">8</int>
-      </lst>
-    </lst>
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">1</int>
-      </lst>
-      <str name="core">test2_shard1_1_replica_n1</str>
-      <str name="status">EMPTY_BUFFER</str>
-    </lst>
-    <lst name="192.168.43.52:8983_solr">
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">30</int>
-      </lst>
-    </lst>
-    <lst name="192.168.43.52:8983_solr">
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">30</int>
-      </lst>
-    </lst>
-  </lst>
-</response>
-----
 
 [[reindexcollection]]
 == REINDEXCOLLECTION: Re-Index a Collection
@@ -1250,32 +1009,7 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
                                     "_i_Lucene50_0.pos": "11.1 MB",
                                     "_i_Lucene50_0.doc": "10 MB",
                                     "_i_Lucene50_0.tim": "4.3 MB"
-                                },
-                                "ramBytesUsed": {
-                                    "total": 49153,
-                                    "postings [PerFieldPostings(segment=_i formats=1)]": {
-                                        "total": 31023,
-                                "fields": {
-                                    "dc": {
-                                        "flags": "I-----------",
-                                        "schemaType": "text_general"
-                                    },
-                                    "dc_str": {
-                                        "flags": "-Dsrs-------",
-                                        "schemaType": "strings"
-                                    },
-                                    "dc.title": {
-                                        "flags": "I-----------",
-                                        "docCount": 70958,
-                                        "sumDocFreq": 646756,
-                                        "sumTotalTermFreq": 671817,
-                                        "schemaType": "text_general"
-                                    },
-                                    "dc.date": {
-                                        "flags": "-Dsrn-------:1:1:8",
-                                        "schemaType": "pdates"
-                                    }
-                                  }}}}}}}}}}}
+                                }}}}}}}}}
 ----
 
 Example of using the raw index data analysis tool:
@@ -1612,13 +1346,14 @@ http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=myBackupName
 
 [source,bash]
 ----
-POST http://localhost:8983/v2/collections/backups
-{
-  "list-backups" : {
-    "name": "myBackupName",
-    "location": "/path/to/my/shared/drive"
+curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d'
+  {
+    "list-backups" : {
+      "name": "myBackupName",
+      "location": "/path/to/my/shared/drive"
+    }
   }
-}
+'
 ----
 ====
 --
@@ -1781,14 +1516,15 @@ http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupNa
 
 [source,bash]
 ----
-POST http://localhost:8983/v2/collections/backups
-{
-  "delete-backups" : {
-    "name": "myBackupName",
-    "location": "/path/to/my/shared/drive",
-    "backupId": 0
+curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d'
+  {
+    "delete-backups" : {
+      "name": "myBackupName",
+      "location": "/path/to/my/shared/drive",
+      "backupId": 0
+    }
   }
-}
+'
 ----
 ====
 --

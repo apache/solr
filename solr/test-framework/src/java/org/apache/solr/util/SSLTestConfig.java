@@ -164,7 +164,7 @@ public class SSLTestConfig {
     assert isSSLMode();
     
     SSLContextBuilder builder = SSLContexts.custom();
-    builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
+    builder.setSecureRandom(NotSecurePseudoRandom.INSTANCE);
     
     // NOTE: KeyStore & TrustStore are swapped because they are from configured from server perspective...
     // we are a client - our keystore contains the keys the server trusts, and vice versa
@@ -216,7 +216,7 @@ public class SSLTestConfig {
         SslContextFactory.Server factory = new SslContextFactory.Server();
         try {
           SSLContextBuilder builder = SSLContexts.custom();
-          builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
+          builder.setSecureRandom(NotSecurePseudoRandom.INSTANCE);
 
           builder.loadKeyMaterial(buildKeyStore(keyStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
 
@@ -296,8 +296,8 @@ public class SSLTestConfig {
    * SecureRandom instances due to too many instances / not enough random entropy.  
    * Tests do not need secure SSL.
    */
-  private static class NotSecurePsuedoRandom extends SecureRandom {
-    public static final SecureRandom INSTANCE = new NotSecurePsuedoRandom();
+  private static class NotSecurePseudoRandom extends SecureRandom {
+    public static final SecureRandom INSTANCE = new NotSecurePseudoRandom();
     private static final Random RAND = new Random(42);
     
     /** 
@@ -323,7 +323,7 @@ public class SSLTestConfig {
       public void engineSetSeed(byte[] seed) { /* NOOP */ }
     };
     
-    private NotSecurePsuedoRandom() {
+    private NotSecurePseudoRandom() {
       super(NOT_SECURE_SPI, null) ;
     }
     

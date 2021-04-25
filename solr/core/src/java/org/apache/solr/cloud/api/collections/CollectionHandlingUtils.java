@@ -336,7 +336,7 @@ public class CollectionHandlingUtils {
                                      CollectionCommandContext ccc, ClusterState clusterState) {
     log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
     DocCollection coll = clusterState.getCollection(collectionName);
     List<Replica> notLivesReplicas = new ArrayList<>();
     final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker = asyncRequestTracker(asyncId, ccc);
@@ -463,7 +463,7 @@ public class CollectionHandlingUtils {
   }
 
   public static ShardRequestTracker asyncRequestTracker(String asyncId, CollectionCommandContext ccc) {
-    return new ShardRequestTracker(asyncId, ccc.getAdminPath(), ccc.getZkStateReader(), ccc.getShardHandler().getShardHandlerFactory());
+    return new ShardRequestTracker(asyncId, ccc.getAdminPath(), ccc.getZkStateReader(), ccc.newShardHandler().getShardHandlerFactory());
   }
 
   public static class ShardRequestTracker {

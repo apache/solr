@@ -164,7 +164,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       e.printStackTrace();
     }
 
-    assertEquals("Task with the same requestid already exists.", r.get("error"));
+    assertEquals("Task with the same requestid already exists. (1002)", r.get("error"));
   }
 
   @SuppressWarnings("unchecked")

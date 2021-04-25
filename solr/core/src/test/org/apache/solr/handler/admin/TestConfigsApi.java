@@ -42,7 +42,7 @@ public class TestConfigsApi extends SolrTestCaseJ4 {
       }
 
       @Override
-      protected void sendToZk(SolrQueryResponse rsp,
+      protected void sendToOverseer(SolrQueryResponse rsp,
                               ConfigSetOperation operation,
                               Map<String, Object> result) {
         result.put(QUEUE_OPERATION, operation.action.toLower());
