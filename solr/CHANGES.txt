@@ -265,8 +265,8 @@ Other Changes
   alternative implementations of where ConfigSets come from.
   (Nazerke Seidan, David Smiley)
 
-* SOLR-15341: Lucene has removed CodecReader#ramBytesUsed in LUCENE-9387, so ramBytesUsed will no longer be reported
-  in SegmentsInfo handler (janhoy)
+* SOLR-15341: Remove indexHeapUsageBytes info from /admin/segments and /admin/luke because it's no
+  longer available in Lucene -- LUCENE-9387. (janhoy, David Smiley)
 
 * SOLR-15146: Allow Collection API and Config Set API to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
 

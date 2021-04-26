@@ -16,6 +16,10 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.lucene.index.IndexOptions.DOCS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.NoSuchFileException;
@@ -29,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.TokenFilterFactory;
@@ -39,13 +42,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -55,7 +56,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -81,18 +81,14 @@ import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.index.IndexOptions.DOCS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-
 /**
- * This handler exposes the internal lucene index.  It is inspired by and 
- * modeled on Luke, the Lucene Index Browser by Andrzej Bialecki.
- *   http://www.getopt.org/luke/
+ * Exposes the internal lucene index.  It's registered at /admin/luke by default.
  *
- * For more documentation see:
- *  http://wiki.apache.org/solr/LukeRequestHandler
+ * It is inspired by and
+ * modeled on Luke, the Lucene Index Browser that is currently a Lucene module:
+ * https://github.com/apache/lucene/tree/main/lucene/luke
  *
+ * @see SegmentsInfoRequestHandler
  * @since solr 1.2
  */
 public class LukeRequestHandler extends RequestHandlerBase
@@ -575,8 +571,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
     indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
-    indexInfo.add("indexHeapUsageBytes", getIndexHeapUsed(reader));
-
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.leaves().size());
     indexInfo.add("current", closeSafe( reader::isCurrent));
@@ -631,23 +625,6 @@ public class LukeRequestHandler extends RequestHandlerBase
                strangeException);
     }
     return -1;
-  }
-
-  /** Returns the sum of RAM bytes used by each segment */
-  private static long getIndexHeapUsed(DirectoryReader reader) {
-    return reader.leaves().stream()
-        .map(LeafReaderContext::reader)
-        .map(FilterLeafReader::unwrap)
-        .map(leafReader -> {
-          if (leafReader instanceof Accountable) {
-            return ((Accountable) leafReader).ramBytesUsed();
-          } else {
-            return -1L; // unsupported
-          }
-        })
-        .mapToLong(Long::longValue)
-        .reduce(0, (left, right) -> left == -1 || right == -1 ? -1 : left + right);
-    // if any leaves are unsupported (-1), we ultimately return -1.
   }
 
   // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
