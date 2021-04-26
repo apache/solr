@@ -70,7 +70,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     jettys.forEach(j -> {
       Set<Path> allowPath = j.getCoreContainer().getAllowPaths();
       allowPath.clear();
-      allowPath.addAll(SolrPaths.ALL_PATHS); // Allow non-standard core instance path
+      allowPath.add(SolrPaths.ALL_PATH); // Allow non-standard core instance path
     });
     testCoreUnloadAndLeaders(); // long
     testUnloadLotsOfCores(); // long

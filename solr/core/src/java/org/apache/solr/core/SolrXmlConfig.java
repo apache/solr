@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -371,14 +370,11 @@ public class SolrXmlConfig {
     }
     // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
     String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);
-    Set<Path> paths = Sets.newHashSetWithExpectedSize(pathStrings.length);
+    SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
     for (String p : pathStrings) {
-      if ("*".equals(p) || "_ALL_".equals(p)) {
-        return SolrPaths.ALL_PATHS;
-      }
-      paths.add(Paths.get(p));
+      allowPathBuilder.addPath(Paths.get(p));
     }
-    return paths;
+    return allowPathBuilder.build();
   }
 
   private static UpdateShardHandlerConfig loadUpdateConfig(NamedList<Object> nl, boolean alwaysDefine) {
