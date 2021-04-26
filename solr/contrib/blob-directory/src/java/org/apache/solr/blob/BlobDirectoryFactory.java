@@ -42,6 +42,26 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Creates {@link BlobDirectory} instances which delegate to local {@link MMapDirectory}, considered
+ * as transient cache for performance, and also get/push files to a configured {@link
+ * BackupRepository} for persistent storage.
+ *
+ * <p>It is configured with the following parameters:
+ *
+ * <ul>
+ *   <li>{@link CoreAdminParams#BACKUP_REPOSITORY} (required) -- the {@link BackupRepository} to
+ *       push/get files for persistence.</li>
+ *   <li>{@link CoreAdminParams#BACKUP_LOCATION} (required) -- the base location of the {@link
+ *       BackupRepository}.</li>
+ *   <li>threads (optional, default 20) -- the maximum number of threads that push files concurrently to the
+ *       repository.</li>
+ *   <li>streamBufferSize (optional, default 32 KB) -- defines the size of the stream copy buffer.
+ *   This determines the size of the chunk of data sent to the repository during files transfer.
+ *   It is optional but recommended to set the appropriate size for the selected repository.
+ *   There is one buffer per thread.</li>
+ * </ul>
+ */
 public class BlobDirectoryFactory extends CachingDirectoryFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,7 +83,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   private String localRootPath;
   private BackupRepository repository;
   private URI repositoryLocation;
-  private BlobPusher blobPusher;
+  private BlobStoreConnection blobStoreConnection;
   private MMapParams mMapParams;
 
   @Override
@@ -102,7 +122,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     // There is one buffer per thread.
     int streamBufferSize = params.getInt("streamBufferSize", DEFAULT_STREAM_BUFFER_SIZE);
 
-    blobPusher = new BlobPusher(repository, repositoryLocation, maxThreads, streamBufferSize);
+    blobStoreConnection = new BlobStoreConnection(repository, repositoryLocation, maxThreads, streamBufferSize);
 
     // Filesystem MMapDirectory used as a local file cache.
     mMapParams = new MMapParams(params);
@@ -131,7 +151,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   public void close() throws IOException {
     log.debug("close");
     IOUtils.closeQuietly(repository);
-    IOUtils.closeQuietly(blobPusher);
+    IOUtils.closeQuietly(blobStoreConnection);
     super.close();
   }
 
@@ -166,7 +186,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     // is already a CachingDirectoryFactory, so we don't want another CachingDirectoryFactory.
     MMapDirectory mapDirectory = createMMapDirectory(path, lockFactory);
     String blobDirPath = getLocalRelativePath(path);
-    return new BlobDirectory(mapDirectory, blobDirPath, blobPusher);
+    return new BlobDirectory(mapDirectory, blobDirPath, blobStoreConnection);
   }
 
   private MMapDirectory createMMapDirectory(String path, LockFactory lockFactory) throws IOException {

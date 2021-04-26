@@ -17,6 +17,9 @@
 
 package org.apache.solr.blob;
 
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -26,21 +29,30 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Pushes a set of files to Blob, and works with listings.
+ * Connection to a {@link BackupRepository} to store persistently directories files.
+ * Provides support to:
+ * <ul>
+ *   <li>List and pull repository files.</li>
+ *   <li>Push local files to the repository.</li>
+ * </ul>
  */
-public class BlobPusher implements Closeable {
+public class BlobStoreConnection implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -57,25 +69,32 @@ public class BlobPusher implements Closeable {
   private final ThreadLocal<byte[]> streamBuffers;
 
   /**
-   * @param repository The repository to push files to.
+   * @param repository The {@link BackupRepository} to push files to.
    * @param repositoryLocation Base location in the repository. This is used to build the URIs.
    * @param maxThreads       Maximum number of threads to push files concurrently.
    * @param streamBufferSize Size of the stream copy buffer, in bytes. This determines the size of the chunk
    *                         of data sent to the repository during files transfer. There is one buffer per thread.
    */
-  public BlobPusher(BackupRepository repository, URI repositoryLocation, int maxThreads, int streamBufferSize) {
+  public BlobStoreConnection(BackupRepository repository, URI repositoryLocation, int maxThreads, int streamBufferSize) {
     this.repository = Objects.requireNonNull(repository);
     this.repositoryLocation = Objects.requireNonNull(repositoryLocation);
     executor = ExecutorUtil.newMDCAwareCachedThreadPool(
         maxThreads,
-        new SolrNamedThreadFactory(BlobPusher.class.getSimpleName()));
+        new SolrNamedThreadFactory(BlobStoreConnection.class.getSimpleName()));
     streamBuffers = ThreadLocal.withInitial(() -> new byte[streamBufferSize]);
   }
 
+  /**
+   * Pushes a set of files to the repository.
+   * @param blobDirPath The path to the directory where to put the files.
+   * @param writes The local files to push and write.
+   * @param inputSupplier Supplies the {@link IndexInput} to read each file.
+   * @param deletes The names of the files to delete in the directory.
+   */
   public void push(
       String blobDirPath,
       Collection<BlobFile> writes,
-      IOUtils.IOFunction<BlobFile, InputStream> inputStreamSupplier,
+      IOUtils.IOFunction<BlobFile, IndexInput> inputSupplier,
       Collection<String> deletes)
       throws IOException {
 
@@ -83,13 +102,30 @@ public class BlobPusher implements Closeable {
     //      TODO David
 
     // Send files to repository and delete our files too.
-    log.debug("Pushing {}", writes);
-    executeAll(pushFiles(blobDirPath, writes, inputStreamSupplier));
+    log.debug("Pushing {} to {}", writes, blobDirPath);
+    executeAll(pushFiles(blobDirPath, writes, inputSupplier));
     log.debug("Deleting {}", deletes);
     deleteFiles(blobDirPath, deletes);
 
     // update "our" listing
     //      TODO David
+  }
+
+  /**
+   * Pulls selected files from a directory in the repository.
+   * @param blobDirPath The path to the directory where to list the files.
+   * @param outputSupplier Supplies the {@link IndexOutput} to write each file.
+   * @param fileFilter Selects the files to pull.
+   */
+  public void pull(
+      String blobDirPath,
+      IOUtils.IOFunction<BlobFile, IndexOutput> outputSupplier,
+      BlobFileFilter fileFilter)
+      throws IOException {
+    URI blobDirUri = repository.resolve(repositoryLocation, blobDirPath);
+    List<BlobFile> blobFiles = list(blobDirUri, fileFilter);
+    log.debug("Pulling {} from {}", blobFiles, blobDirPath);
+    executeAll(pullFiles(blobDirUri, blobFiles, outputSupplier));
   }
 
   private void executeAll(List<Callable<Void>> actions) throws IOException {
@@ -108,16 +144,16 @@ public class BlobPusher implements Closeable {
   private List<Callable<Void>> pushFiles(
       String blobDirPath,
       Collection<BlobFile> blobFiles,
-      IOUtils.IOFunction<BlobFile, InputStream> inputStreamSupplier)
+      IOUtils.IOFunction<BlobFile, IndexInput> inputSupplier)
       throws IOException {
     URI blobDirUri = repository.resolve(repositoryLocation, blobDirPath);
-    createDirectories(blobDirUri, blobDirPath);
+    createDirectory(blobDirUri, blobDirPath);
     return blobFiles.stream()
         .map(
             (blobFile) ->
                 (Callable<Void>)
                     () -> {
-                      try (InputStream in = inputStreamSupplier.apply(blobFile);
+                      try (IndexInput in = inputSupplier.apply(blobFile);
                            OutputStream out = repository.createOutput(repository.resolve(blobDirUri, blobFile.fileName()))) {
                         copyStream(in, out);
                       }
@@ -126,15 +162,7 @@ public class BlobPusher implements Closeable {
         .collect(Collectors.toList());
   }
 
-  private void copyStream(InputStream input, OutputStream output) throws IOException {
-    byte[] buffer = streamBuffers.get();
-    int n;
-    while ((n = input.read(buffer)) != -1) {
-      output.write(buffer, 0, n);
-    }
-  }
-
-  private void createDirectories(URI blobDirUri, String blobDirPath) throws IOException {
+  private void createDirectory(URI blobDirUri, String blobDirPath) throws IOException {
     // Create the parent directories if needed.
     // The goal is to have a minimal number of calls to the repository in most cases.
     // Common case: the directory exists or the parent directory exists.
@@ -152,9 +180,64 @@ public class BlobPusher implements Closeable {
     }
   }
 
+  private void copyStream(IndexInput input, OutputStream output) throws IOException {
+    byte[] buffer = streamBuffers.get();
+    long remaining = input.length();
+    while (remaining > 0) {
+      int length = (int) Math.min(buffer.length, remaining);
+      input.readBytes(buffer, 0, length, false);
+      output.write(buffer, 0, length);
+      remaining -= length;
+    }
+  }
+
   private void deleteFiles(String blobDirPath, Collection<String> fileNames) throws IOException {
     URI blobDirUri = repository.resolve(repositoryLocation, blobDirPath);
     repository.delete(blobDirUri, fileNames, true);
+  }
+
+  /**
+   * Lists the files in a specific directory of the repository and select them with the provided filter.
+   */
+  private List<BlobFile> list(URI blobDirUri, BlobFileFilter fileFilter) throws IOException {
+    String[] fileNames = repository.listAll(blobDirUri);
+    List<BlobFile> blobFiles = new ArrayList<>(fileNames.length);
+    for (String fileName : fileNames) {
+      BlobFile blobFile = new BlobFile(fileName, -1, -1);
+      if (fileFilter.accept(blobFile)) {
+        blobFiles.add(blobFile);
+      }
+    }
+    return blobFiles;
+  }
+
+  private List<Callable<Void>> pullFiles(
+      URI blobDirUri,
+      Collection<BlobFile> blobFiles,
+      IOUtils.IOFunction<BlobFile, IndexOutput> outputSupplier) {
+    return blobFiles.stream()
+        .map(
+            (blobFile) ->
+                (Callable<Void>)
+                    () -> {
+                      try (IndexInput in = repository.openInput(blobDirUri, blobFile.fileName(), IOContext.READ);
+                           IndexOutput out = outputSupplier.apply(blobFile)) {
+                        copyStream(in, out);
+                      }
+                      return null;
+                    })
+        .collect(Collectors.toList());
+  }
+
+  private void copyStream(IndexInput input, IndexOutput output) throws IOException {
+    byte[] buffer = streamBuffers.get();
+    long remaining = input.length();
+    while (remaining > 0) {
+      int length = (int) Math.min(buffer.length, remaining);
+      input.readBytes(buffer, 0, length, false);
+      output.writeBytes(buffer, 0, length);
+      remaining -= length;
+    }
   }
 
   @Override
@@ -165,5 +248,13 @@ public class BlobPusher implements Closeable {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
+  }
+
+  /**
+   * Filters {@link BlobFile}s.
+   */
+  public interface BlobFileFilter {
+
+    boolean accept(BlobFile blobFile) throws IOException;
   }
 }

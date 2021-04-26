@@ -12,6 +12,7 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.NoSuchFileException;
@@ -164,6 +165,26 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
         checkDirListing(testFileName1Renamed, testFileName2, testFileName3Renamed);
     }
 
+    @Test
+    public void testSyncFromRepository() throws IOException {
+        // Given some files in the directory.
+        testWriteRead();
+
+        // When
+        // - The local files are wiped (e.g. host crash).
+        deleteRecursively(new File(directoryPath));
+        // - The directory is released and reopened.
+        directoryFactory.doneWithDirectory(directory);
+        directoryFactory.release(directory);
+        directory = directoryFactory.get(directoryPath,
+            DirectoryFactory.DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_NATIVE);
+
+        // Then the local files are restored from the repository.
+        checkDirListing("test1", "test2");
+        checkFileContent("test1", "test content 1");
+        checkFileContent("test2", "test content 2");
+    }
+
     private void writeFileToLocalDir(String name, String content) throws IOException {
         try (IndexOutput output = directory.createOutput(name, IOContext.DEFAULT)) {
             output.writeString(content);
@@ -188,6 +209,25 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
         URI blobDirUri = directoryFactory.resolveBlobPath(directoryFactory.getLocalRelativePath(directoryPath));
         try (IndexInput input = directoryFactory.getRepository().openInput(blobDirUri, name, IOContext.READ)) {
             assertEquals(expectedContent, input.readString());
+        }
+    }
+
+    private static void deleteRecursively(File file) throws IOException {
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files == null) {
+                throw new IOException("IO error while listing files in directory '" + file + "'");
+            }
+            for (File f : files) {
+                deleteRecursively(f);
+            }
+            if (!file.delete()) {
+                throw new IOException("Directory '" + file + "' cannot be deleted");
+            }
+        } else if (file.exists()) {
+            if (!file.delete()) {
+                throw new IOException("File '" + file + "' cannot be deleted");
+            }
         }
     }
 }

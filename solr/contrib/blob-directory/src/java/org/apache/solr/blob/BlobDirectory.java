@@ -21,29 +21,34 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Delegates to a local {@link MMapDirectory}, considered as transient cache for performance, and also get/push files
+ * to a {@link BackupRepository} for persistent storage.
+ */
 public class BlobDirectory extends FilterDirectory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final IOContext SYNC_IO_CONTEXT = new IOContext();
-
   private final String blobDirPath;
-  private final BlobPusher blobPusher;
+  private final BlobStoreConnection blobStoreConnection;
   /**
    * Map of {@link BlobFileSupplier} for each file created by this directory. Keys are file names.
    * Each {@link BlobFileSupplier} keeps a reference to the {@link IndexOutput} created for the
@@ -56,10 +61,22 @@ public class BlobDirectory extends FilterDirectory {
   private final Object lock = new Object();
   private volatile boolean isOpen;
 
-  public BlobDirectory(Directory delegate, String blobDirPath, BlobPusher blobPusher) {
+  public BlobDirectory(Directory delegate, String blobDirPath, BlobStoreConnection blobStoreConnection) throws IOException {
     super(delegate);
     this.blobDirPath = blobDirPath;
-    this.blobPusher = blobPusher;
+    this.blobStoreConnection = blobStoreConnection;
+    pullMissingFilesFromRepo();
+  }
+
+  private void pullMissingFilesFromRepo() throws IOException {
+    Set<String> localFileNames = new HashSet<>(Arrays.asList(in.listAll()));
+    blobStoreConnection.pull(blobDirPath, this::openOutput, blobFile -> {
+      //TODO: We could also check the size and checksum.
+      return !localFileNames.remove(blobFile.fileName());
+    });
+    for (String localFileName : localFileNames) {
+      in.deleteFile(localFileName);
+    }
   }
 
   @Override
@@ -140,11 +157,15 @@ public class BlobDirectory extends FilterDirectory {
     }
 
     log.debug("Sync to repository writes={} deleted={}", writes, deletes);
-    blobPusher.push(blobDirPath, writes, this::openInputStream, deletes);
+    blobStoreConnection.push(blobDirPath, writes, this::openInput, deletes);
   }
 
-  private InputStream openInputStream(BlobFile blobFile) throws IOException {
-    return new IndexInputInputStream(in.openInput(blobFile.fileName(), SYNC_IO_CONTEXT));
+  private IndexOutput openOutput(BlobFile blobFile) throws IOException {
+    return in.createOutput(blobFile.fileName(), IOContext.DEFAULT);
+  }
+
+  private IndexInput openInput(BlobFile blobFile) throws IOException {
+    return in.openInput(blobFile.fileName(), IOContext.DEFAULT);
   }
 
   public void release() {
