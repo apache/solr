@@ -116,6 +116,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15322: Solr releases now contain everything needed to build runable docker images (Houston Putman, hossman)
 
+* SOLR-15340: Rename shardsWhitelist and extract AllowListUrlChecker to use it more broadly. (Bruno Roustant)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
