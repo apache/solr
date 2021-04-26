@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.exec.OS;
@@ -36,9 +37,13 @@ public final class SolrPaths {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Special path set which accepts all paths.
+   * Special path which means to accept all paths.
    */
-  public static final Set<Path> ALL_PATHS = Collections.singleton(Paths.get("_ALL_"));
+  public static final Path ALL_PATH = Paths.get("_ALL_");
+  /**
+   * Special singleton path set containing only {@link #ALL_PATH}.
+   */
+  private static final Set<Path> ALL_PATHS = Collections.singleton(ALL_PATH);
 
   private SolrPaths() {} // don't create this
 
@@ -80,6 +85,35 @@ public final class SolrPaths {
     if (allowPaths.stream().noneMatch(p -> path.startsWith(Path.of(p.toString())))) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
+    }
+  }
+
+  /**
+   * Builds a set of allowed {@link Path}.
+   * Detects special paths '*' and '_ALL_' that mean all paths are allowed.
+   */
+  public static class AllowPathBuilder {
+
+    private static final Path WILDCARD_PATH = Paths.get("*");
+
+    private Set<Path> paths;
+
+    public AllowPathBuilder addPath(Path path) {
+      if (paths != ALL_PATHS) {
+        if (path.equals(ALL_PATH) || path.equals(WILDCARD_PATH)) {
+          paths = ALL_PATHS;
+        } else {
+          if (paths == null) {
+            paths = new HashSet<>();
+          }
+          paths.add(path.normalize());
+        }
+      }
+      return this;
+    }
+
+    public Set<Path> build() {
+      return paths == null ? Collections.emptySet() : paths;
     }
   }
 }
