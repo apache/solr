@@ -27,7 +27,7 @@ CoreAdmin actions can be executed by via HTTP requests that specify an `action` 
 
 All action names are uppercase, and are defined in depth in the sections below.
 
-The examples assume you have started Solr via `bin/solr start -e techproducts`.
+The examples assume you have started Solr via `bin/solr start -DconfigSetBaseDir=./server/solr/configsets -e techproducts`.
 
 [[coreadmin-status]]
 == STATUS
@@ -89,6 +89,45 @@ The `CREATE` action creates a new core and registers it.
 If a Solr core with the given name already exists, it will continue to handle requests while the new core is initializing. When the new core is ready, it will take new requests and the old core will be unloaded.
 
 `admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-create]
+====
+[.tab-label]*V1 API*
+
+Assuming you are using an existing configSet to create your new core:
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=CREATE&&name=techproducts_v2&configSet=sample_techproducts_configs
+
+----
+
+If you have already existing core files deployed on disk, and need to just create the Solr core from them then the url will look something like
+[source,bash]
+----
+admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data
+----
+====
+
+[example.tab-pane#v2coreadmin-create]
+====
+[.tab-label]*V2 API*
+
+Assumes SOLR-15372 is committed.
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json' -d'
+  {
+    "create": {
+      "name": "techproducts_v2",
+      "configSet": "sample_techproducts_configs"
+    }
+  }
+'
+----
+====
+--
 
 Note that this command is the only one of the Core Admin API commands that *does not* support the `core` parameter. Instead, the `name` parameter is required, as shown below.
 
