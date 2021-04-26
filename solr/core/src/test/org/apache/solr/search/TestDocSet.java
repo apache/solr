@@ -42,6 +42,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
@@ -348,6 +349,11 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       public VectorValues getVectorValues(String field) {
+        return null;
+      }
+
+      @Override
+      public TopDocs searchNearestVectors(String field, float[] target, int k, int fanout) {
         return null;
       }
 
