@@ -64,10 +64,10 @@ The following components support distributed search:
 * The *Stats* component, which returns simple statistics for numeric fields within the DocSet.
 * The *Debug* component, which helps with debugging.
 
-=== shardsWhitelist Parameter
+=== allowUrls Parameter
 
-The nodes allowed in the `shards` parameter is configurable through the `shardsWhitelist` property in `solr.xml`.
-This whitelist is automatically configured for SolrCloud but needs explicit configuration for leader/follower mode.
+The nodes allowed in the `shards` parameter is configurable through the `allowUrls` property in `solr.xml`.
+This allow-list is automatically configured for SolrCloud but needs explicit configuration for user-managed clusters.
 Read more details in the section <<solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>>.
 
 == Limitations to User-Managed Distributed Search

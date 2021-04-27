@@ -101,16 +101,26 @@ Currently non-operational.
 Specifies the path to a common library directory that will be shared across all cores. Any JAR files in this directory will be added to the search path for Solr plugins. If the specified path is not absolute, it will be relative to `$SOLR_HOME`. Custom handlers may be placed in this directory. Note that specifying `sharedLib` will not remove `$SOLR_HOME/lib` from Solr's class path.
 
 `allowPaths`::
-Solr will normally only access folders relative to `$SOLR_HOME`, `$SOLR_DATA_HOME` or `coreRootDir`. If you need to e.g., create a core outside of these paths, you can explicitly allow the path with `allowPaths`. It is a comma separated string of file system paths to allow. The special value of `*` will allow any path on the system.
+Solr will normally only access folders relative to `$SOLR_HOME`, `$SOLR_DATA_HOME` or `coreRootDir`.
+If you need to e.g., create a core outside of these paths, you can explicitly allow the path with `allowPaths`.
+It is a comma separated string of file system paths to allow. The special value of `*` will allow any path on the system.
 
-[#_allow_urls]
+[#allow-urls]
 `allowUrls`::
-Comma-separated list of Solr hosts to allow. The http/https protocol may be omitted, and only the host and port are checked, i.e. `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
-When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be allowed or Solr will forbid the request. In Solr cloud mode, this allow-list is added to the cluster's live nodes to determine which hosts are allowed. The allow-list can also be configured with the `solr.allowUrls` system property (see its use in `solr.in.sh`).
+Comma-separated list of Solr hosts to allow.
++
+The HTTP/HTTPS protocol may be omitted, and only the host and port are checked, i.e., `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
++
+When running Solr as a user-managed cluster and using the `shards` parameter, a list of hosts needs to be specifically configured as allowed or Solr will forbid the request.
++
+In SolrCloud mode, the allow-list is automatically configured to include all live nodes in the cluster.
++
+The allow-list can also be configured with the `solr.allowUrls` system property in `solr.in.sh` / `solr.in.cmd`.
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
 
 `shareSchema`::
-This attribute, when set to `true`, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object. Sharing the IndexSchema Object makes loading the core faster. If you use this feature, make sure that no core-specific property is used in your Schema file.
+This attribute, when set to `true`, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object.
+Sharing the IndexSchema Object makes loading the core faster. If you use this feature, make sure that no core-specific property is used in your Schema file.
 
 `transientCacheSize`::
 Defines how many cores with `transient=true` that can be loaded before swapping the least recently used core for a new core.

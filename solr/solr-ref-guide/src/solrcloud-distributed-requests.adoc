@@ -308,7 +308,13 @@ To add a `shardHandlerFactory` to the standard search handler, provide a configu
 </requestHandler>
 ----
 
-`HttpShardHandlerFactory` is the only `ShardHandlerFactory` implementation included out of the box with Solr, It accepts the following parameters:
+`HttpShardHandlerFactory` is the only `ShardHandlerFactory` implementation included out of the box with Solr.
+
+NOTE:: The `shardHandlerFactory` is reliant on the `allowUrls` parameter configured in `solr.xml`, which controls which nodes are allowed to talk to each other.
+This means that the configuration of hosts is global instead of per-core or per-collection.
+See the section <<configuring-solr-xml.adoc#allow-urls, Format of solr.allowUrls>> for details.
+
+The `HttpShardHandlerFactory` accepts the following parameters:
 
 `socketTimeout`::
 +
@@ -373,7 +379,9 @@ The amount of time in seconds to wait for before threads are scaled back in resp
 |Optional |Default: `-1`
 |===
 +
-If specified, the thread pool will use a backing queue instead of a direct handoff buffer. High throughput systems will want to configure this to be a direct hand off (with `-1`). Systems that desire better latency will want to configure a reasonable size of queue to handle variations in requests.
+If specified, the thread pool will use a backing queue instead of a direct handoff buffer.
+High throughput systems will want to configure this to be a direct hand off (with `-1`).
+Systems that desire better latency will want to configure a reasonable size of queue to handle variations in requests.
 
 `fairnessPolicy`::
 +
@@ -386,25 +394,6 @@ Chooses the JVM specifics dealing with fair policy queuing.
 If enabled distributed searches will be handled in a first-in-first-out fashion at a cost to throughput.
 If disabled throughput will be favored over latency.
 
-`shardsWhitelist`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: see below
-|===
-+
-If specified, this limits the nodes that can be requested with the `shards` request parameter.
-+
-In SolrCloud mode this whitelist is automatically configured to include all live nodes in the cluster.
-+
-In User-managed mode the whitelist defaults to empty (sharding not allowed).
-+
-If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`.
-The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.,
-`10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
-+
-NOTE: In SolrCloud mode, if at least one node is included in the whitelist, then the `live_nodes` will no longer be used as source for the list.
-This means that if you need to do a cross-cluster request using the `shards` parameter in SolrCloud mode (in addition to regular within-cluster requests), you'll need to add all nodes (local cluster + remote nodes) to the whitelist.
 
 [[distributedidf]]
 == Distributed Inverse Document Frequency (IDF)
