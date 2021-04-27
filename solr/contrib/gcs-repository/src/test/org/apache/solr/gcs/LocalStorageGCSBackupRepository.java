@@ -86,7 +86,9 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
       return stashedStorage;
     }
 
-    stashedStorage = LocalStorageHelper.customOptions(false).getService();
+    // FakeStorageRpc isn't thread-safe, which causes flaky test failures when multiple cores attempt to backup files
+    // simultaneously.  We work around this here by wrapping it in a delegating instance that adds a measure of thread safety.
+    stashedStorage = new ConcurrentDelegatingStorage(LocalStorageHelper.customOptions(false).getService());
     return stashedStorage;
   }
 
