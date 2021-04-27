@@ -42,15 +42,18 @@ public class KerberosTestServices {
   private final JaasConfiguration jaasConfiguration;
   private final Configuration savedConfig;
   private volatile Locale savedLocale;
+  private final boolean debug;
 
   private final File workDir;
 
   private KerberosTestServices(File workDir,
                                JaasConfiguration jaasConfiguration,
-                               Configuration savedConfig) {
+                               Configuration savedConfig,
+                               boolean debug) {
     this.jaasConfiguration = jaasConfiguration;
     this.savedConfig = savedConfig;
     this.workDir = workDir;
+    this.debug = debug;
   }
 
   public MiniKdc getKdc() {
@@ -71,7 +74,7 @@ public class KerberosTestServices {
       try {
         bindException = false;
 
-        kdc = getKdc(workDir);
+        kdc = getKdc(workDir, debug);
         kdc.start();
       } catch (BindException e) {
         FileUtils.deleteDirectory(workDir); // clean directory
@@ -104,10 +107,10 @@ public class KerberosTestServices {
    * Returns a MiniKdc that can be used for creating kerberos principals
    * and keytabs.  Caller is responsible for starting/stopping the kdc.
    */
-  private static MiniKdc getKdc(File workDir) throws Exception {
+  private static MiniKdc getKdc(File workDir, boolean debug) throws Exception {
     Properties conf = MiniKdc.createConf();
     conf.setProperty("kdc.port", "0");
-    conf.setProperty("debug", "true");
+    conf.setProperty("debug", String.valueOf(debug));
     return new MiniKdc(conf, workDir);
   }
 
@@ -202,11 +205,17 @@ public class KerberosTestServices {
     private String serverPrincipal;
     private File serverKeytab;
     private String appName;
+    private boolean debug = false;
 
     public Builder() { }
 
     public Builder withKdc(File kdcWorkDir) {
       this.kdcWorkDir = kdcWorkDir;
+      return this;
+    }
+
+    public Builder withDebug() {
+      this.debug = true;
       return this;
     }
 
@@ -237,7 +246,7 @@ public class KerberosTestServices {
             new JaasConfiguration(clientPrincipal, clientKeytab, serverPrincipal, serverKeytab) :
             new JaasConfiguration(clientPrincipal, clientKeytab, appName);
       }
-      return new KerberosTestServices(kdcWorkDir, jaasConfiguration, oldConfig);
+      return new KerberosTestServices(kdcWorkDir, jaasConfiguration, oldConfig, debug);
     }
   }
 }
