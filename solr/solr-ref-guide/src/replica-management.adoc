@@ -17,14 +17,81 @@
 // specific language governing permissions and limitations
 // under the License.
 
-A replica is a physical copy of a shard.
+A replica is a physical copy of a shard.  Replicas enhance fail over by providing additional copies of the data
+and enhance scalability by providing additional capacity for searching.
+
+The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
 
 [[addreplica]]
 == ADDREPLICA: Add Replica
 
 Add one or more replicas to a shard in a collection. The node name can be specified if the replica is to be created in a specific node. Otherwise, a set of nodes can be specified and the most suitable ones among them will be chosen to create the replica(s).
 
-`/admin/collections?action=ADDREPLICA&collection=_collection_&shard=_shard_&node=_nodeName_`
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1addreplica]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=techproducts&shard=shard1&node=localhost:8983_solr
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":482},
+  "success":{
+    "localhost:8983_solr":{
+      "responseHeader":{
+        "status":0,
+        "QTime":396},
+      "core":"techproducts_shard1_replica_n3"}}}
+----
+====
+
+[example.tab-pane#v2addreplica]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+  {
+    "add-replica":{
+      "shard":"shard1",
+      "node":"localhost:8983_solr"
+    }
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":820},
+  "success":{
+    "localhost:8983_solr":{
+      "responseHeader":{
+        "status":0,
+        "QTime":473},
+      "core":"techproducts_shard1_replica_n11"}}}
+----
+====
+--
+
 
 === ADDREPLICA Parameters
 
@@ -89,37 +156,7 @@ If `true`, the request will complete only when all affected replicas become acti
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
 
-=== Examples using ADDREPLICA
-
-*Input*
-
-Create a replica for the "test" collection on the node "192.167.1.2:8983_solr".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&shard=shard2&node=192.167.1.2:8983_solr&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">3764</int>
-  </lst>
-  <lst name="success">
-    <lst>
-      <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">3450</int>
-      </lst>
-      <str name="core">test2_shard2_replica4</str>
-    </lst>
-  </lst>
-</response>
-----
+=== Additional Examples using ADDREPLICA
 
 *Input*
 
@@ -165,6 +202,65 @@ This command moves a replica from one node to another node by executing ADDREPLI
 
 If this command is used on a collection where more than one replica from the same shard exists on the same node, and the `shard` and `sourceNode` parameters match more than one replica, the replica selected is not deterministic (currently it's random).
 
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1movereplica]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&targetNode=localhost:8983_solr&replica=core_node6
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 3668
+    },
+    "success": "MOVEREPLICA action completed successfully, moved replica=test_shard1_replica_n5 at node=localhost:8982_solr to replica=test_shard1_replica_n7 at node=localhost:8983_solr"
+}
+----
+====
+
+[example.tab-pane#v2movereplica]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+  {
+    "move-replica":{
+      "replica":"core_node6",
+      "targetNode": "localhost:8983_solr"
+    }
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 3668
+    },
+    "success": "MOVEREPLICA action completed successfully, moved replica=test_shard1_replica_n5 at node=localhost:8982_solr to replica=test_shard1_replica_n7 at node=localhost:8983_solr"
+}
+----
+====
+--
+
 === MOVEREPLICA Parameters
 
 `collection`::
@@ -191,66 +287,6 @@ For replicas that use shared filesystems allow 'in-place' move that reuses share
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
-=== Examples using MOVEREPLICA
-
-[.dynamic-tabs]
---
-
-[example.tab-pane#v2moveReplica]
-====
-[.tab-label]*V2 API*
-*Input*
-
-`POST /api/c/test`
-
-[source,json]
-----
-{
-  "move-replica":{
-    "replica":"core_node6",
-    "targetNode": "localhost:8983_solr"
-  }
-}
-----
-*Output*
-
-[source,json]
-----
-{
-    "responseHeader": {
-        "status": 0,
-        "QTime": 3668
-    },
-    "success": "MOVEREPLICA action completed successfully, moved replica=test_shard1_replica_n5 at node=localhost:8982_solr to replica=test_shard1_replica_n7 at node=localhost:8983_solr"
-}
-----
-====
-
-[example.tab-pane#v1createAlias]
-====
-[.tab-label]*V1 API*
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&targetNode=localhost:8983_solr&replica=core_node6
-----
-
-*Output*
-
-[source,json]
-----
-{
-    "responseHeader": {
-        "status": 0,
-        "QTime": 3668
-    },
-    "success": "MOVEREPLICA action completed successfully, moved replica=test_shard1_replica_n5 at node=localhost:8982_solr to replica=test_shard1_replica_n7 at node=localhost:8983_solr"
-}
-----
-====
---
 
 
 [[deletereplica]]
@@ -260,7 +296,36 @@ Deletes a named replica from the specified collection and shard.
 
 If the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) delete the instanceDir and dataDir. If the node/core is down, the entry is taken off the clusterstate and if the core comes up later it is automatically unregistered.
 
-`/admin/collections?action=DELETEREPLICA&collection=_collection_&shard=_shard_&replica=_replica_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletereplica]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=techproducts&shard=shard1&replica=core_node2
+----
+====
+
+[example.tab-pane#v2deletereplica]
+====
+[.tab-label]*V2 API*
+
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/core_node2
+----
+
+To run a DELETE asynchronously then append the `async` parameter:
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/core_node2?async=aaaa
+----
+====
+--
 
 === DELETEREPLICA Parameters
 
@@ -295,33 +360,47 @@ When set to `true`, no action will be taken if the replica is active. Default `f
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
-=== Examples using DELETEREPLICA
-
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=test2&shard=shard2&replica=core_node3&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">110</int>
-  </lst>
-</response>
-----
-
 [[addreplicaprop]]
 == ADDREPLICAPROP: Add Replica Property
 
 Assign an arbitrary property to a particular replica and give it the value specified. If the property already exists, it will be overwritten with the new value.
 
-`/admin/collections?action=ADDREPLICAPROP&collection=collectionName&shard=shardName&replica=replicaName&property=propertyName&property.value=value`
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1addreplicaprop]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&collection=techproducts&shard=shard1&replica=core_node2&property=preferredLeader&property.value=true
+----
+
+====
+
+[example.tab-pane#v2addreplicaprop]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+  {
+    "add-replica-property":{
+      "shard":"shard1",
+      "replica":"core_node2",
+      "name":"preferredLeader",
+      "value": "true"
+    }
+  }
+'
+----
+====
+--
 
 === ADDREPLICAPROP Parameters
 
@@ -353,34 +432,13 @@ If `true`, then setting this property in one replica will remove the property fr
 +
 There is one pre-defined property `preferredLeader` for which `shardUnique` is forced to `true` and an error returned if `shardUnique` is explicitly set to `false`.
 +
-`PreferredLeader` is a boolean property. Any value assigned that is not equal (case insensitive) to `true` will be interpreted as `false` for `preferredLeader`.
+`preferredLeader` is a boolean property. Any value assigned that is not equal (case insensitive) to `true` will be interpreted as `false` for `preferredLeader`.
 
 === ADDREPLICAPROP Response
 
 The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
 
-=== Examples using ADDREPLICAPROP
-
-*Input*
-
-This command would set the "preferredLeader" property (`property.preferredLeader`) to "true" on "core_node1", and remove that property from any other replica in the shard.
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&property.value=true&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">46</int>
-  </lst>
-</response>
-----
+=== Additional Examples using ADDREPLICAPROP
 
 *Input*
 
@@ -409,7 +467,41 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&
 
 Deletes an arbitrary property from a particular replica.
 
-`/admin/collections?action=DELETEREPLICAPROP&collection=collectionName&shard=_shardName_&replica=_replicaName_&property=_propertyName_`
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1deletereplicaprop]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&collection=techproducts&shard=shard1&replica=core_node2&property=preferredLeader
+----
+
+====
+
+[example.tab-pane#v2deletereplicaprop]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+  {
+    "delete-replica-property":{
+      "shard":"shard1",
+      "replica":"core_node2",
+      "name":"preferredLeader"
+    }
+  }
+'
+----
+====
+--
 
 === DELETEREPLICAPROP Parameters
 
@@ -434,26 +526,3 @@ and
 === DELETEREPLICAPROP Response
 
 The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
-
-=== Examples using DELETEREPLICAPROP
-
-*Input*
-
-This command would delete the preferredLeader (`property.preferredLeader`) from core_node1.
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">9</int>
-  </lst>
-</response>
-----

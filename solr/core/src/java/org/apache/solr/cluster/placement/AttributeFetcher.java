@@ -33,12 +33,6 @@ public interface AttributeFetcher {
   AttributeFetcher requestNodeSystemProperty(String name);
 
   /**
-   * Request an environment variable on each node. To get the value use {@link AttributeValues#getEnvironmentVariable(Node, String)}
-   * @param name environment property name
-   */
-  AttributeFetcher requestNodeEnvironmentVariable(String name);
-
-  /**
    * Request a node metric from each node. To get the value use {@link AttributeValues#getNodeMetric(Node, NodeMetric)}
    * @param metric metric to retrieve (see {@link NodeMetric})
    */

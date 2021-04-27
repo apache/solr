@@ -18,42 +18,39 @@
 package org.apache.solr.util.tracing;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
+import io.opentracing.util.GlobalTracer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.LogLevel;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
+@LogLevel("org.apache.solr.core.TracerConfigurator=trace")
 public class TestDistributedTracing extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  static MockTracer tracer;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    tracer = new MockTracer();
+    assertTrue(GlobalTracer.registerIfAbsent(tracer));
+
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .withSolrXml(TEST_PATH().resolve("solr-tracing.xml"))
         .configure();
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "100.0")
-        .process(cluster.getSolrClient());
-    waitForSampleRateUpdated(1.0);
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 2, 2)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
@@ -61,21 +58,18 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
   }
 
-  private static void waitForSampleRateUpdated(double rate) throws TimeoutException, InterruptedException {
-    TimeOut timeOut = new TimeOut(1, TimeUnit.MINUTES, TimeSource.NANO_TIME);
-    timeOut.waitFor("Waiting for sample rate is updated", () ->
-        Math.abs(GlobalTracer.get().getSampleRate() - rate) < 0.001
-            && GlobalTracer.get().tracer instanceof MockTracer);
-  }
-
-  private List<MockSpan> getFinishedSpans() {
-    return ((MockTracer)GlobalTracer.get().tracer).finishedSpans();
+  @AfterClass
+  public static void afterTest() {
+    tracer = null;
   }
 
   @Test
   public void test() throws IOException, SolrServerException, TimeoutException, InterruptedException {
+    // TODO it would be clearer if we could compare the complete Span tree between reality
+    //   and what we assert it looks like in a structured visual way.
+
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    List<MockSpan> allSpans = getFinishedSpans();
+    List<MockSpan> allSpans = tracer.finishedSpans();
 
     cloudClient.add(COLLECTION, sdoc("id", "1"));
     List<MockSpan> finishedSpans = getRecentSpans(allSpans);
@@ -112,15 +106,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         fail("All spans must belong to single span, but:"+finishedSpans);
       }
     }
-
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "0.0")
-        .process(cluster.getSolrClient());
-    waitForSampleRateUpdated(0);
-
-    getRecentSpans(allSpans);
-    cloudClient.add(COLLECTION, sdoc("id", "5"));
-    finishedSpans = getRecentSpans(allSpans);
-    assertEquals(0, finishedSpans.size());
   }
 
   private void assertOneSpanIsChildOfAnother(List<MockSpan> finishedSpans) {
@@ -136,10 +121,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   private List<MockSpan> getRecentSpans(List<MockSpan> allSpans) {
-    List<MockSpan> result = new ArrayList<>(getFinishedSpans());
+    List<MockSpan> result = new ArrayList<>(tracer.finishedSpans());
     result.removeAll(allSpans);
     allSpans.clear();
-    allSpans.addAll(getFinishedSpans());
+    allSpans.addAll(tracer.finishedSpans());
     return result;
   }
 }

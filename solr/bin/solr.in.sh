@@ -219,10 +219,10 @@
 #SOLR_ULIMIT_CHECKS=
 
 # When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
-# list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
-# or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
-# host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"
+# list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
+# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
+# Alternatively host checking can be disabled by using the system property "solr.disable.allowUrls"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984"
 
 # For a visual indication in the Admin UI of what type of environment this cluster is, configure
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
