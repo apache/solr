@@ -124,7 +124,7 @@ WARNING: Enable either `SOLR_SSL_NEED_CLIENT_AUTH` or `SOLR_SSL_WANT_CLIENT_AUTH
 
 When you start Solr, the `bin/solr` script includes these settings and will pass them as system properties to the JVM.
 
-If you are running Solr in standalone mode, you can skip to <<Run Single Node Solr using SSL>>.
+If you are running Solr in a user-managed cluster or single-node installation, you can skip to <<Run Single Node Solr using SSL>>.
 
 If you are using SolrCloud, however, you need to <<Configure ZooKeeper>> before starting Solr.
 

@@ -23,13 +23,15 @@ Many of these files are in XML format, although APIs that interact with configur
 == Solr Home
 When Solr runs, it needs access to a home directory.
 
-When you first install Solr, your home directory is `server/solr`. However, some examples may change this location (such as, if you run `bin/solr start -e cloud`, your home directory will be `example/cloud`).
+When you first install Solr, your home directory is `server/solr`.
+However, some examples may change this location (such as, if you run `bin/solr start -e cloud`, your home directory will be `example/cloud`).
 
-The home directory contains important configuration information and is the place where Solr will store its index. The layout of the home directory will look a little different when you are running Solr in standalone mode vs. when you are running in SolrCloud mode.
+The home directory contains important configuration information and is the place where Solr will store its index.
+The layout of the home directory will look a little different when you are running Solr in a user-managed cluster or single-node installation vs. when you are running a SolrCloud cluster.
 
 The crucial parts of the Solr home directory are shown in these examples:
 
-.Standalone Mode
+.User-Managed Cluster or Single-Node
 [source,plain]
 ----
 <solr-home-directory>/
@@ -48,7 +50,7 @@ The crucial parts of the Solr home directory are shown in these examples:
       data/
 ----
 
-.SolrCloud Mode
+.SolrCloud
 [source,plain]
 ----
 <solr-home-directory>/
@@ -61,34 +63,45 @@ The crucial parts of the Solr home directory are shown in these examples:
       data/
 ----
 
-You may see other files, but the main ones you need to know are discussed in the next section.
+You may see other files, but the main ones you need to know are discussed below.
 
 == Solr's Configuration Files
 Inside Solr's Home, you'll find these files:
 
-* `solr.xml` specifies configuration options for your Solr server instance. For more information on `solr.xml` see <<configuring-solr-xml.adoc#,Configuring solr.xml>>.
+* `solr.xml` specifies configuration options for your Solr server instance.
+For more information on `solr.xml` see <<configuring-solr-xml.adoc#,Configuring solr.xml>>.
 * Per Solr Core:
-** `core.properties` defines specific properties for each core such as its name, the collection the core belongs to, the location of the schema, and other parameters. For more details on `core.properties`, see the section <<core-discovery.adoc#,Core Discovery>>.
-** `solrconfig.xml` controls high-level behavior. You can, for example, specify an alternate location for the data directory. For more information on `solrconfig.xml`, see <<configuring-solrconfig-xml.adoc#,Configuring solrconfig.xml>>.
-** `managed-schema` (or `schema.xml` instead) describes the documents you will ask Solr to index. The Schema define a document as a collection of fields. You get to define both the field types and the fields themselves. Field type definitions are powerful and include information about how Solr processes incoming field values and query values. For more information on Solr Schemas, see <<solr-schema.adoc#,Solr Schema>>.
-** `data/` The directory containing the low level index files.
+** `core.properties` defines specific properties for each core such as its name, the collection the core belongs to, the location of the schema, and other parameters.
+For more details on `core.properties`, see the section <<core-discovery.adoc#,Core Discovery>>.
+** `solrconfig.xml` controls high-level behavior.
+You can, for example, specify an alternate location for the data directory.
+For more information on `solrconfig.xml`, see <<configuring-solrconfig-xml.adoc#,Configuring solrconfig.xml>>.
+** `managed-schema` (or `schema.xml`) describes the documents you will ask Solr to index.
+The schema defines a document as a collection of fields.
+You can define both the field types and the fields themselves.
+Field type definitions are powerful and include information about how Solr processes incoming field values and query values.
+For more information on Solr schemas, see <<solr-schema.adoc#,Solr Schema>>.
+** `data/` contains index files.
 
-Note that the SolrCloud example does not include a `conf` directory for each Solr Core (so there is no `solrconfig.xml` or Schema file). This is because the configuration files usually found in the `conf` directory are stored in ZooKeeper so they can be propagated across the cluster.
+Note that the SolrCloud example does not include a `conf` directory for each Solr Core (so there is no `solrconfig.xml` or schema file).
+This is because the configuration files usually found in the `conf` directory are stored in ZooKeeper so they can be propagated across the cluster.
 
-If you are using SolrCloud with the embedded ZooKeeper instance, you may also see `zoo.cfg` and `zoo.data` which are ZooKeeper configuration and data files. However, if you are running your own ZooKeeper ensemble, you would supply your own ZooKeeper configuration file when you start it and the copies in Solr would be unused. For more information about SolrCloud, see the section <<clusters.adoc#solrcloud-mode,SolrCloud>>.
+If you are using SolrCloud with the embedded ZooKeeper instance, you may also see `zoo.cfg` and `zoo.data` which are ZooKeeper configuration and data files.
+However, if you are running your own ZooKeeper ensemble, you would supply your own ZooKeeper configuration file when you start it and the copies in Solr would be unused.
 
 == Files Screen
 
-The Files screen in the Admin UI lets you browse & view the configuration files (such `solrconfig.xml` and the schema file) for the collection you selected.
+The Files screen in the Admin UI lets you browse & view configuration files (such `solrconfig.xml` and the schema file) for the collection you selected.
 
 .The Files Screen
 image::images/configuration-files/files-screen.png[Files screen,height=400]
 
 If you are using <<clusters.adoc#solrcloud-mode,SolrCloud>>, the files displayed are the configuration files for this collection stored in ZooKeeper.
-In a standalone Solr installations, all files in the `conf` directory are displayed.
+In user-managed clusters or single-node installations, all files in the `conf` directory are displayed.
 
 The configuration files shown may or may not be used by the collection as use of the file depends on how they are referenced in either `solrconfig.xml` or your schema.
 
 Configuration files cannot be edited with this screen, so a text editor of some kind must be used.
 
-This screen is related to the <<schema-browser-screen.adoc#,Schema Browser Screen>>, in that they both can display information from the schema, but the Schema Browser provides a way to drill into the analysis chain and displays linkages between field types, fields, and dynamic field rules.
+This screen is related to the <<schema-browser-screen.adoc#,Schema Browser Screen>>, in that they both can display information from the schema.
+However, the Schema Browser provides a way to drill into the analysis chain and displays linkages between field types, fields, and dynamic field rules.

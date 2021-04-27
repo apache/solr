@@ -1483,7 +1483,9 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 ====
 --
 
-The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command <<making-and-restoring-backups.adoc#,takes one copy from each shard for the indexes>>. For configurations, it backs up the configset that was associated with the collection and metadata.
+The BACKUP command will backup Solr indexes and configurations for a specified collection.
+The BACKUP command <<backup-restore.adoc#,takes one copy from each shard for the indexes>>.
+For configurations, it backs up the configset that was associated with the collection and metadata.
 
 Backup data is stored in the repository based on the provided `name` and `location`.
 Each backup location can hold multiple backups for the same collection, allowing users to later restore from any of these "backup points" as desired.

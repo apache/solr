@@ -4,7 +4,7 @@
     taking-solr-to-production, \
     jvm-settings, \
     upgrading-a-solr-cluster, \
-    making-and-restoring-backups, \
+    backup-restore, \
     running-solr-on-hdfs
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -36,7 +36,7 @@ This section covers system requirements, installation, upgrades, and deployments
 | <<taking-solr-to-production.adoc#,Taking Solr to Production>>: Install Solr as a service and take your application to production.
 | <<jvm-settings.adoc#,JVM Settings>>: Best practices for working with Java Virtual Machines.
 | <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>: Upgrading a production SolrCloud cluster.
-| <<making-and-restoring-backups.adoc#,Making and Restoring Backups>>: Backup strategies for your Solr indexes.
+| <<backup-restore.adoc#,Backup and Restore>>: Backup strategies for your Solr indexes.
 | <<running-solr-on-hdfs.adoc#,Running Solr on HDFS>>: Store Solr indexes and transaction logs in HDFS.
 |===
 // end::install-sections[]
