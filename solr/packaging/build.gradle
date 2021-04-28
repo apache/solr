@@ -21,6 +21,7 @@
 plugins {
   id 'base'
   id 'distribution'
+  id 'signing'
 }
 
 description = 'Solr distribution packaging'
@@ -40,6 +41,13 @@ configurations {
   server
   docs
   docker
+  solrTgz
+  solrZip
+}
+
+artifacts {
+  solrTgz(distTar)
+  solrZip(distZip)
 }
 
 dependencies {
@@ -155,3 +163,42 @@ task dev(type: Copy) {
 }
 
 assemble.dependsOn installDist
+
+
+// NOTE: we don't use the convinence DSL of the 'signing' extension to define our 'Sign' tasks because
+// that (by default) adds our signature files to the 'archives' configuration -- which is what
+// assemble & installDist try to copy/sync, so they wouldn't work w/o GPG installed (which would be bad).
+//
+// We also want to hook in our own property check dependency since the default error message from Sign task
+// refers to the wrong (internal only) property name ("signatory.keyId")
+signing {
+  useGpgCmd() // so gpg-agent can be used
+}
+task failUnlessGpgKeyProperty {
+  // placeholder that can be depended on by any task needing GPG key which will 'fail fast' if it's not set.
+  def propName = 'signing.gnupg.keyName'
+
+  // This explicitly checks the taskGraph (instead of a simple 'doFirst') so it can fail the user's gradle
+  // invocation immediately before any unrelated build tasks may run in parallel
+  if ( ! project.hasProperty(propName) ) {
+    gradle.taskGraph.whenReady { graph ->
+      if ( graph.hasTask(failUnlessGpgKeyProperty) ) {
+        // TODO: it would be really nice if taskGraph was an actual graph and we could report what tasks in (transitive) depend on us
+        throw new GradleException("'$propName' property must be set for GPG signing, please see help/gpgSigning.txt")
+      }
+    }
+  }
+}
+task signDistTar(type: Sign) {
+  dependsOn failUnlessGpgKeyProperty
+  sign configurations.solrTgz
+}
+task signDistZip(type: Sign) {
+  dependsOn failUnlessGpgKeyProperty
+  sign configurations.solrZip
+}
+task signDist {
+  group = 'Distribution'
+  description = 'GPG Signs the main distributions'
+  dependsOn signDistTar, signDistZip
+}
