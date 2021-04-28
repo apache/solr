@@ -25,3 +25,8 @@ __pycache__
 
 # Emacs backup
 *~
+
+# VSCode
+**/.settings
+**/.classpath
+**/.project
