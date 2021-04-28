@@ -262,6 +262,14 @@ public class IndexFetcher {
 
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
+
+    if (httpBasicAuthUser == null && httpBasicAuthPassword == null) {
+      httpBasicAuthUser = System.getProperty("replication." + HttpClientUtil.PROP_BASIC_AUTH_USER, 
+        System.getenv("SOLR_REPLICATION_HTTP_BASIC_AUTH_USER"));
+      httpBasicAuthPassword = System.getProperty("replication." + HttpClientUtil.PROP_BASIC_AUTH_PASS, 
+        System.getenv("SOLR_REPLICATION_HTTP_BASIC_AUTH_PASSWORD");
+    }
+
     myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
   }
 
