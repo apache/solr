@@ -98,7 +98,7 @@ The Solr docker distribution adds scripts in `/opt/solr/docker/scripts` to make 
 
 === Creating cores
 
-When Solr runs in standalone mode, you create "cores" to store data. On a non-Docker Solr, you would run the server in the background, then use the <<solr-control-script-reference.adoc,Solr control script>> to create cores and load data. With Solr docker you have various options.
+When Solr runs in standalone mode, you create "cores" to store data. On a non-Docker Solr, you would run the server in the background, then use the <<solr-control-script-reference.adoc#,Solr control script>> to create cores and load data. With Solr docker you have various options.
 
 The first is exactly the same: start Solr running in a container, then execute the control script manually in the same container:
 
