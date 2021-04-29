@@ -66,6 +66,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
@@ -542,7 +543,7 @@ public class TestPackages extends SolrCloudTestCase {
       Package.AddVersion add = new Package.AddVersion();
       add.version = "0.12";
       add.pkg = "test_pkg";
-      add.files = Arrays.asList(new String[]{FILE1, FILE2});
+      add.files = List.of(FILE1, FILE2);
       V2Request req = new V2Request.Builder("/cluster/package")
           .forceV2(true)
           .withMethod(SolrRequest.METHOD.POST)
@@ -557,7 +558,7 @@ public class TestPackages extends SolrCloudTestCase {
       postFileAndWait(cluster, "runtimecode/runtimelibs.jar.bin", FILE1, null);
 
 
-      add.files = Arrays.asList(new String[]{FILE1});
+      add.files = Collections.singletonList(FILE1);
       expectError(req, cluster.getSolrClient(), errPath,
           FILE1 + " has no signature");
       //now we upload the keys
@@ -568,7 +569,7 @@ public class TestPackages extends SolrCloudTestCase {
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
       // with correct signature
       //after uploading the file, let's delete the keys to see if we get proper error message
-      add.files = Arrays.asList(new String[]{FILE2});
+      add.files = Collections.singletonList(FILE2);
       /*expectError(req, cluster.getSolrClient(), errPath,
           "ZooKeeper does not have any public keys");*/
 
@@ -584,7 +585,7 @@ public class TestPackages extends SolrCloudTestCase {
               null, new Stat(), true))),
           Map.of(
               ":packages:test_pkg[0]:version", "0.12",
-              ":packages:test_pkg[0]:files[0]", FILE1
+              ":packages:test_pkg[0]:files[0]", FILE2
           ));
 
       //post a new jar with a proper signature
@@ -595,7 +596,7 @@ public class TestPackages extends SolrCloudTestCase {
       //this time we are adding the second version of the package (0.13)
       add.version = "0.13";
       add.pkg = "test_pkg";
-      add.files = Arrays.asList(new String[]{FILE3});
+      add.files = Collections.singletonList(FILE3);
 
       //this request should succeed
       req.process(cluster.getSolrClient());
@@ -629,7 +630,7 @@ public class TestPackages extends SolrCloudTestCase {
               null, new Stat(), true))),
           Map.of(
               ":packages:test_pkg[0]:version", "0.13",
-              ":packages:test_pkg[0]:files[0]", FILE2
+              ":packages:test_pkg[0]:files[0]", FILE3
           ));
 
       //So far we have been verifying the details with  ZK directly

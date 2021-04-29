@@ -247,6 +247,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         if (i >= repeats - 1) throw e;
         continue;
       }
+      boolean passed = true;
       for (Map.Entry<String, Object> entry : vals.entrySet()) {
         String k = entry.getKey();
         List<String> key = StrUtils.split(k, '/');
@@ -257,14 +258,12 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           String v = o == null ? null : o.toString();
           return Objects.equals(val, v);
         };
-        boolean isPass = p.test(rsp._get(key, null));
-        if (isPass) return rsp;
-        else if (i >= repeats - 1) {
-          fail("req: " + callable + " . attempt: " + i + " Mismatch for value : '" + key + "' in response , " + Utils.toJSONString(rsp));
+        Object actual = rsp._get(key, null);
+        passed = passed && p.test(actual); // Important: check all of the values, not just the first one
+        if (!passed && i >= repeats - 1) {
+          fail("Failed on path " + key + " after " + (i+1) + " attempt(s). Expected: " + val + "; Actual: " + Utils.toJSONString(actual));
         }
-
       }
-
     }
     return rsp;
   }
