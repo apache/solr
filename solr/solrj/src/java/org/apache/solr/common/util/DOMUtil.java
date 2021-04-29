@@ -17,7 +17,9 @@
 package org.apache.solr.common.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +41,7 @@ public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
 
-  public static final Set<String>  NL_TAGS = Set.of("str", "int","long","float","double","bool");
+  public static final Set<String>  NL_TAGS = new HashSet<>(Arrays.asList("str", "int", "long", "float", "double", "bool", "null"));
 
 
   public static Map<String,String> toMap(NamedNodeMap attrs) {
