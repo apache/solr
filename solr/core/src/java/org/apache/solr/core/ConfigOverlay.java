@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -62,7 +63,12 @@ public class ConfigOverlay implements MapSerializable {
     return Utils.getObjectByPath(props, onlyPrimitive, hierarchy);
   }
 
-  @SuppressWarnings({"unchecked"})
+  public Object getXPathProperty(List<String> path) {
+    List<String> hierarchy = new ArrayList<>();
+    if(isEditable(true, hierarchy, path) == null) return null;
+    return Utils.getObjectByPath(props, true, hierarchy);
+  }
+
   public ConfigOverlay setUserProperty(String key, Object val) {
     Map<String, Object> copy = new LinkedHashMap<>(userProps);
     copy.put(key, val);
@@ -178,6 +184,10 @@ public class ConfigOverlay implements MapSerializable {
 
   public static Class<?> checkEditable(String path, boolean isXpath, List<String> hierarchy) {
     List<String> parts = StrUtils.splitSmart(path, isXpath ? '/' : '.');
+    return isEditable(isXpath, hierarchy, StrUtils.splitSmart(path, isXpath ? '/' : '.'));
+  }
+
+  private static Class<?> isEditable(boolean isXpath, List<String> hierarchy, List<String> parts) {
     Object obj = editable_prop_map;
     for (int i = 0; i < parts.size(); i++) {
       String part = parts.get(i);

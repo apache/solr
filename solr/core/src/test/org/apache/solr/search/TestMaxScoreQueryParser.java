@@ -29,7 +29,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
-import org.apache.solr.SolrTestCaseJ4;
 import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
