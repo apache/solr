@@ -158,10 +158,9 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     return endPoint.permission();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static SpecProvider readSpec(EndPoint endPoint, List<Method> m) {
     return () -> {
-      Map map = new LinkedHashMap();
+      Map<String, Object> map = new LinkedHashMap<>();
       List<String> methods = new ArrayList<>();
       for (SolrRequest.METHOD method : endPoint.method()) {
         methods.add(method.name());

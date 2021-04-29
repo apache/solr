@@ -25,13 +25,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -312,7 +310,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
         Class<? extends UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
         if(factoryClass != null) {
           PluginInfo pluginInfo = new PluginInfo("updateProcessor",
-              Utils.makeMap("name", s,
+              Map.of("name", s,
                   "class", factoryClass.getName()));
           UpdateRequestProcessorFactory plugin = p = core.getUpdateProcessors().createPlugin(pluginInfo).get();
           if (plugin instanceof SolrCoreAware) ((SolrCoreAware) plugin).inform(core);

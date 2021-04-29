@@ -36,7 +36,7 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
     map.put("k1","v1");
     map.put("k2",1);
     map.put("k3",false);
-    map.put("k4",Utils.makeMap("k41", "v41", "k42","v42"));
+    map.put("k4",Utils.makeMap("k41", "v41", "k42","v42")); // Compare in order
     map.put("k5", (MapWriter) ew -> {
       ew.put("k61","v61");
       ew.put("k62","v62");

@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -2045,7 +2044,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                                   int numShards ) throws Exception {
     int numNrtReplicas = useTlogReplicas()?0:replicationFactor;
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
-    Map<String, Object> props = makeMap(
+    Map<String, Object> props = Map.of(
         ZkStateReader.NRT_REPLICAS, numNrtReplicas,
         ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
         ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),

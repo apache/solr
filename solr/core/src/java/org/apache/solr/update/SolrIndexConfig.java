@@ -32,7 +32,6 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.PluginInfo;
@@ -196,23 +195,27 @@ public class SolrIndexConfig implements MapSerializable {
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
-    Map<String, Object> m = Utils.makeMap("useCompoundFile", useCompoundFile,
-        "maxBufferedDocs", maxBufferedDocs,
-        "ramBufferSizeMB", ramBufferSizeMB,
-        "ramPerThreadHardLimitMB", ramPerThreadHardLimitMB,
-        "maxCommitMergeWaitTime", maxCommitMergeWaitMillis,
-        "writeLockTimeout", writeLockTimeout,
-        "lockType", lockType,
-        "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
-    if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo);
+    map.put("useCompoundFile", useCompoundFile);
+    map.put("maxBufferedDocs", maxBufferedDocs);
+    map.put("ramBufferSizeMB", ramBufferSizeMB);
+    map.put("ramPerThreadHardLimitMB", ramPerThreadHardLimitMB);
+    map.put("maxCommitMergeWaitTime", maxCommitMergeWaitMillis);
+    map.put("writeLockTimeout", writeLockTimeout);
+    map.put("lockType", lockType);
+    map.put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
+    if(mergeSchedulerInfo != null) {
+      map.put("mergeScheduler",mergeSchedulerInfo);
+    }
     if (metricsInfo != null) {
-      m.put("metrics", metricsInfo);
+      map.put("metrics", metricsInfo);
     }
     if (mergePolicyFactoryInfo != null) {
-      m.put("mergePolicyFactory", mergePolicyFactoryInfo);
+      map.put("mergePolicyFactory", mergePolicyFactoryInfo);
     }
-    if(mergedSegmentWarmerInfo != null) m.put("mergedSegmentWarmer",mergedSegmentWarmerInfo);
-    return m;
+    if(mergedSegmentWarmerInfo != null) {
+      map.put("mergedSegmentWarmer",mergedSegmentWarmerInfo);
+    }
+    return map;
   }
 
   private PluginInfo getPluginInfo(String path, SolrConfig solrConfig, PluginInfo def)  {

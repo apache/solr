@@ -135,7 +135,7 @@ public class TestPackages extends SolrCloudTestCase {
               () -> new V2Request.Builder("/cluster/package").
                       withMethod(SolrRequest.METHOD.GET)
                       .build().process(cluster.getSolrClient()),
-              Utils.makeMap(
+              Map.of(
                       ":result:packages:mypkg[0]:version", "1.0",
                       ":result:packages:mypkg[0]:files[0]", FILE1
               ));
@@ -154,7 +154,7 @@ public class TestPackages extends SolrCloudTestCase {
               () -> new V2Request.Builder("/cluster/package").
                       withMethod(SolrRequest.METHOD.GET)
                       .build().process(cluster.getSolrClient()),
-              Utils.makeMap(
+              Map.of(
                       ":result:packages:mypkg[1]:version", "2.0",
                       ":result:packages:mypkg[1]:files[0]", FILE1
               ));
@@ -165,7 +165,6 @@ public class TestPackages extends SolrCloudTestCase {
               "mypkg", "2.0" );
   }
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testPluginLoading() throws Exception {
       String FILE1 = "/mypkg/runtimelibs.jar";
       String FILE2 = "/mypkg/runtimelibs_v2.jar";
@@ -207,7 +206,7 @@ public class TestPackages extends SolrCloudTestCase {
           () -> new V2Request.Builder("/cluster/package").
               withMethod(SolrRequest.METHOD.GET)
               .build().process(cluster.getSolrClient()),
-          Utils.makeMap(
+          Map.of(
               ":result:packages:mypkg[0]:version", "1.0",
               ":result:packages:mypkg[0]:files[0]", FILE1
           ));
@@ -268,10 +267,10 @@ public class TestPackages extends SolrCloudTestCase {
       TestDistribPackageStore.assertResponseValues(10,
           cluster.getSolrClient() ,
           new GenericSolrRequest(SolrRequest.METHOD.GET,
-              "/stream", new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+              "/stream", new MapSolrParams(Map.of("collection", COLLECTION_NAME,
                   WT, JAVABIN,
                   "action", "plugins"
-                  ))), Utils.makeMap(
+                  ))), Map.of(
               ":plugins:mincopy", "org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric"
           ));
 
@@ -288,17 +287,17 @@ public class TestPackages extends SolrCloudTestCase {
 
       executeReq( "/" + COLLECTION_NAME + "/runtime?wt=javabin", cluster.getRandomJetty(random()),
           Utils.JAVABINCONSUMER,
-          Utils.makeMap("class", "org.apache.solr.core.RuntimeLibReqHandler"));
+          Map.of("class", "org.apache.solr.core.RuntimeLibReqHandler"));
 
       executeReq( "/" + COLLECTION_NAME + "/get?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap("class", "org.apache.solr.core.RuntimeLibSearchComponent",
+          Map.of("class", "org.apache.solr.core.RuntimeLibSearchComponent",
               "Version","1"));
 
 
       executeReq( "/" + COLLECTION_NAME + "/runtime?wt=json1", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap("wt", "org.apache.solr.core.RuntimeLibResponseWriter"));
+          Map.of("wt", "org.apache.solr.core.RuntimeLibResponseWriter"));
 
       //now upload the second jar
       postFileAndWait(cluster, "runtimecode/runtimelibs_v2.jar.bin", FILE2,
@@ -330,7 +329,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       executeReq( "/" + COLLECTION_NAME + "/get?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap(  "Version","2"));
+          Map.of(  "Version","2"));
 
 
       //now upload the third jar
@@ -356,7 +355,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       executeReq( "/" + COLLECTION_NAME + "/runtime?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap("Version","2"));
+          Map.of("Version","2"));
 
       //insert a doc with urp
       ur = new UpdateRequest();
@@ -497,7 +496,7 @@ public class TestPackages extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 5);
       checkAllNodesForFile(cluster,FILE3,
-          Utils.makeMap(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
+          Map.of(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);
   }
   @SuppressWarnings({"unchecked","rawtypes"})
@@ -517,8 +516,7 @@ public class TestPackages extends SolrCloudTestCase {
 
   private void verifyComponent(SolrClient client, String COLLECTION_NAME,
                                String componentType, String componentName, String pkg, String version) throws Exception {
-    @SuppressWarnings({"unchecked"})
-    SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+    SolrParams params = new MapSolrParams(Map.of("collection", COLLECTION_NAME,
         WT, JAVABIN,
         "componentName", componentName,
         "meta", "true"));
@@ -527,13 +525,14 @@ public class TestPackages extends SolrCloudTestCase {
         "/config/" + componentType, params);
     TestDistribPackageStore.assertResponseValues(10,
         client,
-        req1, Utils.makeMap(
+        req1, Map.of(
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:package", pkg,
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:version", version
         ));
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testAPI() throws Exception {
       String errPath = "/error/details[0]/errorMessages[0]";
       String FILE1 = "/mypkg/v.0.12/jar_a.jar";
@@ -581,9 +580,9 @@ public class TestPackages extends SolrCloudTestCase {
 
       //Now verify the data in ZK
       TestDistribPackageStore.assertResponseValues(1,
-          () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
+          () -> new MapWriterMap((Map<String,Object>) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
               null, new Stat(), true))),
-          Utils.makeMap(
+          Map.of(
               ":packages:test_pkg[0]:version", "0.12",
               ":packages:test_pkg[0]:files[0]", FILE1
           ));
@@ -602,9 +601,9 @@ public class TestPackages extends SolrCloudTestCase {
       req.process(cluster.getSolrClient());
       //no verify the data (/packages.json) in ZK
       TestDistribPackageStore.assertResponseValues(1,
-          () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
+          () -> new MapWriterMap((Map<String,Object>) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
               null, new Stat(), true))),
-          Utils.makeMap(
+          Map.of(
               ":packages:test_pkg[1]:version", "0.13",
               ":packages:test_pkg[1]:files[0]", FILE3
           ));
@@ -626,9 +625,9 @@ public class TestPackages extends SolrCloudTestCase {
       req.process(cluster.getSolrClient());
       //Verify with ZK that the data is correct
       TestDistribPackageStore.assertResponseValues(1,
-          () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
+          () -> new MapWriterMap((Map<String,Object>) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
               null, new Stat(), true))),
-          Utils.makeMap(
+          Map.of(
               ":packages:test_pkg[0]:version", "0.13",
               ":packages:test_pkg[0]:files[0]", FILE2
           ));
@@ -644,7 +643,7 @@ public class TestPackages extends SolrCloudTestCase {
               return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);
             }
           }
-        }, Utils.makeMap(
+        }, Map.of(
             ":result:packages:test_pkg[0]:version", "0.13",
             ":result:packages:test_pkg[0]:files[0]", FILE3
         ));
@@ -715,7 +714,7 @@ public class TestPackages extends SolrCloudTestCase {
           () -> new V2Request.Builder("/cluster/package").
               withMethod(SolrRequest.METHOD.GET)
               .build().process(cluster.getSolrClient()),
-          Utils.makeMap(
+          Map.of(
               ":result:packages:schemapkg[0]:version", "1.0",
               ":result:packages:schemapkg[0]:files[0]", FILE1
           ));
@@ -726,7 +725,7 @@ public class TestPackages extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-              Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
+              Map.of(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
                       ":fieldType:analyzer:tokenizer:_packageinfo_:version","1.0",
                       ":fieldType:_packageinfo_:version","1.0"));
 
@@ -745,20 +744,19 @@ public class TestPackages extends SolrCloudTestCase {
           () -> new V2Request.Builder("/cluster/package").
               withMethod(SolrRequest.METHOD.GET)
               .build().process(cluster.getSolrClient()),
-          Utils.makeMap(
+          Map.of(
               ":result:packages:schemapkg[0]:version", "2.0",
               ":result:packages:schemapkg[0]:files[0]", FILE1
           ));
 
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-          Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"2.0",
+          Map.of(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"2.0",
               ":fieldType:analyzer:tokenizer:_packageinfo_:version","2.0",
               ":fieldType:_packageinfo_:version","2.0"));
   }
-  @SuppressWarnings({"rawtypes","unchecked"})
   private void verifySchemaComponent(SolrClient client, String COLLECTION_NAME, String path,
-                                     Map expected) throws Exception {
-    SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+                                     Map<String, Object> expected) throws Exception {
+    SolrParams params = new MapSolrParams(Map.of("collection", COLLECTION_NAME,
         WT, JAVABIN,
         "meta", "true"));
 
@@ -777,7 +775,7 @@ public class TestPackages extends SolrCloudTestCase {
         fileContent,
         path, sig);// has file, but no signature
 
-    TestDistribPackageStore.checkAllNodesForFile(cluster, path, Utils.makeMap(
+    TestDistribPackageStore.checkAllNodesForFile(cluster, path, Map.of(
         ":files:" + path + ":sha512",
         sha512
     ), false);

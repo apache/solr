@@ -89,21 +89,19 @@ import static org.apache.solr.common.params.CommonParams.ID;
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   private ModelCache modelCache;
-  @SuppressWarnings({"rawtypes"})
-  private ConcurrentMap objectCache;
+  private ConcurrentMap<String, Object> objectCache;
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private SolrClientCache solrClientCache;
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
+  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap<>());
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
     return PermissionNameProvider.Name.READ_PERM;
   }
 
-  @SuppressWarnings({"rawtypes"})
+  @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
@@ -112,7 +110,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     this.coreName = core.getName();
     String cacheKey = this.getClass().getName() + "_" + coreName + "_";
     this.objectCache = coreContainer.getObjectCache().computeIfAbsent(cacheKey + "objectCache",
-        ConcurrentHashMap.class, k-> new ConcurrentHashMap());
+        ConcurrentHashMap.class, k-> new ConcurrentHashMap<>());
     if (coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
@@ -476,7 +474,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
-    @SuppressWarnings({"unchecked"})
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if (tuple.EOF) {
@@ -497,7 +494,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         String collection = param.split("\\.")[0];
         String shardString = params.get(param);
         String[] shards = shardString.split(",");
-        @SuppressWarnings({"rawtypes"})
         List<String> shardList = new ArrayList<>();
         for (String shard : shards) {
           shardList.add(shard);

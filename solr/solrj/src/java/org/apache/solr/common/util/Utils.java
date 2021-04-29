@@ -321,6 +321,13 @@ public class Utils {
     }
   }
 
+  public static <V> Map<String, V> makeMap(String k1, V v1, String k2, V v2) {
+    Map<String, V> map = new LinkedHashMap<>(2, 1);
+    map.put(k1, v1);
+    map.put(k2, v2);
+    return map;
+  }
+
   public static Map<String, Object> makeMap(Object... keyVals) {
     return makeMap(false, keyVals);
   }
@@ -520,7 +527,9 @@ public class Utils {
           if (o instanceof MapWriter) {
             o = getVal(o, null, idx);
           } else if (o instanceof Map) {
-            o = getVal(new MapWriterMap((Map) o), null, idx);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) o;
+            o = getVal(new MapWriterMap(map), null, idx);
           } else {
             @SuppressWarnings({"rawtypes"})
             List l = (List) o;

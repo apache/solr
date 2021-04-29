@@ -3031,7 +3031,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @lucene.experimental
    * @lucene.internal
    */
-  @SuppressWarnings({"rawtypes"})
   private static void randomizeNumericTypesProperties() {
 
     final boolean useDV = random().nextBoolean();
@@ -3111,8 +3110,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static boolean isChildDoc(Object o) {
     if(o instanceof Collection) {
-      @SuppressWarnings({"rawtypes"})
-      Collection col = (Collection) o;
+      Collection<?> col = (Collection<?>) o;
       if(col.size() == 0) {
         return false;
       }

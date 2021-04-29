@@ -109,9 +109,8 @@ public class PluginBag<T> implements AutoCloseable {
   /**
    * Check if any of the mentioned names are missing. If yes, return the Set of missing names
    */
-  @SuppressWarnings({"unchecked"})
   public Set<String> checkContains(Collection<String> names) {
-    if (names == null || names.isEmpty()) return Collections.EMPTY_SET;
+    if (names == null || names.isEmpty()) return Collections.emptySet();
     HashSet<String> result = new HashSet<>();
     for (String s : names) if (!this.registry.containsKey(s)) result.add(s);
     return result;

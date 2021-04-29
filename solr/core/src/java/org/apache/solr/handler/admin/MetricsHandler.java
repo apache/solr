@@ -109,7 +109,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     handleRequest(req.getParams(), (k, v) -> rsp.add(k, v));
   }
   
-  @SuppressWarnings({"unchecked"})
   public void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) throws Exception {
     if (!enabled) {
       consumer.accept("error", "metrics collection is disabled");

@@ -56,6 +56,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
@@ -87,7 +88,6 @@ import org.xml.sax.SAXException;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.util.Utils.fromJSON;
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
@@ -390,7 +390,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static ConfigOverlay getConfigOverlay(SolrResourceLoader loader) {
     InputStream in = null;
     InputStreamReader isr = null;
@@ -401,7 +400,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         // TODO: we should be explicitly looking for file not found exceptions
         // and logging if it's not the expected IOException
         // hopefully no problem, assume no overlay.json file
-        return new ConfigOverlay(Collections.EMPTY_MAP, -1);
+        return new ConfigOverlay(Collections.emptyMap(), -1);
       }
       
       int version = 0; // will be always 0 for file based resourceLoader
@@ -409,7 +408,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.debug("Config overlay loaded. version : {} ", version);
       }
-      Map m = (Map) fromJSON(in);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> m = (Map<String, Object>) fromJSON(in);
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading config overlay", e);
@@ -546,18 +546,19 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     /**
      * config xpath prefix for getting HTTP Caching options
      */
-    private final static String CACHE_PRE
+    private static final String CACHE_PRE
         = "requestDispatcher/httpCaching/";
 
     /**
      * For extracting Expires "ttl" from <cacheControl> config
      */
-    private final static Pattern MAX_AGE
+    private static final Pattern MAX_AGE
         = Pattern.compile("\\bmax-age=(\\d+)");
 
     @Override
     public Map<String, Object> toMap(Map<String, Object> map) {
-      return makeMap("never304", never304,
+      // Could have nulls
+      return Utils.makeMap("never304", never304,
           "etagSeed", etagSeed,
           "lastModFrom", lastModFrom.name().toLowerCase(Locale.ROOT),
           "cacheControl", cacheControlHeader);
@@ -672,20 +673,18 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<String, Object> toMap(Map<String, Object> map) {
-      LinkedHashMap result = new LinkedHashMap();
-      result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
-      result.put("commitWithin", makeMap("softCommit", commitWithinSoftCommit));
-      result.put("autoCommit", makeMap(
+      map.put("indexWriter", Map.of("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
+      map.put("commitWithin", Map.of("softCommit", commitWithinSoftCommit));
+      map.put("autoCommit", Map.of(
           "maxDocs", autoCommmitMaxDocs,
           "maxTime", autoCommmitMaxTime,
           "openSearcher", openSearcher
       ));
-      result.put("autoSoftCommit",
-          makeMap("maxDocs", autoSoftCommmitMaxDocs,
+      map.put("autoSoftCommit",
+          Map.of("maxDocs", autoSoftCommmitMaxDocs,
               "maxTime", autoSoftCommmitMaxTime));
-      return result;
+      return map;
     }
   }
 
@@ -707,13 +706,12 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    *             SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
    *             IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<PluginInfo> getPluginInfos(String type) {
     List<PluginInfo> result = pluginStore.get(type);
     SolrPluginInfo info = classVsSolrPluginInfo.get(type);
     if (info != null &&
         (info.options.contains(REQUIRE_NAME) || info.options.contains(REQUIRE_NAME_IN_OVERLAY))) {
-      Map<String, Map> infos = overlay.getNamedPlugins(info.getCleanTag());
+      Map<String, Map<String, Object>> infos = overlay.getNamedPlugins(info.getCleanTag());
       if (!infos.isEmpty()) {
         LinkedHashMap<String, PluginInfo> map = new LinkedHashMap<>();
         if (result != null) for (PluginInfo pluginInfo : result) {
@@ -723,13 +721,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
               pluginInfo.name;
           map.put(name, pluginInfo);
         }
-        for (Map.Entry<String, Map> e : infos.entrySet()) {
+        for (Map.Entry<String, Map<String, Object>> e : infos.entrySet()) {
           map.put(e.getKey(), new PluginInfo(info.getCleanTag(), e.getValue()));
         }
         result = new ArrayList<>(map.values());
       }
     }
-    return result == null ? Collections.<PluginInfo>emptyList() : result;
+    return result == null ? Collections.emptyList() : result;
   }
 
   public PluginInfo getPluginInfo(String type) {
@@ -908,7 +906,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     result.put("requestDispatcher", m);
     m.put("handleSelect", handleSelect);
     if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
-    m.put("requestParsers", makeMap("multipartUploadLimitKB", multipartUploadLimitKB,
+    m.put("requestParsers", Map.of("multipartUploadLimitKB", multipartUploadLimitKB,
         "formUploadLimitKB", formUploadLimitKB,
         "addHttpRequestToContext", addHttpRequestToContext));
     if (indexConfig != null) result.put("indexConfig", indexConfig);

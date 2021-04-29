@@ -33,8 +33,7 @@ class SolrEnumerator implements Enumerator<Object> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final TupleStream tupleStream;
-  @SuppressWarnings({"rawtypes"})
-  private final List<Map.Entry<String, Class>> fields;
+  private final List<Map.Entry<String, Class<?>>> fields;
   private Tuple current;
   private char sep = 31;
 

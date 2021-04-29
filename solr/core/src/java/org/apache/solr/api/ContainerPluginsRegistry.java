@@ -56,7 +56,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * This class manages the container-level plugins and their Api-s. It is
@@ -253,9 +252,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return path;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private static  Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
-    return (Map) makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
+  private static Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
+    return Utils.makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
   }
 
   private static class ApiHolder extends Api {
@@ -315,7 +313,6 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     public PluginMeta getInfo() {
       return info.copy();
     }
-    @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMetaHolder infoHolder, List<String> errs) {
       this.holder = infoHolder;
       this.info = infoHolder.meta;
@@ -394,7 +391,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     public void init() throws Exception {
       if (this.holders != null) return;
       Constructor constructor = klas.getConstructors()[0];
@@ -410,7 +407,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         if (c != null) {
           Map<String, Object> original = (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
           holder.meta.config = mapper.readValue(Utils.toJSON(original), c);
-          ((ConfigurablePlugin) instance).configure(holder.meta.config);
+          ((ConfigurablePlugin<MapWriter>) instance).configure(holder.meta.config);
 
         }
       }
