@@ -59,8 +59,7 @@ public class PluginBag<T> implements AutoCloseable {
   private final Map<String, PluginHolder<T>> registry;
   private final Map<String, PluginHolder<T>> immutableRegistry;
   private String def;
-  @SuppressWarnings({"rawtypes"})
-  private final Class klass;
+  private final Class<T> klass;
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
   private final ApiBag apiBag;

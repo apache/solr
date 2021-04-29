@@ -128,15 +128,13 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     addExpressiblePlugins(streamFactory, core);
   }
 
-  @SuppressWarnings({"unchecked"})
   public static void addExpressiblePlugins(StreamFactory streamFactory, SolrCore core) {
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
     for (PluginInfo pluginInfo : pluginInfos) {
       if (pluginInfo.pkgName != null) {
         @SuppressWarnings("resource")
         ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
-        streamFactory.withFunctionName(pluginInfo.name,
-            () -> holder.getClazz());
+        streamFactory.withFunctionName(pluginInfo.name, holder);
       } else {
         Class<? extends Expressible> clazz = core.getResourceLoader().findClass(pluginInfo.className, Expressible.class);
         streamFactory.withFunctionName(pluginInfo.name, clazz);
@@ -144,24 +142,17 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static class ExpressibleHolder extends PackagePluginHolder {
-    private Class clazz;
-
+  public static class ExpressibleHolder extends PackagePluginHolder<Class<? extends Expressible>> {
     public ExpressibleHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
       super(info, core, pluginMeta);
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public Class getClazz() {
-      return clazz;
-    }
-
+    // WARNING: This is called from the super constructor, do not make assumptions about object state.
+    // This will probably cause a really bad bug someday, I hope you are reading this under better circumstances.
     @Override
     protected Object initNewInstance(PackageLoader.Package.Version newest, SolrCore core) {
-      return clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
+      return inst = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
     }
-
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {

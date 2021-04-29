@@ -359,10 +359,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
     public static final String SUPPORTED_TYPES_MSG = EnumSet.allOf(MetricType.class).toString();
 
-    @SuppressWarnings({"rawtypes"})
-    private final Class klass;
+    private final Class<? extends Metric> klass;
 
-    MetricType(@SuppressWarnings({"rawtypes"})Class klass) {
+    MetricType(Class<? extends Metric> klass) {
       this.klass = klass;
     }
 

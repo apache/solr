@@ -58,15 +58,14 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
 
     q = parse("price:[0 TO 10]");
-    @SuppressWarnings({"rawtypes"})
-    Class expected = LegacyNumericRangeQuery.class;
+    Class<? extends Query> expected = LegacyNumericRangeQuery.class;
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
       expected = PointRangeQuery.class;
       if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
         expected = IndexOrDocValuesQuery.class;
       }
     }
-    assertTrue(expected + " vs actual: " + q.getClass(), expected.isInstance(q));
+    assertThat(q, Matchers.instanceOf(expected));
   }
 
   @Test

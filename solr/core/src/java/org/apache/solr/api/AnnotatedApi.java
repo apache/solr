@@ -101,14 +101,14 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
    *                then absence of Api-s is silently ignored.
    * @return list of discovered Api-s
    */
-  public static List<Api> getApis(Class<? extends Object> theClass , Object obj, boolean allowEmpty)  {
+  public static List<Api> getApis(Class<?> theClass , Object obj, boolean allowEmpty)  {
     Class<?> klas = null;
     try {
       klas = MethodHandles.publicLookup().accessClass(theClass);
     } catch (IllegalAccessException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Method may be non-public/inaccessible", e);
     }
-    if (klas.getAnnotation(EndPoint.class) != null) {
+    if (klas.isAnnotationPresent(EndPoint.class)) {
       EndPoint endPoint = klas.getAnnotation(EndPoint.class);
       List<Method> methods = new ArrayList<>();
       Map<String, Cmd> commands = new HashMap<>();
@@ -229,8 +229,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     final Object obj;
 
     int paramsCount;
-    @SuppressWarnings({"rawtypes"})
-    Class parameterClass;
+    Class<?> parameterClass;
     boolean isWrappedInPayloadObj = false;
 
 
@@ -272,13 +271,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
           Type t1 = typ.getActualTypeArguments()[0];
           if (t1 instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) t1;
-            parameterClass = (Class) parameterizedType.getRawType();
+            parameterClass = (Class<?>) parameterizedType.getRawType();
           } else {
-            parameterClass = (Class) typ.getActualTypeArguments()[0];
+            parameterClass = (Class<?>) typ.getActualTypeArguments()[0];
           }
         }
       } else {
-        parameterClass = (Class) t;
+        parameterClass = (Class<?>) t;
       }
     }
 

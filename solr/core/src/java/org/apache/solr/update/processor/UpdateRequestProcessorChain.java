@@ -278,7 +278,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   }
 
   private static void insertBefore(LinkedList<UpdateRequestProcessorFactory> urps, List<UpdateRequestProcessorFactory> newFactories,
-                                   @SuppressWarnings({"rawtypes"})Class klas, int idx) {
+                                   Class<?> klas, int idx) {
     if (newFactories.isEmpty()) return;
     for (int i = 0; i < urps.size(); i++) {
       if (klas.isInstance(urps.get(i))) {
@@ -309,8 +309,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
         p = core.getUpdateProcessors().get(s);
       }
       if (p == null) {
-        @SuppressWarnings({"unchecked"})
-        Class<UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
+        Class<? extends UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
         if(factoryClass != null) {
           PluginInfo pluginInfo = new PluginInfo("updateProcessor",
               Utils.makeMap("name", s,
@@ -389,11 +388,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       }
     }
   }
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static final Map<String, Class> implicits = new ImmutableMap.Builder()
-      .put(TemplateUpdateProcessorFactory.NAME, TemplateUpdateProcessorFactory.class)
-      .put(AtomicUpdateProcessorFactory.NAME, AtomicUpdateProcessorFactory.class)
-      .put(UUIDUpdateProcessorFactory.NAME, UUIDUpdateProcessorFactory.class)
-      .build();
-
+  public static final Map<String, Class<? extends UpdateRequestProcessorFactory>> implicits = Map.of(
+      TemplateUpdateProcessorFactory.NAME, TemplateUpdateProcessorFactory.class,
+      AtomicUpdateProcessorFactory.NAME, AtomicUpdateProcessorFactory.class,
+      UUIDUpdateProcessorFactory.NAME, UUIDUpdateProcessorFactory.class);
 }

@@ -62,8 +62,8 @@ public class RetryUtil {
     }
   }
   
-  private static boolean isInstanceOf(@SuppressWarnings({"rawtypes"})Set<Class> classes, Throwable t) {
-    for (@SuppressWarnings({"rawtypes"})Class c : classes) {
+  private static boolean isInstanceOf(Set<Class<? extends Exception>> classes, Throwable t) {
+    for (Class<? extends Exception> c : classes) {
       if (c.isInstance(t)) {
         return true;
       }

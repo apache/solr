@@ -178,8 +178,7 @@ public class ConfigOverlay implements MapSerializable {
   }
 
 
-  @SuppressWarnings({"rawtypes"})
-  public static Class checkEditable(String path, boolean isXpath, List<String> hierarchy) {
+  public static Class<?> checkEditable(String path, boolean isXpath, List<String> hierarchy) {
     List<String> parts = StrUtils.splitSmart(path, isXpath ? '/' : '.');
     Object obj = editable_prop_map;
     for (int i = 0; i < parts.size(); i++) {
@@ -191,23 +190,21 @@ public class ConfigOverlay implements MapSerializable {
       if (hierarchy != null) hierarchy.add(part);
       if (obj == null) return null;
       if (i == parts.size() - 1) {
-        if (obj instanceof Map) {
-          Map map = (Map) obj;
+        if (obj instanceof Map<?,?>) {
+          Map<?,?> map = (Map<?,?>) obj;
           Object o = map.get(part);
           return checkType(o, isXpath, isAttr);
         }
         return null;
       }
-      obj = ((Map) obj).get(part);
+      obj = ((Map<?,?>) obj).get(part);
     }
     return null;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  static Class[] types = new Class[]{String.class, Boolean.class, Integer.class, Float.class};
+  static Class<?>[] types = new Class<?>[]{String.class, Boolean.class, Integer.class, Float.class};
 
-  @SuppressWarnings({"rawtypes"})
-  private static Class checkType(Object o, boolean isXpath, boolean isAttr) {
+  private static Class<?> checkType(Object o, boolean isXpath, boolean isAttr) {
     if (o instanceof Long) {
       Long aLong = (Long) o;
       int ten = aLong.intValue() / 10;

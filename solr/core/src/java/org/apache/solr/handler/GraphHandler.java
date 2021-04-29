@@ -125,7 +125,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
         } else {
           @SuppressWarnings("resource")
           StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
-          streamFactory.withFunctionName(key, () -> holder.getClazz());
+          streamFactory.withFunctionName(key, holder);
         }
 
       }

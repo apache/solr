@@ -294,7 +294,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     public final String pkg;
 
     private PackageLoader.Package.Version pkgVersion;
-    private Class klas;
+    private Class<?> klas;
     Object instance;
 
     ApiHolder get(EndPoint endPoint) {
@@ -432,9 +432,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   /**
    * Get the generic type of a {@link ConfigurablePlugin}
    */
-  @SuppressWarnings("rawtypes")
-  public static Class getConfigClass(ConfigurablePlugin<?> o) {
-    Class klas = o.getClass();
+  @SuppressWarnings("unchecked")
+  public static <T extends MapWriter> Class<T> getConfigClass(ConfigurablePlugin<T> o) {
+    Class<?> klas = o.getClass();
     do {
       Type[] interfaces = klas.getGenericInterfaces();
       for (Type type : interfaces) {
@@ -443,8 +443,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           Type rawType = parameterizedType.getRawType();
           if (rawType == ConfigurablePlugin.class ||
               // or if a super interface is a ConfigurablePlugin
-              ((rawType instanceof Class) && ConfigurablePlugin.class.isAssignableFrom((Class) rawType))) {
-            return (Class) parameterizedType.getActualTypeArguments()[0];
+              ((rawType instanceof Class<?>) && ConfigurablePlugin.class.isAssignableFrom((Class<?>) rawType))) {
+
+            return (Class<T>) parameterizedType.getActualTypeArguments()[0];
           }
         }
       }

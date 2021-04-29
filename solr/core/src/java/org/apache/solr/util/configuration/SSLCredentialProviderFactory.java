@@ -38,8 +38,7 @@ public class SSLCredentialProviderFactory {
   public static final String DEFAULT_PROVIDER_CHAIN = "env;sysprop";
   public static final String PROVIDER_CHAIN_KEY = "solr.ssl.credential.provider.chain";
 
-  @SuppressWarnings({"rawtypes"})
-  private final static ImmutableMap<String, Class> defaultProviders = ImmutableMap.of(
+  private static final Map<String, Class<? extends AbstractSSLCredentialProvider>> defaultProviders = ImmutableMap.of(
       "env", EnvSSLCredentialProvider.class,
       "sysprop", SysPropSSLCredentialProvider.class,
       "hadoop", HadoopSSLCredentialProvider.class

@@ -600,8 +600,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
 
-    @SuppressWarnings({"unchecked"})
-    private boolean verifyClass(CommandOperation op, String clz, @SuppressWarnings({"rawtypes"})Class expected) {
+    private boolean verifyClass(CommandOperation op, String clz, Class<?> expected) {
       if (clz == null) return true;
       PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
       try {
@@ -668,8 +667,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       for (Map.Entry<String, Object> e : m.entrySet()) {
         String name = e.getKey();
         Object val = e.getValue();
-        @SuppressWarnings({"rawtypes"})
-        Class typ = ConfigOverlay.checkEditable(name, false, null);
+        Class<?> typ = ConfigOverlay.checkEditable(name, false, null);
         if (typ == null) {
           op.addError(formatString(NOT_EDITABLE, name));
           continue;

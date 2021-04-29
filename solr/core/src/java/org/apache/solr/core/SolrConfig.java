@@ -369,17 +369,15 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public static class SolrPluginInfo {
 
-    @SuppressWarnings({"rawtypes"})
-    public final Class clazz;
+    public final Class<?> clazz;
     public final String tag;
     public final Set<PluginOpts> options;
 
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private SolrPluginInfo(Class clz, String tag, PluginOpts... opts) {
+    private SolrPluginInfo(Class<?> clz, String tag, PluginOpts... opts) {
       this.clazz = clz;
       this.tag = tag;
-      this.options = opts == null ? Collections.EMPTY_SET : EnumSet.of(NOOP, opts);
+      this.options = opts == null ? Collections.emptySet() : EnumSet.of(NOOP, opts);
     }
 
     public String getCleanTag() {

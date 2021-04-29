@@ -883,8 +883,7 @@ public class Utils {
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private static List<FieldWriter> getReflectData(Class c) throws IllegalAccessException {
+  private static List<FieldWriter> getReflectData(Class<?> c) throws IllegalAccessException {
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
     //we should not cache the class references of objects loaded from packages because they will not get garbage collected
     //TODO fix that later
