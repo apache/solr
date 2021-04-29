@@ -370,6 +370,8 @@ Bug Fixes
 * SOLR-11921: Move "cursorMark" logic from QueryComponent to SearchHandler so it can work with things like QueryElevationComponent
   that modify the SortSpec in prepare(), as well as possible custom "search" components other then QueryComponent.  (hossman)
 
+* SOLR-15383: Solr Zookeeper status page shows green even when some Zookeepers are not serving requests (janhoy)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
