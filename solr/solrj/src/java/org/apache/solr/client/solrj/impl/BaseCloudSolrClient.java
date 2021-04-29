@@ -848,7 +848,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws SolrServerException, IOException {
+  public NamedList<Object> request(SolrRequest<?> request, String collection) throws SolrServerException, IOException {
     // the collection parameter of the request overrides that of the parameter to this method
     String requestCollection = request.getCollection();
     if (requestCollection != null) {
@@ -866,7 +866,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * there's a chance that the request will fail due to cached stale state,
    * which means the state must be refreshed from ZK and retried.
    */
-  protected NamedList<Object> requestWithRetryOnStaleState(@SuppressWarnings({"rawtypes"})SolrRequest request, int retryCount, List<String> inputCollections)
+  protected NamedList<Object> requestWithRetryOnStaleState(SolrRequest<?> request, int retryCount, List<String> inputCollections)
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
@@ -1051,7 +1051,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return resp;
   }
 
-  protected NamedList<Object> sendRequest(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> inputCollections)
+  protected NamedList<Object> sendRequest(SolrRequest<?> request, List<String> inputCollections)
       throws SolrServerException, IOException {
     connect();
 
