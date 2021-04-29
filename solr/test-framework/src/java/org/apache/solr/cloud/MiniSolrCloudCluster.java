@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.Filter;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -88,7 +89,7 @@ public class MiniSolrCloudCluster {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  public static final String SOLR_TESTS_SHARDS_WHITELIST = "solr.tests.shardsWhitelist";
+  public static final String TEST_URL_ALLOW_LIST = SolrTestCaseJ4.TEST_URL_ALLOW_LIST;
 
   public static final int DEFAULT_TIMEOUT = 30;
 
@@ -99,12 +100,12 @@ public class MiniSolrCloudCluster {
       "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n" +
       "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n" +
       "  <str name=\"collectionsHandler\">${collectionsHandler:solr.CollectionsHandler}</str>\n" +
+      "  <str name=\"allowUrls\">${"+ TEST_URL_ALLOW_LIST +":}</str>\n" +
       "\n" +
       "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">\n" +
       "    <str name=\"urlScheme\">${urlScheme:}</str>\n" +
       "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n" +
       "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n" +
-      "    <str name=\"shardsWhitelist\">${"+SOLR_TESTS_SHARDS_WHITELIST+":}</str>\n" +
       "  </shardHandlerFactory>\n" +
       "\n" +
       "  <solrcloud>\n" +
@@ -121,6 +122,7 @@ public class MiniSolrCloudCluster {
       "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:cryptokeys/priv_key512_pkcs8.pem}</str> \n" +
       "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:cryptokeys/pub_key512.der}</str> \n" +
       "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n" +
+      "    <str name=\"distributedCollectionConfigSetExecution\">${solr.distributedCollectionConfigSetExecution:false}</str> \n" +
       "  </solrcloud>\n" +
       // NOTE: this turns off the metrics collection unless overriden by a sysprop
       "  <metrics enabled=\"${metricsEnabled:false}\">\n" +

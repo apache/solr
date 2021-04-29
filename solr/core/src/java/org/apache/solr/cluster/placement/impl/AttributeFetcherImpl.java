@@ -65,12 +65,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeEnvironmentVariable(String name) {
-    requestedNodeSystemSnitchTags.add(getSystemEnvSnitchTag(name));
-    return this;
-  }
-
-  @Override
   public AttributeFetcher requestNodeMetric(NodeMetric<?> metric) {
     requestedNodeMetricSnitchTags.add(metric);
     return this;
@@ -213,9 +207,5 @@ public class AttributeFetcherImpl implements AttributeFetcher {
 
   public static String getSystemPropertySnitchTag(String name) {
     return ImplicitSnitch.SYSPROP + name;
-  }
-
-  public static String getSystemEnvSnitchTag(String name) {
-    return ImplicitSnitch.SYSENV + name;
   }
 }

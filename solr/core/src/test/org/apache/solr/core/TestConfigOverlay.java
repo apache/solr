@@ -46,9 +46,6 @@ public class TestConfigOverlay extends SolrTestCase {
     assertTrue(isEditableProp("query.queryResultMaxDocsCached", false, null));
     assertTrue(isEditableProp("query.enableLazyFieldLoading", false, null));
     assertTrue(isEditableProp("query.boolTofilterOptimizer", false, null));
-    assertTrue(isEditableProp("jmx.agentId", false, null));
-    assertTrue(isEditableProp("jmx.serviceUrl", false, null));
-    assertTrue(isEditableProp("jmx.rootName", false, null));
 
     assertTrue(isEditableProp("requestDispatcher.requestParsers.multipartUploadLimitInKB", false, null));
     assertTrue(isEditableProp("requestDispatcher.requestParsers.formdataUploadLimitInKB", false, null));
@@ -69,7 +66,7 @@ public class TestConfigOverlay extends SolrTestCase {
     ConfigOverlay overlay = new ConfigOverlay(Collections.EMPTY_MAP,0);
     overlay = overlay.setProperty("query.filterCache.initialSize",100);
     assertEquals(100, overlay.getXPathProperty("query/filterCache/@initialSize"));
-    Map<String, String> map = overlay.getEditableSubProperties("query/filterCache");
+    Map<String, Object> map = overlay.getEditableSubProperties("query/filterCache");
     assertNotNull(map);
     assertEquals(1,map.size());
     assertEquals(100,map.get("initialSize"));

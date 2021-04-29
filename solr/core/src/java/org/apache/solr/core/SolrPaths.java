@@ -21,6 +21,8 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.exec.OS;
@@ -33,6 +35,15 @@ import org.slf4j.LoggerFactory;
  */
 public final class SolrPaths {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Special path which means to accept all paths.
+   */
+  public static final Path ALL_PATH = Paths.get("_ALL_");
+  /**
+   * Special singleton path set containing only {@link #ALL_PATH}.
+   */
+  private static final Set<Path> ALL_PATHS = Collections.singleton(ALL_PATH);
 
   private SolrPaths() {} // don't create this
 
@@ -58,6 +69,7 @@ public final class SolrPaths {
    * @throws SolrException if path is outside allowed paths
    */
   public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths) throws SolrException {
+    if (ALL_PATHS.equals(allowPaths)) return; // Catch-all allows all paths (*/_ALL_)
     if (pathToAssert == null) return;
     if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -70,10 +82,38 @@ public final class SolrPaths {
           "Path " + pathToAssert + " disallowed due to path traversal..");
     }
     if (!path.isAbsolute()) return; // All relative paths are accepted
-    if (allowPaths.contains(Paths.get("_ALL_"))) return; // Catch-all path "*"/"_ALL_" will allow all other paths
     if (allowPaths.stream().noneMatch(p -> path.startsWith(Path.of(p.toString())))) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
+    }
+  }
+
+  /**
+   * Builds a set of allowed {@link Path}.
+   * Detects special paths '*' and '_ALL_' that mean all paths are allowed.
+   */
+  public static class AllowPathBuilder {
+
+    private static final Path WILDCARD_PATH = Paths.get("*");
+
+    private Set<Path> paths;
+
+    public AllowPathBuilder addPath(Path path) {
+      if (paths != ALL_PATHS) {
+        if (path.equals(ALL_PATH) || path.equals(WILDCARD_PATH)) {
+          paths = ALL_PATHS;
+        } else {
+          if (paths == null) {
+            paths = new HashSet<>();
+          }
+          paths.add(path.normalize());
+        }
+      }
+      return this;
+    }
+
+    public Set<Path> build() {
+      return paths == null ? Collections.emptySet() : paths;
     }
   }
 }

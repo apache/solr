@@ -43,11 +43,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import io.opentracing.Tracer;
+import io.opentracing.noop.NoopTracer;
+import io.opentracing.noop.NoopTracerFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
@@ -72,6 +74,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.impl.ClusterEventProducerFactory;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
@@ -128,6 +131,7 @@ import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -164,6 +168,12 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 public class CoreContainer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  {
+    // Declared up top to ensure this is present before anything else.
+    // note: will not be re-added if already there
+    ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
+  }
 
   final SolrCores solrCores = new SolrCores(this);
 
@@ -245,6 +255,8 @@ public class CoreContainer {
 
   protected volatile SolrMetricsContext solrMetricsContext;
 
+  protected volatile Tracer tracer = NoopTracerFactory.create();
+
   protected MetricsHandler metricsHandler;
 
   protected volatile MetricsHistoryHandler metricsHistoryHandler;
@@ -267,7 +279,9 @@ public class CoreContainer {
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
-  private Set<Path> allowPaths;
+  private final Set<Path> allowPaths;
+
+  private final AllowListUrlChecker allowListUrlChecker;
 
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
@@ -276,6 +290,12 @@ public class CoreContainer {
   private volatile long status = 0L;
 
   private ExecutorService coreContainerAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Container Async Task");
+
+  /**
+   * Non empty if the Collection API is executed in a distributed way and not on Overseer, once the CoreContainer has been initialized
+   * properly, i.e. method {@link #load()} called. Until then it is null, and it is not expected to be read.
+   */
+  private volatile Optional<DistributedCollectionConfigSetCommandRunner> distributedCollectionCommandRunner;
 
   private enum CoreInitFailedAction {fromleader, none}
 
@@ -354,9 +374,10 @@ public class CoreContainer {
   }
 
   public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
+    this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
     this.solrHome = config.getSolrHome();
-    this.cfg = requireNonNull(config);
+
     try {
       containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
     } catch (IOException | InvalidKeySpecException e) {
@@ -374,18 +395,21 @@ public class CoreContainer {
             cfg.getReplayUpdatesThreads(),
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
 
-    this.allowPaths = new java.util.HashSet<>();
-    addToAllowPath(cfg.getSolrHome());
-    addToAllowPath(cfg.getCoreRootDirectory());
+    SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
+    allowPathBuilder.addPath(cfg.getSolrHome());
+    allowPathBuilder.addPath(cfg.getCoreRootDirectory());
     if (cfg.getSolrDataHome() != null) {
-      addToAllowPath(cfg.getSolrDataHome());
+      allowPathBuilder.addPath(cfg.getSolrDataHome());
     }
     if (!cfg.getAllowPaths().isEmpty()) {
-      addAllToAllowPath(cfg.getAllowPaths());
+      cfg.getAllowPaths().forEach(allowPathBuilder::addPath);
       if (log.isInfoEnabled()) {
         log.info("Allowing use of paths: {}", cfg.getAllowPaths());
       }
     }
+    this.allowPaths = allowPathBuilder.build();
+
+    this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
     Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
     try {
@@ -393,14 +417,6 @@ public class CoreContainer {
     } catch (Exception e) {
       log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
     }
-  }
-
-  private void addToAllowPath(Path path) {
-    this.allowPaths.add(path.normalize());
-  }
-
-  private void addAllToAllowPath(Set<Path> paths) {
-    this.allowPaths.addAll(paths.stream().map( path -> path.normalize()).collect(Collectors.toSet()));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -595,6 +611,9 @@ public class CoreContainer {
     cfg = null;
     containerProperties = null;
     replayUpdatesExecutor = null;
+    distributedCollectionCommandRunner = Optional.empty();
+    allowPaths = null;
+    allowListUrlChecker = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -637,6 +656,11 @@ public class CoreContainer {
 
   public MetricsHistoryHandler getMetricsHistoryHandler() {
     return metricsHistoryHandler;
+  }
+
+  /** Never null but may implement {@link NoopTracer}. */
+  public Tracer getTracer() {
+    return tracer;
   }
 
   public OrderedExecutor getReplayUpdatesExecutor() {
@@ -703,13 +727,11 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
     containerPluginsRegistry.registerListener(clusterEventProducerFactory.getPluginRegistryListener());
 
-    packageStoreAPI = new PackageStoreAPI(this);
-    containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
-    containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
-
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
+
+    tracer = TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
 
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor, null,
@@ -743,7 +765,11 @@ public class CoreContainer {
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       // use deprecated API for back-compat, remove in 9.0
       pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
-      TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
+
+      packageStoreAPI = new PackageStoreAPI(this);
+      containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
+      containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
+
       packageLoader = new PackageLoader(this);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().readAPI);
@@ -760,6 +786,15 @@ public class CoreContainer {
     coreConfigService = ConfigSetService.createConfigSetService(this);
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
+
+    // CoreContainer is initialized enough at this stage so we can set distributedCollectionCommandRunner (the
+    // construction of DistributedCollectionConfigSetCommandRunner uses Zookeeper so can't be done from the CoreContainer constructor
+    // because there Zookeeper is not yet ready). Given this is used in the CollectionsHandler created next line, this is
+    // the latest point where distributedCollectionCommandRunner can be initialized without refactoring this method...
+    // TODO: manage to completely build CoreContainer in the constructor and not in the load() method... Requires some test refactoring.
+    this.distributedCollectionCommandRunner = isZooKeeperAware() && cfg.getCloudConfig().getDistributedCollectionConfigSetExecution() ?
+        Optional.of(new DistributedCollectionConfigSetCommandRunner(this)) : Optional.empty();
+
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
     containerHandlers.getApiBag().registerObject(collectionsAPI);
@@ -942,7 +977,9 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
-      zkSys.getZkController().checkOverseerDesignate();
+      if (!distributedCollectionCommandRunner.isPresent()) {
+        zkSys.getZkController().checkOverseerDesignate();
+      }
 
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
@@ -1042,8 +1079,14 @@ public class CoreContainer {
 
     ZkController zkController = getZkController();
     if (zkController != null) {
-      OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
-      overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+      if (distributedCollectionCommandRunner.isPresent()) {
+        // Local (i.e. distributed) Collection API processing
+        distributedCollectionCommandRunner.get().stopAndWaitForPendingTasksToComplete();
+      } else {
+        // Overseer based processing
+        OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
+        overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+      }
     }
     if (log.isInfoEnabled()) {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
@@ -1218,6 +1261,8 @@ public class CoreContainer {
       org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
+
+    tracer.close();
   }
 
   public void cancelCoreRecoveries() {
@@ -1402,6 +1447,13 @@ public class CoreContainer {
   @VisibleForTesting
   public Set<Path> getAllowPaths() {
     return allowPaths;
+  }
+
+  /**
+   * Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml.
+   */
+  public AllowListUrlChecker getAllowListUrlChecker() {
+    return allowListUrlChecker;
   }
 
   /**
@@ -2221,8 +2273,8 @@ public class CoreContainer {
     return placementPluginFactory;
   }
 
-  static {
-    ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
+  public Optional<DistributedCollectionConfigSetCommandRunner> getDistributedCollectionCommandRunner() {
+    return this.distributedCollectionCommandRunner;
   }
 
   /**

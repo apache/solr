@@ -15,21 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.core;
+package org.apache.solr.cloud;
 
-import io.opentracing.Tracer;
-import io.opentracing.mock.MockTracer;
-import org.apache.solr.common.util.NamedList;
-
-public class MockTracerConfigurator extends TracerConfigurator {
-  
-  @Override
-  public Tracer getTracer() {
-    return new MockTracer();
-  }
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-
-  }
+/**
+ * A lock that can be used across cluster nodes.
+ */
+public interface DistributedLock {
+  void waitUntilAcquired();
+  void release();
+  boolean isAcquired();
 }

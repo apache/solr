@@ -79,7 +79,7 @@ for command in "grep -E \"^NAME=\" /etc/os-release" \
       distro=SUSE
     elif [[ ${distro_string,,} == *"darwin"* ]]; then
       echo "Sorry, this script does not support macOS. You'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide."
-      echo "You could also try installing via Homebrew (http://brew.sh/), e.g. brew install solr"
+      echo "You could also try installing via Homebrew (https://brew.sh/), e.g. brew install solr"
       exit 1
     fi
     if [[ $distro ]] ; then break ; fi
