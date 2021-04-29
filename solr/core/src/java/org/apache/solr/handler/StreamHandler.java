@@ -141,15 +141,21 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   public static class ExpressibleHolder extends PackagePluginHolder<Class<? extends Expressible>> {
+    private Class<? extends Expressible> clazz;
+
     public ExpressibleHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
       super(info, core, pluginMeta);
     }
 
-    // WARNING: This is called from the super constructor, do not make assumptions about object state.
-    // This will probably cause a really bad bug someday, I hope you are reading this under better circumstances.
+    @Override
+    public Class<? extends Expressible> get() {
+      return clazz;
+    }
+
     @Override
     protected Object initNewInstance(PackageLoader.Package.Version newest, SolrCore core) {
-      return inst = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
+      // This is called from super constructor, so be careful that pluginInfo.className is done initializing.
+      return clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
     }
   }
 
