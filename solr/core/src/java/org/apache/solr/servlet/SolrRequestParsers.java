@@ -41,6 +41,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import io.opentracing.Span;
+import io.opentracing.noop.NoopSpan;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -59,7 +61,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
@@ -169,8 +170,10 @@ public class SolrRequestParsers {
     // Pick the parser from the request...
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
-    if (GlobalTracer.get().tracing()) {
-      GlobalTracer.getTracer().activeSpan().setTag("params", params.toString());
+
+    Span span = (Span) req.getAttribute(Span.class.getName()); // not null but maybe in some tests?
+    if (span != null && !(span instanceof NoopSpan)) {
+      span.setTag("params", params.toString());
     }
     SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 
@@ -213,7 +216,7 @@ public class SolrRequestParsers {
     strs = params.getParams( CommonParams.STREAM_FILE );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled. See http://lucene.apache.org/solr/guide/requestdispatcher-in-solrconfig.html for help" );
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled. See https://solr.apache.org/guide/requestdispatcher-in-solrconfig.html for help" );
       }
       for( final String file : strs ) {
         ContentStreamBase stream = new ContentStreamBase.FileStream( new File(file) );
@@ -228,7 +231,7 @@ public class SolrRequestParsers {
     strs = params.getParams( CommonParams.STREAM_BODY );
     if( strs != null ) {
       if( !enableStreamBody ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, "Stream Body is disabled. See http://lucene.apache.org/solr/guide/requestdispatcher-in-solrconfig.html for help" );
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Stream Body is disabled. See https://solr.apache.org/guide/requestdispatcher-in-solrconfig.html for help" );
       }
       for( final String body : strs ) {
         ContentStreamBase stream = new ContentStreamBase.StringStream( body );

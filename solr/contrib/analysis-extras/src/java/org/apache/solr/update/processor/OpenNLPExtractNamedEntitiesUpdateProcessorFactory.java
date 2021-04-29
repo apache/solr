@@ -74,7 +74,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *   &lt;/fieldType&gt;
  * </pre>
  *
- * <p>See the <a href="http://opennlp.apache.org/models.html">OpenNLP website</a>
+ * <p>See the <a href="https://opennlp.apache.org/models.html">OpenNLP website</a>
  * for information on downloading pre-trained models.</p>
  *
  * Note that in order to use model files larger than 1MB on SolrCloud,

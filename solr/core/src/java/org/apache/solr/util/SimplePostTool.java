@@ -1137,7 +1137,7 @@ public class SimplePostTool {
         }
         res.httpStatus = 404;
         HttpURLConnection conn = (HttpURLConnection) u.openConnection();
-        conn.setRequestProperty("User-Agent", "SimplePostTool-crawler/"+VERSION_OF_THIS_TOOL+" (http://lucene.apache.org/solr/)");
+        conn.setRequestProperty("User-Agent", "SimplePostTool-crawler/"+VERSION_OF_THIS_TOOL+" (https://solr.apache.org/)");
         conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
         conn.connect();
         res.httpStatus = conn.getResponseCode();

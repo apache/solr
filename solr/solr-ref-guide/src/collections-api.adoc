@@ -42,22 +42,52 @@ As of now, REQUESTSTATUS does not automatically clean up the tracking data struc
 
 *Input*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1asyncexample]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collection1&shard=shard1&async=1000
+
+----
+====
+
+[example.tab-pane#v2asyncexample]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Content-Type: application/json' -d'
+  {
+    "split": {
+      "shard": "shard1",
+      "async": "1000"
+    }
+  }
+'
+----
+====
+--
+
+
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collection1&shard=shard1&async=1000&wt=xml
+
 ----
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">99</int>
-  </lst>
-  <str name="requestid">1000</str>
-</response>
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":115},
+  "requestid":"1000"}
 ----
 
 
@@ -66,7 +96,29 @@ http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collec
 
 Request the status and response of an already submitted <<Asynchronous Calls,Asynchronous Collection API>> (below) call. This call is also used to clear up the stored statuses.
 
-`/admin/collections?action=REQUESTSTATUS&requestid=_request-id_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1asyncrequeststatus]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000
+
+----
+====
+
+[example.tab-pane#v2asyncrequeststatus]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster/command-status/1000
+----
+====
+--
 
 === REQUESTSTATUS Parameters
 
@@ -126,7 +178,36 @@ http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1004
 
 Deletes the stored response of an already failed or completed <<Asynchronous Calls,Asynchronous Collection API>> call.
 
-`/admin/collections?action=DELETESTATUS&requestid=_request-id_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1asyncdeletestatus]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=1000
+
+----
+====
+
+[example.tab-pane#v2asyncdeletestatus]
+====
+[.tab-label]*V2 API*
+
+Delete a single request response:
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/cluster/command-status/1000
+----
+
+Flush out all stored completed and failed async request responses:
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/cluster/command-status
+----
+====
+--
 
 === DELETESTATUS Parameters
 
@@ -135,6 +216,7 @@ The request ID of the asynchronous call whose stored response should be cleared.
 
 `flush`::
 Set to `true` to clear all stored completed and failed async request responses.
+This is required only with the V1 API.
 
 === Examples using DELETESTATUS
 

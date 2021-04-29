@@ -36,96 +36,43 @@ A setup of a `TracerConfigurator` in `solr.xml` looks like this:
 [source,xml]
 ----
 <solr>
-  <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
-    <str name="agentHost">localhost</str>
-    <int name="agentPort">5775</int>
-    <bool name="logSpans">true</bool>
-    <int name="flushInterval">1000</int>
-    <int name="maxQueueSize">10000</int>
-  </tracerConfig>
+  <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator" />
 </solr>
 ----
 
 If `<tracerConfig>` is absent, `TracerConfigurator` will try to pick up the `Tracer` instance that was registered in `io.opentracing.util.GlobalTracer`.
-By doing this some backends like DataDog are supported out of the box since
+By doing this, some backends like DataDog are supported out of the box since
 https://docs.datadoghq.com/tracing/setup/java/[datadog-java-agent] uses Javaagent to register a `Tracer` in
 `io.opentracing.util.GlobalTracer`.
 
-=== Configuring Sample Rate
-
-By default only 0.1% of requests are sampled, this ensures that tracing activities do not affect performance of a node.
-
-The rate can be changed without needing to restart Solr nodes by setting the new sample rate as a cluster property using the Collections API's <<cluster-node-management.adoc#clusterprop,CLUSTERPROP>> command.
-
-For example, the following sets the `samplePercentage` property to 100%:
-
-[source,text]
-/admin/collections?action=CLUSTERPROP&name=samplePercentage&val=100
 
 == Jaeger Tracer Configurator
 
 The `contrib/jagertracer-configurator` provides a default implementation for setting up Jaeger Tracer.
 
-Note that all libraries of `jaegertracer-configurator` must be included in the classpath of all nodes.
-Then Jaeger tracer can be set up in `solr.xml` like this:
+Add the solr-jaegertracer JAR file and the other JARs provided with this module to your Solr installation, ideally to each node.
+GSON is a dependency that is only used by Jaeger's "remote" sampler,
+which is the default.  Solr doesn't distribute it, so you'll need to add GSON yourself or configure a different sampler.
+
+Then Jaeger tracer is configured in `solr.xml` like this:
 
 [source,xml]
 ----
-<tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
-  <str name="agentHost">localhost</str>
-  <int name="agentPort">5775</int>
-  <bool name="logSpans">true</bool>
-  <int name="flushInterval">1000</int>
-  <int name="maxQueueSize">10000</int>
-</tracerConfig>
+<tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator" />
 ----
 
-The parameters for `JaegerTracerConfigurator` include:
+_There are no configuration elements in the XML_; instead, this 3rd party system is configured using System Properties or Environment Variables.  The full list are listed at https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].
 
-`agentHost`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-The Jaeger backend host.
+For example, to use the probabilistic sampler, you could set this environment variable:
 
-`agentPort`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-The Jaeger port.
+[source,bash]
+----
+export JAEGER_SAMPLER_TYPE=probabilistic
+----
 
-`logSpans`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `true`
-|===
-+
-Whether the tracer should also log the spans.
+or System property:
 
-`flushInterval`::
-+
-[%autowidth,frame=none]
-|===
-|Optional | Default: `5000` (ms)
-|===
-+
-The tracer's flush interval.
-
-`maxQueueSize`::
-+
-[%autowidth,frame=none]
-|===
-|Optional | Default: `10000`
-|===
-+
-The tracer's maximum queue size.
-
-Other parameters which are not listed above can be configured using system properties or environment variables.
-The full list of parameters can be found in the https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].
+[source,bash]
+----
+bin/solr start -DJAEGER_SAMPLER_TYPE=probabilistic
+----
