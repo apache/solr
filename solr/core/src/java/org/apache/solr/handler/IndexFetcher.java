@@ -682,7 +682,7 @@ public class IndexFetcher {
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
-        throw new InterruptedException("Index fetch interrupted", e);
+        throw (InterruptedException)(new InterruptedException("Index fetch interrupted").initCause(e));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       }
