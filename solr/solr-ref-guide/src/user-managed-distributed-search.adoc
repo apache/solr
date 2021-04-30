@@ -102,7 +102,7 @@ When managing a user-managed Solr cluster. query requests should be load balance
 This gives you both increased query handling capacity and failover if a server goes down.
 
 Because there is no centralized cluster management in this scenario, none of the leader shards in this configuration know about each other.
-Documents are indexed to each leader, the index is replicated to each follower, and then searches are distributed across the followers, using one follower from each leader/follower shard.
+Documents are indexed to each leader, the index is replicated to each follower, and then searches are distributed across the followers, using one follower from each shard.
 
 For high availability you should use a load balancer to set up a virtual IP for each shard's set of followers.
 If you are new to load balancing, HAProxy (http://haproxy.1wt.eu/) is a good open source software load-balancer.

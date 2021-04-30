@@ -34,7 +34,7 @@ If you are using the managed schema, it is expected that you only interact with 
 If you do not use the managed schema, you will only be able to make manual edits to the file, the Schema API will not support any modifications.
 
 Note that if you are not using the Schema API yet you do use SolrCloud, you will need to interact with `schema.xml` through ZooKeeper using `upconfig` and `downconfig` commands to make a local copy and upload your changes.
-The options for doing this are described in <<solr-control-script-reference.adoc#,Solr Control Script Reference>> and <<using-zookeeper-to-manage-configuration-files.adoc#,Using ZooKeeper to Manage Configuration Files>>.
+The options for doing this are described in <<solr-control-script-reference.adoc#,Solr Control Script Reference>> and <<zookeeper-file-management.adoc#,ZooKeeper File Management>>.
 
 == Structure of the Schema File
 

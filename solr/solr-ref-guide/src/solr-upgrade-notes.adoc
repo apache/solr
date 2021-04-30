@@ -136,7 +136,7 @@ The Solr community is working on pluggable API to replace this functionality, wi
 * Support for detecting spinning disks has been removed in LUCENE-9576. Corresponding
 `spins` metrics in Solr still exist but now they always return `false` and will be removed in Solr 9.0.
 
-*Legacy Scaling (non-SolrCloud) Terminology Updated*
+*User-Managed Cluster Terminology Updated*
 
 * Solr has replaced the terms "master" and "slave" in the codebase and all documentation with "leader" and "follower".
 +
@@ -561,7 +561,7 @@ It is recommended that external ensembles set up to work with Solr also be updat
 This ZooKeeper release includes many new security features.
 In order for Solr's Admin UI to work with 3.5.5, the `zoo.cfg` file must allow access to ZooKeeper's "four-letter commands".
 At a minimum, `ruok`, `conf`, and `mntr` must be enabled, but other commands can optionally be enabled if you choose.
-See the section <<setting-up-an-external-zookeeper-ensemble.adoc#configuration-for-a-zookeeper-ensemble,Configuration for a ZooKeeper Ensemble>> for details.
+See the section <<zookeeper-ensemble.adoc#configuration-for-a-zookeeper-ensemble,Configuration for a ZooKeeper Ensemble>> for details.
 
 [WARNING]
 Until 8.3, https://issues.apache.org/jira/browse/SOLR-13672[SOLR-13672] causes the ZK Status screen in the Admin UI to not be able to report status. This only impacts the UI, ZooKeeper still operates correctly.

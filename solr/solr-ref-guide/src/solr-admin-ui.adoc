@@ -92,9 +92,9 @@ In the left-hand navigation bar, you will see a pull-down menu titled Collection
 .Only Visible When Using SolrCloud
 [NOTE]
 ====
-The Collection Selector pull-down menu is only available on Solr instances running in <<clusters.adoc#solrcloud-mode,SolrCloud mode>>.
+The Collection Selector pull-down menu is only available on Solr instances running <<clusters.adoc#solrcloud-mode,SolrCloud>>.
 
-Single node or leader/follower replication instances of Solr will not display this menu, instead the Collection specific UI pages described in this section will be available in the <<Core-Specific Tools,Core Selector pull-down menu>>.
+User-managed clusters or single-node installations will not display this menu, instead the Collection specific UI pages described in this section will be available in the <<Core-Specific Tools,Core Selector pull-down menu>>.
 ====
 
 Clicking on the Collection Selector pull-down menu will show a list of the collections in your Solr cluster, with a search box that can be used to find a specific collection by name.

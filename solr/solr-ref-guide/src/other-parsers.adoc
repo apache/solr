@@ -302,11 +302,13 @@ Boolean to indicate if the documents that matched the original query (to define 
 `returnOnlyLeaf`::
 Boolean that indicates if the results of the query should be filtered so that only documents with no outgoing edges are returned. Defaults to `false`.
 
-`useAutn`:: Boolean that indicates if an Automatons should be compiled for each iteration of the breadth first search, which may be faster for some graphs. Defaults to `false`.
+`useAutn`::
+Boolean that indicates if an Automatons should be compiled for each iteration of the breadth first search, which may be faster for some graphs.
+Defaults to `false`.
 
 === Graph Query Limitations
 
-The `graph` parser only works in single node Solr installations, or with SolrCloud collections that use exactly 1 shard.
+The `graph` parser only works in single-node Solr installations, or with SolrCloud and user-managed clusters that use exactly 1 shard.
 
 === Graph Query Examples
 

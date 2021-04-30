@@ -87,11 +87,18 @@ sudo service solr status
 
 If you do not want to start the service immediately, pass the `-n` option. You can then start the service manually later, e.g., after completing the configuration setup.
 
-We'll cover some additional configuration settings you can make to fine-tune your Solr setup in a moment. Before moving on, let's take a closer look at the steps performed by the installation script. This gives you a better overview and will help you understand important details about your Solr installation when reading other pages in this guide; such as when a page refers to Solr home, you'll know exactly where that is on your system.
+We'll cover some additional configuration settings you can make to fine-tune your Solr setup in a moment.
+Before moving on, let's take a closer look at the steps performed by the installation script.
+This gives you a better overview and will help you understand important details about your Solr installation when reading other pages in this guide; such as when a page refers to Solr home, you'll know exactly where that is on your system.
 
 ==== Solr Home Directory
 
-The Solr home directory (not to be confused with the Solr installation directory) is where Solr manages core directories with index files. By default, the installation script uses `/var/solr/data`. If the `-d` option is used on the install script, then this will change to the `data` subdirectory in the location given to the -d option. Take a moment to inspect the contents of the Solr home directory on your system. If you do not <<using-zookeeper-to-manage-configuration-files.adoc#,store `solr.xml` in ZooKeeper>>, the home directory must contain a `solr.xml` file. When Solr starts up, the Solr Control Script passes the location of the home directory using the `-Dsolr.solr.home=...` system property.
+The Solr home directory (not to be confused with the Solr installation directory) is where Solr manages core directories with index files.
+By default, the installation script uses `/var/solr/data`.
+If the `-d` option is used on the install script, then this will change to the `data` subdirectory in the location given to the -d option.
+Take a moment to inspect the contents of the Solr home directory on your system.
+If you do not <<zookeeper-file-management.adoc#,store `solr.xml` in ZooKeeper>>, the home directory must contain a `solr.xml` file.
+When Solr starts up, the Solr Control Script passes the location of the home directory using the `-Dsolr.solr.home=...` system property.
 
 ==== Environment Overrides Include File
 

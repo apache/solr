@@ -192,7 +192,7 @@ $ sudo vim /etc/hosts
 
 === Install ZooKeeper
 
-These steps will help you install and configure a single instance of ZooKeeper on AWS. This is not sufficient for a production, use, however, where a ZooKeeper ensemble of at least three nodes is recommended. See the section <<setting-up-an-external-zookeeper-ensemble.adoc#,Setting Up an External ZooKeeper Ensemble>> for information about how to change this single-instance into an ensemble.
+These steps will help you install and configure a single instance of ZooKeeper on AWS. This is not sufficient for a production, use, however, where a ZooKeeper ensemble of at least three nodes is recommended. See the section <<zookeeper-ensemble.adoc#,ZooKeeper Ensemble>> for information about how to change this single-instance into an ensemble.
 
 . Download a stable version of ZooKeeper. In this example we're using ZooKeeper v{ivy-zookeeper-version}. On the node you're using to host ZooKeeper (`zookeeper-node`), download the package and untar it:
 +
@@ -266,5 +266,5 @@ $ bin/solr start -c -p 8983 -h solr-node-1 -z zookeeper-node:2181
 As noted earlier, a single ZooKeeper node is not sufficient for a production installation. See these additional resources for more information about deploying Solr in production, which can be used once you have the EC2 instances up and running:
 
 * <<taking-solr-to-production.adoc#,Taking Solr to Production>>
-* <<setting-up-an-external-zookeeper-ensemble.adoc#,Setting Up an External ZooKeeper Ensemble>>
+* <<zookeeper-ensemble.adoc#,ZooKeeper Ensemble>>
 ====

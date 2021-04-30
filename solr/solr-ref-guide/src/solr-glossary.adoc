@@ -50,13 +50,17 @@ In Solr, a cluster is a set of Solr nodes operating in coordination with each ot
 [[collection]]Collection::
 In Solr, one or more <<document,Documents>> grouped together in a single logical index using a single configuration and Schema.
 +
-In <<solrclouddef,SolrCloud>> a collection may be divided up into multiple logical shards, which may in turn be distributed across many nodes, or in a Single node Solr installation, a collection may be a single <<core,Core>>.
+In <<solrclouddef,SolrCloud>> a collection may be divided up into multiple logical shards, which may in turn be distributed across many nodes.
++
+Single-node installations and user-managed clusters use instead the concept of a <<core,Core>>.
 
 [[defcommit]]Commit::
 To make document changes permanent in the index. In the case of added documents, they would be searchable after a _commit_.
 
 [[core]]Core::
-An individual Solr instance (represents a logical index). Multiple cores can run on a single node. See also <<solrclouddef,SolrCloud>>.
+An individual Solr instance (represents a logical index).
+Multiple cores can run on a single node.
+See also <<solrclouddef,SolrCloud>>.
 
 [[corereload]]Core reload::
 To re-initialize a Solr core after changes to `schema.xml`, `solrconfig.xml` or other configuration files.

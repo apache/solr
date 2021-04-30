@@ -108,7 +108,8 @@ In this case, an instance of `SignatureUpdateProcessorFactory` is configured wit
 
 == Update Processors in SolrCloud
 
-In a single node, stand-alone Solr, each update is run through all the update processors in a chain exactly once. But the behavior of update request processors in SolrCloud deserves special consideration.
+In a user-managed cluster or a single-node installation, each update is run through all the update processors in a chain exactly once.
+In SolrCloud, however, the behavior of update request processors deserves special consideration.
 
 A critical SolrCloud functionality is the routing and distributing of requests. For update requests this routing is implemented by the `DistributedUpdateRequestProcessor`, and this processor is given a special status by Solr due to its important function.
 
@@ -351,7 +352,8 @@ The {solr-javadocs}/contrib/langid/index.html[`langid`] contrib provides::
 
 The {solr-javadocs}/contrib/analysis-extras/index.html[`analysis-extras`] contrib provides::
 
-{solr-javadocs}/contrib/analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.  Note that in order to use model files larger than 1MB on SolrCloud, you must either <<setting-up-an-external-zookeeper-ensemble#increasing-the-file-size-limit,configure both ZooKeeper server and clients>> or <<libs.adoc#lib-directives-in-solrconfig,store the model files on the filesystem>> on each node hosting a collection replica.
+{solr-javadocs}/contrib/analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
+Note that in order to use model files larger than 1MB on SolrCloud, you must either <<zookeeper-ensemble#increasing-the-file-size-limit,configure both ZooKeeper server and clients>> or <<libs.adoc#lib-directives-in-solrconfig,store the model files on the filesystem>> on each node hosting a collection replica.
 
 === Update Processor Factories You Should _Not_ Modify or Remove
 

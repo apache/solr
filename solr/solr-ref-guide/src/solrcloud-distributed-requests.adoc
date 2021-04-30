@@ -274,7 +274,7 @@ http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!,user2!
 == Near Real Time (NRT) Use Cases
 
 Near Real Time (NRT) search means that documents are available for search soon after being indexed.
-NRT searching is one of the main features of SolrCloud and is rarely attempted in leader/follower configurations.
+NRT searching is one of the main features of SolrCloud and is rarely attempted in user-managed clusters or single-node installations.
 
 Document durability and searchability are controlled by `commits`.
 The "Near" in "Near Real Time" is configurable to meet the needs of your application.

@@ -1,10 +1,7 @@
 = Scaling Solr
 :page-children: clusters, \
-    index-sharding-replication, \
-    distributed-queries, \
-    cluster-coordination, \
-    solrcloud-collections, \
-    solrcloud-with-legacy-configuration-files
+    user-managed-clusters, \
+    solrcloud-clusters
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -37,21 +34,13 @@ The differences between the approaches are then how each cluster is managed and 
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::scaling-sections[]
-*Index Sharding and Replication*
+*User-Managed Clusters*
 
-include::index-sharding-replication.adoc[tag=sharding-sections]
+include::user-managed-clusters.adoc[tag=user-managed-sections]
 
-*Distributed Queries*
+*SolrCloud Clusters*
 
-include::distributed-queries.adoc[tag=shard-queries-sections]
-
-*SolrCloud Cluster Coordination*
-
-include::cluster-coordination.adoc[tag=coordination-sections]
-
-*SolrCloud Collections*
-
-include::solrcloud-collections.adoc[tag=collections-sections]
+include::solrcloud-clusters.adoc[tag=solrcloud-sections]
 
 // end::scaling-sections[]
 ****

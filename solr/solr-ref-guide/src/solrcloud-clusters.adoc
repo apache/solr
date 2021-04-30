@@ -1,0 +1,59 @@
+= SolrCloud Clusters
+:page-children: shards-and-indexing-data-in-solrcloud, \
+    solrcloud-recoveries-and-write-tolerance, \
+    shard-management, \
+    replica-management, \
+    solrcloud-distributed-requests, \
+    collection-management, \
+    collection-aliasing, \
+    aliases, \
+    collections-core-admin, \
+    cluster-node-management, \
+    zookeeper-ensemble, \
+    zookeeper-file-management, \
+    zookeeper-utilities, \
+    cloud-screens, \
+    solrcloud-with-legacy-configuration-files
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+*TODO*
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::solrcloud-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<shards-and-indexing-data-in-solrcloud.adoc#,Shards and Indexing Data in SolrCloud>>
+| <<solrcloud-recoveries-and-write-tolerance.adoc#,SolrCloud Recoveries and Write Tolerance>>
+| <<shard-management.adoc#,Shard Management>>: Create and delete a shard; split a shard into two or more additional shards; force a shard leader.
+| <<replica-management.adoc#,Replica Management>>: Add or delete a replica; set replica properties; move a replica to a different node.| <<solrcloud-distributed-requests.adoc#,SolrCloud Distributed Requests>>
+|<<collection-management.adoc#,Collection Management>>: Create, list, reload and delete collections; set collection properties; migrate documents to another collection; rebalance leaders; backup and restore collections.
+|<<collection-aliasing.adoc#,Collection Aliasing>>: Create, list or delete collection aliases; set alias properties.
+| <<aliases.adoc#,Aliases>>
+| <<collections-core-admin.adoc#,Collections / Core Admin>>
+|<<cluster-node-management.adoc#,Cluster and Node Management>>: Define properties for the entire cluster; check the status of a cluster; remove replicas from a node; utilize a newly added node; add or remove roles for a node.
+|<<zookeeper-ensemble.adoc#,ZooKeeper Ensemble>>
+| <<zookeeper-file-management.adoc#,ZooKeeper File Management>>
+| <<zookeeper-utilities.adoc#,ZooKeeper Utilities>>
+| <<cloud-screens.adoc#,Cloud Screens>>: Information about nodes when running in SolrCloud mode.
+| <<solrcloud-with-legacy-configuration-files.adoc#,SolrCloud with Legacy Configuration Files>>
+|
+|===
+// end::solrcloud-sections[]
+****

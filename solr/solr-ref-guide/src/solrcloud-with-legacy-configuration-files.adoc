@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-If you are migrating from a non-SolrCloud environment to SolrCloud, this information may be helpful.
+If you are migrating from a user-managed cluster to SolrCloud, this information may be helpful.
 
 All of the required configuration is already set up in the sample configurations shipped with Solr. You only need to add the following if you are migrating old configuration files. Do not remove these files and parameters from a new Solr instance if you intend to use Solr in SolrCloud mode.
 

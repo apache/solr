@@ -391,7 +391,7 @@ When upgrading to Solr 7.4, users should be aware of the following major changes
 
 * Configuring `slowQueryThresholdMillis` now logs slow requests to a separate file named `solr_slow_requests.log`. Previously they would get logged in the `solr.log` file.
 
-*Legacy Scaling (non-SolrCloud)*
+*User-Managed Clusters*
 
 * In the <<user-managed-index-replication.adoc#,leader-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
 

@@ -100,7 +100,7 @@ Then use the `bin/solr zk` command to upload the file:
 >bin/solr zk cp ./security.json zk:security.json -z localhost:2181
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
 
 [WARNING]
 ====
@@ -114,7 +114,7 @@ The version data is found at the end of the `security.json` file, and will appea
 
 === In a User-Managed Cluster or Single-Node Installation
 
-When running Solr in either a user-managed cluster or a single node, you need to create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
+When running Solr in either a user-managed cluster or a single-node installation, you create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
 
 With a user-managed cluster, you will need to place `security.json` on each node of the cluster.
 
