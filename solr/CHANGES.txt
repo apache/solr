@@ -39,6 +39,8 @@ New Features
 
 * SOLR-15164: Implement Task Management Interface (Atri Sharma, with extensive review and perf testing by Anshum Gupta, Mike Drob and Houston Putman)
 
+* SOLR-15090: A new 'gcs-repository' contrib can be used to store and retrieve backups from Google Cloud Storage. (Jason Gerlowski, Shalin Mangar, Cao Manh Dat)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -365,6 +367,8 @@ Bug Fixes
 
 * SOLR-11921: Move "cursorMark" logic from QueryComponent to SearchHandler so it can work with things like QueryElevationComponent
   that modify the SortSpec in prepare(), as well as possible custom "search" components other then QueryComponent.  (hossman)
+
+* SOLR-15383: Solr Zookeeper status page shows green even when some Zookeepers are not serving requests (janhoy)
 
 Other Changes
 ---------------------
