@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -30,7 +31,6 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
-import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory;
@@ -91,12 +91,11 @@ public class SolrIndexConfig implements MapSerializable {
   public final PluginInfo mergedSegmentWarmerInfo;
   
   public InfoStream infoStream = InfoStream.NO_OUTPUT;
-  private ConfigNode node;
 
   /**
    * Internal constructor for setting defaults based on Lucene Version
    */
-  private SolrIndexConfig() {
+  private SolrIndexConfig(SolrConfig solrConfig) {
     useCompoundFile = false;
     maxBufferedDocs = -1;
     ramBufferSizeMB = 100;
@@ -110,78 +109,88 @@ public class SolrIndexConfig implements MapSerializable {
     // enable coarse-grained metrics by default
     metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
   }
-  private ConfigNode get(String s) { return node.get(s); }
-  public SolrIndexConfig(SolrConfig cfg, SolrIndexConfig def)  {
-    this(cfg.get("indexConfig"), def);
-  }
+  
   /**
    * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml
+   * @param solrConfig the overall SolrConfig object
+   * @param prefix the XPath prefix for which section to parse (mandatory)
    * @param def a SolrIndexConfig instance to pick default values from (optional)
    */
-  public SolrIndexConfig(ConfigNode cfg, SolrIndexConfig def)  {
-    this.node = cfg;
-    if (def == null) {
-      def = new SolrIndexConfig();
+  public SolrIndexConfig(SolrConfig solrConfig, String prefix, SolrIndexConfig def)  {
+    if (prefix == null) {
+      prefix = "indexConfig";
+      log.debug("Defaulting to prefix '{}' for index configuration", prefix);
     }
-
+    
+    if (def == null) {
+      def = new SolrIndexConfig(solrConfig);
+    }
 
     // sanity check: this will throw an error for us if there is more then one
     // config section
-//    Object unused =  solrConfig.getNode(prefix, false);
+    Object unused = solrConfig.getNode(prefix, false);
 
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_3_6, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
-        get("mergeScheduler").isNull() || get("mergeScheduler").attr("class") != null,
+        !((solrConfig.getNode(prefix + "/mergeScheduler", false) != null) && (solrConfig.get(prefix + "/mergeScheduler/@class", null) == null)),
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergePolicy>myclass</mergePolicy> is no longer supported, use <mergePolicyFactory> instead.",
-        get("mergePolicy").isNull() || get("mergePolicy").attr("class") != null,
+        !((solrConfig.getNode(prefix + "/mergePolicy", false) != null) && (solrConfig.get(prefix + "/mergePolicy/@class", null) == null)),
         true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
-        get("luceneAutoCommit").isNull(),
+        solrConfig.get(prefix + "/luceneAutoCommit", null) == null,
         true);
 
-    useCompoundFile = get("useCompoundFile").boolVal(def.useCompoundFile);
-    maxBufferedDocs = get("maxBufferedDocs").intVal(def.maxBufferedDocs);
-    ramBufferSizeMB = get("ramBufferSizeMB").doubleVal(def.ramBufferSizeMB);
-    maxCommitMergeWaitMillis = get("maxCommitMergeWaitTime").intVal(def.maxCommitMergeWaitMillis);
+    useCompoundFile = solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
+    maxBufferedDocs = solrConfig.getInt(prefix+"/maxBufferedDocs", def.maxBufferedDocs);
+    ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
+    maxCommitMergeWaitMillis = solrConfig.getInt(prefix+"/maxCommitMergeWaitTime", def.maxCommitMergeWaitMillis);
 
     // how do we validate the value??
-    ramPerThreadHardLimitMB = get("ramPerThreadHardLimitMB").intVal(def.ramPerThreadHardLimitMB);
+    ramPerThreadHardLimitMB = solrConfig.getInt(prefix+"/ramPerThreadHardLimitMB", def.ramPerThreadHardLimitMB);
 
-    writeLockTimeout= get("writeLockTimeout").intVal(def.writeLockTimeout);
-    lockType = get("lockType").txt(def.lockType);
+    writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
+    lockType=solrConfig.get(prefix+"/lockType", def.lockType);
 
-    metricsInfo = getPluginInfo(get("metrics"), def.metricsInfo);
-    mergeSchedulerInfo = getPluginInfo(get("mergeScheduler"), def.mergeSchedulerInfo);
-    mergePolicyFactoryInfo = getPluginInfo(get("mergePolicyFactory"), def.mergePolicyFactoryInfo);
+    List<PluginInfo> infos = solrConfig.readPluginInfos(prefix + "/metrics", false, false);
+    if (infos.isEmpty()) {
+      metricsInfo = def.metricsInfo;
+    } else {
+      metricsInfo = infos.get(0);
+    }
+    mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
+    mergePolicyFactoryInfo = getPluginInfo(prefix + "/mergePolicyFactory", solrConfig, def.mergePolicyFactoryInfo);
 
     assertWarnOrFail("Beginning with Solr 7.0, <mergePolicy> is no longer supported, use <mergePolicyFactory> instead.",
-        get("mergePolicy").isNull(),
+        getPluginInfo(prefix + "/mergePolicy", solrConfig, null) == null,
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <maxMergeDocs> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        get("maxMergeDocs").isNull(),
+        solrConfig.getInt(prefix+"/maxMergeDocs", 0) == 0,
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergeFactor> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        get("maxMergeFactor").isNull(),
+        solrConfig.getInt(prefix+"/mergeFactor", 0) == 0,
         true);
 
-    if (get("termIndexInterval").exists()) {
+    String val = solrConfig.get(prefix + "/termIndexInterval", null);
+    if (val != null) {
       throw new IllegalArgumentException("Illegal parameter 'termIndexInterval'");
     }
 
-    if(get("infoStream").boolVal(false)) {
-      if (get("infoStream").attr("file") == null) {
+    boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
+    if(infoStreamEnabled) {
+      String infoStreamFile = solrConfig.get(prefix + "/infoStream/@file", null);
+      if (infoStreamFile == null) {
         log.info("IndexWriter infoStream solr logging is enabled");
         infoStream = new LoggingInfoStream();
       } else {
         throw new IllegalArgumentException("Remove @file from <infoStream> to output messages to solr's logfile");
       }
     }
-    mergedSegmentWarmerInfo = getPluginInfo(get("mergedSegmentWarmer"), def.mergedSegmentWarmerInfo);
+    mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
 
     assertWarnOrFail("Beginning with Solr 5.0, <checkIntegrityAtMerge> option is no longer supported and should be removed from solrconfig.xml (these integrity checks are now automatic)",
-        get( "checkIntegrityAtMerge").isNull(),
+        (null == solrConfig.getNode(prefix + "/checkIntegrityAtMerge", false)),
         true);
   }
 
@@ -206,10 +215,9 @@ public class SolrIndexConfig implements MapSerializable {
     return m;
   }
 
-  private PluginInfo getPluginInfo(ConfigNode node , PluginInfo def)  {
-    return node != null && node.exists() ?
-        new PluginInfo(node, "[solrconfig.xml] " + node.name(), false, false) :
-        def;
+  private PluginInfo getPluginInfo(String path, SolrConfig solrConfig, PluginInfo def)  {
+    List<PluginInfo> l = solrConfig.readPluginInfos(path, false, true);
+    return l.isEmpty() ? def : l.get(0);
   }
 
   private static class DelayedSchemaAnalyzer extends DelegatingAnalyzerWrapper {
