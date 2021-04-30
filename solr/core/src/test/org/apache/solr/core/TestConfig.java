@@ -16,18 +16,17 @@
  */
 package org.apache.solr.core;
 
+import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Collections;
-import java.util.List;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.ConfigNode;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -36,6 +35,8 @@ import org.apache.solr.update.SolrIndexConfig;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class TestConfig extends SolrTestCaseJ4 {
 
@@ -79,24 +80,24 @@ public class TestConfig extends SolrTestCaseJ4 {
   public void testJavaProperty() {
     // property values defined in build.xml
 
-    String s = solrConfig.get("propTest").txt();
+    String s = solrConfig.get("propTest");
     assertEquals("prefix-proptwo-suffix", s);
 
-    s = solrConfig.get("propTest").attr("attr1", "default");
+    s = solrConfig.get("propTest/@attr1", "default");
     assertEquals("propone-${literal}", s);
 
-    s = solrConfig.get("propTest").attr("attr2", "default");
+    s = solrConfig.get("propTest/@attr2", "default");
     assertEquals("default-from-config", s);
 
+    s = solrConfig.get("propTest[@attr2='default-from-config']", "default");
+    assertEquals("prefix-proptwo-suffix", s);
 
-    assertEquals("prefix-proptwo-suffix", solrConfig.get("propTest",
-        it -> "default-from-config".equals(it.attr("attr2"))).txt());
+    NodeList nl = (NodeList) solrConfig.evaluate("propTest", XPathConstants.NODESET);
+    assertEquals(1, nl.getLength());
+    assertEquals("prefix-proptwo-suffix", nl.item(0).getTextContent());
 
-    List<ConfigNode> nl = solrConfig.root.getAll("propTest");
-    assertEquals(1, nl.size());
-    assertEquals("prefix-proptwo-suffix", nl.get(0).txt());
-
-    assertEquals("prefix-proptwo-suffix", solrConfig.get("propTest").txt());
+    Node node = solrConfig.getNode("propTest", true);
+    assertEquals("prefix-proptwo-suffix", node.getTextContent());
   }
 
   // sometime if the config referes to old things, it must be replaced with new stuff
