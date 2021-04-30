@@ -11,12 +11,6 @@
     ]
   },
   "commands": {
-    "modify": {
-      "#include": "collections.collection.Commands.modify"
-    },
-    "reload": {
-      "#include": "collections.collection.Commands.reload"
-    },
     "move-replica": {
       "type": "object",
       "documentation": "https://lucene.apache.org/solr/guide/replica-management.html#movereplica",

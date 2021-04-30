@@ -5,6 +5,7 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.ModifyCollectionPayload;
+import org.apache.solr.client.solrj.request.beans.ReloadCollectionPayload;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -32,6 +33,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 public class SpecificCollectionAPI {
 
   private static final String V2_MODIFY_COLLECTION_CMD = "modify";
+  private static final String V2_RELOAD_COLLECTION_CMD = "reload";
 
   public final SpecificCollectionCommands specificCollectionCommands = new SpecificCollectionCommands();
   private final CollectionsHandler collectionsHandler;
@@ -73,6 +75,16 @@ public class SpecificCollectionAPI {
         v1Params.remove("properties");
         flattenMapWithPrefix(v2Body.properties, v1Params, "property.");
       }
+
+      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    }
+
+    @Command(name = V2_RELOAD_COLLECTION_CMD)
+    public void reloadCollection(PayloadObj<ReloadCollectionPayload> obj) throws Exception {
+      final ReloadCollectionPayload v2Body = obj.get();
+      final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+      v1Params.put(ACTION, CollectionParams.CollectionAction.RELOAD.toLower());
+      v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
     }
