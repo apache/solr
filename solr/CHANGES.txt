@@ -283,6 +283,9 @@ Other Changes
   use.  The Jaeger plugin is now completely configurable via system properties or environment vars,
   not by values in solr.xml. (David Smiley)
 
+* SOLR-14166: Non-cached filter queries are now pushed down to Lucene, possibly benefiting from
+  TwoPhaseIterator, which can make a big difference for some queries.  (David Smiley)
+
 * SOLR-15369: PackageStoreAPI will only be loaded in SolrCloud mode (Mike Drob)
 
 Bug Fixes
