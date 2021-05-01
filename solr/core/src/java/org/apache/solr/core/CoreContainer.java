@@ -43,7 +43,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -131,6 +130,7 @@ import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -278,7 +278,9 @@ public class CoreContainer {
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
-  private Set<Path> allowPaths;
+  private final Set<Path> allowPaths;
+
+  private final AllowListUrlChecker allowListUrlChecker;
 
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
@@ -392,18 +394,21 @@ public class CoreContainer {
             cfg.getReplayUpdatesThreads(),
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
 
-    this.allowPaths = new java.util.HashSet<>();
-    addToAllowPath(cfg.getSolrHome());
-    addToAllowPath(cfg.getCoreRootDirectory());
+    SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
+    allowPathBuilder.addPath(cfg.getSolrHome());
+    allowPathBuilder.addPath(cfg.getCoreRootDirectory());
     if (cfg.getSolrDataHome() != null) {
-      addToAllowPath(cfg.getSolrDataHome());
+      allowPathBuilder.addPath(cfg.getSolrDataHome());
     }
     if (!cfg.getAllowPaths().isEmpty()) {
-      addAllToAllowPath(cfg.getAllowPaths());
+      cfg.getAllowPaths().forEach(allowPathBuilder::addPath);
       if (log.isInfoEnabled()) {
         log.info("Allowing use of paths: {}", cfg.getAllowPaths());
       }
     }
+    this.allowPaths = allowPathBuilder.build();
+
+    this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
     Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
     try {
@@ -411,14 +416,6 @@ public class CoreContainer {
     } catch (Exception e) {
       log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
     }
-  }
-
-  private void addToAllowPath(Path path) {
-    this.allowPaths.add(path.normalize());
-  }
-
-  private void addAllToAllowPath(Set<Path> paths) {
-    this.allowPaths.addAll(paths.stream().map( path -> path.normalize()).collect(Collectors.toSet()));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -614,6 +611,8 @@ public class CoreContainer {
     containerProperties = null;
     replayUpdatesExecutor = null;
     distributedCollectionCommandRunner = Optional.empty();
+    allowPaths = null;
+    allowListUrlChecker = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -727,10 +726,6 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
     containerPluginsRegistry.registerListener(clusterEventProducerFactory.getPluginRegistryListener());
 
-    packageStoreAPI = new PackageStoreAPI(this);
-    containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
-    containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
-
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
@@ -769,6 +764,11 @@ public class CoreContainer {
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       // use deprecated API for back-compat, remove in 9.0
       pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
+
+      packageStoreAPI = new PackageStoreAPI(this);
+      containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
+      containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
+
       packageLoader = new PackageLoader(this);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().readAPI);
@@ -1443,6 +1443,13 @@ public class CoreContainer {
   @VisibleForTesting
   public Set<Path> getAllowPaths() {
     return allowPaths;
+  }
+
+  /**
+   * Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml.
+   */
+  public AllowListUrlChecker getAllowListUrlChecker() {
+    return allowListUrlChecker;
   }
 
   /**

@@ -42,7 +42,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     
@@ -63,7 +63,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
 
 

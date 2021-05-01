@@ -176,13 +176,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void setSolrDisableShardsWhitelist() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
   }
 
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void clearSolrDisableShardsWhitelist() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
 
   private static String getHostContextSuitableForServletContext() {

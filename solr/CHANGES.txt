@@ -39,6 +39,8 @@ New Features
 
 * SOLR-15164: Implement Task Management Interface (Atri Sharma, with extensive review and perf testing by Anshum Gupta, Mike Drob and Houston Putman)
 
+* SOLR-15090: A new 'gcs-repository' contrib can be used to store and retrieve backups from Google Cloud Storage. (Jason Gerlowski, Shalin Mangar, Cao Manh Dat)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -121,6 +123,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   (Michael Gibney, David Smiley)
 
 * SOLR-15329: Improve HDFS Directory size calculation (Andras Salamon via Mike Drob)
+
+* SOLR-15340: Rename shardsWhitelist and extract AllowListUrlChecker to use it more broadly. (Bruno Roustant)
 
 Other Changes
 ----------------------
@@ -263,8 +267,8 @@ Other Changes
   alternative implementations of where ConfigSets come from.
   (Nazerke Seidan, David Smiley)
 
-* SOLR-15341: Lucene has removed CodecReader#ramBytesUsed in LUCENE-9387, so ramBytesUsed will no longer be reported
-  in SegmentsInfo handler (janhoy)
+* SOLR-15341: Remove indexHeapUsageBytes info from /admin/segments and /admin/luke because it's no
+  longer available in Lucene -- LUCENE-9387. (janhoy, David Smiley)
 
 * SOLR-15146: Allow Collection API and Config Set API to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
 
@@ -281,6 +285,8 @@ Other Changes
 
 * SOLR-14166: Non-cached filter queries are now pushed down to Lucene, possibly benefiting from
   TwoPhaseIterator, which can make a big difference for some queries.  (David Smiley)
+
+* SOLR-15369: PackageStoreAPI will only be loaded in SolrCloud mode (Mike Drob)
 
 Bug Fixes
 ---------------------
@@ -364,6 +370,8 @@ Bug Fixes
 
 * SOLR-11921: Move "cursorMark" logic from QueryComponent to SearchHandler so it can work with things like QueryElevationComponent
   that modify the SortSpec in prepare(), as well as possible custom "search" components other then QueryComponent.  (hossman)
+
+* SOLR-15383: Solr Zookeeper status page shows green even when some Zookeepers are not serving requests (janhoy)
 
 Other Changes
 ---------------------
