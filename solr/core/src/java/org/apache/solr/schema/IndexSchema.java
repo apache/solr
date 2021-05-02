@@ -172,7 +172,7 @@ public class IndexSchema {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
-    ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
+    if(substitutableProperties !=null) ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
     try {
       readSchema(schemaResource);
       loader.inform(loader);
