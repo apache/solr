@@ -39,12 +39,8 @@ import org.apache.solr.request.SolrQueryRequest;
 public class FunctionRangeQParserPlugin extends QParserPlugin {
   public static final String NAME = "frange";
 
-  // NOTE: unlike most queries, frange defaults to cost==100
-  private static final SolrParams defaultParams = new ModifiableSolrParams().set(CommonParams.COST, "100");
-
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    localParams = SolrParams.wrapDefaults(localParams, defaultParams);
     return new QParser(qstr, localParams, params, req) {
       ValueSource vs;
       String funcStr;
