@@ -153,7 +153,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
         assertNumberOfReplicas(collectionName, 1, 0, numPullReplicas, false, true);
     s = docCollection.getSlices().iterator().next();
     pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
-    assertEquals(3, pullReplicas.size());
+    assertEquals(numPullReplicas, pullReplicas.size());
     waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
 
     withBasicAuth(CollectionAdminRequest.deleteCollection(collectionName)).process(cluster.getSolrClient());

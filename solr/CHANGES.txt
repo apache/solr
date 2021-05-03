@@ -299,6 +299,9 @@ Bug Fixes
 
 * SOLR-15334: Return error response when failing auth in PKIAuthPlugin (Mike Drob)
 
+* SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
+  allow PULL replicas to replicate from security-enabled leaders (Timothy Potter)
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
