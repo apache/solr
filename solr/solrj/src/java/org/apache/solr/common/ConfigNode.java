@@ -129,9 +129,6 @@ public interface ConfigNode {
     return getAll(test, nodeNames == null ? Collections.emptySet() : new HashSet<>(Arrays.asList(nodeNames)));
   }
 
-  default List<ConfigNode> children(Predicate<ConfigNode> test, Set<String> matchNames) {
-    return getAll(test, matchNames);
-  }
   /**Iterate through child nodes with the names and return all the matching children
    * @param matchNames names of tags to be returned
    * @param  test check for the nodes to be returned
@@ -147,10 +144,6 @@ public interface ConfigNode {
   }
 
   default List<ConfigNode> getAll(String name) {
-    return getAll(null, Collections.singleton(name));
-  }
-
-  default List<ConfigNode> children(String name) {
     return getAll(null, Collections.singleton(name));
   }
 
