@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -194,7 +195,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   /**
    * Asserts that Update logs don't exist for replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL}
    */
-  private void assertUlogPresence(DocCollection collection) {
+  static void assertUlogPresence(DocCollection collection) {
     for (Slice s:collection.getSlices()) {
       for (Replica r:s.getReplicas()) {
         if (r.getType() == Replica.Type.NRT) {
@@ -486,7 +487,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       leaderClient.commit();
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)), "id:2");
+    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)), "id:2", null, null);
     waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
   }
 
@@ -528,17 +529,22 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas) throws IOException, SolrServerException, InterruptedException {
-    waitForNumDocsInAllReplicas(numDocs, replicas, "*:*");
+    waitForNumDocsInAllReplicas(numDocs, replicas, "*:*", null, null);
   }
 
-  private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query) throws IOException, SolrServerException, InterruptedException {
+  static void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query, String user, String pass) throws IOException, SolrServerException, InterruptedException {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:replicas) {
       try (HttpSolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
           try {
+            QueryRequest req = new QueryRequest(new SolrQuery(query));
+            if (user != null) {
+              req.setBasicAuthCredentials(user, pass);
+            }
+            long numFound = req.process(replicaClient).getResults().getNumFound();
             assertEquals("Replica " + r.getName() + " not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",
-                numDocs, replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
+                numDocs, numFound);
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {
@@ -552,7 +558,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
   }
 
-  private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
+  static void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
       log.info("Collection not yet deleted");
@@ -570,10 +576,14 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   private DocCollection assertNumberOfReplicas(int numNrtReplicas, int numTlogReplicas, int numPullReplicas, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
+    return assertNumberOfReplicas(collectionName, numNrtReplicas, numTlogReplicas, numPullReplicas, updateCollection, activeOnly);
+  }
+
+  static DocCollection assertNumberOfReplicas(String coll, int numNrtReplicas, int numTlogReplicas, int numPullReplicas, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
     if (updateCollection) {
-      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
+      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(coll);
     }
-    DocCollection docCollection = getCollectionState(collectionName);
+    DocCollection docCollection = getCollectionState(coll);
     assertNotNull(docCollection);
     assertEquals("Unexpected number of writer replicas: " + docCollection, numNrtReplicas,
         docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
