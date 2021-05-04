@@ -278,9 +278,12 @@ If you do not define the `wt` parameter in your queries, JSON will be returned a
 
 Solr caches the results of all queries and filter queries by default. To disable result caching, set the `cache=false` parameter.
 
-You can also use the `cost` option to control the order in which non-cached filter queries are evaluated. This allows you to order less expensive non-cached filters before expensive non-cached filters.
+You can also use the `cost` option to provide a hint as to the order in which non-cached filter queries are evaluated.
+This allows you to order less expensive non-cached filters before expensive non-cached filters.
+At the Lucene layer, this maps to `TwoPhaseIterator.matchCost` if the query has a TPI.
 
-For very high cost filters, if `cache=false` and `cost>=100` and the query implements the `PostFilter` interface, a Collector will be requested from that query and used to filter documents after they have matched the main query and all other filter queries. There can be multiple post filters; they are also ordered by cost.
+*Post Filters*: For very high cost filters, if `cache=false` _and_ `cost>=100`, _and_ the query implements the `PostFilter` interface, a Collector will be requested from that query and used to filter documents after they have matched the main query and all other filter queries.
+There can be multiple post filters; they are also ordered by cost.
 
 For most queries the default behavior is `cost=0`, but some types of queries (such as `{!frange}`) default to `cost=100`, because they are most efficient when used as a `PostFilter`.
 
