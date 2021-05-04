@@ -542,9 +542,8 @@ public class TestPullReplica extends SolrCloudTestCase {
             if (user != null) {
               req.setBasicAuthCredentials(user, pass);
             }
-            long numFound = req.process(replicaClient).getResults().getNumFound();
             assertEquals("Replica " + r.getName() + " not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",
-                numDocs, numFound);
+                numDocs, req.process(replicaClient).getResults().getNumFound());
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {
