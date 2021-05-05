@@ -28,13 +28,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,6 +55,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -65,10 +66,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-
 @Slow
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+@LogLevel("org.apache.solr.handler.ReplicationHandler=DEBUG,org.apache.solr.handler.IndexFetcher=DEBUG")
 public class TestPullReplica extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -215,7 +214,6 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("unchecked")
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -230,37 +228,26 @@ public class TestPullReplica extends SolrCloudTestCase {
       numDocs++;
       cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(numDocs), "foo", "bar"));
       cluster.getSolrClient().commit(collectionName);
+      log.info("Committed doc {} to leader", numDocs);
 
       Slice s = docCollection.getSlices().iterator().next();
       try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
         assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       }
+      log.info("Found {} docs in leader, verifying updates make it to {} pull replicas", numDocs, numPullReplicas);
 
-      TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.PULL))) {
-        //TODO: assert replication < REPLICATION_TIMEOUT_SECS
+      List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
+      waitForNumDocsInAllReplicas(numDocs, pullReplicas);
+
+      for (Replica r : pullReplicas) {
         try (HttpSolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
-          while (true) {
-            try {
-              assertEquals("Replica " + r.getName() + " not up to date after 10 seconds",
-                  numDocs, pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-              break;
-            } catch (AssertionError e) {
-              if (t.hasTimedOut()) {
-                throw e;
-              } else {
-                Thread.sleep(100);
-              }
-            }
-          }
-          SolrQuery req = new SolrQuery(
-              "qt", "/admin/plugins",
-              "stats", "true");
+          SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
           QueryResponse statsResponse = pullReplicaClient.query(req);
-          assertEquals("Replicas shouldn't process the add document request: " + statsResponse,
-              0L, ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
+          assertNull("Replicas shouldn't process the add document request: " + statsResponse,
+              ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
         }
       }
+
       if (reloaded) {
         break;
       } else {
@@ -535,21 +522,24 @@ public class TestPullReplica extends SolrCloudTestCase {
   static void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query, String user, String pass) throws IOException, SolrServerException, InterruptedException {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:replicas) {
-      try (HttpSolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
+      String replicaUrl = r.getCoreUrl();
+      try (HttpSolrClient replicaClient = getHttpSolrClient(replicaUrl)) {
         while (true) {
+          QueryRequest req = new QueryRequest(new SolrQuery(query));
+          if (user != null) {
+            req.setBasicAuthCredentials(user, pass);
+          }
           try {
-            QueryRequest req = new QueryRequest(new SolrQuery(query));
-            if (user != null) {
-              req.setBasicAuthCredentials(user, pass);
-            }
-            assertEquals("Replica " + r.getName() + " not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",
-                numDocs, req.process(replicaClient).getResults().getNumFound());
+            long numFound = replicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+            assertEquals("Replica " + r.getName() + " (" + replicaUrl + ") not up to date after 30 seconds; found " + numFound + ", expected " + numDocs,
+                numDocs, numFound);
+            log.info("Replica {} ({}) has all {} docs", r.name, replicaUrl, numDocs);
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {
               throw e;
             } else {
-              Thread.sleep(100);
+              Thread.sleep(200);
             }
           }
         }
