@@ -125,7 +125,7 @@ fq=+popularity:[10 TO *] +section:0
 
 === cache Local Parameter
 
-Solr caches the results of filter queries by default in the <<query-settings-in-solrconfig.adoc#filterCache,filter cache>>.
+Solr caches the results of filter queries by default in the <<query-settings-in-solrconfig.adoc#filtercache,filter cache>>.
 To disable it, use the boolean `cache` <<local-parameters-in-queries.adoc#,local parameter>>, such as `fq={!geofilt cache=false}...`.
 Do this when you think a query is unlikely to be repeated.
 
