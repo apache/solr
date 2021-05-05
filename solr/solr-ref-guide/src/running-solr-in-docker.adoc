@@ -32,7 +32,7 @@ This is a convenient mechanism for developers, and could be used for single-serv
 [source,bash]
 ----
 mkdir solrdata
-docker run -d -v "$PWD/solrdata:/var/solr" -p 8983:8983 --name my_solr apache/solr solr-precreate gettingstarted
+docker run -d -v "$PWD/solrdata:/var/solr" -p 8983:8983 --name my_solr solr solr-precreate gettingstarted
 ----
 
 Then with a web browser go to `+http://localhost:8983/+` to see the Admin Console (adjust the hostname for your docker host).
@@ -58,7 +58,7 @@ For example, with a `docker-compose.yml` containing the following:
 version: '3'
 services:
   solr:
-    image: apache/solr
+    image: solr
     ports:
      - "8983:8983"
     volumes:
@@ -83,7 +83,7 @@ For quick demos of Solr docker, there is a single command that starts Solr, crea
 
 [source,bash]
 ----
-docker run --name solr_demo -d -p 8983:8983 apache/solr solr-demo
+docker run --name solr_demo -d -p 8983:8983 solr solr-demo
 ----
 
 == How the image works
@@ -104,7 +104,7 @@ The first is exactly the same: start Solr running in a container, then execute t
 
 [source,bash]
 ----
-docker run -d -p 8983:8983 --name my_solr apache/solr
+docker run -d -p 8983:8983 --name my_solr solr
 docker exec -it my_solr solr create_core -c gettingstarted
 ----
 
@@ -113,7 +113,7 @@ So, typically you will use the `solr-precreate` command which prepares the speci
 
 [source,bash]
 ----
-docker run -d -p 8983:8983 --name my_solr apache/solr solr-precreate gettingstarted
+docker run -d -p 8983:8983 --name my_solr solr solr-precreate gettingstarted
 ----
 
 The `solr-precreate` command takes an optional extra argument to specify a configset directory below `/opt/solr/server/solr/configsets/`.
@@ -123,14 +123,14 @@ The third option is to use the `solr-create` command. This runs a Solr in the ba
 
 [source,bash]
 ----
-docker run -d -p 8983:8983 --name my_solr apache/solr solr-create -c gettingstarted
+docker run -d -p 8983:8983 --name my_solr solr solr-create -c gettingstarted
 ----
 
 Finally, you can run your own command-line and specify what to do, and even invoke mounted scripts. For example:
 
 [source,bash]
 ----
-docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr apache/solr bash -c "precreate-core gettingstarted && source /mysetup.sh && solr-foreground"
+docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr solr bash -c "precreate-core gettingstarted && source /mysetup.sh && solr-foreground"
 ----
 
 === Creating collections
@@ -152,7 +152,7 @@ The third way is to use a separate container:
 
 [source,bash]
 ----
-docker run -e SOLR_HOST=solr1 --network docs_solr apache/solr solr create_collection -c gettingstarted3 -p 8983
+docker run -e SOLR_HOST=solr1 --network docs_solr solr solr create_collection -c gettingstarted3 -p 8983
 ----
 
 The fourth way is to use the remote API, from the host or from one of the containers, or some new container on the same network (adjust the hostname accordingly):
@@ -175,20 +175,20 @@ One way of doing that is using a separate container, with a mounted volume conta
 [source,bash]
 ----
 # start Solr. Listens on localhost:8983
-docker run --name my_solr -p 8983:8983 apache/solr solr-precreate books
+docker run --name my_solr -p 8983:8983 solr solr-precreate books
 
 # get data
 mkdir mydata
 wget -O mydata/books.csv https://raw.githubusercontent.com/apache/solr/main/solr/example/exampledocs/books.csv
-docker run --rm -v "$PWD/mydata:/mydata" --network=host apache/solr post -c books /mydata/books.csv
+docker run --rm -v "$PWD/mydata:/mydata" --network=host solr post -c books /mydata/books.csv
 ----
 
 The same works if you use the <<docker-compose,example docker compose cluster>>, or you can just start your loading container in the same network:
 
 [source,bash]
 ----
-docker run -e SOLR_HOST=solr1 --network=mycluster_solr apache/solr solr create_collection -c books -p 8983
-docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr apache/solr post  -c books /mydata/books.csv -host solr1
+docker run -e SOLR_HOST=solr1 --network=mycluster_solr solr solr create_collection -c books -p 8983
+docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr post  -c books /mydata/books.csv -host solr1
 ----
 
 Alternatively, you can make the data available on a volume at Solr start time, and then load it from `docker exec` or a custom start script.
@@ -202,14 +202,14 @@ The `solr.in.sh` file can be found in `/etc/default`:
 
 [source,bash]
 ----
-docker run apache/solr cat /etc/default/solr.in.sh
+docker run solr cat /etc/default/solr.in.sh
 ----
 
 It has various commented-out values, which you can override when running the container, like:
 
 [source,bash]
 ----
-docker run -d -p 8983:8983 -e SOLR_HEAP=800m apache/solr
+docker run -d -p 8983:8983 -e SOLR_HEAP=800m solr
 ----
 
 You can also mount your own config file. Do no modify the values that are set at the end of the file.
@@ -234,7 +234,7 @@ you can run:
 
 [source,console]
 ----
-$ docker run --name solr_custom1 -d -v $PWD/custom.sh:/docker-entrypoint-initdb.d/custom.sh apache/solr
+$ docker run --name solr_custom1 -d -v $PWD/custom.sh:/docker-entrypoint-initdb.d/custom.sh solr
 $ sleep 5
 $ docker logs solr_custom1 | head
 /opt/docker-solr/scripts/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/set-heap.sh

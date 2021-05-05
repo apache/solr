@@ -67,10 +67,10 @@ mkdir /home/docker-volumes/mysolr1
 sudo chown 8983:8983 /home/docker-volumes/mysolr1
 
 # copy the solr directory from a temporary container to the volume
-docker run -it --rm -v /home/docker-volumes/mysolr1:/target apache/solr cp -r server/solr /target/
+docker run -it --rm -v /home/docker-volumes/mysolr1:/target solr cp -r server/solr /target/
 
 # pass the solr directory to a new container running solr
-SOLR_CONTAINER=$(docker run -d -P -v /home/docker-volumes/mysolr1/solr:/opt/solr/server/solr apache/solr)
+SOLR_CONTAINER=$(docker run -d -P -v /home/docker-volumes/mysolr1/solr:/opt/solr/server/solr solr)
 
 # create a new core
 docker exec -it --user=solr $SOLR_CONTAINER solr create_core -c gettingstarted
@@ -106,7 +106,7 @@ Here is an example:
 docker create -v /opt/solr/server/solr --name mysolr1data solr /bin/true
 
 # pass the volume to a new container running solr
-SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data apache/solr)
+SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data solr)
 
 # create a new core
 docker exec -it --user=solr $SOLR_CONTAINER solr create_core -c gettingstarted
@@ -123,7 +123,7 @@ docker exec -it --user=solr $SOLR_CONTAINER curl http://localhost:8983/solr/gett
 docker exec -it --user=solr $SOLR_CONTAINER bash -c 'cd server; java -DSTOP.PORT=7983 -DSTOP.KEY=solrrocks -jar start.jar --stop'
 
 # create a new container
-SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data apache/solr)
+SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data solr)
 
 # check our core is still there:
 docker exec -it --user=solr $SOLR_CONTAINER ls server/solr/gettingstarted
@@ -139,7 +139,7 @@ You can use this in Solr docker, in combination with volumes:
 
 [source,bash]
 ----
-docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome apache/solr
+docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome solr
 ----
 
 This does need a pre-configured directory at that location.
@@ -151,7 +151,7 @@ from the default directory in the image to the SOLR_HOME (if it is empty).
 ----
 mkdir mysolrhome
 sudo chown 8983:8983 mysolrhome
-docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome -e INIT_SOLR_HOME=yes apache/solr
+docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome -e INIT_SOLR_HOME=yes solr
 ----
 
 NOTE: If SOLR_HOME is set, the "solr-precreate" command will put the created core in the SOLR_HOME directory
@@ -205,11 +205,11 @@ Run two Solr nodes, linked to the zookeeper container:
 [source,bash]
 ----
 docker run --name solr1 --link zookeeper:ZK -d -p 8983:8983 \
-      apache/solr \
+      solr \
       bash -c 'solr start -f -z $ZK_PORT_2181_TCP_ADDR:$ZK_PORT_2181_TCP_PORT'
 
 docker run --name solr2 --link zookeeper:ZK -d -p 8984:8983 \
-      apache/solr \
+      solr \
       bash -c 'solr start -f -z $ZK_PORT_2181_TCP_ADDR:$ZK_PORT_2181_TCP_PORT'
 ----
 
@@ -250,34 +250,34 @@ set by the `GC_TUNE` environment variable and further down the list the overridi
 == I'm confused about the different invocations of solr -- help?
 
 The different invocations of the Solr docker image can look confusing, because the name of the
-image is "apache/solr" and the Solr command is also "solr", and the image interprets various arguments in
+image is "solr" and the Solr command is also "solr", and the image interprets various arguments in
 special ways. I'll illustrate the various invocations:
 
 To run an arbitrary command in the image:
 
 [source,bash]
 ----
-docker run -it apache/solr date
+docker run -it solr date
 ----
 
-Here "apache/solr" is the name of the image, and "date" is the command.
+Here "solr" is the name of the image, and "date" is the command.
 This does not invoke any Solr functionality.
 
 To run the Solr server:
 
 [source,bash]
 ----
-docker run -it apache/solr
+docker run -it solr
 ----
 
-Here "apache/solr" is the name of the image, and there is no specific command,
+Here "solr" is the name of the image, and there is no specific command,
 so the image defaults to run the "solr" command with "-f" to run it in the foreground.
 
 To run the Solr server with extra arguments:
 
 [source,bash]
 ----
-docker run -it apache/solr -h myhostname
+docker run -it solr -h myhostname
 ----
 
 This is the same as the previous one, but an additional argument is passed.
@@ -287,10 +287,10 @@ To run solr as an arbitrary command:
 
 [source,bash]
 ----
-docker run -it apache/solr solr zk --help
+docker run -it solr solr zk --help
 ----
 
-Here the first "apache/solr" is the image name, and the second "solr"
+Here the first "solr" is the image name, and the second "solr"
 is the "solr" command. The image runs the command exactly as specified;
 no "-f" is implicitly added. The container will print help text, and exit.
 
@@ -299,7 +299,7 @@ and specific command paths. For example:
 
 [source,bash]
 ----
-docker run -it apache/solr bin/solr -f -h myhostname
+docker run -it solr bin/solr -f -h myhostname
 ----
 
 Finally, the Solr docker image offers several commands that do some work before
@@ -310,7 +310,7 @@ as the first argument to the image. For example:
 
 [source,bash]
 ----
-docker run -it apache/solr solr-demo
+docker run -it solr solr-demo
 ----
 
 It's important to understand an implementation detail here. The Dockerfile uses
@@ -319,15 +319,15 @@ that by by running "solr -f". So these two are equivalent:
 
 [source,bash]
 ----
-docker run -it apache/solr
-docker run -it apache/solr solr-foreground
+docker run -it solr
+docker run -it solr solr-foreground
 ----
 
 whereas:
 
 [source,bash]
 ----
-docker run -it apache/solr solr -f
+docker run -it solr solr -f
 ----
 
 is slightly different: the "solr" there is a generic command, not treated in any
@@ -341,7 +341,7 @@ command. For example, this does NOT run `docker-entrypoint-initdb.d` scripts:
 [source,bash]
 ----
 docker run -it -v $PWD/set-heap.sh:/docker-entrypoint-initdb.d/set-heap.sh \
-    apache/solr bash -c "echo hello; solr -f"
+    solr bash -c "echo hello; solr -f"
 ----
 
 but this does:
@@ -349,5 +349,5 @@ but this does:
 [source,bash]
 ----
 docker run -it $PWD/set-heap.sh:/docker-entrypoint-initdb.d/set-heap.sh \
-    apache/solr bash -c "echo hello; /opt/docker-solr/scripts/docker-entrypoint.sh solr-foreground"
+    solr bash -c "echo hello; /opt/docker-solr/scripts/docker-entrypoint.sh solr-foreground"
 ----
