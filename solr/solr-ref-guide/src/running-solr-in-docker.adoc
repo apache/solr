@@ -196,7 +196,7 @@ Alternatively, you can make the data available on a volume at Solr start time, a
 === solr.in.sh configuration
 
 In Solr it is common to configure settings in https://github.com/apache/solr/blob/main/solr/bin/solr.in.sh[solr.in.sh],
-as documented in the https://cwiki.apache.org/confluence/display/solr/Taking+Solr+to+Production#TakingSolrtoProduction-Environmentoverridesincludefile[Solr Reference Guide].
+as documented in the <<taking-solr-to-production.adoc#environment-overrides-include-file,Taking Solr to Production page>>.
 
 The `solr.in.sh` file can be found in `/etc/default`:
 
