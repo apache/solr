@@ -39,14 +39,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
+import io.opentracing.tag.Tags;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -182,19 +185,38 @@ public class SolrRequestParsers {
       sreq.getContext().put("httpRequest", req);
     }
 
-    String coreOrColName = null;
-    final HttpSolrCall call = sreq.getHttpSolrCall();
-    if (call != null) {
-      coreOrColName = call.origCorename;
-    }
-    if (coreOrColName == null && core != null) {
-      coreOrColName = core.getName();
-    }
-    TraceUtils.setSpanInfo(sreq, null, coreOrColName);
+    // add span info
+    TraceUtils.ifNotNoop(
+        sreq.getSpan(),
+        (span) -> {
+          // Set operation name.
+          //  TODO V2 API: it could be put into req context and we could read here
+          String verb =
+              sreq.getParams()
+                  .get(CoreAdminParams.ACTION, sreq.getHttpMethod())
+                  .toLowerCase(Locale.ROOT);
+          span.setOperationName(verb.toLowerCase(Locale.ROOT) + ":" + sreq.getPath());
+
+          // Set db.instance
+          String coreOrColName = null;
+          final HttpSolrCall call = sreq.getHttpSolrCall();
+          if (call != null) {
+            coreOrColName = call.origCorename;
+          }
+          if (coreOrColName == null && sreq.getCore() != null) {
+            coreOrColName = sreq.getCore().getName();
+          }
+          if (coreOrColName != null) {
+            span.setTag(Tags.DB_INSTANCE, coreOrColName);
+          }
+
+          span.setTag("params", sreq.getParams().toString());
+        });
 
     return sreq;
   }
 
+  /** For embedded Solr use; not related to HTTP. */
   public SolrQueryRequest buildRequestFrom(SolrCore core, SolrParams params, Collection<ContentStream> streams) throws Exception {
     return buildRequestFrom(core, params, streams, new RTimerTree(), null);
   }

@@ -32,12 +32,14 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.LogLevel;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @LogLevel("org.apache.solr.core.TracerConfigurator=trace")
@@ -109,6 +111,12 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     }
     assertEquals("get:/select", finishedSpans.get(0).operationName());
     assertDbInstanceColl(finishedSpans.get(0));
+  }
+
+  @Test
+  public void testAdminApi() throws Exception {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    List<MockSpan> finishedSpans;
 
     // Admin API call
     cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params()));
@@ -118,6 +126,24 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CollectionAdminRequest.listCollections(cloudClient);
     finishedSpans = getAndClearSpans();
     assertEquals("list:/admin/collections", finishedSpans.get(0).operationName());
+  }
+
+  @Test
+  @Ignore // not supported yet
+  public void testV2Api() throws Exception {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    List<MockSpan> finishedSpans;
+
+    new V2Request.Builder("/c/" + COLLECTION)
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{\n" +
+            " \"reload\" : {}\n" +
+            "}")
+        .build()
+        .process(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("reload:/c/{collection}", finishedSpans.get(0).operationName());
+    assertDbInstanceColl(finishedSpans.get(0));
   }
 
   private void assertDbInstanceColl(MockSpan mockSpan) {

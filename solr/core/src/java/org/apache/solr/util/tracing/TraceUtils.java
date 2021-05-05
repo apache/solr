@@ -16,34 +16,20 @@
  */
 package org.apache.solr.util.tracing;
 
-import java.util.Locale;
 import java.util.function.Consumer;
 
 import io.opentracing.Span;
 import io.opentracing.noop.NoopSpan;
 import io.opentracing.tag.Tags;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {
 
-  public static void setSpanInfo(SolrQueryRequest req,
-                                 String action, String coreOrColl) {
-    ifNotNoop(req.getSpan(), (span) -> {
-      String verb = action == null ? req.getHttpMethod() : action;
-      String path = req.getPath();
-      span.setOperationName(verb.toLowerCase(Locale.ROOT) + ":" + path);
-
-      if (coreOrColl != null) {
-        span.setTag(Tags.DB_INSTANCE, coreOrColl);
-      }
-
-      final SolrParams params = req.getParams();
-      if (params != null) {
-        span.setTag("params", params.toString());
-      }
-    });
+  public static void setDbInstance(SolrQueryRequest req, String coreOrColl) {
+    if (coreOrColl != null) {
+      ifNotNoop(req.getSpan(), (span) -> span.setTag(Tags.DB_INSTANCE, coreOrColl));
+    }
   }
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
