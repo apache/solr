@@ -41,8 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import io.opentracing.Span;
-import io.opentracing.noop.NoopSpan;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -61,6 +59,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
@@ -171,20 +170,28 @@ public class SolrRequestParsers {
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
 
-    Span span = (Span) req.getAttribute(Span.class.getName()); // not null but maybe in some tests?
-    if (span != null && !(span instanceof NoopSpan)) {
-      span.setTag("params", params.toString());
-    }
     SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
-    sreq.getContext().put(PATH, RequestHandlers.normalize(path));
+    String pathNormalized = RequestHandlers.normalize(path);
+    sreq.getContext().put(PATH, pathNormalized);
     sreq.getContext().put("httpMethod", req.getMethod());
 
     if(addHttpRequestToContext) {
       sreq.getContext().put("httpRequest", req);
     }
+
+    String coreOrColName = null;
+    final HttpSolrCall call = sreq.getHttpSolrCall();
+    if (call != null) {
+      coreOrColName = call.origCorename;
+    }
+    if (coreOrColName == null && core != null) {
+      coreOrColName = core.getName();
+    }
+    TraceUtils.setSpanInfo(sreq, null, coreOrColName);
+
     return sreq;
   }
 

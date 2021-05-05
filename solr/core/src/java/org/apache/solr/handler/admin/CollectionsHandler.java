@@ -82,6 +82,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -205,11 +206,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (action == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
+      final String collection = params.get(COLLECTION);
+      MDCLoggingContext.setCollection(collection);
+      TraceUtils.setSpanInfo(req, a, collection);
       CollectionOperation operation = CollectionOperation.get(action);
       if (log.isDebugEnabled()) {
         log.debug("Invoked Collection Action: {} with params {}", action.toLower(), req.getParamString());
       }
-      MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");

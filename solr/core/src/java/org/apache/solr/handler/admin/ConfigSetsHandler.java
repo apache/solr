@@ -55,6 +55,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +109,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       ConfigSetAction action = ConfigSetAction.get(a);
       if (action == null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
+      TraceUtils.setSpanInfo(req, action.toLower(), null);
       if (action == ConfigSetAction.UPLOAD) {
         handleConfigUploadRequest(req, rsp);
         return;

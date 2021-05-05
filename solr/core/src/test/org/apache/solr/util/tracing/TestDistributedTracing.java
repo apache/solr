@@ -18,7 +18,7 @@
 package org.apache.solr.util.tracing;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -27,15 +27,18 @@ import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.util.GlobalTracer;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.LogLevel;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 
 @LogLevel("org.apache.solr.core.TracerConfigurator=trace")
 public class TestDistributedTracing extends SolrCloudTestCase {
@@ -69,29 +72,27 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     //   and what we assert it looks like in a structured visual way.
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    List<MockSpan> allSpans = tracer.finishedSpans();
+    List<MockSpan> finishedSpans;
 
+    // Indexing
     cloudClient.add(COLLECTION, sdoc("id", "1"));
-    List<MockSpan> finishedSpans = getRecentSpans(allSpans);
+    finishedSpans = getAndClearSpans();
     finishedSpans.removeIf(x ->
         !x.tags().get("http.url").toString().endsWith("/update"));
     assertEquals(2, finishedSpans.size());
     assertOneSpanIsChildOfAnother(finishedSpans);
+    assertEquals("post:/update", finishedSpans.get(0).operationName());
+    assertDbInstanceCore(finishedSpans.get(0)); // core because cloudClient routes to core
 
     cloudClient.add(COLLECTION, sdoc("id", "2"));
-    finishedSpans = getRecentSpans(allSpans);
-    finishedSpans.removeIf(x ->
-        !x.tags().get("http.url").toString().endsWith("/update"));
-    assertEquals(2, finishedSpans.size());
-    assertOneSpanIsChildOfAnother(finishedSpans);
-
     cloudClient.add(COLLECTION, sdoc("id", "3"));
     cloudClient.add(COLLECTION, sdoc("id", "4"));
     cloudClient.commit(COLLECTION);
+    getAndClearSpans();
 
-    getRecentSpans(allSpans);
+    // Searching
     cloudClient.query(COLLECTION, new SolrQuery("*:*"));
-    finishedSpans = getRecentSpans(allSpans);
+    finishedSpans = getAndClearSpans();
     finishedSpans.removeIf(x ->
         !x.tags().get("http.url").toString().endsWith("/select"));
     // one from client to server, 2 for execute query, 2 for fetching documents
@@ -106,6 +107,26 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         fail("All spans must belong to single span, but:"+finishedSpans);
       }
     }
+    assertEquals("get:/select", finishedSpans.get(0).operationName());
+    assertDbInstanceColl(finishedSpans.get(0));
+
+    // Admin API call
+    cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params()));
+    finishedSpans = getAndClearSpans();
+    assertEquals("get:/admin/metrics", finishedSpans.get(0).operationName());
+
+    CollectionAdminRequest.listCollections(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("list:/admin/collections", finishedSpans.get(0).operationName());
+  }
+
+  private void assertDbInstanceColl(MockSpan mockSpan) {
+    MatcherAssert.assertThat(mockSpan.tags().get("db.instance"), Matchers.equalTo("collection1"));
+  }
+
+  private void assertDbInstanceCore(MockSpan mockSpan) {
+    MatcherAssert.assertThat(
+        (String) mockSpan.tags().get("db.instance"), Matchers.startsWith("collection1_"));
   }
 
   private void assertOneSpanIsChildOfAnother(List<MockSpan> finishedSpans) {
@@ -120,11 +141,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(child.parentId(), parent.context().spanId());
   }
 
-  private List<MockSpan> getRecentSpans(List<MockSpan> allSpans) {
-    List<MockSpan> result = new ArrayList<>(tracer.finishedSpans());
-    result.removeAll(allSpans);
-    allSpans.clear();
-    allSpans.addAll(tracer.finishedSpans());
+  private List<MockSpan> getAndClearSpans() {
+    List<MockSpan> result = tracer.finishedSpans(); // returns a mutable copy
+    Collections.reverse(result); // nicer to see spans chronologically
+    tracer.reset();
     return result;
   }
 }

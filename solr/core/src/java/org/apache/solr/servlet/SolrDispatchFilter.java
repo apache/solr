@@ -62,6 +62,7 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import io.opentracing.util.GlobalTracer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
@@ -447,13 +448,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     }
 
-    Tracer tracer = cores.getTracer();
-    String hostAndPort = request.getServerName() + "_" + request.getServerPort();
-    Span span = tracer.buildSpan(request.getMethod() + ":" + hostAndPort)
-        .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
-        .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
-        .withTag(Tags.HTTP_URL, request.getRequestURL().toString())
-        .start();
+    Tracer tracer = cores == null ? GlobalTracer.get() : cores.getTracer();
+    Span span =
+        tracer
+            .buildSpan( // nocommit extract method buildSpan
+                "http.request") // will be changed later
+            .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
+            .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
+            .withTag(Tags.HTTP_METHOD, request.getMethod())
+            .withTag(Tags.HTTP_URL, request.getRequestURL().toString())
+            .withTag(Tags.DB_TYPE, "solr")
+            .start();
     request.setAttribute(Tracer.class.getName(), tracer);
     request.setAttribute(Span.class.getName(), span);
     boolean accepted = false;
@@ -499,6 +504,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         if (log.isDebugEnabled()) {
           log.debug("User principal: {}", request.getUserPrincipal());
         }
+        span.setTag(Tags.DB_USER, String.valueOf(request.getUserPrincipal()));
       }
 
       HttpSolrCall call = getHttpSolrCall(request, response, retry);
@@ -507,12 +513,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         Action result = call.call();
         switch (result) {
           case PASSTHROUGH:
+            span.log("SolrDispatchFilter PASSTHROUGH");
             chain.doFilter(request, response);
             break;
           case RETRY:
+            span.log("SolrDispatchFilter RETRY");
+            // nocommit but our method includes some logic like span setup that ought not to be repeated
             doFilter(request, response, chain, true); // RECURSION
             break;
           case FORWARD:
+            span.log("SolrDispatchFilter FORWARD");
             request.getRequestDispatcher(call.getPath()).forward(request, response);
             break;
           case ADMIN:
@@ -533,6 +543,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
       }
+      span.setTag(Tags.HTTP_STATUS, response.getStatus());
       span.finish();
     }
   }

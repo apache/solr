@@ -41,6 +41,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -51,8 +52,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -165,18 +166,18 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
 
       // Pick the action
-      CoreAdminOperation op = opMap.get(req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT));
+      final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
+      CoreAdminOperation op = opMap.get(action);
       if (op == null) {
         handleCustomAction(req, rsp);
         return;
       }
 
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
-      String coreName = req.getParams().get(CoreAdminParams.CORE);
-      if (coreName == null) {
-        coreName = req.getParams().get(CoreAdminParams.NAME);
-      }
+      final String coreName =
+          req.getParams().get(CoreAdminParams.CORE, req.getParams().get(CoreAdminParams.NAME));
       MDCLoggingContext.setCoreName(coreName);
+      TraceUtils.setSpanInfo(req, action, coreName);
       if (taskId == null) {
         callInfo.call();
       } else {
