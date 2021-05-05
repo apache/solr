@@ -449,16 +449,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
 
     Tracer tracer = cores == null ? GlobalTracer.get() : cores.getTracer();
-    Span span =
-        tracer
-            .buildSpan( // nocommit extract method buildSpan
-                "http.request") // will be changed later
-            .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
-            .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
-            .withTag(Tags.HTTP_METHOD, request.getMethod())
-            .withTag(Tags.HTTP_URL, request.getRequestURL().toString())
-            .withTag(Tags.DB_TYPE, "solr")
-            .start();
+    Span span = buildSpan(request, tracer);
     request.setAttribute(Tracer.class.getName(), tracer);
     request.setAttribute(Span.class.getName(), span);
     boolean accepted = false;
@@ -518,7 +509,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             break;
           case RETRY:
             span.log("SolrDispatchFilter RETRY");
-            // nocommit but our method includes some logic like span setup that ought not to be repeated
             doFilter(request, response, chain, true); // RECURSION
             break;
           case FORWARD:
@@ -547,7 +537,19 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       span.finish();
     }
   }
-  
+
+  protected Span buildSpan(HttpServletRequest request, Tracer tracer) {
+    return tracer
+        .buildSpan(
+            "http.request") // will be changed later
+        .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
+        .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
+        .withTag(Tags.HTTP_METHOD, request.getMethod())
+        .withTag(Tags.HTTP_URL, request.getRequestURL().toString())
+        .withTag(Tags.DB_TYPE, "solr")
+        .start();
+  }
+
   // we make sure we read the full client request so that the client does
   // not hit a connection reset and we can reuse the 
   // connection - see SOLR-8453 and SOLR-8683
