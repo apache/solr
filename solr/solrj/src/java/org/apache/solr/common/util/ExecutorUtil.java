@@ -41,6 +41,14 @@ public class ExecutorUtil {
 
   private static volatile List<InheritableThreadLocalProvider> providers = new ArrayList<>();
 
+  /**
+   * Resets everything added via {@link #addThreadLocalProvider(InheritableThreadLocalProvider)}.
+   * Useful to call at the beginning of tests.
+   */
+  public static void resetThreadLocalProviders() {
+    providers = new ArrayList<>();
+  }
+
   public synchronized static void addThreadLocalProvider(InheritableThreadLocalProvider provider) {
     for (InheritableThreadLocalProvider p : providers) {//this is to avoid accidental multiple addition of providers in tests
       if (p.getClass().equals(provider.getClass())) return;

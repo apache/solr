@@ -57,6 +57,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
 import org.noggit.JSONUtil;
@@ -69,8 +70,6 @@ import org.slf4j.LoggerFactory;
 //@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending","Asserting"})
 public class SolrTestCaseHS extends SolrTestCaseJ4 {
   
-  public static final String SOLR_TESTS_SHARDS_WHITELIST = "solr.tests.shardsWhitelist";
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @SafeVarargs
   public static <T> Set<T> set(T... a) {
@@ -524,8 +523,8 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       
       // If we want to run with whitelist list, this must be explicitly set to true for the test
       // otherwise we disable the check
-      if (System.getProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST) == null) {
-        systemSetPropertySolrDisableShardsWhitelist("true");
+      if (System.getProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST) == null) {
+        systemSetPropertySolrDisableUrlAllowList("true");
       }
 
       jetty.start();

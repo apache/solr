@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import java.util.ArrayList;
@@ -58,6 +60,9 @@ public class ShardRequest {
 
   /** may be null */
   public String nodeName;
+
+  /** Not null but may implement {@link io.opentracing.noop.NoopTracer}. */
+  public final Tracer tracer = GlobalTracer.get();
 
   // TODO: one could store a list of numbers to correlate where returned docs
   // go in the top-level response rather than looking up by id...

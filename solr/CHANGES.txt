@@ -37,11 +37,17 @@ New Features
 
 * SOLR-15208: Add the countDist aggregation to the stats, facet and timeseries Streaming Expressions (Joel Bernstein)
 
+* SOLR-15164: Implement Task Management Interface (Atri Sharma, with extensive review and perf testing by Anshum Gupta, Mike Drob and Houston Putman)
+
+* SOLR-15090: A new 'gcs-repository' contrib can be used to store and retrieve backups from Google Cloud Storage. (Jason Gerlowski, Shalin Mangar, Cao Manh Dat)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
 * SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)
+
+* SOLR-15153: Collection selector drop down does not sort collections (Edward Ribeiro)
 
 * SOLR-11725: Use corrected sample formula for computing stdDev and variance in JSON aggregations
   (hossman, Munendra S N, yonik)
@@ -109,6 +115,16 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15274: The QueryElevationComponent now supports loading elevation file changes on commits.
   This doesn't work in SolrCloud (but may someday).  QEC no longer supports a config file in
   the data dir. (David Smiley)
+
+* SOLR-15322: Solr releases now contain everything needed to build runable docker images (Houston Putman, hossman)
+
+* SOLR-14185: Added DocSet.iterator(LeafReaderContext) and some related changes that may add
+  a minor performance boost to some cases (e.g. interval facets).  Reduced need for Filter.java.
+  (Michael Gibney, David Smiley)
+
+* SOLR-15329: Improve HDFS Directory size calculation (Andras Salamon via Mike Drob)
+
+* SOLR-15340: Rename shardsWhitelist and extract AllowListUrlChecker to use it more broadly. (Bruno Roustant)
 
 Other Changes
 ----------------------
@@ -251,6 +267,27 @@ Other Changes
   alternative implementations of where ConfigSets come from.
   (Nazerke Seidan, David Smiley)
 
+* SOLR-15341: Remove indexHeapUsageBytes info from /admin/segments and /admin/luke because it's no
+  longer available in Lucene -- LUCENE-9387. (janhoy, David Smiley)
+
+* SOLR-15146: Allow Collection API and Config Set API to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
+
+* SOLR-15356: "mergeindexes" should not use UninvertingReader (FieldCache). (David Smiley)
+
+* SOLR-15356: UninvertDocValuesMergePolicy was removed because it's incompatible with Lucene 9.
+  (David Smiley, Christine Poerschke)
+
+* SOLR-15283: Overhaul distributed-tracing.  Solr's "samplePercentage" is gone; tracing is either
+  enabled and you always have trace IDs or it isn't, based on wether you configure a tracing plugin.
+  Reporting of traces to a server like Zipkin is a configuration matter of the tracing plugin you
+  use.  The Jaeger plugin is now completely configurable via system properties or environment vars,
+  not by values in solr.xml. (David Smiley)
+
+* SOLR-14166: Non-cached filter queries are now pushed down to Lucene, possibly benefiting from
+  TwoPhaseIterator, which can make a big difference for some queries.  (David Smiley)
+
+* SOLR-15369: PackageStoreAPI will only be loaded in SolrCloud mode (Mike Drob)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -258,9 +295,9 @@ Bug Fixes
 
 * SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh)
 
-* SOLR-15233: Set doAs param in ConfigurableInternodeAuthHadoopPlugin (Geza Nagy, Jason Gerlowski, Mike Drob)
-
 * SOLR-15317: Correctly handle user principals with whitespace in PKIAuthPlugin (Dominik Dresel, Mike Drob)
+
+* SOLR-15334: Return error response when failing auth in PKIAuthPlugin (Mike Drob)
 
 ==================  8.9.0 ==================
 
@@ -313,6 +350,8 @@ Optimizations
 
 * SOLR-15120 Reduce duplicated core creation work (Mike Drob, Mark Miller)
 
+* SOLR-15067 ChildDocTransformerFactory uses perSegFilter cache (Bence Szabo via David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
@@ -326,13 +365,13 @@ Bug Fixes
 * SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
   (Thomas Wöckinger, David Smiley)
 
-* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
-
 * SOLR-15273: Fix NullPointerException in StoredFieldsShardResponseProcessor that happened when a field name alias is
   used for the unique key field in searches with distributed result grouping. (limingnihao via Christine Poerschke)
 
 * SOLR-11921: Move "cursorMark" logic from QueryComponent to SearchHandler so it can work with things like QueryElevationComponent
   that modify the SortSpec in prepare(), as well as possible custom "search" components other then QueryComponent.  (hossman)
+
+* SOLR-15383: Solr Zookeeper status page shows green even when some Zookeepers are not serving requests (janhoy)
 
 Other Changes
 ---------------------
@@ -341,6 +380,19 @@ Other Changes
 * SOLR-15292: An ERROR is logged if SignatureUpdateProcessorFactory is used in SolrCloud cluster in a way that is known to
   be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
 
+
+==================  8.8.2 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
+
+* SOLR-15288: Hardening NODEDOWN event in PRS collections (noble)
+
+* SOLR-15233: Set doAs param in ConfigurableInternodeAuthHadoopPlugin (Geza Nagy, Jason Gerlowski, Mike Drob)
+
+* SOLR-15217: Use shardsWhitelist in ReplicationHandler. (Bruno Roustant)
 
 ==================  8.8.1 ==================
 

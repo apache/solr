@@ -22,6 +22,25 @@ java.util.concurrent.Executors#newScheduledThreadPool(int)
 java.util.concurrent.Executors#defaultThreadFactory()
 java.util.concurrent.Executors#privilegedThreadFactory()
 
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareFixedThreadPool instead
+java.util.concurrent.Executors#newFixedThreadPool(int,java.util.concurrent.ThreadFactory)
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareSingleThreadExecutor instead
+java.util.concurrent.Executors#newSingleThreadExecutor(java.util.concurrent.ThreadFactory)
+
+@defaultMessage Spawns threads without MDC logging context; use ExecutorUtil.newMDCAwareCachedThreadPool instead
+java.util.concurrent.Executors#newCachedThreadPool(java.util.concurrent.ThreadFactory)
+
+@defaultMessage Use ExecutorUtil.MDCAwareThreadPoolExecutor instead of ThreadPoolExecutor
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory,java.util.concurrent.RejectedExecutionHandler)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.ThreadFactory)
+java.util.concurrent.ThreadPoolExecutor#<init>(int,int,long,java.util.concurrent.TimeUnit,java.util.concurrent.BlockingQueue,java.util.concurrent.RejectedExecutionHandler)
+
+@defaultMessage Must specify an explicit executor to run async tasks so that we have named threads
+java.util.concurrent.CompletableFuture#runAsync(java.lang.Runnable)
+java.util.concurrent.CompletableFuture#supplyAsync(java.util.function.Supplier)
+
 @defaultMessage Properties files should be read/written with Reader/Writer, using UTF-8 charset. This allows reading older files with unicode escapes, too.
 java.util.Properties#load(java.io.InputStream)
 java.util.Properties#save(java.io.OutputStream,java.lang.String)
@@ -66,3 +85,9 @@ java.io.ObjectOutputStream
 @defaultMessage Don't set a dictionary on a Deflater using a method that takes an offset or ByteBuffer (JDK-8252739)
 java.util.zip.Deflater#setDictionary(byte[],int,int)
 java.util.zip.Deflater#setDictionary(java.nio.ByteBuffer)
+
+@defaultMessage Use RTimer/TimeOut/System.nanoTime for time comparisons, and `new Date()` output/debugging/stats of timestamps. If for some miscellaneous reason, you absolutely need to use this, use a SuppressForbidden.
+java.lang.System#currentTimeMillis()
+
+@defaultMessage Use slf4j classes instead
+java.util.logging.**

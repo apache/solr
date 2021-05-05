@@ -18,53 +18,85 @@
 package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.atomic.AtomicReference;
 
+import io.opentracing.Scope;
+import io.opentracing.Span;
 import io.opentracing.Tracer;
-import io.opentracing.noop.NoopTracerFactory;
-import org.apache.solr.common.cloud.ZkStateReader;
+import io.opentracing.util.GlobalTracer;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Produces an OpenTracing {@link Tracer} from configuration. */
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public abstract Tracer getTracer();
 
-  public static void loadTracer(SolrResourceLoader loader, PluginInfo info, ZkStateReader stateReader) {
-    if (info == null) {
-      // in case of a Tracer is registered to OpenTracing through javaagent
-      if (io.opentracing.util.GlobalTracer.isRegistered()) {
-        GlobalTracer.setup(io.opentracing.util.GlobalTracer.get());
-        registerListener(stateReader);
-      } else {
-        GlobalTracer.setup(NoopTracerFactory.create());
-        GlobalTracer.get().setSamplePercentage(0.0);
-      }
-    } else {
-      TracerConfigurator configurator = loader
-          .newInstance(info.className, TracerConfigurator.class);
-      configurator.init(info.initArgs);
+  public static Tracer loadTracer(SolrResourceLoader loader, PluginInfo info) {
+    // In "normal" Solr operation, loadTracer is called once in Solr's lifetime.
+    // In test mode we run many test suites, sometimes multiple servers per test suite.
+    // It's important that the tracing config not change throughout a test suite because of the
+    //   static singleton pattern and assumptions based on this.
 
-      GlobalTracer.setup(configurator.getTracer());
-      registerListener(stateReader);
+    if (info != null && info.isEnabled()) {
+      GlobalTracer.registerIfAbsent(() -> {
+        TracerConfigurator configurator =
+            loader.newInstance(info.className, TracerConfigurator.class);
+        configurator.init(info.initArgs);
+        return configurator.getTracer();
+      });
     }
+    if (GlobalTracer.isRegistered()) {
+      // ideally we would furthermore check that it's not a no-op impl either but
+      //  GlobalTracer.get() always returns a GlobalTracer implementing Tracer that delegates
+      //  to the real Tracer (that may or may not be a No-Op impl.
+      ExecutorUtil.addThreadLocalProvider(new TracerConfigurator.SpanThreadLocalProvider());
+    }
+
+    return GlobalTracer.get();
   }
 
-  private static void registerListener(ZkStateReader stateReader) {
-    stateReader.registerClusterPropertiesListener(properties -> {
-      if (properties.containsKey(ZkStateReader.SAMPLE_PERCENTAGE)) {
-        try {
-          double sampleRate = Double.parseDouble(properties.get(ZkStateReader.SAMPLE_PERCENTAGE).toString());
-          GlobalTracer.get().setSamplePercentage(sampleRate);
-        } catch (NumberFormatException e) {
-          log.error("Unable to set sample rate", e);
-        }
-      } else {
-        GlobalTracer.get().setSamplePercentage(0.1);
+  /**
+   * Propagate the active span across threads. New spans are not created, which means that we're
+   * possibly exposing a Span to a thread that may find that it has already finished, depending on
+   * how the instrumented thread pool is used. It's probably fine to create new spans related to a
+   * finished span? It's not okay to otherwise touch a finished span (e.g. to log or tag).
+   *
+   * <p>This strategy is also used by {@code
+   * brave.propagation.CurrentTraceContext#wrap(java.lang.Runnable)}.
+   */
+  private static class SpanThreadLocalProvider
+      implements ExecutorUtil.InheritableThreadLocalProvider {
+    private final Tracer tracer = GlobalTracer.get();
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Override
+    public void store(AtomicReference ctx) {
+      assert tracer == GlobalTracer.get() : "Tracer changed; not supported!";
+      ctx.set(tracer.scopeManager().activeSpan());
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Override
+    public void set(AtomicReference ctx) {
+      final Span span = (Span) ctx.get();
+      if (span != null) {
+        log.trace("Thread received span to do async work: {}", span);
+        final Scope scope = tracer.scopeManager().activate(span);
+        ctx.set(scope);
       }
-      return false;
-    });
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Override
+    public void clean(AtomicReference ctx) {
+      Scope scope = (Scope) ctx.get();
+      if (scope != null) {
+        scope.close();
+      }
+    }
   }
 }

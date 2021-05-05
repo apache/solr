@@ -53,7 +53,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -294,7 +293,7 @@ public class SolrCmdDistributor implements Closeable {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
     }
 
-    Tracer tracer = GlobalTracer.getTracer();
+    Tracer tracer = req.cmd.getTracer();
     Span parentSpan = tracer.activeSpan();
     if (parentSpan != null) {
       tracer.inject(parentSpan.context(), Format.Builtin.HTTP_HEADERS,

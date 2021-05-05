@@ -77,7 +77,7 @@ dependencies {
 
   implementation 'com.tdunning:t-digest'
 
-  implementation 'io.opentracing:opentracing-api'
+  api 'io.opentracing:opentracing-api' // Tracer is exposed on some methods
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
   implementation 'org.apache.commons:commons-exec'

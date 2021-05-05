@@ -310,14 +310,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     }
 
-    public void setCacheSep(boolean cacheSep) {
-
-    }
-
-    public boolean getCacheSep() {
-      return false;
-    }
-
     public boolean getCache() {
       return false;
     }
@@ -521,7 +513,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               fieldInfo.getPointIndexDimensionCount(),
               fieldInfo.getPointNumBytes(),
               fieldInfo.getVectorDimension(),
-              fieldInfo.getVectorSearchStrategy(),
+              fieldInfo.getVectorSimilarityFunction(),
               fieldInfo.isSoftDeletesField());
           newInfos.add(f);
         } else {

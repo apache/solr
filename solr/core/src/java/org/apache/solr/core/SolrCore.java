@@ -199,6 +199,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public final UUID uniqueId = UUID.randomUUID();
 
+  private final CancellableQueryTracker cancellableQueryTracker = new CancellableQueryTracker();
+
   private boolean isReloaded = false;
 
   private final CoreDescriptor coreDescriptor;
@@ -476,7 +478,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       if (directoryFactory.exists(getIndexDir())) {
         dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
         try {
-          size = DirectoryFactory.sizeOfDirectory(dir);
+          size = directoryFactory.size(dir);
         } finally {
           directoryFactory.release(dir);
         }
@@ -3242,6 +3244,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     });
     return blobRef;
+  }
+
+  public CancellableQueryTracker getCancellableQueryTracker() {
+    return cancellableQueryTracker;
   }
 
   /**
