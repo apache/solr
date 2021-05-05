@@ -530,7 +530,7 @@ public class TestPullReplica extends SolrCloudTestCase {
             req.setBasicAuthCredentials(user, pass);
           }
           try {
-            long numFound = replicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+            long numFound = req.process(replicaClient).getResults().getNumFound();
             assertEquals("Replica " + r.getName() + " (" + replicaUrl + ") not up to date after 30 seconds; found " + numFound + ", expected " + numDocs,
                 numDocs, numFound);
             log.info("Replica {} ({}) has all {} docs", r.name, replicaUrl, numDocs);

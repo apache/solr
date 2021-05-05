@@ -60,7 +60,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
   private static final String collectionName = "testPullReplicaWithAuth";
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupClusterWithSecurityEnabled() throws Exception {
     final String SECURITY_JSON = Utils.toJSONString
         (Map.of("authorization",
             Map.of("class", RuleBasedAuthorizationPlugin.class.getName(),
