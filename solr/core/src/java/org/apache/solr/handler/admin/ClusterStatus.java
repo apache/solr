@@ -54,13 +54,13 @@ public class ClusterStatus {
     GREEN,
     /** Some replicas down, leader exists. */
     YELLOW,
-    /** Many replicas down, leader exists. */
+    /** Most replicas down, leader exists. */
     ORANGE,
-    /** No leader or most replicas down. */
+    /** No leader or all replicas down. */
     RED;
 
     public static final float ORANGE_LEVEL = 0.5f;
-    public static final float RED_LEVEL = 0.1f;
+    public static final float RED_LEVEL = 0.0f;
 
     public static Health calcShardHealth(float fractionReplicasUp, boolean hasLeader) {
       if (hasLeader) {
