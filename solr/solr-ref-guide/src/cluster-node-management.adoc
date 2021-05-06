@@ -27,14 +27,18 @@ These API commands work with a SolrCloud cluster at the entire cluster level, or
 Fetch the cluster status including collections, shards, replicas, configuration name as well as collection aliases and cluster properties.
 
 Additionally, this command reports a `health` status of each collection and shard, in
-order to make it easier to monitor the operational state of the collection. The
-following health state values are defined, ordered from the best to worst:
+order to make it easier to monitor the operational state of the collections. The
+following health state values are defined, ordered from the best to worst, based on
+the percentage of active replicas (`active`):
 
-* `GREEN` - all replicas are active, and there's a shard leader
-* `YELLOW` - less than 1/3rd of replicas in a shard is offline, and there's a shard leader
-* `ORANGE` - more than 1/3rd but less than 2/3rd of replicas in a shard is offline,
-  and there's a shard leader
-* `RED` - more than 2/3rd of replicas is offline, OR there's no shard leader.
+`GREEN`::
+`active == 100%`, all replicas are active and there's a shard leader.
+`YELLOW`::
+`100% > active > 50%`, AND there's a shard leader.
+`ORANGE`::
+`50% >= active > 1%`, AND there's a shard leader.
+`RED`::
+`1% >= active`, *OR* there's no shard leader.
 
 The collection health state is reported as the worst state of any shard, e.g. for a
 collection with all shards GREEN except for one YELLOW the collection health will be

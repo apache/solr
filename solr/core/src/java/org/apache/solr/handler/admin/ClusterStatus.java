@@ -59,10 +59,8 @@ public class ClusterStatus {
     /** No leader or most replicas down. */
     RED;
 
-    // somewhat higher than 2/3
-    public static final float ORANGE_LEVEL = 0.67f;
-    // somewhat higher than 1/3
-    public static final float RED_LEVEL = 0.34f;
+    public static final float ORANGE_LEVEL = 0.5f;
+    public static final float RED_LEVEL = 0.1f;
 
     public static Health calcShardHealth(float fractionReplicasUp, boolean hasLeader) {
       if (hasLeader) {
