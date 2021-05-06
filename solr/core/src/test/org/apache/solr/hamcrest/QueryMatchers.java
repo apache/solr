@@ -3,6 +3,7 @@ package org.apache.solr.hamcrest;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -11,9 +12,8 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 
-import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 
 public class QueryMatchers {
@@ -29,7 +29,33 @@ public class QueryMatchers {
   }
 
   public static Matcher<Query> boostQuery(Matcher<? extends Query> query, float boost) {
-    return allOf(hasProperty("query", query), hasProperty("boost", is(boost)));
+    return new TypeSafeDiagnosingMatcher<Query>() {
+      @Override
+      protected boolean matchesSafely(Query item, Description mismatchDescription) {
+        if (item instanceof BoostQuery) {
+          BoostQuery bq = (BoostQuery) item;
+          boolean match = true;
+          mismatchDescription.appendText("was a BoostQuery ");
+          if (!query.matches(bq.getQuery())) {
+            match = false;
+            mismatchDescription.appendText("with" + bq.getQuery());
+          }
+          if (boost != bq.getBoost()) {
+            match = false;
+            mismatchDescription.appendText("with boost " + bq.getBoost());
+          }
+          return match;
+        } else {
+          classMismatch(mismatchDescription, item);
+          return false;
+        }
+      }
+
+      @Override
+      public void describeTo(Description description) {
+        description.appendText("a BoostQuery ").appendDescriptionOf(query).appendText("^" + boost);
+      }
+    };
   }
 
   public static Matcher<Query> phraseQuery(String field, String... terms) {
@@ -47,28 +73,32 @@ public class QueryMatchers {
       protected boolean matchesSafely(BooleanClause item, Description mismatchDescription) {
         boolean match = true;
         mismatchDescription.appendText("was a BooleanClause ");
-        if (is(occur).matches(item.getOccur())) {
+        if (occur != item.getOccur()) {
           match = false;
           mismatchDescription.appendText("that " + item.getOccur().name() + " occur ");
         }
         if (!query.matches(item.getQuery())) {
           match = false;
-          mismatchDescription.appendText("with query " + item.getQuery());
+          mismatchDescription.appendText("with" + item.getQuery());
         }
         return match;
       }
 
       @Override
       public void describeTo(Description description) {
-        description.appendText("a BooleanClause that " + occur.name() + " occur with query ")
+        description.appendText("a BooleanClause that " + occur.name() + " occur with ")
             .appendDescriptionOf(query);
       }
     };
   }
 
   // TODO Figure out Varargs
+  public static Matcher<Query> booleanQuery(Matcher<Query> query, BooleanClause.Occur occur) {
+    return _booleanQuery(contains(booleanClause(query, occur)));
+  }
+
   public static Matcher<Query> booleanQuery(Matcher<Query> query) {
-    return _booleanQuery(containsInAnyOrder(booleanClause(query)));
+    return _booleanQuery(contains(booleanClause(query)));
   }
 
   public static Matcher<Query> booleanQuery(Matcher<Query> c1, Matcher<Query> c2) {
@@ -90,7 +120,7 @@ public class QueryMatchers {
         if (item instanceof BooleanQuery) {
           BooleanQuery bq = (BooleanQuery) item;
           if (matcher.matches(bq.clauses())) return true;
-          mismatchDescription.appendText(" was a BooleanQuery with ");
+          mismatchDescription.appendText("was a BooleanQuery with ");
           matcher.describeMismatch(bq.clauses(), mismatchDescription);
         } else {
           classMismatch(mismatchDescription, item);
@@ -100,14 +130,22 @@ public class QueryMatchers {
 
       @Override
       public void describeTo(Description description) {
-        description.appendText(" a BooleanQuery with ")
+        description.appendText("a BooleanQuery with ")
             .appendDescriptionOf(matcher);
       }
     };
   }
 
+  public static Matcher<Query> disjunctionQuery(Matcher<Query> q1) {
+    return _disjunctionQuery(contains(q1));
+  }
+
   public static Matcher<Query> disjunctionQuery(Matcher<Query> q1, Matcher<Query> q2) {
     return _disjunctionQuery(containsInAnyOrder(q1, q2));
+  }
+
+  public static Matcher<Query> disjunctionQuery(Matcher<Query> q1, Matcher<Query> q2, Matcher<Query> q3) {
+    return _disjunctionQuery(containsInAnyOrder(q1, q2, q3));
   }
 
   public static Matcher<Query> disjunctionQuery(Matcher<Query> q1, Matcher<Query> q2, Matcher<Query> q3, Matcher<Query> q4) {
@@ -121,7 +159,7 @@ public class QueryMatchers {
         if (item instanceof DisjunctionMaxQuery) {
           DisjunctionMaxQuery dmq = (DisjunctionMaxQuery) item;
           if (disjuncts.matches(dmq.getDisjuncts())) return true;
-          mismatchDescription.appendText(" was a DisjunctionMaxQuery with ");
+          mismatchDescription.appendText("was a DisjunctionMaxQuery with ");
           disjuncts.describeMismatch(dmq.getDisjuncts(), mismatchDescription);
         } else {
           classMismatch(mismatchDescription, item);

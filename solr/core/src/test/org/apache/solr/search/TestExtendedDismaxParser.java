@@ -45,6 +45,14 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.hamcrest.QueryMatchers.booleanQuery;
+import static org.apache.solr.hamcrest.QueryMatchers.boostQuery;
+import static org.apache.solr.hamcrest.QueryMatchers.disjunctionQuery;
+import static org.apache.solr.hamcrest.QueryMatchers.phraseQuery;
+import static org.apache.solr.hamcrest.QueryMatchers.termQuery;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+
 @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15389")
 public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
@@ -2115,9 +2123,19 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
       qParser = QParser.getParser("grackle wi fi", "edismax", req);
       q = qParser.getQuery();
-      assertEquals("+(((text:\"crow blackbird\" text:grackl)"
-              + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl))) (text:wi | text_sw:wi) (text:fi | text_sw:fi))",
-          q.toString());
+      assertThat(q, booleanQuery(booleanQuery(
+          disjunctionQuery(
+              booleanQuery(phraseQuery("text", "crow", "blackbird"), termQuery("text", "grackl")),
+              booleanQuery(
+                  booleanQuery(
+                      booleanQuery(termQuery("text_sw", "crow"), termQuery("text_sw", "blackbird")),
+                      termQuery("text_sw", "grackl")
+                  ),
+                  disjunctionQuery(termQuery("text", "wi"), termQuery("text_sw", "wi")),
+                  disjunctionQuery(termQuery("text", "fi"), termQuery("text_sw", "fi"))
+              )
+          )
+      ), BooleanClause.Occur.MUST));
     }
   }
   
@@ -2125,22 +2143,34 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject title")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+((title:one | subject:on) (title:two | subject:two))", q.toString());
+      assertThat(q, booleanQuery(booleanQuery(
+          disjunctionQuery(termQuery("title", "one"), termQuery("subject", "on")),
+          disjunctionQuery(termQuery("title", "two"), termQuery("subject", "two"))
+      ), BooleanClause.Occur.MUST));
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject title^5")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+(((title:one)^5.0 | subject:on) ((title:two)^5.0 | subject:two))", q.toString());
+      assertThat(q, booleanQuery(booleanQuery(
+          disjunctionQuery(boostQuery("title", "one", 5), termQuery("subject", "on")),
+          disjunctionQuery(boostQuery("title", "two", 5), termQuery("subject", "two"))
+      ), BooleanClause.Occur.MUST));
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject^3 title")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+((title:one | (subject:on)^3.0) (title:two | (subject:two)^3.0))", q.toString());
+      assertThat(q, booleanQuery(booleanQuery(
+          disjunctionQuery(termQuery("title", "one"), boostQuery("subject", "on", 3)),
+          disjunctionQuery(termQuery("title", "two"), boostQuery("subject", "two", 3))
+      ), BooleanClause.Occur.MUST));
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject^10 title^20")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      assertEquals("+(((title:one)^20.0 | (subject:on)^10.0) ((title:two)^20.0 | (subject:two)^10.0))", q.toString());
+      assertThat(q, booleanQuery(booleanQuery(
+          disjunctionQuery(boostQuery("title", "one", 20), boostQuery("subject", "on", 10)),
+          disjunctionQuery(boostQuery("title", "two", 20), boostQuery("subject", "two", 10))
+      ), BooleanClause.Occur.MUST));
     }
   }
 
@@ -2348,8 +2378,14 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
     // test valid field names
     String response = h.query(req(params));
-    assertTrue(response.contains("+DisjunctionMaxQuery((title:olive | " +
-        "(subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))"));
+    assertThat(response, allOf(
+        containsString("+(+DisjunctionMaxQuery(("),
+        containsString("title:olive"),
+        containsString("(subject:oliv)^3.0"),
+        containsString(" +DisjunctionMaxQuery(("),
+        containsString("title:other"),
+        containsString("(subject:other)^3.0")
+    ));
 
     // test invalid field name
     params.set("qf", "subject^3 nosuchfield");
