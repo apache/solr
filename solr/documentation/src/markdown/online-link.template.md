@@ -1,5 +1,5 @@
 <div>
-  <a href="http://lucene.apache.org/solr/">
+  <a href="https://solr.apache.org/">
     <img src="solr.svg" style="width:210px; margin:22px 0px 7px 20px; border:none;" title="Apache Solr Logo" alt="Solr" />
   </a>
   <div style="z-index:100;position:absolute;top:25px;left:226px">

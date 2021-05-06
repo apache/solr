@@ -165,7 +165,10 @@ interface SweepCountAware {
      */
     public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int maxSegOrd) {
       int segOrd = maxSegOrd;
-      final int maxIdx = countAccs.length - 1;
+      // NOTE: the `countAccs` array may be oversized (e.g., in the event that one or more of the domains supplies a <code>null</code>
+      // DocIdSetIterator -- matches no docs -- for a given segment). But the relevant contents of `countAccs` are re-initialized
+      // per-segment, so we can (and must!) safely set `maxIdx` based on `activeSegCounts.length` (as opposed to `countAccs.length`).
+      final int maxIdx = activeSegCounts.length - 1;
       for (;;) {
         if (seen[segOrd]) {
           int i = maxIdx;

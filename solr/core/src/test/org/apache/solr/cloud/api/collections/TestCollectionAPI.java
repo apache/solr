@@ -62,7 +62,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   @Test
   @ShardsFixed(num = 2)
   public void test() throws Exception {
+    final boolean isDistributedCollectionApi;
     try (CloudSolrClient client = createCloudClient(null)) {
+      isDistributedCollectionApi = new CollectionAdminRequest.RequestApiDistributedProcessing().process(client).getIsCollectionApiDistributed();
       CollectionAdminRequest.Create req;
       if (useTlogReplicas()) {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 0, 1, 1);
@@ -85,7 +87,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusWithCollectionAndMultipleShards();
     clusterStatusWithRouteKey();
     clusterStatusAliasTest();
-    clusterStatusRolesTest();
+    if (!isDistributedCollectionApi) {
+      clusterStatusRolesTest();
+    }
     clusterStatusBadCollectionTest();
     replicaPropTest();
     clusterStatusZNodeVersion();
