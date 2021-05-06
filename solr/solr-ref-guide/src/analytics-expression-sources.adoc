@@ -69,10 +69,10 @@ There are two possible ways of specifying constant strings, as shown below.
 
 * Surrounded by double quotes, inside the quotes both `"` and `\` must be escaped with a `\` character.
 +
-`"Inside of 'double' \\ \"quotes\""` \=> `Inside of 'double' \ "quotes"`
+`"Inside of 'double' \\ \"quotes\""` => `Inside of 'double' \ "quotes"`
 * Surrounded by single quotes, inside the quotes both `'` and `\` must be escaped with a `\` character.
 +
-`'Inside of "single" \\ \'quotes\''` \=> `Inside of "double" \ 'quotes'`
+`'Inside of "single" \\ \'quotes\''` => `Inside of "double" \ 'quotes'`
 
 === Dates
 

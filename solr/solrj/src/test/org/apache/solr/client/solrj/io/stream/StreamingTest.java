@@ -2642,21 +2642,19 @@ public void testParallelRankStream() throws Exception {
   }
 
 
-  protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {
+  protected boolean assertOrder(List<Tuple> tuples, int... ids) {
     int i = 0;
     for(int val : ids) {
       Tuple t = tuples.get(i);
       String tip = (String)t.get("id");
       String valStr = Integer.toString(val);
-      if(!tip.equals(valStr)) {
-        assertEquals("Found value:"+tip+" expecting:"+valStr, val, tip);
-      }
+      assertEquals(valStr, tip);
       ++i;
     }
     return true;
   }
 
-  protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
+  protected boolean assertGroupOrder(Tuple tuple, int... ids) {
     @SuppressWarnings({"rawtypes"})
     List group = (List)tuple.get("tuples");
     int i=0;
@@ -2664,9 +2662,7 @@ public void testParallelRankStream() throws Exception {
       @SuppressWarnings({"rawtypes"})
       Map t = (Map)group.get(i);
       Long tip = (Long)t.get("id");
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
-      }
+      assertEquals(val, tip.intValue());
       ++i;
     }
     return true;

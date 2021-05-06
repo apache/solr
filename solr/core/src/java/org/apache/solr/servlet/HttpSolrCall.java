@@ -109,7 +109,6 @@ import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -501,10 +500,8 @@ public class HttpSolrCall {
    */
   public Action call() throws IOException {
     MDCLoggingContext.reset();
-    Span activeSpan = GlobalTracer.getTracer().activeSpan();
-    if (activeSpan != null) {
-      MDCLoggingContext.setTracerId(activeSpan.context().toTraceId());
-    }
+    Span activeSpan = (Span) req.getAttribute(Span.class.getName()); // never null
+    MDCLoggingContext.setTracerId(activeSpan.context().toTraceId()); // handles empty string
 
     MDCLoggingContext.setNode(cores);
 
@@ -706,7 +703,7 @@ public class HttpSolrCall {
         // encoding issues with Tomcat
         if (header != null && !header.getName().equalsIgnoreCase(TRANSFER_ENCODING_HEADER)
             && !header.getName().equalsIgnoreCase(CONNECTION_HEADER)) {
-          
+
           // NOTE: explicitly using 'setHeader' instead of 'addHeader' so that
           // the remote nodes values for any response headers will overide any that
           // may have already been set locally (ex: by the local jetty's RewriteHandler config)
