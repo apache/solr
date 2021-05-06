@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -80,7 +79,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void createTestCluster() throws Exception {
    //  cloudSolrClientMaxStaleRetries
    System.setProperty("cloudSolrClientMaxStaleRetries", "1");
    System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
@@ -170,7 +169,7 @@ public class TestPullReplica extends SolrCloudTestCase {
             2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
         for (Slice s:docCollection.getSlices()) {
           // read-only replicas can never become leaders
-          assertFalse(s.getLeader().getType() == Replica.Type.PULL);
+          assertNotSame(s.getLeader().getType(), Replica.Type.PULL);
           List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
           assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()),
               1, shardElectionNodes.size());
@@ -200,14 +199,10 @@ public class TestPullReplica extends SolrCloudTestCase {
         if (r.getType() == Replica.Type.NRT) {
           continue;
         }
-        SolrCore core = null;
-        try {
-          core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName());
+        try (SolrCore core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName())) {
           assertNotNull(core);
           assertFalse("Update log should not exist for replicas of type Passive but file is present: " + core.getUlogDir(),
               new java.io.File(core.getUlogDir()).exists());
-        } finally {
-          core.close();
         }
       }
     }
@@ -433,7 +428,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // Also fails if I send the update to the pull replica explicitly
     try (HttpSolrClient pullReplicaClient = getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       expectThrows(SolrException.class, () ->
-        cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
+          pullReplicaClient.add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
       );
     }
     if (removeReplica) {
@@ -640,7 +635,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
   }
 
-  private void addReplicaToShard(String shardName, Replica.Type type) throws ClientProtocolException, IOException, SolrServerException {
+  private void addReplicaToShard(String shardName, Replica.Type type) throws IOException, SolrServerException {
     switch (random().nextInt(3)) {
       case 0: // Add replica with SolrJ
         CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, shardName, type).process(cluster.getSolrClient());

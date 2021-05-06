@@ -40,7 +40,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
-import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
 
 import static java.util.Collections.singletonList;
@@ -52,7 +51,6 @@ import static org.apache.solr.cloud.TestPullReplica.waitForNumDocsInAllReplicas;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 @Slow
-@LogLevel("org.apache.solr.handler.ReplicationHandler=DEBUG,org.apache.solr.handler.IndexFetcher=DEBUG")
 public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   private static final String USER = "solr";
@@ -86,7 +84,6 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     return withBasicAuth(new QueryRequest(q)).process(client);
   }
 
-  @SuppressWarnings("unchecked")
   public void testPKIAuthWorksForPullReplication() throws Exception {
     int numPullReplicas = 2;
     withBasicAuth(CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas))
@@ -133,7 +130,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     // add another pull replica to ensure it can pull the indexes
     Slice s = docCollection.getSlices().iterator().next();
     List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
-    assertEquals(2, pullReplicas.size());
+    assertEquals(numPullReplicas, pullReplicas.size());
     response = withBasicAuth(CollectionAdminRequest.addReplicaToShard(collectionName, s.getName(), Replica.Type.PULL)).process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
