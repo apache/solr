@@ -238,6 +238,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         try (HttpSolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
           SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
           QueryResponse statsResponse = pullReplicaClient.query(req);
+          // The adds gauge metric should be null for pull replicas since they don't process adds
           assertNull("Replicas shouldn't process the add document request: " + statsResponse,
               ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
         }
@@ -521,12 +522,12 @@ public class TestPullReplica extends SolrCloudTestCase {
       try (HttpSolrClient replicaClient = getHttpSolrClient(replicaUrl)) {
         while (true) {
           QueryRequest req = new QueryRequest(new SolrQuery(query));
-          if (user != null) {
+          if (user != null && pass != null) {
             req.setBasicAuthCredentials(user, pass);
           }
           try {
             long numFound = req.process(replicaClient).getResults().getNumFound();
-            assertEquals("Replica " + r.getName() + " (" + replicaUrl + ") not up to date after 30 seconds; found " + numFound + ", expected " + numDocs,
+            assertEquals("Replica " + r.getName() + " (" + replicaUrl + ") not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",
                 numDocs, numFound);
             log.info("Replica {} ({}) has all {} docs", r.name, replicaUrl, numDocs);
             break;
