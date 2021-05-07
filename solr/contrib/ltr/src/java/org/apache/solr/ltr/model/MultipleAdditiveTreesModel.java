@@ -33,43 +33,43 @@ import java.util.Map;
  * <p>
  * Example configuration:
  <pre>{
- "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
- "name" : "multipleadditivetreesmodel",
- "features":[
- { "name" : "userTextTitleMatch"},
- { "name" : "originalScore"}
- ],
- "params" : {
- "trees" : [
- {
- "weight" : "1",
- "root": {
- "feature" : "userTextTitleMatch",
- "threshold" : "0.5",
- "left" : {
- "value" : "-100"
- },
- "right" : {
- "feature" : "originalScore",
- "threshold" : "10.0",
- "left" : {
- "value" : "50"
- },
- "right" : {
- "value" : "75"
- }
- }
- }
- },
- {
- "weight" : "2",
- "root" : {
- "value" : "-10"
- }
- }
- ]
- }
- }</pre>
+   "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+   "name" : "multipleadditivetreesmodel",
+   "features":[
+       { "name" : "userTextTitleMatch"},
+       { "name" : "originalScore"}
+   ],
+   "params" : {
+       "trees" : [
+           {
+               "weight" : "1",
+               "root": {
+                   "feature" : "userTextTitleMatch",
+                   "threshold" : "0.5",
+                   "left" : {
+                       "value" : "-100"
+                   },
+                   "right" : {
+                       "feature" : "originalScore",
+                       "threshold" : "10.0",
+                       "left" : {
+                           "value" : "50"
+                       },
+                       "right" : {
+                           "value" : "75"
+                       }
+                   }
+               }
+           },
+           {
+               "weight" : "2",
+               "root" : {
+                   "value" : "-10"
+               }
+           }
+       ]
+   }
+}</pre>
  * <p>
  * Training libraries:
  * <ul>
@@ -249,9 +249,9 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   public MultipleAdditiveTreesModel(String name, List<Feature> features,
-                                    List<Normalizer> norms,
-                                    String featureStoreName, List<Feature> allFeatures,
-                                    Map<String,Object> params) {
+      List<Normalizer> norms,
+      String featureStoreName, List<Feature> allFeatures,
+      Map<String,Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
 
     fname2index = new HashMap<String,Integer>();
