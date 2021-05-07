@@ -46,8 +46,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.hamcrest.QueryMatchers.booleanQuery;
-import static org.apache.solr.hamcrest.QueryMatchers.boostQuery;
-import static org.apache.solr.hamcrest.QueryMatchers.disjunctionQuery;
+import static org.apache.solr.hamcrest.QueryMatchers.boosted;
+import static org.apache.solr.hamcrest.QueryMatchers.disjunctionOf;
 import static org.apache.solr.hamcrest.QueryMatchers.phraseQuery;
 import static org.apache.solr.hamcrest.QueryMatchers.termQuery;
 import static org.hamcrest.Matchers.allOf;
@@ -2124,15 +2124,15 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       qParser = QParser.getParser("grackle wi fi", "edismax", req);
       q = qParser.getQuery();
       assertThat(q, booleanQuery(booleanQuery(
-          disjunctionQuery(
-              booleanQuery(phraseQuery("text", "crow", "blackbird"), termQuery("text", "grackl")),
+          disjunctionOf(
+              booleanQuery(phraseQuery("text", "crow blackbird"), termQuery("text", "grackl")),
               booleanQuery(
                   booleanQuery(
                       booleanQuery(termQuery("text_sw", "crow"), termQuery("text_sw", "blackbird")),
                       termQuery("text_sw", "grackl")
                   ),
-                  disjunctionQuery(termQuery("text", "wi"), termQuery("text_sw", "wi")),
-                  disjunctionQuery(termQuery("text", "fi"), termQuery("text_sw", "fi"))
+                  disjunctionOf(termQuery("text", "wi"), termQuery("text_sw", "wi")),
+                  disjunctionOf(termQuery("text", "fi"), termQuery("text_sw", "fi"))
               )
           )
       ), BooleanClause.Occur.MUST));
@@ -2144,32 +2144,32 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
       assertThat(q, booleanQuery(booleanQuery(
-          disjunctionQuery(termQuery("title", "one"), termQuery("subject", "on")),
-          disjunctionQuery(termQuery("title", "two"), termQuery("subject", "two"))
+          disjunctionOf(termQuery("title", "one"), termQuery("subject", "on")),
+          disjunctionOf(termQuery("title", "two"), termQuery("subject", "two"))
       ), BooleanClause.Occur.MUST));
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject title^5")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
       assertThat(q, booleanQuery(booleanQuery(
-          disjunctionQuery(boostQuery("title", "one", 5), termQuery("subject", "on")),
-          disjunctionQuery(boostQuery("title", "two", 5), termQuery("subject", "two"))
+          disjunctionOf(boosted("title", "one", 5), termQuery("subject", "on")),
+          disjunctionOf(boosted("title", "two", 5), termQuery("subject", "two"))
       ), BooleanClause.Occur.MUST));
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject^3 title")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
       assertThat(q, booleanQuery(booleanQuery(
-          disjunctionQuery(termQuery("title", "one"), boostQuery("subject", "on", 3)),
-          disjunctionQuery(termQuery("title", "two"), boostQuery("subject", "two", 3))
+          disjunctionOf(termQuery("title", "one"), boosted("subject", "on", 3)),
+          disjunctionOf(termQuery("title", "two"), boosted("subject", "two", 3))
       ), BooleanClause.Occur.MUST));
     }
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject^10 title^20")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
       assertThat(q, booleanQuery(booleanQuery(
-          disjunctionQuery(boostQuery("title", "one", 20), boostQuery("subject", "on", 10)),
-          disjunctionQuery(boostQuery("title", "two", 20), boostQuery("subject", "two", 10))
+          disjunctionOf(boosted("title", "one", 20), boosted("subject", "on", 10)),
+          disjunctionOf(boosted("title", "two", 20), boosted("subject", "two", 10))
       ), BooleanClause.Occur.MUST));
     }
   }
