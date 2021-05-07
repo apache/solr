@@ -181,7 +181,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       this.restoreConfigName = message.getStr(CollectionAdminParams.COLL_CONF, this.backupProperties.getConfigName());
       this.backupCollectionState = this.backupManager.readCollectionState(this.backupCollection);
 
-      this.shardHandler = ccc.getShardHandler();
+      this.shardHandler = ccc.newShardHandler();
       this.nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
               zkStateReader.getClusterState().getLiveNodes(), message, CollectionHandlingUtils.RANDOM);
     }

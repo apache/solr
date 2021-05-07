@@ -41,4 +41,4 @@ This section includes the following topics:
 
 <<schemaless-mode.adoc#,Schemaless Mode>>: Automatically add previously unknown schema fields using value-based field type guessing.
 
-<<luke-request-handler.adoc#,Luke Requst Handler>>: The request handler which provides access to information about fields in the index. This request handler powers the <<schema-browser-screen.adoc#,Schema Browser>> page of Solr's Admin UI.
+<<luke-request-handler.adoc#,Luke Request Handler>>: The request handler which provides access to information about fields in the index. This request handler powers the <<schema-browser-screen.adoc#,Schema Browser>> page of Solr's Admin UI.

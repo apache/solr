@@ -26,21 +26,15 @@
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
   <str name="collectionsHandler">${collectionsHandler:solr.CollectionsHandler}</str>
+  <str name="allowUrls">${solr.tests.allowUrls:}</str>
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
     <str name="urlScheme">${urlScheme:}</str>
     <int name="socketTimeout">${socketTimeout:90000}</int>
     <int name="connTimeout">${connTimeout:15000}</int>
-    <str name="shardsWhitelist">${solr.tests.shardsWhitelist:}</str>
   </shardHandlerFactory>
 
-  <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
-    <str name="agentHost">localhost</str>
-    <int name="agentPort">5775</int>
-    <bool name="logSpans">true</bool>
-    <int name="flushInterval">1000</int>
-    <int name="maxQueueSize">10000</int>
-  </tracerConfig>
+  <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator" />
 
   <solrcloud>
     <str name="host">127.0.0.1</str>

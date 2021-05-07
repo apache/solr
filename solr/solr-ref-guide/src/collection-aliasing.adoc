@@ -159,7 +159,7 @@ is created (possibly several seconds). Preemptive creation reduces these hiccups
 an hour or more) then if there are problems creating a collection, this window of time might be enough to take
 corrective action. However after a successful preemptive creation,  the collection is consuming resources without
 being used, and new documents will tend to be routed through it only to be routed elsewhere. Also, note that
-router.autoDeleteAge is currently evaluated relative to the date of a newly created collection, and so you may
+`router.autoDeleteAge` is currently evaluated relative to the date of a newly created collection, and so you may
 want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
 soon. Note that it has to be possible to subtract the interval specified from a date, so if prepending a
 minus sign creates invalid date math, this will cause an error. Also note that a document that is itself
@@ -214,33 +214,6 @@ Create an alias named "testalias" and link it to the collections named "foo" and
 [.dynamic-tabs]
 --
 
-[example.tab-pane#v2createAlias]
-====
-[.tab-label]*V2 API*
-*Input*
-
-[source,json]
-----
-{
-  "create-alias":{
-    "name":"testalias",
-    "collections":["foo","bar"]
-  }
-}
-----
-*Output*
-
-[source,json]
-----
-{
-  "responseHeader": {
-    "status": 0,
-    "QTime": 125
-  }
-}
-----
-====
-
 [example.tab-pane#v1createAlias]
 ====
 [.tab-label]*V1 API*
@@ -264,64 +237,41 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 </response>
 ----
 ====
---
 
-A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
-Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
-
-[.dynamic-tabs]
---
-
-[example.tab-pane#v2createTRA]
+[example.tab-pane#v2createAlias]
 ====
 [.tab-label]*V2 API*
-
 *Input*
 
-POST /api/c
-
-[source,json]
+[source,bash]
 ----
-{
-  "create-alias" : {
-    "name": "somethingTemporalThisWayComes",
-    "router" : {
-      "name": "time",
-      "field": "evt_dt",
-      "start":"NOW/MINUTE",
-      "interval":"+2HOUR",
-      "maxFutureMs":"14400000"
-    },
-    "create-collection" : {
-      "config":"_default",
-      "router": {
-        "name":"implicit",
-        "field":"foo_s"
-      },
-      "shards":"foo,bar,baz",
-      "numShards": 3,
-      "tlogReplicas":1,
-      "pullReplicas":1,
-      "properties" : {
-        "foobar":"bazbam"
-      }
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "create-alias":{
+      "name":"testalias",
+      "collections":["foo","bar"]
     }
   }
-}
+'
 ----
-
 *Output*
 
 [source,json]
 ----
 {
-    "responseHeader": {
-        "status": 0,
-        "QTime": 1234
-    }
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
 }
 ----
 ====
+--
+
+A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
+
+[.dynamic-tabs]
+--
 
 [example.tab-pane#v1createTRA]
 ====
@@ -346,6 +296,7 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
     &create-collection.tlogReplicas=1
     &create-collection.pullReplicas=1
     &create-collection.property.foobar=bazbam
+    &wt=xml
 ----
 
 *Output*
@@ -360,45 +311,46 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 </response>
 ----
 ====
---
 
-Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
-individual dimensions
-
-[.dynamic-tabs]
---
-
-[example.tab-pane#v2createDRA]
+[example.tab-pane#v2createTRA]
 ====
 [.tab-label]*V2 API*
 
 *Input*
 
-POST /api/c
-[source,json]
+
+[source,bash]
 ----
-{
-  "create-alias":{
-    "name":"dra_test1",
-    "router": {
-      "name": "Dimensional[time,category]",
-      "routerList" : [ {
-            "field":"myDate_tdt",
-            "start":"2019-01-01T00:00:00Z",
-            "interval":"+1MONTH",
-            "maxFutureMs":600000
-        },{
-             "field":"myCategory_s",
-             "maxCardinality":20
-        }]
-    },
-    "create-collection": {
-      "config":"_default",
-      "numShards":2
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "create-alias" : {
+      "name": "somethingTemporalThisWayComes",
+      "router" : {
+        "name": "time",
+        "field": "evt_dt",
+        "start":"NOW/MINUTE",
+        "interval":"+2HOUR",
+        "maxFutureMs":"14400000"
+      },
+      "create-collection" : {
+        "config":"_default",
+        "router": {
+          "name":"implicit",
+          "field":"foo_s"
+        },
+        "shards":"foo,bar,baz",
+        "numShards": 3,
+        "tlogReplicas":1,
+        "pullReplicas":1,
+        "properties" : {
+          "foobar":"bazbam"
+        }
+      }
     }
   }
-}
+'
 ----
+
 *Output*
 
 [source,json]
@@ -411,6 +363,14 @@ POST /api/c
 }
 ----
 ====
+
+--
+
+Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
+individual dimensions
+
+[.dynamic-tabs]
+--
 
 [example.tab-pane#v1createDRA]
 ====
@@ -431,6 +391,7 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
     &create-collection.numShards=2
     &router.1.maxCardinality=20
     &router.1.field=myCategory_s
+    &wt=xml
 ----
 
 *Output*
@@ -445,12 +406,79 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 </response>
 ----
 ====
+
+[example.tab-pane#v2createDRA]
+====
+[.tab-label]*V2 API*
+
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+  {
+    "create-alias":{
+      "name":"dra_test1",
+      "router": {
+        "name": "Dimensional[time,category]",
+        "routerList" : [ {
+              "field":"myDate_tdt",
+              "start":"2019-01-01T00:00:00Z",
+              "interval":"+1MONTH",
+              "maxFutureMs":600000
+          },{
+               "field":"myCategory_s",
+               "maxCardinality":20
+          }]
+      },
+      "create-collection": {
+        "config":"_default",
+        "numShards":2
+      }
+    }
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 1234
+    }
+}
+----
+====
+
 --
 
 [[listaliases]]
 == LISTALIASES: List of all aliases in the cluster
 
-`/admin/collections?action=LISTALIASES`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listaliases]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8982/solr/admin/collections?action=LISTALIASES
+----
+====
+
+[example.tab-pane#v2listaliases]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster/aliases
+----
+====
+--
 
 The LISTALIASES action does not take any parameters.
 
@@ -496,7 +524,37 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
 
 The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
 
-`/admin/collections?action=ALIASPROP&name=_name_&property.someKey=somevalue`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1aliasprop]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias&property.foo=bar
+----
+====
+
+[example.tab-pane#v2aliasprop]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+{
+  "set-alias-property":{
+    "name":"techproducts_alias",
+    "properties": {"foo":"bar"}
+  }
+}
+'
+----
+
+====
+--
+
 
 WARNING: This command allows you to revise any property. No alias specific validation is performed.
          Routed aliases may cease to function, function incorrectly or cause errors if property values
@@ -507,8 +565,11 @@ WARNING: This command allows you to revise any property. No alias specific valid
 `name`::
 The alias name on which to set properties. This parameter is required.
 
-`property.*`::
-The name of the property to be modified replaces '*', the value for the parameter is passed as the value for the property.
+`property._name_=_value_` (v1)::
+Set property _name_ to _value_.
+
+`"properties":{"name":"value"}` (v2)::
+A dictionary of name/value pairs of properties to be set.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -519,33 +580,38 @@ The output will simply be a responseHeader with details of the time it took to p
 To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and
 find the `aliases.json` file or use the LISTALIASES api command.
 
-=== Examples using ALIASPROP
-
-*Input*
-
-For an alias named "testalias2" and set the value "someValue" for a property of "someKey" and "otherValue" for "otherKey".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=ALIASPROP&name=testalias2&property.someKey=someValue&property.otherKey=otherValue&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">122</int>
-  </lst>
-</response>
-----
-
 [[deletealias]]
 == DELETEALIAS: Delete a Collection Alias
 
-`/admin/collections?action=DELETEALIAS&name=_name_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletealias]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
+----
+====
+
+[example.tab-pane#v2deletealias]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+{
+  "delete-alias":{
+    "name":"testalias"
+  }
+}
+'
+----
+====
+--
+
 
 === DELETEALIAS Parameters
 
@@ -560,26 +626,3 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 The output will simply be a responseHeader with details of the time it took to process the request.
 To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and
 find the `aliases.json` file.
-
-=== Examples using DELETEALIAS
-
-*Input*
-
-Remove the alias named "testalias".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias&wt=xml
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">117</int>
-  </lst>
-</response>
-----

@@ -220,10 +220,10 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   @SuppressWarnings({"unchecked"})
-  public Map<String, String> getEditableSubProperties(String xpath) {
+  public Map<String, Object> getEditableSubProperties(String xpath) {
     Object o = Utils.getObjectByPath(props, false, StrUtils.splitSmart(xpath, '/'));
     if (o instanceof Map) {
-      return (Map<String,String>) o;
+      return (Map<String, Object>) o;
     } else {
       return null;
     }

@@ -280,10 +280,10 @@ groups:
       voting rules, create a PGP/GPG key for use with signing and more. Please familiarise
       yourself with the resources listed below.
     links:
-    - http://www.apache.org/dev/release-publishing.html
-    - http://www.apache.org/legal/release-policy.html
-    - http://www.apache.org/dev/release-signing.html
-    - https://wiki.apache.org/lucene-java/ReleaseTodo
+    - https://infra.apache.org/release-publishing.html
+    - https://www.apache.org/legal/release-policy.html
+    - https://infra.apache.org/release-signing.html
+    - https://cwiki.apache.org/confluence/display/LUCENE/ReleaseTodo
   - !Todo
     id: tools
     title: Necessary tools are installed
@@ -321,8 +321,8 @@ groups:
         fingerprint for the key.
     function: configure_pgp
     links:
-    - http://www.apache.org/dev/release-signing.html
-    - http://www.apache.org/dev/openpgp.html#apache-wot
+    - https://infra.apache.org/release-signing.html
+    - https://infra.apache.org/openpgp.html#apache-wot
     - https://id.apache.org
     - https://dist.apache.org/repos/dist/release/lucene/KEYS
   - !Todo
@@ -1041,10 +1041,9 @@ groups:
     description: |
       Ensure your refrigerator has at least 2 beers - the svn import operation can take a while,
       depending on your upload bandwidth. We'll publish this directly to the production tree.
-      At the end of the task, the two links below shall work.
+      At the end of the task, the link below shall work.
     links:
-    - http://lucene.apache.org/core/{{ version }}
-    - http://lucene.apache.org/solr/{{ version }}
+    - https://solr.apache.org/{{ version }}
     vars:
       release_tag: releases/lucene-solr/{{ release_version }}
       version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
@@ -1250,15 +1249,13 @@ groups:
     post_description: |
       Wait a few minutes for the build to happen. You can follow the site build at https://ci2.apache.org/#/builders/3
 
-      Verify on https://lucene.apache.org that the site is OK.
+      Verify on https://solr.apache.org that the site is OK.
 
-      You can now also verify that http://lucene.apache.org/solr/api/solr-core/ and http://lucene.apache.org/core/api/core/
-      redirects to the latest version
+      You can now also verify that https://solr.apache.org/api/solr-core/ redirects to the latest version
     links:
       - https://ci2.apache.org/#/builders/3
-      - https://lucene.apache.org
-      - http://lucene.apache.org/solr/api/solr-core/
-      - http://lucene.apache.org/core/api/core/
+      - https://solr.apache.org
+      - https://solr.apache.org/api/solr-core/
   - !Todo
     id: update_doap
     title: Update the DOAP files
@@ -1522,114 +1519,6 @@ groups:
       - !Command
         cmd: git add -u .  && git commit -m "Add next bugfix version {{ next_version }}"  && git push
         logfile: commit-stable.log
-  - !Todo
-    id: backcompat_release
-    title: Generate Backcompat Indexes for release branch
-    description: |
-      After each version of Lucene is released, compressed CFS, non-CFS, and sorted indexes created with 
-      the newly released version are added to `lucene/backwards-codecs/src/test/org/apache/lucene/index/`, 
-      for use in testing backward index compatibility via org.apache.lucene.index.TestBackwardsCompatibility, 
-      which is also located under the `backwards-codecs/` module. There are also three indexes created only 
-      with major Lucene versions: moreterms, empty, and dvupdates. These indexes are created via methods 
-      on `TestBackwardsCompatibility` itself - see comments in the source for more information.
-
-      There is a script (`dev-tools/scripts/addBackcompatIndexes.py`) that automates most of the process.
-      It downloads the source for the specified release; generates indexes for the current release using 
-      `TestBackwardsCompatibility`; compresses the indexes and places them in the correct place in the source 
-      tree; modifies TestBackwardsCompatibility.java to include the generated indexes in the list of indexes 
-      to test; and then runs `TestBackwardsCompatibility`.
-      
-      In this and the next two steps we'll guide you through using this tool on each of the branches.
-    depends: 
-    - increment_release_version
-    vars:
-      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add back-compat indices to release branch
-      commands:
-      - !Command
-        cmd: git checkout {{ release_branch }} && git pull --ff-only && git clean -df && git checkout -- .
-        tee: true
-        logfile: checkout.log
-      - !Command
-        cmd: "{{ gradle_cmd }} clean"
-      - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
-        logfile: add-backcompat.log
-      - !Command
-        cmd: git diff --staged
-        comment: Check the git diff before committing
-        tee: true
-      - !Command
-        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
-        logfile: commit.log
-  - !Todo
-    id: backcompat_stable
-    title: Generate Backcompat Indexes for stable branch
-    description: |
-      Now generate back-compat for stable branch ({{ stable_branch }})
-    depends: 
-    - increment_release_version
-    vars:
-      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add back-compat indices to {{ stable_branch }}
-      commands:
-      - !Command
-        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
-        tee: true
-        logfile: checkout.log
-      - !Command
-        cmd: "{{ gradle_cmd }} clean"
-      - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
-        logfile: add-backcompat.log
-      - !Command
-        cmd: git diff --staged
-        comment: Check the git diff before committing
-        tee: true
-      - !Command
-        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
-        logfile: commit.log
-  - !Todo
-    id: backcompat_master
-    title: Generate Backcompat Indexes for unstable branch
-    description: |
-      Now generate back-compat for unstable (master) branch.
-      Note that this time we do not specify `--no-cleanup` meaning the tmp folder will be deleted
-    depends: 
-    - increment_release_version
-    vars:
-      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
-      version: "{{ set_java_home(master_version) }}"
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add back-compat indices to master
-      commands:
-      - !Command
-        cmd: git checkout master && git pull --ff-only && git clean -df && git checkout -- .
-        tee: true
-        logfile: checkout.log
-      - !Command
-        cmd: "{{ gradle_cmd }} clean"
-      - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
-        logfile: add-backcompat.log
-      - !Command
-        cmd: git diff --staged
-        comment: Check the git diff before committing
-        tee: true
-      - !Command
-        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
-        logfile: commit.log
-    post_description: |
-      When doing a major version release, eg. 8.0.0, you might also need to reenable some 
-      backward compatibility tests for corner cases. To find them, run grep -r assume 
-      lucene/backward-codecs/, which should find tests that have been disabled on master 
-      because there was no released Lucene version to test against.
-      {{ set_java_home(release_version) }}
   - !Todo
     id: jira_release
     title: Mark version as released in JIRA

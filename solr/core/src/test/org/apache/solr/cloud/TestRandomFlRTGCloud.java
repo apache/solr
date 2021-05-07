@@ -143,7 +143,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .withProperty("config", "solrconfig-tlog.xml")
-        .withProperty("schema", "schema-psuedo-fields.xml")
+        .withProperty("schema", "schema-pseudo-fields.xml")
         .process(CLOUD_CLIENT);
 
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards); 

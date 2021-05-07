@@ -175,7 +175,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
         boolean configSetIsUsedByOtherCollection = false;
 
         // make sure the configSet is not shared with other collections
-        // Similar to what happens in: OverseerConfigSetMessageHandler::deleteConfigSet
+        // Similar to what happens in: ConfigSetCmds::deleteConfigSet
         for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
           String otherConfigSetName = null;
           try {
