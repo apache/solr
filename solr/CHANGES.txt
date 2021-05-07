@@ -128,7 +128,7 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15340: Rename shardsWhitelist and extract AllowListUrlChecker to use it more broadly. (Bruno Roustant)
 
-* SOLR-15315: LTR latency optimisation by changing recursion to loop in tree traversal
+* SOLR-15315: LTR latency optimisation by changing recursion to loop in tree traversal. (Suryakant Pandey)
 
 Other Changes
 ----------------------
