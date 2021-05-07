@@ -169,25 +169,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       return feature == null;
     }
 
-    public float score(float[] featureVector) {
-      RegressionTreeNode regressionTreeNode = this;
-      while (true) {
-        if (regressionTreeNode.isLeaf()) {
-          return regressionTreeNode.value;
-        }
-        // unsupported feature (tree is looking for a feature that does not exist)
-        if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
-          return 0f;
-        }
-
-        if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
-          regressionTreeNode = regressionTreeNode.left;
-        } else {
-          regressionTreeNode = regressionTreeNode.right;
-        }
-      }
-    }
-
     public String explain(float[] featureVector) {
       if (isLeaf()) {
         return "val: " + value;
@@ -274,7 +255,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public float score(float[] featureVector) {
-      return weight.floatValue() * root.score(featureVector);
+      return weight.floatValue() * scoreNode(featureVector, root);
     }
 
     public String explain(float[] featureVector) {
@@ -345,6 +326,24 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       score += t.score(modelFeatureValuesNormalized);
     }
     return score;
+  }
+
+  private static float scoreNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
+    while (true) {
+      if (regressionTreeNode.isLeaf()) {
+       return regressionTreeNode.value;
+      }
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
+       return 0f;
+      }
+
+      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+        regressionTreeNode = regressionTreeNode.left;
+      } else {
+        regressionTreeNode = regressionTreeNode.right;
+      }
+    }
   }
 
   // /////////////////////////////////////////
