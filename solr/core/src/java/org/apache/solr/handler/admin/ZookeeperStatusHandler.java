@@ -89,7 +89,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           throw e;
         }
         if (log.isWarnEnabled()) {
-          log.warn("{} - Continuing with static connection string", e.getMessage());
+          log.warn("{} - Continuing with static connection string", e.toString());
         }
       }
       values.add("zkStatus", getZkStatus(zkHost, dynConfig));
