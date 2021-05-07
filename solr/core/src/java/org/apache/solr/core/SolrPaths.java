@@ -90,17 +90,35 @@ public final class SolrPaths {
 
   /**
    * Builds a set of allowed {@link Path}.
-   * Detects special paths '*' and '_ALL_' that mean all paths are allowed.
+   * Detects special paths "*" and "_ALL_" that mean all paths are allowed.
    */
   public static class AllowPathBuilder {
 
-    private static final Path WILDCARD_PATH = Paths.get("*");
+    private static final String WILDCARD_PATH = "*";
 
     private Set<Path> paths;
 
+    /**
+     * Adds an allowed path.
+     * Detects "*" and "_ALL_" which mean all paths are allowed.
+     */
+    public AllowPathBuilder addPath(String path) {
+      if (path.equals(WILDCARD_PATH)) {
+        paths = ALL_PATHS;
+      } else {
+        addPath(Paths.get(path));
+      }
+      return this;
+    }
+
+    /**
+     * Adds an allowed path.
+     * Detects "_ALL_" which means all paths are allowed.
+     * Does not detect "*" (not supported as a {@link Path} on Windows), see {@link #addPath(String)}.
+     */
     public AllowPathBuilder addPath(Path path) {
       if (paths != ALL_PATHS) {
-        if (path.equals(ALL_PATH) || path.equals(WILDCARD_PATH)) {
+        if (path.equals(ALL_PATH)) {
           paths = ALL_PATHS;
         } else {
           if (paths == null) {
