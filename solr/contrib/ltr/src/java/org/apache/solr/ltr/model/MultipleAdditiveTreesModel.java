@@ -16,60 +16,60 @@
  */
 package org.apache.solr.ltr.model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * A scoring model that computes scores based on the summation of multiple weighted trees.
  * Example models are LambdaMART and Gradient Boosted Regression Trees (GBRT) .
  * <p>
  * Example configuration:
-<pre>{
-   "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
-   "name" : "multipleadditivetreesmodel",
-   "features":[
-       { "name" : "userTextTitleMatch"},
-       { "name" : "originalScore"}
-   ],
-   "params" : {
-       "trees" : [
-           {
-               "weight" : "1",
-               "root": {
-                   "feature" : "userTextTitleMatch",
-                   "threshold" : "0.5",
-                   "left" : {
-                       "value" : "-100"
-                   },
-                   "right" : {
-                       "feature" : "originalScore",
-                       "threshold" : "10.0",
-                       "left" : {
-                           "value" : "50"
-                       },
-                       "right" : {
-                           "value" : "75"
-                       }
-                   }
-               }
-           },
-           {
-               "weight" : "2",
-               "root" : {
-                   "value" : "-10"
-               }
-           }
-       ]
-   }
-}</pre>
+ <pre>{
+ "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+ "name" : "multipleadditivetreesmodel",
+ "features":[
+ { "name" : "userTextTitleMatch"},
+ { "name" : "originalScore"}
+ ],
+ "params" : {
+ "trees" : [
+ {
+ "weight" : "1",
+ "root": {
+ "feature" : "userTextTitleMatch",
+ "threshold" : "0.5",
+ "left" : {
+ "value" : "-100"
+ },
+ "right" : {
+ "feature" : "originalScore",
+ "threshold" : "10.0",
+ "left" : {
+ "value" : "50"
+ },
+ "right" : {
+ "value" : "75"
+ }
+ }
+ }
+ },
+ {
+ "weight" : "2",
+ "root" : {
+ "value" : "-10"
+ }
+ }
+ ]
+ }
+ }</pre>
  * <p>
  * Training libraries:
  * <ul>
@@ -169,31 +169,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       return feature == null;
     }
 
-    public String explain(float[] featureVector) {
-      if (isLeaf()) {
-        return "val: " + value;
-      }
-
-      // unsupported feature (tree is looking for a feature that does not exist)
-      if  ((featureIndex < 0) || (featureIndex >= featureVector.length)) {
-        return  "'" + feature + "' does not exist in FV, Return Zero";
-      }
-
-      // could store extra information about how much training data supported
-      // each branch and report
-      // that here
-
-      if (featureVector[featureIndex] <= threshold) {
-        String rval = "'" + feature + "':" + featureVector[featureIndex] + " <= "
-            + threshold + ", Go Left | ";
-        return rval + left.explain(featureVector);
-      } else {
-        String rval = "'" + feature + "':" + featureVector[featureIndex] + " > "
-            + threshold + ", Go Right | ";
-        return rval + right.explain(featureVector);
-      }
-    }
-
     @Override
     public String toString() {
       final StringBuilder sb = new StringBuilder();
@@ -210,28 +185,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public RegressionTreeNode() {
-    }
-
-    public void validate() throws ModelException {
-      if (isLeaf()) {
-        if (left != null || right != null) {
-          throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left="+left+" and right="+right);
-        }
-        return;
-      }
-      if (null == threshold) {
-        throw new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
-      }
-      if (null == left) {
-        throw new ModelException("MultipleAdditiveTreesModel tree node is missing left");
-      } else {
-        left.validate();
-      }
-      if (null == right) {
-        throw new ModelException("MultipleAdditiveTreesModel tree node is missing right");
-      } else {
-        right.validate();
-      }
     }
 
   }
@@ -259,7 +212,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public String explain(float[] featureVector) {
-      return root.explain(featureVector);
+      return explainNode(featureVector, root);
     }
 
     @Override
@@ -281,7 +234,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       if (root == null) {
         throw new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
       } else {
-        root.validate();
+        validateNode(root);
       }
     }
   }
@@ -296,9 +249,9 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   public MultipleAdditiveTreesModel(String name, List<Feature> features,
-      List<Normalizer> norms,
-      String featureStoreName, List<Feature> allFeatures,
-      Map<String,Object> params) {
+                                    List<Normalizer> norms,
+                                    String featureStoreName, List<Feature> allFeatures,
+                                    Map<String,Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
 
     fname2index = new HashMap<String,Integer>();
@@ -331,11 +284,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   private static float scoreNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
     while (true) {
       if (regressionTreeNode.isLeaf()) {
-       return regressionTreeNode.value;
+        return regressionTreeNode.value;
       }
       // unsupported feature (tree is looking for a feature that does not exist)
       if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
-       return 0f;
+        return 0f;
       }
 
       if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
@@ -345,6 +298,62 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       }
     }
   }
+
+  private static void validateNode(RegressionTreeNode regressionTreeNode) throws ModelException {
+    while (true) {
+      if (regressionTreeNode.isLeaf()) {
+        if (regressionTreeNode.left != null || regressionTreeNode.right != null) {
+          throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=" + regressionTreeNode.left + " and right=" + regressionTreeNode.right);
+        }
+        return;
+      }
+      if (null == regressionTreeNode.threshold) {
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
+      }
+      if (null == regressionTreeNode.left) {
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing left");
+      } else {
+        regressionTreeNode = regressionTreeNode.left;
+      }
+      if (null == regressionTreeNode.right) {
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing right");
+      } else {
+        regressionTreeNode = regressionTreeNode.right;
+      }
+    }
+  }
+
+  private static String explainNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
+    StringBuilder returnValueBuilder = new StringBuilder();
+    while(true) {
+      if (regressionTreeNode.isLeaf()) {
+        returnValueBuilder.append("val: " + regressionTreeNode.value);
+        return returnValueBuilder.toString();
+      }
+
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "' does not exist in FV, Return Zero");
+        return returnValueBuilder.toString();
+      }
+
+      // could store extra information about how much training data supported
+      // each branch and report
+      // that here
+
+      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " <= "
+                + regressionTreeNode.threshold + ", Go Left | ");
+        regressionTreeNode = regressionTreeNode.left;
+      } else {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " > "
+                + regressionTreeNode.threshold + ", Go Right | ");
+        regressionTreeNode = regressionTreeNode.right;
+      }
+    }
+
+  }
+
 
   // /////////////////////////////////////////
   // produces a string that looks like:
@@ -357,7 +366,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   // -10.0 = tree 1 | val: -10.0
   @Override
   public Explanation explain(LeafReaderContext context, int doc,
-      float finalScore, List<Explanation> featureExplanations) {
+                             float finalScore, List<Explanation> featureExplanations) {
     final float[] fv = new float[featureExplanations.size()];
     int index = 0;
     for (final Explanation featureExplain : featureExplanations) {
@@ -371,13 +380,13 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     for (final RegressionTree t : trees) {
       final float score = t.score(fv);
       final Explanation p = Explanation.match(score, "tree " + index + " | "
-          + t.explain(fv));
+              + t.explain(fv));
       details.add(p);
       index++;
     }
 
     return Explanation.match(finalScore, toString()
-        + " model applied to features, sum of:", details);
+            + " model applied to features, sum of:", details);
   }
 
   @Override
