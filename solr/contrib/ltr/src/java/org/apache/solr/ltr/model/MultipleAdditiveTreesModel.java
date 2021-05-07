@@ -16,23 +16,23 @@
  */
 package org.apache.solr.ltr.model;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * A scoring model that computes scores based on the summation of multiple weighted trees.
  * Example models are LambdaMART and Gradient Boosted Regression Trees (GBRT) .
  * <p>
  * Example configuration:
- <pre>{
+<pre>{
    "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
    "name" : "multipleadditivetreesmodel",
    "features":[
