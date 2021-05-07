@@ -88,7 +88,9 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         if (!(e.getCause() instanceof KeeperException)) {
           throw e;
         }
-        log.warn(e.getMessage() + " - Continuing with static connection string");
+        if (log.isWarnEnabled()) {
+          log.warn(e.getMessage() + " - Continuing with static connection string");
+        }
       }
       values.add("zkStatus", getZkStatus(zkHost, dynConfig));
     } else {
