@@ -622,4 +622,6 @@ This local parameter overrides default logic for `facet.sort`. if `facet.sort` i
 
 == Related Topics
 
-See also <<spatial-search.adoc#,Heatmap Faceting (Spatial)>>.
+See <<spatial-search.adoc#,Spatial Search>> for examples of faceting by distance and generating heatmaps via faceting.
+
+See <<response-writers.adoc#json-nl, Response Writers>> for details on the `json.nl` parameter for controlling the format for writing out field facet data when using the JSON response writer.
