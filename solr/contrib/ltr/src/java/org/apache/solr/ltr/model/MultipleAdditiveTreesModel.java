@@ -366,7 +366,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   // -10.0 = tree 1 | val: -10.0
   @Override
   public Explanation explain(LeafReaderContext context, int doc,
-                             float finalScore, List<Explanation> featureExplanations) {
+      float finalScore, List<Explanation> featureExplanations) {
     final float[] fv = new float[featureExplanations.size()];
     int index = 0;
     for (final Explanation featureExplain : featureExplanations) {
@@ -380,13 +380,13 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     for (final RegressionTree t : trees) {
       final float score = t.score(fv);
       final Explanation p = Explanation.match(score, "tree " + index + " | "
-              + t.explain(fv));
+          + t.explain(fv));
       details.add(p);
       index++;
     }
 
     return Explanation.match(finalScore, toString()
-            + " model applied to features, sum of:", details);
+        + " model applied to features, sum of:", details);
   }
 
   @Override
