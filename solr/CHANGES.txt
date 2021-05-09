@@ -301,6 +301,9 @@ Bug Fixes
 
 * SOLR-15334: Return error response when failing auth in PKIAuthPlugin (Mike Drob)
 
+* SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
+  allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -380,9 +383,6 @@ Bug Fixes
   that modify the SortSpec in prepare(), as well as possible custom "search" components other then QueryComponent.  (hossman)
 
 * SOLR-15383: Solr Zookeeper status page shows green even when some Zookeepers are not serving requests (janhoy)
-
-* SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
-  allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
 
 Other Changes
 ---------------------

@@ -84,6 +84,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     return withBasicAuth(new QueryRequest(q)).process(client);
   }
 
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testPKIAuthWorksForPullReplication() throws Exception {
     int numPullReplicas = 2;
     withBasicAuth(CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas))
