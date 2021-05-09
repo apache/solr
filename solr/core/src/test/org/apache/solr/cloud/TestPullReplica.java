@@ -281,12 +281,14 @@ public class TestPullReplica extends SolrCloudTestCase {
     assertNumberOfReplicas(2, 0, 1, true, true);
   }
 
+  @Test
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testRemoveAllWriterReplicas() throws Exception {
     doTestNoLeader(true);
   }
 
   @Test
-  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testKillLeader() throws Exception {
     doTestNoLeader(false);
   }
