@@ -55,11 +55,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.hamcrest.QueryMatchers.booleanQuery;
-import static org.apache.solr.hamcrest.QueryMatchers.boosted;
-import static org.apache.solr.hamcrest.QueryMatchers.disjunctionOf;
-import static org.apache.solr.hamcrest.QueryMatchers.phraseQuery;
-import static org.apache.solr.hamcrest.QueryMatchers.termQuery;
+import static org.apache.solr.util.QueryMatchers.booleanQuery;
+import static org.apache.solr.util.QueryMatchers.boosted;
+import static org.apache.solr.util.QueryMatchers.disjunctionOf;
+import static org.apache.solr.util.QueryMatchers.phraseQuery;
+import static org.apache.solr.util.QueryMatchers.termQuery;
 import static org.hamcrest.core.StringContains.containsString;
 
 public class TestSolrQueryParser extends SolrTestCaseJ4 {

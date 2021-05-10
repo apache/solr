@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.hamcrest;
+package org.apache.solr.util;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -33,6 +33,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
+// TODO: This can be contributed to Lucene
 public class QueryMatchers {
   private abstract static class SubTypeDiagnosingMatcher<Q extends Query> extends TypeSafeDiagnosingMatcher<Query> {
     private static final ReflectiveTypeFinder TYPE_FINDER = new ReflectiveTypeFinder("matchesExactType", 2, 0);
@@ -52,6 +53,27 @@ public class QueryMatchers {
   }
 
   private QueryMatchers() {}
+
+  /**
+   * Matches is a Query object's toString result is equal to this query string.
+   * A useful shortcut when constructing complex queries with deterministic string repr
+   *<p>
+   * Note: Do not use this in place of DisjunctionMaxQuery, but safe to use for the disjunct clauses
+   * @param query the query string to match against
+   */
+  public static Matcher<Query> stringQuery(String query) {
+    return new TypeSafeDiagnosingMatcher<Query>() {
+      @Override
+      protected boolean matchesSafely(Query item, Description mismatchDescription) {
+        return is(query).matches(item.toString());
+      }
+
+      @Override
+      public void describeTo(Description description) {
+        description.appendText(query);
+      }
+    };
+  }
 
   public static Matcher<Query> termQuery(String field, String text) {
     // TODO Use a better matcher for more descriptive results?
@@ -90,15 +112,18 @@ public class QueryMatchers {
    * Create a phrase query matcher with a whitespace delimited sequence of terms
    * @param field the field the phrase query should match against
    * @param terms a whitespace delimited set of terms that should
-   * @return
    */
   public static Matcher<Query> phraseQuery(String field, String terms) {
     // TODO Use a better matcher for more descriptive results?
     return is(new PhraseQuery(field, terms.split(" ")));
   }
 
-  public static Matcher<BooleanClause> shouldClause(Matcher<? extends Query> query) {
+  private static Matcher<BooleanClause> shouldClause(Matcher<? extends Query> query) {
     return booleanClause(query, BooleanClause.Occur.SHOULD);
+  }
+
+  private static Matcher<BooleanClause> mustClause(Matcher<? extends Query> query) {
+    return booleanClause(query, BooleanClause.Occur.MUST);
   }
 
   public static Matcher<BooleanClause> booleanClause(Matcher<? extends Query> query, BooleanClause.Occur occur) {
@@ -113,22 +138,26 @@ public class QueryMatchers {
         }
         if (!query.matches(item.getQuery())) {
           match = false;
-          mismatchDescription.appendText("with" + item.getQuery());
+          mismatchDescription.appendText("with " + item.getQuery());
+          query.describeMismatch(item.getQuery(), mismatchDescription);
         }
         return match;
       }
 
       @Override
       public void describeTo(Description description) {
-        description.appendText("a BooleanClause that " + occur.name() + " occur with ")
-            .appendDescriptionOf(query);
+        description.appendText(occur.toString()).appendText("(").appendDescriptionOf(query).appendText(")");
       }
     };
   }
 
   // TODO Figure out Varargs
-  public static Matcher<Query> booleanQuery(Matcher<Query> query, BooleanClause.Occur occur) {
-    return _booleanQuery(contains(booleanClause(query, occur)));
+  public static Matcher<Query> booleanQuery(Matcher<Query> q1, BooleanClause.Occur occur) {
+    return _booleanQuery(contains(booleanClause(q1, occur)));
+  }
+
+  public static Matcher<Query> booleanQuery(Matcher<Query> q1, Matcher<Query> q2, BooleanClause.Occur occur) {
+    return _booleanQuery(containsInAnyOrder(booleanClause(q1, occur), booleanClause(q2, occur)));
   }
 
   public static Matcher<Query> booleanQuery(Matcher<Query> query) {
