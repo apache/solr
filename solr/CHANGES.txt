@@ -94,9 +94,6 @@ Improvements
 * SOLR-15011: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
 when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
-* SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax
-  escaping. It was inconsistent with other Solr options.  (David Smiley)
-
 * SOLR-15100: Make the ConfigSetService pluggable/configurable via <string name="configSetService" /> in solr.xml
  (baisui)
 
@@ -351,6 +348,9 @@ Improvements
 * SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with a new "cluster" row (janhoy)
 
 * SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
+
+* SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax escaping.
+  It was inconsistent with other Solr options.  It did this escaping since 8.0 but not prior.  (David Smiley)
 
 Optimizations
 ---------------------
