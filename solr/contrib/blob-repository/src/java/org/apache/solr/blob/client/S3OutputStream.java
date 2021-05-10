@@ -61,7 +61,7 @@ public class S3OutputStream extends OutputStream {
         this.multiPartUpload = null;
 
         if (log.isDebugEnabled()) {
-            log.debug("Create com.salesforce.services.search.blobstore.client.S3OutputStream for bucketName '{}' key '{}'", bucketName, key);
+            log.debug("Created S3OutputStream for bucketName '{}' key '{}'", bucketName, key);
         }
     }
 
