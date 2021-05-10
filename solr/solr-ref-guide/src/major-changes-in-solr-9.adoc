@@ -150,9 +150,6 @@ _(raw; not yet edited)_
 * SOLR-15121: XSLTResponseWriter moved to /contrib/scripting/ package instead
  of shipping as part of Solr, due to security concerns.
 
-* SOLR-15156: Child Doc Transformer's `childFilter` param no longer applies query syntax
-escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
-
 * SOLR-15203: Remove the deprecated `jwkUrl` in favour of `jwksUrl` when configuring JWT authentication.
 
 * SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000".
