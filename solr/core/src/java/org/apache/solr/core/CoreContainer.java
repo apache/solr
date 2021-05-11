@@ -409,13 +409,6 @@ public class CoreContainer {
     this.allowPaths = allowPathBuilder.build();
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
-
-    Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
-    try {
-      Files.createDirectories(userFilesPath); // does nothing if already exists
-    } catch (Exception e) {
-      log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
-    }
   }
 
   @SuppressWarnings({"unchecked"})
@@ -873,6 +866,8 @@ public class CoreContainer {
       metricManager.loadClusterReporters(metricReporters, this);
     }
 
+    // Do this before cores get created
+    createUserFilesDirectory();
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
@@ -980,6 +975,17 @@ public class CoreContainer {
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
+  }
+
+  private void createUserFilesDirectory() {
+    if (isZooKeeperAware()) {
+      Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
+      try {
+        Files.createDirectories(userFilesPath); // does nothing if already exists
+      } catch (Exception e) {
+        log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
+      }
+    }
   }
 
   // MetricsHistoryHandler supports both cloud and standalone configs
