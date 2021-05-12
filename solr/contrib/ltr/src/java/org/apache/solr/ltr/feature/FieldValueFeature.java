@@ -68,8 +68,8 @@ public class FieldValueFeature extends Feature {
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = defaultParamsToMap();
+  public LinkedHashMap<String, Object> paramsToMap() {
+    final LinkedHashMap<String, Object> params = defaultParamsToMap();
     params.put("field", field);
     return params;
   }
@@ -77,19 +77,17 @@ public class FieldValueFeature extends Feature {
   @Override
   protected void validate() throws FeatureException {
     if (field == null || field.isEmpty()) {
-      throw new FeatureException(getClass().getSimpleName()+
-          ": field must be provided");
+      throw new FeatureException(getClass().getSimpleName() + ": field must be provided");
     }
   }
 
-  public FieldValueFeature(String name, Map<String,Object> params) {
+  public FieldValueFeature(String name, Map<String, Object> params) {
     super(name, params);
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
-      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
-          throws IOException {
+  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, SolrQueryRequest request,
+                                    Query originalQuery, Map<String, String[]> efi) throws IOException {
     return new FieldValueFeatureWeight(searcher, request, originalQuery, efi);
   }
 
@@ -150,14 +148,13 @@ public class FieldValueFeature extends Feature {
           } else {
             final String string = indexableField.stringValue();
             if (string.length() == 1) {
-              // boolean values in the index are encoded with the
-              // a single char contained in TRUE_TOKEN or FALSE_TOKEN
+              // boolean values in the index are encoded with a single char contained in TRUE_TOKEN or FALSE_TOKEN
               // (see BoolField)
               if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
-                return 1;
+                return 1f;
               }
               if (string.charAt(0) == BoolField.FALSE_TOKEN[0]) {
-                return 0;
+                return 0f;
               }
             }
           }

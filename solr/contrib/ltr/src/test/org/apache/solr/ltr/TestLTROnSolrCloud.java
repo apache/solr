@@ -58,10 +58,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     int numberOfNodes = numberOfShards * numberOfReplicas;
 
     setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes);
-
-
   }
-
 
   @Override
   public void tearDown() throws Exception {
@@ -233,7 +230,6 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 
-
   void indexDocument(String collection, String id, String title, String description, int popularity)
     throws Exception{
     SolrInputDocument doc = new SolrInputDocument();
@@ -356,5 +352,4 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     }
     System.clearProperty("managed.schema.mutable");
   }
-
 }
