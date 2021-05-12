@@ -199,8 +199,6 @@ public class FieldValueFeature extends Feature {
               docValues = DocValues.getSorted(context.reader(), field);
               break;
             case BINARY:
-              docValues = DocValues.getBinary(context.reader(), field);
-              break;
             case SORTED_NUMERIC:
             case SORTED_SET:
             case NONE:
