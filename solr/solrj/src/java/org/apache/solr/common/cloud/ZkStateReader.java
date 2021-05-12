@@ -129,8 +129,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CONFIGS_ZKNODE = "/configs";
   public final static String CONFIGNAME_PROP = "configName";
 
-  public static final String SAMPLE_PERCENTAGE = "samplePercentage";
-
   /**
    * @deprecated use {@link org.apache.solr.common.params.CollectionAdminParams#DEFAULTS} instead.
    */
@@ -185,8 +183,6 @@ public class ZkStateReader implements SolrCloseable {
 
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
-  private final ZkConfigManager configManager;
-
   private ConfigData securityData;
 
   private final Runnable securityNodeListener;
@@ -229,7 +225,6 @@ public class ZkStateReader implements SolrCloseable {
       CoreAdminParams.BACKUP_LOCATION,
       DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,
-      SAMPLE_PERCENTAGE,
       SOLR_ENVIRONMENT,
       CollectionAdminParams.DEFAULTS,
       CONTAINER_PLUGINS,
@@ -287,7 +282,6 @@ public class ZkStateReader implements SolrCloseable {
 
   public ZkStateReader(SolrZkClient zkClient, Runnable securityNodeListener) {
     this.zkClient = zkClient;
-    this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = false;
     this.securityNodeListener = securityNodeListener;
     assert ObjectReleaseTracker.track(this);
@@ -313,15 +307,10 @@ public class ZkStateReader implements SolrCloseable {
             }
           }
         });
-    this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
     this.securityNodeListener = null;
 
     assert ObjectReleaseTracker.track(this);
-  }
-
-  public ZkConfigManager getConfigManager() {
-    return configManager;
   }
 
   /**

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.request;
 
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.SolrParams;
@@ -131,6 +133,14 @@ public interface SolrQueryRequest extends AutoCloseable {
 
   default HttpSolrCall getHttpSolrCall() {
     return null;
+  }
+
+  /**
+   * Distributed tracing Tracer. Never null but might implement
+   * {@link io.opentracing.noop.NoopTracer}.
+   */
+  default Tracer getTracer() {
+    return GlobalTracer.get(); // default impl is only for some tests
   }
 }
 

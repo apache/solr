@@ -30,54 +30,55 @@ These can be combined using mapping functions to implement more complex function
 The number of existing values for an expression. For single-valued expressions, this is equivalent to `docCount`.
 If no expression is given, the number of matching documents is returned.
 
-`count()` \=> `< _Single Long_ >`
-`count(< T >)` \=> `< _Single Long_ >`
+`count()` => `< _Single Long_ >`
+
+`count(< T >)` => `< _Single Long_ >`
 
 === Doc Count
 The number of documents for which an expression has existing values. For single-valued expressions, this is equivalent to `count`.
 If no expression is given, the number of matching documents is returned.
 
-`doc_count()` \=> `< _Single Long_ >`
+`doc_count()` => `< _Single Long_ >`
 
-`doc_count(< T >)` \=> `< _Single Long_ >`
+`doc_count(< T >)` => `< _Single Long_ >`
 
 === Missing
 The number of documents for which an expression has no existing value.
 
-`missing(< T >)` \=> `< _Single Long_ >`
+`missing(< T >)` => `< _Single Long_ >`
 
 [[analytics-unique]]
 === Unique
 The number of unique values for an expression. This function accepts `Numeric`, `Date` and `String` expressions.
 
-`unique(< T >)` \=> `< _Single Long_ >`
+`unique(< T >)` => `< _Single Long_ >`
 
 == Math Reductions
 
 === Sum
 Returns the sum of all values for the expression.
 
-`sum(< _Double_ >)` \=> `< _Single Double_ >`
+`sum(< _Double_ >)` => `< _Single Double_ >`
 
 === Variance
 Returns the variance of all values for the expression.
 
-`variance(< _Double_ >)` \=> `< _Single Double_ >`
+`variance(< _Double_ >)` => `< _Single Double_ >`
 
 === Standard Deviation
 Returns the standard deviation of all values for the expression.
 
-`stddev(< _Double_ >)` \=> `< _Single Double_ >`
+`stddev(< _Double_ >)` => `< _Single Double_ >`
 
 === Mean
 Returns the arithmetic mean of all values for the expression.
 
-`mean(< _Double_ >)` \=> `< _Single Double_ >`
+`mean(< _Double_ >)` => `< _Single Double_ >`
 
 === Weighted Mean
 Returns the arithmetic mean of all values for the second expression weighted by the values of the first expression.
 
-`wmean(< _Double_ >, < _Double_ >)` \=> `< _Single Double_ >`
+`wmean(< _Double_ >, < _Double_ >)` => `< _Single Double_ >`
 
 NOTE: The expressions must satisfy the rules for `mult` function parameters.
 
@@ -86,17 +87,17 @@ NOTE: The expressions must satisfy the rules for `mult` function parameters.
 === Minimum
 Returns the minimum value for the expression. This function accepts `Numeric`, `Date` and `String` expressions.
 
-`min(< T >)` \=> `< _Single_ T >`
+`min(< T >)` => `< _Single_ T >`
 
 === Maximum
 Returns the maximum value for the expression. This function accepts `Numeric`, `Date` and `String` expressions.
 
-`max(< T >)` \=> `< _Single_ T >`
+`max(< T >)` => `< _Single_ T >`
 
 === Median
 Returns the median of all values for the expression. This function accepts `Numeric` and `Date` expressions.
 
-`median(< T >)` \=> `< _Single_ T >`
+`median(< T >)` => `< _Single_ T >`
 
 === Percentile
 Calculates the given percentile of all values for the expression.
@@ -104,7 +105,7 @@ This function accepts `Numeric`, `Date` and `String` expressions for the 2^nd^ p
 
 The percentile, given as the 1^st^ parameter, must be a <<analytics-expression-sources.adoc#numeric,constant double>> between [0, 100).
 
-`percentile(<Constant Double>, < T >)` \=> `< _Single_ T >`
+`percentile(<Constant Double>, < T >)` => `< _Single_ T >`
 
 === Ordinal
 Calculates the given ordinal of all values for the expression.
@@ -116,4 +117,4 @@ If the ordinal is positive, the returned value will be the _n_^th^ smallest valu
 
 If the ordinal is negative, the returned value will be the _n_^th^ largest value.
 
-`ordinal(<Constant Int>, < T >)` \=> `< _Single_ T >`
+`ordinal(<Constant Int>, < T >)` => `< _Single_ T >`

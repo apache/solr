@@ -78,6 +78,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     leader.setUp();
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    System.setProperty(TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl().toString());
 
     follower = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
     follower.setUp();
@@ -108,6 +109,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
       followerClient.close();
       followerClient = null;
     }
+    System.clearProperty(TEST_URL_ALLOW_LIST);
     System.clearProperty("solr.indexfetcher.sotimeout");
     
     IndexFetcher.usableDiskSpaceProvider = originalDiskSpaceprovider;

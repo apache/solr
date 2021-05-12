@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -128,31 +127,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   public String getPolicyNameByCollection(String coll) {
     ClusterState.CollectionRef state = getState(coll);
     return state == null || state.get() == null ? null : (String) state.get().getProperties().get("policy");
-  }
-
-  /**
-   * Download a named config from Zookeeper to a location on the filesystem
-   * @param configName    the name of the config
-   * @param downloadPath  the path to write config files to
-   * @throws IOException  if an I/O exception occurs
-   */
-  public void downloadConfig(String configName, Path downloadPath) throws IOException {
-    getZkStateReader().getConfigManager().downloadConfigDir(configName, downloadPath);
-  }
-
-  /**
-   * Upload a set of config files to Zookeeper and give it a name
-   *
-   * NOTE: You should only allow trusted users to upload configs.  If you
-   * are allowing client access to zookeeper, you should protect the
-   * /configs node against unauthorised write access.
-   *
-   * @param configPath {@link java.nio.file.Path} to the config files
-   * @param configName the name of the config
-   * @throws IOException if an IO error occurs
-   */
-  public void uploadConfig(Path configPath, String configName) throws IOException {
-    getZkStateReader().getConfigManager().uploadConfigDir(configPath, configName);
   }
 
   @Override

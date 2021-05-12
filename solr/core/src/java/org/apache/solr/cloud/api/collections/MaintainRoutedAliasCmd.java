@@ -58,12 +58,12 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
    */
   static void remoteInvoke(CollectionsHandler collHandler, String aliasName, String targetCol)
       throws Exception {
-    final String operation = CollectionParams.CollectionAction.MAINTAINROUTEDALIAS.toLower();
+    final CollectionParams.CollectionAction maintainroutedalias = CollectionParams.CollectionAction.MAINTAINROUTEDALIAS;
     Map<String, Object> msg = new HashMap<>();
-    msg.put(Overseer.QUEUE_OPERATION, operation);
+    msg.put(Overseer.QUEUE_OPERATION, maintainroutedalias.toLower());
     msg.put(CollectionParams.NAME, aliasName);
     msg.put(MaintainRoutedAliasCmd.ROUTED_ALIAS_TARGET_COL, targetCol);
-    final SolrResponse rsp = collHandler.sendToOCPQueue(new ZkNodeProps(msg));
+    final SolrResponse rsp = collHandler.submitCollectionApiCommand(new ZkNodeProps(msg), maintainroutedalias);
     if (rsp.getException() != null) {
       throw rsp.getException();
     }

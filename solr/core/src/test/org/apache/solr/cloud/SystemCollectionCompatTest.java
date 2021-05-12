@@ -162,6 +162,13 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
 
   @Test
   public void testBackCompat() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      // TODO once we completely remove Overseer, do we need to move the back compat check to some other place, for example
+      //  to when the .system collection is opened?
+      return;
+    }
+
     CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
     CloudSolrClient solrClient = cluster.getSolrClient();
     CollectionAdminResponse adminResponse = status.process(solrClient);

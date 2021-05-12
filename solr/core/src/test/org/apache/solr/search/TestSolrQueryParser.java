@@ -36,6 +36,7 @@ import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -57,6 +58,7 @@ import org.junit.Test;
 
 import static org.hamcrest.core.StringContains.containsString;
 
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15389")
 public class TestSolrQueryParser extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

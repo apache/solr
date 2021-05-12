@@ -650,7 +650,7 @@ All parameters below are required.
 `-n <name>`::
 Name of the configuration set in ZooKeeper. This command will upload the configuration set to the "configs" ZooKeeper node giving it the name specified.
 +
-You can see all uploaded configuration sets in the Admin UI via the Cloud screens. Choose Cloud \-> Tree \-> configs to see them.
+You can see all uploaded configuration sets in the Admin UI via the Cloud screens. Choose Cloud -> Tree -> configs to see them.
 +
 If a pre-existing configuration set is specified, it will be overwritten in ZooKeeper.
 +
@@ -691,7 +691,7 @@ Use the `zk downconfig` command to download a configuration set from ZooKeeper t
 All parameters listed below are required.
 
 `-n <name>`::
-Name of the configset in ZooKeeper to download. The Admin UI Cloud \-> Tree \-> configs node lists all available configuration sets.
+Name of the configset in ZooKeeper to download. The Admin UI Cloud -> Tree -> configs node lists all available configuration sets.
 +
 *Example*: `-n myconfig`
 
@@ -916,7 +916,7 @@ bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.js
 
 === Importing Documents to a Collection
 
-Once you have exported documents in a file, you can use the <<updatehandlers-in-solrconfig.adoc#,/update request handler>> to import them to a new Solr collection.
+Once you have exported documents in a file, you can use the <<uploading-data-with-index-handlers.adoc#,/update request handler>> to import them to a new Solr collection.
 
 *Example: import `jsonl` files*
 

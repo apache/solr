@@ -47,7 +47,7 @@ By default any AuditLogger plugin configured will log asynchronously in the back
     "blockAsync" : false,
     "numThreads" : 2,
     "queueSize" : 4096,
-    "eventTypes": ["REJECTED", "ANONYMOUS_REJECTED", "UNAUTHORIZED", "COMPLETED" "ERROR"]
+    "eventTypes": ["REJECTED", "ANONYMOUS_REJECTED", "UNAUTHORIZED", "COMPLETED", "ERROR"]
   }
 }
 ----

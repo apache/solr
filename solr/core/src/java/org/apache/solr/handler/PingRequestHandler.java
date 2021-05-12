@@ -16,14 +16,14 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Locale;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -136,7 +136,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   protected enum ACTIONS {STATUS, ENABLE, DISABLE, PING};
   
   private String healthFileName = null;
-  private File healthcheck = null;
+  private Path healthcheck = null;
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
@@ -148,17 +148,17 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void inform( SolrCore core ) {
     if (null != healthFileName) {
-      healthcheck = new File(healthFileName);
-      if ( ! healthcheck.isAbsolute()) {
-        healthcheck = new File(core.getDataDir(), healthFileName);
-        healthcheck = healthcheck.getAbsoluteFile();
+      healthcheck = Path.of(healthFileName);
+      if (!healthcheck.isAbsolute()) {
+        healthcheck = Path.of(core.getDataDir(), healthFileName);
+        healthcheck = healthcheck.toAbsolutePath();
       }
 
-      if ( ! healthcheck.getParentFile().canWrite()) {
+      if (!Files.isWritable(healthcheck.getParent())) {
         // this is not fatal, users may not care about enable/disable via 
         // solr request, file might be touched/deleted by an external system
         log.warn("Directory for configured healthcheck file is not writable by solr, PingRequestHandler will not be able to control enable/disable: {}",
-                 healthcheck.getParentFile().getAbsolutePath());
+                 healthcheck.getParent().toAbsolutePath());
       }
 
     }
@@ -171,7 +171,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
    * returns false. 
    */
   public boolean isPingDisabled() {
-    return (null != healthcheck && ! healthcheck.exists() );
+    return (null != healthcheck && ! Files.exists(healthcheck) );
   }
 
   @Override
@@ -309,18 +309,18 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     if ( enable ) {
       try {
         // write out when the file was created
-        FileUtils.write(healthcheck, Instant.now().toString(), "UTF-8");
+        Files.write(healthcheck, Instant.now().toString().getBytes(StandardCharsets.UTF_8));
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                                 "Unable to write healthcheck flag file", e);
       }
     } else {
       try {
-        Files.deleteIfExists(healthcheck.toPath());
+        Files.deleteIfExists(healthcheck);
       } catch (Throwable cause) {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
                                 "Did not successfully delete healthcheck file: "
-                                +healthcheck.getAbsolutePath(), cause);
+                                +healthcheck.toAbsolutePath(), cause);
       }
     }
   }

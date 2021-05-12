@@ -81,14 +81,28 @@ import static org.apache.solr.filestore.TestDistribPackageStore.*;
 public class TestPackages extends SolrCloudTestCase {
 
   @Before
-  public void setup() {
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
     System.setProperty("enable.packages", "true");
+    configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
+        .addConfig("conf", configset("conf2"))
+        .addConfig("conf1", configset("schema-package"))
+        .configure();
   }
-  
+
   @After
-  public void teardown() {
+  @Override
+  public void tearDown() throws Exception {
+    if (cluster != null) {
+      cluster.shutdown();
+    }
     System.clearProperty("enable.packages");
+
+    super.tearDown();
   }
+
   public static class ConfigPlugin implements ReflectMapWriter {
     @JsonProperty
     public String name;
@@ -99,12 +113,6 @@ public class TestPackages extends SolrCloudTestCase {
 
 
   public void testCoreReloadingPlugin() throws Exception {
-    MiniSolrCloudCluster cluster =
-            configureCluster(4)
-                    .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("conf", configset("conf2"))
-                    .configure();
-    try {
       String FILE1 = "/mypkg/runtimelibs.jar";
       String COLLECTION_NAME = "testCoreReloadingPluginColl";
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
@@ -155,19 +163,10 @@ public class TestPackages extends SolrCloudTestCase {
       verifyComponent(cluster.getSolrClient(),
               COLLECTION_NAME, "query", "filterCache",
               "mypkg", "2.0" );
-    } finally {
-      cluster.shutdown();
-    }
   }
   @Test
   @SuppressWarnings({"unchecked"})
   public void testPluginLoading() throws Exception {
-    MiniSolrCloudCluster cluster =
-        configureCluster(4)
-            .withJettyConfig(jetty -> jetty.enableV2(true))
-            .addConfig("conf", configset("cloud-minimal"))
-            .configure();
-    try {
       String FILE1 = "/mypkg/runtimelibs.jar";
       String FILE2 = "/mypkg/runtimelibs_v2.jar";
       String FILE3 = "/mypkg/runtimelibs_v3.jar";
@@ -500,9 +499,6 @@ public class TestPackages extends SolrCloudTestCase {
       checkAllNodesForFile(cluster,FILE3,
           Utils.makeMap(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);
-    } finally {
-      cluster.shutdown();
-    }
   }
   @SuppressWarnings({"unchecked","rawtypes"})
   private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
@@ -539,13 +535,6 @@ public class TestPackages extends SolrCloudTestCase {
 
   @Test
   public void testAPI() throws Exception {
-    System.setProperty("enable.packages", "true");
-    MiniSolrCloudCluster cluster =
-        configureCluster(4)
-            .withJettyConfig(jetty -> jetty.enableV2(true))
-            .addConfig("conf", configset("cloud-minimal"))
-            .configure();
-    try {
       String errPath = "/error/details[0]/errorMessages[0]";
       String FILE1 = "/mypkg/v.0.12/jar_a.jar";
       String FILE2 = "/mypkg/v.0.12/jar_b.jar";
@@ -660,9 +649,6 @@ public class TestPackages extends SolrCloudTestCase {
             ":result:packages:test_pkg[0]:files[0]", FILE3
         ));
       }
-    } finally {
-      cluster.shutdown();
-    }
   }
   public static class C extends RequestHandlerBase implements SolrCoreAware   {
     static boolean informCalled = false;
@@ -704,12 +690,6 @@ public class TestPackages extends SolrCloudTestCase {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");
 
-    MiniSolrCloudCluster cluster =
-            configureCluster(4)
-                    .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("conf1", configset("schema-package"))
-                    .configure();
-    try {
       String FILE1 = "/schemapkg/schema-plugins.jar";
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
       uploadKey(derFile, PackageStoreAPI.KEYS_DIR+"/pub_key512.der", cluster);
@@ -774,11 +754,6 @@ public class TestPackages extends SolrCloudTestCase {
           Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"2.0",
               ":fieldType:analyzer:tokenizer:_packageinfo_:version","2.0",
               ":fieldType:_packageinfo_:version","2.0"));
-
-    } finally {
-      cluster.shutdown();
-    }
-
   }
   @SuppressWarnings({"rawtypes","unchecked"})
   private void verifySchemaComponent(SolrClient client, String COLLECTION_NAME, String path,

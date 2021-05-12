@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
@@ -36,8 +35,7 @@ abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
   }
 
   private static boolean addAcc(SweepCountAccStruct entry, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx, int idx) throws IOException {
-    final DocIdSet docIdSet = entry.docSet.getTopFilter().getDocIdSet(subCtx, null);
-    if (docIdSet == null || (subIterators[idx] = docIdSet.iterator()) == null) {
+    if ((subIterators[idx] = entry.docSet.iterator(subCtx)) == null) {
       return false;
     }
     activeCountAccs[idx] = entry.countAcc;
