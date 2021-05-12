@@ -41,6 +41,8 @@ New Features
 
 * SOLR-15090: A new 'gcs-repository' contrib can be used to store and retrieve backups from Google Cloud Storage. (Jason Gerlowski, Shalin Mangar, Cao Manh Dat)
 
+* SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -91,9 +93,6 @@ Improvements
 
 * SOLR-15011: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
 when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
-
-* SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax
-  escaping. It was inconsistent with other Solr options.  (David Smiley)
 
 * SOLR-15100: Make the ConfigSetService pluggable/configurable via <string name="configSetService" /> in solr.xml
  (baisui)
@@ -288,6 +287,8 @@ Other Changes
 
 * SOLR-15369: PackageStoreAPI will only be loaded in SolrCloud mode (Mike Drob)
 
+* SOLR-15222: userfiles dir will only be created in SolrCloud mode (Mike Drob)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -298,6 +299,9 @@ Bug Fixes
 * SOLR-15317: Correctly handle user principals with whitespace in PKIAuthPlugin (Dominik Dresel, Mike Drob)
 
 * SOLR-15334: Return error response when failing auth in PKIAuthPlugin (Mike Drob)
+
+* SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
+  allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
 
 ==================  8.9.0 ==================
 
@@ -315,6 +319,8 @@ New Features
 * SOLR-15132: Add temporal graph query to the nodes Streaming Expression (Joel Bernstein)
 
 * SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with new Solr Cluster row (janhoy)
+
+* SOLR-15397: Expose zookeeper status in the Prometheus exporter (janhoy)
 
 Improvements
 ---------------------
@@ -341,11 +347,14 @@ Improvements
 
 * SOLR-15154: Let Http2SolrClient pass Basic Auth credentials to all requests (Tomás Fernández Löbbe)
 
+* SOLR-6152: Pre-populating values into search parameters on the query page of solr admin (jafurrer, daniel6691)
+
 * SOLR-11233: Add optional JAVA8_GC_LOG_FILE_OPTS for bin/solr. (Pranav Murugappan, Christine Poerschke)
 
-* SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with a new "cluster" row (janhoy)
-
 * SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
+
+* SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax escaping.
+  It was inconsistent with other Solr options.  It did this escaping since 8.0 but not prior.  (David Smiley)
 
 Optimizations
 ---------------------
@@ -386,6 +395,7 @@ Other Changes
 * SOLR-15292: An ERROR is logged if SignatureUpdateProcessorFactory is used in SolrCloud cluster in a way that is known to
   be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
 
+* SOLR-15377: Improve IndexFetcher's exception logging upon replication errors. (Torsten Bøgh Köster, Christine Poerschke)
 
 ==================  8.8.2 ==================
 
