@@ -33,13 +33,14 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.LogLevel;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @LogLevel("org.apache.solr.core.TracerConfigurator=trace")
@@ -83,8 +84,9 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         !x.tags().get("http.url").toString().endsWith("/update"));
     assertEquals(2, finishedSpans.size());
     assertOneSpanIsChildOfAnother(finishedSpans);
-    assertEquals("post:/update", finishedSpans.get(0).operationName());
-    assertDbInstanceCore(finishedSpans.get(0)); // core because cloudClient routes to core
+    // core because cloudClient routes to core
+    assertEquals("post:/{core}/update", finishedSpans.get(0).operationName());
+    assertDbInstanceCore(finishedSpans.get(0));
 
     cloudClient.add(COLLECTION, sdoc("id", "2"));
     cloudClient.add(COLLECTION, sdoc("id", "3"));
@@ -109,7 +111,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         fail("All spans must belong to single span, but:"+finishedSpans);
       }
     }
-    assertEquals("get:/select", finishedSpans.get(0).operationName());
+    assertEquals("get:/{collection}/select", finishedSpans.get(0).operationName());
     assertDbInstanceColl(finishedSpans.get(0));
   }
 
@@ -129,7 +131,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // not supported yet
   public void testV2Api() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     List<MockSpan> finishedSpans;
@@ -144,6 +145,28 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     finishedSpans = getAndClearSpans();
     assertEquals("reload:/c/{collection}", finishedSpans.get(0).operationName());
     assertDbInstanceColl(finishedSpans.get(0));
+
+    new V2Request.Builder("/c/" + COLLECTION + "/update/json")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{\n" +
+            " \"id\" : \"9\"\n" +
+            "}")
+        .withParams(params("commit", "true"))
+        .build()
+        .process(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).operationName());
+    assertDbInstanceColl(finishedSpans.get(0));
+
+    final V2Response v2Response = new V2Request.Builder("/c/" + COLLECTION + "/select")
+        .withMethod(SolrRequest.METHOD.GET)
+        .withParams(params("q", "id:9"))
+        .build()
+        .process(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("get:/c/{collection}/select", finishedSpans.get(0).operationName());
+    assertDbInstanceColl(finishedSpans.get(0));
+    assertEquals(1, ((SolrDocumentList)v2Response.getResponse().get("response")).getNumFound());
   }
 
   private void assertDbInstanceColl(MockSpan mockSpan) {

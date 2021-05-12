@@ -18,12 +18,15 @@
 package org.apache.solr.api;
 
 import com.google.common.collect.ImmutableSet;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -48,7 +51,6 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.util.PathTrie.getPathSegments;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.*;
 
 // class that handle the '/v2' path
@@ -56,7 +58,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.*;
 public class V2HttpCall extends HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Api api;
-  List<String> pieces;
+  private List<String> pathSegments;
   private String prefix;
   HashMap<String, String> parts = new HashMap<>();
   static final Set<String> knownPrefixes = ImmutableSet.of("cluster", "node", "collections", "cores", "c");
@@ -70,8 +72,8 @@ public class V2HttpCall extends HttpSolrCall {
     String path = this.path;
     final String fullPath = path = path.substring(7);//strip off '/____v2'
     try {
-      pieces = getPathSegments(path);
-      if (pieces.size() == 0 || (pieces.size() == 1 && path.endsWith(CommonParams.INTROSPECT))) {
+      pathSegments = PathTrie.getPathSegments(path);
+      if (pathSegments.size() == 0 || (pathSegments.size() == 1 && path.endsWith(CommonParams.INTROSPECT))) {
         api = new Api(null) {
           @Override
           public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -82,7 +84,7 @@ public class V2HttpCall extends HttpSolrCall {
         initAdminRequest(path);
         return;
       } else {
-        prefix = pieces.get(0);
+        prefix = pathSegments.get(0);
       }
 
       boolean isCompositeApi = false;
@@ -98,7 +100,7 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       if ("c".equals(prefix) || "collections".equals(prefix)) {
-        origCorename = pieces.get(1);
+        origCorename = pathSegments.get(1);
 
         DocCollection collection = resolveDocCollection(queryParams.get(COLLECTION_PROP, origCorename));
 
@@ -120,7 +122,7 @@ public class V2HttpCall extends HttpSolrCall {
           }
         }
       } else if ("cores".equals(prefix)) {
-        origCorename = pieces.get(1);
+        origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
       } else {
         api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
@@ -140,7 +142,7 @@ public class V2HttpCall extends HttpSolrCall {
         }
       }
 
-      this.path = path = path.substring(prefix.length() + pieces.get(1).length() + 2);
+      this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
       Api apiInfo = getApiInfo(core.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
       if (isCompositeApi && apiInfo instanceof CompositeApi) {
         ((CompositeApi) this.api).add(apiInfo);
@@ -312,6 +314,10 @@ public class V2HttpCall extends HttpSolrCall {
     }
   }
 
+  public List<String> getPathSegments() {
+    return pathSegments;
+  }
+
   public static class CompositeApi extends Api {
     private LinkedList<Api> apis = new LinkedList<>();
 
@@ -358,6 +364,85 @@ public class V2HttpCall extends HttpSolrCall {
     }
 
     SolrCore.postDecorateResponse(handler, solrReq, rsp);
+  }
+
+  @Override
+  protected void populateTracingSpan(Span span) {
+    // Set db.instance
+    String coreOrColName = this.origCorename;
+    if (coreOrColName == null) {
+      Map<String, String> pathTemplateValues = getUrlParts(); // == solrReq.getPathTemplateValues()
+      coreOrColName = pathTemplateValues.get("collection");
+      if (coreOrColName == null) {
+        coreOrColName = pathTemplateValues.get("core");
+      }
+    }
+    if (coreOrColName != null) {
+      span.setTag(Tags.DB_INSTANCE, coreOrColName);
+    }
+
+    // Get the templatize-ed path
+    String path;
+    if (api instanceof AnnotatedApi) {
+      // ideal scenario; eventually everything might be AnnotatedApi?
+      var aapi = (AnnotatedApi) api;
+      path = aapi.getEndPoint().path()[0]; // consider first to be primary
+    } else {
+      path = computeEndpointPath();
+      // TODO consider getValidators, looking for command & path?
+    }
+
+    String verb = req.getMethod().toLowerCase(Locale.ROOT);
+    // if this api has commands ...
+    final Map<String, JsonSchemaValidator> validators = getValidators(); // should be cached
+    if (validators != null && validators.isEmpty() == false && solrReq != null) {
+      // does this request have one command?
+      List<CommandOperation> cmds = solrReq.getCommands(false);
+      if (cmds.size() == 1) {
+        verb = cmds.get(0).name;
+      }
+    }
+
+    span.setOperationName(verb + ":" + path);
+
+    if (req.getQueryString() != null) {
+      span.setTag("params", req.getQueryString());
+    }
+  }
+
+  /**
+   * Example:
+   * /c/collection1/  and template map collection->collection1 produces /c/{collection}.
+   */
+  private String computeEndpointPath() {
+    // It's not ideal to compute this; let's try to transition away from hitting this code path
+    //  by using Annotation APIs
+    // collection -> myColName
+    final Map<String, String> pathTemplateKeyVal = getUrlParts();
+    // myColName -> collection
+    final Map<String, String> pathTemplateValKey;
+    if (pathTemplateKeyVal.isEmpty()) { // typical
+      pathTemplateValKey = Collections.emptyMap();
+    } else if (pathTemplateKeyVal.size() == 1) { // typical
+      var entry = pathTemplateKeyVal.entrySet().iterator().next();
+      pathTemplateValKey = Map.of(entry.getValue(), entry.getKey());
+    } else { // uncommon
+      pathTemplateValKey = new HashMap<>();
+      for (Map.Entry<String, String> entry : pathTemplateKeyVal.entrySet()) {
+        pathTemplateValKey.put(entry.getValue(), entry.getKey());
+      }
+    }
+    final StringBuilder builder = new StringBuilder();
+    for (String segment : pathSegments) {
+      builder.append('/');
+      String key = pathTemplateValKey.get(segment);
+      if (key == null) {
+        builder.append(segment);
+      } else {
+        builder.append('{').append(key).append('}');
+      }
+    }
+    return builder.toString();
   }
 
   @Override
