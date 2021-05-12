@@ -578,7 +578,9 @@ public class SolrRequestParsers {
     public SolrParams parseParamsAndFillStreams( 
         final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
     {
-      streams.add( new HttpRequestContentStream( req ) );
+      if (!req.getMethod().equals("GET")) { // or other conditions? Check headers?
+        streams.add(new HttpRequestContentStream(req));
+      }
       return parseQueryString( req.getQueryString() );
     }
   }
