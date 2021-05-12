@@ -18,13 +18,22 @@
 
 <schema name="example" version="1.5">
   <fields>
-    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
+    <field name="final-score" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="final-score-float" type="float" indexed="true" stored="true" multiValued="false"/>
+    <field name="field" type="text_general" indexed="true" stored="false" multiValued="false"/>
     <field name="title" type="text_general" indexed="true" stored="true"/>
     <field name="description" type="text_general" indexed="true" stored="true"/>
     <field name="keywords" type="text_general" indexed="true" stored="true" multiValued="true"/>
     <field name="popularity" type="int" indexed="true" stored="true" />
     <field name="normHits" type="float" indexed="true" stored="true" />
     <field name="isTrendy" type="boolean" indexed="true" stored="true" />
+    <field name="dvIntField" type="int" indexed="false" docValues="true" stored="false" default="-1" multiValued="false"/>
+    <field name="dvLongField" type="long" indexed="false" docValues="true" stored="false" default="-2" multiValued="false"/>
+    <field name="dvFloatField" type="float" indexed="false" docValues="false" stored="true" default="-3" multiValued="false"/>
+    <field name="dvDoubleField" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvStrNumField" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvStrBoolField" type="boolean" indexed="false" docValues="true" stored="false" multiValued="false"/>
 
     <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
     <field name="_version_" type="long" indexed="true" stored="true"/>
