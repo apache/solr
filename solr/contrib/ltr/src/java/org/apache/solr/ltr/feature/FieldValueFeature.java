@@ -112,8 +112,7 @@ public class FieldValueFeature extends Feature {
      */
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
-      // always prefer docValues
-      if (schemaField != null && schemaField.hasDocValues()) {
+      if (schemaField != null && !schemaField.stored() && schemaField.hasDocValues()) {
         return new DocValuesFieldValueFeatureScorer(this, context,
             DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS), schemaField);
       }
