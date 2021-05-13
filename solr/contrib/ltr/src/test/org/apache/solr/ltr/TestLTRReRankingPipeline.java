@@ -114,8 +114,8 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
   @Test
   public void testRescorer() throws Exception {
-    assertU(adoc("id", "0", "field", "wizard the the the the the oz", "final-score", "F"));
-    assertU(adoc("id", "1", "field", "wizard oz the the the the the the", "final-score", "T"));
+    assertU(adoc("id", "0", "field", "wizard the the the the the oz", "finalScore", "F"));
+    assertU(adoc("id", "1", "field", "wizard oz the the the the the the", "finalScore", "T"));
     assertU(commit());
 
     try (SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
@@ -131,12 +131,12 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
       final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2},
-              "final-score");
+              "finalScore");
       final List<Normalizer> norms =
               new ArrayList<Normalizer>(
                       Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
-              2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
+              2, 3, 4, 5, 6, 7, 8, 9}, "finalScore");
       final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
               features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
 
@@ -145,7 +145,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       final LTRRescorer rescorer = new LTRRescorer(ltrScoringQuery);
       hits = rescorer.rescore(searcher, hits, 2);
 
-      // rerank using the field final-score
+      // rerank using the field finalScore
       assertEquals("1", searcher.doc(hits.scoreDocs[0].doc).get("id"));
       assertEquals("0", searcher.doc(hits.scoreDocs[1].doc).get("id"));
     }
@@ -154,11 +154,11 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
   @Test
   public void testDifferentTopN() throws IOException {
-    assertU(adoc("id", "0", "field", "wizard oz oz oz oz oz", "final-score-float", "1.0"));
-    assertU(adoc("id", "1", "field", "wizard oz oz oz oz the", "final-score-float", "2.0"));
-    assertU(adoc("id", "2", "field", "wizard oz oz oz the the ", "final-score-float", "3.0"));
-    assertU(adoc("id", "3", "field", "wizard oz oz the the the the ", "final-score-float", "4.0"));
-    assertU(adoc("id", "4", "field", "wizard oz the the the the the the", "final-score-float", "5.0"));
+    assertU(adoc("id", "0", "field", "wizard oz oz oz oz oz", "finalScoreFloat", "1.0"));
+    assertU(adoc("id", "1", "field", "wizard oz oz oz oz the", "finalScoreFloat", "2.0"));
+    assertU(adoc("id", "2", "field", "wizard oz oz oz the the ", "finalScoreFloat", "3.0"));
+    assertU(adoc("id", "3", "field", "wizard oz oz the the the the ", "finalScoreFloat", "4.0"));
+    assertU(adoc("id", "4", "field", "wizard oz the the the the the the", "finalScoreFloat", "5.0"));
     assertU(commit());
 
     try (SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
@@ -179,12 +179,12 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       assertEquals("4", searcher.doc(hits.scoreDocs[4].doc).get("id"));
 
       final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2},
-              "final-score-float");
+              "finalScoreFloat");
       final List<Normalizer> norms =
               new ArrayList<Normalizer>(
                       Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
-              2, 3, 4, 5, 6, 7, 8, 9}, "final-score-float");
+              2, 3, 4, 5, 6, 7, 8, 9}, "finalScoreFloat");
       final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
               features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
 
@@ -229,12 +229,12 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
   public void testDocParam() throws Exception {
     try (SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
       List<Feature> features = makeFieldValueFeatures(new int[] {0},
-              "final-score");
+              "finalScore");
       List<Normalizer> norms =
               new ArrayList<Normalizer>(
                       Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0},
-              "final-score");
+              "finalScore");
       MockModel ltrScoringModel = new MockModel("test",
               features, norms, "test", allFeatures, null);
       LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
@@ -246,12 +246,12 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
         assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
       }
 
-      features = makeFieldValueFeatures(new int[] {0, 1, 2}, "final-score");
+      features = makeFieldValueFeatures(new int[] {0, 1, 2}, "finalScore");
       norms =
               new ArrayList<Normalizer>(
                       Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       allFeatures = makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8,
-              9}, "final-score");
+              9}, "finalScore");
       ltrScoringModel = new MockModel("test", features, norms,
               "test", allFeatures, null);
       query = new LTRScoringQuery(ltrScoringModel);
