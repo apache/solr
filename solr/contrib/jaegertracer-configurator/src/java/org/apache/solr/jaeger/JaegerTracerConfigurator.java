@@ -31,7 +31,5 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-  }
-
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {}
 }
