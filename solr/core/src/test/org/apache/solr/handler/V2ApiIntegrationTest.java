@@ -160,8 +160,10 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testCollectionsApi() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
+    V2Request req1 = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
+    assertEquals(COLL_NAME, req1.getCollection());
     @SuppressWarnings({"rawtypes"})
-    Map result = resAsMap(client, new V2Request.Builder("/c/"+COLL_NAME+"/get/_introspect").build());
+    Map result = resAsMap(client, req1);
     assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/collections/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
