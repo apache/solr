@@ -114,7 +114,7 @@ public class FieldValueFeature extends Feature {
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       if (schemaField != null && !schemaField.stored() && schemaField.hasDocValues()) {
         return new DocValuesFieldValueFeatureScorer(this, context,
-            DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS), schemaField);
+            DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS), schemaField.getType());
       }
       return new FieldValueFeatureScorer(this, context,
           DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
@@ -178,14 +178,15 @@ public class FieldValueFeature extends Feature {
     public class DocValuesFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
       final LeafReaderContext context;
       final DocIdSetIterator docValues;
-      final FieldType schemaFieldType;
+      final FieldType fieldType;
+      NumberType fieldNumberType;
       DocValuesType docValuesType = DocValuesType.NONE;
 
       public DocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
-                                              final DocIdSetIterator itr, final SchemaField schemaField) {
+                                              final DocIdSetIterator itr, final FieldType fieldType) {
         super(weight, itr);
         this.context = context;
-        schemaFieldType = schemaField.getType();
+        this.fieldType = fieldType;
 
         try {
           FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(field);
@@ -194,6 +195,7 @@ public class FieldValueFeature extends Feature {
           switch (docValuesType) {
             case NUMERIC:
               docValues = DocValues.getNumeric(context.reader(), field);
+              fieldNumberType = fieldType.getNumberType();
               break;
             case SORTED:
               docValues = DocValues.getSorted(context.reader(), field);
@@ -216,10 +218,10 @@ public class FieldValueFeature extends Feature {
         if (docValues != null && docValues.advance(itr.docID()) < DocIdSetIterator.NO_MORE_DOCS) {
           switch (docValuesType) {
             case NUMERIC:
-              if (NumberType.FLOAT.equals(schemaFieldType.getNumberType())) {
+              if (NumberType.FLOAT.equals(fieldNumberType)) {
                 // convert float value that was stored as long back to float
                 return Float.intBitsToFloat((int) ((NumericDocValues) docValues).longValue());
-              } else if (NumberType.DOUBLE.equals(schemaFieldType.getNumberType())) {
+              } else if (NumberType.DOUBLE.equals(fieldNumberType)) {
                 // handle double value conversion
                 return (float) Double.longBitsToDouble(((NumericDocValues) docValues).longValue());
               }
