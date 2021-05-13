@@ -272,7 +272,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     final int collectionSize = 8;
     // put documents in random order to check that advanceExact is working correctly
     List<Integer> docIds = IntStream.rangeClosed(1, collectionSize).boxed().collect(toList());
-    Collections.shuffle(docIds);
+    Collections.shuffle(docIds, random());
 
     int docCounter = 1;
     for (int docId : docIds) {

@@ -30,7 +30,7 @@
     <field name="isTrendy" type="boolean" indexed="true" stored="true" />
     <field name="dvIntField" type="int" indexed="false" docValues="true" stored="false" default="-1" multiValued="false"/>
     <field name="dvLongField" type="long" indexed="false" docValues="true" stored="false" default="-2" multiValued="false"/>
-    <field name="dvFloatField" type="float" indexed="false" docValues="false" stored="true" default="-3" multiValued="false"/>
+    <field name="dvFloatField" type="float" indexed="false" docValues="true" stored="false" default="-3" multiValued="false"/>
     <field name="dvDoubleField" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvStrNumField" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvStrBoolField" type="boolean" indexed="false" docValues="true" stored="false" multiValued="false"/>
