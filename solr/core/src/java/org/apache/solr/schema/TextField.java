@@ -30,7 +30,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.parser.SolrQueryParserBase;
+import org.apache.solr.parser.SynonymQueryStyle;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -43,7 +43,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
   protected boolean enableGraphQueries;
-  protected SolrQueryParserBase.SynonymQueryStyle synonymQueryStyle;
+  protected SynonymQueryStyle synonymQueryStyle;
 
   /**
    * Analyzer set by schema for text types to use when searching fields
@@ -76,18 +76,18 @@ public class TextField extends FieldType {
     if (autoGeneratePhraseQueriesStr != null)
       autoGeneratePhraseQueries = Boolean.parseBoolean(autoGeneratePhraseQueriesStr);
 
-    synonymQueryStyle = SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
+    synonymQueryStyle = SynonymQueryStyle.AS_SAME_TERM;
     String synonymQueryStyle = args.remove(SYNONYM_QUERY_STYLE);
     if (synonymQueryStyle != null) {
-      this.synonymQueryStyle = SolrQueryParserBase.SynonymQueryStyle.valueOf(synonymQueryStyle.toUpperCase(Locale.ROOT));
+      this.synonymQueryStyle = SynonymQueryStyle.valueOf(synonymQueryStyle.toUpperCase(Locale.ROOT));
     }
-    
+
     enableGraphQueries = true;
     String enableGraphQueriesStr = args.remove(ENABLE_GRAPH_QUERIES);
     if (enableGraphQueriesStr != null)
       enableGraphQueries = Boolean.parseBoolean(enableGraphQueriesStr);
 
-    super.init(schema, args);    
+    super.init(schema, args);
   }
 
   /**
@@ -108,12 +108,12 @@ public class TextField extends FieldType {
   public boolean getAutoGeneratePhraseQueries() {
     return autoGeneratePhraseQueries;
   }
-  
+
   public boolean getEnableGraphQueries() {
     return enableGraphQueries;
   }
 
-  public SolrQueryParserBase.SynonymQueryStyle getSynonymQueryStyle() {return synonymQueryStyle;}
+  public SynonymQueryStyle getSynonymQueryStyle() {return synonymQueryStyle;}
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
@@ -126,12 +126,12 @@ public class TextField extends FieldType {
                                  SortedSetSelector.Type.MIN,
                                  reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
-  
+
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     return new SortedSetFieldSource(field.getName());
   }
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     return Type.SORTED_SET_BINARY;
