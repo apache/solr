@@ -314,11 +314,13 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         throw new ModelException("MultipleAdditiveTreesModel tree node is missing left");
       } else {
         regressionTreeNode = regressionTreeNode.left;
+        continue;
       }
       if (null == regressionTreeNode.right) {
         throw new ModelException("MultipleAdditiveTreesModel tree node is missing right");
       } else {
         regressionTreeNode = regressionTreeNode.right;
+        continue;
       }
     }
   }
