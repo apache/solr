@@ -326,8 +326,8 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   private static String explainNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
-    StringBuilder returnValueBuilder = new StringBuilder();
-    while(true) {
+    final StringBuilder returnValueBuilder = new StringBuilder();
+    while (true) {
       if (regressionTreeNode.isLeaf()) {
         returnValueBuilder.append("val: " + regressionTreeNode.value);
         return returnValueBuilder.toString();
