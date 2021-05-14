@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -300,27 +301,32 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   private static void validateNode(RegressionTreeNode regressionTreeNode) throws ModelException {
-    while (true) {
-      if (regressionTreeNode.isLeaf()) {
-        if (regressionTreeNode.left != null || regressionTreeNode.right != null) {
-          throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=" + regressionTreeNode.left + " and right=" + regressionTreeNode.right);
+    
+    // Create an empty stack and push root to it
+    Stack<RegressionTreeNode> stack = new Stack<RegressionTreeNode>();
+    stack.push(regressionTreeNode);
+
+    while (stack.empty() == false) {
+      RegressionTreeNode topStackNode = stack.pop();
+
+      if (topStackNode.isLeaf()) {
+        if (topStackNode.left != null || topStackNode.right != null) {
+          throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=" + topStackNode.left + " and right=" + topStackNode.right);
         }
         return;
       }
-      if (null == regressionTreeNode.threshold) {
+      if (null == topStackNode.threshold) {
         throw new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
       }
-      if (null == regressionTreeNode.left) {
+      if (null == topStackNode.left) {
         throw new ModelException("MultipleAdditiveTreesModel tree node is missing left");
       } else {
-        regressionTreeNode = regressionTreeNode.left;
-        continue;
+        stack.push(topStackNode.left);
       }
-      if (null == regressionTreeNode.right) {
+      if (null == topStackNode.right) {
         throw new ModelException("MultipleAdditiveTreesModel tree node is missing right");
       } else {
-        regressionTreeNode = regressionTreeNode.right;
-        continue;
+        stack.push(topStackNode.right);
       }
     }
   }
