@@ -36,7 +36,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.BoolField;
-import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -118,9 +117,12 @@ public class FieldValueFeature extends Feature {
         FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(field);
         DocValuesType docValuesType = fieldInfo != null ? fieldInfo.getDocValuesType() : DocValuesType.NONE;
 
-        if (DocValuesType.NUMERIC.equals(docValuesType) || DocValuesType.SORTED.equals(docValuesType)) {
-          return new DocValuesFieldValueFeatureScorer(this, context,
-                  DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS), schemaField.getType(), docValuesType);
+        if (DocValuesType.NUMERIC.equals(docValuesType)) {
+          return new NumericDocValuesFieldValueFeatureScorer(this, context,
+                  DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS), schemaField.getType().getNumberType());
+        } else if (DocValuesType.SORTED.equals(docValuesType)) {
+          return new SortedDocValuesFieldValueFeatureScorer(this, context,
+                  DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
           // If type is NONE, this segment has no docs with this field. That's not a problem, because we won't call score() anyway
         } else if (!DocValuesType.NONE.equals(docValuesType)) {
           throw new IllegalArgumentException("Doc values type " + docValuesType.name() + " of field " + field
@@ -180,45 +182,28 @@ public class FieldValueFeature extends Feature {
     }
 
     /**
-     * A FeatureScorer that reads the docValues for a field
+     * A FeatureScorer that reads the numeric docValues for a field
      */
-    public class DocValuesFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
-      final LeafReaderContext context;
-      final FieldType fieldType;
-      final DocValuesType docValuesType;
-      DocIdSetIterator docValues;
-      NumberType fieldNumberType;
+    public class NumericDocValuesFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
+      NumericDocValues docValues;
+      NumberType numberType;
 
-      public DocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
-                                              final DocIdSetIterator itr, final FieldType fieldType,
-                                              final DocValuesType docValuesType) {
+      public NumericDocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
+                                              final DocIdSetIterator itr, final NumberType numberType) {
         super(weight, itr);
-        this.context = context;
-        this.fieldType = fieldType;
-        this.docValuesType = docValuesType;
+        this.numberType = numberType;
 
         try {
-          if (DocValuesType.NUMERIC.equals(docValuesType)) {
-            docValues = DocValues.getNumeric(context.reader(), field);
-            fieldNumberType = fieldType.getNumberType();
-          } else if (DocValuesType.SORTED.equals(docValuesType)) {
-            docValues = DocValues.getSorted(context.reader(), field);
-          }
+          docValues = DocValues.getNumeric(context.reader(), field);
         } catch (IOException e) {
-          throw new IllegalArgumentException("Could not read docValues for field " + field + " with docValuesType "
-                  + docValuesType.name());
+          throw new IllegalArgumentException("Could not read numeric docValues for field " + field);
         }
       }
 
       @Override
       public float score() throws IOException {
-        if (DocValuesType.NUMERIC.equals(docValuesType) &&
-                ((NumericDocValues) docValues).advanceExact(itr.docID())) {
+        if (docValues.advanceExact(itr.docID())) {
           return readNumericDocValues();
-        } else if (DocValuesType.SORTED.equals(docValuesType) &&
-                ((SortedDocValues) docValues).advanceExact(itr.docID())) {
-          int ord = ((SortedDocValues) docValues).ordValue();
-          return readSortedDocValues(((SortedDocValues) docValues).lookupOrd(ord));
         }
         return FieldValueFeature.this.getDefaultValue();
       }
@@ -230,15 +215,15 @@ public class FieldValueFeature extends Feature {
        * @throws IOException if docValues cannot be read
        */
       private float readNumericDocValues() throws IOException {
-        if (NumberType.FLOAT.equals(fieldNumberType)) {
+        if (NumberType.FLOAT.equals(numberType)) {
           // convert float value that was stored as long back to float
-          return Float.intBitsToFloat((int) ((NumericDocValues) docValues).longValue());
-        } else if (NumberType.DOUBLE.equals(fieldNumberType)) {
+          return Float.intBitsToFloat((int) docValues.longValue());
+        } else if (NumberType.DOUBLE.equals(numberType)) {
           // handle double value conversion
-          return (float) Double.longBitsToDouble(((NumericDocValues) docValues).longValue());
+          return (float) Double.longBitsToDouble(docValues.longValue());
         }
         // just take the long value
-        return ((NumericDocValues) docValues).longValue();
+        return docValues.longValue();
       }
 
       /**
@@ -272,5 +257,64 @@ public class FieldValueFeature extends Feature {
         return Float.POSITIVE_INFINITY;
       }
     }
+    /**
+     * A FeatureScorer that reads the sorted docValues for a field
+     */
+    public class SortedDocValuesFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
+      SortedDocValues docValues;
+      NumberType fieldNumberType;
+
+      public SortedDocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
+                                              final DocIdSetIterator itr) {
+        super(weight, itr);
+
+        try {
+          docValues = DocValues.getSorted(context.reader(), field);
+        } catch (IOException e) {
+          throw new IllegalArgumentException("Could not read sorted docValues for field " + field);
+        }
+      }
+
+      @Override
+      public float score() throws IOException {
+        if (docValues.advanceExact(itr.docID())) {
+          int ord = docValues.ordValue();
+          return readSortedDocValues(docValues.lookupOrd(ord));
+        }
+        return FieldValueFeature.this.getDefaultValue();
+      }
+
+      /**
+       * Interprets the bytesRef either as true / false token or tries to read it as number string
+       *
+       * @param bytesRef the value of the field that should be used as score
+       * @return the input converted to a number
+       */
+      private float readSortedDocValues(BytesRef bytesRef) {
+        String string = bytesRef.utf8ToString();
+        if (string.length() == 1
+                && (string.charAt(0) == BoolField.TRUE_TOKEN[0] || string.charAt(0) == BoolField.FALSE_TOKEN[0])) {
+          // boolean values in the index are encoded with a single char contained in TRUE_TOKEN or FALSE_TOKEN
+          // (see BoolField)
+          if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
+            return 1f;
+          } else {
+            return 0f;
+          }
+        } else {
+          try {
+            return Float.parseFloat(string);
+          } catch (NumberFormatException ex) {
+            throw new FeatureException("Cannot parse value " + string + " of field " + schemaField.getName() + " to float.");
+          }
+        }
+      }
+
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return Float.POSITIVE_INFINITY;
+      }
+    }
+
   }
 }
