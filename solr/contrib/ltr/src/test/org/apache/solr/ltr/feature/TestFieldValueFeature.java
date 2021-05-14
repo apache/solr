@@ -30,6 +30,12 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   private static final float FIELD_VALUE_FEATURE_DEFAULT_VAL = 0.0f;
 
+  private static final String FIELD_NAMES[] = {
+    "popularity",
+    "dvIntPopularity", "dvLongPopularity",
+    "dvFloatPopularity", "dvDoublePopularity"
+  };
+
   @Before
   public void before() throws Exception {
     setuptest(false);
@@ -56,11 +62,13 @@ public class TestFieldValueFeature extends TestRerankBase {
 
     assertU(commit());
 
-    loadFeature("popularity", FieldValueFeature.class.getName(),
-            "{\"field\":\"popularity\"}");
+    for (String field : FIELD_NAMES) {
+      loadFeature(field, FieldValueFeature.class.getName(),
+              "{\"field\":\""+field+"\"}");
 
-    loadModel("popularity-model", LinearModel.class.getName(),
-            new String[] {"popularity"}, "{\"weights\":{\"popularity\":1.0}}");
+      loadModel(field + "-model", LinearModel.class.getName(),
+              new String[] {field}, "{\"weights\":{\""+field+"\":1.0}}");
+    }
   }
 
   @After
@@ -70,86 +78,92 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   @Test
   public void testRanking() throws Exception {
+    for (String field : FIELD_NAMES) {
 
-    final SolrQuery query = new SolrQuery();
-    query.setQuery("title:w1");
-    query.add("fl", "*, score");
-    query.add("rows", "4");
+      final SolrQuery query = new SolrQuery();
+      query.setQuery("title:w1");
+      query.add("fl", "*, score");
+      query.add("rows", "4");
 
-    // Normal term match
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='8'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='7'");
+      // Normal term match
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='8'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='7'");
 
-    query.add("rq", "{!ltr model=popularity-model reRankDocs=4}");
+      query.add("rq", "{!ltr model="+field+"-model reRankDocs=4}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
 
-    query.setQuery("*:*");
-    query.remove("rows");
-    query.add("rows", "8");
-    query.remove("rq");
-    query.add("rq", "{!ltr model=popularity-model reRankDocs=8}");
+      query.setQuery("*:*");
+      query.remove("rows");
+      query.add("rows", "8");
+      query.remove("rq");
+      query.add("rq", "{!ltr model="+field+"-model reRankDocs=8}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
+    }
   }
 
 
   @Test
   public void testIfADocumentDoesntHaveAFieldDefaultValueIsReturned() throws Exception {
-    SolrQuery query = new SolrQuery();
-    query.setQuery("id:42");
-    query.add("fl", "*, score");
-    query.add("rows", "4");
+    for (String field : FIELD_NAMES) {
+      SolrQuery query = new SolrQuery();
+      query.setQuery("id:42");
+      query.add("fl", "*, score");
+      query.add("rows", "4");
 
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='42'");
-    query = new SolrQuery();
-    query.setQuery("id:42");
-    query.add("rq", "{!ltr model=popularity-model reRankDocs=4}");
-    query.add("fl", "[fv]");
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
-    assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("popularity",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='42'");
+      query = new SolrQuery();
+      query.setQuery("id:42");
+      query.add("rq", "{!ltr model="+field+"-model reRankDocs=4}");
+      query.add("fl", "[fv]");
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+      assertJQ("/query" + query.toQueryString(),
+              "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field,Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
 
+    }
   }
 
 
   @Test
   public void testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned() throws Exception {
+    for (String field : FIELD_NAMES) {
 
-    final String fstore = "testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned";
+      final String fstore = "testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned"+field;
 
-    loadFeature("popularity42", FieldValueFeature.class.getName(), fstore,
-            "{\"field\":\"popularity\",\"defaultValue\":\"42.0\"}");
+      loadFeature(field+"42", FieldValueFeature.class.getName(), fstore,
+              "{\"field\":\""+field+"\",\"defaultValue\":\"42.0\"}");
 
-    SolrQuery query = new SolrQuery();
-    query.setQuery("id:42");
-    query.add("fl", "*, score");
-    query.add("rows", "4");
+      SolrQuery query = new SolrQuery();
+      query.setQuery("id:42");
+      query.add("fl", "*, score");
+      query.add("rows", "4");
 
-    loadModel("popularity-model42", LinearModel.class.getName(),
-            new String[] {"popularity42"}, fstore, "{\"weights\":{\"popularity42\":1.0}}");
+      loadModel(field+"-model42", LinearModel.class.getName(),
+              new String[] {field+"42"}, fstore, "{\"weights\":{\""+field+"42\":1.0}}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='42'");
-    query = new SolrQuery();
-    query.setQuery("id:42");
-    query.add("rq", "{!ltr model=popularity-model42 reRankDocs=4}");
-    query.add("fl", "[fv]");
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
-    assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("popularity42","42.0")+"'}");
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+      assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='42'");
+      query = new SolrQuery();
+      query.setQuery("id:42");
+      query.add("rq", "{!ltr model="+field+"-model42 reRankDocs=4}");
+      query.add("fl", "[fv]");
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+      assertJQ("/query" + query.toQueryString(),
+              "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field+"42","42.0")+"'}");
 
+    }
   }
 
   @Test
