@@ -1152,27 +1152,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         if (raw) {
           return new RawQuery(sf, queryTerms);
         } else {
-          if (queryTerms.size() == 1) {
-            return ft.getFieldQuery(parser, sf, queryTerms.get(0));
-          } else {
-            List<Query> subqs = new ArrayList<>();
-            for (String queryTerm : queryTerms) {
-              try {
-                subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
-              } catch (Exception e) { // assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
-                // for edismax: ignore parsing failures
-              }
-            }
-            if (subqs.size() == 1) {
-              return subqs.get(0);
-            } else { // delay building boolean query until we must
-              final BooleanClause.Occur occur
-                  = operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
-              BooleanQuery.Builder booleanBuilder = newBooleanQuery();
-              subqs.forEach(subq -> booleanBuilder.add(subq, occur));
-              return booleanBuilder.build();
-            }
-          }
+            String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
+            return ft.getFieldQuery(parser, sf, queryText);
         }
       }
     }

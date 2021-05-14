@@ -112,6 +112,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "72", "text_sw", "wifi ATM"));
     assertU(adoc("id", "73", "shingle23", "A B X D E"));
     assertU(adoc("id", "74", "isocharfilter", "niño"));
+    assertU(adoc("id", "75", "trait_ss", "multi term"));
 //    assertU(adoc("id", "74", "text_pick_best", "tabby"));
 //    assertU(adoc("id", "74", "text_as_distinct", "persian"));
 
@@ -412,24 +413,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             nor);
 
     // throw in a numeric field
-    assertQ(req("defType","edismax", "mm","0", "q","Terminator: 100", "qf","movies_t foo_i"),
+    assertQ(req("defType","edismax", "mm","0", "q","Terminator: 100", "qf","movies_t foo_i","sow","true"),
             twor);
 
     assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","true"),
             nor);
-    // When sow=false, the per-field query structures differ (no "Terminator" query on integer field foo_i),
-    // so a dismax-per-field is constructed.  As a result, mm=100% is applied per-field instead of per-term;
-    // since there is only one term (100) required in the foo_i field's dismax, the query can match docs that
-    // only have the 100 term in the foo_i field, and don't necessarily have "Terminator" in any field.
     assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","false"),
-            oner);
+            nor);
     assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i"), // default sow=false
-        oner);
+        nor);
 
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i"),
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i","sow","true"),
             oner);
 
-    assertQ(req("defType","edismax", "mm","0", "q","movies_t:Terminator 100", "qf","movies_t foo_i"),
+    assertQ(req("defType","edismax", "mm","0", "q","movies_t:Terminator 100", "qf","movies_t foo_i","sow","true"),
             twor);
     
     // special pseudo-fields like _query_ and _val_
@@ -708,20 +705,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         nor);
     
     assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 mytrait_ss^5.0"), oner);
-    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0"), twor);
-    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0", "mm", "100%"), oner);
-    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","who^10.0 where^3.0", "f.who.qf","name^2.0", "f.where.qf", "mytrait_ss^5.0"), oner);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0","sow","true"), twor);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0", "mm", "100%","sow","true"), oner);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","who^10.0 where^3.0", "f.who.qf","name^2.0", "f.where.qf", "mytrait_ss^5.0","sow","true"), oner);
     
-    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias", "f.myalias.qf","name mytrait_ss", "uf", "myalias"), oner);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias", "f.myalias.qf","name mytrait_ss", "uf", "myalias","sow","true"), oner);
     
-    assertQ(req("defType","edismax", "uf","who", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0", "qf", "id"), twor);
-    assertQ(req("defType","edismax", "uf","* -name", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0"), twor);
+    assertQ(req("defType","edismax", "uf","who", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0", "qf", "id","sow","true"), twor);
+    assertQ(req("defType","edismax", "uf","* -name", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0","sow","true"), twor);
     
   }
   
   public void testAliasingBoost() throws Exception {
-    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.1"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
-    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.1"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
+    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.1","sow","true"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
+    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.1","sow","true"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
   }
   
   /** SOLR-13203 **/
@@ -1770,6 +1767,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertThat(parsedquery, anyOf(containsString("((name:of | title:of))"), containsString("((title:of | name:of))")));
     assertThat(parsedquery, anyOf(containsString("((name:stigma | title:stigma))"), containsString("((title:stigma | name:stigma))")));
   }
+
+    @Test 
+    public void testSplitOnWhitespace_stringField_shouldBuildSingleClause() throws Exception
+    {
+        assertJQ(req("qf", "trait_ss", "defType", "edismax", "q", "multi term", "sow", "false"),
+            "/response/numFound==1", "/response/docs/[0]/id=='75'");
+
+        String parsedquery;
+        parsedquery = getParsedQuery(
+            req("qf", "trait_ss", "q", "multi term", "defType", "edismax", "sow", "false", "debugQuery", "true"));
+        assertThat(parsedquery, anyOf(containsString("((trait_ss:multi term))")));
+    }
 
   private static String getParsedQuery(SolrQueryRequest request) throws Exception {
     String resp = h.query(request);
