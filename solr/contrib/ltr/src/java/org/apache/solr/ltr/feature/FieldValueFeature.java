@@ -226,43 +226,17 @@ public class FieldValueFeature extends Feature {
         return docValues.longValue();
       }
 
-      /**
-       * Interprets the bytesRef either as true / false token or tries to read it as number string
-       *
-       * @param bytesRef the value of the field that should be used as score
-       * @return the input converted to a number
-       */
-      private float readSortedDocValues(BytesRef bytesRef) {
-        String string = bytesRef.utf8ToString();
-        if (string.length() == 1
-                && (string.charAt(0) == BoolField.TRUE_TOKEN[0] || string.charAt(0) == BoolField.FALSE_TOKEN[0])) {
-          // boolean values in the index are encoded with a single char contained in TRUE_TOKEN or FALSE_TOKEN
-          // (see BoolField)
-          if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
-            return 1f;
-          } else {
-            return 0f;
-          }
-        } else {
-          try {
-            return Float.parseFloat(string);
-          } catch (NumberFormatException ex) {
-            throw new FeatureException("Cannot parse value " + string + " of field " + schemaField.getName() + " to float.");
-          }
-        }
-      }
-
       @Override
       public float getMaxScore(int upTo) throws IOException {
         return Float.POSITIVE_INFINITY;
       }
     }
+
     /**
      * A FeatureScorer that reads the sorted docValues for a field
      */
     public class SortedDocValuesFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
       SortedDocValues docValues;
-      NumberType fieldNumberType;
 
       public SortedDocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
                                               final DocIdSetIterator itr) {
