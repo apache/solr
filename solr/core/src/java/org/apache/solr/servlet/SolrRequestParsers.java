@@ -173,14 +173,12 @@ public class SolrRequestParsers {
 
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
-    String pathNormalized = RequestHandlers.normalize(path);
-    sreq.getContext().put(PATH, pathNormalized);
+    sreq.getContext().put(PATH, RequestHandlers.normalize(path));
     sreq.getContext().put("httpMethod", req.getMethod());
 
     if(addHttpRequestToContext) {
       sreq.getContext().put("httpRequest", req);
     }
-
     return sreq;
   }
 
