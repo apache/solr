@@ -1168,7 +1168,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
                 subqs.add(new MatchNoDocsQuery());
               }
             }
-            if (subqs.size() == 1 && queryTerms.size() == 1) {
+            if (subqs.size() == 1) {
               return subqs.get(0);
             } else { // delay building boolean query until we must
               final BooleanClause.Occur occur
