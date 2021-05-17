@@ -1151,7 +1151,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         return newFieldQuery
             (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
-        if (raw) {
+        if (raw) {// assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
           return new RawQuery(sf, queryTerms);
         } else {
           if (queryTerms.size() == 1) {
@@ -1164,8 +1164,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             for (String queryTerm : queryTerms) {
               try {
                 subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
-              } catch (Exception e) { // assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
-                // for edismax: ignore parsing failures
+              } catch (Exception e) { 
+                subqs.add(new MatchNoDocsQuery());
               }
             }
             if (subqs.size() == 1 && queryTerms.size() == 1) {
@@ -1175,9 +1175,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
                   = operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
               BooleanQuery.Builder booleanBuilder = newBooleanQuery();
               subqs.forEach(subq -> booleanBuilder.add(subq, occur));
-              for (int i = subqs.size(); i < queryTerms.size(); i++) {
-                booleanBuilder.add(new MatchNoDocsQuery(), occur);
-              }
               return booleanBuilder.build();
             }
           }
