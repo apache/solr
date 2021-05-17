@@ -404,10 +404,6 @@ public class V2HttpCall extends HttpSolrCall {
     }
 
     span.setOperationName(verb + ":" + path);
-
-    if (req.getQueryString() != null) {
-      span.setTag("params", req.getQueryString());
-    }
   }
 
   /**

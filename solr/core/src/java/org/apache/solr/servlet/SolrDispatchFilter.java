@@ -60,6 +60,8 @@ import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
+import io.opentracing.noop.NoopSpan;
+import io.opentracing.noop.NoopTracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
 import io.opentracing.util.GlobalTracer;
@@ -449,7 +451,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
 
     Tracer tracer = cores == null ? GlobalTracer.get() : cores.getTracer();
-    Span span = buildSpan(request, tracer);
+    Span span = buildSpan(tracer, request);
     request.setAttribute(Tracer.class.getName(), tracer);
     request.setAttribute(Span.class.getName(), span);
     boolean accepted = false;
@@ -538,16 +540,20 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
   }
 
-  protected Span buildSpan(HttpServletRequest request, Tracer tracer) {
-    return tracer
-        .buildSpan(
-            "http.request") // will be changed later
+  protected Span buildSpan(Tracer tracer, HttpServletRequest request) {
+    if (tracer instanceof NoopTracer) {
+      return NoopSpan.INSTANCE;
+    }
+    Tracer.SpanBuilder spanBuilder = tracer.buildSpan("http.request") // will be changed later
         .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
         .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
         .withTag(Tags.HTTP_METHOD, request.getMethod())
-        .withTag(Tags.HTTP_URL, request.getRequestURL().toString())
-        .withTag(Tags.DB_TYPE, "solr")
-        .start();
+        .withTag(Tags.HTTP_URL, request.getRequestURL().toString());
+    if (request.getQueryString() != null) {
+      spanBuilder.withTag("http.params", request.getQueryString());
+    }
+    spanBuilder.withTag(Tags.DB_TYPE, "solr");
+    return spanBuilder.start();
   }
 
   // we make sure we read the full client request so that the client does

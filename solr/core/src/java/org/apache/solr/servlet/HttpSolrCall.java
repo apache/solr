@@ -640,10 +640,6 @@ public class HttpSolrCall {
             .get(CoreAdminParams.ACTION, req.getMethod())
             .toLowerCase(Locale.ROOT);
     span.setOperationName(verb + ":" + path);
-
-    if (req.getQueryString() != null) {
-      span.setTag("params", req.getQueryString());
-    }
   }
 
   private boolean shouldAudit() {
