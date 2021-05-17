@@ -123,11 +123,12 @@ public class FieldValueFeature extends Feature {
         } else if (DocValuesType.SORTED.equals(docValuesType)) {
           return new SortedDocValuesFieldValueFeatureScorer(this, context,
                   DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
-          // If type is NONE, this segment has no docs with this field. That's not a problem, because we won't call score() anyway
-        } else if (!DocValuesType.NONE.equals(docValuesType)) {
-          throw new IllegalArgumentException("Doc values type " + docValuesType.name() + " of field " + field
-                  + " is not supported!");
+        } else if (DocValuesType.NONE.equals(docValuesType)) {
+          // Using a fallback feature scorer because this segment has no documents with a doc value for the current field
+          return new DefaultValueFieldValueFeatureScorer(this, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
         }
+        throw new IllegalArgumentException("Doc values type " + docValuesType.name() + " of field " + field
+                + " is not supported!");
       }
       return new FieldValueFeatureScorer(this, context,
               DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
@@ -290,5 +291,27 @@ public class FieldValueFeature extends Feature {
       }
     }
 
+    /**
+     * A FeatureScorer that always returns the default value.
+     *
+     * It is used as a fallback for cases when a segment does not have any documents that contain doc values for a field.
+     * By doing so, we prevent a fallback to the FieldValueFeatureScorer, which would also return the default value but
+     * in a less performant way because it would first try to read the stored fields for the doc (which aren't present).
+     */
+    public class DefaultValueFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
+      public DefaultValueFieldValueFeatureScorer(final FeatureWeight weight, final DocIdSetIterator itr) {
+        super(weight, itr);
+      }
+
+      @Override
+      public float score() throws IOException {
+        return FieldValueFeature.this.getDefaultValue();
+      }
+
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return Float.POSITIVE_INFINITY;
+      }
+    }
   }
 }

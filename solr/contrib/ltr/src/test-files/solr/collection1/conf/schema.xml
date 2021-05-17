@@ -38,6 +38,7 @@
     <field name="dvDoubleField" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvStrNumField" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvStrBoolField" type="boolean" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvTestField" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
 
     <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
     <field name="_version_" type="long" indexed="true" stored="true"/>
