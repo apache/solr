@@ -313,7 +313,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         if (topStackNode.left != null || topStackNode.right != null) {
           throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=" + topStackNode.left + " and right=" + topStackNode.right);
         }
-        return;
+        continue;
       }
       if (null == topStackNode.threshold) {
         throw new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
