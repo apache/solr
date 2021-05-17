@@ -385,8 +385,7 @@ public class V2HttpCall extends HttpSolrCall {
     String path;
     if (api instanceof AnnotatedApi) {
       // ideal scenario; eventually everything might be AnnotatedApi?
-      var aapi = (AnnotatedApi) api;
-      path = aapi.getEndPoint().path()[0]; // consider first to be primary
+      path = ((AnnotatedApi) api).getEndPoint().path()[0]; // consider first to be primary
     } else {
       path = computeEndpointPath();
       // TODO consider getValidators, looking for command & path?
@@ -420,7 +419,7 @@ public class V2HttpCall extends HttpSolrCall {
     if (pathTemplateKeyVal.isEmpty()) { // typical
       pathTemplateValKey = Collections.emptyMap();
     } else if (pathTemplateKeyVal.size() == 1) { // typical
-      var entry = pathTemplateKeyVal.entrySet().iterator().next();
+      Map.Entry<String, String> entry = pathTemplateKeyVal.entrySet().iterator().next();
       pathTemplateValKey = Map.of(entry.getValue(), entry.getKey());
     } else { // uncommon
       pathTemplateValKey = new HashMap<>();
