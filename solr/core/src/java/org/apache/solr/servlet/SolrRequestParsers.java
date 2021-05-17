@@ -544,7 +544,8 @@ public class SolrRequestParsers {
     public SolrParams parseParamsAndFillStreams( 
         final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
     {
-      if (!req.getMethod().equals("GET")) { // or other conditions? Check headers?
+      // HTTP spec says either of these two headers are how it's known if there is a body.
+      if (req.getContentLengthLong() >= 0 || req.getHeader("Transfer-Encoding") != null) {
         streams.add(new HttpRequestContentStream(req));
       }
       return parseQueryString( req.getQueryString() );
