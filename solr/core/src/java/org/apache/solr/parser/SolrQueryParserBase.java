@@ -41,6 +41,7 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -61,6 +62,7 @@ import org.apache.solr.query.FilterQuery;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
@@ -1152,8 +1154,33 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         if (raw) {
           return new RawQuery(sf, queryTerms);
         } else {
-            String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
+          if (queryTerms.size() == 1) {
+            return ft.getFieldQuery(parser, sf, queryTerms.get(0));
+          } else if(ft instanceof StrField){
+            String queryText = String.join(" ", queryTerms);
             return ft.getFieldQuery(parser, sf, queryText);
+          } else {
+            List<Query> subqs = new ArrayList<>();
+            for (String queryTerm : queryTerms) {
+              try {
+                subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
+              } catch (Exception e) { // assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
+                // for edismax: ignore parsing failures
+              }
+            }
+            if (subqs.size() == 1 && queryTerms.size() == 1) {
+              return subqs.get(0);
+            } else { // delay building boolean query until we must
+              final BooleanClause.Occur occur
+                  = operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+              BooleanQuery.Builder booleanBuilder = newBooleanQuery();
+              subqs.forEach(subq -> booleanBuilder.add(subq, occur));
+              for (int i = subqs.size(); i < queryTerms.size(); i++) {
+                booleanBuilder.add(new MatchNoDocsQuery(), occur);
+              }
+              return booleanBuilder.build();
+            }
+          }
         }
       }
     }
