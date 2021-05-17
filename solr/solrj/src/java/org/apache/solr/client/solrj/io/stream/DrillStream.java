@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -33,6 +32,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
@@ -268,7 +268,7 @@ public class DrillStream extends CloudSolrStream implements Expressible {
         solrStreams.add(solrStream);
       });
     } catch (Exception e) {
-      Throwable rootCause = ExceptionUtils.getRootCause(e);
+      Throwable rootCause = SolrException.getRootCause(e);
       if (rootCause instanceof IOException) {
         throw (IOException)rootCause;
       } else {
