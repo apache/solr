@@ -212,7 +212,8 @@ public class SolrException extends RuntimeException {
 
     return null;
   }
-  
+
+  // TODO: This doesn't handle cause loops
     public static Throwable getRootCause(Throwable t) {
     while (true) {
       Throwable cause = t.getCause();
