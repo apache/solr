@@ -167,7 +167,7 @@ else
   fi
   JAVA_VENDOR="Oracle"
    # OpenJ9 was previously known as IBM J9, this will match both
-  if [ "`echo $JAVA_VER | grep -i "J9"`" != "" ]; then
+  if [ "`echo $JAVA_VER | grep -i -E "OpenJ9|IBM J9"`" != "" ]; then
       JAVA_VENDOR="OpenJ9"
   fi
 fi

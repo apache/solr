@@ -2079,7 +2079,7 @@ GOTO :eof
 REM Set which JVM vendor we have
 :resolve_java_vendor
 REM OpenJ9 was previously known as IBM J9, this will match both
-"%JAVA%" -version 2>&1 | findstr /i "J9" > nul
+"%JAVA%" -version 2>&1 | findstr /i /C:"IBM J9" /C:"OpenJ9" > nul
 if %ERRORLEVEL% == 1 ( set "JAVA_VENDOR=Oracle" ) else ( set "JAVA_VENDOR=OpenJ9" )
 
 set JAVA_VENDOR_OUT=
