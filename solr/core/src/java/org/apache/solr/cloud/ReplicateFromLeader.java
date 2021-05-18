@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -87,7 +88,18 @@ public class ReplicateFromLeader {
 
       NamedList<Object> followerConfig = new NamedList<>();
       followerConfig.add("fetchFromLeader", Boolean.TRUE);
-      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, switchTransactionLog);
+
+      // don't commit on leader version zero for PULL replicas as PULL should only get its index state from leader
+      boolean skipCommitOnLeaderVersionZero = switchTransactionLog;
+      final CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
+      if (cloudDescriptor != null) {
+        Replica replica =
+            cc.getZkController().zkStateReader.getCollection(cloudDescriptor.getCollectionName())
+                .getSlice(cloudDescriptor.getShardId()).getReplica(cloudDescriptor.getCoreNodeName());
+        skipCommitOnLeaderVersionZero = replica != null && replica.getType() == Replica.Type.PULL;
+      }
+      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, skipCommitOnLeaderVersionZero);
+
       followerConfig.add("pollInterval", pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("follower", followerConfig);
