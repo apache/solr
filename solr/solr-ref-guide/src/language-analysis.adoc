@@ -2137,7 +2137,7 @@ This filter normalize use of the interchangeable Scandinavian characters æÆä�
 
 [.dynamic-tabs]
 --
-[example.tab-pane#byname-lang-scandinavian]
+[example.tab-pane#byname-lang-norwegian]
 ====
 [.tab-label]*With name*
 [source,xml]
@@ -2149,7 +2149,7 @@ This filter normalize use of the interchangeable Scandinavian characters æÆä�
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-scandinavian]
+[example.tab-pane#byclass-lang-norwegian]
 ====
 [.tab-label]*With class name (legacy)*
 [source,xml]
