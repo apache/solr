@@ -2049,7 +2049,6 @@ CALL :resolve_java_vendor
 
 set JAVA_MAJOR_VERSION=0
 set JAVA_VERSION_INFO=
-set JAVA_BUILD=0
 
 FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "version"^"`) do (
   set JAVA_VERSION_INFO=%%a
@@ -2064,13 +2063,6 @@ FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "versi
       set JAVA_MAJOR_VERSION=%%a
     ) else (
       set JAVA_MAJOR_VERSION=%%b
-    )
-  )
-
-  REM Don't look for "_{build}" if we're on OpenJ9.
-  if NOT "%JAVA_VENDOR%" == "OpenJ9" (
-    for /f "delims=_ tokens=2" %%a in ("!JAVA_VERSION_INFO!") do (
-      set /a JAVA_BUILD=%%a
     )
   )
 )
