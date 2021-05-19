@@ -25,6 +25,8 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight;
 import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight.DefaultValueFieldValueFeatureScorer;
 import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight.FieldValueFeatureScorer;
+import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight.NumericDocValuesFieldValueFeatureScorer;
+import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight.SortedDocValuesFieldValueFeatureScorer;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
@@ -39,45 +41,55 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   private static final float FIELD_VALUE_FEATURE_DEFAULT_VAL = 0.0f;
 
-  private static final String[] FIELD_NAMES = {
-    "popularity",
-    "dvIntPopularity", "dvLongPopularity",
-    "dvFloatPopularity", "dvDoublePopularity"
+  private static final String[] FIELDS = {
+      "popularity",
+      "dvIntPopularity", "dvLongPopularity",
+      "dvFloatPopularity", "dvDoublePopularity",
+      "dvStringPopularity", "dvBoolPopularity"
   };
 
   @Before
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
-        "1","isTrendy","true"));
-    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
-        "w2 2asd asdd didid", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
-        "3","isTrendy","true"));
-    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity",
-        "4","isTrendy","false"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5","isTrendy","true"));
-    assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2",
-        "popularity", "6","isTrendy","false"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
-        "w1 w2 w3 w4 w5 w8", "popularity", "7","isTrendy","true"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
-        "w1 w1 w1 w2 w2", "popularity", "8","isTrendy","false"));
+    assertU(adoc("id", "1", "popularity", "1", "title", "w1",
+        "dvStringPopularity", "1", "dvBoolPopularity", "F",
+        "description", "w1", "isTrendy", "true"));
+    assertU(adoc("id", "2", "popularity", "2", "title", "w2 2asd asdd didid",
+        "dvStringPopularity", "2", "dvBoolPopularity", "T",
+        "description", "w2 2asd asdd didid"));
+    assertU(adoc("id", "3", "popularity", "3", "title", "w3",
+        "dvStringPopularity", "3", "dvBoolPopularity", "F",
+        "description", "w3", "isTrendy", "true"));
+    assertU(adoc("id", "4", "popularity", "4", "title", "w4",
+        "dvStringPopularity", "4", "dvBoolPopularity", "T",
+        "description", "w4", "isTrendy", "false"));
+    assertU(adoc("id", "5", "popularity", "5", "title", "w5",
+        "dvStringPopularity", "5", "dvBoolPopularity", "F",
+        "description", "w5", "isTrendy", "true"));
+    assertU(adoc("id", "6", "popularity", "6", "title", "w1 w2",
+        "dvStringPopularity", "6", "dvBoolPopularity", "T",
+        "description", "w1 w2", "isTrendy", "false"));
+    assertU(adoc("id", "7", "popularity", "7", "title", "w1 w2 w3 w4 w5",
+        "dvStringPopularity", "7", "dvBoolPopularity", "F",
+        "description", "w1 w2 w3 w4 w5 w8", "isTrendy", "true"));
+    assertU(adoc("id", "8", "popularity", "8", "title", "w1 w1 w1 w2 w2 w8",
+        "dvStringPopularity", "8", "dvBoolPopularity", "T",
+        "description", "w1 w1 w1 w2 w2", "isTrendy", "false"));
 
-    // a document without the popularity field
+    // a document without the popularity and the dv fields
     assertU(adoc("id", "42", "title", "NO popularity", "description", "NO popularity"));
 
     assertU(commit());
 
-    for (String field : FIELD_NAMES) {
+    for (String field : FIELDS) {
       loadFeature(field, FieldValueFeature.class.getName(),
-              "{\"field\":\""+field+"\"}");
+          "{\"field\":\"" + field + "\"}");
     }
-    loadModel("model", LinearModel.class.getName(), FIELD_NAMES,
-            "{\"weights\":{\"popularity\":1.0,\"dvIntPopularity\":1.0,\"dvLongPopularity\":1.0," +
-                    "\"dvFloatPopularity\":1.0,\"dvDoublePopularity\":1.0}}");
+   loadModel("model", LinearModel.class.getName(), FIELDS,
+       "{\"weights\":{\"popularity\":1.0,\"dvIntPopularity\":1.0,\"dvLongPopularity\":1.0," +
+           "\"dvFloatPopularity\":1.0,\"dvDoublePopularity\":1.0," +
+           "\"dvStringPopularity\":1.0,\"dvBoolPopularity\":1.0}}");
   }
 
   @After
@@ -119,7 +131,6 @@ public class TestFieldValueFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
   }
 
-
   @Test
   public void testIfADocumentDoesntHaveAFieldDefaultValueIsReturned() throws Exception {
     SolrQuery query = new SolrQuery();
@@ -137,13 +148,14 @@ public class TestFieldValueFeature extends TestRerankBase {
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'popularity=0.0,dvIntPopularity=0.0,dvLongPopularity=0.0," +
-                    "dvFloatPopularity=0.0,dvDoublePopularity=0.0'}");
+        "/response/docs/[0]/=={'[fv]':'popularity=0.0,dvIntPopularity=0.0,dvLongPopularity=0.0," +
+            "dvFloatPopularity=0.0,dvDoublePopularity=0.0," +
+            "dvStringPopularity=0.0,dvBoolPopularity=0.0'}");
   }
 
   @Test
   public void testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned() throws Exception {
-    for (String field : FIELD_NAMES) {
+    for (String field : FIELDS) {
       final String fstore = "testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned"+field;
 
       loadFeature(field+"42", FieldValueFeature.class.getName(), fstore,
@@ -166,6 +178,35 @@ public class TestFieldValueFeature extends TestRerankBase {
       assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
       assertJQ("/query" + query.toQueryString(),
               "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field+"42","42.0")+"'}");
+    }
+  }
+
+  @Test
+  public void testIfADocumentDoesntHaveAFieldTheDefaultValueFromSchemaIsReturned() throws Exception {
+    final String[] fieldsWithDefaultValues = {"dvIntField", "dvLongField", "dvFloatField"};
+
+    double fieldCounter = -1.0;
+    for (String field : fieldsWithDefaultValues) {
+      final String fstore = "testIfADocumentDoesntHaveAFieldTheDefaultValueFromSchemaIsReturned"+field;
+
+      assertU(adoc("id", "21"));
+      assertU(commit());
+
+      loadFeature(field, FieldValueFeature.class.getName(), fstore,
+              "{\"field\":\""+field+"\"}");
+      loadModel(field+"-model", LinearModel.class.getName(),
+          new String[] {field}, fstore, "{\"weights\":{\"" + field + "\":1.0}}");
+
+      SolrQuery query = new SolrQuery();
+      query.setQuery("id:21");
+      query.add("rq", "{!ltr model="+field+"-model reRankDocs=4}");
+      query.add("fl", "[fv]");
+
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+      assertJQ("/query" + query.toQueryString(),
+              "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field, String.valueOf(fieldCounter))+"'}");
+
+      fieldCounter--;
     }
   }
 
@@ -205,6 +246,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.setQuery("id:42");
     query.add("rq", "{!ltr model=dvTestField-model reRankDocs=4}");
     query.add("fl", "[fv]");
+
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
             "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils
@@ -242,6 +284,60 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(),
             "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("trendy","0.0")+"'}");
+  }
+
+  @Test
+  public void testThatExceptionIsThrownForUnsupportedType() throws Exception {
+    final String fstore = "test_store";
+
+    assertU(adoc("id", "21", "title", "multivalued not supported", "dvUnsupportedField", "wow value"));
+    assertU(commit());
+
+    loadFeature("dvUnsupportedField", FieldValueFeature.class.getName(), fstore,
+            "{\"field\":\"dvUnsupportedField\"}");
+
+    loadModel("dvUnsupportedField-model", LinearModel.class.getName(),
+            new String[] {"dvUnsupportedField"}, fstore, "{\"weights\":{\"dvUnsupportedField\":1.0}}");
+
+    SolrQuery query = new SolrQuery();
+    query.setQuery("id:21");
+    query.add("rq", "{!ltr model=dvUnsupportedField-model reRankDocs=4}");
+    query.add("fl", "[fv]");
+
+    assertJQ("/query" + query.toQueryString(),
+        "/error/msg/=='java.lang.IllegalArgumentException: Doc values type SORTED_SET of field dvUnsupportedField is not supported!'");
+  }
+
+  @Test
+  public void testThatCorrectFieldValueFeatureIsUsedForDocValueTypes() throws Exception {
+    final String[][] fieldsWithDifferentTypes = {
+        new String[]{"dvIntPopularity", NumericDocValuesFieldValueFeatureScorer.class.getName()},
+        new String[]{"dvStringPopularity", SortedDocValuesFieldValueFeatureScorer.class.getName()},
+        new String[]{"noDocValuesField", FieldValueFeatureScorer.class.getName()}
+    };
+
+    for (String[] fieldAndScorerClass : fieldsWithDifferentTypes) {
+      String field = fieldAndScorerClass[0];
+      final String fstore = "testThatCorrectFieldValueFeatureIsUsedForDocValueTypes"+field;
+
+      assertU(adoc("id", "21", field, "1"));
+      assertU(commit());
+
+      loadFeature(field, ObservingFieldValueFeature.class.getName(), fstore,
+          "{\"field\":\""+field+"\"}");
+      loadModel(field+"-model", LinearModel.class.getName(),
+          new String[] {field}, fstore, "{\"weights\":{\"" + field + "\":1.0}}");
+
+      SolrQuery query = new SolrQuery();
+      query.setQuery("id:21");
+      query.add("rq", "{!ltr model="+field+"-model reRankDocs=4}");
+      query.add("fl", "[fv]");
+
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+      assertJQ("/query" + query.toQueryString(),
+          "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field, "1.0")+"'}");
+      assertEquals(fieldAndScorerClass[1], ObservingFieldValueFeature.usedScorerClass);
+    }
   }
 
   @Test

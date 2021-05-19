@@ -30,6 +30,8 @@
     <field name="dvLongPopularity" type="long" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvFloatPopularity" type="float" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvDoublePopularity" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvBoolPopularity" type="boolean" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvStringPopularity" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="normHits" type="float" indexed="true" stored="true" />
     <field name="isTrendy" type="boolean" indexed="true" stored="true" />
     <field name="dvIntField" type="int" indexed="false" docValues="true" stored="false" default="-1" multiValued="false"/>
@@ -39,6 +41,8 @@
     <field name="dvStrNumField" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvStrBoolField" type="boolean" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvTestField" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvUnsupportedField" type="string" indexed="false" docValues="true" stored="false" multiValued="true"/>
+    <field name="noDocValuesField" type="float" indexed="false" docValues="false" stored="true" multiValued="false"/>
 
     <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
     <field name="_version_" type="long" indexed="true" stored="true"/>
