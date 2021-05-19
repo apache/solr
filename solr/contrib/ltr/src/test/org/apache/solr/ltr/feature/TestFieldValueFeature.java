@@ -347,6 +347,40 @@ public class TestFieldValueFeature extends TestRerankBase {
     doTestParamsToMap(FieldValueFeature.class.getName(), params);
   }
 
+  @Test
+  public void testThatStringValuesAreCorrectlyParsed() throws Exception {
+    final String[][] inputsAndTests = {
+      new String[]{"T", "/response/docs/[0]/=={'[fv]':'" +
+          FeatureLoggerTestUtils.toFeatureVector("dvStrNumField", "1.0")+"'}"},
+      new String[]{"F", "/response/docs/[0]/=={'[fv]':'" +
+          FeatureLoggerTestUtils.toFeatureVector("dvStrNumField", "0.0")+"'}"},
+      new String[]{"-7324.427", "/response/docs/[0]/=={'[fv]':'" +
+          FeatureLoggerTestUtils.toFeatureVector("dvStrNumField", "-7324.427")+"'}"},
+      new String[]{"532", "/response/docs/[0]/=={'[fv]':'" +
+          FeatureLoggerTestUtils.toFeatureVector("dvStrNumField", "532.0")+"'}"},
+      new String[]{"notanumber", "/error/msg/=='org.apache.solr.ltr.feature.FeatureException: " +
+          "Cannot parse value notanumber of field dvStrNumField to float.'"}
+    };
+
+    final String fstore = "testThatStringValuesAreCorrectlyParsed";
+    loadFeature("dvStrNumField", FieldValueFeature.class.getName(), fstore,
+        "{\"field\":\"" + "dvStrNumField" + "\"}");
+    loadModel("dvStrNumField-model", LinearModel.class.getName(),
+        new String[]{"dvStrNumField"}, fstore, "{\"weights\":{\"" + "dvStrNumField" + "\":1.0}}");
+
+    for (String[] inputAndTest : inputsAndTests) {
+      assertU(adoc("id", "21", "dvStrNumField", inputAndTest[0]));
+      assertU(commit());
+
+      SolrQuery query = new SolrQuery();
+      query.setQuery("id:21");
+      query.add("rq", "{!ltr model=" + "dvStrNumField" + "-model reRankDocs=4}");
+      query.add("fl", "[fv]");
+
+      assertJQ("/query" + query.toQueryString(), inputAndTest[1]);
+    }
+  }
+
   /**
    * This class is used to track which specific FieldValueFeature is used so that we can test, whether the
    * fallback mechanism works correctly.
