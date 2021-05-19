@@ -17,12 +17,14 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.Part;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -515,12 +517,12 @@ public class SolrRequestParsers {
    */
   static class HttpRequestContentStream extends ContentStreamBase
   {
-    private final HttpServletRequest req;
-    
-    public HttpRequestContentStream( HttpServletRequest req ) {
-      this.req = req;
-      
-      contentType = req.getContentType();
+    private final InputStream inputStream;
+
+    public HttpRequestContentStream(HttpServletRequest req, InputStream inputStream) {
+      this.inputStream = inputStream;
+
+      this.contentType = req.getContentType();
       // name = ???
       // sourceInfo = ???
       
@@ -536,7 +538,7 @@ public class SolrRequestParsers {
       // so that it does not trip our test assert in our close shield
       // in SolrDispatchFilter - we must allow closes from getStream
       // due to the other impls of ContentStream
-      return new CloseShieldInputStream(req.getInputStream());
+      return new CloseShieldInputStream(inputStream);
     }
   }
 
@@ -549,7 +551,22 @@ public class SolrRequestParsers {
     public SolrParams parseParamsAndFillStreams( 
         final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
     {
-      streams.add( new HttpRequestContentStream( req ) );
+      // If we wrongly add a stream that actually has no content, then it can confuse
+      //  some of our code that sees a stream but has no content-type.
+      // If we wrongly don't add a stream, then obviously we'll miss data.
+      final ServletInputStream inputStream = req.getInputStream(); // don't close it
+      if (req.getContentLengthLong() >= 0 || req.getHeader("Transfer-Encoding") != null
+            || inputStream.available() > 0) {
+        streams.add(new HttpRequestContentStream(req, inputStream));
+      } else {
+        // See if we can read a byte.  It's sad there's no better way to do this.
+        PushbackInputStream pbInputStream = new PushbackInputStream(inputStream);
+        int b = pbInputStream.read();
+        if (b != -1) {
+          pbInputStream.unread(b);
+          streams.add(new HttpRequestContentStream(req, pbInputStream));
+        }
+      }
       return parseQueryString( req.getQueryString() );
     }
   }
