@@ -96,7 +96,9 @@ public class ReplicateFromLeader {
         Replica replica =
             cc.getZkController().zkStateReader.getCollection(cloudDescriptor.getCollectionName())
                 .getSlice(cloudDescriptor.getShardId()).getReplica(cloudDescriptor.getCoreNodeName());
-        skipCommitOnLeaderVersionZero = replica != null && replica.getType() == Replica.Type.PULL;
+        if (replica != null && replica.getType() == Replica.Type.PULL) {
+          skipCommitOnLeaderVersionZero = true; // only set this to true if we're a PULL replica, otherwise use value of switchTransactionLog
+        }
       }
       followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, skipCommitOnLeaderVersionZero);
 
