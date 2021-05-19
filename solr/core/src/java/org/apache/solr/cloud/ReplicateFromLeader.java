@@ -91,13 +91,15 @@ public class ReplicateFromLeader {
 
       // don't commit on leader version zero for PULL replicas as PULL should only get its index state from leader
       boolean skipCommitOnLeaderVersionZero = switchTransactionLog;
-      final CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
-      if (cloudDescriptor != null) {
-        Replica replica =
-            cc.getZkController().zkStateReader.getCollection(cloudDescriptor.getCollectionName())
-                .getSlice(cloudDescriptor.getShardId()).getReplica(cloudDescriptor.getCoreNodeName());
-        if (replica != null && replica.getType() == Replica.Type.PULL) {
-          skipCommitOnLeaderVersionZero = true; // only set this to true if we're a PULL replica, otherwise use value of switchTransactionLog
+      if (!skipCommitOnLeaderVersionZero) {
+        CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
+        if (cloudDescriptor != null) {
+          Replica replica =
+              cc.getZkController().getZkStateReader().getCollection(cloudDescriptor.getCollectionName())
+                  .getSlice(cloudDescriptor.getShardId()).getReplica(cloudDescriptor.getCoreNodeName());
+          if (replica != null && replica.getType() == Replica.Type.PULL) {
+            skipCommitOnLeaderVersionZero = true; // only set this to true if we're a PULL replica, otherwise use value of switchTransactionLog
+          }
         }
       }
       followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, skipCommitOnLeaderVersionZero);

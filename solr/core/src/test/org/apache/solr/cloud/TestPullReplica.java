@@ -211,9 +211,13 @@ public class TestPullReplica extends SolrCloudTestCase {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
     .process(cluster.getSolrClient());
-    waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas", collectionName, clusterShape(1, numPullReplicas + 1));
+    waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
+        collectionName, clusterShape(1, numPullReplicas + 1));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
     assertEquals(1, docCollection.getSlices().size());
+
+    // ugly but needed to ensure a full PULL replication cycle (every sec) has occurred on the replicas before adding docs
+    Thread.sleep(1500);
 
     boolean reloaded = false;
     int numDocs = 0;
@@ -229,7 +233,8 @@ public class TestPullReplica extends SolrCloudTestCase {
       }
       log.info("Found {} docs in leader, verifying updates make it to {} pull replicas", numDocs, numPullReplicas);
 
-      List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
+      List<Replica> pullReplicas =
+          (numDocs == 1) ? restartPullReplica(docCollection, numPullReplicas) : s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
       for (Replica r : pullReplicas) {
@@ -253,6 +258,37 @@ public class TestPullReplica extends SolrCloudTestCase {
       }
     }
     assertUlogPresence(docCollection);
+  }
+
+  private List<Replica> restartPullReplica(DocCollection docCollection, int numPullReplicas) throws Exception {
+    Slice s = docCollection.getSlices().iterator().next();
+    List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
+    // make sure a PULL replica recovers this first doc after a restart
+    JettySolrRunner leaderJetty = cluster.getReplicaJetty(s.getLeader());
+
+    // find a node with a PULL replica that's not hosting the leader
+    JettySolrRunner replicaJetty = null;
+    for (Replica r : pullReplicas) {
+      JettySolrRunner jetty = cluster.getReplicaJetty(r);
+      if (!jetty.getNodeName().equals(leaderJetty.getNodeName())) {
+        replicaJetty = jetty;
+        break;
+      }
+    }
+
+    // stop / start the node with a pull replica
+    if (replicaJetty != null) {
+      replicaJetty.stop();
+      cluster.waitForJettyToStop(replicaJetty);
+      replicaJetty.start();
+      waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
+          collectionName, clusterShape(1, numPullReplicas + 1));
+      docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
+      s = docCollection.getSlices().iterator().next();
+      pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
+    } // else it's ok if all replicas ended up on the same node, we're not testing replica placement here, but skip this part of the test
+
+    return pullReplicas;
   }
 
   public void testAddRemovePullReplica() throws Exception {
