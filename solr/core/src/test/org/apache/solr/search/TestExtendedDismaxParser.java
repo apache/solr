@@ -113,6 +113,9 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "73", "shingle23", "A B X D E"));
     assertU(adoc("id", "74", "isocharfilter", "niño"));
     assertU(adoc("id", "75", "trait_ss", "multi term"));
+    assertU(adoc("id", "76", "foo_i", "101"));
+    assertU(adoc("id", "77", "foo_i", "102"));
+
 //    assertU(adoc("id", "74", "text_pick_best", "tabby"));
 //    assertU(adoc("id", "74", "text_as_distinct", "persian"));
 
@@ -417,11 +420,12 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             twor);
 
     /*
+     * in multi-field search with different analysis per field
      * sow=true implies the minimum should match is "per document"
      * i.e a document to be a match must contain all the mm query terms anywhere at least once
      * sow=false implies the minimum should match is "per field"
      * i.e a document to be a match must contain all the mm query terms in a single field at least once
-     * */
+     */
     assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","true"),
         nor); //no document contains both terms, even in separate fields
 
@@ -1789,10 +1793,27 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         assertJQ(req("qf", "trait_ss", "defType", "edismax", "q", "multi term", "sow", "false"),
             "/response/numFound==1", "/response/docs/[0]/id=='75'");
 
-        String parsedquery;
-        parsedquery = getParsedQuery(
+        String parsedquery = getParsedQuery(
             req("qf", "trait_ss", "q", "multi term", "defType", "edismax", "sow", "false", "debugQuery", "true"));
         assertThat(parsedquery, anyOf(containsString("((trait_ss:multi term))")));
+    }
+
+    @Test
+    public void testSplitOnWhitespace_numericField_shouldBuildAlwaysMultiClause() throws Exception
+    {
+        assertJQ(req("qf", "foo_i", "defType", "edismax", "q", "101 102", "sow", "false"),
+            "/response/numFound==2", "/response/docs/[0]/id=='76'", "/response/docs/[1]/id=='77'");
+
+        String parsedquery = getParsedQuery(
+            req("qf", "foo_i", "q", "101 102", "defType", "edismax", "sow", "false", "debugQuery", "true"));
+        assertThat(parsedquery, anyOf(containsString("foo_i:[101 TO 101]"), containsString("foo_i:[102 TO 102]")));
+
+        assertJQ(req("qf", "foo_i", "defType", "edismax", "q", "101 102", "sow", "true"),
+            "/response/numFound==2", "/response/docs/[0]/id=='76'", "/response/docs/[1]/id=='77'");
+
+        parsedquery = getParsedQuery(
+            req("qf", "foo_i", "q", "101 102", "defType", "edismax", "sow", "true", "debugQuery", "true"));
+        assertThat(parsedquery, anyOf(containsString("foo_i:[101 TO 101]"), containsString("foo_i:[102 TO 102]")));
     }
 
   private static String getParsedQuery(SolrQueryRequest request) throws Exception {
