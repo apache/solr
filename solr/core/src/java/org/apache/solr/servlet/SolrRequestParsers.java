@@ -558,12 +558,12 @@ public class SolrRequestParsers {
       if (req.getContentLengthLong() >= 0 || req.getHeader("Transfer-Encoding") != null
             || inputStream.available() > 0) {
         streams.add(new HttpRequestContentStream(req, inputStream));
-      } else {
-        // See if we can read a byte.  It's sad there's no better way to do this.
+      } else if (!req.getMethod().equals("GET")) { // GET shouldn't have data
+        // We're not 100% sure there is no data, so check by reading a byte (and put back).
         PushbackInputStream pbInputStream = new PushbackInputStream(inputStream);
         int b = pbInputStream.read();
         if (b != -1) {
-          pbInputStream.unread(b);
+          pbInputStream.unread(b); // put back
           streams.add(new HttpRequestContentStream(req, pbInputStream));
         }
       }
