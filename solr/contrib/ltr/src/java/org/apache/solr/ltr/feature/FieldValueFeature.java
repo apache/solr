@@ -41,16 +41,16 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * This feature returns the value of a field in the current document
+ * This feature returns the value of a field in the current document.
+ * The field must have stored="true" or docValues="true" properties.
  * Example configuration:
  * <pre>{
- * "name":  "rawHits",
- * "class": "org.apache.solr.ltr.feature.FieldValueFeature",
- * "params": {
- * "field": "hits",
- * "defaultValue": -1
- * }
- * }</pre>
+  "name":  "rawHits",
+  "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+  "params": {
+      "field": "hits"
+  }
+}</pre>
  */
 public class FieldValueFeature extends Feature {
 
