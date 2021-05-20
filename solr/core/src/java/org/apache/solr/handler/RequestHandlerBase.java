@@ -202,7 +202,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       }
     }
     Timer.Context timer = requestTimes.time();
-    //@SuppressWarnings("resource")
+    @SuppressWarnings("resource")
     Timer.Context dTimer = distrib ? distribRequestTimes.time() : localRequestTimes.time();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
