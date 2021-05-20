@@ -22,6 +22,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -83,6 +85,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_REDIRECT_URIS = "redirectUris";
   private static final String PARAM_ISSUERS = "issuers";
   private static final String PARAM_REALM = "realm";
+  private static final String IDP_CERT_PEM_PATH = "idpCertPemPath";
 
   private static final String DEFAULT_AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
@@ -155,8 +158,15 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
     }
 
+    String idpCertPemPathString = (String) pluginConfig.get(IDP_CERT_PEM_PATH);
+    Path idpCertPemPath = null;
+    if (idpCertPemPathString != null) {
+      idpCertPemPath = Paths.get(idpCertPemPathString);
+    }
+
     long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
-    JWTIssuerConfig.setHttpsJwksFactory(new JWTIssuerConfig.HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD));
+    JWTIssuerConfig.setHttpsJwksFactory(new JWTIssuerConfig.HttpsJwksFactory(
+        jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD, idpCertPemPath));
 
     issuerConfigs = new ArrayList<>();
 

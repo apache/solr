@@ -24,15 +24,19 @@ import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
+import org.jose4j.http.Get;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
@@ -341,27 +345,50 @@ public class JWTIssuerConfig {
   static class HttpsJwksFactory {
     private final long jwkCacheDuration;
     private final long refreshReprieveThreshold;
+    private final Path certPemPath;
 
     public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold) {
       this.jwkCacheDuration = jwkCacheDuration;
       this.refreshReprieveThreshold = refreshReprieveThreshold;
+      this.certPemPath = null;
     }
-    
+
+    public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold,
+                            Path certPemPath) {
+      this.jwkCacheDuration = jwkCacheDuration;
+      this.refreshReprieveThreshold = refreshReprieveThreshold;
+      this.certPemPath = certPemPath;
+    }
+
     /**
      * While the class name is HttpsJwks, it actually works with plain http formatted url as well.
+     *
      * @param url the Url to connect to for JWK details.
      */
     private HttpsJwks create(String url) {
       try {
         URL jwksUrl = new URL(url);
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
-        
+
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
       }
       HttpsJwks httpsJkws = new HttpsJwks(url);
       httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
       httpsJkws.setRefreshReprieveThreshold(refreshReprieveThreshold);
+      if (certPemPath != null) {
+        try {
+          // Configure custom truststore for outgoing HTTPS
+          Get getWithCustomTrust = new Get();
+          Collection<X509Certificate> certs;
+          CertificateFactory cf = CertificateFactory.getInstance("X.509");
+          certs = (Collection<X509Certificate>) cf.generateCertificates(Files.newInputStream(certPemPath));
+          getWithCustomTrust.setTrustedCertificates(certs);
+          httpsJkws.setSimpleHttpGet(getWithCustomTrust);
+        } catch (CertificateException | IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed loading custom IdP certificate(s)", e);
+        }
+      }
       return httpsJkws;
     }
 
