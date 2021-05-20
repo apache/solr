@@ -67,8 +67,8 @@ public class FieldValueFeature extends Feature {
   }
 
   @Override
-  public LinkedHashMap<String, Object> paramsToMap() {
-    final LinkedHashMap<String, Object> params = defaultParamsToMap();
+  public LinkedHashMap<String,Object> paramsToMap() {
+    final LinkedHashMap<String,Object> params = defaultParamsToMap();
     params.put("field", field);
     return params;
   }
@@ -76,17 +76,19 @@ public class FieldValueFeature extends Feature {
   @Override
   protected void validate() throws FeatureException {
     if (field == null || field.isEmpty()) {
-      throw new FeatureException(getClass().getSimpleName() + ": field must be provided");
+      throw new FeatureException(getClass().getSimpleName()+
+          ": field must be provided");
     }
   }
 
-  public FieldValueFeature(String name, Map<String, Object> params) {
+  public FieldValueFeature(String name, Map<String,Object> params) {
     super(name, params);
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, SolrQueryRequest request,
-                                    Query originalQuery, Map<String, String[]> efi) throws IOException {
+  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
+      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
+          throws IOException {
     return new FieldValueFeatureWeight(searcher, request, originalQuery, efi);
   }
 
@@ -94,7 +96,7 @@ public class FieldValueFeature extends Feature {
     private final SchemaField schemaField;
 
     public FieldValueFeatureWeight(IndexSearcher searcher,
-                                   SolrQueryRequest request, Query originalQuery, Map<String, String[]> efi) {
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(FieldValueFeature.this, searcher, request, originalQuery, efi);
       if (searcher instanceof SolrIndexSearcher) {
         schemaField = ((SolrIndexSearcher) searcher).getSchema().getFieldOrNull(field);
@@ -114,8 +116,8 @@ public class FieldValueFeature extends Feature {
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       if (schemaField != null && !schemaField.stored() && schemaField.hasDocValues()) {
 
-        FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(field);
-        DocValuesType docValuesType = fieldInfo != null ? fieldInfo.getDocValuesType() : DocValuesType.NONE;
+        final FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(field);
+        final DocValuesType docValuesType = fieldInfo != null ? fieldInfo.getDocValuesType() : DocValuesType.NONE;
 
         if (DocValuesType.NUMERIC.equals(docValuesType)) {
           return new NumericDocValuesFieldValueFeatureScorer(this, context,
@@ -131,16 +133,18 @@ public class FieldValueFeature extends Feature {
                 + " is not supported!");
       }
       return new FieldValueFeatureScorer(this, context,
-              DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+          DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
     }
 
     /**
      * A FeatureScorer that reads the stored value for a field
      */
     public class FieldValueFeatureScorer extends FeatureScorer {
-      LeafReaderContext context;
 
-      public FieldValueFeatureScorer(FeatureWeight weight, LeafReaderContext context, DocIdSetIterator itr) {
+      LeafReaderContext context = null;
+
+      public FieldValueFeatureScorer(FeatureWeight weight,
+          LeafReaderContext context, DocIdSetIterator itr) {
         super(weight, itr);
         this.context = context;
       }
@@ -149,7 +153,8 @@ public class FieldValueFeature extends Feature {
       public float score() throws IOException {
 
         try {
-          final Document document = context.reader().document(itr.docID(), fieldAsSet);
+          final Document document = context.reader().document(itr.docID(),
+              fieldAsSet);
           final IndexableField indexableField = document.getField(field);
           if (indexableField == null) {
             return getDefaultValue();
@@ -160,18 +165,22 @@ public class FieldValueFeature extends Feature {
           } else {
             final String string = indexableField.stringValue();
             if (string.length() == 1) {
-              // boolean values in the index are encoded with a single char contained in TRUE_TOKEN or FALSE_TOKEN
+              // boolean values in the index are encoded with the
+              // a single char contained in TRUE_TOKEN or FALSE_TOKEN
               // (see BoolField)
               if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
-                return 1f;
+                return 1;
               }
               if (string.charAt(0) == BoolField.FALSE_TOKEN[0]) {
-                return 0f;
+                return 0;
               }
             }
           }
         } catch (final IOException e) {
-          throw new FeatureException(e.toString() + ": " + "Unable to extract feature for " + name, e);
+          throw new FeatureException(
+              e.toString() + ": " +
+                  "Unable to extract feature for "
+                  + name, e);
         }
         return getDefaultValue();
       }
@@ -185,20 +194,22 @@ public class FieldValueFeature extends Feature {
     /**
      * A FeatureScorer that reads the numeric docValues for a field
      */
-    public class NumericDocValuesFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
-      NumericDocValues docValues;
-      NumberType numberType;
+    public final class NumericDocValuesFieldValueFeatureScorer extends FeatureScorer {
+      private final NumericDocValues docValues;
+      private final NumberType numberType;
 
       public NumericDocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
                                               final DocIdSetIterator itr, final NumberType numberType) {
         super(weight, itr);
         this.numberType = numberType;
 
+        NumericDocValues docValues;
         try {
           docValues = DocValues.getNumeric(context.reader(), field);
         } catch (IOException e) {
           throw new IllegalArgumentException("Could not read numeric docValues for field " + field);
         }
+        this.docValues = docValues;
       }
 
       @Override
@@ -236,18 +247,20 @@ public class FieldValueFeature extends Feature {
     /**
      * A FeatureScorer that reads the sorted docValues for a field
      */
-    public class SortedDocValuesFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
-      SortedDocValues docValues;
+    public final class SortedDocValuesFieldValueFeatureScorer extends FeatureScorer {
+      private final SortedDocValues docValues;
 
       public SortedDocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
                                               final DocIdSetIterator itr) {
         super(weight, itr);
 
+        SortedDocValues docValues;
         try {
           docValues = DocValues.getSorted(context.reader(), field);
         } catch (IOException e) {
           throw new IllegalArgumentException("Could not read sorted docValues for field " + field);
         }
+        this.docValues = docValues;
       }
 
       @Override
@@ -298,7 +311,7 @@ public class FieldValueFeature extends Feature {
      * By doing so, we prevent a fallback to the FieldValueFeatureScorer, which would also return the default value but
      * in a less performant way because it would first try to read the stored fields for the doc (which aren't present).
      */
-    public class DefaultValueFieldValueFeatureScorer extends FeatureWeight.FeatureScorer {
+    public final class DefaultValueFieldValueFeatureScorer extends FeatureScorer {
       public DefaultValueFieldValueFeatureScorer(final FeatureWeight weight, final DocIdSetIterator itr) {
         super(weight, itr);
       }
