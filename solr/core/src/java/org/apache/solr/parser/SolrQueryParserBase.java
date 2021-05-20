@@ -1170,7 +1170,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
                 e.g.
                 a numerical field trying to parse a textual query term
                  */
-                subqs.add(new MatchNoDocsQuery());
+                subqs.add(new MatchNoDocsQuery(queryTerm + " is not compatible with " + field));
               }
             }
             if (subqs.size() == 1) {
