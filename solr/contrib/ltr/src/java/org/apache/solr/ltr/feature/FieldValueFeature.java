@@ -51,6 +51,17 @@ import org.apache.solr.search.SolrIndexSearcher;
       "field": "hits"
   }
 }</pre>
+ *
+ * <p>There are 4 different types of FeatureScorers that a FieldValueFeatureWeight may use.
+ * The chosen scorer depends on the field attributes.</p>
+ *
+ * <p>FieldValueFeatureScorer (FVFS): used for stored=true, no matter if docValues=true or docValues=false</p>
+ *
+ * <p>NumericDocValuesFVFS: used for stored=false and docValues=true, if docValueType == NUMERIC</p>
+ * <p>SortedDocValuesFVFS: used for stored=false and docValues=true, if docValueType == SORTED
+ *
+ * <p>DefaultValueFVFS: used for stored=false and docValues=true, a fallback scorer that is used on segments
+ * where no document has a value set in the field of this feature</p>
  */
 public class FieldValueFeature extends Feature {
 
