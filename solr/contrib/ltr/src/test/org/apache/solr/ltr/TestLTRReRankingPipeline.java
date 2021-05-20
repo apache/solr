@@ -114,6 +114,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
   @Test
   public void testRescorer() throws Exception {
+    assertU(delQ("*:*"));
     assertU(adoc("id", "0", "field", "wizard the the the the the oz", "finalScore", "F"));
     assertU(adoc("id", "1", "field", "wizard oz the the the the the the", "finalScore", "T"));
     assertU(commit());
@@ -151,9 +152,9 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
   @Test
   public void testDifferentTopN() throws IOException {
+    assertU(delQ("*:*"));
     assertU(adoc("id", "0", "field", "wizard oz oz oz oz oz", "finalScoreFloat", "1.0"));
     assertU(adoc("id", "1", "field", "wizard oz oz oz oz the", "finalScoreFloat", "2.0"));
     assertU(adoc("id", "2", "field", "wizard oz oz oz the the ", "finalScoreFloat", "3.0"));
@@ -185,8 +186,9 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
                       Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
               2, 3, 4, 5, 6, 7, 8, 9}, "finalScoreFloat");
+      final Double featureWeight = 0.1;
       final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
-              features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
+              features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features, featureWeight));
 
       LTRScoringQuery scoringQuery = new LTRScoringQuery(ltrScoringModel);
       scoringQuery.setRequest(solrQueryRequest);
@@ -215,10 +217,9 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
             log.info("doc {} in pos {}", searcher.doc(hits.scoreDocs[j].doc)
                 .get("id"), j);
           }
-
           assertEquals(i,
                   Integer.parseInt(searcher.doc(hits.scoreDocs[j].doc).get("id")));
-          assertEquals(i + 1, hits.scoreDocs[j].score, 0.00001);
+          assertEquals((i + 1) * features.size()*featureWeight, hits.scoreDocs[j].score, 0.00001);
 
         }
       }
