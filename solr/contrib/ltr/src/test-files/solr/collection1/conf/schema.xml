@@ -18,7 +18,7 @@
 
 <schema name="example" version="1.5">
   <fields>
-    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
+    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
     <field name="finalScore" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="finalScoreFloat" type="float" indexed="true" stored="true" multiValued="false"/>
     <field name="field" type="text_general" indexed="true" stored="false" multiValued="false"/>
@@ -30,10 +30,12 @@
     <field name="dvLongPopularity" type="long" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvFloatPopularity" type="float" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvDoublePopularity" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
-    <field name="dvBoolPopularity" type="boolean" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvStringPopularity" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="normHits" type="float" indexed="true" stored="true" />
+
     <field name="isTrendy" type="boolean" indexed="true" stored="true" />
+    <field name="dvIsTrendy" type="boolean" indexed="true" stored="false" docValues="true"/>
+
     <field name="dvIntField" type="int" indexed="false" docValues="true" stored="false" default="-1" multiValued="false"/>
     <field name="dvLongField" type="long" indexed="false" docValues="true" stored="false" default="-2" multiValued="false"/>
     <field name="dvFloatField" type="float" indexed="false" docValues="true" stored="false" default="-3" multiValued="false"/>
@@ -60,6 +62,8 @@
   <copyField source="popularity" dest="dvLongPopularity"/>
   <copyField source="popularity" dest="dvFloatPopularity"/>
   <copyField source="popularity" dest="dvDoublePopularity"/>
+
+  <copyField source="isTrendy" dest="dvIsTrendy"/>
 
   <types>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />

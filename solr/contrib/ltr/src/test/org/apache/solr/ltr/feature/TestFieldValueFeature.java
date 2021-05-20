@@ -44,7 +44,9 @@ public class TestFieldValueFeature extends TestRerankBase {
       "popularity",
       "dvIntPopularity", "dvLongPopularity",
       "dvFloatPopularity", "dvDoublePopularity",
-      "dvStringPopularity", "dvBoolPopularity"
+      "dvStringPopularity",
+      "isTrendy",
+      "dvIsTrendy"
   };
 
   @Before
@@ -52,32 +54,32 @@ public class TestFieldValueFeature extends TestRerankBase {
     setuptest(false);
 
     assertU(adoc("id", "1", "popularity", "1", "title", "w1",
-        "dvStringPopularity", "1", "dvBoolPopularity", "F",
+        "dvStringPopularity", "1",
         "description", "w1", "isTrendy", "true"));
     assertU(adoc("id", "2", "popularity", "2", "title", "w2 2asd asdd didid",
-        "dvStringPopularity", "2", "dvBoolPopularity", "T",
+        "dvStringPopularity", "2",
         "description", "w2 2asd asdd didid"));
     assertU(adoc("id", "3", "popularity", "3", "title", "w3",
-        "dvStringPopularity", "3", "dvBoolPopularity", "F",
+        "dvStringPopularity", "3",
         "description", "w3", "isTrendy", "true"));
     assertU(adoc("id", "4", "popularity", "4", "title", "w4",
-        "dvStringPopularity", "4", "dvBoolPopularity", "T",
+        "dvStringPopularity", "4",
         "description", "w4", "isTrendy", "false"));
     assertU(adoc("id", "5", "popularity", "5", "title", "w5",
-        "dvStringPopularity", "5", "dvBoolPopularity", "F",
+        "dvStringPopularity", "5",
         "description", "w5", "isTrendy", "true"));
     assertU(adoc("id", "6", "popularity", "6", "title", "w1 w2",
-        "dvStringPopularity", "6", "dvBoolPopularity", "T",
+        "dvStringPopularity", "6",
         "description", "w1 w2", "isTrendy", "false"));
     assertU(adoc("id", "7", "popularity", "7", "title", "w1 w2 w3 w4 w5",
-        "dvStringPopularity", "7", "dvBoolPopularity", "F",
+        "dvStringPopularity", "7",
         "description", "w1 w2 w3 w4 w5 w8", "isTrendy", "true"));
     assertU(adoc("id", "8", "popularity", "8", "title", "w1 w1 w1 w2 w2 w8",
-        "dvStringPopularity", "8", "dvBoolPopularity", "T",
+        "dvStringPopularity", "8",
         "description", "w1 w1 w1 w2 w2", "isTrendy", "false"));
 
     // a document without the popularity and the dv fields
-    assertU(adoc("id", "42", "title", "NO popularity", "description", "NO popularity"));
+    assertU(adoc("id", "42", "title", "NO popularity or isTrendy", "description", "NO popularity or isTrendy"));
 
     assertU(commit());
 
@@ -88,7 +90,7 @@ public class TestFieldValueFeature extends TestRerankBase {
    loadModel("model", LinearModel.class.getName(), FIELDS,
        "{\"weights\":{\"popularity\":1.0,\"dvIntPopularity\":1.0,\"dvLongPopularity\":1.0," +
            "\"dvFloatPopularity\":1.0,\"dvDoublePopularity\":1.0," +
-           "\"dvStringPopularity\":1.0,\"dvBoolPopularity\":1.0}}");
+           "\"dvStringPopularity\":1.0,\"isTrendy\":1.0,\"dvIsTrendy\":1.0}}");
   }
 
   @After
@@ -149,7 +151,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'popularity=0.0,dvIntPopularity=0.0,dvLongPopularity=0.0," +
             "dvFloatPopularity=0.0,dvDoublePopularity=0.0," +
-            "dvStringPopularity=0.0,dvBoolPopularity=0.0'}");
+            "dvStringPopularity=0.0,isTrendy=0.0,dvIsTrendy=0.0'}");
   }
 
   @Test
