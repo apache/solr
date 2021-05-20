@@ -280,8 +280,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     if (replicaJetty != null) {
       replicaJetty.stop();
       cluster.waitForJettyToStop(replicaJetty);
+      waitForState("Expected to see a downed PULL replica", collectionName, clusterStateReflectsActiveAndDownReplicas());
       replicaJetty.start();
-      waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
+      waitForState("Expected collection to have recovered with 1 shard and " + (numPullReplicas + 1) + " replicas after restarting " + replicaJetty.getNodeName(),
           collectionName, clusterShape(1, numPullReplicas + 1));
       docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
       s = docCollection.getSlices().iterator().next();
