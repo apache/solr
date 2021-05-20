@@ -158,8 +158,6 @@ If you know the filter query (be it spatial or not) is fairly unique and not lik
 [source,text]
 &q=...mykeywords...&fq=...someotherfilters...&fq={!geofilt cache=false}&sfield=store&pt=45.15,-93.85&d=5
 
-LLPSF does not support Solr's "PostFilter".
-
 == Distance Sorting or Boosting (Function Queries)
 
 There are four distance function queries:

@@ -86,12 +86,13 @@ Details of each cache are described below.
 
 === Filter Cache
 
-The `filterCache` is used by `SolrIndexSearcher` for filters (DocSets) for unordered sets of all documents that match a query.
-The numeric attributes control the number of entries in the cache.
+This cache holds parsed queries paired with an unordered set of all documents that match it.
+Unless such a set is trivially small, the set implementation is a bitset.
 
 The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other cases as well.
 Subsequent queries using the same parameter filter query result in cache hits and rapid returns of results.
 See <<common-query-parameters.adoc#fq-filter-query-parameter,fq (Filter Query) Parameter>> for a detailed discussion of `fq`.
+Use of this cache can be disabled for a `fq` using the <<common-query-parameters.adoc#cache-local-parameter,`cache` local parameter>>.
 
 Another Solr feature using this cache is the `filter(...)` syntax in the default Lucene query parser.
 
@@ -125,6 +126,8 @@ The `queryResultCache` has an optional setting to limit the maximum amount of RA
 This lets you specify the maximum heap size, in megabytes, used by the contents of this cache.
 When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit.
 If a `size` is specified in addition to `maxRamMB` then only the heap usage limit is respected.
+
+Use of this cache can be disabled on a query-by-query basis in `q` using the <<common-query-parameters.adoc#cache-local-parameter,cache local parameter>>.
 
 [source,xml]
 ----

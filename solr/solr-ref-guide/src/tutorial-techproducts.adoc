@@ -46,7 +46,7 @@ This will be the port that the first node runs on. Unless you know you have some
 ----
 Please enter the port for node2 [7574]:
 ----
-This is the port the second node will run on. Again, unless you know you have something else running on port 8983 on your machine, accept this default option also by pressing kbd:[enter]. If something is already using that port, you will be asked to choose another port.
+This is the port the second node will run on. Again, unless you know you have something else running on port 7574 on your machine, accept this default option also by pressing kbd:[enter]. If something is already using that port, you will be asked to choose another port.
 
 Solr will now initialize itself and start running on those two nodes. The script will print the commands it uses for your reference.
 

@@ -1031,10 +1031,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             + "\n\txml response was: " + response
             + "\n\trequest was:" + req.getParamString();
 
-        log.error(msg);
-        throw new RuntimeException(msg);
+        fail(msg);
       }
-
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {

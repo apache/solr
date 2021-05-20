@@ -26,7 +26,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -372,7 +371,7 @@ public class SolrXmlConfig {
     String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);
     SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
     for (String p : pathStrings) {
-      allowPathBuilder.addPath(Paths.get(p));
+      allowPathBuilder.addPath(p);
     }
     return allowPathBuilder.build();
   }
