@@ -22,7 +22,6 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight;
 import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight.DefaultValueFieldValueFeatureScorer;
 import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight.FieldValueFeatureScorer;
 import org.apache.solr.ltr.feature.FieldValueFeature.FieldValueFeatureWeight.NumericDocValuesFieldValueFeatureScorer;
@@ -225,6 +224,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.setQuery("id:42");
     query.add("rq", "{!ltr model=not-existing-field-model reRankDocs=4}");
     query.add("fl", "[fv]");
+    ObservingFieldValueFeature.usedScorerClass = null; // to clear away any previous test's use
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
             "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils
@@ -247,6 +247,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("rq", "{!ltr model=dvTestField-model reRankDocs=4}");
     query.add("fl", "[fv]");
 
+    ObservingFieldValueFeature.usedScorerClass = null; // to clear away any previous test's use
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
             "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils
@@ -333,6 +334,7 @@ public class TestFieldValueFeature extends TestRerankBase {
       query.add("rq", "{!ltr model="+field+"-model reRankDocs=4}");
       query.add("fl", "[fv]");
 
+      ObservingFieldValueFeature.usedScorerClass = null; // to clear away any previous test's use
       assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
       assertJQ("/query" + query.toQueryString(),
           "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field, "1.0")+"'}");
