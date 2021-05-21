@@ -203,6 +203,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
     if (trustedCertsStream != null) {
       trustedSslCerts = CryptoKeys.parseX509Certs(trustedCertsStream);
+      log.info("Trusting custom SSL certificate(s) for the IdP");
     }
 
     long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));

@@ -387,7 +387,6 @@ public class JWTIssuerConfig {
       if (trustedCerts != null) {
         Get getWithCustomTrust = new Get();
         getWithCustomTrust.setTrustedCertificates(trustedCerts);
-        log.info("Trusting custom SSL certificate(s) for the IdP");
       }
       return httpsJkws;
     }
