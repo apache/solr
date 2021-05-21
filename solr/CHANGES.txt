@@ -129,6 +129,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15335: Docker: Solr has capability to build functionally-identical local and official Docker image. (hossman, Houston Putman)
 
+* SOLR-15414: Use ConfigSet API instead of Zookeeper data node to list out configsets available in Solr Admin UI. (Nazerke Seidan via Eric Pugh)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -398,6 +400,8 @@ Bug Fixes
   allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
 
 * SOLR-15424: Solr replication UI wraps ETA time on top of next line (janhoy)
+
+* SOLR-15399: IndexFetcher should not issue a local commit for PULL replicas when leader's version is zero (Timothy Potter)
 
 Other Changes
 ---------------------
