@@ -45,13 +45,18 @@ They emit a stream of tuples (key/value Maps).
 Some of the provided streaming functions are designed to work with entire result sets rather than the top N results like normal search.
 This is supported by the <<exporting-result-sets.adoc#,/export handler>>.
 
-Some streaming functions act as stream sources to originate the stream flow. Other streaming functions act as stream decorators to wrap other stream functions and perform operations on the stream of tuples. Many streams functions can be parallelized across a worker collection. This can be particularly powerful for relational algebra functions.
+Some streaming functions act as stream sources to originate the stream flow.
+Other streaming functions act as stream decorators to wrap other stream functions and perform operations on the stream of tuples.
+Many streams functions can be parallelized across a worker collection.
+This can be particularly powerful for relational algebra functions.
 
 === Streaming Requests and Responses
 
-Solr has a `/stream` request handler that takes streaming expression requests and returns the tuples as a JSON stream. This request handler is implicitly defined, meaning there is nothing that has to be defined in `solrconfig.xml` - see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>.
+Solr has a `/stream` request handler that takes streaming expression requests and returns the tuples as a JSON stream.
+This request handler is implicitly defined, meaning there is nothing that has to be defined in `solrconfig.xml` - see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>.
 
-The `/stream` request handler takes one parameter, `expr`, which is used to specify the streaming expression. For example, this curl command encodes and POSTs a simple `search()` expression to the `/stream` handler:
+The `/stream` request handler takes one parameter, `expr`, which is used to specify the streaming expression.
+For example, this curl command encodes and POSTs a simple `search()` expression to the `/stream` handler:
 
 [source,bash]
 ----
@@ -86,7 +91,9 @@ For the above example the `/stream` handler responded with the following JSON re
 }
 ----
 
-Note the last tuple in the above example stream is `{"EOF":true,"RESPONSE_TIME":33}`. The `EOF` indicates the end of the stream. To process the JSON response, you'll need to use a streaming JSON implementation because streaming expressions are designed to return the entire result set which may have millions of records. In your JSON client you'll need to iterate each doc (tuple) and check for the EOF tuple to determine the end of stream.
+Note the last tuple in the above example stream is `{"EOF":true,"RESPONSE_TIME":33}`. The `EOF` indicates the end of the stream.
+To process the JSON response, you'll need to use a streaming JSON implementation because streaming expressions are designed to return the entire result set which may have millions of records.
+In your JSON client you'll need to iterate each doc (tuple) and check for the EOF tuple to determine the end of stream.
 
 === Configuration
 
@@ -96,7 +103,8 @@ Timeouts for Streaming Expressions can be configured with the `socketTimeout` an
 
 === Stream Sources
 
-Stream sources originate streams. There are rich set of searching, sampling and aggregation stream sources to choose from.
+Stream sources originate streams.
+There are rich set of searching, sampling and aggregation stream sources to choose from.
 
 A full reference to all available source expressions is available in <<stream-source-reference.adoc#,Stream Source Reference>>.
 

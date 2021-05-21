@@ -70,7 +70,7 @@ that have a lot of rich media embedded in them.
 For these reasons, Solr Cell is not recommended for use in a production system.
 
 It is a best practice to use Solr Cell as a proof-of-concept tool during development and then run Tika as an external
-process that sends the extracted documents to Solr (via <<using-solrj.adoc#,SolrJ>>) for indexing.
+process that sends the extracted documents to Solr (via <<solrj.adoc#,SolrJ>>) for indexing.
 This way, any extraction failures that occur are isolated from Solr itself and can be handled gracefully.
 
 For a few examples of how this could be done, see this blog post by Erick Erickson, https://lucidworks.com/2012/02/14/indexing-with-solrj/[Indexing with SolrJ].
@@ -464,7 +464,8 @@ curl "http://localhost:8983/solr/gettingstarted/update/extract?literal.id=doc6&d
 
 == Using Solr Cell with SolrJ
 
-SolrJ is a Java client that you can use to add documents to the index, update the index, or query the index. You'll find more information on SolrJ in <<using-solrj.adoc#,Using SolrJ>>.
+SolrJ is a Java client that you can use to add documents to the index, update the index, or query the index.
+You'll find more information on SolrJ in <<solrj.adoc#,SolrJ>>.
 
 Here's an example of using Solr Cell and SolrJ to add documents to a Solr index.
 

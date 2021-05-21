@@ -1,4 +1,4 @@
-= Working with Currencies and Exchange Rates
+= Currencies and Exchange Rates
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The `currency` FieldType provides support for monetary values to Solr/Lucene with query-time currency conversion and exchange rates. The following features are supported:
+The `currency` FieldType provides support for monetary values to Solr/Lucene with query-time currency conversion and exchange rates.
+The following features are supported:
 
 * Point queries
 * Range queries
@@ -34,7 +35,8 @@ The `currency` FieldType provides support for monetary values to Solr/Lucene wit
 CurrencyField has been deprecated in favor of CurrencyFieldType; all configuration examples below use CurrencyFieldType.
 ====
 
-The `currency` field type is defined in `schema.xml`. This is the default configuration of this type.
+The `currency` field type is defined in `schema.xml`.
+This is the default configuration of this type.
 
 [source,xml]
 ----
@@ -43,7 +45,10 @@ The `currency` field type is defined in `schema.xml`. This is the default config
            defaultCurrency="USD" currencyConfig="currency.xml" />
 ----
 
-In this example, we have defined the name and class of the field type, and defined the `defaultCurrency` as "USD", for U.S. Dollars. We have also defined a `currencyConfig` to use a file called "currency.xml". This is a file of exchange rates between our default currency to other currencies. There is an alternate implementation that would allow regular downloading of currency data. See <<Exchange Rates>> below for more.
+In this example, we have defined the name and class of the field type, and defined the `defaultCurrency` as "USD", for U.S. Dollars.
+We have also defined a `currencyConfig` to use a file called "currency.xml". This is a file of exchange rates between our default currency to other currencies.
+There is an alternate implementation that would allow regular downloading of currency data.
+See <<Exchange Rates>> below for more.
 
 Many of the example schemas that ship with Solr include a <<dynamic-fields.adoc#,dynamic field>> that uses this type, such as this example:
 
@@ -54,7 +59,9 @@ Many of the example schemas that ship with Solr include a <<dynamic-fields.adoc#
 
 This dynamic field would match any field that ends in `_c` and make it a currency typed field.
 
-At indexing time, money fields can be indexed in a native currency. For example, if a product on an e-commerce site is listed in Euros, indexing the price field as "1000,EUR" will index it appropriately. The price should be separated from the currency by a comma, and the price must be encoded with a floating point value (a decimal point).
+At indexing time, money fields can be indexed in a native currency.
+For example, if a product on an e-commerce site is listed in Euros, indexing the price field as "1000,EUR" will index it appropriately.
+The price should be separated from the currency by a comma, and the price must be encoded with a floating point value (a decimal point).
 
 During query processing, range and point queries are both supported.
 
@@ -69,23 +76,28 @@ You must specify parameters `amountLongSuffix` and `codeStrSuffix`, correspondin
            defaultCurrency="USD" currencyConfig="currency.xml" />
 ----
 
-In the above example, the raw amount field will use the `"*_l_ns"` dynamic field, which must exist in the schema and use a long field type, i.e., one that extends `LongValueFieldType`.  The currency code field will use the `"*_s_ns"` dynamic field, which must exist in the schema and use a string field type, i.e., one that is or extends `StrField`.
+In the above example, the raw amount field will use the `"*_l_ns"` dynamic field, which must exist in the schema and use a long field type, i.e., one that extends `LongValueFieldType`.
+The currency code field will use the `"*_s_ns"` dynamic field, which must exist in the schema and use a string field type, i.e., one that is or extends `StrField`.
 
 .Atomic Updates won't work if dynamic sub-fields are stored
 [NOTE]
 ====
-As noted on <<updating-parts-of-documents.adoc#field-storage,Updating Parts of Documents>>, stored dynamic sub-fields will cause indexing to fail when you use Atomic Updates. To avoid this problem, specify `stored="false"` on those dynamic fields.
+As noted in <<partial-document-updates.adoc#field-storage,Atomic Update Field Storage>>, stored dynamic sub-fields will cause indexing to fail when you use Atomic Updates.
+To avoid this problem, specify `stored="false"` on those dynamic fields.
 ====
 
 == Exchange Rates
 
-You configure exchange rates by specifying a provider. Natively, two provider types are supported: `FileExchangeRateProvider` or `OpenExchangeRatesOrgProvider`.
+You configure exchange rates by specifying a provider.
+Natively, two provider types are supported: `FileExchangeRateProvider` or `OpenExchangeRatesOrgProvider`.
 
 === FileExchangeRateProvider
 
-This provider requires you to provide a file of exchange rates. It is the default, meaning that to use this provider you only need to specify the file path and name as a value for `currencyConfig` in the definition for this type.
+This provider requires you to provide a file of exchange rates.
+It is the default, meaning that to use this provider you only need to specify the file path and name as a value for `currencyConfig` in the definition for this type.
 
-There is a sample `currency.xml` file included with Solr, found in the same directory as the `schema.xml` file. Here is a small snippet from this file:
+There is a sample `currency.xml` file included with Solr, found in the same directory as the `schema.xml` file.
+Here is a small snippet from this file:
 
 [source,xml]
 ----
@@ -110,9 +122,11 @@ There is a sample `currency.xml` file included with Solr, found in the same dire
 
 === OpenExchangeRatesOrgProvider
 
-You can configure Solr to download exchange rates from http://www.OpenExchangeRates.Org[OpenExchangeRates.Org], with updates rates between USD and 170 currencies hourly. These rates are symmetrical only.
+You can configure Solr to download exchange rates from http://www.OpenExchangeRates.Org[OpenExchangeRates.Org], with updates rates between USD and 170 currencies hourly.
+These rates are symmetrical only.
 
-In this case, you need to specify the `providerClass` in the definitions for the field type and sign up for an API key. Here is an example:
+In this case, you need to specify the `providerClass` in the definitions for the field type and sign up for an API key.
+Here is an example:
 
 [source,xml]
 ----
@@ -123,4 +137,5 @@ In this case, you need to specify the `providerClass` in the definitions for the
            ratesFileLocation="http://www.openexchangerates.org/api/latest.json?app_id=yourPersonalAppIdKey"/>
 ----
 
-The `refreshInterval` is minutes, so the above example will download the newest rates every 60 minutes. The refresh interval may be increased, but not decreased.
+The `refreshInterval` is minutes, so the above example will download the newest rates every 60 minutes.
+The refresh interval may be increased, but not decreased.

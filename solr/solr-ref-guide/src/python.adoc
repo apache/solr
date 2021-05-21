@@ -1,4 +1,4 @@
-= Using Python
+= Python
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -20,14 +20,16 @@ Solr includes an output format specifically for <<response-writers.adoc#python-r
 
 == Simple Python
 
-Making a query is a simple matter. First, tell Python you will need to make HTTP connections.
+Making a query is a simple matter.
+First, tell Python you will need to make HTTP connections.
 
 [source,python]
 ----
 from urllib2 import *
 ----
 
-Now open a connection to the server and get a response. The `wt` query parameter tells Solr to return results in a format that Python can understand.
+Now open a connection to the server and get a response.
+The `wt` query parameter tells Solr to return results in a format that Python can understand.
 
 [source,python]
 ----
@@ -51,7 +53,8 @@ for document in response['response']['docs']:
 
 JSON is a more robust response format, and Python has support for it in its standard library since version 2.6.
 
-Making a query is nearly the same as before. However, notice that the `wt` query parameter is now `json` (which is also the default if no `wt` parameter is specified), and the response is now digested by `json.load()`.
+Making a query is nearly the same as before.
+However, notice that the `wt` query parameter is now `json` (which is also the default if no `wt` parameter is specified), and the response is now digested by `json.load()`.
 
 [source,python]
 ----

@@ -142,7 +142,7 @@ here are sections throughout the Guide describing each screen of the Admin UI:
 // tag::ui-collection-tools[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<running-your-analyzer.adoc#,Analysis Screen>>: Test and validation tool for field type analyzers.
+| <<analysis-screen.adoc#,Analysis Screen>>: Test and validation tool for field type analyzers.
 | <<documents-screen.adoc#,Documents Screen>>: Form-based document updates using the Admin UI.
 | <<configuration-files.adoc#files-screen,Files Screen>>: Browse current configuration files such as `solrconfig.xml`.
 | <<query-screen.adoc#,Query Screen>>: Form-based query builder.

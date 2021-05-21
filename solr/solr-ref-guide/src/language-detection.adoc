@@ -1,4 +1,4 @@
-= Detecting Languages During Indexing
+= Language Detection
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -24,7 +24,8 @@ Solr supports three implementations of this feature:
 * LangDetect language detection: https://github.com/shuyo/language-detection
 * OpenNLP language detection: http://opennlp.apache.org/docs/{ivy-opennlp-version}/manual/opennlp.html#tools.langdetect
 
-You can see a comparison between the Tika and LangDetect implementations here: http://blog.mikemccandless.com/2011/10/accuracy-and-performance-of-googles.html. In general, the LangDetect implementation supports more languages with higher performance.
+You can see a comparison between the Tika and LangDetect implementations here: http://blog.mikemccandless.com/2011/10/accuracy-and-performance-of-googles.html.
+In general, the LangDetect implementation supports more languages with higher performance.
 
 For specific information on each of these language identification implementations, including a list of supported languages for each, see the relevant project websites.
 
@@ -32,7 +33,8 @@ For more information about language analysis in Solr, see <<language-analysis.ad
 
 == Configuring Language Detection
 
-You can configure the `langid` UpdateRequestProcessor in `solrconfig.xml`. Both implementations take the same parameters, which are described in the following section. At a minimum, you must specify the fields for language identification and a field for the resulting language code.
+You can configure the `langid` UpdateRequestProcessor in `solrconfig.xml`. Both implementations take the same parameters, which are described in the following section.
+At a minimum, you must specify the fields for language identification and a field for the resulting language code.
 
 === Configuring Tika Language Detection
 
@@ -80,7 +82,11 @@ Here is an example of a minimal OpenNLP `langid` configuration in `solrconfig.xm
 ==== OpenNLP-specific Parameters
 
 `langid.model`::
-An OpenNLP language detection model. The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/{ivy-opennlp-version}/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required.  See <<resource-loading.adoc#,Resource Loading>> for information on where to put the model.
+An OpenNLP language detection model.
++
+The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/{ivy-opennlp-version}/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required.
++
+See <<resource-loading.adoc#,Resource Loading>> for information on where to put the model.
 
 ==== OpenNLP Language Codes
 
@@ -97,13 +103,16 @@ When `true`, the default, enables language detection.
 A comma- or space-delimited list of fields to be processed by `langid`. This parameter is required.
 
 `langid.langField`::
-Specifies the field for the returned language code. This parameter is required.
+Specifies the field for the returned language code.
+This parameter is required.
 
 `langid.langsField`::
-Specifies the field for a list of returned language codes. If you use `langid.map.individual`, each detected language will be added to this field.
+Specifies the field for a list of returned language codes.
+If you use `langid.map.individual`, each detected language will be added to this field.
 
 `langid.overwrite`::
-Specifies whether the content of the `langField` and `langsField` fields will be overwritten if they already contain values. The default is `false`.
+Specifies whether the content of the `langField` and `langsField` fields will be overwritten if they already contain values.
+The default is `false`.
 
 `langid.lcmap`::
 A space-separated list specifying colon delimited language code mappings to apply to the detected languages.
@@ -115,24 +124,30 @@ This affects both the values put into the `langField` and `langsField` fields, a
 `langid.threshold`::
 Specifies a threshold value between 0 and 1 that the language identification score must reach before `langid` accepts it.
 +
-With longer text fields, a high threshold such as `0.8` will give good results. For shorter text fields, you may need to lower the threshold for language identification, though you will be risking somewhat lower quality results. We recommend experimenting with your data to tune your results.
+With longer text fields, a high threshold such as `0.8` will give good results.
+For shorter text fields, you may need to lower the threshold for language identification, though you will be risking somewhat lower quality results.
+We recommend experimenting with your data to tune your results.
 +
 The default is `0.5`.
 
 `langid.whitelist`::
-Specifies a list of allowed language identification codes. Use this in combination with `langid.map` to ensure that you only index documents into fields that are in your schema.
+Specifies a list of allowed language identification codes.
+Use this in combination with `langid.map` to ensure that you only index documents into fields that are in your schema.
 
 `langid.map`::
-Enables field name mapping. If `true`, Solr will map field names for all fields listed in `langid.fl`. The default is `false`.
+Enables field name mapping.
+If `true`, Solr will map field names for all fields listed in `langid.fl`. The default is `false`.
 
 `langid.map.fl`::
 A comma-separated list of fields for `langid.map` that is different than the fields specified in `langid.fl`.
 
 `langid.map.keepOrig`::
-If `true`, Solr will copy the field during the field name mapping process, leaving the original field in place. The default is `false`.
+If `true`, Solr will copy the field during the field name mapping process, leaving the original field in place.
+The default is `false`.
 
 `langid.map.individual`::
-If `true`, Solr will detect and map languages for each field individually. The default is `false`.
+If `true`, Solr will detect and map languages for each field individually.
+The default is `false`.
 
 `langid.map.individual.fl`::
 A comma-separated list of fields for use with `langid.map.individual` that is different than the fields specified in `langid.fl`.
@@ -159,6 +174,7 @@ By default, fields are mapped as <field>_<language>. To change this pattern, you
 By default, fields are mapped as `<field>_<language>`. To change this pattern, you can specify a Java replace in this parameter.
 
 `langid.enforceSchema`::
-If `false`, the `langid` processor does not validate field names against your schema. This may be useful if you plan to rename or delete fields later in the UpdateChain.
+If `false`, the `langid` processor does not validate field names against your schema.
+This may be useful if you plan to rename or delete fields later in the UpdateChain.
 +
 The default is `true`.

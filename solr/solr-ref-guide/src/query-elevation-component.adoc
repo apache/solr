@@ -165,7 +165,7 @@ You can force set `useConfiguredElevatedOrder` during runtime by supplying it as
 
 === Document Transformers and the markExcludes Parameter
 
-The `[elevated]` <<transforming-result-documents.adoc#,Document Transformer>> can be used to annotate each document with information about whether or not it was elevated:
+The `[elevated]` <<document-transformers.adoc#,Document Transformer>> can be used to annotate each document with information about whether or not it was elevated:
 
 [source,text]
 http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&fl=id,[elevated]

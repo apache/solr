@@ -83,7 +83,7 @@ The LTR contrib module includes several feature classes as well as support for c
 
 ==== Feature Extraction
 
-The ltr contrib module includes a <<transforming-result-documents.adoc#,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
+The ltr contrib module includes a <<document-transformers.adoc#,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
 
 ==== Feature Selection and Model Training
 

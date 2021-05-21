@@ -17,7 +17,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-A collection alias is a virtual collection which Solr treats the same as a normal collection. The alias collection may point to one or more real collections.
+A collection alias is a virtual collection which Solr treats the same as a normal collection.
+The alias collection may point to one or more real collections.
 
 Some use cases for collection aliasing:
 
@@ -30,56 +31,52 @@ Some use cases for collection aliasing:
 The `CREATEALIAS` action will create a new alias pointing to one or more collections.
 Aliases come in 2 flavors: standard and routed.
 
-*Standard aliases* are simple:  CREATEALIAS registers the alias name with the names of one or more collections provided
-  by the command.
+*Standard aliases* are simple: `CREATEALIAS` registers the alias name with the names of one or more collections provided by the command.
 If an existing alias exists, it is replaced/updated.
-A standard alias can serve as a means to rename a collection, and can be used to atomically swap
-which backing/underlying collection is "live" for various purposes.
-When Solr searches an alias pointing to multiple collections, Solr will search all shards of all the collections as an
-  aggregated whole.
-While it is possible to send updates to an alias spanning multiple collections, standard aliases have no logic for
-  distributing documents among the referenced collections so all updates will go to the first collection in the list.
+
+A standard alias can serve as a means to rename a collection, and can be used to atomically swap which backing/underlying collection is "live" for various purposes.
+
+When Solr searches an alias pointing to multiple collections, Solr will search all shards of all the collections as an aggregated whole.
+While it is possible to send updates to an alias spanning multiple collections, standard aliases have no logic for distributing documents among the referenced collections so all updates will go to the first collection in the list.
 
 `/admin/collections?action=CREATEALIAS&name=_name_&collections=_collectionlist_`
 
-*Routed aliases* are aliases with additional capabilities to act as a kind of super-collection that route
-  updates to the correct collection. Routing is data driven and may be based on a temporal field or on categories
-  specified in a field (normally string based).
-See <<aliases.adoc#routed-aliases,Routed Aliases>> for some important high-level information
-  before getting started.
+*Routed aliases* are aliases with additional capabilities to act as a kind of super-collection that route updates to the correct collection.
+
+Routing is data driven and may be based on a temporal field or on categories   specified in a field (normally string based).
+See <<aliases.adoc#routed-aliases,Routed Aliases>> for some important high-level information before getting started.
 
 [source,text]
 ----
-localhost:8983/solr/admin/collections?action=CREATEALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+$ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
 ----
 
-If run on Jan 15, 2018, the above will create an time routed alias named timedata, that contains collections with names prefixed
-with `timedata` and an initial collection named `timedata_2018_01_15` will be created immediately. Updates sent to this
-alias with a (required) value in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60
-minutes of 2018-01-15. After 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted.
-As soon as the system receives a document for an allowable time window for which there is no collection it will
-automatically create the next required collection (and potentially any intervening collections if `router.interval` is
-smaller than `router.maxFutureMs`). Both the initial collection and any subsequent collections will be created using
-the specified configset. All collection creation parameters other than `name` are allowed, prefixed
+If run on Jan 15, 2018, the above will create an time routed alias named timedata, that contains collections with names prefixed with `timedata` and an initial collection named `timedata_2018_01_15` will be created immediately.
+Updates sent to this alias with a (required) value in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60 minutes of 2018-01-15.
+After 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted.
+As soon as the system receives a document for an allowable time window for which there is no collection it will automatically create the next required collection (and potentially any intervening collections if `router.interval` is
+smaller than `router.maxFutureMs`).
+Both the initial collection and any subsequent collections will be created using
+the specified configset.
+All collection creation parameters other than `name` are allowed, prefixed
 by `create-collection.`
 
-This means that one could, for example, partition their collections by day, and within each daily collection route
-the data to shards based on customer id. Such shards can be of any type (NRT, PULL or TLOG), and rule-based replica
+This means that one could, for example, partition their collections by day, and within each daily collection route the data to shards based on customer id.
+Such shards can be of any type (NRT, PULL or TLOG), and rule-based replica
 placement strategies may also be used.
 
 The values supplied in this command for collection creation will be retained
 in alias properties, and can be verified by inspecting `aliases.json` in ZooKeeper.
 
-NOTE: Presently only updates are routed and queries are distributed to all collections in the alias, but future
-features may enable routing of the query to the single appropriate collection based on a special parameter or perhaps
-a filter on the routed field.
+NOTE: Only updates are routed and queries are distributed to all collections in the alias.
 
 === CREATEALIAS Parameters
 
 `name`::
-The alias name to be created. This parameter is required. If the alias is to be routed it also functions
-as a prefix for the names of the dependent collections that will be created. It must therefore adhere to normal
-requirements for collection naming.
+The alias name to be created.
+This parameter is required.
+If the alias is to be routed it also functions as a prefix for the names of the dependent collections that will be created.
+It must therefore adhere to normal requirements for collection naming.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -87,85 +84,84 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 ==== Standard Alias Parameters
 
 `collections`::
-A comma-separated list of collections to be aliased. The collections must already exist in the cluster.
-This parameter signals the creation of a standard alias. If it is present all routing parameters are
-prohibited. If routing parameters are present this parameter is prohibited.
+A comma-separated list of collections to be aliased.
+The collections must already exist in the cluster.
+This parameter signals the creation of a standard alias.
+If it is present all routing parameters are prohibited.
+If routing parameters are present this parameter is prohibited.
 
 ==== Routed Alias Parameters
 
 Most routed alias parameters become _alias properties_ that can subsequently be inspected and <<aliasprop,modified>>.
 
 `router.name`::
-The type of routing to use. Presently only `time` and `category` and `Dimensional[]` are valid.
-In the case of a multi dimensional routed alias (A. K. A. "DRA", see <<aliases.adoc#dimensional-routed-aliases,Aliases>>
-documentation), it is required to express all the dimensions in the same order that they will appear in the dimension
-array. The format for a DRA router.name is Dimensional[dim1,dim2] where dim1 and dim2 are valid router.name
-values for each sub-dimension. Note that DRA's are very new, and only 2D DRA's are presently supported. Higher
-numbers of dimensions will be supported soon. See examples below for further clarification on how to configure
-individual dimensions. This parameter is required.
+The type of routing to use.
+Presently only `time` and `category` and `Dimensional[]` are valid.
+In the case of a multi dimensional routed alias (aka "DRA", see <<aliases.adoc#dimensional-routed-aliases,Aliases>>), it is required to express all the dimensions in the same order that they will appear in the dimension
+array.
+The format for a DRA router.name is Dimensional[dim1,dim2] where dim1 and dim2 are valid router.name values for each sub-dimension.
+Note that DRA's are very new, and only 2D DRA's are presently supported.
+Higher numbers of dimensions will be supported soon.
+See examples below for further clarification on how to configure
+individual dimensions.
+This parameter is required.
 
 `router.field`::
 The field to inspect to determine which underlying collection an incoming document should be routed to.
 This field is required on all incoming documents.
 
 `create-collection.*`::
-The `*` wildcard can be replaced with any parameter from the <<collection-management.adoc#create,CREATE>> command except `name`. All other fields
-are identical in requirements and naming except that we insist that the configset be explicitly specified.
+The `*` wildcard can be replaced with any parameter from the <<collection-management.adoc#create,CREATE>> command except `name`.
+All other fields are identical in requirements and naming except that we insist that the configset be explicitly specified.
 The configset must be created beforehand, either uploaded or copied and modified.
 It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
 
 ==== Time Routed Alias Parameters
 
 `router.start`::
-The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW"
-optionally with <<working-with-dates.adoc#date-math,date math>>).
+The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW" optionally with <<date-formatting-math.adoc#date-math,date math>>).
 +
 The first collection created for the alias will be internally named after this value.
-If a document is submitted with an earlier value for router.field then the earliest collection the alias points to then
-it will yield an error since it can't be routed. This date/time MUST NOT have a milliseconds component other than 0.
-Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc. will work
-just fine. This parameter is required.
+If a document is submitted with an earlier value for router.field then the earliest collection the alias points to then it will yield an error since it can't be routed.
+This date/time MUST NOT have a milliseconds component other than 0.
+Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc., will work just fine.
+This parameter is required.
 
 `TZ`::
-The timezone to be used when evaluating any date math in router.start or router.interval. This is equivalent to the
-same parameter supplied to search queries, but understand in this case it's persisted with most of the other parameters
+The timezone to be used when evaluating any date math in router.start or router.interval.
+This is equivalent to the same parameter supplied to search queries, but understand in this case it's persisted with most of the other parameters
 as an alias property.
 +
-If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the
-myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
+If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
 +
 The default timezone is UTC.
 
 `router.interval`::
 A date math expression that will be appended to a timestamp to determine the next collection in the series.
-Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will
-work here.
+Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will work here.
 +
 This parameter is required.
 
 `router.maxFutureMs`::
-The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted
-without error.  If there was no limit, than an erroneous value could trigger many collections to be created.
+The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted without error.
+If there was no limit, than an erroneous value could trigger many collections to be created.
 +
-The default is 10 minutes.
+The default is `600000` or 10 minutes.
 
 `router.preemptiveCreateMath`::
 A date math expression that results in early creation of new collections.
 +
-If a document arrives with a timestamp that is after the end time of the most recent collection minus this
-interval, then the next (and only the next) collection will be created asynchronously. Without this setting, collections are created
-synchronously when required by the document time stamp and thus block the flow of documents until the collection
-is created (possibly several seconds). Preemptive creation reduces these hiccups. If set to enough time (perhaps
-an hour or more) then if there are problems creating a collection, this window of time might be enough to take
-corrective action. However after a successful preemptive creation,  the collection is consuming resources without
-being used, and new documents will tend to be routed through it only to be routed elsewhere. Also, note that
-`router.autoDeleteAge` is currently evaluated relative to the date of a newly created collection, and so you may
-want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
-soon. Note that it has to be possible to subtract the interval specified from a date, so if prepending a
-minus sign creates invalid date math, this will cause an error. Also note that a document that is itself
-destined for a collection that does not exist will still trigger synchronous creation up to that destination collection
-but will not trigger additional async preemptive creation. Only one type of collection creation can happen
-per document.
+If a document arrives with a timestamp that is after the end time of the most recent collection minus this interval, then the next (and only the next) collection will be created asynchronously.
+Without this setting, collections are created synchronously when required by the document time stamp and thus block the flow of documents until the collection is created (possibly several seconds).
+Preemptive creation reduces these hiccups.
+If set to enough time (perhaps an hour or more) then if there are problems creating a collection, this window of time might be enough to take
+corrective action.
+However after a successful preemptive creation, the collection is consuming resources without being used, and new documents will tend to be routed through it only to be routed elsewhere.
+Also, note that `router.autoDeleteAge` is currently evaluated relative to the date of a newly created collection, so you may want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
+soon.
+Note that it has to be possible to subtract the interval specified from a date, so if prepending a minus sign creates invalid date math, this will cause an error.
+Also note that a document that is itself destined for a collection that does not exist will still trigger synchronous creation up to that destination collection but will not trigger additional async preemptive creation.
+Only one type of collection creation can happen per document.
 Example: `90MINUTES`.
 +
 This property is blank by default indicating just-in-time, synchronous creation of new collections.
@@ -173,8 +169,7 @@ This property is blank by default indicating just-in-time, synchronous creation 
 `router.autoDeleteAge`::
 A date math expression that results in the oldest collections getting deleted automatically.
 +
-The date math is relative to the timestamp of a newly created collection (typically close to the current time),
-and thus this must produce an earlier time via rounding and/or subtracting.
+The date math is relative to the timestamp of a newly created collection (typically close to the current time), and thus this must produce an earlier time via rounding and/or subtracting.
 Collections to be deleted must have a time range that is entirely before the computed age.
 Collections are considered for deletion immediately prior to new collections getting created.
 Example: `/DAY-90DAYS`.
@@ -188,14 +183,13 @@ The maximum number of categories allowed for this alias.
 This setting safeguards against the inadvertent creation of an infinite number of collections in the event of bad data.
 
 `router.mustMatch`::
-A regular expression that the value of the field specified by `router.field` must match before a corresponding
-collection will be created. Note that changing this setting after data has been added will not alter the data already
-indexed. Any valid Java regular expression pattern may be specified. This expression is pre-compiled at the start of
-each request so batching of updates is strongly recommended. Overly complex patterns will produce cpu
-or garbage collecting overhead during indexing as determined by the JVM's implementation of regular expressions.
+A regular expression that the value of the field specified by `router.field` must match before a corresponding collection will be created.
+Note that changing this setting after data has been added will not alter the data already indexed.
+Any valid Java regular expression pattern may be specified.
+This expression is pre-compiled at the start of each request so batching of updates is strongly recommended.
+Overly complex patterns will produce CPU or garbage collection overhead during indexing as determined by the JVM's implementation of regular expressions.
 
 ==== Dimensional Routed Alias Parameters
-
 
 `router.#.`::
 This prefix denotes which position in the dimension array is being referred to for purposes of dimension configuration.
@@ -205,8 +199,8 @@ For example in a Dimensional[time,category] router.0.start would be used to set 
 === CREATEALIAS Response
 
 The output will simply be a responseHeader with details of the time it took to process the request.
-To confirm the creation of the alias, you can look in the Solr Admin UI, under the Cloud section and find the
-`aliases.json` file. The initial collection for routed aliases should also be visible in various parts of the admin UI.
+To confirm the creation of the alias, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file.
+The initial collection for routed aliases should also be visible in various parts of the admin UI.
 
 === Examples using CREATEALIAS
 Create an alias named "testalias" and link it to the collections named "foo" and "bar".
@@ -522,7 +516,8 @@ http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
 [[aliasprop]]
 == ALIASPROP: Modify Alias Properties for a Collection
 
-The `ALIASPROP` action modifies the properties (metadata) on an alias. If a key is set with a value that is empty it will be removed.
+The `ALIASPROP` action modifies the properties (metadata) on an alias.
+If a key is set with a value that is empty it will be removed.
 
 [.dynamic-tabs]
 --
@@ -556,14 +551,15 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 --
 
 
-WARNING: This command allows you to revise any property. No alias specific validation is performed.
-         Routed aliases may cease to function, function incorrectly or cause errors if property values
-         are set carelessly.
+WARNING: This command allows you to revise any property.
+No alias specific validation is performed.
+Routed aliases may cease to function, function incorrectly, or cause errors if property values are set carelessly.
 
 === ALIASPROP Parameters
 
 `name`::
-The alias name on which to set properties. This parameter is required.
+The alias name on which to set properties.
+This parameter is required.
 
 `property._name_=_value_` (v1)::
 Set property _name_ to _value_.
@@ -577,8 +573,7 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 === ALIASPROP Response
 
 The output will simply be a responseHeader with details of the time it took to process the request.
-To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and
-find the `aliases.json` file or use the LISTALIASES api command.
+To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file or use the LISTALIASES api command.
 
 [[deletealias]]
 == DELETEALIAS: Delete a Collection Alias
@@ -616,7 +611,8 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 === DELETEALIAS Parameters
 
 `name`::
-The name of the alias to delete. This parameter is required.
+The name of the alias to delete.
+This parameter is required.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -624,5 +620,4 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 === DELETEALIAS Response
 
 The output will simply be a responseHeader with details of the time it took to process the request.
-To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and
-find the `aliases.json` file.
+To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and find the `aliases.json` file.

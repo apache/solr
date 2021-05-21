@@ -1,4 +1,4 @@
-= Updating Parts of Documents
+= Partial Document Updates
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,21 +16,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Once you have indexed the content you need in your Solr index, you will want to start thinking about your strategy for dealing with changes to those documents. Solr supports three approaches to updating documents that have only partially changed.
+Once you have indexed the content you need in your Solr index, you will want to start thinking about your strategy for dealing with changes to those documents.
+Solr supports three approaches to updating documents that have only partially changed.
 
 The first is _<<Atomic Updates,atomic updates>>_. This approach allows changing only one or more fields of a document without having to reindex the entire document.
 
 The second approach is known as _<<In-Place Updates,in-place updates>>_. This approach is similar to atomic updates (is a subset of atomic updates in some sense), but can be used only for updating single valued non-indexed and non-stored docValue-based numeric fields.
 
-The third approach is known as _<<Optimistic Concurrency,optimistic concurrency>>_ or _optimistic locking_. It is a feature of many NoSQL databases, and allows conditional updating a document based on its version. This approach includes semantics and rules for how to deal with version matches or mis-matches.
+The third approach is known as _<<Optimistic Concurrency,optimistic concurrency>>_ or _optimistic locking_. It is a feature of many NoSQL databases, and allows conditional updating a document based on its version.
+This approach includes semantics and rules for how to deal with version matches or mis-matches.
 
 Atomic Updates (and in-place updates) and Optimistic Concurrency may be used as independent strategies for managing changes to documents, or they may be combined: you can use optimistic concurrency to conditionally apply an atomic update.
 
 == Atomic Updates
 
-Solr supports several modifiers that atomically update values of a document. This allows updating only specific fields, which can help speed indexing processes in an environment where speed of index additions is critical to the application.
+Solr supports several modifiers that atomically update values of a document.
+This allows updating only specific fields, which can help speed indexing processes in an environment where speed of index additions is critical to the application.
 
-To use atomic updates, add a modifier to the field that needs to be updated. The content can be updated, added to, or incrementally increased if the field has a numeric type.
+To use atomic updates, add a modifier to the field that needs to be updated.
+The content can be updated, added to, or incrementally increased if the field has a numeric type.
 
 `set`::
 Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
@@ -38,27 +42,38 @@ Set or replace the field value(s) with the specified value(s), or remove the val
 May be specified as a single value, or as a list for multiValued fields.
 
 `add`::
-Adds the specified values to a multiValued field. May be specified as a single value, or as a list.
+Adds the specified values to a multiValued field.
+May be specified as a single value, or as a list.
 
 `add-distinct`::
-Adds the specified values to a multiValued field, only if not already present. May be specified as a single value, or as a list.
+Adds the specified values to a multiValued field, only if not already present.
+May be specified as a single value, or as a list.
 
 `remove`::
-Removes (all occurrences of) the specified values from a multiValued field. May be specified as a single value, or as a list.
+Removes (all occurrences of) the specified values from a multiValued field.
+May be specified as a single value, or as a list.
 
 `removeregex`::
-Removes all occurrences of the specified regex from a multiValued field. May be specified as a single value, or as a list.
+Removes all occurrences of the specified regex from a multiValued field.
+May be specified as a single value, or as a list.
 
 `inc`::
-Increments a numeric value by a specific amount. Must be specified as a single numeric value.
+Increments a numeric value by a specific amount.
+Must be specified as a single numeric value.
 
 === Field Storage
 
-The core functionality of atomically updating a document requires that all fields in your schema must be configured as stored (`stored="true"`) or docValues (`docValues="true"`) except for fields which are `<copyField/>` destinations, which must be configured as `stored="false"`. Atomic updates are applied to the document represented by the existing stored field values. All data in copyField destinations fields must originate from ONLY copyField sources.
+The core functionality of atomically updating a document requires that all fields in your schema must be configured as stored (`stored="true"`) or docValues (`docValues="true"`) except for fields which are `<copyField/>` destinations, which must be configured as `stored="false"`. Atomic updates are applied to the document represented by the existing stored field values.
+All data in copyField destinations fields must originate from ONLY copyField sources.
 
-If `<copyField/>` destinations are configured as stored, then Solr will attempt to index both the current value of the field as well as an additional copy from any source fields. If such fields contain some information that comes from the indexing program and some information that comes from copyField, then the information which originally came from the indexing program will be lost when an atomic update is made.
+If `<copyField/>` destinations are configured as stored, then Solr will attempt to index both the current value of the field as well as an additional copy from any source fields.
+If such fields contain some information that comes from the indexing program and some information that comes from copyField, then the information which originally came from the indexing program will be lost when an atomic update is made.
 
-There are other kinds of derived fields that must also be set so they aren't stored. Some spatial field types, such as BBoxField and LatLonType, use derived fields. CurrencyFieldType also uses derived fields. These types create additional fields which are normally specified by a dynamic field definition. That dynamic field definition must be not stored, or indexing will fail.
+There are other kinds of derived fields that must also be set so they aren't stored.
+Some spatial field types, such as BBoxField and LatLonType, use derived fields.
+CurrencyFieldType also uses derived fields.
+These types create additional fields which are normally specified by a dynamic field definition.
+That dynamic field definition must be not stored, or indexing will fail.
 
 === Example Updating Part of a Document
 
@@ -109,9 +124,11 @@ Solr supports modifying, adding and removing child documents as part of atomic u
 Syntactically, updates changing the children of a document are very similar to regular atomic updates of simple fields, as demonstrated by the examples below.
 
 Schema and configuration requirements for updating child documents use the same
-<<updating-parts-of-documents#field-storage,Field Storage>> requirements for atomic updates mentioned above.
+<<Field Storage>> requirements for atomic updates mentioned above.
 
-Under the hood, Solr conceptually behaves similarly for nested documents as for non-nested documents, it's just that it applies to entire trees (from the root) of nested documents instead of stand-alone documents.  You can expect more overhead because of this.  In-place updates avoid that.
+Under the hood, Solr conceptually behaves similarly for nested documents as for non-nested documents, it's just that it applies to entire trees (from the root) of nested documents instead of stand-alone documents.
+You can expect more overhead because of this.
+In-place updates avoid that.
 
 [IMPORTANT]
 ====
@@ -125,11 +142,14 @@ When sending an update that specifies the `id` of a _child document_ this will n
 Solr offers two solutions to address this:
 
 * Clients may specify a <<shards-and-indexing-data-in-solrcloud#document-routing,`\_route_` parameter>>, with the `id` of the Root document as the parameter value, on each update to tell Solr which shard should process the update.
-* Clients can use the (default) `compositeId` router's "prefix routing" feature when indexing all documents to ensure that all child/descendent documents in a Block use the same `id` prefix as the Root level document.  This will cause Solr's default routing logic to automatically send child document updates to the correct shard.
+* Clients can use the (default) `compositeId` router's "prefix routing" feature when indexing all documents to ensure that all child/descendent documents in a Block use the same `id` prefix as the Root level document.
+This will cause Solr's default routing logic to automatically send child document updates to the correct shard.
 
 Furthermore, you _should_ (sometimes _must_) specify the Root document's ID in the `\_root_`
-field of this partial update.  This is how Solr understands that you are updating a child
-document, and not a Root document.  Without it, Solr only guesses that the `\_route_` param is
+field of this partial update.
+This is how Solr understands that you are updating a child
+document, and not a Root document.
+Without it, Solr only guesses that the `\_route_` param is
 equivalent, but it may be absent or not equivalent (e.g., when using the `implicit` router).
 
 All of the examples below use `id` prefixes, so no `\_route_` param will be necessary for these examples.
@@ -211,7 +231,10 @@ curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H '
 
 == In-Place Updates
 
-In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is reindexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences in efficiency, there is no functional difference between atomic updates and in-place updates.
+In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates.
+In regular atomic updates, the entire document is reindexed internally during the application of the update.
+However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally.
+Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences in efficiency, there is no functional difference between atomic updates and in-place updates.
 
 An atomic update operation is performed using this In-Place approach only when the fields to be updated meet these three conditions:
 
@@ -219,19 +242,22 @@ An atomic update operation is performed using this In-Place approach only when t
 * the `\_version_` field is also a non-indexed, non-stored single valued docValues field; and,
 * copy targets of updated fields, if any, are also non-indexed, non-stored single valued numeric docValues fields.
 
-To use in-place updates, add a modifier to the field that needs to be updated. The content can be updated or incrementally increased.
+To use in-place updates, add a modifier to the field that needs to be updated.
+The content can be updated or incrementally increased.
 
 `set`::
 Set or replace the field value(s) with the specified value(s). May be specified as a single value.
 
 `inc`::
-Increments a numeric value by a specific amount. Must be specified as a single numeric value.
+Increments a numeric value by a specific amount.
+Must be specified as a single numeric value.
 
 [TIP]
 ====
 .Preventing Atomic Updates that can't be done In-Place
 
-Since it can be tricky to ensure that all of the neccessary conditions are satisfied to ensure that an udpate can be don In-Place, Solr supports a request parameter option named `update.partial.requireInPlace`.  When set to `true`, and Atomic Update that can not be don In-Place will fail.  Users can specify this option when they would prefer that an update request "fail fast" if it can't be done In-Place.
+Since it can be tricky to ensure that all of the neccessary conditions are satisfied to ensure that an udpate can be don In-Place, Solr supports a request parameter option named `update.partial.requireInPlace`.  When set to `true`, and Atomic Update that can not be don In-Place will fail.
+Users can specify this option when they would prefer that an update request "fail fast" if it can't be done In-Place.
 
 ====
 
@@ -284,27 +310,36 @@ The resulting document in our collection will be:
 
 == Optimistic Concurrency
 
-Optimistic Concurrency is a feature of Solr that can be used by client applications which update/replace documents to ensure that the document they are replacing/updating has not been concurrently modified by another client application. This feature works by requiring a `\_version_` field on all documents in the index, and comparing that to a `\_version_` specified as part of the update command. By default, Solr's Schema includes a `\_version_` field, and this field is automatically added to each new document.
+Optimistic Concurrency is a feature of Solr that can be used by client applications which update/replace documents to ensure that the document they are replacing/updating has not been concurrently modified by another client application.
+This feature works by requiring a `\_version_` field on all documents in the index, and comparing that to a `\_version_` specified as part of the update command.
+By default, Solr's Schema includes a `\_version_` field, and this field is automatically added to each new document.
 
 In general, using optimistic concurrency involves the following work flow:
 
-. A client reads a document. In Solr, one might retrieve the document with the `/get` handler to be sure to have the latest version.
+. A client reads a document.
+In Solr, one might retrieve the document with the `/get` handler to be sure to have the latest version.
 . A client changes the document locally.
 . The client resubmits the changed document to Solr, for example, perhaps with the `/update` handler.
 . If there is a version conflict (HTTP error code 409), the client starts the process over.
 
-When the client resubmits a changed document to Solr, the `\_version_` can be included with the update to invoke optimistic concurrency control. Specific semantics are used to define when the document should be updated or when to report a conflict.
+When the client resubmits a changed document to Solr, the `\_version_` can be included with the update to invoke optimistic concurrency control.
+Specific semantics are used to define when the document should be updated or when to report a conflict.
 
 * If the content in the `\_version_` field is greater than '1' (i.e., '12345'), then the `\_version_` in the document must match the `\_version_` in the index.
-* If the content in the `\_version_` field is equal to '1', then the document must simply exist. In this case, no version matching occurs, but if the document does not exist, the updates will be rejected.
-* If the content in the `\_version_` field is less than '0' (i.e., '-1'), then the document must *not* exist. In this case, no version matching occurs, but if the document exists, the updates will be rejected.
-* If the content in the `\_version_` field is equal to '0', then it doesn't matter if the versions match or if the document exists or not. If it exists, it will be overwritten; if it does not exist, it will be added.
+* If the content in the `\_version_` field is equal to '1', then the document must simply exist.
+In this case, no version matching occurs, but if the document does not exist, the updates will be rejected.
+* If the content in the `\_version_` field is less than '0' (i.e., '-1'), then the document must *not* exist.
+In this case, no version matching occurs, but if the document exists, the updates will be rejected.
+* If the content in the `\_version_` field is equal to '0', then it doesn't matter if the versions match or if the document exists or not.
+If it exists, it will be overwritten; if it does not exist, it will be added.
 
-When documents are added/updated in batches even a single version conflict may lead to rejecting the entire batch. Use the parameter `failOnVersionConflicts=false` to avoid failure of the entire batch when version  constraints fail for one or more documents in a batch.
+When documents are added/updated in batches even a single version conflict may lead to rejecting the entire batch.
+Use the parameter `failOnVersionConflicts=false` to avoid failure of the entire batch when version  constraints fail for one or more documents in a batch.
 
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
-When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#,`/get` request>>.
+When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response.
+This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#,`/get` request>>.
 
 Following are some examples using `versions=true` in queries:
 
@@ -342,7 +377,8 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
 ----
 
 
-In this example, we've attempted to update document "aaa" but specified the wrong version in the request: `_version_=999999` doesn't match the document version we just got when we added the document. We get an error in response.
+In this example, we've attempted to update document "aaa" but specified the wrong version in the request: `_version_=999999` doesn't match the document version we just got when we added the document.
+We get an error in response.
 
 [source,bash]
 ----
@@ -357,7 +393,8 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "aaa",1632740462042284032]}
 ----
 
-Now we've sent an update with a value for `\_version_` that matches the value in the index, and it succeeds. Because we included `versions=true` to the update request, the response includes a different value for the `\_version_` field.
+Now we've sent an update with a value for `\_version_` that matches the value in the index, and it succeeds.
+Because we included `versions=true` to the update request, the response includes a different value for the `\_version_` field.
 [source,bash]
 ----
 $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' --data-binary '
@@ -375,7 +412,9 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "code":409}}
 ----
 
-Now we've sent an update with a value for `\_version_` embedded in the document itself. this request fails because we have specified the wrong version. This is useful when documents are sent in a batch and different `\_version_` values need to be specified for each doc.
+Now we've sent an update with a value for `\_version_` embedded in the document itself.
+This request fails because we have specified the wrong version.
+This is useful when documents are sent in a batch and different `\_version_` values need to be specified for each doc.
 
 [source,bash]
 ----
@@ -390,7 +429,9 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "aaa",1632741942747987968]}
 ----
 
-Now we've sent an update with a value for `\_version_` embedded in the document itself. this request fails because we have specified the wrong version. This is useful when documents are sent in a batch and different `\_version_` values need to be specified for each doc.
+Now we've sent an update with a value for `\_version_` embedded in the document itself.
+This request fails because we have specified the wrong version.
+This is useful when documents are sent in a batch and different `\_version_` values need to be specified for each doc.
 
 
 [source,bash]
@@ -425,7 +466,9 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "ccc",1632740949182382080]}
 ----
 
-In this example, we have added 2 documents "aaa" and "ccc". As we have specified the parameter `\_version_=-1`, this request should not add the document with the id `aaa` because it already exists. The request succeeds & does not throw any error because the `failOnVersionConflicts=false` parameter is specified. The response shows that only document `ccc` is added and `aaa` is silently ignored.
+In this example, we have added 2 documents "aaa" and "ccc". As we have specified the parameter `\_version_=-1`, this request should not add the document with the id `aaa` because it already exists.
+The request succeeds & does not throw any error because the `failOnVersionConflicts=false` parameter is specified.
+The response shows that only document `ccc` is added and `aaa` is silently ignored.
 
 
 For more information, please also see Yonik Seeley's presentation on https://www.youtube.com/watch?v=WYVM6Wz-XTw[NoSQL features in Solr 4] from Apache Lucene EuroCon 2012.
@@ -451,7 +494,8 @@ Once configured, this update processor will reject (HTTP error code 409) any att
 .versionField vs `\_version_`
 [IMPORTANT]
 ====
-The `\_version_` field used by Solr for its normal optimistic concurrency also has important semantics in how updates are distributed to replicas in SolrCloud, and *MUST* be assigned internally by Solr. Users can not re-purpose that field and specify it as the `versionField` for use in the `DocBasedVersionConstraintsProcessorFactory` configuration.
+The `\_version_` field used by Solr for its normal optimistic concurrency also has important semantics in how updates are distributed to replicas in SolrCloud, and *MUST* be assigned internally by Solr.
+Users can not re-purpose that field and specify it as the `versionField` for use in the `DocBasedVersionConstraintsProcessorFactory` configuration.
 ====
 
 `DocBasedVersionConstraintsProcessorFactory` supports the following additional configuration parameters, which are all optional:

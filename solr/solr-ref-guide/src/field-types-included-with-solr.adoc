@@ -16,7 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The following table lists the field types that are available in Solr and are recommended. The page further down, lists all the deprecated types for those migrating from older version of Solr. The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table.
+The following table lists the field types that are available in Solr and are recommended.
+The page further down, lists all the deprecated types for those migrating from older version of Solr.
+The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table.
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -33,17 +35,17 @@ The following table lists the field types that are available in Solr and are rec
 
 |CollationField |Supports Unicode collation for sorting and range queries. The ICUCollationField is a better choice if you can use ICU4J. See the section <<language-analysis.adoc#unicode-collation,Unicode Collation>> for more information.
 
-|CurrencyFieldType |Supports currencies and exchange rates. See the section <<working-with-currencies-and-exchange-rates.adoc#,Working with Currencies and Exchange Rates>> for more information.
+|CurrencyFieldType |Supports currencies and exchange rates. See the section <<currencies-exchange-rates.adoc#,Currencies and Exchange Rates>> for more information.
 
-|DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section <<working-with-dates.adoc#,Working with Dates>> for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
+|DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section <<date-formatting-math.adoc#,Date Formatting and Date Math>> for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
 
-|DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section <<working-with-dates.adoc#,Working with Dates>> for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
+|DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section <<date-formatting-math.adoc#,Working with Dates>> for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |DoublePointField |Double field (64-bit IEEE floating point). This class encodes double values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|ExternalFileField |Pulls values from a file on disk. See the section <<working-with-external-files-and-processes.adoc#,Working with External Files and Processes>> for more information.
+|ExternalFileField |Pulls values from a file on disk. See the section <<external-files-processes.adoc#,External Files and Processes>> for more information.
 
-|EnumFieldType |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section <<working-with-enum-fields.adoc#,Working with Enum Fields>> for more information.
+|EnumFieldType |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section <<enum-fields.adoc#,Enum Fields>> for more information.
 
 |FloatPointField |Floating point field (32-bit IEEE floating point). This class encodes float values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
@@ -61,7 +63,7 @@ The following table lists the field types that are available in Solr and are rec
 
 |PreAnalyzedField |Provides a way to send to Solr serialized token streams, optionally with independent stored values of a field, and have this information stored and indexed without any additional text processing.
 
-Configuration and usage of PreAnalyzedField is documented in the section  <<working-with-external-files-and-processes.adoc#the-preanalyzedfield-type,Working with External Files and Processes>>.
+Configuration and usage of PreAnalyzedField is documented in the section  <<external-files-processes.adoc#the-preanalyzedfield-type,The PreAnalyzedField Type>>.
 
 |RandomSortField |Does not contain a value. Queries that sort on this field type will return results in random order. Use a dynamic field to use this feature.
 
@@ -85,9 +87,9 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 == Deprecated Field Types
 
 NOTE: All Trie* numeric and date field types have been deprecated in favor of *Point field types.
-      Point field types are better at range queries (speed, memory, disk), however simple field:value queries underperform
-      relative to Trie. Either accept this, or continue to use Trie fields.
-      This shortcoming may be addressed in a future release.
+Point field types are better at range queries (speed, memory, disk), however simple field:value queries underperform relative to Trie.
+Either accept this, or continue to use Trie fields.
+This shortcoming may be addressed in a future release.
 
 [cols="25,75",options="header"]
 |===

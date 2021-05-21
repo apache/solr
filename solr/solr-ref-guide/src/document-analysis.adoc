@@ -5,7 +5,7 @@
     charfilterfactories, \
     language-analysis, \
     phonetic-matching, \
-    running-your-analyzer
+    analysis-screen
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -50,12 +50,12 @@ It also serves as a guide so that you can configure your own analysis classes if
 // tag::analysis-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<analyzers.adoc#,Analyzers>>: Detailed conceptual information about Solr analyzers.
-| <<tokenizers.adoc#,Tokenizers>>: Information about configuring tokenizers, and about the tokenizer factory classes included in this distribution of Solr.
-| <<filters.adoc#,Filters>>: Information about configuring filters, and about the filter factory classes included in this distribution of Solr.
-| <<charfilterfactories.adoc#,CharFilterFactories>>: Information about filters for pre-processing input characters.
-| <<language-analysis.adoc#,Language Analysis>>: Information about tokenizers and filters for character set conversion or for use with specific languages.
-| <<running-your-analyzer.adoc#,Running Your Analyzer>>: Detailed information about testing and running your Solr analyzer.
+| <<analyzers.adoc#,Analyzers>>: Overview of Solr analyzers.
+| <<tokenizers.adoc#,Tokenizers>>: Tokenizers and tokenizer factory classes.
+| <<filters.adoc#,Filters>>: Filters and filter factory classes.
+| <<charfilterfactories.adoc#,CharFilterFactories>>: Filters for pre-processing input characters.
+| <<language-analysis.adoc#,Language Analysis>>: Tokenizers and filters for character set conversion or for use with specific languages.
+| <<analysis-screen.adoc#,Analysis Screen>>: Admin UI screen for testing and running your field analysis.
 |===
 // end::analysis-sections[]
 ****

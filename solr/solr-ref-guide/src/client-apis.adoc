@@ -1,5 +1,8 @@
 = Client APIs
-:page-children: introduction-to-client-apis, choosing-an-output-format, using-solrj, using-javascript, using-python, using-solr-from-ruby, client-api-lineup
+:page-children: solrj, \
+  javascript, \
+  python, \
+  ruby
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,24 +20,54 @@
 // specific language governing permissions and limitations
 // under the License.
 
-[.lead]
-This section covers available client APIs for Solr.
+At its heart, Solr is a Web application, but because it is built on open protocols, any type of client application can use Solr.
 
-It covers the following topics:
+Solr offers documentation on the following client integrations:
 
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::client-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<introduction-to-client-apis.adoc#,Introduction to Client APIs>>: A conceptual overview of Solr client APIs.
-| <<choosing-an-output-format.adoc#,Choosing an Output Format>>: How Solr formats responses to requests.
-| <<using-solrj.adoc#,Using SolrJ>>: SolrJ, an API for working with Java applications.
-| <<using-javascript.adoc#,Using JavaScript>>: JavaScript clients.
-| <<using-python.adoc#,Using Python>>: Python and JSON responses.
-| <<using-solr-from-ruby.adoc#,Using Solr From Ruby>>: Solr with Ruby applications.
-| <<client-api-lineup.adoc#,Other Clients>>: Links to 3rd-party client libraries.
-|
+| <<solrj.adoc#,SolrJ>>: SolrJ, an API for working with Java applications.
+| <<javascript.adoc#,JavaScript>>: JavaScript clients.
+| <<python.adoc#,Python>>: Python and JSON responses.
+| <<ruby.adoc#,Ruby>>: Solr with Ruby applications.
 |===
 //end::client-sections[]
 ****
+
+The Solr Wiki contains a list of client APIs at https://cwiki.apache.org/confluence/display/solr/IntegratingSolr.
+
+== Introduction to Client APIs
+
+HTTP is the fundamental protocol used between client applications and Solr.
+The client makes a request and Solr does some work and provides a response.
+Clients use requests to ask Solr to do things like perform queries or index documents.
+
+Client applications can reach Solr by creating HTTP requests and parsing the HTTP responses.
+Client APIs encapsulate much of the work of sending requests and parsing responses, which makes it much easier to write client applications.
+
+Clients use Solr's five fundamental operations to work with Solr.
+The operations are query, index, delete, commit, and optimize.
+
+Queries are executed by creating a URL that contains all the query parameters.
+Solr examines the request URL, performs the query, and returns the results.
+The other operations are similar, although in certain cases the HTTP request is a POST operation and contains information beyond whatever is included in the request URL.
+An index operation, for example, may contain a document in the body of the request.
+
+Solr also features an EmbeddedSolrServer that offers a Java API without requiring an HTTP connection.
+For details, see <<solrj.adoc#,SolrJ>>.
+
+
+== Choosing an Output Format
+
+Many programming environments are able to send HTTP requests and retrieve responses.
+Parsing the responses is a slightly more thorny problem.
+Fortunately, Solr makes it easy to choose an output format that will be easy to handle on the client side.
+
+Specify a response format using the `wt` parameter in a query.
+The available response formats are documented in <<response-writers.adoc#,Response Writers>>.
+
+Most client APIs hide this detail for you, so for many types of client applications, you won't ever have to specify a `wt` parameter.
+In JavaScript, however, the interface to Solr is a little closer to the metal, so you will need to add this parameter yourself.

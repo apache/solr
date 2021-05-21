@@ -235,9 +235,9 @@ The default value for this parameter is `filter`.
 .Date Ranges & Time Zones
 [NOTE]
 ====
-Range faceting on date fields is a common situation where the <<working-with-dates.adoc#tz,`TZ`>> parameter can be useful to ensure that the "facet counts per day" or "facet counts per month" are based on a meaningful definition of when a given day/month "starts" relative to a particular TimeZone.
+Range faceting on date fields is a common situation where the <<date-formatting-math.adoc#tz,`TZ`>> parameter can be useful to ensure that the "facet counts per day" or "facet counts per month" are based on a meaningful definition of when a given day/month "starts" relative to a particular TimeZone.
 
-For more information, see the examples in the <<working-with-dates.adoc#,Working with Dates>> section.
+For more information, see the examples in the <<date-formatting-math.adoc#,Working with Dates>> section.
 ====
 
 === facet.mincount in Range Faceting

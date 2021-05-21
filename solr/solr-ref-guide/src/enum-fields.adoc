@@ -1,4 +1,4 @@
-= Working with Enum Fields
+= Enum Fields
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-EnumFieldType allows defining a field whose values are a closed set, and the sort order is pre-determined but is not alphabetic nor numeric. Examples of this are severity lists, or risk definitions.
+The EnumFieldType allows defining a field whose values are a closed set, and the sort order is pre-determined but is not alphabetic nor numeric.
+Examples of this are severity lists, or risk definitions.
 
 .EnumField has been Deprecated
 [WARNING]
@@ -36,7 +37,8 @@ The EnumFieldType type definition is quite simple, as in this example defining f
 
 Besides the `name` and the `class`, which are common to all field types, this type also takes two additional parameters:
 
-`enumsConfig`:: the name of a configuration file that contains the `<enum/>` list of field values and their order that you wish to use with this field type. If a path to the file is not defined specified, the file should be in the `conf` directory for the collection.
+`enumsConfig`:: the name of a configuration file that contains the `<enum/>` list of field values and their order that you wish to use with this field type.
+If a path to the file is not defined specified, the file should be in the `conf` directory for the collection.
 `enumName`:: the name of the specific enumeration in the `enumsConfig` file to use for this type.
 
 Note that `docValues="true"` must be specified either in the EnumFieldType fieldType or field specification.
@@ -45,7 +47,8 @@ Note that `docValues="true"` must be specified either in the EnumFieldType field
 
 The file named with the `enumsConfig` parameter can contain multiple enumeration value lists with different names if there are multiple uses for enumerations in your Solr schema.
 
-In this example, there are two value lists defined. Each list is between `enum` opening and closing tags:
+In this example, there are two value lists defined.
+Each list is between `enum` opening and closing tags:
 
 [source,xml]
 ----

@@ -5,8 +5,8 @@
     jvm-settings, \
     upgrading-a-solr-cluster, \
     backup-restore, \
-    running-solr-in-docker, \
-    running-solr-on-hdfs
+    solr-in-docker, \
+    solr-on-hdfs
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -38,8 +38,8 @@ This section covers system requirements, installation, upgrades, and deployments
 | <<jvm-settings.adoc#,JVM Settings>>: Java Virtual Machines best practices
 | <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>: SolrCloud cluster upgrades.
 | <<backup-restore.adoc#,Backup and Restore>>: Solr backup strategies.
-| <<running-solr-in-docker#,Running Solr in Docker>>: Solr's Docker image. 
-| <<running-solr-on-hdfs.adoc#,Running Solr on HDFS>>: Store Solr indexes and transaction logs in HDFS.
+| <<solr-in-docker#,Running Solr in Docker>>: Solr's Docker image.
+| <<solr-on-hdfs.adoc#,Running Solr on HDFS>>: Store Solr indexes and transaction logs in HDFS.
 |===
 // end::install-sections[]
 ****

@@ -56,7 +56,8 @@ When the new core is ready, it will take new requests and the old core will be u
 
 `admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data`
 
-Note that this command is the only one of the Core Admin API commands that *does not* support the `core` parameter. Instead, the `name` parameter is required, as shown below.
+Note that this command is the only one of the Core Admin API commands that *does not* support the `core` parameter.
+Instead, the `name` parameter is required, as shown below.
 
 Note that CREATE must be able to find a configuration or it will not succeed.
 
@@ -83,7 +84,9 @@ The `core.properties` file must NOT exist before calling the CoreAdmin API with 
 === CREATE Core Parameters
 
 `name`::
-The name of the new core. Same as `name` on the `<core>` element. This parameter is required.
+The name of the new core.
+Same as `name` on the `<core>` element.
+This parameter is required.
 
 `instanceDir`::
 The directory where files for this core should be stored.
@@ -109,7 +112,8 @@ For more information, see the section <<config-sets.adoc#,Configsets>>.
 
 `collection`::
 The name of the collection to which this core belongs.
-The default is the name of the core. `collection._param_=_value_` causes a property of `_param_=_value_` to be set if a new collection is being created.
+The default is the name of the core.
+`collection._param_=_value_` causes a property of `_param_=_value_` to be set if a new collection is being created.
 Use `collection.configName=_config-name_` to point to the configuration for a new collection.
 +
 WARNING: While it's possible to create a core for a non-existent collection, this approach is not supported and not recommended.
@@ -155,7 +159,8 @@ Some configuration options, such as the `dataDir` location and `IndexWriter`-rel
 === RELOAD Core Parameters
 
 `core`::
-The name of the core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required.
+The name of the core, as listed in the "name" attribute of a `<core>` element in `solr.xml`.
+This parameter is required.
 
 [[coreadmin-rename]]
 == RENAME

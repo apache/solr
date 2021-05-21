@@ -57,7 +57,7 @@ Most non-text field types in the Solr sample configsets now default to using <<d
 
 == Java 8 Required
 
-The minimum supported version of Java for Solr 6 (and the <<using-solrj.adoc#,SolrJ client libraries>>) is now Java 8.
+The minimum supported version of Java for Solr 6 (and the <<solrj.adoc#,SolrJ client libraries>>) is now Java 8.
 
 == Index Format Changes
 

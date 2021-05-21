@@ -225,7 +225,7 @@ Then go to `+http://localhost:8983/solr/#/~cloud+` (adjust the hostname for your
 
 == How can I run ZooKeeper and Solr with Docker Compose?
 
-See the <<running-solr-in-docker.adoc#docker-compose,docker compose example>>.
+See the <<solr-in-docker.adoc#docker-compose,docker compose example>>.
 
 == How can I get rid of "shared memory" warnings on Solr startup?
 

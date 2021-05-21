@@ -49,7 +49,7 @@ start, rows::
 `start` is the offset into the query result starting at which documents should be returned. The default value is 0, meaning that the query should return results starting with the first document that matches. This field accepts the same syntax as the start query parameter, which is described in <<query-guide.adoc#,Query Guide>>. `rows` is the number of rows to return.
 
 fl::
-Defines the fields to return for each document. You can explicitly list the stored fields, <<function-queries.adoc#,functions>>, and <<transforming-result-documents.adoc#,doc transformers>> you want to have returned by separating them with either a comma or a space.
+Defines the fields to return for each document. You can explicitly list the stored fields, <<function-queries.adoc#,functions>>, and <<document-transformers.adoc#,doc transformers>> you want to have returned by separating them with either a comma or a space.
 
 wt::
 Specifies the Response Writer to be used to format the query response. Defaults to JSON if not specified.

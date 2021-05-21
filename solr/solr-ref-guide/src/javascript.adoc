@@ -1,4 +1,4 @@
-= Choosing an Output Format
+= JavaScript
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,8 +16,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Many programming environments are able to send HTTP requests and retrieve responses. Parsing the responses is a slightly more thorny problem. Fortunately, Solr makes it easy to choose an output format that will be easy to handle on the client side.
+Using Solr from JavaScript clients is so straightforward that it deserves a special mention.
+In fact, it is so straightforward that there is no client API.
+You don't need to install any packages or configure anything.
 
-Specify a response format using the `wt` parameter in a query. The available response formats are documented in <<response-writers.adoc#,Response Writers>>.
+HTTP requests can be sent to Solr using the standard `XMLHttpRequest` mechanism.
 
-Most client APIs hide this detail for you, so for many types of client applications, you won't ever have to specify a `wt` parameter. In JavaScript, however, the interface to Solr is a little closer to the metal, so you will need to add this parameter yourself.
+By default, Solr sends <<response-writers.adoc#json-response-writer,JavaScript Object Notation (JSON) responses>>, which are easily interpreted in JavaScript.
+You don't need to add anything to the request URL to have responses sent as JSON.
+
+For more information and an excellent example, take a look at the SolJSON page on the Solr Wiki:
+
+https://cwiki.apache.org/confluence/display/solr/SolJSON#SolJSON-UsingSolr'sJSONoutputforAJAX

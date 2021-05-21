@@ -31,7 +31,8 @@ This keystore will also be used as a truststore below.
 It's possible to use the keystore that comes with the JDK for these purposes, and to use a separate truststore, but those options aren't covered here.
 
 Run the commands below in the `server/etc/` directory in the binary Solr distribution.
-It's assumed that you have the JDK `keytool` utility on your `PATH`, and that `openssl` is also on your `PATH`. See https://www.openssl.org/related/binaries.html for OpenSSL binaries for Windows and Solaris.
+It's assumed that you have the JDK `keytool` utility on your `PATH`, and that `openssl` is also on your `PATH`.
+See https://www.openssl.org/related/binaries.html for OpenSSL binaries for Windows and Solaris.
 
 The `-ext SAN=...` `keytool` option allows you to specify all the DNS names and/or IP addresses that will be allowed during hostname verification if you choose to require it.
 
@@ -120,7 +121,9 @@ set SOLR_SSL_CHECK_PEER_NAME=true
 --
 
 .Client Authentication Settings
-WARNING: Enable either `SOLR_SSL_NEED_CLIENT_AUTH` or `SOLR_SSL_WANT_CLIENT_AUTH` but not both at the same time. They are mutually exclusive and Jetty will select one of them which may not be what you expect. `SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification.
+WARNING: Enable either `SOLR_SSL_NEED_CLIENT_AUTH` or `SOLR_SSL_WANT_CLIENT_AUTH` but not both at the same time.
+They are mutually exclusive and Jetty will select one of them which may not be what you expect.
+`SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification.
 
 When you start Solr, the `bin/solr` script includes these settings and will pass them as system properties to the JVM.
 
@@ -155,7 +158,8 @@ Note that if the `javax.net.ssl.\*` configurations are not set, they will fallba
 Solr requires three parameters to be configured in order to use the credential store file for keystore passwords.
 
 `solr.ssl.credential.provider.chain`::
-The credential provider chain. This should be set to `hadoop`.
+The credential provider chain.
+This should be set to `hadoop`.
 
 `SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH`::
 The path to the credential store file.

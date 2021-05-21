@@ -1,5 +1,11 @@
 = Solr Field Types
-:page-children: field-type-definitions-and-properties, field-types-included-with-solr, working-with-currencies-and-exchange-rates, working-with-dates, working-with-enum-fields, working-with-external-files-and-processes, field-properties-by-use-case
+:page-children: field-type-definitions-and-properties, \
+    field-types-included-with-solr, \
+    currencies-exchange-rates, \
+    date-formatting-math, \
+    enum-fields, \
+    external-files-processes, \
+    field-properties-by-use-case
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -25,13 +31,13 @@ Topics covered in this section:
 
 * <<field-types-included-with-solr.adoc#,Field Types Included with Solr>>
 
-* <<working-with-currencies-and-exchange-rates.adoc#,Working with Currencies and Exchange Rates>>
+* <<currencies-exchange-rates.adoc#,Currencies and Exchange Rates>>
 
-* <<working-with-dates.adoc#,Working with Dates>>
+* <<date-formatting-math.adoc#,Date Formatting and Date Math>>
 
-* <<working-with-enum-fields.adoc#,Working with Enum Fields>>
+* <<enum-fields.adoc#,Enum Fields>>
 
-* <<working-with-external-files-and-processes.adoc#,Working with External Files and Processes>>
+* <<external-files-processes.adoc#,External Files and Processes>>
 
 * <<field-properties-by-use-case.adoc#,Field Properties by Use Case>>
 

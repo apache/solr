@@ -1,4 +1,4 @@
-= Monitoring Solr with Prometheus and Grafana
+= Monitoring with Prometheus and Grafana
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -23,7 +23,7 @@ A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr me
 This graphic provides a more detailed view:
 
 .solr-exporter Diagram
-image::images/monitoring-solr-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
+image::images/monitoring-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
 
 The Prometheus exporter is included in Solr as a contrib, and is located in `contrib/prometheus-exporter` in your Solr instance.
 
@@ -31,8 +31,10 @@ There are three aspects to running `solr-exporter`:
 
 * Modify the `solr-exporter-config.xml` to define the data to collect.
 Solr has a default configuration you can use, but if you would like to modify it before running the exporter the first time, see the section <<Exporter Configuration>> below.
-* Start the exporter from within Solr. See the section below <<Starting the Exporter>>.
-* Modify your Prometheus configuration to listen on the correct port. See the section below <<Prometheus Configuration>>
+* Start the exporter from within Solr.
+See the section below <<Starting the Exporter>>.
+* Modify your Prometheus configuration to listen on the correct port.
+See the section below <<Prometheus Configuration>>
 
 == Starting the Exporter
 You can start `solr-exporter` by running `./bin/solr-exporter` (Linux) or `.\bin\solr-exporter.cmd` (Windows) from the `contrib/prometheus-exporter` directory.
@@ -91,7 +93,8 @@ Displays command line help and usage.
 `-p`, `--port`, `$PORT`::
 The port where Prometheus will listen for new data.
 This port will be used to configure Prometheus.
-It can be any port not already in use on your server. The default is `8989`.
+It can be any port not already in use on your server.
+The default is `8989`.
 
 `-b`, `--baseurl`, `$SOLR_URL`::
 The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in a user-managed cluster or a single-node installation.
@@ -108,7 +111,8 @@ The path to the configuration file that defines the Solr metrics to read.
 The default is `contrib/prometheus-exporter/conf/solr-exporter-config.xml`.
 
 `-n`, `--num-threads`, `$NUM_THREADS`::
-The number of threads. The `solr-exporter` creates thread pools for requests to Solr.
+The number of threads.
+The `solr-exporter` creates thread pools for requests to Solr.
 Request latency can be improved by increasing the number of threads.
 The default is `1`.
 
@@ -152,7 +156,7 @@ All <<#command-line-parameters,command line parameters>> are able to be provided
 === Getting Metrics from a Secured SolrCloud
 
 Your SolrCloud might be secured by measures described in <<securing-solr.adoc#,Securing Solr>>.
-The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<using-solrj.adoc#,SolrJ>>.
+The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<solrj.adoc#,SolrJ>>.
 This is possible because the main script picks up <<Environment Variable Options>>  and passes them on to the Java process.
 
 Example for a SolrCloud instance secured by <<basic-authentication-plugin.adoc#,Basic Authentication>>, <<enabling-ssl.adoc#,SSL>> and <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>:
@@ -183,7 +187,8 @@ Of course, you can use a different source.
 The configuration for the `solr-exporter` defines the data to get from Solr.
 This includes the metrics, but can also include queries to the PingRequestHandler, the Collections API, and a query to any query request handler.
 
-A default example configuration is in `contrib/prometheus-exporter/conf/solr-exporter-config.xml`. Below is a slightly shortened version of it:
+A default example configuration is in `contrib/prometheus-exporter/conf/solr-exporter-config.xml`.
+Below is a slightly shortened version of it:
 
 [source,xml]
 ----
@@ -337,7 +342,8 @@ There are several possible types of requests to make:
 `<collections>`:: Scrape the response to a <<collections-api.adoc#,Collections API>> request.
 `<search>`:: Scrape the response to a <<query-guide.adoc#,search>> request.
 
-Within each of these types, we need to define the query and how to work with the response. To do this, we define two additional elements:
+Within each of these types, we need to define the query and how to work with the response.
+To do this, we define two additional elements:
 
 `<query>`::
 Defines the query parameter(s) used for the request.
@@ -442,7 +448,7 @@ You can test that the Prometheus server, `solr-exporter`, and Solr are working t
 doing a query for `solr_ping` metric in the Prometheus GUI:
 
 .Prometheus Solr Ping expression
-image::images/monitoring-solr-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
+image::images/monitoring-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
 
 
 == Sample Grafana Dashboard
@@ -459,4 +465,4 @@ TIP: You can directly import the Solr dashboard https://grafana.com/grafana/dash
 This screenshot shows what it might look like:
 
 .Grafana Dashboard
-image::images/monitoring-solr-with-prometheus-and-grafana/grafana-solr-dashboard.png[image,width=800]
+image::images/monitoring-with-prometheus-and-grafana/grafana-solr-dashboard.png[image,width=800]

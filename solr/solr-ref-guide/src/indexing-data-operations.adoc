@@ -4,9 +4,9 @@
     indexing-nested-documents, \
     post-tool, \
     documents-screen, \
-    updating-parts-of-documents, \
+    partial-document-updates, \
     reindexing, \
-    detecting-languages-during-indexing, \
+    language-detection, \
     de-duplication, \
     content-streams
 :page-show-toc: false
@@ -40,9 +40,9 @@ This section describes how Solr adds data to its index. It covers the following 
 | <<indexing-nested-documents.adoc#,Indexing Nested Documents>>: Indexing and schema configuration for nested documents.
 | <<post-tool.adoc#,Post Tool>>: The `post.jar` to quickly upload content to your system.
 | <<documents-screen.adoc#,Documents Screen>>: Form-based document updates using the Admin UI.
-| <<updating-parts-of-documents.adoc#,Updating Parts of Documents>>: Atomic updates and optimistic concurrency for partial document updates.
+| <<partial-document-updates.adoc#,Partial Document Updates>>: Atomic updates and optimistic concurrency for partial document updates.
 | <<reindexing.adoc#,Reindexing>>: When reindexing is required or recommended, and some strategies for completely reindexing your documents.
-| <<detecting-languages-during-indexing.adoc#,Detecting Languages During Indexing>>: Language identification during the indexing process.
+| <<language-detection.adoc#,Language detection>>: Language identification during the indexing process.
 | <<de-duplication.adoc#,De-Duplication>>: Configuring Solr to mark duplicate documents as they are indexed.
 | <<content-streams.adoc#,Content Streams>>: Streaming content to Solr request handlers.
 |
@@ -52,4 +52,4 @@ This section describes how Solr adds data to its index. It covers the following 
 
 == Indexing Using Client APIs
 
-Using client APIs, such as <<using-solrj.adoc#,SolrJ>>, from your applications is an important option for updating Solr indexes. See the <<client-apis.adoc#,Client APIs>> section for more information.
+Using client APIs, such as <<solrj.adoc#,SolrJ>>, from your applications is an important option for updating Solr indexes. See the <<client-apis.adoc#,Client APIs>> section for more information.

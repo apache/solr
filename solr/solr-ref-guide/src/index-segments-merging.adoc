@@ -274,7 +274,7 @@ WARNING: If multiple Solr instances in different JVMs modify an index, this type
 See also the {lucene-javadocs}/core/org/apache/lucene/store/SingleInstanceLockFactory.html[SingleInstanceLockFactory javadocs].
 
 * `hdfs` uses `HdfsLockFactory` to support reading and writing index and transaction log files to a HDFS filesystem.
-See the section <<running-solr-on-hdfs.adoc#,Running Solr on HDFS>> for more details on using this feature.
+See the section <<solr-on-hdfs.adoc#,Solr on HDFS>> for more details on using this feature.
 
 [source,xml]
 ----

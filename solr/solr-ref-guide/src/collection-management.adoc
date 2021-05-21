@@ -65,41 +65,59 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 The CREATE action allows the following parameters:
 
 `name`::
-The name of the collection to be created. This parameter is required.
+The name of the collection to be created.
+This parameter is required.
 
 `router.name`::
-The router name that will be used. The router defines how documents will be distributed among the shards. Possible values are `implicit` or `compositeId`, which is the default.
+The router name that will be used.
+The router defines how documents will be distributed among the shards.
+Possible values are `implicit` or `compositeId`, which is the default.
 +
-The `implicit` router does not automatically route documents to different shards. Whichever shard you indicate on the indexing request (or within each document) will be used as the destination for those documents.
+The `implicit` router does not automatically route documents to different shards.
+Whichever shard you indicate on the indexing request (or within each document) will be used as the destination for those documents.
 +
 The `compositeId` router hashes the value in the uniqueKey field and looks up that hash in the collection's clusterstate to determine which shard will receive the document, with the additional ability to manually direct the routing.
 +
-When using the `implicit` router, the `shards` parameter is required. When using the `compositeId` router, the `numShards` parameter is required.
+When using the `implicit` router, the `shards` parameter is required.
+When using the `compositeId` router, the `numShards` parameter is required.
 +
 For more information, see also the section <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,Document Routing>>.
 
 `numShards`::
-The number of shards to be created as part of the collection. This is a required parameter when the `router.name` is `compositeId`.
+The number of shards to be created as part of the collection.
+This is a required parameter when the `router.name` is `compositeId`.
 
 `shards`::
-A comma separated list of shard names, e.g., `shard-x,shard-y,shard-z`. This is a required parameter when the `router.name` is `implicit`.
+A comma separated list of shard names, e.g., `shard-x,shard-y,shard-z`.
+This is a required parameter when the `router.name` is `implicit`.
 
 `replicationFactor`::
-The number of replicas to be created for each shard. The default is `1`.
+The number of replicas to be created for each shard.
+The default is `1`.
 +
-This will create a NRT type of replica. If you want another type of replica, see the `tlogReplicas` and `pullReplica` parameters below. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+This will create a NRT type of replica.
+If you want another type of replica, see the `tlogReplicas` and `pullReplica` parameters below.
+See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `nrtReplicas`::
-The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. If you want all of your replicas to be of this type, you can simply use `replicationFactor` instead.
+The number of NRT (Near-Real-Time) replicas to create for this collection.
+This type of replica maintains a transaction log and updates its index locally.
+If you want all of your replicas to be of this type, you can simply use `replicationFactor` instead.
 
 `tlogReplicas`::
-The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+The number of TLOG replicas to create for this collection.
+This type of replica maintains a transaction log but only updates its index via replication from a leader.
+See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `pullReplicas`::
-The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+The number of PULL replicas to create for this collection.
+This type of replica does not maintain a transaction log and only updates its index via replication from a leader.
+This type is not eligible to become a leader and should not be the only type of replicas in the collection.
+See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `createNodeSet` (v1), `nodeSet` (v2)::
-Allows defining the nodes to spread the new collection across. The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+Allows defining the nodes to spread the new collection across.
+The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 +
 If not provided, the CREATE operation will create shard-replicas spread across all live Solr nodes.
 +
@@ -108,7 +126,8 @@ Alternatively, use the special value of `EMPTY` to initially create no shard-rep
 `createNodeSet.shuffle` (v1), `shuffleNodes` (v2)::
 Controls whether or not the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
 +
-A `false` value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but `true` can be a better choice for ensuring replicas are distributed evenly across nodes. The default is `true`.
+A `false` value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but `true` can be a better choice for ensuring replicas are distributed evenly across nodes.
+The default is `true`.
 +
 This parameter is ignored if `createNodeSet` is not also specified.
 
@@ -119,30 +138,36 @@ If not provided, Solr will use the configuration of `_default` configset to crea
 When such a collection is deleted, its autocreated configset will be deleted by default when it is not in use by any other collection.
 
 `router.field` (v1), `router` (v2)::
-If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
+If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field.
+If the field specified is null in the document, the document will be rejected.
 +
 Please note that <<realtime-get.adoc#,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
 `perReplicaState`::
-If `true` the states of individual replicas will be maintained as individual child of the `state.json`. default is `false`
+If `true` the states of individual replicas will be maintained as individual child of the `state.json`.
+default is `false`
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
 
 [WARNING]
 ====
-The entries in each core.properties file are vital for Solr to function correctly. Overriding entries can result in unusable collections. Altering these entries by specifying `property._name_=_value_` is an expert-level option and should only be used if you have a thorough understanding of the consequences.
+The entries in each core.properties file are vital for Solr to function correctly.
+Overriding entries can result in unusable collections.
+Altering these entries by specifying `property._name_=_value_` is an expert-level option and should only be used if you have a thorough understanding of the consequences.
 ====
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 `waitForFinalState`::
-If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+If `true`, the request will complete only when all affected replicas become active.
+The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
 
 `alias`::
 Starting with version 8.1 when a collection is created additionally an alias can be created
-that points to this collection. This parameter allows specifying the name of this alias, effectively combining
+that points to this collection.
+This parameter allows specifying the name of this alias, effectively combining
 this operation with <<collection-aliasing.adoc#createalias,CREATEALIAS>>
 
 Collections are first created in read-write mode but can be put in `readOnly`
@@ -150,14 +175,16 @@ mode using the <<collection-management.adoc#modifycollection,MODIFYCOLLECTION>> 
 
 === CREATE Response
 
-The response will include the status of the request and the new core names. If the status is anything other than "success", an error message will explain why the request failed.
+The response will include the status of the request and the new core names.
+If the status is anything other than "success", an error message will explain why the request failed.
 
 [[reload]]
 == RELOAD: Reload a Collection
 
 The RELOAD action is used when you have changed a configuration file in ZooKeeper, like uploading a new `schema.xml`.
 Solr automatically reloads collections when certain files, monitored via a watch in ZooKeeper are changed,
-such as `security.json`.  However, for changes to files in configsets, like uploading a new `schema.xml`, you
+such as `security.json`.
+ However, for changes to files in configsets, like uploading a new `schema.xml`, you
 will need to manually trigger the RELOAD.
 
 [.dynamic-tabs]
@@ -208,21 +235,26 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 === RELOAD Parameters
 
 `name`::
-The name of the collection to reload. This parameter is required by the V1 API.
+The name of the collection to reload.
+This parameter is required by the V1 API.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 === RELOAD Response
 
-The response will include the status of the request and the cores that were reloaded. If the status is anything other than "success", an error message will explain why the request failed.
+The response will include the status of the request and the cores that were reloaded.
+If the status is anything other than "success", an error message will explain why the request failed.
 
 [[modifycollection]]
 == MODIFYCOLLECTION: Modify Attributes of a Collection
 
-It's possible to edit multiple attributes at a time. Changing these values only updates the znode on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+It's possible to edit multiple attributes at a time.
+Changing these values only updates the znode on ZooKeeper, they do not change the topology of the collection.
+For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
 
-An attribute can be deleted by passing an empty value. For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
+An attribute can be deleted by passing an empty value.
+For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
 
 [.dynamic-tabs]
 --
@@ -263,7 +295,8 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 === MODIFYCOLLECTION Parameters
 
 `collection`::
-The name of the collection to be modified. This parameter is required.
+The name of the collection to be modified.
+This parameter is required.
 
 `_attribute_=_value_`::
 Key-value pairs of attribute names and attribute values.
@@ -282,7 +315,8 @@ See the <<create,CREATE action>> section above for details on these attributes.
 [[readonlymode]]
 ==== Read-Only Mode
 Setting the `readOnly` attribute to `true` puts the collection in read-only mode,
-in which any index update requests are rejected. Other collection-level actions (e.g., adding /
+in which any index update requests are rejected.
+Other collection-level actions (e.g., adding /
 removing / moving replicas) are still available in this mode.
 
 The transition from the (default) read-write to read-only mode consists of the following steps:
@@ -353,7 +387,8 @@ using the new name.
 
 This command does NOT actually rename the underlying Solr collection - it sets up a new one-to-one alias
 using the new name, or renames the existing alias so that it uses the new name, while still referring to
-the same underlying Solr collection. However, from the user's point of view the collection can now be
+the same underlying Solr collection.
+However, from the user's point of view the collection can now be
 accessed using the new name, and the new name can be also referred to in other aliases.
 
 The following limitations apply:
@@ -392,9 +427,11 @@ Name of the existing SolrCloud collection or an alias that refers to exactly one
 a Routed Alias.
 
 `target`::
-Target name of the collection. This will be the new alias that refers to the underlying SolrCloud collection.
+Target name of the collection.
+This will be the new alias that refers to the underlying SolrCloud collection.
 The original name (or alias) of the collection will be replaced also in the existing aliases so that they
-also refer to the new name. Target name must not be an existing alias.
+also refer to the new name.
+Target name must not be an existing alias.
 
 === Examples using RENAME
 Assuming there are two actual SolrCloud collections named `collection1` and `collection2`,
@@ -462,14 +499,16 @@ curl -X DELETE http://localhost:8983/api/collections/techproducts_v2?async=aaaa
 === DELETE Parameters
 
 `name`::
-The name of the collection to delete. This parameter is required.
+The name of the collection to delete.
+This parameter is required.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 === DELETE Response
 
-The response will include the status of the request and the cores that were deleted. If the status is anything other than "success", an error message will explain why the request failed.
+The response will include the status of the request and the cores that were deleted.
+If the status is anything other than "success", an error message will explain why the request failed.
 
 *Output*
 
@@ -544,16 +583,20 @@ The name of the collection for which the property would be set.
 The name of the property.
 
 `propertyValue` (v1), `value` (v2)::
-The value of the property. When not provided, the property is deleted.
+The value of the property.
+When not provided, the property is deleted.
 
 === COLLECTIONPROP Response
 
-The response will include the status of the request and the properties that were updated or removed. If the status is anything other than "0", an error message will explain why the request failed.
+The response will include the status of the request and the properties that were updated or removed.
+If the status is anything other than "0", an error message will explain why the request failed.
 
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
 
-The MIGRATE command is used to migrate all documents having a given routing key to another collection. The source collection will continue to have the same data as-is but it will start re-routing write requests to the target collection for the number of seconds specified by the `forward.timeout` parameter. It is the responsibility of the user to switch to the target collection for reads and writes after the MIGRATE action completes.
+The MIGRATE command is used to migrate all documents having a given routing key to another collection.
+The source collection will continue to have the same data as-is but it will start re-routing write requests to the target collection for the number of seconds specified by the `forward.timeout` parameter.
+It is the responsibility of the user to switch to the target collection for reads and writes after the MIGRATE action completes.
 
 [.dynamic-tabs]
 --
@@ -587,27 +630,37 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 --
 
 
-The routing key specified by the `split.key` parameter may span multiple shards on both the source and the target collections. The migration is performed shard-by-shard in a single thread. One or more temporary collections may be created by this command during the ‘migrate’ process but they are cleaned up at the end automatically.
+The routing key specified by the `split.key` parameter may span multiple shards on both the source and the target collections.
+The migration is performed shard-by-shard in a single thread.
+One or more temporary collections may be created by this command during the ‘migrate’ process but they are cleaned up at the end automatically.
 
-This is a long running operation and therefore using the `async` parameter is highly recommended. If the `async` parameter is not specified then the operation is synchronous by default and keeping a large read timeout on the invocation is advised. Even with a large read timeout, the request may still timeout but that doesn’t necessarily mean that the operation has failed. Users should check logs, cluster state, source and target collections before invoking the operation again.
+This is a long running operation and therefore using the `async` parameter is highly recommended.
+If the `async` parameter is not specified then the operation is synchronous by default and keeping a large read timeout on the invocation is advised.
+Even with a large read timeout, the request may still timeout but that doesn’t necessarily mean that the operation has failed.
+Users should check logs, cluster state, source and target collections before invoking the operation again.
 
-This command works only with collections using the compositeId router. The target collection must not receive any writes during the time the MIGRATE command is running otherwise some writes may be lost.
+This command works only with collections using the compositeId router.
+The target collection must not receive any writes during the time the MIGRATE command is running otherwise some writes may be lost.
 
 Please note that the MIGRATE API does not perform any de-duplication on the documents so if the target collection contains documents with the same uniqueKey as the documents being migrated then the target collection will end up with duplicate documents.
 
 === MIGRATE Parameters
 
 `collection`::
-The name of the source collection from which documents will be split. This parameter is required.
+The name of the source collection from which documents will be split.
+This parameter is required.
 
 `target.collection` (v1), `target` (v2)::
-The name of the target collection to which documents will be migrated. This parameter is required.
+The name of the target collection to which documents will be migrated.
+This parameter is required.
 
 `split.key` (v1), `splitKey` (v2)::
-The routing key prefix. For example, if the uniqueKey of a document is "a!123", then you would use `split.key=a!`. This parameter is required.
+The routing key prefix.
+For example, if the uniqueKey of a document is "a!123", then you would use `split.key=a!`. This parameter is required.
 
 `forward.timeout` (v1), `forwardTimeout` (v2)::
-The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard. The default is 60 seconds.
+The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard.
+The default is 60 seconds.
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
@@ -653,73 +706,72 @@ with caution, evaluating the potential impact by using different source and targ
 collection names first, and preserving the source collection until the evaluation is
 complete.
 
-The target collection must not exist (and may not be an alias). If the target
-collection name is the same as the source collection then first a unique sequential name
-will be generated for the target collection, and then after reindexing is done an alias
-will be created that points from the source name to the actual sequentially-named target collection.
+The target collection must not exist (and may not be an alias).
+If the target collection name is the same as the source collection then first a unique sequential name will be generated for the target collection, and then after reindexing is done an alias will be created that points from the source name to the actual sequentially-named target collection.
 
-When reindexing is started the source collection is put in <<readonlymode,read-only mode>> to ensure that
-all source documents are properly processed.
+When reindexing is started the source collection is put in <<readonlymode,read-only mode>> to ensure that all source documents are properly processed.
 
-Using optional parameters a different index schema, collection shape (number of shards and replicas)
-or routing parameters can be requested for the target collection.
+Using optional parameters a different index schema, collection shape (number of shards and replicas) or routing parameters can be requested for the target collection.
 
-Reindexing is executed as a streaming expression daemon, which runs on one of the
-source collection's replicas. It is usually a time-consuming operation so it's recommended to execute
-it as an asynchronous request in order to avoid request time outs. Only one reindexing operation may
-execute concurrently for a given source collection. Long-running, erroneous or crashed reindexing
-operations may be terminated by using the `abort` option, which also removes partial results.
+Reindexing is executed as a streaming expression daemon, which runs on one of the source collection's replicas.
+It is usually a time-consuming operation so it's recommended to execute it as an asynchronous request in order to avoid request time outs.
+Only one reindexing operation may execute concurrently for a given source collection.
+Long-running, erroneous or crashed reindexing operations may be terminated by using the `abort` option, which also removes partial results.
 
 === REINDEXCOLLECTION Parameters
 
 `name`::
-Source collection name, may be an alias. This parameter is required.
+Source collection name, may be an alias.
+This parameter is required.
 
 `cmd`::
-Optional command. Default command is `start`. Currently supported commands are:
+Optional command.
+Default command is `start`.
+Currently supported commands are:
 * `start` - default, starts processing if not already running,
 * `abort` - aborts an already running reindexing (or clears a left-over status after a crash),
 and deletes partial results,
 * `status` - returns detailed status of a running reindexing command.
 
 `target`::
-Target collection name, optional. If not specified a unique name will be generated and
-after all documents have been copied an alias will be created that points from the source
-collection name to the unique sequentially-named collection, effectively "hiding"
+Target collection name, optional.
+If not specified a unique name will be generated and after all documents have been copied an alias will be created that points from the source collection name to the unique sequentially-named collection, effectively "hiding"
 the original source collection from regular update and search operations.
 
 `q`::
-Optional query to select documents for reindexing. Default value is `\*:*`.
+Optional query to select documents for reindexing.
+Default value is `\*:*`.
 
 `fl`::
-Optional list of fields to reindex. Default value is `*`.
+Optional list of fields to reindex.
+Default value is `*`.
 
 `rows`::
-Documents are transferred in batches. Depending on the average size of the document large
-batch sizes may cause memory issues. Default value is 100.
+Documents are transferred in batches.
+Depending on the average size of the document large batch sizes may cause memory issues.
+Default value is 100.
 
 `configName`::
 `collection.configName`::
-Optional name of the configset for the target collection. Default is the same as the
-source collection.
+Optional name of the configset for the target collection.
+Default is the same as the source collection.
 
-There's a number of optional parameters that determine the target collection layout. If they
-are not specified in the request then their values are copied from the source collection.
+There's a number of optional parameters that determine the target collection layout.
+If they are not specified in the request then their values are copied from the source collection.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
 `shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
 `removeSource`::
-Optional boolean. If true then after the processing is successfully finished the source collection will
-be deleted.
+Optional boolean.
+If true then after the processing is successfully finished the source collection will be deleted.
 
 `async`::
 Optional request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 When the reindexing process has completed the target collection is marked using
 `property.rx: "finished"`, and the source collection state is updated to become read-write.
-On any errors the command will delete any temporary and target collections and also reset the
-state of the source collection's read-only flag.
+On any errors the command will delete any temporary and target collections and also reset the state of the source collection's read-only flag.
 
 === Examples using REINDEXCOLLECTION
 
@@ -729,11 +781,9 @@ state of the source collection's read-only flag.
 ----
 http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=techproducts_v2&numShards=3&configName=conf2&q=id:aa*&fl=id,string_s
 ----
-This request specifies a different schema for the target collection, copies only some of the fields, selects only the documents
-matching a query, and also potentially re-shapes the collection by explicitly specifying 3 shards. Since the target collection
-hasn't been specified in the parameters, a collection with a unique name, e.g., `.rx_techproducts_v2_2`, will be created and on success
-an alias pointing from `techproducts_v2` to `.rx_techproducts_v2_2` will be created, effectively replacing the source collection
-for the purpose of indexing and searching. The source collection is assumed to be small so a synchronous request was made.
+This request specifies a different schema for the target collection, copies only some of the fields, selects only the documents matching a query, and also potentially re-shapes the collection by explicitly specifying 3 shards.
+Since the target collection hasn't been specified in the parameters, a collection with a unique name, e.g., `.rx_techproducts_v2_2`, will be created and on success an alias pointing from `techproducts_v2` to `.rx_techproducts_v2_2` will be created, effectively replacing the source collection for the purpose of indexing and searching.
+The source collection is assumed to be small so a synchronous request was made.
 
 *Output*
 
@@ -754,15 +804,14 @@ for the purpose of indexing and searching. The source collection is assumed to b
   }
 }
 ----
-As a result a new collection `.rx_techproducts_v2_2` has been created, with selected documents reindexed to 3 shards, and
-with an alias pointing from `techproducts_v2` to this one. The status also shows that the source collection
-was already an alias to `.rx_techproducts_v2_1`, which was likely a result of a previous reindexing.
+As a result a new collection `.rx_techproducts_v2_2` has been created, with selected documents reindexed to 3 shards, and with an alias pointing from `techproducts_v2` to this one.
+The status also shows that the source collection was already an alias to `.rx_techproducts_v2_1`, which was likely a result of a previous reindexing.
 
 [[colstatus]]
 == COLSTATUS: Detailed Status of a Collection's Indexes
 
-The COLSTATUS command provides a detailed description of the collection status, including low-level index
-information about segments and field data.  There isn't a good equivalent V2 API that supports all the parameters below.
+The COLSTATUS command provides a detailed description of the collection status, including low-level index information about segments and field data.
+There isn't a good equivalent V2 API that supports all the parameters below.
 
 [.dynamic-tabs]
 --
@@ -789,13 +838,8 @@ curl -X GET http://localhost:8983/api/collections/techproducts_v2
 ====
 --
 
-This command also checks the compliance of Lucene index field types with the current Solr collection
-schema and indicates the names of non-compliant fields, i.e., Lucene fields with field types incompatible
-(or different) from the corresponding Solr field types declared in the current schema. Such incompatibilities may
-result from incompatible schema changes or after migration of
-data to a different major Solr release.
-
-
+This command also checks the compliance of Lucene index field types with the current Solr collection schema and indicates the names of non-compliant fields, i.e., Lucene fields with field types incompatible (or different) from the corresponding Solr field types declared in the current schema.
+Such incompatibilities may result from incompatible schema changes or after migration of data to a different major Solr release.
 
 === COLSTATUS Parameters
 
@@ -803,62 +847,64 @@ data to a different major Solr release.
 Collection name (optional). If missing then it means all collections.
 
 `coreInfo`::
-Optional boolean. If true then additional information will be provided about
+Optional boolean.
+If true then additional information will be provided about
 SolrCore of shard leaders.
 
 `segments`::
-Optional boolean. If true then segment information will be provided.
+Optional boolean.
+If true then segment information will be provided.
 
 `fieldInfo`::
-Optional boolean. If true then detailed Lucene field information will be provided
+Optional boolean.
+If true then detailed Lucene field information will be provided
 and their corresponding Solr schema types.
 
 `sizeInfo`::
-Optional boolean. If true then additional information about the index files
+Optional boolean.
+If true then additional information about the index files
 size and their RAM usage will be provided.
 
 ==== Index Size Analysis Tool
-The `COLSTATUS` command also provides a tool for analyzing and estimating the composition of raw index data. Please note that
-this tool should be used with care because it generates a significant IO load on all shard leaders of the
-analyzed collections. A sampling threshold and a sampling percent parameters can be adjusted to reduce this
-load to some degree.
+The `COLSTATUS` command also provides a tool for analyzing and estimating the composition of raw index data.
+Please note that this tool should be used with care because it generates a significant IO load on all shard leaders of the analyzed collections.
+A sampling threshold and a sampling percent parameters can be adjusted to reduce this load to some degree.
 
-Size estimates produced by this tool are only approximate and represent the aggregated size of uncompressed
-index data. In reality these values would never occur, because Lucene (and Solr) always stores data in a
-compressed format - still, these values help to understand what occupies most of the space and the relative size
-of each type of data and each field in the index.
+Size estimates produced by this tool are only approximate and represent the aggregated size of uncompressed index data.
+In reality these values would never occur, because Lucene (and Solr) always stores data in a compressed format - still, these values help to understand what occupies most of the space and the relative size of each type of data and each field in the index.
 
-In the following sections whenever "size" is mentioned it means an estimated aggregated size of
-uncompressed (raw) data.
+In the following sections whenever "size" is mentioned it means an estimated aggregated size of uncompressed (raw) data.
 
 The following parameters are specific to this tool:
 
 `rawSize`::
-Optional boolean. If true then run the raw index data analysis tool (other boolean options below imply
-this option if any of them are true). Command response will include sections that show estimated breakdown of
-data size per field and per data type.
+Optional boolean.
+If `true` then run the raw index data analysis tool (other boolean options below imply this option if any of them are true).
+Command response will include sections that show estimated breakdown of data size per field and per data type.
 
 `rawSizeSummary`::
-Optional boolean. If true then include also a more detailed breakdown of data size per field and per type.
+Optional boolean.
+If `true` then include also a more detailed breakdown of data size per field and per type.
 
 `rawSizeDetails`::
-Optional boolean. If true then provide exhaustive details that include statistical distribution of items per
-field and per type as well as top 20 largest items per field.
+Optional boolean.
+If `true` then provide exhaustive details that include statistical distribution of items per field and per type as well as top 20 largest items per field.
 
 `rawSizeSamplingPercent`::
-Optional float. When the index is larger than a certain threshold (100k documents per shard) only a part of
-data is actually retrieved and analyzed in order to reduce the IO load, and then the final results are extrapolated.
-Values must be greater than 0 and less or equal to 100.0. Default value is 5.0. Very small values (between 0.0 and 1.0)
-may introduce significant estimation errors. Also, values that would result in less than 10 documents being sampled
-are rejected with an exception.
+Optional float.
+When the index is larger than a certain threshold (100k documents per shard) only a part of data is actually retrieved and analyzed in order to reduce the IO load, and then the final results are extrapolated.
+Values must be greater than 0 and less or equal to 100.0.
+Default value is `5.0`.
+Very small values (between 0.0 and 1.0) may introduce significant estimation errors.
+Also, values that would result in less than 10 documents being sampled are rejected with an exception.
 
 Response for this command always contains two sections:
 
-* `fieldsBySize` is a map where field names are keys and values are estimated sizes of raw (uncompressed) data
-that belongs to the field. The map is sorted by size so that it's easy to see what field occupies most space.
+* `fieldsBySize` is a map where field names are keys and values are estimated sizes of raw (uncompressed) data that belongs to the field.
+The map is sorted by size so that it's easy to see what field occupies most space.
 
-* `typesBySize` is a map where data types are the keys and values are estimates sizes of raw (uncompressed) data
-of particular type. This map is also sorted by size.
+* `typesBySize` is a map where data types are the keys and values are estimates sizes of raw (uncompressed) data of particular type.
+This map is also sorted by size.
 
 Optional sections include:
 
@@ -869,19 +915,19 @@ This section also shows `topN` values by size from each field.
 
 Data types shown in the response can be roughly divided into the following groups:
 
-* `storedFields` - represents the raw uncompressed data in stored fields. For example, for UTF-8 strings this represents
-the aggregated sum of the number of bytes in the strings' UTF-8 representation, for long numbers this is 8 bytes per value, etc.
+* `storedFields` - represents the raw uncompressed data in stored fields.
+For example, for UTF-8 strings this represents the aggregated sum of the number of bytes in the strings' UTF-8 representation, for long numbers this is 8 bytes per value, etc.
 
-* `terms_terms` - represents the aggregated size of the term dictionary. The size of this data is affected by the
-the number and length of unique terms, which in turn depends on the field size and the analysis chain.
+* `terms_terms` - represents the aggregated size of the term dictionary.
+The size of this data is affected by the the number and length of unique terms, which in turn depends on the field size and the analysis chain.
 
 * `terms_postings` - represents the aggregated size of all term position and offset information, if present.
 This information may be absent if position-based searching, such as phrase queries, is not needed.
 
 * `terms_payloads` - represents the aggregated size of all per-term payload data, if present.
 
-* `norms` - represents the aggregated size of field norm information. This information may be omitted if a field
-has an `omitNorms` flag in the schema, which is common for fields that don't need weighting or scoring by field length.
+* `norms` - represents the aggregated size of field norm information.
+This information may be omitted if a field has an `omitNorms` flag in the schema, which is common for fields that don't need weighting or scoring by field length.
 
 * `termVectors` - represents the aggregated size of term vectors.
 
@@ -1260,24 +1306,30 @@ See the `incremental` parameter below for more information.
 === BACKUP Parameters
 
 `collection`::
-The name of the collection to be backed up. This parameter is required.
+The name of the collection to be backed up.
+This parameter is required.
 
 `name`::
-What to name the backup that is created.  This is checked to make sure it doesn't already exist, and otherwise an error message is raised. This parameter is required.
+What to name the backup that is created.
+This is checked to make sure it doesn't already exist, and otherwise an error message is raised.
+This parameter is required.
 
 `location`::
-The location on a shared drive for the backup command to write to. This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
+The location on a shared drive for the backup command to write to.
+This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 +
 If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
 Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
 +
-Each backup location can only hold a backup for one collection, however the same location can be used for repeated backups of the same collection.  Repeated backups of the same collection are done incrementally, so that files unchanged since the last backup are not duplicated in the backup repository.
+Each backup location can only hold a backup for one collection, however the same location can be used for repeated backups of the same collection.
+Repeated backups of the same collection are done incrementally, so that files unchanged since the last backup are not duplicated in the backup repository.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 `repository`::
-The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+The name of a repository to be used for the backup.
+If no repository is specified then the local filesystem repository will be used automatically.
 
 `maxNumBackupPoints`::
 The upper-bound on how many backups should be retained at the backup location.
@@ -1314,7 +1366,8 @@ The backup name usually corresponds to the collection-name, but isn't required t
 This parameter is required.
 
 `location`::
-The repository location to list backups from. This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
+The repository location to list backups from.
+This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 +
 If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
 Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
@@ -1436,7 +1489,8 @@ The RESTORE operation will replace the content of a collection with files from t
 
 If the provided `collection` value matches an existing collection, Solr will use it for restoration, assuming it is compatible (same number of shards, etc.) with the stored backup files.
 If the provided `collection` value doesn't exist, a new collection with that name is created in a way compatible with the stored backup files.
-The collection created will be have the same number of shards and replicas as the original collection, preserving routing information, etc. Optionally, you can override some parameters documented below.
+The collection created will be have the same number of shards and replicas as the original collection, preserving routing information, etc.
+Optionally, you can override some parameters documented below.
 
 While restoring, if a configset with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configset in ZooKeeper and use that.
 
@@ -1445,24 +1499,30 @@ You can use the collection <<collection-aliasing.adoc#createalias,CREATEALIAS>> 
 === RESTORE Parameters
 
 `collection`::
-The collection where the indexes will be restored into. This parameter is required.
+The collection where the indexes will be restored into.
+This parameter is required.
 
 `name`::
-The name of the existing backup that you want to restore. This parameter is required.
+The name of the existing backup that you want to restore.
+This parameter is required.
 
 `location`::
-The location on a shared drive for the RESTORE command to read from. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
+The location on a shared drive for the RESTORE command to read from.
+Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 `repository`::
-The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+The name of a repository to be used for the backup.
+If no repository is specified then the local filesystem repository will be used automatically.
 
 `backupId`::
 The ID of a specific backup point to restore from.
 +
-Backup locations can hold multiple backups of the same collection.  This parameter allows users to choose which of those backups should be used to restore from.  If not specified the most recent backup point is used.
+Backup locations can hold multiple backups of the same collection.
+This parameter allows users to choose which of those backups should be used to restore from.
+If not specified the most recent backup point is used.
 
 There are also optional parameters that determine the target collection layout.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
@@ -1550,16 +1610,19 @@ curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: appl
 === DELETEBACKUP Parameters
 
 `name`::
-The backup name to delete backup files from.  This parameter is required.
+The backup name to delete backup files from.
+This parameter is required.
 
 `location`::
-The repository location to delete backups from. This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
+The repository location to delete backups from.
+This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 +
 If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
 Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
 
 `repository`::
-The name of a repository to be used for deleting backup files. If no repository is specified then the local filesystem repository will be used automatically.
+The name of a repository to be used for deleting backup files.
+If no repository is specified then the local filesystem repository will be used automatically.
 
 `backupId`::
 Explicitly specify a single backup-ID to delete.
@@ -1615,28 +1678,35 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
 ====
 --
 
-Leaders are assigned in a collection according to the `preferredLeader` property on active nodes. This command should be run after the preferredLeader property has been assigned via the BALANCESHARDUNIQUE or ADDREPLICAPROP commands.
+Leaders are assigned in a collection according to the `preferredLeader` property on active nodes.
+This command should be run after the preferredLeader property has been assigned via the BALANCESHARDUNIQUE or ADDREPLICAPROP commands.
 
-NOTE: It is not _required_ that all shards in a collection have a `preferredLeader` property. Rebalancing will only attempt to reassign leadership to those replicas that have the `preferredLeader` property set to `true` _and_ are not currently the shard leader _and_ are currently active.
+NOTE: It is not _required_ that all shards in a collection have a `preferredLeader` property.
+Rebalancing will only attempt to reassign leadership to those replicas that have the `preferredLeader` property set to `true` _and_ are not currently the shard leader _and_ are currently active.
 
 === REBALANCELEADERS Parameters
 
 `collection`::
-The name of the collection to rebalance `preferredLeaders` on. This parameter is required.
+The name of the collection to rebalance `preferredLeaders` on.
+This parameter is required.
 
 `maxAtOnce`::
-The maximum number of reassignments to have queue up at once. Values \<=0 are use the default value Integer.MAX_VALUE.
+The maximum number of reassignments to have queue up at once.
+Values \<=0 are use the default value Integer.MAX_VALUE.
 +
 When this number is reached, the process waits for one or more leaders to be successfully assigned before adding more to the queue.
 
 `maxWaitSeconds`::
-Defaults to `60`. This is the timeout value when waiting for leaders to be reassigned. If `maxAtOnce` is less than the number of reassignments that will take place, this is the maximum interval that any _single_ wait for at least one reassignment.
+Defaults to `60`. This is the timeout value when waiting for leaders to be reassigned.
+If `maxAtOnce` is less than the number of reassignments that will take place, this is the maximum interval that any _single_ wait for at least one reassignment.
 +
 For example, if 10 reassignments are to take place and `maxAtOnce` is `1` and `maxWaitSeconds` is `60`, the upper bound on the time that the command may wait is 10 minutes.
 
 === REBALANCELEADERS Response
 
-The response will include the status of the request. A status of "0" indicates the request was _processed_, not that all assignments were successful. Examine the "Summary" section for that information.
+The response will include the status of the request.
+A status of "0" indicates the request was _processed_, not that all assignments were successful.
+Examine the "Summary" section for that information.
 
 === Examples using REBALANCELEADERS
 
@@ -1656,10 +1726,12 @@ http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=
 In this example:
 
 * In the "alreadyLeaders" section, core_node5 was already the leader, so there were no changes in leadership for shard1.
-* In the "inactivePreferreds" section, core_node57 had the preferredLeader property set, but the node was not active, the leader for shard7 was not changed. This is considered successful.
+* In the "inactivePreferreds" section, core_node57 had the preferredLeader property set, but the node was not active, the leader for shard7 was not changed.
+This is considered successful.
 * In the "successes" section, core_node23 was _not_ the leader for shard3, so leadership was assigned to that replica.
 
-The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as requried. If a replica cannot be made leader due to not being healthy (for example, it is on a Solr instance that is not running), it's also considered success.
+The "Summary" section with the "Success" tag indicates that the command rebalanced all _active_ replicas with the preferredLeader property set as requried.
+If a replica cannot be made leader due to not being healthy (for example, it is on a Solr instance that is not running), it's also considered success.
 
 [source,json]
 ----
@@ -1685,6 +1757,8 @@ The "Summary" section with the "Success" tag indicates that the command rebalanc
 
 Examining the clusterstate after issuing this call should show that every active replica that has the `preferredLeader` property should also have the "leader" property set to _true_.
 
-NOTE: The added work done by an NRT leader is quite small and only present when indexing. The primary use-case is to redistribute the leader role if there are a large number of leaders concentrated on a small number of nodes. Rebalancing will likely not improve performance unless the imbalance of leadership roles is measured in multiples of 10.
+NOTE: The added work done by an NRT leader is quite small and only present when indexing.
+The primary use-case is to redistribute the leader role if there are a large number of leaders concentrated on a small number of nodes.
+Rebalancing will likely not improve performance unless the imbalance of leadership roles is measured in multiples of 10.
 
 NOTE: The BALANCESHARDUNIQUE command that distributes the preferredLeader property does not guarantee perfect distribution and in some collection topologies it is impossible to make that guarantee.
