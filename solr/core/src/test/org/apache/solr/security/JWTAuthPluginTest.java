@@ -16,6 +16,24 @@
  */
 package org.apache.solr.security;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.CryptoKeys;
+import org.jose4j.jwk.RsaJsonWebKey;
+import org.jose4j.jwk.RsaJwkGenerator;
+import org.jose4j.jws.AlgorithmIdentifiers;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.keys.BigEndianBigInteger;
+import org.jose4j.lang.JoseException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -32,26 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Base64;
-import org.apache.solr.common.util.Utils;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jwk.RsaJwkGenerator;
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.keys.BigEndianBigInteger;
-import org.jose4j.lang.JoseException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
+import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.*;
 
 @SuppressWarnings("unchecked")
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
@@ -495,12 +494,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithIdpCertPath() {
+  public void initWithTruestedCertsFile() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
     authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_idpCert.pem").toString());
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
+    assertEquals(2, plugin.getIssuerConfigs().get(0).getTrustedCerts().size());
   }
 
   @Test
@@ -518,14 +518,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Test
   public void parsePemToX509() {
     Collection<X509Certificate> parsed =
-        JWTAuthPlugin.parsePemToX509Certs(IOUtils.toInputStream(trustedPemCert, StandardCharsets.UTF_8));
+        CryptoKeys.parseX509Certs(IOUtils.toInputStream(trustedPemCert, StandardCharsets.UTF_8));
     assertEquals(2, parsed.size());
   }
 
   @Test
   public void parseInvalidPemToX509() {
     expectThrows(SolrException.class, CertificateException.class, () -> {
-      JWTAuthPlugin.parsePemToX509Certs(IOUtils.toInputStream(
+      CryptoKeys.parseX509Certs(IOUtils.toInputStream(
           "-----BEGIN CERTIFICATE-----\n" +
               "foo\n" +
               "-----END CERTIFICATE-----\n", StandardCharsets.UTF_8));

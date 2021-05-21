@@ -17,6 +17,7 @@
 
 package org.apache.solr.security;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
@@ -350,6 +351,11 @@ public class JWTIssuerConfig {
     this.trustedCerts = trustedCerts;
   }
 
+  @VisibleForTesting
+  public Collection<X509Certificate> getTrustedCerts() {
+    return this.trustedCerts;
+  }
+
   /**
    *
    */
@@ -439,6 +445,7 @@ public class JWTIssuerConfig {
       }
     }
 
+    @VisibleForTesting
     public static WellKnownDiscoveryConfig parse(String json, Charset charset) {
       return parse(new ByteArrayInputStream(json.getBytes(charset)));
     }
