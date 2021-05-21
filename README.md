@@ -90,6 +90,36 @@ Common options are described in some detail in solr/README.txt.  For an
 exhaustive treatment of options, run `bin/solr start -h` from the `solr/`
 directory.
 
+### Running Solr in Docker
+
+You can run Solr in Docker via the [official image](https://hub.docker.com/_/solr).
+
+To simply run Solr in a container and expose the Solr port, run:
+
+`docker run -p 8983:8983 solr`
+
+In order to start Solr in cloud mode, run the following.
+
+`docker run -p 8983:8983 solr solr-fg -c`
+
+For documentation on using the official docker builds, please refer to the [DockerHub page](https://hub.docker.com/_/solr).
+Documentation up to date with this branch, useful for running locally-built images, can be found in the [reference guide](solr/solr-ref-guide/src/running-solr-in-docker.adoc).
+
+There is also a gradle task for building custom Solr images,
+which are built identically to the official image except for getting the Solr artifacts locally instead of from the official release.
+The task will output the image name to use at the end of the build.
+
+`./gradlew docker`
+
+For more info on building an image, run:
+
+`./gradlew helpDocker`
+
+### Running Solr on Kubernetes
+
+Solr has official support for running on Kubernetes, in the official Docker image.
+Please refer to the [Solr Operator](https://solr.apache.org/operator) home for details, tutorials and instructions.
+
 ### Gradle build and IDE support
 
 - *IntelliJ* - IntelliJ idea can import the project out of the box. 
