@@ -32,6 +32,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
+import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
@@ -201,7 +202,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       log.info("Reading trustedCerts PEM from configuration string");
     }
     if (trustedCertsStream != null) {
-      trustedSslCerts = parsePemToX509Certs(trustedCertsStream);
+      trustedSslCerts = CryptoKeys.parseX509Certs(trustedCertsStream);
     }
 
     long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
@@ -248,28 +249,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     initConsumer();
 
     lastInitTime = Instant.now();
-  }
-
-  /**
-   * Tries for find X509 certificates in the input stream in DER or PEM format.
-   * Supports multiple certs in same stream if multiple PEM certs are concatenated.
-   * @param trustedCertsStream input stream with the contents of either PEM (plaintext) or DER (binary) certs
-   * @return collection of found certificates, else throws exception
-   */
-  static Collection<X509Certificate> parsePemToX509Certs(InputStream trustedCertsStream) {
-    try {
-      CertificateFactory cf = CertificateFactory.getInstance("X.509");
-      Collection<? extends Certificate> parsedCerts = cf.generateCertificates(trustedCertsStream);
-      List<X509Certificate> certs = parsedCerts.stream().filter(c -> c instanceof X509Certificate)
-          .map(c -> (X509Certificate) c).collect(Collectors.toList());
-      if (certs.size() > 0) {
-        return certs;
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Wrong type of certificates. Must be DER or PEM format");
-      }
-    } catch (CertificateException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed loading trusted certificate(s)", e);
-    }
   }
 
   @SuppressWarnings("unchecked")

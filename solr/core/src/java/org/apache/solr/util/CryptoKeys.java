@@ -38,12 +38,19 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
@@ -51,8 +58,8 @@ import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**A utility class to verify signatures
- *
+/**
+ * A utility class with helpers for various signature and certificate tasks
  */
 public final class CryptoKeys {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -323,6 +330,28 @@ public final class CryptoKeys {
     }
     rsaCipher.init(Cipher.DECRYPT_MODE, pubKey);
     return rsaCipher.doFinal(buffer, 0, buffer.length);
+  }
+
+  /**
+   * Tries for find X509 certificates in the input stream in DER or PEM format.
+   * Supports multiple certs in same stream if multiple PEM certs are concatenated.
+   * @param certsStream input stream with the contents of either PEM (plaintext) or DER (binary) certs
+   * @return collection of found certificates, else throws exception
+   */
+  public static Collection<X509Certificate> parseX509Certs(InputStream certsStream) {
+    try {
+      CertificateFactory cf = CertificateFactory.getInstance("X.509");
+      Collection<? extends Certificate> parsedCerts = cf.generateCertificates(certsStream);
+      List<X509Certificate> certs = parsedCerts.stream().filter(c -> c instanceof X509Certificate)
+          .map(c -> (X509Certificate) c).collect(Collectors.toList());
+      if (certs.size() > 0) {
+        return certs;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Wrong type of certificates. Must be DER or PEM format");
+      }
+    } catch (CertificateException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed loading certificate(s) from input stream", e);
+    }
   }
 
   public static class RSAKeyPair {
