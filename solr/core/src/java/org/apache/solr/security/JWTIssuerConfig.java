@@ -435,8 +435,6 @@ public class JWTIssuerConfig {
           SimpleResponse resp = httpGet.get(url.toString());
           return parse(IOUtils.toInputStream(resp.getBody(), StandardCharsets.UTF_8));
         }
-      } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config URL " + url + " is malformed", e);
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config could not be read from url " + url, e);
       }
