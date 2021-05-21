@@ -387,7 +387,7 @@ public class JWTIssuerConfig {
       if (trustedCerts != null) {
         Get getWithCustomTrust = new Get();
         getWithCustomTrust.setTrustedCertificates(trustedCerts);
-        log.info("Trusting {} custom SSL certificate(s) for the IdP", trustedCerts.size());
+        log.info("Trusting custom SSL certificate(s) for the IdP");
       }
       return httpsJkws;
     }
@@ -431,7 +431,6 @@ public class JWTIssuerConfig {
           Get httpGet = new Get();
           if (trustedCerts != null) {
             httpGet.setTrustedCertificates(trustedCerts);
-            log.debug("Trusting {} custom certificate(s) instead of using Java's default trust store", trustedCerts.size());
           }
           SimpleResponse resp = httpGet.get(url.toString());
           return parse(IOUtils.toInputStream(resp.getBody(), StandardCharsets.UTF_8));
