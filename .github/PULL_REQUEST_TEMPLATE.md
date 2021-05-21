@@ -1,3 +1,5 @@
+https://issues.apache.org/jira/browse/SOLR-XXXXX
+
 <!--
 _(If you are a project committer then you may remove some/all of the following template.)_
 

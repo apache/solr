@@ -41,6 +41,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -84,7 +85,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     return withBasicAuth(new QueryRequest(q)).process(client);
   }
 
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
+  @Test
   public void testPKIAuthWorksForPullReplication() throws Exception {
     int numPullReplicas = 2;
     withBasicAuth(CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas))

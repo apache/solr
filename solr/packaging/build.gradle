@@ -194,8 +194,8 @@ task signDistTar(type: Sign) {
   dependsOn failUnlessGpgKeyProperty
   sign configurations.solrTgz
 }
-artifacts {
-  solrTgzSignature(signDistTar.signatureFiles.singleFile) {
+dependencies {
+  solrTgzSignature files(tasks.signDistTar.signatureFiles.singleFile) {
     builtBy signDistTar
   }
 }
