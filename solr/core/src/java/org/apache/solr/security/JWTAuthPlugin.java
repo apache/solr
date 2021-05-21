@@ -264,6 +264,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       }
       if (primary.isValid()) {
         log.debug("Found issuer in top level config");
+        primary.setTrustedCerts(trustedSslCerts);
         primary.init();
         return Optional.of(primary);
       } else {
