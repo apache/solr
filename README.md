@@ -94,7 +94,7 @@ directory.
 
 You can run Solr in Docker via the [official image](https://hub.docker.com/_/solr).
 
-To simply run Solr in a container and expose the Solr port, run:
+To run Solr in a container and expose the Solr port, run:
 
 `docker run -p 8983:8983 solr`
 
@@ -106,7 +106,7 @@ For documentation on using the official docker builds, please refer to the [Dock
 Documentation up to date with this branch, useful for running locally-built images, can be found in the [reference guide](solr/solr-ref-guide/src/running-solr-in-docker.adoc).
 
 There is also a gradle task for building custom Solr images,
-which are built identically to the official image except for getting the Solr artifacts locally instead of from the official release.
+which are built identically to the official image except for retrieving the Solr artifacts locally instead of from the official release.
 The task will output the image name to use at the end of the build.
 
 `./gradlew docker`
