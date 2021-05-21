@@ -16,18 +16,23 @@
  */
 package org.apache.solr.security;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
@@ -56,7 +61,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static RsaJsonWebKey rsaJsonWebKey;
   private HashMap<String, Object> testConfig;
   private HashMap<String, Object> minimalConfig;
-
+  private static String trustedPemCert;
   // Shared with other tests
   static HashMap<String, Object> testJwk;
 
@@ -73,7 +78,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
       testJwk.put("kid", rsaJsonWebKey.getKeyId());
       testJwk.put("alg", rsaJsonWebKey.getAlgorithm());
       testJwk.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
-    } catch (JoseException e) {
+
+      trustedPemCert = Files.readString(TEST_PATH().resolve("security").resolve("jwt_idpCert.pem"));
+    } catch (JoseException | IOException e) {
       fail("Failed static initialization: " + e.getMessage());
     }
   }
@@ -476,5 +483,52 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals("aud2", plugin.getPrimaryIssuer().getAud());
     // Top-level (name=PRIMARY) issuer config does not need "iss" for back compat
     assertNull(plugin.getPrimaryIssuer().getIss());
+  }
+
+  @Test
+  public void initWithIdpCertString() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCerts", trustedPemCert);
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+  }
+
+  @Test
+  public void initWithIdpCertPath() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_idpCert.pem").toString());
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+  }
+
+  @Test
+  public void initWithIdpCertWrongDoubleConfig() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCerts", trustedPemCert);
+    authConf.put("trustedCertsFile", "/path/to/cert.pem");
+    plugin = new JWTAuthPlugin();
+    expectThrows(SolrException.class, () -> {
+      plugin.init(authConf);
+    });
+  }
+
+  @Test
+  public void parsePemToX509() {
+    Collection<X509Certificate> parsed =
+        JWTAuthPlugin.parsePemToX509Certs(IOUtils.toInputStream(trustedPemCert, StandardCharsets.UTF_8));
+    assertEquals(2, parsed.size());
+  }
+
+  @Test
+  public void parseInvalidPemToX509() {
+    expectThrows(SolrException.class, CertificateException.class, () -> {
+      JWTAuthPlugin.parsePemToX509Certs(IOUtils.toInputStream(
+          "-----BEGIN CERTIFICATE-----\n" +
+              "foo\n" +
+              "-----END CERTIFICATE-----\n", StandardCharsets.UTF_8));
+    });
   }
 }

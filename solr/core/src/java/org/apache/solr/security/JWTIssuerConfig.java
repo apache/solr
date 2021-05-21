@@ -17,6 +17,18 @@
 
 package org.apache.solr.security;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
+import org.jose4j.http.Get;
+import org.jose4j.http.SimpleResponse;
+import org.jose4j.jwk.HttpsJwks;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.JsonWebKeySet;
+import org.jose4j.lang.JoseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,25 +36,15 @@ import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Utils;
-import org.jose4j.http.Get;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
-import org.jose4j.lang.JoseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc
@@ -70,7 +72,8 @@ public class JWTIssuerConfig {
   private WellKnownDiscoveryConfig wellKnownDiscoveryConfig;
   private String clientId;
   private String authorizationEndpoint;
-  
+  private Collection<X509Certificate> trustedCerts;
+
   public static boolean ALLOW_OUTBOUND_HTTP = Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG = "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
 
@@ -103,7 +106,11 @@ public class JWTIssuerConfig {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Configuration is not valid");
     }
     if (wellKnownUrl != null) {
-      wellKnownDiscoveryConfig = fetchWellKnown(wellKnownUrl);
+      try {
+        wellKnownDiscoveryConfig = fetchWellKnown(new URL(wellKnownUrl));
+      } catch (MalformedURLException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Wrong URL given for well-known endpoint " + wellKnownUrl);
+      }
       if (iss == null) {
         iss = wellKnownDiscoveryConfig.getIssuer();
       }
@@ -178,8 +185,8 @@ public class JWTIssuerConfig {
     return webKeySet;
   }
 
-  private WellKnownDiscoveryConfig fetchWellKnown(String wellKnownUrl) {
-    return WellKnownDiscoveryConfig.parse(wellKnownUrl);
+  private WellKnownDiscoveryConfig fetchWellKnown(URL wellKnownUrl) {
+    return WellKnownDiscoveryConfig.parse(wellKnownUrl, trustedCerts);
   }
 
   public String getIss() {
@@ -339,25 +346,27 @@ public class JWTIssuerConfig {
     return jwkConfigured > 0;
   }
 
+  public void setTrustedCerts(Collection<X509Certificate> trustedCerts) {
+    this.trustedCerts = trustedCerts;
+  }
+
   /**
    *
    */
   static class HttpsJwksFactory {
     private final long jwkCacheDuration;
     private final long refreshReprieveThreshold;
-    private final Path certPemPath;
+    private Collection<X509Certificate> trustedCerts;
 
     public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold) {
       this.jwkCacheDuration = jwkCacheDuration;
       this.refreshReprieveThreshold = refreshReprieveThreshold;
-      this.certPemPath = null;
     }
 
-    public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold,
-                            Path certPemPath) {
+    public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold, Collection<X509Certificate> trustedCerts) {
       this.jwkCacheDuration = jwkCacheDuration;
       this.refreshReprieveThreshold = refreshReprieveThreshold;
-      this.certPemPath = certPemPath;
+      this.trustedCerts = trustedCerts;
     }
 
     /**
@@ -369,25 +378,16 @@ public class JWTIssuerConfig {
       try {
         URL jwksUrl = new URL(url);
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
-
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
       }
       HttpsJwks httpsJkws = new HttpsJwks(url);
       httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
       httpsJkws.setRefreshReprieveThreshold(refreshReprieveThreshold);
-      if (certPemPath != null) {
-        try {
-          // Configure custom truststore for outgoing HTTPS
-          Get getWithCustomTrust = new Get();
-          Collection<X509Certificate> certs;
-          CertificateFactory cf = CertificateFactory.getInstance("X.509");
-          certs = (Collection<X509Certificate>) cf.generateCertificates(Files.newInputStream(certPemPath));
-          getWithCustomTrust.setTrustedCertificates(certs);
-          httpsJkws.setSimpleHttpGet(getWithCustomTrust);
-        } catch (CertificateException | IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed loading custom IdP certificate(s)", e);
-        }
+      if (trustedCerts != null) {
+        Get getWithCustomTrust = new Get();
+        getWithCustomTrust.setTrustedCertificates(trustedCerts);
+        log.info("Trusting {} custom SSL certificate(s) for the IdP", trustedCerts.size());
       }
       return httpsJkws;
     }
@@ -402,25 +402,44 @@ public class JWTIssuerConfig {
    * Typically exposed through /.well-known/openid-configuration endpoint
    */
   public static class WellKnownDiscoveryConfig {
-    private Map<String, Object> securityConf;
+    private final Map<String, Object> securityConf;
 
     WellKnownDiscoveryConfig(Map<String, Object> securityConf) {
       this.securityConf = securityConf;
     }
 
-    public static WellKnownDiscoveryConfig parse(String urlString) {
+    public static WellKnownDiscoveryConfig parse(String urlString) throws MalformedURLException {
+      return parse(new URL(urlString), null);
+    }
+
+    /**
+     * Fetch well-known config from a URL, with optional list of trusted certificates
+     * @param url the url to fetch
+     * @param trustedCerts optional list of trusted SSL certs. May be null to fall-back to Java's defaults
+     * @return an instance of WellKnownDiscoveryConfig object
+     */
+    public static WellKnownDiscoveryConfig parse(URL url, Collection<X509Certificate> trustedCerts) {
       try {
-        URL url = new URL(urlString);
         if (!Arrays.asList("https", "file", "http").contains(url.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be one of HTTPS or HTTP or file");          
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be one of HTTPS or HTTP or file");
         }
         checkAllowOutboundHttpConnections(PARAM_WELL_KNOWN_URL, url);
 
-        return parse(url.openStream());
+        if ("file".equals(url.getProtocol())) {
+          return parse(url.openStream());
+        } else {
+          Get httpGet = new Get();
+          if (trustedCerts != null) {
+            httpGet.setTrustedCertificates(trustedCerts);
+            log.debug("Trusting {} custom certificate(s) instead of using Java's default trust store", trustedCerts.size());
+          }
+          SimpleResponse resp = httpGet.get(url.toString());
+          return parse(IOUtils.toInputStream(resp.getBody(), StandardCharsets.UTF_8));
+        }
       } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config URL " + urlString + " is malformed", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config URL " + url + " is malformed", e);
       } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config could not be read from url " + urlString, e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config could not be read from url " + url, e);
       }
     }
 

@@ -20,14 +20,20 @@ import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Principal;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +47,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -85,7 +92,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_REDIRECT_URIS = "redirectUris";
   private static final String PARAM_ISSUERS = "issuers";
   private static final String PARAM_REALM = "realm";
-  private static final String IDP_CERT_PEM_PATH = "idpCertPemPath";
+  private static final String PARAM_TRUSTED_CERTS_FILE = "trustedCertsFile";
+  private static final String PARAM_TRUSTED_CERTS = "trustedCerts";
 
   private static final String DEFAULT_AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
@@ -97,6 +105,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
       PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_REALM, PARAM_ROLES_CLAIM,
       PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS,
+      PARAM_TRUSTED_CERTS_FILE, PARAM_TRUSTED_CERTS,
       // These keys are supported for now to enable PRIMARY issuer config through top-level keys
       JWTIssuerConfig.PARAM_JWKS_URL, JWTIssuerConfig.PARAM_JWK, JWTIssuerConfig.PARAM_ISSUER,
       JWTIssuerConfig.PARAM_CLIENT_ID, JWTIssuerConfig.PARAM_WELL_KNOWN_URL, JWTIssuerConfig.PARAM_AUDIENCE,
@@ -117,6 +126,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private List<JWTIssuerConfig> issuerConfigs;
   private boolean requireIssuer;
   private JWTVerificationkeyResolver verificationKeyResolver;
+  private Collection<X509Certificate> trustedSslCerts;
   String realm;
 
   /**
@@ -133,7 +143,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     unknownKeys.remove("class");
     unknownKeys.remove("");
     if (!unknownKeys.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JwtAuth configuration parameter " + unknownKeys); 
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JwtAuth configuration parameter " + unknownKeys);
     }
 
     blockUnknown = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, false)));
@@ -158,15 +168,33 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
     }
 
-    String idpCertPemPathString = (String) pluginConfig.get(IDP_CERT_PEM_PATH);
-    Path idpCertPemPath = null;
-    if (idpCertPemPathString != null) {
-      idpCertPemPath = Paths.get(idpCertPemPathString);
+    // Parse custom IDP SSL Cert from either path or string
+    InputStream trustedCertsStream = null;
+    String trustedCertsFile = (String) pluginConfig.get(PARAM_TRUSTED_CERTS_FILE);
+    String trustedCerts = (String) pluginConfig.get(PARAM_TRUSTED_CERTS);
+    if (trustedCertsFile != null && trustedCerts != null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Found both " + PARAM_TRUSTED_CERTS_FILE + " and " + PARAM_TRUSTED_CERTS + ", please use only one");
+    }
+    if (trustedCertsFile != null) {
+      try {
+          trustedCertsStream = Files.newInputStream(Paths.get(trustedCertsFile));
+          log.info("Reading trustedCerts from file {}", trustedCertsFile);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + trustedCertsFile, e);
+      }
+    }
+    if (trustedCerts != null) {
+      trustedCertsStream = IOUtils.toInputStream(trustedCerts, StandardCharsets.UTF_8);
+      log.info("Reading trustedCerts PEM from configuration string");
+    }
+    if (trustedCertsStream != null) {
+      trustedSslCerts = parsePemToX509Certs(trustedCertsStream);
     }
 
     long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
+
     JWTIssuerConfig.setHttpsJwksFactory(new JWTIssuerConfig.HttpsJwksFactory(
-        jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD, idpCertPemPath));
+        jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD, trustedSslCerts));
 
     issuerConfigs = new ArrayList<>();
 
@@ -207,6 +235,28 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     initConsumer();
 
     lastInitTime = Instant.now();
+  }
+
+  /**
+   * Tries for find X509 certificates in the input stream in DER or PEM format.
+   * Supports multiple certs in same stream if multiple PEM certs are concatenated.
+   * @param trustedCertsStream input stream with the contents of either PEM (plaintext) or DER (binary) certs
+   * @return collection of found certificates, else throws exception
+   */
+  static Collection<X509Certificate> parsePemToX509Certs(InputStream trustedCertsStream) {
+    try {
+      CertificateFactory cf = CertificateFactory.getInstance("X.509");
+      Collection<? extends Certificate> parsedCerts = cf.generateCertificates(trustedCertsStream);
+      List<X509Certificate> certs = parsedCerts.stream().filter(c -> c instanceof X509Certificate)
+          .map(c -> (X509Certificate) c).collect(Collectors.toList());
+      if (certs.size() > 0) {
+        return certs;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Wrong type of certificates. Must be DER or PEM format");
+      }
+    } catch (CertificateException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed loading trusted certificate(s)", e);
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -260,6 +310,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       if (issuers != null) {
         issuers.forEach(issuerConf -> {
           JWTIssuerConfig ic = new JWTIssuerConfig(issuerConf);
+          ic.setTrustedCerts(trustedSslCerts);
           ic.init();
           configs.add(ic);
           if (log.isDebugEnabled()) {
@@ -593,7 +644,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   static class JWTAuthenticationResponse {
     private final Principal principal;
     private String errorMessage;
-    private AuthCode authCode;
+    private final AuthCode authCode;
     private InvalidJwtException jwtException;
   
     enum AuthCode {
