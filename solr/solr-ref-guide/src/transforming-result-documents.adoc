@@ -141,7 +141,7 @@ If the documents involved include a `\_nest_path_` field, then it is used to re-
 A query to filter which child documents should be included. This can be particularly useful when you have multiple levels of hierarchical documents. The default is all children.
 
 `limit`::
-The maximum number of child documents to be returned per parent document. The default is `10`.
+The maximum number of child documents to be returned underneath the document being augmented. The default is `-1` which means unlimited.
 
 `fl`::
 The field list which the transformer is to return. The default is the top level `fl`).

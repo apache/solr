@@ -16,8 +16,9 @@
  */
 package org.apache.solr.response.transform;
 
-import java.io.IOException;
+import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
+import java.io.IOException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -37,8 +38,6 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
 
-import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
-
 /**
  * Attaches all descendants (child documents) to each parent document.
  *
@@ -48,7 +47,7 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
  *
  * Optionally you can provide a "childFilter" param to filter out which child documents should be returned and a
  * "limit" param which provides an option to specify the number of child documents
- * to be returned per parent document. By default it's set to 10.
+ * to be returned per parent document.
  *
  * Examples -
  * [child parentFilter="fieldName:fieldValue"]
@@ -94,11 +93,6 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
     String parentFilterStr = params.get( "parentFilter" );
     BitSetProducer parentsFilter;
-    // TODO reuse org.apache.solr.search.join.BlockJoinParentQParser.getCachedFilter (uses a cache)
-    // TODO shouldn't we try to use the Solr filter cache, and then ideally implement
-    //  BitSetProducer over that?
-    // DocSet parentDocSet = req.getSearcher().getDocSet(parentFilterQuery);
-    // then return BitSetProducer with custom BitSet impl accessing the docSet
     if (parentFilterStr == null) {
       parentsFilter = !buildHierarchy ? null : getCachedBitSetProducer(req, rootFilter);
     } else {
@@ -136,7 +130,10 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       childSolrReturnFields = new SolrReturnFields(req);
     }
 
-    int limit = params.getInt( "limit", 10 );
+    int limit = params.getInt("limit", -1);
+    if (limit == -1) {
+      limit = Integer.MAX_VALUE;
+    }
 
     return new ChildDocTransformer(field, parentsFilter, childDocSet, childSolrReturnFields,
         buildHierarchy, limit, req.getSchema().getUniqueKeyField().getName());
@@ -174,7 +171,11 @@ public class ChildDocTransformerFactory extends TransformerFactory {
         + " +(" + remaining + ")";
   }
 
-  public static BitSetProducer getCachedBitSetProducer(final SolrQueryRequest request, Query query) {
+  private static BitSetProducer getCachedBitSetProducer(final SolrQueryRequest request, Query query) {
+    // TODO shouldn't we try to use the Solr filter cache, and then ideally implement
+    //  BitSetProducer over that?
+    // DocSet parentDocSet = req.getSearcher().getDocSet(parentFilterQuery);
+    // then return BitSetProducer with custom BitSet impl accessing the docSet
     @SuppressWarnings("unchecked")
     SolrCache<Query, BitSetProducer> parentCache = request.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
