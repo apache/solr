@@ -33,8 +33,8 @@ import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.StringUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -418,14 +418,19 @@ public class ZkMaintenanceUtils {
   // Will return empty string if the path is just "/"
   // Will return empty string if the path is just ""
   public static String getZkParent(String path) {
-    // Remove trailing slash if present.
-    if (StringUtils.endsWith(path, "/")) {
-      path = StringUtils.substringBeforeLast(path, "/");
-    }
-    if (StringUtils.contains(path, "/") == false) {
+    if (StringUtils.isEmpty(path) || "/".equals(path)) {
       return "";
     }
-    return (StringUtils.substringBeforeLast(path, "/"));
+    // Remove trailing slash if present.
+    int endIndex = path.length() - 1;
+    if (path.endsWith("/")) {
+      endIndex--;
+    }
+    int index = path.lastIndexOf("/", endIndex);
+    if (index == -1) {
+      return "";
+    }
+    return path.substring(0, index);
   }
 
   // Take into account Windows file separators when making a Znode's name.
