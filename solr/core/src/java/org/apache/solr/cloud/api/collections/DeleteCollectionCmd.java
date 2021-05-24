@@ -43,11 +43,8 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.admin.MetricsHistoryHandler;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,8 +97,6 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
       assignStrategy.verifyDeleteCollection(ccc.getSolrCloudManager(), coll);
     }
 
-    final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
-
     boolean removeCounterNode = true;
     try {
       // Remove the snapshots meta-data for this collection in ZK. Deleting actual index files
@@ -117,19 +112,10 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
           return;
         }
       }
-      // remove collection-level metrics history
-      if (deleteHistory) {
-        MetricsHistoryHandler historyHandler = ccc.getCoreContainer().getMetricsHistoryHandler();
-        if (historyHandler != null) {
-          String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.collection, collection);
-          historyHandler.removeHistory(registry);
-        }
-      }
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.UNLOAD.toString());
       params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
-      params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
       String asyncId = message.getStr(ASYNC);
 

@@ -95,8 +95,6 @@ dependencies {
   implementation 'org.codehaus.janino:commons-compiler'
   implementation 'org.codehaus.janino:janino'
 
-  implementation 'org.rrd4j:rrd4j'
-
   // For faster XML processing than the JDK
   implementation ('org.codehaus.woodstox:woodstox-core-asl', {
     exclude group: "javax.xml.stream", module: "stax-api"
