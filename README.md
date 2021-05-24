@@ -102,11 +102,12 @@ In order to start Solr in cloud mode, run the following.
 
 `docker run -p 8983:8983 solr solr-fg -c`
 
-For documentation on using the official docker builds, please refer to the [DockerHub page](https://hub.docker.com/_/solr).
-Documentation up to date with this branch, useful for running locally-built images, can be found in the [reference guide](solr/solr-ref-guide/src/running-solr-in-docker.adoc).
+For documentation on using the official docker builds, please refer to the [DockerHub page](https://hub.docker.com/_/solr).  
+Up to date documentation for running locally built images of this branch can be found in the [local reference guide](solr/solr-ref-guide/src/running-solr-in-docker.adoc).
 
-There is also a gradle task for building custom Solr images,
-which are built identically to the official image except for retrieving the Solr artifacts locally instead of from the official release.
+There is also a gradle task for building custom Solr images from your local checkout.
+These local images are built identically to the official image except for retrieving the Solr artifacts locally instead of from the official release.
+This can be useful for testing out local changes as well as creating custom images for yourself or your organization.
 The task will output the image name to use at the end of the build.
 
 `./gradlew docker`
