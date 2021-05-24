@@ -381,7 +381,7 @@ public class V2HttpCall extends HttpSolrCall {
       span.setTag(Tags.DB_INSTANCE, coreOrColName);
     }
 
-    // Get the templatize-ed path
+    // Get the templatize-ed path, ex: "/c/{collection}"
     String path;
     if (api instanceof AnnotatedApi) {
       // ideal scenario; eventually everything might be AnnotatedApi?
@@ -395,8 +395,9 @@ public class V2HttpCall extends HttpSolrCall {
     // if this api has commands ...
     final Map<String, JsonSchemaValidator> validators = getValidators(); // should be cached
     if (validators != null && validators.isEmpty() == false && solrReq != null) {
+      boolean validateInput = true; // because getCommands caches it; and we want it validated later
       // does this request have one command?
-      List<CommandOperation> cmds = solrReq.getCommands(false);
+      List<CommandOperation> cmds = solrReq.getCommands(validateInput);
       if (cmds.size() == 1) {
         verb = cmds.get(0).name;
       }
