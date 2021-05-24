@@ -112,31 +112,31 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     final String result0_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "64.0", "c3", "2.0", "original", "0.0", "dvIntFieldFeature", "8.0",
         "dvLongFieldFeature", "8.0", "dvFloatFieldFeature", "0.8", "dvDoubleFieldFeature", "0.8",
-        "dvStrNumFieldFeature", "8.0", "dvStrBoolFieldFeature", "1.0");
+        "dvStrNumFieldFeature", "0.0", "dvStrBoolFieldFeature", "1.0");
     final String result1_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "49.0", "c3", "2.0", "original", "1.0", "dvIntFieldFeature", "7.0",
         "dvLongFieldFeature", "7.0", "dvFloatFieldFeature", "0.7", "dvDoubleFieldFeature", "0.7",
-        "dvStrNumFieldFeature", "7.0", "dvStrBoolFieldFeature", "0.0");
+        "dvStrNumFieldFeature", "1.0", "dvStrBoolFieldFeature", "0.0");
     final String result2_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "36.0", "c3", "2.0", "original", "2.0", "dvIntFieldFeature", "6.0",
         "dvLongFieldFeature", "6.0", "dvFloatFieldFeature", "0.6", "dvDoubleFieldFeature", "0.6",
-        "dvStrNumFieldFeature", "6.0", "dvStrBoolFieldFeature", "1.0");
+        "dvStrNumFieldFeature", "0.0", "dvStrBoolFieldFeature", "1.0");
     final String result3_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "25.0", "c3", "2.0", "original", "3.0", "dvIntFieldFeature", "5.0",
         "dvLongFieldFeature", "5.0", "dvFloatFieldFeature", "0.5", "dvDoubleFieldFeature", "0.5",
-        "dvStrNumFieldFeature", "5.0", "dvStrBoolFieldFeature", "0.0");
+        "dvStrNumFieldFeature", "1.0", "dvStrBoolFieldFeature", "0.0");
     final String result4_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "16.0", "c3", "2.0", "original", "4.0", "dvIntFieldFeature", "4.0",
         "dvLongFieldFeature", "4.0", "dvFloatFieldFeature", "0.4", "dvDoubleFieldFeature", "0.4",
-        "dvStrNumFieldFeature", "4.0", "dvStrBoolFieldFeature", "1.0");
+        "dvStrNumFieldFeature", "0.0", "dvStrBoolFieldFeature", "1.0");
     final String result5_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "9.0", "c3", "2.0", "original", "5.0", "dvIntFieldFeature", "3.0",
         "dvLongFieldFeature", "3.0", "dvFloatFieldFeature", "0.3", "dvDoubleFieldFeature", "0.3",
-        "dvStrNumFieldFeature", "3.0", "dvStrBoolFieldFeature", "0.0");
+        "dvStrNumFieldFeature", "1.0", "dvStrBoolFieldFeature", "0.0");
     final String result6_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "4.0", "c3", "2.0", "original", "6.0", "dvIntFieldFeature", "2.0",
         "dvLongFieldFeature", "2.0", "dvFloatFieldFeature", "0.2", "dvDoubleFieldFeature", "0.2",
-        "dvStrNumFieldFeature", "2.0", "dvStrBoolFieldFeature", "1.0");
+        "dvStrNumFieldFeature", "0.0", "dvStrBoolFieldFeature", "1.0");
     final String result7_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "1.0", "c3", "2.0", "original", "7.0", "dvIntFieldFeature", "-1.0",
         "dvLongFieldFeature", "-2.0", "dvFloatFieldFeature", "-3.0", "dvDoubleFieldFeature", "-4.0",
@@ -262,7 +262,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       doc.setField("dvLongField", popularity);
       doc.setField("dvFloatField", ((float) popularity) / 10);
       doc.setField("dvDoubleField", ((double) popularity) / 10);
-      doc.setField("dvStrNumField", popularity);
+      doc.setField("dvStrNumField", popularity % 2 == 0 ? "F" : "T");
       doc.setField("dvStrBoolField", popularity % 2 == 0 ? "T" : "F");
     }
     solrCluster.getSolrClient().add(collection, doc);

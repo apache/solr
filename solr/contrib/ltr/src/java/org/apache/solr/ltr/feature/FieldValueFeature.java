@@ -141,7 +141,7 @@ public class FieldValueFeature extends Feature {
           return new DefaultValueFieldValueFeatureScorer(this, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
         }
         throw new IllegalArgumentException("Doc values type " + docValuesType.name() + " of field " + field
-                + " is not supported!");
+                + " is not supported");
       }
       return new FieldValueFeatureScorer(this, context,
           DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
@@ -291,22 +291,18 @@ public class FieldValueFeature extends Feature {
        */
       private float readSortedDocValues(BytesRef bytesRef) {
         String string = bytesRef.utf8ToString();
-        if (string.length() == 1
-                && (string.charAt(0) == BoolField.TRUE_TOKEN[0] || string.charAt(0) == BoolField.FALSE_TOKEN[0])) {
-          // boolean values in the index are encoded with a single char contained in TRUE_TOKEN or FALSE_TOKEN
+        if (string.length() == 1) {
+          // boolean values in the index are encoded with the
+          // a single char contained in TRUE_TOKEN or FALSE_TOKEN
           // (see BoolField)
           if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
-            return 1f;
-          } else {
-            return 0f;
+            return 1;
           }
-        } else {
-          try {
-            return Float.parseFloat(string);
-          } catch (NumberFormatException ex) {
-            throw new FeatureException("Cannot parse value " + string + " of field " + schemaField.getName() + " to float.");
+          if (string.charAt(0) == BoolField.FALSE_TOKEN[0]) {
+            return 0;
           }
         }
+        return FieldValueFeature.this.getDefaultValue();
       }
 
       @Override

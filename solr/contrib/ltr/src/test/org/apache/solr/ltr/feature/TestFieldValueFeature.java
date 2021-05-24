@@ -16,6 +16,10 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -31,10 +35,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class TestFieldValueFeature extends TestRerankBase {
 
@@ -87,10 +87,10 @@ public class TestFieldValueFeature extends TestRerankBase {
       loadFeature(field, FieldValueFeature.class.getName(),
           "{\"field\":\"" + field + "\"}");
     }
-   loadModel("model", LinearModel.class.getName(), FIELDS,
-       "{\"weights\":{\"popularity\":1.0,\"dvIntPopularity\":1.0,\"dvLongPopularity\":1.0," +
-           "\"dvFloatPopularity\":1.0,\"dvDoublePopularity\":1.0," +
-           "\"dvStringPopularity\":1.0,\"isTrendy\":1.0,\"dvIsTrendy\":1.0}}");
+    loadModel("model", LinearModel.class.getName(), FIELDS,
+        "{\"weights\":{\"popularity\":1.0,\"dvIntPopularity\":1.0,\"dvLongPopularity\":1.0," +
+        "\"dvFloatPopularity\":1.0,\"dvDoublePopularity\":1.0," +
+        "\"dvStringPopularity\":1.0,\"isTrendy\":1.0,\"dvIsTrendy\":1.0}}");
   }
 
   @After
@@ -100,7 +100,8 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   @Test
   public void testRanking() throws Exception {
-    SolrQuery query = new SolrQuery();
+
+    final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
     query.add("fl", "*, score");
     query.add("rows", "4");
@@ -132,6 +133,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
   }
 
+
   @Test
   public void testIfADocumentDoesntHaveAFieldDefaultValueIsReturned() throws Exception {
     SolrQuery query = new SolrQuery();
@@ -147,12 +149,17 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("rq", "{!ltr model=model reRankDocs=4}");
     query.add("fl", "[fv]");
 
+    // "0.0" in the assertJQ below is more readable than
+    // Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL) but first make sure it's equivalent
+    assertEquals("0.0", Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL));
+
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'popularity=0.0,dvIntPopularity=0.0,dvLongPopularity=0.0," +
             "dvFloatPopularity=0.0,dvDoublePopularity=0.0," +
             "dvStringPopularity=0.0,isTrendy=0.0,dvIsTrendy=0.0'}");
   }
+
 
   @Test
   public void testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned() throws Exception {
@@ -185,9 +192,12 @@ public class TestFieldValueFeature extends TestRerankBase {
   @Test
   public void testIfADocumentDoesntHaveAFieldTheDefaultValueFromSchemaIsReturned() throws Exception {
     final String[] fieldsWithDefaultValues = {"dvIntField", "dvLongField", "dvFloatField"};
+    final String[] defaultValues = {"-1.0", "-2.0", "-3.0"};
 
-    double fieldCounter = -1.0;
-    for (String field : fieldsWithDefaultValues) {
+    for (int idx = 0; idx < fieldsWithDefaultValues.length; ++idx) {
+      final String field = fieldsWithDefaultValues[idx];
+      final String defaultValue = defaultValues[idx];
+
       final String fstore = "testIfADocumentDoesntHaveAFieldTheDefaultValueFromSchemaIsReturned"+field;
 
       assertU(adoc("id", "21"));
@@ -198,16 +208,13 @@ public class TestFieldValueFeature extends TestRerankBase {
       loadModel(field+"-model", LinearModel.class.getName(),
           new String[] {field}, fstore, "{\"weights\":{\"" + field + "\":1.0}}");
 
-      SolrQuery query = new SolrQuery();
-      query.setQuery("id:21");
+      final SolrQuery query = new SolrQuery("id:21");
       query.add("rq", "{!ltr model="+field+"-model reRankDocs=4}");
       query.add("fl", "[fv]");
 
       assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
       assertJQ("/query" + query.toQueryString(),
-              "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field, String.valueOf(fieldCounter))+"'}");
-
-      fieldCounter--;
+              "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field, defaultValue)+"'}");
     }
   }
 
@@ -229,32 +236,35 @@ public class TestFieldValueFeature extends TestRerankBase {
     ObservingFieldValueFeature.usedScorerClass = null; // to clear away any previous test's use
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils
-                    .toFeatureVector("not-existing-field",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("not-existing-field",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
     assertEquals(FieldValueFeatureScorer.class.getName(), ObservingFieldValueFeature.usedScorerClass);
   }
 
   @Test
   public void testThatDefaultFieldValueScorerIsUsedAndDefaultIsReturned() throws Exception {
+    final String[] fieldsWithoutDefaultValues = {"dvDoubleField", "dvStrBoolField"};
     // this tests the case that no document contains docValues for the provided existing field
-    final String fstore = "testThatDefaultFieldValueScorerIsUsedAndDefaultIsReturned";
-    loadFeature("dvTestField", ObservingFieldValueFeature.class.getName(), fstore,
-            "{\"field\":\"dvTestField\"}");
 
-    loadModel("dvTestField-model", LinearModel.class.getName(),
-            new String[] {"dvTestField"}, fstore, "{\"weights\":{\"dvTestField\":1.0}}");
+    for (String field : fieldsWithoutDefaultValues) {
+      final String fstore = "testThatDefaultFieldValueScorerIsUsedAndDefaultIsReturned"+field;
 
-    final SolrQuery query = new SolrQuery();
-    query.setQuery("id:42");
-    query.add("rq", "{!ltr model=dvTestField-model reRankDocs=4}");
-    query.add("fl", "[fv]");
+      loadFeature(field, ObservingFieldValueFeature.class.getName(), fstore,
+              "{\"field\":\""+field+"\"}");
 
-    ObservingFieldValueFeature.usedScorerClass = null; // to clear away any previous test's use
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
-    assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils
-                    .toFeatureVector("dvTestField",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
-    assertEquals(DefaultValueFieldValueFeatureScorer.class.getName(), ObservingFieldValueFeature.usedScorerClass);
+      loadModel(field+"-model", LinearModel.class.getName(),
+              new String[] {field}, fstore, "{\"weights\":{\""+field+"\":1.0}}");
+
+      final SolrQuery query = new SolrQuery("id:42");
+      query.add("rq", "{!ltr model="+field+"-model reRankDocs=4}");
+      query.add("fl", "[fv]");
+
+      ObservingFieldValueFeature.usedScorerClass = null; // to clear away any previous test's use
+      assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+      assertJQ("/query" + query.toQueryString(),
+              "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils
+                      .toFeatureVector(field,Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
+      assertEquals(DefaultValueFieldValueFeatureScorer.class.getName(), ObservingFieldValueFeature.usedScorerClass);
+    }
   }
 
   @Test
@@ -272,6 +282,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(),
             "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("trendy","0.0")+"'}");
+
 
     query = new SolrQuery();
     query.setQuery("id:5");
@@ -293,37 +304,38 @@ public class TestFieldValueFeature extends TestRerankBase {
   public void testThatExceptionIsThrownForUnsupportedType() throws Exception {
     final String fstore = "test_store";
 
-    assertU(adoc("id", "21", "title", "multivalued not supported", "dvUnsupportedField", "wow value"));
+    assertU(adoc("id", "21", "title", "multivalued not supported", "dvStringPopularities", "wow value"));
     assertU(commit());
 
-    loadFeature("dvUnsupportedField", FieldValueFeature.class.getName(), fstore,
-            "{\"field\":\"dvUnsupportedField\"}");
+    loadFeature("dvStringPopularities", FieldValueFeature.class.getName(), fstore,
+            "{\"field\":\"dvStringPopularities\"}");
 
-    loadModel("dvUnsupportedField-model", LinearModel.class.getName(),
-            new String[] {"dvUnsupportedField"}, fstore, "{\"weights\":{\"dvUnsupportedField\":1.0}}");
+    loadModel("dvStringPopularities-model", LinearModel.class.getName(),
+            new String[] {"dvStringPopularities"}, fstore, "{\"weights\":{\"dvStringPopularities\":1.0}}");
 
-    SolrQuery query = new SolrQuery();
-    query.setQuery("id:21");
-    query.add("rq", "{!ltr model=dvUnsupportedField-model reRankDocs=4}");
+    final SolrQuery query = new SolrQuery("id:21");
+    query.add("rq", "{!ltr model=dvStringPopularities-model reRankDocs=4}");
     query.add("fl", "[fv]");
 
     assertJQ("/query" + query.toQueryString(),
-        "/error/msg/=='java.lang.IllegalArgumentException: Doc values type SORTED_SET of field dvUnsupportedField is not supported!'");
+        "/error/msg/=='java.lang.IllegalArgumentException: Doc values type SORTED_SET of field dvStringPopularities is not supported'");
   }
 
   @Test
   public void testThatCorrectFieldValueFeatureIsUsedForDocValueTypes() throws Exception {
     final String[][] fieldsWithDifferentTypes = {
-        new String[]{"dvIntPopularity", NumericDocValuesFieldValueFeatureScorer.class.getName()},
-        new String[]{"dvStringPopularity", SortedDocValuesFieldValueFeatureScorer.class.getName()},
-        new String[]{"noDocValuesField", FieldValueFeatureScorer.class.getName()}
+        new String[]{"dvIntPopularity", "1", NumericDocValuesFieldValueFeatureScorer.class.getName()},
+        new String[]{"dvStringPopularity", "T", SortedDocValuesFieldValueFeatureScorer.class.getName()},
+        new String[]{"noDvFloatField", "1", FieldValueFeatureScorer.class.getName()},
+        new String[]{"noDvStrNumField", "T", FieldValueFeatureScorer.class.getName()}
     };
 
     for (String[] fieldAndScorerClass : fieldsWithDifferentTypes) {
-      String field = fieldAndScorerClass[0];
+      final String field = fieldAndScorerClass[0];
+      final String fieldValue = fieldAndScorerClass[1];
       final String fstore = "testThatCorrectFieldValueFeatureIsUsedForDocValueTypes"+field;
 
-      assertU(adoc("id", "21", field, "1"));
+      assertU(adoc("id", "21", field, fieldValue));
       assertU(commit());
 
       loadFeature(field, ObservingFieldValueFeature.class.getName(), fstore,
@@ -331,8 +343,7 @@ public class TestFieldValueFeature extends TestRerankBase {
       loadModel(field+"-model", LinearModel.class.getName(),
           new String[] {field}, fstore, "{\"weights\":{\"" + field + "\":1.0}}");
 
-      SolrQuery query = new SolrQuery();
-      query.setQuery("id:21");
+      final SolrQuery query = new SolrQuery("id:21");
       query.add("rq", "{!ltr model="+field+"-model reRankDocs=4}");
       query.add("fl", "[fv]");
 
@@ -340,7 +351,7 @@ public class TestFieldValueFeature extends TestRerankBase {
       assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
       assertJQ("/query" + query.toQueryString(),
           "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector(field, "1.0")+"'}");
-      assertEquals(fieldAndScorerClass[1], ObservingFieldValueFeature.usedScorerClass);
+      assertEquals(fieldAndScorerClass[2], ObservingFieldValueFeature.usedScorerClass);
     }
   }
 
@@ -353,35 +364,39 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   @Test
   public void testThatStringValuesAreCorrectlyParsed() throws Exception {
-    final String[][] inputsAndTests = {
-      new String[]{"T", "/response/docs/[0]/=={'[fv]':'" +
-          FeatureLoggerTestUtils.toFeatureVector("dvStrNumField", "1.0")+"'}"},
-      new String[]{"F", "/response/docs/[0]/=={'[fv]':'" +
-          FeatureLoggerTestUtils.toFeatureVector("dvStrNumField", "0.0")+"'}"},
-      new String[]{"-7324.427", "/response/docs/[0]/=={'[fv]':'" +
-          FeatureLoggerTestUtils.toFeatureVector("dvStrNumField", "-7324.427")+"'}"},
-      new String[]{"532", "/response/docs/[0]/=={'[fv]':'" +
-          FeatureLoggerTestUtils.toFeatureVector("dvStrNumField", "532.0")+"'}"},
-      new String[]{"notanumber", "/error/msg/=='org.apache.solr.ltr.feature.FeatureException: " +
-          "Cannot parse value notanumber of field dvStrNumField to float.'"}
-    };
+    for (String field : new String[] {"dvStrNumField" , "noDvStrNumField"}) {
+      final String[][] inputsAndTests = {
+        new String[]{"T", "/response/docs/[0]/=={'[fv]':'" +
+            FeatureLoggerTestUtils.toFeatureVector(field, "1.0")+"'}"},
+        new String[]{"F", "/response/docs/[0]/=={'[fv]':'" +
+            FeatureLoggerTestUtils.toFeatureVector(field, "0.0")+"'}"},
+        new String[]{"-7324.427", "/response/docs/[0]/=={'[fv]':'" +
+            FeatureLoggerTestUtils.toFeatureVector(field, Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}"},
+        new String[]{"532", "/response/docs/[0]/=={'[fv]':'" +
+            FeatureLoggerTestUtils.toFeatureVector(field, Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}"},
+        new String[]{Float.toString(Float.NaN), "/response/docs/[0]/=={'[fv]':'" +
+                FeatureLoggerTestUtils.toFeatureVector(field, Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}"},
+        new String[]{"notanumber", "/response/docs/[0]/=={'[fv]':'" +
+                FeatureLoggerTestUtils.toFeatureVector(field, Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}"}
+      };
 
-    final String fstore = "testThatStringValuesAreCorrectlyParsed";
-    loadFeature("dvStrNumField", FieldValueFeature.class.getName(), fstore,
-        "{\"field\":\"" + "dvStrNumField" + "\"}");
-    loadModel("dvStrNumField-model", LinearModel.class.getName(),
-        new String[]{"dvStrNumField"}, fstore, "{\"weights\":{\"" + "dvStrNumField" + "\":1.0}}");
+      final String fstore = "testThatStringValuesAreCorrectlyParsed"+field;
+      loadFeature(field, FieldValueFeature.class.getName(), fstore,
+          "{\"field\":\"" + field + "\"}");
+      loadModel(field+"-model", LinearModel.class.getName(),
+          new String[]{field}, fstore,
+          "{\"weights\":{\""+field+"\":1.0}}");
 
-    for (String[] inputAndTest : inputsAndTests) {
-      assertU(adoc("id", "21", "dvStrNumField", inputAndTest[0]));
-      assertU(commit());
+      for (String[] inputAndTest : inputsAndTests) {
+        assertU(adoc("id", "21", field, inputAndTest[0]));
+        assertU(commit());
 
-      SolrQuery query = new SolrQuery();
-      query.setQuery("id:21");
-      query.add("rq", "{!ltr model=" + "dvStrNumField" + "-model reRankDocs=4}");
-      query.add("fl", "[fv]");
+        final SolrQuery query = new SolrQuery("id:21");
+        query.add("rq", "{!ltr model=" + field + "-model reRankDocs=4}");
+        query.add("fl", "[fv]");
 
-      assertJQ("/query" + query.toQueryString(), inputAndTest[1]);
+        assertJQ("/query" + query.toQueryString(), inputAndTest[1]);
+      }
     }
   }
 
@@ -389,7 +404,7 @@ public class TestFieldValueFeature extends TestRerankBase {
    * This class is used to track which specific FieldValueFeature is used so that we can test, whether the
    * fallback mechanism works correctly.
    */
-  public static class ObservingFieldValueFeature extends FieldValueFeature {
+  final public static class ObservingFieldValueFeature extends FieldValueFeature {
     static String usedScorerClass;
 
     public ObservingFieldValueFeature(String name, Map<String, Object> params) {
