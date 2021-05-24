@@ -322,9 +322,6 @@ New Features
 
 * SOLR-15397: Expose zookeeper status in the Prometheus exporter (janhoy)
 
-* SOLR-12697: In contrib/ltr FieldValueFeature support "stored=false docValues=true" a.k.a. pure DocValues fields.
-  (Stanislav Livotov, Erick Erickson, Tobias Kässmann, Tom Gilke, Christine Poerschke)
-
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
