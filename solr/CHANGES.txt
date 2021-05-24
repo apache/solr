@@ -295,6 +295,8 @@ Other Changes
 
 * SOLR-15222: userfiles dir will only be created in SolrCloud mode (Mike Drob)
 
+* SOLR-15401: Document the new NorwegianNormalizationFilter introduced in LUCENE-9929. (janhoy)
+
 * SOLR-15409: Upgrade to Zookeeper 3.7.0 (Mike Drob)
 
 Bug Fixes
