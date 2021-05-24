@@ -1788,7 +1788,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
     @Test 
-    public void testSplitOnWhitespace_stringField_shouldBuildSingleClause() throws Exception
+    public void testQf_stringFieldWithSowFalse_shouldBuildSingleQueryClause() throws Exception
     {
         assertJQ(req("qf", "trait_ss", "defType", "edismax", "q", "multi term", "sow", "false"),
             "/response/numFound==1", "/response/docs/[0]/id=='75'");
@@ -1799,7 +1799,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     }
 
     @Test
-    public void testSplitOnWhitespace_numericField_shouldBuildAlwaysMultiClause() throws Exception
+    public void testQf_numericField_shouldBuildMultipleQueryClausesIndependentlyOfSow() throws Exception
     {
         assertJQ(req("qf", "foo_i", "defType", "edismax", "q", "101 102", "sow", "false"),
             "/response/numFound==2", "/response/docs/[0]/id=='76'", "/response/docs/[1]/id=='77'");
