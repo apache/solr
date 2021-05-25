@@ -63,6 +63,7 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
   }
 
   @ParametersFactory
+  @SuppressWarnings("rawtypes")
   public static Iterable<Supplier[]> parameters() {
     return Arrays.asList(new Supplier[][]{
         {() -> new ZkConfigSetService(zkClient)},

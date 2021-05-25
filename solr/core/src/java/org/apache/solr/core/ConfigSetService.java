@@ -76,9 +76,10 @@ public abstract class ConfigSetService {
       try {
         bootstrapDefaultConfigSet(zkConfigSetService);
       } catch (Exception e) { // because write-only, probably
-        log.debug(e.toString(), e);
-        log.warn("_default configSet couldn't be uploaded: " + e); // swallow stack
-      }      return zkConfigSetService;
+        log.debug("_default configset ", e);
+        log.warn("_default configSet couldn't be uploaded:" , e); // swallow stack
+      }
+      return zkConfigSetService;
     }
   }
 
