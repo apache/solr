@@ -377,6 +377,8 @@ Optimizations
 * SOLR-15315: Optimise contrib/ltr MultipleAdditiveTreesModel by changing recursion to loop in tree traversal.
   (Suryakant Pandey, Alessandro Benedetti, Christine Poerschke)
 
+* SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
+
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
