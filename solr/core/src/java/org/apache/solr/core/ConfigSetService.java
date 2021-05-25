@@ -53,19 +53,6 @@ public abstract class ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
-    final ConfigSetService configSetService = instantiate(coreContainer);
-    try {
-      bootstrapDefaultConfigSet(configSetService);
-    } catch (UnsupportedOperationException e) {
-      log.info("_default config couldn't be uploaded");
-    } catch (IOException e) {
-      throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, "_default config couldn't be uploaded ", e);
-    }
-    return configSetService;
-  }
-
-  private static ConfigSetService instantiate(CoreContainer coreContainer) {
     final NodeConfig nodeConfig = coreContainer.getConfig();
     final SolrResourceLoader loader = coreContainer.getResourceLoader();
     final ZkController zkController = coreContainer.getZkController();
@@ -80,15 +67,23 @@ public abstract class ConfigSetService {
       } catch (Exception e) {
         throw new RuntimeException("create configSetService instance failed, configSetServiceClass:" + configSetServiceClass, e);
       }
-    } else if (zkController == null) {
+    } else if (zkController == null) { // standalone
       return new FileSystemConfigSetService(coreContainer);
-    } else {
-      return new ZkConfigSetService(coreContainer);
+    } else { // solrCloud
+      final ZkConfigSetService zkConfigSetService = new ZkConfigSetService(coreContainer);
+
+      // TODO ideally this would be toggle-able.  It's okay to start Solr with no configSet!
+      try {
+        bootstrapDefaultConfigSet(zkConfigSetService);
+      } catch (Exception e) { // because write-only, probably
+        log.debug(e.toString(), e);
+        log.warn("_default configSet couldn't be uploaded: " + e); // swallow stack
+      }      return zkConfigSetService;
     }
   }
 
-  private static void bootstrapDefaultConfigSet(ConfigSetService configSetService) throws IOException {
-    if (configSetService.checkConfigExists("_default") == false) {
+  public static void bootstrapDefaultConfigSet(ConfigSetService configSetService) throws IOException {
+    if (configSetService.checkConfigExists(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME) == false) {
       String configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
@@ -341,7 +336,7 @@ public abstract class ConfigSetService {
   /**
    * Upload a file to config
    * If file does not exist, it will be uploaded
-   * If createNew param is set to true then file be overwritten
+   * If overwriteOnExists is set to true then file will be overwritten
    *
    * @param configName the name to give the config
    * @param fileName the name of the file

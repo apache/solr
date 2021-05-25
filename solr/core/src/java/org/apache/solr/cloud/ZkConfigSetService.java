@@ -142,9 +142,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
     try {
-      Boolean existsConfig = zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
-      if (existsConfig == null) return false;
-      return existsConfig;
+      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error checking whether config exists",
               SolrZkClient.checkInterrupted(e));
@@ -197,7 +195,7 @@ public class ZkConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(String configName, String fileName, byte[] data, boolean overwriteOnExists) throws IOException {
     String filePath = CONFIGS_ZKNODE + "/" + configName + "/" + fileName;
     try {
-      // if createNew is true then zkClient#makePath failOnExists is set to false
+      // if overwriteOnExists is true then zkClient#makePath failOnExists is set to false
       zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists, true);
     } catch (KeeperException.NodeExistsException nodeExistsException) {
       throw new SolrException(
@@ -220,16 +218,20 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public Map<String, Object> getConfigMetadata(String configName) throws IOException {
+    byte[] data = null;
     try {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> data =
-          (Map<String, Object>)
-              Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true));
-      if (data == null) return new HashMap<>();
-      return data;
+      data = zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true);
+    } catch (KeeperException.NoNodeException e) {
+      return new HashMap<>();
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error getting config metadata", SolrZkClient.checkInterrupted(e));
     }
+    if (data == null) {
+      return new HashMap<>();
+    }
+    @SuppressWarnings("unchecked")
+    Map<String, Object> metadata = (Map<String, Object>) Utils.fromJSON(data);
+    return metadata;
   }
 
   @Override
