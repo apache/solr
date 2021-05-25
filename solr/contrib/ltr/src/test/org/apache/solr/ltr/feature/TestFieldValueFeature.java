@@ -400,6 +400,38 @@ public class TestFieldValueFeature extends TestRerankBase {
     }
   }
 
+  @Test
+  public void testThatDateValuesAreCorrectlyParsed() throws Exception {
+    for (String field : new String[] {"dvDateField", "noDvDateField"}) {
+      final String[][] inputsAndTests = {
+        new String[]{"1970-01-01T00:00:00.000Z", "/response/docs/[0]/=={'[fv]':'" +
+            FeatureLoggerTestUtils.toFeatureVector(field, "0.0")+"'}"},
+        new String[]{"1970-01-01T00:00:00.001Z", "/response/docs/[0]/=={'[fv]':'" +
+            FeatureLoggerTestUtils.toFeatureVector(field, "1.0")+"'}"},
+        new String[]{"1970-01-01T00:00:01.234Z", "/response/docs/[0]/=={'[fv]':'" +
+            FeatureLoggerTestUtils.toFeatureVector(field, "1234.0")+"'}"}
+      };
+
+      final String fstore = "testThatDateValuesAreCorrectlyParsed"+field;
+      loadFeature(field, FieldValueFeature.class.getName(), fstore,
+          "{\"field\":\"" + field + "\"}");
+      loadModel(field+"-model", LinearModel.class.getName(),
+          new String[]{field}, fstore,
+          "{\"weights\":{\""+field+"\":1.0}}");
+
+      for (String[] inputAndTest : inputsAndTests) {
+        assertU(adoc("id", "21", field, inputAndTest[0]));
+        assertU(commit());
+
+        final SolrQuery query = new SolrQuery("id:21");
+        query.add("rq", "{!ltr model=" + field + "-model reRankDocs=4}");
+        query.add("fl", "[fv]");
+
+        assertJQ("/query" + query.toQueryString(), inputAndTest[1]);
+      }
+    }
+  }
+
   /**
    * This class is used to track which specific FieldValueFeature is used so that we can test, whether the
    * fallback mechanism works correctly.

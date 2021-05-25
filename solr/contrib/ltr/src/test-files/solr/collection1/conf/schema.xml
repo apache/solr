@@ -40,9 +40,11 @@
     <field name="dvDoubleField" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvStrNumField" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
     <field name="dvStrBoolField" type="boolean" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvDateField" type="date" indexed="false" docValues="true" stored="false" multiValued="false"/>
 
     <field name="noDvFloatField" type="float" indexed="false" docValues="false" stored="true" multiValued="false"/>
     <field name="noDvStrNumField" type="string" indexed="false" docValues="false" stored="true" multiValued="false"/>
+    <field name="noDvDateField" type="date" indexed="false" docValues="false" stored="true" multiValued="false"/>
 
     <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
     <field name="_version_" type="long" indexed="true" stored="true"/>
