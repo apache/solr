@@ -25,13 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
@@ -48,6 +46,7 @@ import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -62,17 +61,6 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setup() throws Exception {
     initCore("solrconfig-ltr.xml", "schema.xml");
-  }
-
-  private IndexSearcher getSearcher(IndexReader r) {
-    // 'yes' to maybe wrapping in general
-    final boolean maybeWrap = true;
-    final boolean wrapWithAssertions = false;
-     // 'no' to asserting wrap because lucene AssertingWeight
-     // cannot be cast to solr LTRScoringQuery$ModelWeight
-    final IndexSearcher searcher = newSearcher(r, maybeWrap, wrapWithAssertions);
-
-    return searcher;
   }
 
   private static List<Feature> makeFieldValueFeatures(int[] featureIds,
@@ -124,7 +112,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       final BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
       bqBuilder.add(new TermQuery(new Term("field", "wizard")), BooleanClause.Occur.SHOULD);
       bqBuilder.add(new TermQuery(new Term("field", "oz")), BooleanClause.Occur.SHOULD);
-      final IndexSearcher searcher = solrQueryRequest.getSearcher();
+      final SolrIndexSearcher searcher = solrQueryRequest.getSearcher();
       // first run the standard query
       TopDocs hits = searcher.search(bqBuilder.build(), 10);
       assertEquals(2, hits.totalHits.value);
@@ -167,7 +155,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       final BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
       bqBuilder.add(new TermQuery(new Term("field", "wizard")), BooleanClause.Occur.SHOULD);
       bqBuilder.add(new TermQuery(new Term("field", "oz")), BooleanClause.Occur.SHOULD);
-      final IndexSearcher searcher = solrQueryRequest.getSearcher();
+      final SolrIndexSearcher searcher = solrQueryRequest.getSearcher();
 
       // first run the standard query
       TopDocs hits = searcher.search(bqBuilder.build(), 10);
