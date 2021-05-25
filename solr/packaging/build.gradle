@@ -42,6 +42,7 @@ configurations {
   docs
   docker
   solrTgz
+  solrTgzSignature
   solrZip
 }
 
@@ -192,6 +193,11 @@ task failUnlessGpgKeyProperty {
 task signDistTar(type: Sign) {
   dependsOn failUnlessGpgKeyProperty
   sign configurations.solrTgz
+}
+dependencies {
+  solrTgzSignature files(tasks.signDistTar.signatureFiles.singleFile) {
+    builtBy signDistTar
+  }
 }
 task signDistZip(type: Sign) {
   dependsOn failUnlessGpgKeyProperty

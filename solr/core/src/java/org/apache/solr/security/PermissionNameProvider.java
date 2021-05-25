@@ -48,7 +48,6 @@ public interface PermissionNameProvider {
     SECURITY_EDIT_PERM("security-edit", null),
     SECURITY_READ_PERM("security-read", null),
     METRICS_READ_PERM("metrics-read", null),
-    METRICS_HISTORY_READ_PERM("metrics-history-read", null),
     FILESTORE_READ_PERM("filestore-read", null),
     FILESTORE_WRITE_PERM("filestore-write", null),
     PACKAGE_EDIT_PERM("package-edit", null),
