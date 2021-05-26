@@ -65,8 +65,10 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
    */
   public TransientSolrCoreCacheDefault(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-
     int cacheMaxSize = getConfiguredCacheMaxSize(coreContainer);
+
+    // Now don't allow ridiculous allocations here, if the size is > 1,000, we'll just deal with
+    // adding cores as they're opened. This blows up with the marker value of -1.
     int initialCapacity = Math.min(cacheMaxSize, 1024);
     log.info("Allocating transient core cache for max {} cores with initial capacity of {}", cacheMaxSize, initialCapacity);
     Caffeine<String, SolrCore> transientCoresCacheBuilder =
