@@ -733,7 +733,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
-          DELETE_METRICS_HISTORY,
           FOLLOW_ALIASES);
       return map;
     }),
@@ -771,7 +770,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
-          DELETE_METRICS_HISTORY,
           COUNT_PROP, REPLICA_PROP,
           SHARD_ID_PROP,
           ONLY_IF_DOWN,
