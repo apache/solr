@@ -16,6 +16,12 @@
  */
 package org.apache.solr.util;
 
+import com.google.common.collect.ImmutableMap;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -40,18 +46,11 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableMap;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Base64;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A utility class with helpers for various signature and certificate tasks
