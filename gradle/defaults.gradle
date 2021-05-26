@@ -26,10 +26,6 @@ allprojects {
   repositories {
     mavenCentral()
     maven {
-      name "ApacheSnapshots"
-      url 'https://repository.apache.org/content/repositories/snapshots/'
-    }
-    maven {
       name "LucenePrerelease${lucenePrereleaseBuild}"
       url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
     }
