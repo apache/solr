@@ -388,10 +388,9 @@ public class V2HttpCall extends HttpSolrCall {
       path = ((AnnotatedApi) api).getEndPoint().path()[0]; // consider first to be primary
     } else {
       path = computeEndpointPath();
-      // TODO consider getValidators, looking for command & path?
     }
 
-    String verb = req.getMethod().toLowerCase(Locale.ROOT);
+    String verb = null;
     // if this api has commands ...
     final Map<String, JsonSchemaValidator> validators = getValidators(); // should be cached
     if (validators != null && validators.isEmpty() == false && solrReq != null) {
@@ -401,6 +400,9 @@ public class V2HttpCall extends HttpSolrCall {
       if (cmds.size() == 1) {
         verb = cmds.get(0).name;
       }
+    }
+    if (verb == null) {
+      verb = req.getMethod().toLowerCase(Locale.ROOT);
     }
 
     span.setOperationName(verb + ":" + path);
