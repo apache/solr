@@ -49,7 +49,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   String solrconfig = "solrconfig-ltr.xml";
   String schema = "schema.xml";
 
-  SortedMap<ServletHolder, String> extraServlets = null;
+  SortedMap<ServletHolder,String> extraServlets = null;
 
   @Override
   public void setUp() throws Exception {
@@ -57,13 +57,16 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     extraServlets = setupTestInit(solrconfig, schema, true);
     System.setProperty("enable.update.log", "true");
 
-    int numberOfShards = random().nextInt(4) + 1;
-    int numberOfReplicas = random().nextInt(2) + 1;
+    int numberOfShards = random().nextInt(4)+1;
+    int numberOfReplicas = random().nextInt(2)+1;
 
     int numberOfNodes = numberOfShards * numberOfReplicas;
 
     setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes);
+
+
   }
+
 
   @Override
   public void tearDown() throws Exception {
@@ -89,7 +92,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     query.setParam("rows", "8");
 
     QueryResponse queryResponse =
-        solrCluster.getSolrClient().query(COLLECTION, query);
+        solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("1", queryResponse.getResults().get(0).get("id").toString());
     assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
@@ -100,14 +103,14 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("7", queryResponse.getResults().get(6).get("id").toString());
     assertEquals("8", queryResponse.getResults().get(7).get("id").toString());
 
-    final Float original_result0_score = (Float) queryResponse.getResults().get(0).get("score");
-    final Float original_result1_score = (Float) queryResponse.getResults().get(1).get("score");
-    final Float original_result2_score = (Float) queryResponse.getResults().get(2).get("score");
-    final Float original_result3_score = (Float) queryResponse.getResults().get(3).get("score");
-    final Float original_result4_score = (Float) queryResponse.getResults().get(4).get("score");
-    final Float original_result5_score = (Float) queryResponse.getResults().get(5).get("score");
-    final Float original_result6_score = (Float) queryResponse.getResults().get(6).get("score");
-    final Float original_result7_score = (Float) queryResponse.getResults().get(7).get("score");
+    final Float original_result0_score = (Float)queryResponse.getResults().get(0).get("score");
+    final Float original_result1_score = (Float)queryResponse.getResults().get(1).get("score");
+    final Float original_result2_score = (Float)queryResponse.getResults().get(2).get("score");
+    final Float original_result3_score = (Float)queryResponse.getResults().get(3).get("score");
+    final Float original_result4_score = (Float)queryResponse.getResults().get(4).get("score");
+    final Float original_result5_score = (Float)queryResponse.getResults().get(5).get("score");
+    final Float original_result6_score = (Float)queryResponse.getResults().get(6).get("score");
+    final Float original_result7_score = (Float)queryResponse.getResults().get(7).get("score");
 
     final String result0_features = FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS", "64.0", "c3", "2.0", "original", "0.0", "dvIntFieldFeature", "8.0",
@@ -145,7 +148,8 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     // Test feature vectors returned (without re-ranking)
     query.setFields("*,score,features:[fv store=test]");
-    queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    queryResponse =
+        solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("1", queryResponse.getResults().get(0).get("id").toString());
     assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
@@ -185,7 +189,8 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     // Test feature vectors returned (with re-ranking)
     query.setFields("*,score,features:[fv]");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
-    queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    queryResponse =
+        solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("8", queryResponse.getResults().get(0).get("id").toString());
     assertEquals(result0_features,
@@ -225,7 +230,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     createCollection(COLLECTION, "conf1", numShards, numReplicas);
     indexDocuments(COLLECTION);
     for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
-      if (!solrRunner.getCoreContainer().getCores().isEmpty()) {
+      if (!solrRunner.getCoreContainer().getCores().isEmpty()){
         String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
         restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName);
         break;
@@ -249,8 +254,9 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 
+
   void indexDocument(String collection, String id, String title, String description, int popularity)
-      throws Exception {
+    throws Exception{
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", id);
     doc.setField("title", title);
@@ -268,7 +274,8 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     solrCluster.getSolrClient().add(collection, doc);
   }
 
-  private void indexDocuments(final String collection) throws Exception {
+  private void indexDocuments(final String collection)
+       throws Exception {
     final int collectionSize = 8;
     // put documents in random order to check that advanceExact is working correctly
     List<Integer> docIds = IntStream.rangeClosed(1, collectionSize).boxed().collect(toList());
@@ -375,4 +382,5 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     }
     System.clearProperty("managed.schema.mutable");
   }
+
 }
