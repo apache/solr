@@ -868,8 +868,9 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       var childNode = src[c];
       if (childNode && childNode.a_attr) {
         var a = childNode.a_attr;
+        var stored = a.stored || (a.docValues && a.useDocValuesAsStored);
         var obj = {"name":a.name, "indexed":a.indexed, "docValues": a.docValues,
-          "multiValued":a.multiValued, "stored":a.stored, "tokenized": a.tokenized};
+          "multiValued":a.multiValued, "stored":stored, "tokenized": a.tokenized};
         if (type === "field" || type === "dynamicField") {
           obj.type = a.type;
         } else if (type === "type") {
