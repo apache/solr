@@ -21,15 +21,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import no.nav.security.mock.oauth2.MockOAuth2Server;
+import no.nav.security.mock.oauth2.OAuth2Config;
+import no.nav.security.mock.oauth2.http.OAuth2HttpServer;
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider;
+import okhttp3.HttpUrl;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
@@ -53,8 +60,12 @@ import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -67,6 +78,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @SolrTestCaseJ4.SuppressSSL
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected static final int NUM_SERVERS = 2;
   protected static final int NUM_SHARDS = 2;
   protected static final int REPLICATION_FACTOR = 1;
@@ -75,6 +88,25 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   private String baseUrl;
   private JsonWebSignature jws;
   private String jwtTokenWrongSignature;
+
+  private static MockOAuth2Server mockOAuth2Server;
+  private static String mockOAuth2ServerWellKnownUrl;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    OAuth2HttpServer server = new MockHttpServerHttpsWrapper();
+    OAuth2Config config = new OAuth2Config(false, new OAuth2TokenProvider(), Collections.emptySet(), server);
+    mockOAuth2Server = new MockOAuth2Server(config);
+    mockOAuth2Server.start();
+    mockOAuth2ServerWellKnownUrl = mockOAuth2Server.wellKnownUrl("default").toString();
+    HttpUrl jwksUrl = mockOAuth2Server.jwksUrl("default");
+    log.info("URL={}", jwksUrl);
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    mockOAuth2Server.shutdown();
+  }
 
   @Override
   @Before
@@ -328,4 +360,5 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
                     });
     
   }
+
 }
