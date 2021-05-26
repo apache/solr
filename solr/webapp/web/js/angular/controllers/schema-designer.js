@@ -139,6 +139,35 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     });
   };
 
+  $scope.selectNodeInTree = function(nodeId) {
+    nodeId = stripAnchorSuffix(nodeId);
+    if (!nodeId) return;
+
+    var jst = $('#schemaJsTree').jstree(true);
+    if (jst) {
+      var selectedId = null;
+      var selected_node = jst.get_selected();
+      if (selected_node && selected_node.length > 0) {
+        selectedId = selected_node[0];
+      }
+      if (selectedId) {
+        try {
+          jst.deselect_node(selectedId);
+        } catch (err) {
+          // just ignore
+          //console.log("error deselecting "+selectedId);
+        }
+      }
+
+      try {
+        jst.select_node(nodeId, true);
+      } catch (err) {
+        // just ignore, some low-level tree issue
+        //console.log("error selecting "+nodeId);
+      }
+    }
+  };
+
   $scope.loadFile = function (event) {
     var t = event.target || event.srcElement || event.currentTarget;
     if (t && t.text) {
@@ -324,6 +353,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     var rootChildren = [];
     $scope.fieldsSrc = fieldsToTree(data.fields);
     $scope.fieldsNode = {
+      "id": "fields",
       "text": "Fields",
       "state": {"opened": true},
       "a_attr": {"href": "fields"},
@@ -332,14 +362,23 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     rootChildren.push($scope.fieldsNode);
 
     if ($scope.enableDynamicFields === "true") {
-      var dynamicFields = fieldsToTree(data.dynamicFields);
-      rootChildren.push({"text": "Dynamic Fields", "a_attr": {"href": "dynamicFields"}, "children": dynamicFields});
+      $scope.dynamicFieldsSrc = fieldsToTree(data.dynamicFields);
+      $scope.dynamicFieldsNode = {
+        "id": "dynamicFields",
+        "text": "Dynamic Fields",
+        "a_attr": {"href": "dynamicFields"},
+        "children": $scope.dynamicFieldsSrc
+      };
+      rootChildren.push($scope.dynamicFieldsNode);
+    } else {
+      delete $scope.dynamicFieldsNode;
+      delete $scope.dynamicFieldsSrc;
     }
 
-    rootChildren.push({"text": "Field Types", "a_attr": {"href": "fieldTypes"}, "children": fieldTypes});
+    rootChildren.push({"id":"fieldTypes", "text": "Field Types", "a_attr": {"href": "fieldTypes"}, "children": fieldTypes});
     rootChildren.push(files);
 
-    var tree = [{"text": schema, "a_attr": {"href": "/"}, "children": rootChildren}];
+    var tree = [{"id":"/", "text": schema, "a_attr": {"href": "/"}, "state":{"opened": true}, "children": rootChildren}];
 
     $scope.fields = data.fields;
     $scope.fieldNames = data.fields.map(f => f.name).sort();
@@ -355,17 +394,16 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     $scope.fieldTypes = fieldTypes;
     $scope.core = data.core;
     $scope.schemaTree = tree;
-
-    var jst = $('#schemaJsTree').jstree(true);
-    if (jst) {
-      jst.refresh();
-    }
+    $scope.refreshTree();
 
     $scope.collectionsForConfig = data.collectionsForConfig;
 
     if (data.docIds) {
       $scope.sampleDocIds = data.docIds;
     }
+
+    // re-apply the filters on the updated schema
+    $scope.onTreeFilterOptionChanged();
 
     // Load the Luke schema
     Luke.schema({core: data.core}, function (schema) {
@@ -377,6 +415,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
           nodeId = "/";
         }
         $scope.onSelectSchemaTreeNode(nodeId);
+
         $scope.updateWorking = false;
 
         if (data.updateError != null) {
@@ -414,17 +453,16 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
               } else {
                 $scope.updateStatusMessage = "Schema '"+$scope.currentSchema+"' loaded.";
               }
-              $timeout(function () {
-                delete $scope.updateStatusMessage;
-              }, 5000);
-            } else {
-              delete $scope.updateStatusMessage;
             }
+            $timeout(function () {
+              delete $scope.updateStatusMessage;
+            }, 5000);
           }
         }
 
         // re-fire the current query to reflect the updated schema
         $scope.doQuery();
+        $scope.selectNodeInTree(nodeId);
       });
     });
   };
@@ -440,8 +478,14 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       $scope.newField = {
         stored: "true",
         indexed: "true",
-        uninvertible: "true"
+        uninvertible: "true",
+        docValues: "true"
       }
+
+      if (type === "field") {
+        $scope.newField.type = "string";
+      }
+
       delete $scope.addErrors;
     }
   };
@@ -524,7 +568,10 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     } else if ("type" === $scope.adding) {
       if ($scope.types.includes($scope.newField.name)) {
         $scope.addErrors.push("Type '" + $scope.newField.name + "' already exists!");
-        return;
+      }
+
+      if (!$scope.newField.class) {
+        $scope.addErrors.push("class is required when creating a new field type!");
       }
     }
 
@@ -765,6 +812,13 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     return null;
   }
 
+  $scope.refreshTree = function() {
+    var jst = $('#schemaJsTree').jstree(true);
+    if (jst) {
+      jst.refresh();
+    }
+  };
+
   $scope.onSchemaTreeLoaded = function (id) {
     //console.log(">> on tree loaded");
   };
@@ -784,6 +838,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         $scope.updateFileError = data.updateFileError;
       } else {
         delete $scope.updateFileError;
+        $scope.updateStatusMessage = "File '"+$scope.selectedFile+"' updated.";
         $scope.onSchemaUpdated(data.configSet, data, nodeId);
       }
     }, $scope.errorHandler);
@@ -791,33 +846,56 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
   $scope.onSelectFileNode = function (id, doSelectOnTree) {
     $scope.selectedFile = id.startsWith("files/") ? id.substring("files/".length) : id;
+
     var params = {path: "file", file: $scope.selectedFile, configSet: $scope.currentSchema};
     SchemaDesigner.get(params, function (data) {
       $scope.fileNodeText = data[$scope.selectedFile];
       $scope.isLeafNode = false;
       if (doSelectOnTree) {
-        var jst = $('#schemaJsTree').jstree();
-        var node = jst.get_node(id);
-        if (node) {
-          var selected_node = jst.get_selected();
-          if (selected_node) {
-            jst.deselect_node(selected_node);
-          }
-          delete $scope.selectedNode;
-          $scope.isLeafNode = false;
-          $scope.showFieldDetails = true;
-          delete $scope.sampleDocId;
-          $scope.showAnalysis = false;
-          jst.select_node(id);
-        }
+        delete $scope.selectedNode;
+        $scope.isLeafNode = false;
+        $scope.showFieldDetails = true;
+        delete $scope.sampleDocId;
+        $scope.showAnalysis = false;
+        $scope.selectNodeInTree(id);
       }
     });
   };
+  
+  function fieldNodes(src, type) {
+    var nodes = [];
+    for (var c in src) {
+      var childNode = src[c];
+      if (childNode && childNode.a_attr) {
+        var a = childNode.a_attr;
+        var obj = {"name":a.name, "indexed":a.indexed, "docValues": a.docValues,
+          "multiValued":a.multiValued, "stored":a.stored, "tokenized": a.tokenized};
+        if (type === "field" || type === "dynamicField") {
+          obj.type = a.type;
+        } else if (type === "type") {
+          obj.class = a.class;
+        }
+        nodes.push(obj);
+      }
+    }
+    return nodes;
+  }
+
+  function stripAnchorSuffix(id) {
+    if (id && id.endsWith("_anchor")) {
+      id = id.substring(0, id.length - "_anchor".length);
+    }
+    return id;
+  }
 
   $scope.onSelectSchemaTreeNode = function (id) {
-
+    id = stripAnchorSuffix(id);
     $scope.showFieldDetails = false;
-
+    $scope.isSchemaRoot = false;
+    $scope.isLeafNode = false;
+    delete $scope.containerNodeLabel;
+    delete $scope.containerNode;
+    delete $scope.containerNodes;
     delete $scope.selectedFile;
 
     if (id === "/") {
@@ -825,6 +903,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       $scope.selectedNode = null;
       $scope.isSchemaRoot = true;
       $scope.isLeafNode = false;
+      $scope.isContainerNode = false;
       $scope.showFieldDetails = true;
       delete $scope.sampleDocId;
       $scope.showAnalysis = false;
@@ -837,51 +916,77 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       return;
     }
 
-    $scope.isSchemaRoot = false;
-    $scope.isLeafNode = false;
-
-    if (id.indexOf("/") == -1) {
-      $scope.selectedNode = null;
-      $scope.isLeafNode = false;
-      $scope.showFieldDetails = true;
-      delete $scope.sampleDocId;
-      $scope.showAnalysis = false;
+    var jst = $('#schemaJsTree').jstree(true);
+    if (!jst) {
       return;
     }
 
-    var node = $('#schemaJsTree').jstree(true).get_node(id);
+    var node = jst.get_node(id);
     if (!node) {
+      return;
+    }
+
+    if (id === "files") {
+      $scope.selectedNode = null;
+      $scope.isLeafNode = false;
+      return;
+    }
+
+    if (id.indexOf("/") === -1) {
+      $scope.selectedNode = null;
+      $scope.isLeafNode = false;
+      $scope.containerNode = id;
+
+      if (id === "fields") {
+        $scope.containerNodes = fieldNodes($scope.fieldsNode ? $scope.fieldsNode.children : $scope.fieldsSrc, "field");
+      } else if (id === "dynamicFields") {
+        $scope.containerNodes = fieldNodes($scope.dynamicFieldsNode ? $scope.dynamicFieldsNode.children : $scope.dynamicFieldsSrc, "dynamicField");
+      } else if (id === "fieldTypes") {
+        $scope.containerNodes = fieldNodes($scope.fieldTypes, "type");
+      }
+
+      $scope.containerNodeLabel = node.text;
+      $scope.showFieldDetails = true;
+      delete $scope.sampleDocId;
+      $scope.showAnalysis = false;
       return;
     }
 
     if (id.startsWith("files/")) {
       $scope.selectedNode = null;
       $scope.isLeafNode = false;
-      $scope.showFieldDetails = true;
       delete $scope.sampleDocId;
       $scope.showAnalysis = false;
-      $scope.onSelectFileNode(id, false);
+      if (node.children.length === 0) {
+        // file
+        $scope.showFieldDetails = true;
+        $scope.onSelectFileNode(id, false);
+      } else {
+        // folder
+        $scope.showFieldDetails = false;
+        delete $scope.selectedFile;
+      }
       return;
     }
 
     delete $scope.selectedFile;
-
     $scope.selectedNode = node["a_attr"]; // all the info we need is in the a_attr object
     if (!$scope.selectedNode) {
       // a node in the tree that isn't a field was selected, just ignore
       return;
     }
+
     $scope.selectedNode.fieldType = getType($scope.selectedNode.type);
     $scope.isLeafNode = true;
 
     var nodeType = id.substring(0, id.indexOf("/"));
     var name = null;
-    if (nodeType == "field") {
+    if (nodeType === "field") {
       $scope.selectedType = "Field";
       name = $scope.selectedNode.type;
-    } else if (nodeType == "dynamic") {
+    } else if (nodeType === "dynamic") {
       $scope.selectedType = "Dynamic Field";
-    } else if (nodeType == "type") {
+    } else if (nodeType === "type") {
       $scope.selectedType = "Type";
       name = $scope.selectedNode.name;
     }
@@ -1036,6 +1141,10 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       $scope.updateStatusMessage = "Applying " + $scope.selectedType + " updates ..."
     } else {
       $scope.updateStatusMessage = "Analyzing your sample data, schema will load momentarily ..."
+    }
+
+    if (!nodeId && $scope.selectedNode) {
+      nodeId = $scope.selectedNode.id;
     }
 
     // a bit tricky ...
@@ -1354,7 +1463,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.downloadConfig = function () {
-    location.href = "/api/schema-designer/download?wt=raw&configSet=" + $scope.currentSchema;
+    location.href = "/api/schema-designer/download/"+$scope.currentSchema+"_configset.zip?wt=raw&configSet=" + $scope.currentSchema;
   };
 
   function docsToTree(docs) {
@@ -1422,23 +1531,23 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       }
     }
     return children;
-  }  
+  }
 
   $scope.selectField = function (event) {
     var t = event.target || event.srcElement || event.currentTarget;
     if (t && t.text) {
       var nodeId = "field/" + t.text;
       $scope.onSelectSchemaTreeNode(nodeId);
-      // TODO: the node doesn't get selected in the tree, but calling jst.select_node leads to jstree errors
-      var jst = $('#schemaJsTree').jstree();
-      var node = jst.get_node(nodeId);
-      if (node) {
-        var selected_node = jst.get_selected();
-        if (selected_node) {
-          jst.deselect_node(selected_node);
-        }
-        jst.select_node(nodeId, true);
-      }
+      $scope.selectNodeInTree(nodeId);
+    }
+  };
+
+  $scope.selectFieldType = function (event) {
+    var t = event.target || event.srcElement || event.currentTarget;
+    if (t && t.text) {
+      var nodeId = "type/" + t.text;
+      $scope.onSelectSchemaTreeNode(nodeId);
+      $scope.selectNodeInTree(nodeId);
     }
   };
 
@@ -1659,72 +1768,61 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
   };
 
-  $scope.onTreeFilterOptionChanged = function() {
-    if (!$scope.fieldsNode) {
-      return;
+  function filterFieldsByType(fieldsSrc, typeFilter) {
+    var children = [];
+    for (var f in fieldsSrc) {
+      var field = fieldsSrc[f];
+      if (field.a_attr && field.a_attr.type === typeFilter) {
+        children.push(field);
+      }
     }
+    return children;
+  }
 
-    if (!$scope.treeFilter || !$scope.treeFilterOption || $scope.treeFilterOption === "*") {
-      $scope.fieldsNode.children = $scope.fieldsSrc;
-      $('#schemaJsTree').jstree(true).refresh();
-      return;
-    }
-
-    if ($scope.treeFilter === "type") {
-      var children = [];
-      for (var f in $scope.fieldsSrc) {
-        var field = $scope.fieldsSrc[f];
-        if (field.a_attr && field.a_attr.type === $scope.treeFilterOption) {
+  function filterFieldsByFeature(fieldsSrc, opt, enabled) {
+    var children = [];
+    var isEnabled = enabled === "true";
+    for (var f in fieldsSrc) {
+      var field = fieldsSrc[f];
+      if (!field.a_attr) {
+        continue;
+      }
+      var attr = field.a_attr;
+      if (opt === "indexed") {
+        if (attr.indexed === isEnabled) {
+          children.push(field);
+        }
+      } else if (opt === "text") {
+        if (attr.tokenized === isEnabled) {
+          children.push(field);
+        }
+      } else if (opt === "facet") {
+        if (((attr.indexed || attr.docValues) && !attr.tokenized && attr.name !== '_version_') === isEnabled) {
+          children.push(field);
+        }
+      } else if (opt === "highlight") {
+        if ((attr.stored && attr.tokenized) === isEnabled) {
+          children.push(field);
+        }
+      } else if (opt === "sortable") {
+        if (((attr.indexed || attr.docValues) && !attr.multiValued) === isEnabled) {
+          children.push(field);
+        }
+      } else if (opt === "docValues") {
+        if (attr.docValues === isEnabled) {
+          children.push(field);
+        }
+      } else if (opt === "stored") {
+        if ((attr.stored || (attr.docValues && attr.useDocValuesAsStored)) === isEnabled) {
           children.push(field);
         }
       }
-      $scope.fieldsNode.children = children;
-    } else if ($scope.treeFilter === "feature") {
-      var children = [];
-      for (var f in $scope.fieldsSrc) {
-        var field = $scope.fieldsSrc[f];
-        if (field.a_attr) {
-          var opt = $scope.treeFilterOption;
-          var attr = field.a_attr;
-          if (opt === "indexed") {
-            if (attr.indexed) {
-              children.push(field);
-            }
-          } else if (opt === "text") {
-            if (attr.tokenized) {
-              children.push(field);
-            }
-          } else if (opt === "facet") {
-            if ((attr.indexed || attr.docValues) && !attr.tokenized && attr.name !== '_version_') {
-              children.push(field);
-            }
-          } else if (opt === "highlight") {
-            if (attr.stored && attr.tokenized) {
-              children.push(field);
-            }
-          } else if (opt === "sortable") {
-            if ((attr.indexed || attr.docValues) && !attr.multiValued) {
-              children.push(field);
-            }
-          } else if (opt === "docValues") {
-            if (attr.docValues) {
-              children.push(field);
-            }
-          } else if (opt === "stored") {
-            if (attr.stored || (attr.docValues && attr.useDocValuesAsStored)) {
-              children.push(field);
-            }
-          }
-        }
-      }
-      $scope.fieldsNode.children = children;
-    } else {
-      // otherwise, restore the tree to original state
-      $scope.fieldsNode.children = $scope.fieldsSrc;
     }
-    $('#schemaJsTree').jstree(true).refresh();
+    return children;
+  }
 
-    var nodeId = "/"
+  $scope.findSelectedNodeId = function() {
+    var nodeId = "/";
     if ($scope.fieldsNode.children.length > 0) {
       if ($scope.selectedNode) {
         var found = $scope.fieldsNode.children.find(n => n.a_attr.name === $scope.selectedNode.name);
@@ -1738,19 +1836,60 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         nodeId = $scope.fieldsNode.children[0].a_attr.href;
       }
     }
+    return nodeId;
+  };
+
+  $scope.onTreeFilterOptionChanged = function() {
+    if (!$scope.fieldsNode) {
+      return;
+    }
+
+    if (!$scope.treeFilter || !$scope.treeFilterOption || $scope.treeFilterOption === "*") {
+      // restore tree to unfiltered state
+      $scope.fieldsNode.children = $scope.fieldsSrc;
+      if ($scope.dynamicFieldsNode) {
+        $scope.dynamicFieldsNode.children = $scope.dynamicFieldsSrc;
+      }
+      $scope.refreshTree();
+      return;
+    }
+
+    if ($scope.treeFilter === "type") {
+      $scope.fieldsNode.children = filterFieldsByType($scope.fieldsSrc, $scope.treeFilterOption);
+      if ($scope.dynamicFieldsNode) {
+        $scope.dynamicFieldsNode.children = filterFieldsByType($scope.dynamicFieldsSrc, $scope.treeFilterOption);
+      }
+    } else if ($scope.treeFilter === "feature") {
+      $scope.fieldsNode.children = filterFieldsByFeature($scope.fieldsSrc, $scope.treeFilterOption, $scope.treeFilterFeatureEnabled);
+      if ($scope.dynamicFieldsNode) {
+        $scope.dynamicFieldsNode.children = filterFieldsByFeature($scope.dynamicFieldsSrc, $scope.treeFilterOption, $scope.treeFilterFeatureEnabled);
+      }
+    } else {
+      // otherwise, restore the tree to original state
+      $scope.fieldsNode.children = $scope.fieldsSrc;
+      if ($scope.dynamicFieldsNode) {
+        $scope.dynamicFieldsNode.children = $scope.dynamicFieldsSrc;
+      }
+    }
+    $scope.refreshTree();
+
+    var nodeId = $scope.findSelectedNodeId();
     $scope.onSelectSchemaTreeNode(nodeId);
-    $('#schemaJsTree').jstree(true).select_node(nodeId);
+    $scope.selectNodeInTree(nodeId);
   };
 
   $scope.initTreeFilters = function() {
+    $scope.treeFilterFeatureEnabled = "true";
     $scope.treeFilterOptions = [];
     $scope.treeFilterOption = "";
     if ($scope.treeFilter === "type") {
       var usedFieldTypes = [];
-      var usedTypes = $scope.fields.map(f => f.type);
-      for (var t in usedTypes) {
-        if (!usedFieldTypes.includes(usedTypes[t])) {
-          usedFieldTypes.push(usedTypes[t]);
+      if ($scope.fields) {
+        var usedTypes = $scope.fields.map(f => f.type);
+        for (var t in usedTypes) {
+          if (!usedFieldTypes.includes(usedTypes[t])) {
+            usedFieldTypes.push(usedTypes[t]);
+          }
         }
       }
       $scope.treeFilterOptions = usedFieldTypes.sort();

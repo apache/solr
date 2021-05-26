@@ -212,7 +212,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading file: " + filePath, SolrZkClient.checkInterrupted(e));
     }
-    rsp.getValues().addAll(Collections.singletonMap(file, new String(data, StandardCharsets.UTF_8)));
+    String stringData = data != null && data.length > 0 ? new String(data, StandardCharsets.UTF_8) : "";
+    rsp.getValues().addAll(Collections.singletonMap(file, stringData));
   }
 
   @EndPoint(method = POST, path = "/schema-designer/file", permission = CONFIG_EDIT_PERM)
@@ -347,7 +348,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     return configs;
   }
 
-  @EndPoint(method = GET, path = "/schema-designer/download", permission = CONFIG_READ_PERM)
+  @EndPoint(method = GET, path = "/schema-designer/download/*", permission = CONFIG_READ_PERM)
   public void downloadConfig(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     String mutableId = getMutableId(configSet);

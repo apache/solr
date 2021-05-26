@@ -243,7 +243,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
 
     // don't want to choose text for fields where string will do
     // if most of the sample values are unique but only a few terms, then it's likely a text field
-    return (maxLength > 100 || maxTerms > 15 || (maxTerms > 4 && values.size() > 10 && ((float) Sets.newHashSet(values).size() / values.size()) > 0.9f));
+    return (maxLength > 60 || maxTerms > 12 || (maxTerms > 4 && values.size() >= 10 && ((float) Sets.newHashSet(values).size() / values.size()) > 0.9f));
   }
 
   protected String isFloatOrDouble(List<Object> values, Locale locale) {

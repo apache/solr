@@ -413,12 +413,17 @@ limitations under the License.
         <p ng-show="firstSchemaMessage" class="clearfix">Get started building your search app by defining a new schema. A schema defines all the fields in your search index. Solr comes with a <b>_default</b> schema that provides a good starting point to customize based on your specific data.<br/><br/></p>
         <form>
           <p class="clearfix"><label for="add_schema">New Schema:</label><input type="text" name="name" id="add_schema" ng-model="newSchema"></p>
-          <p class="clearfix"><label for="copy_schema">Copy From:</label>
+          <div class="clearfix"><label for="copy_schema">Copy From:</label>
             <select id="copy_schema"
                     ng-model="copyFrom"
                     chosen
-                    ng-options="schema for schema in schemasWithDefault"></select>
-          </p>
+                    ng-options="schema for schema in schemasWithDefault"></select><a ng-click="showHelp('copyFromHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+            <div id="copyFromHelp" class="help" ng-show="helpId === 'copyFromHelp'" escape-pressed="hideAll()">
+              <div class="help">
+              <p>Copy an existing Configset (schema, solrconfig.xml, and supporting files) as the starting point for your new schema. The <b>_default</b> Configset includes a schema with field guessing enabled, dynamic fields for common field types, and field types for analyzing text data for a number of common languages supported by Lucene. For more information about Configsets, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/config-sets.html">Configsets</a></div></p>
+              </div>
+            </div>
+          </div>
           <p class="clearfix note error" ng-show="addMessage"><span>{{addMessage}}</span></p>
           <p class="clearfix buttons">
             <button type="submit" class="submit" ng-click="addSchema()"><span>Add Schema</span></button>
@@ -439,7 +444,14 @@ limitations under the License.
           <form id="sample-docs-form">
             <div id="document-container">
               <div id="file-upload">
-                <input type="file" id="upload-file" name="upload-file" file-model="fileUpload"/>
+                <input type="file" id="upload-file" name="upload-file" file-model="fileUpload"/><a ng-click="showHelp('sampleDocsHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                <div id="sampleDocsHelp" class="help" ng-show="helpId === 'sampleDocsHelp'">
+                  <div class="help">
+                    <p>Upload a JSON, CSS, or XML file containing sample documents or simply paste some sample documents into the text area below; the Schema Designer supports a maximum of 5MB and 1,000 documents.
+                      <br/><br/>Click on the <b>Analyze Documents</b> button to have Solr determine the schema by looking at the sample values for each field. Sample documents are stored on the server so you can make changes to the schema and Schema Designer will automatically re-index the sample documents to apply the changes.
+                    </p>
+                  </div>
+                </div>
               </div>
               <label for="document">or Paste Sample Document(s):</label>
               <textarea ng-model="sampleDocuments" name="document" id="document" title="Sample Documents" rows="20" cols="44" placeholder="" ng-change="onSampleDocumentsChanged()"></textarea>
@@ -457,21 +469,25 @@ limitations under the License.
     <div class="designer-middle">
       <div class="block" id="schema-editor">
         <h2><span>Schema Editor</span></h2>
+        <div id="tree-filters" ng-show="showSchemaActions">
+          Filter fields by:&nbsp;<select id="tree-filters-cat"
+            ng-model="treeFilter"
+            ng-change="applyTreeFilterOption()">
+          <option value=""></option>
+          <option value="type">type</option>
+          <option value="feature">feature</option>
+          </select>
+          <select id="tree-filters-options"
+              type="text"
+              ng-model="treeFilterOption"
+              ng-change="onTreeFilterOptionChanged()"
+              ng-options="option for option in treeFilterOptions"></select>
+          <span id="treeFilterFeatureEnabledSpan" ng-show="treeFilter === 'feature'">
+          <input id="treeFilterFeatureEnabledInput" type="checkbox" ng-model="treeFilterFeatureEnabled" ng-change="onTreeFilterOptionChanged()" ng-true-value="'true'" ng-false-value="'false'"/>
+          <label class="checkbox" for="treeFilterFeatureEnabledInput" title="enabled">enabled</label>
+          </span>
+        </div>
         <div id="tree-content" class="content clearfix" ng-show="showSchemaActions">
-          <div id="tree-filters">
-            Filter fields by:&nbsp;<select id="tree-filters-cat"
-                ng-model="treeFilter"
-                ng-change="applyTreeFilterOption()">
-              <option value=""></option>
-              <option value="type">type</option>
-              <option value="feature">feature</option>
-            </select>
-            <select id="tree-filters-options"
-                    type="text"
-                    ng-model="treeFilterOption"
-                    ng-change="onTreeFilterOptionChanged()"
-                    ng-options="option for option in treeFilterOptions"></select>
-          </div>
           <jstree class="tree" on-select="onSelectSchemaTreeNode(url)" id="schemaJsTree" data="schemaTree"></jstree>
         </div>
         <div id="tree-node-content" ng-show="showFieldDetails">
@@ -481,6 +497,10 @@ limitations under the License.
           </div>
 
           <div id="schema-root-details" ng-show="isSchemaRoot">
+            <div class="field-form-right">
+              <label class="checkbox" title="Schema">Schema:</label>
+              <p id="currentSchemaLabel">{{currentSchema}}</p>
+            </div>
             <div class="field-form-right">
               <label for="unique_key" class="checkbox" title="Unique Key Field">Unique Key Field:</label>
               <select id="unique_key"
@@ -558,7 +578,7 @@ limitations under the License.
               <div id="fieldGuessingHelp" class="help" ng-show="helpId === 'fieldGuessingHelp'">
                 <div class="help-wide">
                   <p>Field guessing (aka "schemaless mode") allows Solr to detect the "best" field type for unknown fields encountered during indexing. Field guessing also performs some field transformations, such as removing spaces from field names. If you use the schema designer to create your schema based on sample documents, you may not need to enable this feature.
-                    However, with this feature disabled, you need to make sure the incoming data matches the schema exactly or indexing errors may occur.<br/><br/>For more information about schemaless mode, see:
+                    However, with this feature disabled, you need to make sure the incoming data matches the schema exactly or indexing errors may occur. For more information about schemaless mode, see:
                   <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/schemaless-mode.html">Schemaless Mode</a></div>
                   </p>
                 </div>
@@ -578,7 +598,7 @@ limitations under the License.
             </div>
           </div>
           <div id="file-node" ng-show="selectedFile">
-            <textarea name="file-node-text" id="file-node-text" ng-model="fileNodeText" rows="24" cols="68"></textarea>
+            <textarea name="file-node-text" id="file-node-text" ng-model="fileNodeText" rows="24" cols="62"></textarea>
             <div id="save-file-buttons" class="clearfix">
               <button id="save-file" type="submit" class="submit" ng-click="updateFile()"><span>Save</span></button>
             </div>
@@ -743,6 +763,65 @@ limitations under the License.
               </div>
             </form>
           </div>
+          <div class="container-node" ng-show="containerNode === 'fields' || containerNode === 'dynamicFields'">
+            <table border="0" cellspacing="0" cellpadding="0">
+              <tbody>
+              <tr ng-class="{odd:$odd}">
+                <th class="prop-hdr">Name <a ng-click="showHelp('fieldTableHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                  <div id="fieldTableHelp" class="help" ng-show="helpId === 'fieldTableHelp'">
+                    <div class="help">
+                      <p>This table provides a list of {{containerNodeLabel}} defined for your schema. Click on the name in the first column to edit properties. Click on <b>{{containerNodeLabel}}</b> in the Schema Editor tree on the left to return to this table view.<br/><br/>For more information about field properties, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/defining-fields.html">Field Properties</a></div></p>
+                    </div>
+                  </div>
+                </th>
+                <th class="prop-hdr">Type</th>
+                <th class="prop-hdr-flag">Indexed</th>
+                <th class="prop-hdr-flag">Stored</th>
+                <th class="prop-hdr-flag">MultiValued</th>
+                <th class="prop-hdr-flag">DocValues</th>
+                <th class="prop-hdr-flag">Tokenized</th>
+              </tr>
+              <tr ng-repeat="f in containerNodes" ng-class="{odd:$odd}">
+                <td class="prop"><a ng-click="selectField($event)">{{f.name}}</a></td>
+                <td class="prop">{{f.type}}</td>
+                <td class="prop-flag"><span ng-show="f.indexed"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.stored"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.multiValued"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.docValues"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.tokenized"><img src="img/ico/tick.png"/></span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="container-node" ng-show="containerNode === 'fieldTypes'">
+            <table border="0" cellspacing="0" cellpadding="0">
+              <tbody>
+              <tr ng-class="{odd:$odd}">
+                <th class="prop-hdr">Type <a ng-click="showHelp('fieldTypeTableHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                  <div id="fieldTypeTableHelp" class="help" ng-show="helpId === 'fieldTypeTableHelp'">
+                    <div class="help">
+                      <p>This table provides a list of field types defined for your schema. Click on the type name in the first column to edit properties for that type. Changing properties for a type impacts all fields linked to the type. Click on <b>Field Types</b> in the Schema Editor tree on the left to return to this table view.<br/><br/>For more information about field types, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/field-type-definitions-and-properties.html">Field Type Definitions and Properties</a></div></p>
+                    </div>
+                  </div></th>
+                <th class="prop-hdr">Class</th>
+                <th class="prop-hdr-flag">Indexed</th>
+                <th class="prop-hdr-flag">Stored</th>
+                <th class="prop-hdr-flag">MultiValued</th>
+                <th class="prop-hdr-flag">DocValues</th>
+                <th class="prop-hdr-flag">Tokenized</th>
+              </tr>
+              <tr ng-repeat="f in containerNodes" ng-class="{odd:$odd}">
+                <td class="prop"><a ng-click="selectFieldType($event)">{{f.name}}</a></td>
+                <td class="prop">{{f.class}}</td>
+                <td class="prop-flag"><span ng-show="f.indexed"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.stored"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.multiValued"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.docValues"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.tokenized"><img src="img/ico/tick.png"/></span></td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -870,7 +949,7 @@ limitations under the License.
                 <a ng-click="showHelp('queryFacetHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
                 <div id="queryFacetHelp" class="help" ng-show="helpId === 'queryFacetHelp'">
                   <div class="help">
-                    Fields must be indexed or have docValues enabled to compute facets. Hold shift and click to select multiple fields from the list.<br/><br/>For more information about faceting, see:
+                    Fields must be indexed or have docValues enabled to compute facets.<br/><br/>For more information about faceting, see:
                     <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/faceting.html">Faceting</a></div>
                   </div>
                 </div>

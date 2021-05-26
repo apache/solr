@@ -37,7 +37,7 @@ limitations under the License.
   overflow: auto;
   float: left;
   height: 520px;
-  width: 265px;
+  width: 275px;
   padding: 3px;
 }
 #content #designer #tree-node-content
@@ -351,12 +351,12 @@ limitations under the License.
 
 /* Sample Documents */
 
-#analyze-buttons{
+#content #designer #analyze-buttons{
   float: right;
   margin-right: 12px;
 }
 
-#query-buttons{
+#content #designer #query-buttons{
   margin-top: 20px;
   float: right;
   margin-right: 8px;
@@ -641,7 +641,7 @@ limitations under the License.
 
 #content #designer #updateStatusMessage { color: darkgreen; float: right; margin-top: 5px; background-image: url( ../../img/ico/tick.png ); }
 #content #designer #updateStatusMessage span { margin-left: 18px; }
-#content #designer .working { font-style: italic; color: black !important; float: right; margin-top: 5px; background-image: url( ../../img/ico/gear.png ) !important; }
+#content #designer .working { font-style: italic; color: black !important; float: right; margin-top: 5px; background-image: url( ../../img/loader.gif ) !important; }
 
 #content #designer .schema-actions div.action
 {
@@ -1163,36 +1163,36 @@ limitations under the License.
   background-image: url( ../../img/ico/disk-black.png );
 }
 
-#results-tree-left {
+#content #designer #results-tree-left {
   float: left;
   width: 330px;
   overflow: auto;
   height: 350px;
 }
 
-#results-tree-right {
+#content #designer #results-tree-right {
   float: left;
   overflow: auto;
   height: 350px;
 }
 
-#save-file-buttons {
+#content #designer #save-file-buttons {
   margin-top: 15px;
   margin-right: 5px;
   display: block;
   float: right;
 }
 
-#copy_dest {
+#content #designer #copy_dest {
   width: 300px;
 }
 
-.hit-field {
+#content #designer .hit-field {
   padding: 3px;
   width: 120px;
 }
 
-.hit-value {
+#content #designer .hit-value {
   padding: 3px;
 }
 
@@ -1290,6 +1290,7 @@ limitations under the License.
 
 #content #designer .help
 {
+  font-weight: normal !important;
   position: relative;
 }
 
@@ -1320,7 +1321,7 @@ limitations under the License.
   left: -90px;
   top: 0px;
   padding: 6px;
-  width: 390px;
+  width: 420px;
 }
 
 #content #designer .help div.help-wider
@@ -1482,12 +1483,71 @@ limitations under the License.
   text-decoration-color: #003eff;
 }
 
+#content #designer #tree-filters {
+  font-size: 11px;
+  max-width: 400px;
+  overflow: hidden;
+  margin-top: 2px;
+  margin-bottom: 6px;
+}
+
 #content #designer #tree-filters-cat {
-  max-width: 66px;
+  max-width: 70px;
   font-size: 11px;
 }
 
 #content #designer #tree-filters-options {
-  max-width: 81px;
+  max-width: 90px;
   font-size: 11px;
 }
+
+#content #designer #copy_schema {
+  width: 200px;
+}
+
+#content #designer #currentSchemaLabel {
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+#content #designer #treeFilterFeatureEnabledSpan {
+  display: inline;
+  font-size: 11px;
+}
+
+#content #designer #treeFilterFeatureEnabledSpan input {
+  padding: 0px;
+  margin-top: 4px;
+}
+
+#content #designer .container-node {
+  max-height: 540px;
+  overflow: auto;
+}
+
+
+#content #designer .prop {
+  padding: 3px;
+  text-align: left;
+}
+
+#content #designer .prop-flag {
+  padding: 3px;
+  text-align: center;
+}
+
+#content #designer .prop-hdr {
+  padding: 3px;
+  font-weight: bold;
+  text-align: left;
+  min-width: 90px;
+}
+
+#content #designer .prop-hdr-flag {
+  padding: 3px;
+  font-weight: bold;
+  text-align: center;
+  min-width: 65px;
+}
+
+

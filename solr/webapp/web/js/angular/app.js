@@ -434,10 +434,8 @@ solrAdminApp.config([
         $location.path('/login');
       }
     } else {
-      // schema designer prefers to handle 400 class errors with internally vs. showing the top-level
-      // red error message but 500's get the normal treatment
-      var isHandledBySchemaDesigner = (rejection.config.url.startsWith("/api/schema-designer/") &&
-          rejection.data.error && rejection.data.error.code && rejection.data.error.code < 500);
+      // schema designer prefers to handle errors itselft
+      var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
       if (!isHandledBySchemaDesigner) {
         $rootScope.exceptions[rejection.config.url] = rejection.data.error;
       }
