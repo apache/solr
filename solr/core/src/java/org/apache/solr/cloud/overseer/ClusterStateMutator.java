@@ -106,18 +106,29 @@ public class ClusterStateMutator {
     }
     collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
-    //put configName in collectionProps so that it will appear in state.json
-    if (message.getStr(CollectionAdminParams.COLL_CONF) != null) {
-      collectionProps.put(ZkStateReader.CONFIGNAME_PROP, message.getStr(CollectionAdminParams.COLL_CONF));
-    }
-
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");
     }
 
+    addConfigNameToProps(message, collectionProps);
+
     DocCollection newCollection = new DocCollection(cName, slices, collectionProps, router, -1);
 
     return new ZkWriteCommand(cName, newCollection);
+  }
+
+  public static void addConfigNameToProps(ZkNodeProps message, Map<String, Object> collectionProps) {
+    // put configName in props so that it will appear in state.json
+    final String configName = (String) message.getProperties().get(CollectionAdminParams.COLL_CONF);
+
+    if (configName != null) {
+      collectionProps.put(ZkStateReader.CONFIGNAME_PROP, configName);
+    }
+
+    // if collection.configName is already in props rename it to configName
+    if (collectionProps.containsKey(CollectionAdminParams.COLL_CONF)) {
+      collectionProps.put(ZkStateReader.CONFIGNAME_PROP, collectionProps.remove(CollectionAdminParams.COLL_CONF));
+    }
   }
 
   public ZkWriteCommand deleteCollection(ClusterState clusterState, ZkNodeProps message) {

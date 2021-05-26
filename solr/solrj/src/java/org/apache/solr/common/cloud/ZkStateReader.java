@@ -231,43 +231,6 @@ public class ZkStateReader implements SolrCloseable {
       PLACEMENT_PLUGIN
       );
 
-  /**
-   * Returns config set name for collection.
-   *
-   * @param collection to return config set name for
-   * @deprecated as 9.0 use {@link DocCollection#getConfigName()} instead
-   */
-  @Deprecated
-  public String readConfigName(String collection) throws KeeperException {
-
-    String configName = null;
-
-    String path = COLLECTIONS_ZKNODE + "/" + collection;
-    log.debug("Loading collection config from: [{}]", path);
-
-    try {
-      byte[] data = zkClient.getData(path, null, null, true);
-      if (data == null) {
-        log.warn("No config data found at path {}.", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-
-      ZkNodeProps props = ZkNodeProps.load(data);
-      configName = props.getStr(CONFIGNAME_PROP);
-
-      if (configName == null) {
-        log.warn("No config data found at path{}. ", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-    } catch (InterruptedException e) {
-      SolrZkClient.checkInterrupted(e);
-      log.warn("Thread interrupted when loading config name for collection {}", collection);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Thread interrupted when loading config name for collection " + collection, e);
-    }
-
-    return configName;
-  }
-
 
   private final SolrZkClient zkClient;
 

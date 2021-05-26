@@ -369,7 +369,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
     }
 
-    assertEquals(sameConfig ? "conf1" : "customConfigName", restoreCollection.getConfigName(client.getZkStateReader()));
+    assertEquals(sameConfig ? "conf1" : "customConfigName", restoreCollection.getConfigName());
 
     Map<String, Integer> numReplicasByNodeName = new HashMap<>();
     restoreCollection.getReplicas().forEach(x -> {

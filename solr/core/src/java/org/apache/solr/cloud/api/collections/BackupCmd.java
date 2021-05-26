@@ -81,7 +81,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
-    String configName = ccc.getSolrCloudManager().getClusterStateProvider().getCollection(collectionName).getConfigName(ccc.getZkStateReader());
+    String configName = ccc.getSolrCloudManager().getClusterStateProvider().getCollection(collectionName).getConfigName();
 
     BackupProperties backupProperties = BackupProperties.create(backupName, collectionName,
             extCollectionName, configName);

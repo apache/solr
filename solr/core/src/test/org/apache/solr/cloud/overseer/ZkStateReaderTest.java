@@ -19,6 +19,7 @@ package org.apache.solr.cloud.overseer;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.IOUtils;
@@ -33,6 +34,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.util.TimeOut;
 
 public class ZkStateReaderTest extends SolrTestCaseJ4 {
@@ -60,7 +62,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       // create new collection
       ZkWriteCommand c1 = new ZkWriteCommand("c1",
-          new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
+          new DocCollection("c1", new HashMap<>(), Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0));
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
       writer.writePendingUpdates();
       reader.forceUpdateCollection("c1");
@@ -97,14 +99,17 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
       ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
-      DocCollection state = new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0);
+      DocCollection state = new DocCollection("c1", new HashMap<>(), Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0);
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();
       assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
       reader.waitForState("c1", 1, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState != null);
 
-      state = new DocCollection("c1", new HashMap<>(), Collections.singletonMap("x", "y"), DocRouter.DEFAULT, 0);
+      Map<String, Object> props = new HashMap<>();
+      props.put("x", "y");
+      props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
+      state = new DocCollection("c1", new HashMap<>(), props, DocRouter.DEFAULT, 0);
       wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();
@@ -156,7 +161,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
 
       // create new collection
-      DocCollection state = new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0);
+      DocCollection state = new DocCollection("c1", new HashMap<>(), Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0);
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();

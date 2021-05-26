@@ -227,7 +227,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     params.set(CoreAdminParams.CORE_NODE_NAME,
         CollectionHandlingUtils.waitToSeeReplicasInState(ccc.getZkStateReader(), ccc.getSolrCloudManager().getTimeSource(), collectionName, Collections.singleton(createReplica.coreName)).get(createReplica.coreName).getName());
 
-    String configName = coll.getConfigName(ccc.getZkStateReader());
+    String configName = coll.getConfigName();
     String routeKey = message.getStr(ShardParams._ROUTE_);
     String dataDir = message.getStr(CoreAdminParams.DATA_DIR);
     String ulogDir = message.getStr(CoreAdminParams.ULOG_DIR);

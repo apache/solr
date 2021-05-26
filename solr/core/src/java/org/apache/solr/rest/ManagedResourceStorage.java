@@ -87,18 +87,18 @@ public abstract class ManagedResourceStorage {
     StorageIO storageIO;
 
     SolrZkClient zkClient = null;
-    String zkConfigName = null;
+    String configName = null;
     if (resourceLoader instanceof ZkSolrResourceLoader) {
       zkClient = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkClient();
       try {
         final ZkStateReader zkStateReader = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkStateReader();
-        zkConfigName = zkStateReader.getClusterState().getCollection(collection).getConfigName(zkStateReader);
+        configName = zkStateReader.getClusterState().getCollection(collection).getConfigName();
       } catch (Exception e) {
         log.error("Failed to get config name due to", e);
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Failed to load config name for collection:" + collection  + " due to: ", e);
       }
-      if (zkConfigName == null) {
+      if (configName == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, 
             "Could not find config name for collection:" + collection);
       }
@@ -108,7 +108,7 @@ public abstract class ManagedResourceStorage {
       storageIO = resourceLoader.newInstance(initArgs.get(STORAGE_IO_CLASS_INIT_ARG), StorageIO.class); 
     } else {
       if (zkClient != null) {
-        String znodeBase = "/configs/"+zkConfigName;
+        String znodeBase = "/configs/"+configName;
         log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: {}", znodeBase);
         storageIO = new ManagedResourceStorage.ZooKeeperStorageIO(zkClient, znodeBase);
       } else {

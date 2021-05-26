@@ -127,10 +127,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       final String async = message.getStr(ASYNC);
 
       ZkStateReader zkStateReader = ccc.getZkStateReader();
-
-      // this also creates the collection zk node as a side-effect
-      CollectionHandlingUtils.createConfNode(ccc.getSolrCloudManager().getDistribStateManager(), configName, collectionName);
-
       message.getProperties().put(COLL_CONF, configName);
 
       Map<String,String> collectionParams = new HashMap<>();

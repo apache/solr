@@ -53,6 +53,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -563,6 +564,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     try {
       if (CollectionParams.CollectionAction.CREATE.isEqual(props.getStr("operation"))) {
         String collName = props.getStr("name");
+        if (props.containsKey(CollectionAdminParams.COLL_CONF)) {
+          props.plus(ZkStateReader.CONFIGNAME_PROP, props.getProperties().remove("collection.configName"));
+        }
         if (collName != null) collectionsSet.put(collName, new ClusterState.CollectionRef(
             new DocCollection(collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));
       }

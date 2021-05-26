@@ -82,7 +82,7 @@ public class TestConfigSetsAPIShareSchema extends SolrCloudTestCase {
     // change col1's configSet
     CollectionAdminRequest.modifyCollection("col1",
       map("collection.configName", "conf1")  // from cShare
-    ).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    ).process(cluster.getSolrClient(), "col1");
 
     try (SolrCore coreCol1 = coreContainer.getCore("col1_shard1_replica_n1");
          SolrCore coreCol2 = coreContainer.getCore("col2_shard1_replica_n1")) {

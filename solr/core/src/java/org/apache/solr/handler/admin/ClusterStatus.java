@@ -183,7 +183,7 @@ public class ClusterStatus {
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
         collectionStatus.put("aliases", collectionVsAliases.get(name));
       }
-      String configName = clusterStateCollection.getConfigName(zkStateReader);;
+      String configName = clusterStateCollection.getConfigName();
       collectionStatus.put("configName", configName);
       collectionProps.add(name, collectionStatus);
     }

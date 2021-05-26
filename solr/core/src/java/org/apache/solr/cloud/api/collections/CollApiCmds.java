@@ -36,7 +36,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -49,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
@@ -58,6 +58,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -297,14 +298,10 @@ public class CollApiCmds {
 
       final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
       //the rest of the processing is based on writing cluster state properties
-      //remove the property here to avoid any errors down the pipeline due to this property appearing
-      String configName = (String) message.getProperties().remove(CollectionAdminParams.COLL_CONF);
+      String configName = (String) message.getProperties().get(COLL_CONF);
 
       if (configName != null) {
         CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getCoreContainer().getConfigSetService(), configName);
-
-        CollectionHandlingUtils.createConfNode(ccc.getSolrCloudManager().getDistribStateManager(), configName, collectionName);
-        new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);
       }
 
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
@@ -321,6 +318,13 @@ public class CollApiCmds {
 
           for (Map.Entry<String, Object> updateEntry : message.getProperties().entrySet()) {
             String updateKey = updateEntry.getKey();
+
+            /** update key from collection.configName to configName; actual renaming happens in
+             * {@link org.apache.solr.cloud.overseer.CollectionMutator#modifyCollection}
+             */
+            if (updateKey.equals(COLL_CONF)) {
+              updateKey = CONFIGNAME_PROP;
+            }
 
             if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
                 && !updateKey.equals(Overseer.QUEUE_OPERATION)
@@ -341,8 +345,8 @@ public class CollApiCmds {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to modify collection", e);
       }
 
-      // if switching to/from read-only mode reload the collection
-      if (message.keySet().contains(ZkStateReader.READ_ONLY)) {
+      // if switching to/from read-only mode or configName is not null reload the collection
+      if (message.keySet().contains(ZkStateReader.READ_ONLY) || configName != null) {
         new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);
       }
     }
