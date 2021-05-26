@@ -71,6 +71,29 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   }
 
   @Test
+  public void testSimpleQueryCustomSort() throws Exception {
+    SolrQuery query = new SolrQuery("*:*");
+    query.setRequestHandler("/query");
+    query.setFields("*,score,[shard]");
+    query.setParam("rows", "8");
+    query.setParam("sort", "id asc");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
+
+    QueryResponse queryResponse =
+            solrCluster.getSolrClient().query(COLLECTION, query);
+    assertEquals(8, queryResponse.getResults().getNumFound());
+    assertEquals("8", queryResponse.getResults().get(0).get("id").toString());
+    assertEquals("7", queryResponse.getResults().get(1).get("id").toString());
+    assertEquals("6", queryResponse.getResults().get(2).get("id").toString());
+    assertEquals("5", queryResponse.getResults().get(3).get("id").toString());
+    assertEquals("4", queryResponse.getResults().get(4).get("id").toString());
+    assertEquals("3", queryResponse.getResults().get(5).get("id").toString());
+    assertEquals("2", queryResponse.getResults().get(6).get("id").toString());
+    assertEquals("1", queryResponse.getResults().get(7).get("id").toString());
+  }
+
+
+  @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testSimpleQuery() throws Exception {
