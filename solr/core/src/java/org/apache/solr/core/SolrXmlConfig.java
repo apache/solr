@@ -599,10 +599,6 @@ public class SolrXmlConfig {
     if (node != null) {
       builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
     }
-    node = config.getNode("solr/metrics/history", false);
-    if (node != null) {
-      builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
-    }
     node = config.getNode("solr/metrics/missingValues", false);;
     if (node != null) {
       NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(node);

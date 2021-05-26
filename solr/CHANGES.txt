@@ -131,6 +131,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15335: Docker: Solr has capability to build functionally-identical local and official Docker image. (hossman, Houston Putman)
 
+* SOLR-15414: Use ConfigSet API instead of Zookeeper data node to list out configsets available in Solr Admin UI. (Nazerke Seidan via Eric Pugh)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -295,7 +297,11 @@ Other Changes
 
 * SOLR-15222: userfiles dir will only be created in SolrCloud mode (Mike Drob)
 
+* SOLR-15401: Document the new NorwegianNormalizationFilter introduced in LUCENE-9929. (janhoy)
+
 * SOLR-15409: Upgrade to Zookeeper 3.7.0 (Mike Drob)
+
+* SOLR-15416: Remove metrics history collection (and MetricsHistoryHandler). (ab)
 
 Bug Fixes
 ---------------------
@@ -398,6 +404,9 @@ Bug Fixes
 
 * SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
   allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
+
+* SOLR-15418: The V2 API threw errors for GET requests to collection handlers like /select.
+  (David Smiley)
 
 * SOLR-15424: Solr replication UI wraps ETA time on top of next line (janhoy)
 
