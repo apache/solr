@@ -36,7 +36,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
