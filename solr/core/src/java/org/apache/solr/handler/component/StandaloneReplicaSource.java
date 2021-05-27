@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.security.AllowListUrlChecker;
 
 /**
  * A replica source for solr stand alone mode
@@ -36,7 +37,7 @@ class StandaloneReplicaSource implements ReplicaSource {
       replicas[i] = StrUtils.splitSmart(list.get(i), "|", true);
       // todo do we really not need to transform in non-cloud mode?!
       // builder.replicaListTransformer.transform(replicas[i]);
-      builder.hostChecker.checkWhitelist(builder.shardsParam, replicas[i]);
+      CloudReplicaSource.checkUrlsAllowList(builder.urlChecker, null, builder.shardsParam, replicas[i]);
     }
   }
 
@@ -59,15 +60,15 @@ class StandaloneReplicaSource implements ReplicaSource {
 
   static class Builder {
     private String shardsParam;
-    private HttpShardHandlerFactory.WhitelistHostChecker hostChecker;
+    private AllowListUrlChecker urlChecker;
 
     public Builder shards(String shardsParam) {
       this.shardsParam = shardsParam;
       return this;
     }
 
-    public Builder whitelistHostChecker(HttpShardHandlerFactory.WhitelistHostChecker hostChecker) {
-      this.hostChecker = hostChecker;
+    public Builder allowListUrlChecker(AllowListUrlChecker urlChecker) {
+      this.urlChecker = urlChecker;
       return this;
     }
 

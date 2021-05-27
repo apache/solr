@@ -452,8 +452,6 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     } catch (IOException e) {
       log.error("Error checking if hdfs path exists", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error checking if hdfs path exists", e);
-    } finally {
-      IOUtils.closeQuietly(fileSystem);
     }
   }
 

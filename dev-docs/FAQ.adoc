@@ -9,3 +9,12 @@ This document provides a quick reference for frequently questioned concepts and 
 === What do I do with NOTICE.txt if I don't have one to satisfy Gradle?
 
 You create an empty file, similar to the `/solr/licenses/antlr4-runtime-NOTICE.txt`
+
+=== What are best practices for branches in Git?
+
+Most committers already use a private fork branch for PRs.  Use of central branches
+is ok for very collaborative work, but 95% of the time it is better to use a private
+branch to avoid extra mailing list traffic etc.
+
+Periodically review https://github.com/apache/solr/branches/all to see if you have
+created a branch that can be deleted.

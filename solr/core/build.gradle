@@ -77,7 +77,7 @@ dependencies {
 
   implementation 'com.tdunning:t-digest'
 
-  implementation 'io.opentracing:opentracing-api'
+  api 'io.opentracing:opentracing-api' // Tracer is exposed on some methods
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
   implementation 'org.apache.commons:commons-exec'
@@ -94,8 +94,6 @@ dependencies {
   api 'org.bitbucket.b_c:jose4j'
   implementation 'org.codehaus.janino:commons-compiler'
   implementation 'org.codehaus.janino:janino'
-
-  implementation 'org.rrd4j:rrd4j'
 
   // For faster XML processing than the JDK
   implementation ('org.codehaus.woodstox:woodstox-core-asl', {

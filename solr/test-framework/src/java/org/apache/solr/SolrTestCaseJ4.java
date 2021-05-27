@@ -31,6 +31,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -40,6 +41,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -70,6 +73,8 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
+import io.opentracing.noop.NoopTracerFactory;
+import io.opentracing.util.GlobalTracer;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
@@ -130,6 +135,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
@@ -192,8 +198,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
 
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  public static final String SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable.shardsWhitelist";
+  public static final String TEST_URL_ALLOW_LIST = "solr.tests." + AllowListUrlChecker.URL_ALLOW_LIST;
 
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
@@ -307,6 +312,35 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } else {
       UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
     }
+
+    resetGlobalTracer();
+    ExecutorUtil.resetThreadLocalProviders();
+  }
+
+  /**
+   * GlobalTracer is initialized by org.apache.solr.core.TracerConfigurator by
+   * org.apache.solr.core.CoreContainer.  Tests may need to reset it in the beginning of a test if
+   * it might have differing configuration from other tests in the same suite.
+   * It's also important to call {@link ExecutorUtil#resetThreadLocalProviders()}.
+   */
+  @SuppressForbidden(reason = "Hack to reset internal state of GlobalTracer")
+  public static void resetGlobalTracer() {
+    AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+      try {
+        final Class<GlobalTracer> globalTracerClass = GlobalTracer.class;
+        final Field isRegistered = globalTracerClass.getDeclaredField("isRegistered");
+        isRegistered.setAccessible(true);
+        isRegistered.setBoolean(null, false);
+        final Field tracer = globalTracerClass.getDeclaredField("tracer");
+        tracer.setAccessible(true);
+        tracer.set(null, NoopTracerFactory.create());
+      } catch (NoSuchFieldException | IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
+      return null;
+    });
+
+    assert GlobalTracer.isRegistered() == false;
   }
 
   @AfterClass
@@ -997,10 +1031,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             + "\n\txml response was: " + response
             + "\n\trequest was:" + req.getParamString();
 
-        log.error(msg);
-        throw new RuntimeException(msg);
+        fail(msg);
       }
-
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
@@ -2941,13 +2973,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
   
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertySolrDisableShardsWhitelist(String value) {
-    System.setProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST, value);
+  protected static void systemSetPropertySolrDisableUrlAllowList(String value) {
+    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, value);
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrDisableShardsWhitelist() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
+  protected static void systemClearPropertySolrDisableUrlAllowList() {
+    System.clearProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST);
   }
 
   @SuppressWarnings({"unchecked"})

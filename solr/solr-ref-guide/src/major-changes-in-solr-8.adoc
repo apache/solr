@@ -283,9 +283,9 @@ The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests w
 
 *Distributed Requests*
 
-* The `shards` parameter, used to manually select the shards and replicas that receive distributed requests, now checks nodes against a whitelist of acceptable values for security reasons.
+* The `shards` parameter, used to manually select the shards and replicas that receive distributed requests, now checks nodes against an allow-list of acceptable values for security reasons.
 +
-In SolrCloud mode this whitelist is automatically configured to contain all live nodes.  In standalone mode the whitelist is empty by default.  Upgrading users who use the `shards` parameter in standalone mode can correct this value by setting the `shardsWhitelist` property in any `shardHandler` configurations in their `solrconfig.xml` file.
+In SolrCloud mode this allow-list is automatically configured to contain all live nodes.  In standalone mode the allow-list is empty by default.  Upgrading users who use the `shards` parameter in standalone mode can correct this value by setting the `shardsWhitelist` property in any `shardHandler` configurations in their `solrconfig.xml` file.
 +
 For more information, see the <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Distributed Request>> documentation.
 
@@ -485,7 +485,7 @@ Existing users of this feature should not have to change anything. However, they
 ** If a reporter configures the `group="shard"` attribute then please also configure the `class="org.apache.solr.metrics.reporters.solr.SolrShardReporter"` attribute.
 ** If a reporter configures the `group="cluster"` attribute then please also configure the  `class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter"` attribute.
 +
-See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and Cluster Reporters>> for more information.
+See the section in Metrics Reporting: Shard and Cluster Reporters for more information.
 
 *Streaming Expressions*
 

@@ -67,7 +67,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(CLOUD_SOLR_XML_WITH_10S_CREATE_COLL_WAIT)
-        .useOtherClusterStateUpdateStrategy()
+        .useOtherCollectionConfigSetExecution()
         .configure();
   }
 

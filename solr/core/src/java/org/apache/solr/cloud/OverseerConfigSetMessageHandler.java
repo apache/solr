@@ -16,36 +16,22 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.ConfigSetProperties;
-import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
-import static org.apache.solr.common.util.Utils.toJSONString;
-import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 
 /**
  * A {@link OverseerMessageHandler} that handles ConfigSets API related
@@ -57,16 +43,6 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
    * Prefix to specify an action should be handled by this handler.
    */
   public static final String CONFIGSETS_ACTION_PREFIX = "configsets:";
-
-  /**
-   * Name of the ConfigSet to copy from for CREATE
-   */
-  public static final String BASE_CONFIGSET = "baseConfigSet";
-
-  /**
-   * Prefix for properties that should be applied to the ConfigSet for CREATE
-   */
-  public static final String PROPERTY_PREFIX = "configSetProp";
 
   private ZkStateReader zkStateReader;
 
@@ -112,10 +88,10 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       }
       switch (action) {
         case CREATE:
-          createConfigSet(message);
+          ConfigSetCmds.createConfigSet(message, coreContainer);
           break;
         case DELETE:
-          deleteConfigSet(message);
+          ConfigSetCmds.deleteConfigSet(message, coreContainer);
           break;
         default:
           throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
@@ -213,160 +189,12 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
 
   private String getBaseConfigSetIfCreate(ZkNodeProps message) {
-    String operation = message.getStr(Overseer.QUEUE_OPERATION);
-    if (operation != null) {
-      operation = operation.substring(CONFIGSETS_ACTION_PREFIX.length());
-      ConfigSetParams.ConfigSetAction action = ConfigSetParams.ConfigSetAction.get(operation);
-      if (action == CREATE) {
-        String baseConfigSetName = message.getStr(BASE_CONFIGSET);
-        if (baseConfigSetName == null || baseConfigSetName.length() == 0) {
-          baseConfigSetName = DEFAULT_CONFIGSET_NAME;
-        }
-        return baseConfigSetName;
-      }
-    }
-    return null;
+    String operation = message.getStr(Overseer.QUEUE_OPERATION).substring(CONFIGSETS_ACTION_PREFIX.length());
+    ConfigSetParams.ConfigSetAction action = ConfigSetParams.ConfigSetAction.get(operation);
+    return ConfigSetCmds.getBaseConfigSetName(action, message.getStr(ConfigSetCmds.BASE_CONFIGSET));
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private NamedList getConfigSetProperties(ConfigSetService configSetService, String configName, String propertyPath) throws IOException {
-    byte[] oldPropsData = configSetService.downloadFileFromConfig(configName, propertyPath);
-    if (oldPropsData != null) {
-      InputStreamReader reader = new InputStreamReader(new ByteArrayInputStream(oldPropsData), StandardCharsets.UTF_8);
-      try {
-        return ConfigSetProperties.readFromInputStream(reader);
-      } finally {
-        reader.close();
-      }
-    }
-    return null;
-  }
 
-  private Map<String, Object> getNewProperties(ZkNodeProps message) {
-    Map<String, Object> properties = null;
-    for (Map.Entry<String, Object> entry : message.getProperties().entrySet()) {
-      if (entry.getKey().startsWith(PROPERTY_PREFIX + ".")) {
-        if (properties == null) {
-          properties = new HashMap<String, Object>();
-        }
-        properties.put(entry.getKey().substring((PROPERTY_PREFIX + ".").length()),
-            entry.getValue());
-      }
-    }
-    return properties;
-  }
 
-  private void mergeOldProperties(Map<String, Object> newProps, @SuppressWarnings({"rawtypes"})NamedList oldProps) {
-    @SuppressWarnings({"unchecked"})
-    Iterator<Map.Entry<String, Object>> it = oldProps.iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, Object> oldEntry = it.next();
-      if (!newProps.containsKey(oldEntry.getKey())) {
-        newProps.put(oldEntry.getKey(), oldEntry.getValue());
-      }
-    }
-  }
 
-  private byte[] getPropertyData(Map<String, Object> newProps) {
-    if (newProps != null) {
-      String propertyDataStr = toJSONString(newProps);
-      if (propertyDataStr == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid property specification");
-      }
-      return propertyDataStr.getBytes(StandardCharsets.UTF_8);
-    }
-    return null;
-  }
-
-  private void createConfigSet(ZkNodeProps message) throws IOException {
-    String configSetName = getTaskKey(message);
-    if (configSetName == null || configSetName.length() == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
-    }
-
-    String baseConfigSetName = message.getStr(BASE_CONFIGSET, DEFAULT_CONFIGSET_NAME);
-
-    if (coreContainer.getConfigSetService().checkConfigExists(configSetName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + configSetName);
-    }
-
-    // is there a base config that already exists
-    if (!coreContainer.getConfigSetService().checkConfigExists(baseConfigSetName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          "Base ConfigSet does not exist: " + baseConfigSetName);
-    }
-
-    String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;
-    Map<String, Object> props = getNewProperties(message);
-    if (props != null) {
-      // read the old config properties and do a merge, if necessary
-      @SuppressWarnings({"rawtypes"})
-      NamedList oldProps = getConfigSetProperties(coreContainer.getConfigSetService(), baseConfigSetName, propertyPath);
-      if (oldProps != null) {
-        mergeOldProperties(props, oldProps);
-      }
-    }
-    byte[] propertyData = getPropertyData(props);
-
-    try {
-      coreContainer.getConfigSetService().copyConfig(baseConfigSetName, configSetName);
-      if (propertyData != null) {
-        coreContainer.getConfigSetService().uploadFileToConfig(configSetName, propertyPath, propertyData, true);
-      }
-    } catch (Exception e) {
-      // copying the config dir or writing the properties file may have failed.
-      // we should delete the ConfigSet because it may be invalid,
-      // assuming we actually wrote something.  E.g. could be
-      // the entire baseConfig set with the old properties, including immutable,
-      // that would make it impossible for the user to delete.
-      try {
-        if (coreContainer.getConfigSetService().checkConfigExists(configSetName)) {
-          deleteConfigSet(configSetName, true);
-        }
-      } catch (IOException ioe) {
-        log.error("Error while trying to delete partially created ConfigSet", ioe);
-      }
-      throw e;
-    }
-  }
-
-  private void deleteConfigSet(ZkNodeProps message) throws IOException {
-    String configSetName = getTaskKey(message);
-    if (configSetName == null || configSetName.length() == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
-    }
-
-    deleteConfigSet(configSetName, false);
-  }
-
-  private void deleteConfigSet(String configSetName, boolean force) throws IOException {
-    if (!coreContainer.getConfigSetService().checkConfigExists(configSetName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet does not exist to delete: " + configSetName);
-    }
-
-    for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
-      String configName = null;
-      try {
-        configName = zkStateReader.readConfigName(entry.getKey());
-      } catch (KeeperException ex) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");
-      }
-      if (configSetName.equals(configName))
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");
-    }
-
-    String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;
-    @SuppressWarnings({"rawtypes"})
-    NamedList properties = getConfigSetProperties(coreContainer.getConfigSetService(), configSetName, propertyPath);
-    if (properties != null) {
-      Object immutable = properties.get(ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG);
-      boolean isImmutableConfigSet = immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;
-      if (!force && isImmutableConfigSet) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Requested delete of immutable ConfigSet: " + configSetName);
-      }
-    }
-    coreContainer.getConfigSetService().deleteConfig(configSetName);
-  }
 }

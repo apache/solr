@@ -896,9 +896,9 @@ There are two filters written specifically for dealing with Bengali language. Th
 ====
 --
 
-*Normalisation* - `মানুষ` \-> `মানুস`
+*Normalisation* - `মানুষ` -> `মানুস`
 
-*Stemming* - `সমস্ত` \-> `সমস্`
+*Stemming* - `সমস্ত` -> `সমস্`
 
 
 === Brazilian Portuguese
@@ -2018,7 +2018,7 @@ Solr includes two classes for stemming Norwegian, `NorwegianLightStemFilterFacto
 
 Another option is to use the Snowball Porter Stemmer with an argument of language="Norwegian".
 
-Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
+For normalization, there is a `NorwegianNormalizationFilterFactory` which is a variant of the <<Scandinavian,Scandinavian normalization filters>> but with folding rules tuned for Norwegian.
 
 ==== Norwegian Light Stemmer
 
@@ -2124,6 +2124,50 @@ The `NorwegianMinimalStemFilterFactory` stems plural forms of Norwegian nouns on
 *Tokenizer to Filter:* "bilens"
 
 *Out:* "bil"
+
+==== Norwegian Normalization Filter
+
+This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØåÅ and folded variants (ae, oe and aa) by transforming them to æÆøØåÅ. This is a variant of `ScandinavianNormalizationFilter`, with folding rules customized for Norwegian.
+
+*Factory class:* `solr.NorwegianNormalizationFilterFactory`
+
+*Arguments:* None
+
+*Example:*
+
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-lang-norwegian]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="lowercase"/>
+<filter name="norwegianNormalization"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-lang-norwegian]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<analyzer>
+<tokenizer class="solr.StandardTokenizerFactory"/>
+<filter class="solr.LowerCaseFilterFactory"/>
+<filter class="solr.NorwegianNormalizationFilterFactory"/>
+</analyzer>
+----
+====
+--
+
+*In:* "blåbærsyltetøj blåbärsyltetöj blaabaarsyltetoej blabarsyltetoj"
+
+*Tokenizer to Filter:* "blåbærsyltetøy", "blåbärsyltetöy", "blaabaersyltetoey", "blabarsyltetoy"
+
+*Out:* "blåbærsyltetøy", "blåbærsyltetøy", "blåbærsyltetøy", "blabarsyltetoy"
 
 === Persian
 
@@ -2374,7 +2418,7 @@ Swedish å, ä, ö are in fact the same letters as Norwegian and Danish å, æ, 
 
 In that situation almost all Swedish people use a, a, o instead of å, ä, ö. Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø. Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
 
-There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö\->o, etc.
+There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö -> o, etc.
 
 See also each language section for other relevant filters.
 
@@ -2426,7 +2470,7 @@ It's a semantically less destructive solution than `ScandinavianFoldingFilter`, 
 
 ==== Scandinavian Folding Filter
 
-This filter folds Scandinavian characters åÅäæÄÆ\->a and öÖøØ\->o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
+This filter folds Scandinavian characters åÅäæÄÆ -> a and öÖøØ -> o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
 
 It's a semantically more destructive solution than `ScandinavianNormalizationFilter`, but can in addition help with matching raksmorgas as räksmörgås.
 

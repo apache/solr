@@ -32,9 +32,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
@@ -47,7 +45,6 @@ import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
@@ -274,15 +271,10 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   }
 
   private void getCountString() throws IOException {
-    Filter filter = docs.getTopFilter();
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
       LeafReaderContext leaf = leaves.get(subIndex);
-      DocIdSet dis = filter.getDocIdSet(leaf, null); // solr docsets already exclude any deleted docs
-      if (dis == null) {
-        continue;
-      }
-      DocIdSetIterator disi = dis.iterator();
+      final DocIdSetIterator disi = docs.iterator(leaf); // solr docsets already exclude any deleted docs
       if (disi != null) {
         if (schemaField.multiValued()) {
           SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(schemaField.getName());
@@ -292,16 +284,16 @@ public class IntervalFacets implements Iterable<FacetInterval> {
           final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
           if (singleton != null) {
             // some codecs may optimize SORTED_SET storage for single-valued fields
-            accumIntervalsSingle(singleton, disi, dis.bits());
+            accumIntervalsSingle(singleton, disi);
           } else {
-            accumIntervalsMulti(sub, disi, dis.bits());
+            accumIntervalsMulti(sub, disi);
           }
         } else {
           SortedDocValues sub = leaf.reader().getSortedDocValues(schemaField.getName());
           if (sub == null) {
             continue;
           }
-          accumIntervalsSingle(sub, disi, dis.bits());
+          accumIntervalsSingle(sub, disi);
         }
       }
     }
@@ -346,8 +338,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      }
   }
 
-  private void accumIntervalsMulti(SortedSetDocValues ssdv,
-                                   DocIdSetIterator disi, Bits bits) throws IOException {
+  private void accumIntervalsMulti(SortedSetDocValues ssdv, DocIdSetIterator disi) throws IOException {
     // First update the ordinals in the intervals for this segment
     for (FacetInterval interval : intervals) {
       interval.updateContext(ssdv);
@@ -355,9 +346,6 @@ public class IntervalFacets implements Iterable<FacetInterval> {
 
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (bits != null && bits.get(doc) == false) {
-        continue;
-      }
       if (doc > ssdv.docID()) {
         ssdv.advance(doc);
       }
@@ -397,16 +385,13 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     }
   }
 
-  private void accumIntervalsSingle(SortedDocValues sdv, DocIdSetIterator disi, Bits bits) throws IOException {
+  private void accumIntervalsSingle(SortedDocValues sdv, DocIdSetIterator disi) throws IOException {
     // First update the ordinals in the intervals to this segment
     for (FacetInterval interval : intervals) {
       interval.updateContext(sdv);
     }
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (bits != null && bits.get(doc) == false) {
-        continue;
-      }
       if (doc > sdv.docID()) {
         sdv.advance(doc);
       }
