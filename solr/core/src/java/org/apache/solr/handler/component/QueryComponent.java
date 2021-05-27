@@ -975,7 +975,6 @@ public class QueryComponent extends SearchComponent
         @SuppressWarnings({"rawtypes"})
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
 
-        int docCounter = 0;
         // go through every doc in this response, construct a ShardDoc, and
         // put it in the priority queue so it can be ordered.
         for (int i=0; i<docs.size(); i++) {
@@ -1013,7 +1012,7 @@ public class QueryComponent extends SearchComponent
 
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-          if(reRankQueue != null && docCounter++ <= reRankDocsSize) {
+          if(reRankQueue != null && i < reRankDocsSize) {
               ShardDoc droppedShardDoc = reRankQueue.insertWithOverflow(shardDoc);
               // FIXME: Only works if the original request does not sort by score
             if(droppedShardDoc != null) {
