@@ -751,12 +751,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   protected ManagedIndexSchema analyzeInputDocs(final Map<String, List<Object>> docs, ManagedIndexSchema schema, List<String> langs) {
-    RTimer timer = null;
-    if (log.isDebugEnabled()) {
-      log.debug("Analyzing {} sample docs", docs.size());
-      timer = new RTimer();
-    }
-
     // collect the fields to add ... adding all fields at once is faster than one-at-a-time
     List<SchemaField> fieldsToAdd = new LinkedList<>();
     for (String field : docs.keySet()) {
@@ -777,12 +771,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     if (!fieldsToAdd.isEmpty()) {
       schema = (ManagedIndexSchema) schema.addFields(fieldsToAdd);
     }
-
-    if (timer != null) {
-      double tookMs = timer.getTime();
-      log.debug("Took {} ms to analyze {} sample docs", tookMs, docs.size());
-    }
-
+    
     return schema;
   }
 
