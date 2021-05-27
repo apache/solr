@@ -39,7 +39,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,8 +47,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -436,7 +433,7 @@ public class JettySolrRunner {
    * @return the {@link CoreContainer} for this node
    */
   public CoreContainer getCoreContainer() {
-    if (getSolrDispatchFilter() == null || getSolrDispatchFilter().getCores() == null) {
+    if (getSolrDispatchFilter() == null) {
       return null;
     }
     return getSolrDispatchFilter().getCores();
@@ -611,27 +608,11 @@ public class JettySolrRunner {
     Map<String,String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
-      Filter filter = dispatchFilter.getFilter();
-
       // we want to shutdown outside of jetty cutting us off
-      SolrDispatchFilter sdf = getSolrDispatchFilter();
-      ExecutorService customThreadPool = null;
-      if (sdf != null) {
-        customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
-
-        sdf.closeOnDestroy(false);
-//        customThreadPool.submit(() -> {
-//          try {
-//            sdf.close();
-//          } catch (Throwable t) {
-//            log.error("Error shutting down Solr", t);
-//          }
-//        });
-        try {
-          sdf.close();
-        } catch (Throwable t) {
-          log.error("Error shutting down Solr", t);
-        }
+      try {
+        dispatchFilter.stop();
+      } catch (Throwable t) {
+        log.error("Error shutting down Solr", t);
       }
 
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
@@ -640,10 +621,9 @@ public class JettySolrRunner {
       server.stop();
 
       if (server.getState().equals(Server.FAILED)) {
-        filter.destroy();
         if (extraFilters != null) {
           for (FilterHolder f : extraFilters) {
-            f.getFilter().destroy();
+            f.stop();
           }
         }
       }
@@ -670,10 +650,6 @@ public class JettySolrRunner {
         TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         timeout.waitFor("Timeout waiting for reserved executor to stop.", ()
             -> rte.isStopped());
-      }
-
-      if (customThreadPool != null) {
-        ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
       }
 
       do {

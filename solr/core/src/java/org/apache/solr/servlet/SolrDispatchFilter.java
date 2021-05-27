@@ -104,7 +104,7 @@ import static org.apache.solr.security.AuditEvent.EventType;
 public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected volatile CoreContainer cores;
+  protected CoreContainer cores;
   protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
@@ -115,9 +115,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
-  private SolrMetricManager metricManager;
   private String registryName;
-  private volatile boolean closeOnDestroy = true;
+
   private Properties extraProperties;
 
   private RateLimitManager rateLimitManager;
@@ -220,13 +219,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       
     } finally{
       log.trace("SolrDispatchFilter.init() done");
-      this.cores = coresInit; // crucially final assignment 
+      this.cores = coresInit; // crucially final assignment
       init.countDown();
     }
   }
 
   private void setupJvmMetrics(CoreContainer coresInit)  {
-    metricManager = coresInit.getMetricManager();
+    SolrMetricManager metricManager = coresInit.getMetricManager();
     registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
     final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
     try {
@@ -292,7 +291,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty 
    * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
    * @see #extraProperties
-   * @see #init
+   * @see #init(FilterConfig) 
    */
   private boolean isCloudMode() {
     assert null != extraProperties; // we should never be called w/o this being initialized
@@ -398,32 +397,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
-    if (closeOnDestroy) {
-      close();
-    }
-  }
-  
-  public void close() {
-    CoreContainer cc = cores;
-    cores = null;
     try {
-      if (metricManager != null) {
-        try {
-          metricManager.unregisterGauges(registryName, metricTag);
-        } catch (NullPointerException e) {
-          // okay
-        } catch (Exception e) {
-          log.warn("Exception closing FileCleaningTracker", e);
-        } finally {
-          metricManager = null;
-        }
-      }
-    } finally {
-      if (cc != null) {
-        httpClient = null;
-        cc.shutdown();
-      }
+      cores.getMetricManager().unregisterGauges(registryName, metricTag);
+    } catch (Exception e) {
+      log.warn("Couldn't unregister gauges on metric manager", e);
     }
+    cores.shutdown();
   }
   
   @Override
@@ -757,10 +736,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } else {
       return response;
     }
-  }
-
-  public void closeOnDestroy(boolean closeOnDestroy) {
-    this.closeOnDestroy = closeOnDestroy;
   }
 
   @VisibleForTesting
