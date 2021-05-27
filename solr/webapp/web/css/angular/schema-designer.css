@@ -1194,6 +1194,8 @@ limitations under the License.
 
 #content #designer .hit-value {
   padding: 3px;
+  word-wrap: break-word;
+  max-width: 700px;
 }
 
 #content #designer #leaf-node .error
@@ -1529,6 +1531,9 @@ limitations under the License.
 #content #designer .prop {
   padding: 3px;
   text-align: left;
+  min-width: 80px;
+  word-wrap: break-word;
+  max-width: 140px;
 }
 
 #content #designer .prop-flag {
@@ -1541,6 +1546,8 @@ limitations under the License.
   font-weight: bold;
   text-align: left;
   min-width: 80px;
+  word-wrap: break-word;
+  max-width: 140px;
 }
 
 #content #designer .prop-hdr-flag {

@@ -55,9 +55,18 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.errorHandler = function (e) {
-    var error = e.data ? e.data.error : null;
+    var error = e.data && e.data.error ? e.data.error : null;
     if (error) {
       $scope.onError(error.msg, error.code, e.data.errorDetails);
+    } else {
+      // when a timeout occurs, the error details are sparse so just give the user a hint that something was off
+      var path = e.config && e.config.url ? e.config.url : "/api/schema-designer";
+      var reloadMsg = "";
+      if (path.includes("/analyze")) {
+        reloadMsg = " Re-try analyzing your sample docs by clicking on 'Analyze Documents' again."
+      }
+      $scope.onError("Request to "+path+" failed!", 408,
+          {"error":"Most likely the request timed out; check server log for more details."+reloadMsg});
     }
   };
 

@@ -784,10 +784,9 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
     containerHandlers.getApiBag().registerObject(clusterAPI.configSetCommands);
 
-    if (this.isZooKeeperAware()) {
-      SchemaDesignerAPI schemaDesignerAPI = new SchemaDesignerAPI(this);
-      containerHandlers.getApiBag().registerObject(schemaDesignerAPI);
-    } // Schema Designer not available in standalone (non-cloud) mode
+    if (isZooKeeperAware()) {
+      containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
+    } // else Schema Designer not available in standalone (non-cloud) mode
 
     /*
      * HealthCheckHandler needs to be initialized before InfoHandler, since the later one will call CoreContainer.getHealthCheckHandler().
