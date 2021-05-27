@@ -26,6 +26,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
@@ -92,6 +94,40 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("1", queryResponse.getResults().get(7).get("id").toString());
   }
 
+  @Test
+  public void testSimpleQueryCustomSortWithASubResults() throws Exception {
+    final int reRankDocs = 2;
+    SolrQuery query = new SolrQuery("*:*");
+    query.setRequestHandler("/query");
+    query.setFields("*,score,[shard]");
+    query.setParam("rows", "8");
+    query.setParam("sort", "id asc");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs="+reRankDocs+"}");
+
+    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    SolrDocumentList results = queryResponse.getResults();
+    assertEquals(8, results.getNumFound());
+
+    int docCounter = 0;
+    float lastScore = Float.MAX_VALUE;
+    double lastId = 0d;
+    for(SolrDocument d : results){
+      float score = (float) d.getFieldValue("score");
+
+      double id = Double.parseDouble((String) d.getFirstValue("id"));
+      if(docCounter < reRankDocs){
+        final float assertedCalculatedScore = (float) Math.pow(id, 2.0d) + 2.1f;
+        assertEquals(assertedCalculatedScore, score, 0.0);
+        assertTrue(lastScore > score);
+      } else if(docCounter > reRankDocs + 1) {
+        assertTrue(lastId < id);
+      }
+      lastScore = score;
+      lastId = id;
+
+      docCounter++;
+    }
+  }
 
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018

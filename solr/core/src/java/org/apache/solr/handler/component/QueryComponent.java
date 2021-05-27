@@ -73,6 +73,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
+import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -865,7 +866,19 @@ public class QueryComponent extends SearchComponent
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
-      final ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+      ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueueWithSameShardCompareSkip(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+      
+      ShardFieldSortedHitQueue reRankQueue = null;
+      int reRankDocsSize = 0;
+      if(rb.getRankQuery() != null){
+          final RankQuery rankQuery = rb.getRankQuery();
+          if(rankQuery instanceof AbstractReRankQuery){
+              reRankDocsSize = ((AbstractReRankQuery) rankQuery).getReRankDocs();
+              reRankQueue = new ShardFieldSortedHitQueueWithSameShardCompareSkip(new SortField[]{SortField.FIELD_SCORE}, Math.min(reRankDocsSize, ss.getCount()), rb.req.getSearcher());
+
+              queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+          }
+      }
 
       NamedList<Object> shardInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -962,6 +975,7 @@ public class QueryComponent extends SearchComponent
         @SuppressWarnings({"rawtypes"})
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
 
+        int docCounter = 0;
         // go through every doc in this response, construct a ShardDoc, and
         // put it in the priority queue so it can be ordered.
         for (int i=0; i<docs.size(); i++) {
@@ -999,7 +1013,15 @@ public class QueryComponent extends SearchComponent
 
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-          queue.insertWithOverflow(shardDoc);
+          if(reRankQueue != null && docCounter++ <= reRankDocsSize) {
+              ShardDoc droppedShardDoc = reRankQueue.insertWithOverflow(shardDoc);
+              // FIXME: Only works if the original request does not sort by score
+            if(droppedShardDoc != null) {
+              queue.insertWithOverflow(droppedShardDoc);
+            }
+          } else {
+              queue.insertWithOverflow(shardDoc);
+          }
         } // end for-each-doc-in-response
       } // end for-each-response
       
@@ -1007,12 +1029,18 @@ public class QueryComponent extends SearchComponent
       // So we want to pop the last documents off the queue to get
       // the docs offset -> queuesize
       int resultSize = queue.size() - ss.getOffset();
+      if(reRankQueue != null) {
+        resultSize += reRankQueue.size();
+      }
       resultSize = Math.max(0, resultSize);  // there may not be any docs in range
 
       Map<Object,ShardDoc> resultIds = new HashMap<>();
       for (int i=resultSize-1; i>=0; i--) {
         ShardDoc shardDoc = queue.pop();
-        shardDoc.positionInResponse = i;
+        if(shardDoc == null && reRankQueue != null) {
+          shardDoc = reRankQueue.pop();
+        }
+        shardDoc.positionInResponse = i;  // FIXME check if we can handle a possible NPE more elegantly
         // Need the toString() for correlation with other lists that must
         // be strings (like keys in highlighting, explain, etc)
         resultIds.put(shardDoc.id.toString(), shardDoc);

@@ -29,7 +29,14 @@ import org.apache.solr.common.SolrException;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-// used by distributed search to merge results.
+/**
+ * Used by distributed search to merge results.
+ *
+ * To sort documents, their sort values are compared.
+ *
+ * Documents are also compared if they are on the same shard. This is importing for reRanking to work.
+ * Use the ShardFieldSortedHitQueueWithSameShardCompareSkip to use the orderInShard if docs are on the same shard.
+ */
 public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
   /** Stores a comparator corresponding to each field being sorted by */
@@ -65,25 +72,11 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
         this.fields[i] = new SortField(fieldname, fields[i].getType(),
             fields[i].getReverse());
       }
-
-      //System.out.println("%%%%%%%%%%%%%%%%%% got "+fields[i].getType() +"   for "+ fieldname +"  fields[i].getReverse(): "+fields[i].getReverse());
     }
   }
 
   @Override
   protected boolean lessThan(ShardDoc docA, ShardDoc docB) {
-    // If these docs are from the same shard, then the relative order
-    // is how they appeared in the response from that shard.    
-    if (docA.shard == docB.shard) {
-      // if docA has a smaller position, it should be "larger" so it
-      // comes before docB.
-      // This will handle sorting by docid within the same shard
-
-      // comment this out to test comparators.
-      return !(docA.orderInShard < docB.orderInShard);
-    }
-
-
     // run comparators
     final int n = comparators.length;
     int c = 0;

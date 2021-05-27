@@ -89,4 +89,8 @@ public abstract class AbstractReRankQuery extends RankQuery {
   public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
+
+  public int getReRankDocs() {
+    return reRankDocs;
+  }
 }
