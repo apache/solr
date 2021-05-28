@@ -142,6 +142,7 @@ grant {
 
   // Needed by JWT integration tests
   permission java.security.SecurityPermission "putProviderProperty.BC";
+  permission java.lang.RuntimePermission "setFactory";
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 

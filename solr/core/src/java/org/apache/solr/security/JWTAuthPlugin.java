@@ -196,7 +196,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
     if (trustedCerts != null) {
       trustedCertsStream = IOUtils.toInputStream(trustedCerts, StandardCharsets.UTF_8);
-      log.info("Reading trustedCerts PEM from configuration string");
+      log.info("Reading trustedCerts PEM from configuration string: {}", trustedCerts);
     }
     if (trustedCertsStream != null) {
       trustedSslCerts = CryptoKeys.parseX509Certs(trustedCertsStream);

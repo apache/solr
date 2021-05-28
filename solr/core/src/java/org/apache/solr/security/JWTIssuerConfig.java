@@ -393,6 +393,7 @@ public class JWTIssuerConfig {
       if (trustedCerts != null) {
         Get getWithCustomTrust = new Get();
         getWithCustomTrust.setTrustedCertificates(trustedCerts);
+        httpsJkws.setSimpleHttpGet(getWithCustomTrust);
       }
       return httpsJkws;
     }
