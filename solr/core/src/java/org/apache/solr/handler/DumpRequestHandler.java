@@ -36,7 +36,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class DumpRequestHandler extends RequestHandlerBase
 {
-
   @Override
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException

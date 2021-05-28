@@ -18,9 +18,7 @@
 package org.apache.solr.util;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 import org.apache.solr.cluster.api.SimpleMap;
@@ -45,7 +43,7 @@ public class DOMConfigNode implements ConfigNode {
   }
 
   @Override
-  public String txt() {
+  public String textValue() {
     return DOMUtil.getText(node);
   }
 
@@ -56,8 +54,7 @@ public class DOMConfigNode implements ConfigNode {
   @Override
   public SimpleMap<String> attributes() {
     if (attrs != null) return attrs;
-    Map<String, String> attrs = DOMUtil.toMap(node.getAttributes());
-    return this.attrs = attrs.size() == 0 ? EMPTY : new WrappedSimpleMap<>(attrs);
+    return attrs = new WrappedSimpleMap<>(DOMUtil.toMap(node.getAttributes()));
   }
 
   @Override
@@ -67,7 +64,7 @@ public class DOMConfigNode implements ConfigNode {
   }
 
   @Override
-  public List<ConfigNode> getAll(String name) {
+  public List<ConfigNode> children(String name) {
     List<ConfigNode> result = new ArrayList<>();
     forEachChild(it -> {
       if (name.equals(it.name())) {
@@ -88,6 +85,5 @@ public class DOMConfigNode implements ConfigNode {
       if (Boolean.FALSE == toContinue) break;
     }
   }
-  private static final SimpleMap<String> EMPTY = new WrappedSimpleMap<>(Collections.emptyMap());
 
 }

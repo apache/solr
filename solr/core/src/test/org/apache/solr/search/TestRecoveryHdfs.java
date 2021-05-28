@@ -39,6 +39,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -68,6 +69,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 // TODO: longer term this should be combined with TestRecovery somehow ??
+@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15405")
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
   private static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
@@ -78,17 +80,17 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   private static MiniDFSCluster dfsCluster;
   private static String hdfsUri;
   private static FileSystem fs;
-  
+
   @After
   public void afterTest() {
     TestInjection.reset(); // do after every test, don't wait for AfterClass
   }
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     hdfsUri = HdfsTestUtil.getURI(dfsCluster);
-    
+
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
@@ -98,10 +100,10 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     }
 
     System.setProperty("solr.ulog.dir", hdfsUri + "/solr/shard1");
-    
+
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     IOUtils.closeQuietly(fs);
@@ -123,10 +125,10 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
   @Test
   public void testReplicationFactor() throws Exception {
-    clearIndex(); 
-    
+    clearIndex();
+
     HdfsUpdateLog ulog = (HdfsUpdateLog) h.getCore().getUpdateHandler().getUpdateLog();
-    
+
     assertU(commit());
     addAndGetVersion(sdoc("id", "REP1"), null);
     assertU(commit());
@@ -140,10 +142,10 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
          break;
        }
     }
-    
+
     assertTrue("Expected to find tlogs with a replication factor of 2", foundRep2);
   }
-  
+
   @Test
   public void testLogReplay() throws Exception {
     try {
@@ -650,7 +652,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       req().close();
     }
   }
-  
+
   private void addDocs(int nDocs, int start, LinkedList<Long> versions) throws Exception {
     for (int i=0; i<nDocs; i++) {
       versions.addFirst( addAndGetVersion( sdoc("id",Integer.toString(start + nDocs)) , null) );
@@ -679,7 +681,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertU(commit());
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
-      
+
       h.close();
 
       String[] files = HdfsUpdateLog.getLogList(fs, new Path(logDir));
@@ -788,16 +790,16 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertU(adoc("id","F1"));
       assertU(adoc("id","F2"));
       assertU(adoc("id","F3"));
-      
-      h.close();
-      
 
-      
+      h.close();
+
+
+
       String[] files = HdfsUpdateLog.getLogList(fs, new Path(logDir));
       Arrays.sort(files);
 
       FSDataOutputStream dos = fs.append(new Path(logDir, files[files.length-1]));
-    
+
       dos.writeLong(0xffffffffffffffffL);
       dos.writeChars("This should be appended to a good log file, representing a bad partially written record.");
       dos.close();
@@ -837,7 +839,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       TestInjection.skipIndexWriterCommitOnClose = true;
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
- 
+
       clearIndex();
       assertU(commit());
 
@@ -970,7 +972,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       System.arraycopy(to, 0, data, idx, to.length);
     }
   }
-  
+
   private static int indexOf(byte[] target, byte[] data, int start) {
     outer: for (int i=start; i<data.length - target.length; i++) {
       for (int j=0; j<target.length; j++) {

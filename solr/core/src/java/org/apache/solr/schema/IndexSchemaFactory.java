@@ -141,8 +141,8 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   }
 
   public static class VersionedConfig {
-    public final int version;
-    public final ConfigNode data;
+    final int version;
+    final ConfigNode data;
 
     public VersionedConfig(int version, ConfigNode data) {
       this.version = version;

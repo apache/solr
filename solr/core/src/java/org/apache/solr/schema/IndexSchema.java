@@ -172,9 +172,7 @@ public class IndexSchema {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
-    ConfigNode.SUBSTITUTES.set(key -> substitutableProperties == null ?
-        null :
-        substitutableProperties.getProperty(key));
+    ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
     try {
       readSchema(schemaResource);
       loader.inform(loader);
@@ -515,9 +513,9 @@ public class IndexSchema {
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      List<ConfigNode> fTypes = rootNode.getAll(null, FIELDTYPE_KEYS);
+      List<ConfigNode> fTypes = rootNode.children(null, FIELDTYPE_KEYS);
       ConfigNode types = rootNode.child(TYPES);
-      if(types != null) fTypes.addAll(types.getAll(null, FIELDTYPE_KEYS));
+      if(types != null) fTypes.addAll(types.children(null, FIELDTYPE_KEYS));
       typeLoader.load(solrClassLoader, fTypes);
 
       // load the fields
@@ -562,7 +560,7 @@ public class IndexSchema {
       if (node==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
-        uniqueKeyField=getIndexedField(node.txt().trim());
+        uniqueKeyField=getIndexedField(node.textValue().trim());
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
         
@@ -649,10 +647,10 @@ public class IndexSchema {
     
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    List<ConfigNode> nodes = n.getAll(null,  FIELD_KEYS);
+    List<ConfigNode> nodes = n.children(null,  FIELD_KEYS);
     ConfigNode child = n.child(FIELDS);
     if(child != null) {
-      nodes.addAll(child.getAll(null, FIELD_KEYS));
+      nodes.addAll(child.children(null, FIELD_KEYS));
     }
 
     for (ConfigNode node : nodes) {
@@ -732,10 +730,10 @@ public class IndexSchema {
    * Loads the copy fields
    */
   protected synchronized void loadCopyFields(ConfigNode n) {
-    List<ConfigNode> nodes = n.getAll(COPY_FIELD);
+    List<ConfigNode> nodes = n.children(COPY_FIELD);
     ConfigNode f = n.child(FIELDS);
     if (f != null) {
-      List<ConfigNode> c = f.getAll(COPY_FIELD);
+      List<ConfigNode> c = f.children(COPY_FIELD);
       if (nodes.isEmpty()) nodes = c;
       else nodes.addAll(c);
     }

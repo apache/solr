@@ -26,7 +26,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -372,7 +371,7 @@ public class SolrXmlConfig {
     String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);
     SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
     for (String p : pathStrings) {
-      allowPathBuilder.addPath(Paths.get(p));
+      allowPathBuilder.addPath(p);
     }
     return allowPathBuilder.build();
   }
@@ -599,10 +598,6 @@ public class SolrXmlConfig {
     node = config.getNode("solr/metrics/suppliers/histogram", false);
     if (node != null) {
       builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
-    }
-    node = config.getNode("solr/metrics/history", false);
-    if (node != null) {
-      builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
     }
     node = config.getNode("solr/metrics/missingValues", false);;
     if (node != null) {

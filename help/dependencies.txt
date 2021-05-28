@@ -84,6 +84,30 @@ tree of all module dependencies and maybe exclude transitive
 dependencies of foo.bar:baz that we won't need.
 
 
+Update Lucene prerelease
+------------------------
+
+The main branch of Apache Solr uses a prerelease of Apache Lucene that
+is published by ASF Jenkins on:
+  https://nightlies.apache.org/solr/lucene-prereleases/
+
+If you want to upgrade Lucene to a newer build proceed like the following:
+
+- Go to https://ci-builds.apache.org/job/Solr/job/Lucene-prerelease-main/
+- Log in with ASF account
+- Press on "build now" on left side
+- Wait until build is finished.... (can take long time, if other builds are
+  queued)
+- remember the build number of Jenkins (left side, first build in list,
+  prefixed by '#')
+- Edit ./versions.props and change Lucene's version to '9.0.0-prereleaseX',
+  with 'X' is the jenkins build number
+- Edit ./gradle/defaults.gradle and change jenkins build number, too
+  (this directs the repository to the one created by latest build):
+    def lucenePrereleaseBuild = 'X'
+- Run: gradlew --write-locks (as described before)
+
+
 Inspecting current dependencies
 -------------------------------
 
