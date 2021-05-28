@@ -42,6 +42,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
@@ -99,7 +100,7 @@ public class SpecificCollectionAPI {
       v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
       if (v2Body.config != null) {
         v1Params.remove("config");
-        v1Params.put("collection.configName", v2Body.config);
+        v1Params.put(COLL_CONF, v2Body.config);
       }
       if (v2Body.properties != null && !v2Body.properties.isEmpty()) {
         v1Params.remove("properties");
