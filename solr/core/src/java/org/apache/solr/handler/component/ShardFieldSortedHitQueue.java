@@ -33,9 +33,11 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * Used by distributed search to merge results.
  *
  * To sort documents, their sort values are compared.
+ * Per default, this does not happen for documents that are on the same shard. Instead, their orderInShard is used.
+ * This behavior can be changed via the param useSameShardShortcut.
  *
- * Documents are also compared if they are on the same shard. This is importing for reRanking to work.
- * Use the ShardFieldSortedHitQueueWithSameShardCompareSkip to use the orderInShard if docs are on the same shard.
+ * The useSameShardShortcut option is necessary for reRanking to work in SolrCloud mod, because we have to disable the
+ * skip for the results that should not be reRanked in the full result set on the coordinator, but were reRanked on the shards.
  */
 public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
@@ -48,12 +50,25 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   /** The order of these fieldNames should correspond to the order of sort field values retrieved from the shard */
   protected List<String> fieldNames = new ArrayList<>();
 
+  /**
+   * Used to enable / disable a shortcut in the lessThen( )-method for documents that are on the same shard.
+   * If enabled, the orderInShard is used for sorting instead of comparing the sort values of the documents.
+   * This shortcut does only work in SolrCloud mode if we are not reRanking the results.
+   */
+  private final boolean useSameShardShortcut;
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   public ShardFieldSortedHitQueue(SortField[] fields, int size, IndexSearcher searcher) {
+    this(fields, size, searcher, true);
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public ShardFieldSortedHitQueue(SortField[] fields, int size, IndexSearcher searcher, boolean useSameShardShortcut) {
     super(size);
     final int n = fields.length;
     comparators = new Comparator[n];
     this.fields = new SortField[n];
+    this.useSameShardShortcut = useSameShardShortcut;
     for (int i = 0; i < n; ++i) {
 
       // keep track of the named fields
@@ -77,6 +92,17 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
   @Override
   protected boolean lessThan(ShardDoc docA, ShardDoc docB) {
+    // If these docs are from the same shard, then the relative order
+    // is how they appeared in the response from that shard.
+    if (useSameShardShortcut && docA.shard == docB.shard) {
+      // if docA has a smaller position, it should be "larger" so it
+      // comes before docB.
+      // This will handle sorting by docid within the same shard
+
+      // comment this out to test comparators.
+      return !(docA.orderInShard < docB.orderInShard);
+    }
+
     // run comparators
     final int n = comparators.length;
     int c = 0;

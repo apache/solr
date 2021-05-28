@@ -866,7 +866,7 @@ public class QueryComponent extends SearchComponent
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
-      ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueueWithSameShardCompareSkip(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+      ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
       
       ShardFieldSortedHitQueue reRankQueue = null;
       int reRankDocsSize = 0;
@@ -874,9 +874,9 @@ public class QueryComponent extends SearchComponent
           final RankQuery rankQuery = rb.getRankQuery();
           if(rankQuery instanceof AbstractReRankQuery){
               reRankDocsSize = ((AbstractReRankQuery) rankQuery).getReRankDocs();
-              reRankQueue = new ShardFieldSortedHitQueueWithSameShardCompareSkip(new SortField[]{SortField.FIELD_SCORE}, Math.min(reRankDocsSize, ss.getCount()), rb.req.getSearcher());
+              reRankQueue = new ShardFieldSortedHitQueue(new SortField[]{SortField.FIELD_SCORE}, Math.min(reRankDocsSize, ss.getCount()), rb.req.getSearcher());
 
-              queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+              queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher(), false);
           }
       }
 
