@@ -73,7 +73,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
-import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -866,19 +865,7 @@ public class QueryComponent extends SearchComponent
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
-      ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
-      
-      ShardFieldSortedHitQueue reRankQueue = null;
-      int reRankDocsSize = 0;
-      if(rb.getRankQuery() != null){
-          final RankQuery rankQuery = rb.getRankQuery();
-          if(rankQuery instanceof AbstractReRankQuery){
-              reRankDocsSize = ((AbstractReRankQuery) rankQuery).getReRankDocs();
-              reRankQueue = new ShardFieldSortedHitQueue(new SortField[]{SortField.FIELD_SCORE}, Math.min(reRankDocsSize, ss.getCount()), rb.req.getSearcher());
-
-              queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher(), false);
-          }
-      }
+      SortedHitQueueManager queueManager = new SortedHitQueueManager(sortFields, ss, rb);
 
       NamedList<Object> shardInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -1012,34 +999,19 @@ public class QueryComponent extends SearchComponent
 
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-          if(reRankQueue != null && i < reRankDocsSize) {
-              ShardDoc droppedShardDoc = reRankQueue.insertWithOverflow(shardDoc);
-              // FIXME: Only works if the original request does not sort by score
-            if(droppedShardDoc != null) {
-              queue.insertWithOverflow(droppedShardDoc);
-            }
-          } else {
-              queue.insertWithOverflow(shardDoc);
-          }
+          queueManager.addDocument(shardDoc, i);
         } // end for-each-doc-in-response
       } // end for-each-response
       
       // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
       // So we want to pop the last documents off the queue to get
       // the docs offset -> queuesize
-      int resultSize = queue.size() - ss.getOffset();
-      if(reRankQueue != null) {
-        resultSize += reRankQueue.size();
-      }
-      resultSize = Math.max(0, resultSize);  // there may not be any docs in range
+      final int resultSize = Math.max(0, queueManager.getResultSize(ss.getOffset()));  // there may not be any docs in range
 
       Map<Object,ShardDoc> resultIds = new HashMap<>();
       for (int i=resultSize-1; i>=0; i--) {
-        ShardDoc shardDoc = queue.pop();
-        if(shardDoc == null && reRankQueue != null) {
-          shardDoc = reRankQueue.pop();
-        }
-        shardDoc.positionInResponse = i;  // FIXME check if we can handle a possible NPE more elegantly
+        final ShardDoc shardDoc = queueManager.nextDocument();
+        shardDoc.positionInResponse = i;
         // Need the toString() for correlation with other lists that must
         // be strings (like keys in highlighting, explain, etc)
         resultIds.put(shardDoc.id.toString(), shardDoc);
