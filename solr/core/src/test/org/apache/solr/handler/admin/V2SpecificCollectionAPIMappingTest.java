@@ -5,16 +5,10 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CommonAdminParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.core.backup.BackupManager;
-import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.SpecificCollectionAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -33,6 +27,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -181,21 +176,52 @@ public class V2SpecificCollectionAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals(456, v1Params.getPrimitiveInt("maxWaitSeconds"));
   }
 
-  // TODO There's no hurdle on these last few tests.  Just ran out of time before going afk.
-
   @Test
   public void testAddReplicaPropertyAllProperties() throws Exception {
+    final SolrParams v1Params = captureConvertedV1Params("/collections/collName", "POST",
+            "{ 'add-replica-property': {" +
+                    "'shard': 'someShardName', " +
+                    "'replica': 'someReplicaName', " +
+                    "'name': 'somePropertyName', " +
+                    "'value': 'somePropertyValue'" +
+                    "}}");
 
+    assertEquals(CollectionParams.CollectionAction.ADDREPLICAPROP.lowerName, v1Params.get(ACTION));
+    assertEquals("collName", v1Params.get(COLLECTION));
+    assertEquals("someShardName", v1Params.get("shard"));
+    assertEquals("someReplicaName", v1Params.get("replica"));
+    assertEquals("somePropertyName", v1Params.get("property"));
+    assertEquals("somePropertyValue", v1Params.get("property.value"));
   }
 
   @Test
   public void testDeleteReplicaPropertyAllProperties() throws Exception {
+    final SolrParams v1Params = captureConvertedV1Params("/collections/collName", "POST",
+            "{ 'delete-replica-property': {" +
+                    "'shard': 'someShardName', " +
+                    "'replica': 'someReplicaName', " +
+                    "'property': 'somePropertyName' " +
+                    "}}");
 
+    assertEquals(CollectionParams.CollectionAction.DELETEREPLICAPROP.lowerName, v1Params.get(ACTION));
+    assertEquals("collName", v1Params.get(COLLECTION));
+    assertEquals("someShardName", v1Params.get("shard"));
+    assertEquals("someReplicaName", v1Params.get("replica"));
+    assertEquals("somePropertyName", v1Params.get("property"));
   }
 
   @Test
   public void testSetCollectionPropertyAllProperties() throws Exception {
+    final SolrParams v1Params = captureConvertedV1Params("/collections/collName", "POST",
+            "{ 'set-collection-property': {" +
+                    "'name': 'somePropertyName', " +
+                    "'value': 'somePropertyValue' " +
+                    "}}");
 
+    assertEquals(CollectionParams.CollectionAction.COLLECTIONPROP.lowerName, v1Params.get(ACTION));
+    assertEquals("collName", v1Params.get(NAME));
+    assertEquals("somePropertyName", v1Params.get("propertyName"));
+    assertEquals("somePropertyValue", v1Params.get("propertyValue"));
   }
 
   private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody) throws Exception {
