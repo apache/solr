@@ -125,10 +125,7 @@ public class ClusterStateMutator {
       collectionProps.put(ZkStateReader.CONFIGNAME_PROP, configName);
     }
 
-    // if collection.configName is already in props rename it to configName
-    if (collectionProps.containsKey(CollectionAdminParams.COLL_CONF)) {
-      collectionProps.put(ZkStateReader.CONFIGNAME_PROP, collectionProps.remove(CollectionAdminParams.COLL_CONF));
-    }
+    assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
   }
 
   public ZkWriteCommand deleteCollection(ClusterState clusterState, ZkNodeProps message) {

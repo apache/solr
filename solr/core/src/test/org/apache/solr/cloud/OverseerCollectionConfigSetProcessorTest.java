@@ -565,7 +565,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       if (CollectionParams.CollectionAction.CREATE.isEqual(props.getStr("operation"))) {
         String collName = props.getStr("name");
         if (props.containsKey(CollectionAdminParams.COLL_CONF)) {
-          props.plus(ZkStateReader.CONFIGNAME_PROP, props.getProperties().remove("collection.configName"));
+          String configName = (String) props.getProperties().remove(CollectionAdminParams.COLL_CONF);
+          props.getProperties().put(ZkStateReader.CONFIGNAME_PROP, configName);
         }
         if (collName != null) collectionsSet.put(collName, new ClusterState.CollectionRef(
             new DocCollection(collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));

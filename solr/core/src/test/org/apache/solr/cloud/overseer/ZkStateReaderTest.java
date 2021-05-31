@@ -62,7 +62,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       // create new collection
       ZkWriteCommand c1 = new ZkWriteCommand("c1",
-          new DocCollection("c1", new HashMap<>(), Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0));
+          new DocCollection("c1", new HashMap<>(), Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0));
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
       writer.writePendingUpdates();
       reader.forceUpdateCollection("c1");
@@ -99,7 +99,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
       ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
-      DocCollection state = new DocCollection("c1", new HashMap<>(), Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0);
+      DocCollection state = new DocCollection("c1", new HashMap<>(), Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0);
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();
@@ -161,7 +161,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
 
       // create new collection
-      DocCollection state = new DocCollection("c1", new HashMap<>(), Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0);
+      DocCollection state = new DocCollection("c1", new HashMap<>(), Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT, 0);
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();

@@ -319,9 +319,8 @@ public class CollApiCmds {
           for (Map.Entry<String, Object> updateEntry : message.getProperties().entrySet()) {
             String updateKey = updateEntry.getKey();
 
-            /** update key from collection.configName to configName; actual renaming happens in
-             * {@link org.apache.solr.cloud.overseer.CollectionMutator#modifyCollection}
-             */
+            // update key from collection.configName to configName;
+            // actual renaming happens in org.apache.solr.cloud.overseer.CollectionMutator#modifyCollection
             if (updateKey.equals(COLL_CONF)) {
               updateKey = CONFIGNAME_PROP;
             }

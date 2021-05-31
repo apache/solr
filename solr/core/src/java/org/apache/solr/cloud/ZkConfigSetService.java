@@ -93,7 +93,7 @@ public class ZkConfigSetService extends ConfigSetService {
     }
 
     // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only populated in standalone
-      String configSetName = zkController.getZkStateReader().getClusterState().getCollection(colName).getConfigName();
+      String configSetName = zkController.getClusterState().getCollection(colName).getConfigName();
       cd.setConfigSet(configSetName);
 
 
