@@ -64,6 +64,7 @@ public class V2SpecificCollectionAPIMappingTest extends SolrTestCaseJ4 {
     final SpecificCollectionAPI specificCollectionAPI = new SpecificCollectionAPI(mockCollectionsHandler);
     apiBag.registerObject(specificCollectionAPI);
     apiBag.registerObject(specificCollectionAPI.specificCollectionCommands);
+    apiBag.registerObject(specificCollectionAPI.modifyCollectionCommand);
   }
 
   @Test

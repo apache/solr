@@ -67,6 +67,7 @@ public class SpecificCollectionAPI {
   private static final String V2_SET_COLLECTION_PROPERTY_CMD = "set-collection-property";
 
   public final SpecificCollectionCommands specificCollectionCommands = new SpecificCollectionCommands();
+  public final SpecificCollectionCommands2 modifyCollectionCommand = new SpecificCollectionCommands2();
   private final CollectionsHandler collectionsHandler;
 
   public SpecificCollectionAPI(CollectionsHandler collectionsHandler) {
@@ -83,14 +84,12 @@ public class SpecificCollectionAPI {
     collectionsHandler.handleRequestBody(req, rsp);
   }
 
-  // TODO What is the purpose of nesting all the POSTs under a separate class in CollectionsAPI.CollectionCommands?
-  //    - try to add the annotation and stuff to the top-level SpecificCollectionAPI once I get everything working in the mirrored, nested fashion
+  // A test to see allow debugging of whether ApiBag allows multiple API objects for the same path/method.
   @EndPoint(
           path = {"/c/{collection}", "/collections/{collection}"},
           method = POST,
           permission = COLL_EDIT_PERM) // TODO is this the correct permission for all POST commands at this path
-  public class SpecificCollectionCommands {
-
+  public class SpecificCollectionCommands2 {
     @Command(name = V2_MODIFY_COLLECTION_CMD)
     public void modifyCollection(PayloadObj<ModifyCollectionPayload> obj) throws Exception {
       final ModifyCollectionPayload v2Body = obj.get();
@@ -109,6 +108,17 @@ public class SpecificCollectionAPI {
 
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
     }
+  }
+
+  // TODO What is the purpose of nesting all the POSTs under a separate class in CollectionsAPI.CollectionCommands?
+  //    - try to add the annotation and stuff to the top-level SpecificCollectionAPI once I get everything working in the mirrored, nested fashion
+  @EndPoint(
+          path = {"/c/{collection}", "/collections/{collection}"},
+          method = POST,
+          permission = COLL_EDIT_PERM) // TODO is this the correct permission for all POST commands at this path
+  public class SpecificCollectionCommands {
+
+
 
     @Command(name = V2_RELOAD_COLLECTION_CMD)
     public void reloadCollection(PayloadObj<ReloadCollectionPayload> obj) throws Exception {
