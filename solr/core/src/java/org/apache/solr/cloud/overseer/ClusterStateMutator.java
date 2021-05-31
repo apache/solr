@@ -110,14 +110,6 @@ public class ClusterStateMutator {
       collectionProps.put("autoCreated", "true");
     }
 
-    addConfigNameToProps(message, collectionProps);
-
-    DocCollection newCollection = new DocCollection(cName, slices, collectionProps, router, -1);
-
-    return new ZkWriteCommand(cName, newCollection);
-  }
-
-  public static void addConfigNameToProps(ZkNodeProps message, Map<String, Object> collectionProps) {
     // put configName in props so that it will appear in state.json
     final String configName = (String) message.getProperties().get(CollectionAdminParams.COLL_CONF);
 
@@ -126,6 +118,9 @@ public class ClusterStateMutator {
     }
 
     assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
+    DocCollection newCollection = new DocCollection(cName, slices, collectionProps, router, -1);
+
+    return new ZkWriteCommand(cName, newCollection);
   }
 
   public ZkWriteCommand deleteCollection(ClusterState clusterState, ZkNodeProps message) {
