@@ -16,7 +16,10 @@
 package org.apache.solr.ltr;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -59,10 +62,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     int numberOfNodes = numberOfShards * numberOfReplicas;
 
     setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes);
-
-
   }
-
 
   @Override
   public void tearDown() throws Exception {
@@ -76,7 +76,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   public void testSimpleQueryCustomSort() throws Exception {
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("/query");
-    query.setFields("*,score,[shard]");
+    query.setFields("*,[shard]");
     query.setParam("rows", "8");
     query.setParam("sort", "id asc");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
@@ -95,7 +95,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   }
 
   @Test
-  public void testSimpleQueryCustomSortWithASubResults() throws Exception {
+  public void testSimpleQueryCustomSortWithSubResultSet() throws Exception {
     final int reRankDocs = 2;
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("/query");
@@ -108,6 +108,9 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     SolrDocumentList results = queryResponse.getResults();
     assertEquals(8, results.getNumFound());
 
+    // save order to use it later
+    List<String> expectedDocIdOrder = new ArrayList<>();
+
     int docCounter = 0;
     float lastScore = Float.MAX_VALUE;
     double lastId = 0d;
@@ -115,6 +118,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       float score = (float) d.getFieldValue("score");
 
       double id = Double.parseDouble((String) d.getFirstValue("id"));
+      expectedDocIdOrder.add((String) d.getFirstValue("id"));
       if(docCounter < reRankDocs){
         final float assertedCalculatedScore = (float) Math.pow(id, 2.0d) + 2.1f;
         assertEquals(assertedCalculatedScore, score, 0.0);
@@ -127,6 +131,19 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
       docCounter++;
     }
+
+    query.setFields("*,[shard]");
+
+    queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    results = queryResponse.getResults();
+    assertEquals(8, results.getNumFound());
+
+    List<String> docIdOrder = results.stream()
+        .map(document -> (String) document.getFirstValue("id"))
+        .collect(Collectors.toList());
+
+    // assert that sorting is correct when we do not return the score via fl param
+    assertEquals(expectedDocIdOrder, docIdOrder);
   }
 
   @Test

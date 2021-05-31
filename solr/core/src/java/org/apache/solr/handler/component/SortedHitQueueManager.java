@@ -6,7 +6,7 @@ import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.SortSpec;
 
 /**
- * This class is used to managed the possible multiple SortedHitQueues that we need during mergeIds( ).
+ * This class is used to manage the possible multiple SortedHitQueues that we need during mergeIds( ).
  * Multiple queues are needed, if reRanking is used.
  *
  * If reRanking is disabled, only the queue is used.

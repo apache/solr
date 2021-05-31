@@ -116,6 +116,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
+import static org.apache.solr.search.SolrIndexSearcher.GET_SCORES;
 
 
 /**
@@ -185,6 +186,8 @@ public class QueryComponent extends SearchComponent
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
           rb.setRankQuery(rankQuery);
+          // we always need the score for reRanking
+          rb.setFieldFlags(rb.getFieldFlags() | GET_SCORES);
           MergeStrategy mergeStrategy = rankQuery.getMergeStrategy();
           if(mergeStrategy != null) {
             rb.addMergeStrategy(mergeStrategy);
