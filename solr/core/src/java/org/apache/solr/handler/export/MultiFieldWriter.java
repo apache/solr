@@ -86,6 +86,8 @@ class MultiFieldWriter extends FieldWriter {
           });
       return true;
     } else if (fieldType.isUtf8Field()) {
+      // XXX could/should consolidate dvRefIterCache with the new `docValuesCache`? Could the latter
+      // be an array, not an int hash?
       DocValuesRefIterator vals = dvRefIterCache.getDocValuesRefIterator(sortDoc.docId, reader, sortDoc.ord);
       if (!vals.advanceExact(sortDoc.docId)) return false;
       out.put(this.field,
