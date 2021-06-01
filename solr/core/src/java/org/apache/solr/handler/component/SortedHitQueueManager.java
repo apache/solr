@@ -41,9 +41,11 @@ public class SortedHitQueueManager {
       // reRanking is enabled, create a queue that is only used for reRanked results
       // disable shortcut in the queue to correctly sort documents that were reRanked on the shards back into the full result
       reRankDocsSize = ((AbstractReRankQuery) rankQuery).getReRankDocs();
-      reRankQueue = new ShardFieldSortedHitQueue(new SortField[]{SortField.FIELD_SCORE},
-          Math.min(reRankDocsSize, ss.getCount()), rb.req.getSearcher());
-      queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher(), false);
+      int absoluteReRankDocs = Math.min(reRankDocsSize, ss.getCount());
+      reRankQueue = new ShardFieldSortedHitQueue(new SortField[]{SortField.FIELD_SCORE}, 
+              absoluteReRankDocs, rb.req.getSearcher());
+      queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount() - absoluteReRankDocs, 
+              rb.req.getSearcher(), false);
     } else {
       // reRanking is disabled, use one queue for all results
       queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());

@@ -19,10 +19,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.common.base.Splitter;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -54,6 +58,10 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   String schema = "schema.xml";
 
   SortedMap<ServletHolder,String> extraServlets = null;
+  
+  private final static String MODEL_WEIGHTS = "\"powpularityS\":1.0,\"c3\":1.0,\"original\":0.1," +
+            "\"dvIntFieldFeature\":0.1,\"dvLongFieldFeature\":0.1," +
+            "\"dvFloatFieldFeature\":0.1,\"dvDoubleFieldFeature\":0.1,\"dvStrNumFieldFeature\":0.1,\"dvStrBoolFieldFeature\":0.1";
 
   @Override
   public void setUp() throws Exception {
@@ -149,6 +157,55 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     // assert that sorting is correct when we do not return the score via fl param
     assertEquals(expectedDocIdOrder, docIdOrder);
+  }
+
+  @Test
+  public void testSimpleQueryCustomSortWithSubResultSetAndRowsLessThanExistingDocs() throws Exception {
+    final int reRankDocs = 2;
+    SolrQuery query = new SolrQuery("*:*");
+    query.setRequestHandler("/query");
+    query.setFields("*,score,[shard],[fv]");
+    query.setParam("rows", "6");
+    query.setParam("sort", "id asc");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs="+reRankDocs+"}");
+    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    SolrDocumentList results = queryResponse.getResults();
+    assertEquals(6, results.size());
+    int docCounter = 0;
+    float lastScore = Float.MAX_VALUE;
+    double lastId = 0d;
+    for(SolrDocument d : results){
+      float score = (float) d.getFieldValue("score");
+      double id = Double.parseDouble((String) d.getFirstValue("id"));
+      if(docCounter < reRankDocs){
+        final float calculatedScore = calculateLTRScoreForDoc(d);
+        System.out.println("calculatedScore " + calculatedScore);
+        System.out.println("score " + score);
+        assertEquals(calculatedScore, score, 0.0);
+        assertTrue(lastScore > score);
+      } else if(docCounter > reRankDocs + 1) {
+        assertTrue(lastId < id);
+      }
+      lastScore = score;
+      lastId = id;
+      docCounter++;
+    }
+  }
+  private float calculateLTRScoreForDoc(SolrDocument d) {
+    Matcher matcher = Pattern.compile(",?(\\w+)=([0-9]+\\.[0-9]+)").matcher((String) d.getFieldValue("[fv]"));
+    Map<String, Float> weights = Splitter.on(",")
+            .splitToList(MODEL_WEIGHTS)
+            .stream()
+            .map(e -> e.split(":"))
+            .collect(
+                    Collectors.toMap(e -> e[0].replaceAll("\"", ""), e -> Float.parseFloat(e[1])));
+
+    float score = 0.0f;
+    while(matcher.find()) {
+        score += Float.parseFloat(matcher.group(2)) * weights.get(matcher.group(1));
+    }
+    
+    return score;
   }
 
   @Test
@@ -373,9 +430,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     final String featureStore = "test";
     final String[] featureNames = new String[]{"powpularityS", "c3", "original", "dvIntFieldFeature",
         "dvLongFieldFeature", "dvFloatFieldFeature", "dvDoubleFieldFeature", "dvStrNumFieldFeature", "dvStrBoolFieldFeature"};
-    final String jsonModelParams = "{\"weights\":{\"powpularityS\":1.0,\"c3\":1.0,\"original\":0.1," +
-        "\"dvIntFieldFeature\":0.1,\"dvLongFieldFeature\":0.1," +
-        "\"dvFloatFieldFeature\":0.1,\"dvDoubleFieldFeature\":0.1,\"dvStrNumFieldFeature\":0.1,\"dvStrBoolFieldFeature\":0.1}}";
+    final String jsonModelParams = "{\"weights\":{" + MODEL_WEIGHTS + "}}";
 
     loadFeature(
         featureNames[0],
