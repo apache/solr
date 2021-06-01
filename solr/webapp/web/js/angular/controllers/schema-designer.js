@@ -1192,7 +1192,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       var fd = new FormData();
       fd.append('file', file);
       SchemaDesigner.upload(params, fd, function (data) {
-        // delete $scope.fileUpload;
+        $("#upload-file").val("");
+        delete $scope.fileUpload;
         $scope.onSchemaUpdated(schema, data, nodeId);
       }, $scope.errorHandler);
     } else {
@@ -1594,6 +1595,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     delete $scope.helpId;
     if ($scope.queryDocs) {
       $scope.hasDocsOnServer = false; // so the updated docs apply
+      $("#upload-file").val("");
       delete $scope.fileUpload;
       $scope.sampleDocuments = $scope.queryDocs;
       $scope.onSampleDocumentsChanged();
