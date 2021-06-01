@@ -112,7 +112,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     final int reRankDocs = 2;
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("/query");
-    query.setFields("*,score,[shard]");
+    query.setFields("*,score,[shard],[fv]");
     query.setParam("rows", "8");
     query.setParam("sort", "id asc");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs="+reRankDocs+"}");
@@ -133,7 +133,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       double id = Double.parseDouble((String) d.getFirstValue("id"));
       expectedDocIdOrder.add((String) d.getFirstValue("id"));
       if(docCounter < reRankDocs){
-        final float assertedCalculatedScore = (float) Math.pow(id, 2.0d) + 2.1f;
+        final float assertedCalculatedScore = calculateLTRScoreForDoc(d);
         assertEquals(assertedCalculatedScore, score, 0.0);
         assertTrue(lastScore > score);
       } else if(docCounter > reRankDocs + 1) {
@@ -145,7 +145,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       docCounter++;
     }
 
-    query.setFields("*,[shard]");
+    query.setFields("*,[shard],[fv]");
 
     queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
     results = queryResponse.getResults();
@@ -164,7 +164,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     final int reRankDocs = 2;
     SolrQuery query = new SolrQuery("*:*");
     query.setRequestHandler("/query");
-    query.setFields("*,score,[shard],[fv]");
+    query.setFields("*,score,[shard],[fv]");  // score as fl is needed here to be able to use it for assertions
     query.setParam("rows", "6");
     query.setParam("sort", "id asc");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs="+reRankDocs+"}");
@@ -179,8 +179,6 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       double id = Double.parseDouble((String) d.getFirstValue("id"));
       if(docCounter < reRankDocs){
         final float calculatedScore = calculateLTRScoreForDoc(d);
-        System.out.println("calculatedScore " + calculatedScore);
-        System.out.println("score " + score);
         assertEquals(calculatedScore, score, 0.0);
         assertTrue(lastScore > score);
       } else if(docCounter > reRankDocs + 1) {
@@ -196,9 +194,9 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     Map<String, Float> weights = Splitter.on(",")
             .splitToList(MODEL_WEIGHTS)
             .stream()
-            .map(e -> e.split(":"))
-            .collect(
-                    Collectors.toMap(e -> e[0].replaceAll("\"", ""), e -> Float.parseFloat(e[1])));
+            .map(fieldWithValue -> fieldWithValue.split(":"))
+            .collect(Collectors.toMap(fieldAndValue -> fieldAndValue[0].replaceAll("\"", ""),
+                fieldAndValue -> Float.parseFloat(fieldAndValue[1])));
 
     float score = 0.0f;
     while(matcher.find()) {
