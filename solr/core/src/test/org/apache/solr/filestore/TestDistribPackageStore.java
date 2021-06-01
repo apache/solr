@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -40,6 +41,8 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -70,6 +73,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   }
   
   @SuppressWarnings({"unchecked"})
+  @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   public void testPackageStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
@@ -121,8 +126,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           )
       );
 
-      @SuppressWarnings({"rawtypes"})
-      Map expected = Map.of(
+      Map<String,Object> expected = Map.of(
           ":files:/package/mypkg/v1.0/runtimelibs.jar:name", "runtimelibs.jar",
           ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
       );
@@ -261,7 +265,13 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         Object actual = rsp._get(key, null);
         passed = passed && p.test(actual); // Important: check all of the values, not just the first one
         if (!passed && i >= repeats - 1) {
-          fail("Failed on path " + key + " after " + (i+1) + " attempt(s). Expected: " + val + "; Actual: " + Utils.toJSONString(actual));
+          String description = rsp.toString();
+          if (rsp instanceof SimpleSolrResponse) {
+            description = ((SimpleSolrResponse) rsp).getResponse().toString();
+          }
+          // we know these are unequal but call assert instead of fail() because it gives a better error message
+          assertEquals("Failed on path " + key + " of " + description + "after attempt #" + (i+1),
+              val, Utils.toJSONString(actual));
         }
       }
     }

@@ -113,6 +113,8 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
+  @Test
   public void testCoreReloadingPlugin() throws Exception {
       String FILE1 = "/mypkg/runtimelibs.jar";
       String COLLECTION_NAME = "testCoreReloadingPluginColl";
@@ -165,6 +167,8 @@ public class TestPackages extends SolrCloudTestCase {
               COLLECTION_NAME, "query", "filterCache",
               "mypkg", "2.0" );
   }
+
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   @Test
   public void testPluginLoading() throws Exception {
       String FILE1 = "/mypkg/runtimelibs.jar";
@@ -686,6 +690,8 @@ public class TestPackages extends SolrCloudTestCase {
     }
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
+  @Test
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");
