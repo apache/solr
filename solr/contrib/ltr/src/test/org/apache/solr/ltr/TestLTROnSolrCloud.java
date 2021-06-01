@@ -133,8 +133,8 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       double id = Double.parseDouble((String) d.getFirstValue("id"));
       expectedDocIdOrder.add((String) d.getFirstValue("id"));
       if(docCounter < reRankDocs){
-        final float assertedCalculatedScore = calculateLTRScoreForDoc(d);
-        assertEquals(assertedCalculatedScore, score, 0.0);
+        final float calculatedScore = calculateLTRScoreForDoc(d);
+        assertEquals(calculatedScore, score, 0.0);
         assertTrue(lastScore > score);
       } else if(docCounter > reRankDocs + 1) {
         assertTrue(lastId < id);
@@ -190,11 +190,11 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     }
   }
   private float calculateLTRScoreForDoc(SolrDocument d) {
-    Matcher matcher = Pattern.compile(",?(\\w+)=([0-9]+\\.[0-9]+)").matcher((String) d.getFieldValue("[fv]"));
+    Matcher matcher = Pattern.compile(",?(\\w+)=(-?[0-9]+\\.[0-9]+)").matcher((String) d.getFieldValue("[fv]"));
     Map<String, Float> weights = Splitter.on(",")
             .splitToList(MODEL_WEIGHTS)
             .stream()
-            .map(fieldWithValue -> fieldWithValue.split(":"))
+            .map(fieldWithWeight -> fieldWithWeight.split(":"))
             .collect(Collectors.toMap(fieldAndValue -> fieldAndValue[0].replaceAll("\"", ""),
                 fieldAndValue -> Float.parseFloat(fieldAndValue[1])));
 
