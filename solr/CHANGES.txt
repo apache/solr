@@ -226,8 +226,6 @@ Other Changes
 * SOLR-14912: Clean up solr-extraction contrib to produce solr-extraction-* jar
   (instead of solr-cell-*). (Dawid Weiss)
 
-* SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
-
 * SOLR-14035: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local alternative.
   (Alex Bulygin via Christine Poerschke)
 
@@ -423,6 +421,8 @@ Other Changes
   be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
 
 * SOLR-15377: Improve IndexFetcher's exception logging upon replication errors. (Torsten Bøgh Köster, Christine Poerschke)
+
+* SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
 
 ==================  8.8.2 ==================
 
