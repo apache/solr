@@ -209,6 +209,7 @@ limitations under the License.
         </div>
         <div class="right">
           <div ng-show="showSchemaActions">
+          <button class="action diff-button" ng-click="toggleDiff($event)"><span>Show Changes</span></button>
           <button class="action publish-button" ng-click="togglePublish($event)"><span>Publish</span></button>
           <button id="download-button" class="action" ng-click="downloadConfig()"><span>Download Config</span></button>
           </div>
@@ -224,11 +225,20 @@ limitations under the License.
         </div>
       </div>
 
-      <div id="show-diff-dialog" class="diff" ng-show="showDiff && showPublish">
+      <div id="warn-dialog" class="warn-dialog" ng-show="apiWarning">
+        <div id="warn-dialog-note"><p class="clearfix"><img src="img/ico/exclamation-button.png"/>&nbsp;{{apiWarning}}</p></div>
+        <div id="warn-dialog-details"><div ng-show="apiWarningDetails"><textarea rows="10" cols="55">{{apiWarningDetails}}</textarea></div></div>
+        <div id="warn-dialog-buttons" class="clearfix">
+          <button type="reset" class="warn-button" ng-click="closeWarnDialog()"><span>OK</span></button>
+        </div>
+      </div>
+
+      <div id="show-diff-dialog" class="diff" ng-show="showDiff">
         <div ng-hide="schemaDiffExists" ng-show="!schemaDiffExists">
-          <p class="clearfix diff-text">No differences found.</p>
+          <p class="clearfix diff-text">No differences with {{diffSource}} found.</p>
         </div>
         {{fieldsDiff=schemaDiff.fieldsDiff;""}}
+        <p class="clearfix diff-text" ng-show="schemaDiffExists">Found differences with {{diffSource}}:</p>
         <div id="fields-diff" ng-hide="fieldsDiff == null" ng-show="Object.keys(fieldsDiff).length > 0">
           <div id="fields-updated" ng-hide="fieldsDiff.updated == null" ng-show="Object.keys(fieldsDiff.updated).length > 0">
             <p class="clearfix diff-text">Updated Fields</p>
@@ -247,11 +257,28 @@ limitations under the License.
           </div>
           <div id="fields-added" ng-show="schemaDiff.addedFields.length > 0">
             <p class="clearfix diff-text">New Fields</p>
-            <ul>
-              <li class="clearfix element" ng-repeat="f in schemaDiff.addedFields">
-                <p class="new-value"> {{f}} </p>
-              </li>
-            </ul>
+            <table border="0" cellspacing="0" cellpadding="0">
+              <tbody>
+              <tr ng-class="{odd:$odd}">
+                <th class="prop-hdr">Name</th>
+                <th class="prop-hdr">Type</th>
+                <th class="prop-hdr-flag">Indexed</th>
+                <th class="prop-hdr-flag">Stored</th>
+                <th class="prop-hdr-flag">MultiValued</th>
+                <th class="prop-hdr-flag">DocValues</th>
+                <th class="prop-hdr-flag">Tokenized</th>
+              </tr>
+              <tr ng-repeat="f in schemaDiff.addedFields" ng-class="{odd:$odd}">
+                <td class="prop">{{f.name}}</td>
+                <td class="prop">{{f.type}}</td>
+                <td class="prop-flag"><span ng-show="f.indexed"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.stored"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.multiValued"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.docValues"><img src="img/ico/tick.png"/></span></td>
+                <td class="prop-flag"><span ng-show="f.tokenized"><img src="img/ico/tick.png"/></span></td>
+              </tr>
+              </tbody>
+            </table>
           </div>
           <div id="fields-removed" ng-show="schemaDiff.removedFields.length > 0">
             <p class="clearfix diff-text">Removed Fields</p>
@@ -356,7 +383,6 @@ limitations under the License.
 
       <div id="publish-dialog" class="publish" ng-show="showPublish" escape-pressed="hideAll()">
         <div id="publish-dialog-note"><p class="clearfix">Publish schema and associated configs to Zookeeper as a Solr ConfigSet.</p></div>
-        <button class="action diff-button" ng-click="toggleDiff($event)"><span>Schema Diff</span></button>
         <div id="publish-affected">
           <p class="clearfix">Affected collections:</p>
           <ul>
@@ -977,6 +1003,12 @@ limitations under the License.
           <jstree class="tree" on-select="onSelectQueryResultsNode(url)" id="queryResultsJsTree" data="queryResultsTree"></jstree>
           </div>
           <div id="results-tree-right">
+            <div id="editDocumentsToolbar" ng-show="(selectedResultsNode === '/' || selectedResultsNode === 'docs') && queryDocs">
+            <button id="editDocuments" class="action" ng-click="editDocuments()"><span>Edit Documents</span></button><a ng-click="showHelp('editDocsHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+              <div id="editDocsHelp" class="help" ng-show="helpId === 'editDocsHelp'">
+                <div class="help-small">Copy the documents from the query results to the Sample Documents text area as JSON. This allows you to refine your schema by changing the sample data sourced from the query results.</div>
+              </div>
+            </div>
             <div id="selected-hit" ng-show="resultsData">
               <table border="0" cellspacing="0" cellpadding="0">
                 <tbody>

@@ -709,6 +709,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     String sourceSchema = configExists(configSet) ? configSet : settings.getCopyFrom();
     Map<String, Object> response = new HashMap<>();
     response.put("diff", ManagedSchemaDiff.diff(loadLatestSchema(sourceSchema), settings.getSchema()));
+    response.put("diff-source", sourceSchema);
     addSettingsToResponse(settings, response);
     rsp.getValues().addAll(response);
   }

@@ -57,6 +57,7 @@ import org.apache.solr.update.processor.ParseDateFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseDoubleFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseLongFieldUpdateProcessorFactory;
 
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.update.processor.ParseDateFieldUpdateProcessorFactory.validateFormatter;
 
 // Just a quick hack to flush out the design, more intelligence is needed
@@ -163,15 +164,18 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
   public Map<String, List<Object>> transposeDocs(List<SolrInputDocument> docs) {
     Map<String, List<Object>> mapByField = new HashMap<>();
     docs.forEach(doc -> doc.getFieldNames().forEach(f -> {
-      List<Object> values = mapByField.computeIfAbsent(f, k -> new LinkedList<>());
-      Collection<Object> fieldValues = doc.getFieldValues(f);
-      if (fieldValues != null && !fieldValues.isEmpty()) {
-        if (fieldValues.size() == 1) {
-          // flatten so every field doesn't end up multi-valued
-          values.add(fieldValues.iterator().next());
-        } else {
-          // truly multi-valued
-          values.add(fieldValues);
+      // skip the version field on incoming docs
+      if (!VERSION_FIELD.equals(f)) {
+        List<Object> values = mapByField.computeIfAbsent(f, k -> new LinkedList<>());
+        Collection<Object> fieldValues = doc.getFieldValues(f);
+        if (fieldValues != null && !fieldValues.isEmpty()) {
+          if (fieldValues.size() == 1) {
+            // flatten so every field doesn't end up multi-valued
+            values.add(fieldValues.iterator().next());
+          } else {
+            // truly multi-valued
+            values.add(fieldValues);
+          }
         }
       }
     }));

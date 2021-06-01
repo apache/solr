@@ -95,6 +95,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
@@ -494,6 +495,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
+    docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
     postDataToBlobStore(cloudClient(), configSet + "_sample",
         DefaultSampleDocumentsLoader.streamAsBytes(toJavabin(docs)));
   }

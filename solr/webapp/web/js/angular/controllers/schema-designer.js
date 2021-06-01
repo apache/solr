@@ -18,6 +18,13 @@
 solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, $cookies, $window, Constants, SchemaDesigner, Luke) {
   $scope.resetMenu("schema-designer", Constants.IS_ROOT_PAGE);
 
+  $scope.onWarning = function (warnMsg, warnDetails) {
+    $scope.updateWorking = false;
+    delete $scope.updateStatusMessage;
+    $scope.apiWarning = warnMsg;
+    $scope.apiWarningDetails = warnDetails;
+  };
+  
   $scope.onError = function (errorMsg, errorCode, errorDetails) {
     $scope.updateWorking = false;
     delete $scope.updateStatusMessage;
@@ -70,6 +77,11 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
   };
 
+  $scope.closeWarnDialog = function () {
+    delete $scope.apiWarning;
+    delete $scope.apiWarningDetails;
+  };
+
   $scope.closeErrorDialog = function () {
     delete $scope.designerAPIError;
     delete $scope.designerAPIErrorDetails;
@@ -84,6 +96,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.refresh = function () {
+    delete $scope.helpId;
+
     $scope.updateStatusMessage = "";
     $scope.analysisVerbose = false;
     $scope.updateWorking = false;
@@ -443,9 +457,9 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
               var updateType = data["updateType"];
               var updatedObject = data[updateType];
               var updatedName = updatedObject && updatedObject.name ? updatedObject.name : "";
-              var errMsg = "Changes to "+updateType+" "+updatedName+" applied, but required the temp collection to be deleted " +
+              var warnMsg = "Changes to "+updateType+" "+updatedName+" applied, but required the temp collection to be deleted " +
                   "and re-created due to an incompatible Lucene change, see details below.";
-              $scope.onError(errMsg, 400, {"error":data.analysisError});
+              $scope.onWarning(warnMsg, data.analysisError);
             } else {
               $timeout(function () { delete $scope.updateStatusMessage; }, waitMs);
             }
@@ -661,6 +675,15 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     return list.sort();
   }
 
+  function toSortedFieldList(fields) {
+    var list = [];
+    var keys = Object.keys(fields);
+    for (var f in keys) {
+      list.push(fields[keys[f]]);
+    }
+    return list.sort((a, b) => (a.name > b.name) ? 1 : -1);
+  }
+
   $scope.toggleDiff = function (event) {
     if ($scope.showDiff) {
       // toggle, close dialog
@@ -670,7 +693,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
     if (event) {
       var t = event.target || event.currentTarget;
-      var leftPos = t.getBoundingClientRect().left - 905;
+      var leftPos = t.getBoundingClientRect().left - 600;
       if (leftPos < 0) leftPos = 0;
       $('#show-diff-dialog').css({left: leftPos});
     }
@@ -684,6 +707,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         dynamicFields = null;
       }
 
+      $scope.diffSource = data["diff-source"];
       $scope.schemaDiff = {
         "fieldsDiff": diff.fields,
         "addedFields": [],
@@ -694,7 +718,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         "copyFieldsDiff": diff.copyFields
       }
       if (diff.fields && diff.fields.added) {
-        $scope.schemaDiff.addedFields = toSortedNameAndTypeList(diff.fields.added, "type");
+        $scope.schemaDiff.addedFields = toSortedFieldList(diff.fields.added);
       }
       if (diff.fields && diff.fields.removed) {
         $scope.schemaDiff.removedFields = toSortedNameAndTypeList(diff.fields.removed, "type");
@@ -716,6 +740,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       $('#publish-dialog').css({left: leftPos});
     }
 
+    $scope.showDiff = false;
     $scope.showPublish = !$scope.showPublish;
     delete $scope.publishErrors;
 
@@ -1561,11 +1586,29 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
   };
 
+  function omitVersionField(key,value) {
+    return (key === "_version_") ? undefined : value;
+  }
+
+  $scope.editDocuments = function() {
+    delete $scope.helpId;
+    if ($scope.queryDocs) {
+      $scope.sampleDocuments = $scope.queryDocs;
+      $scope.onSampleDocumentsChanged();
+    }
+  };
+
   $scope.renderResultsTree = function (data) {
     var h = data.responseHeader;
     var sort = h.params.sort;
     if (!sort) {
       sort = "score desc";
+    }
+
+    if (data.response && data.response.docs && data.response.docs.length > 0) {
+      $scope.queryDocs = JSON.stringify(data.response.docs, omitVersionField, 2);
+    } else {
+      delete $scope.queryDocs;
     }
 
     $scope.resultsMeta = [
@@ -1592,6 +1635,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
 
     var rootChildren = [{
+      "id":"docs",
       "text": "Documents",
       "state": {"opened": true},
       "a_attr": {"href": "docs"},
@@ -1600,6 +1644,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
     if (data.facet_counts && data.facet_counts.facet_fields) {
       rootChildren.push({
+        "id":"facets",
         "text": "Facets",
         "state": {"opened": true},
         "a_attr": {"href": "facets"},
@@ -1611,6 +1656,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       var hlNodes = hlToTree(data.highlighting);
       if (hlNodes.length > 0) {
         rootChildren.push({
+          "id":"hl",
           "text": "Highlighting",
           "state": {"opened": true},
           "a_attr": {"href": "hl"},
@@ -1620,14 +1666,16 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
 
     if (data.debug) {
-      rootChildren.push({"text": "Debug", "a_attr": {"href": "debug"}, "children": debugToTree(data.debug)});
+      rootChildren.push({"id":"debug", "text": "Debug", "a_attr": {"href": "debug"}, "children": debugToTree(data.debug)});
     }
 
-    var tree = [{"text": "Results", "a_attr": {"href": "/"}, "children": rootChildren}];
+    var tree = [{"id":"/","text": "Results", "a_attr": {"href": "/"}, "children": rootChildren}];
     $scope.queryResultsTree = tree;
   };
 
   $scope.onSelectQueryResultsNode = function (id) {
+    $scope.selectedResultsNode = id;
+
     if (id === "/" || id === "docs") {
       $scope.resultsData = $scope.resultsMeta;
       return;
@@ -1667,6 +1715,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.doQuery = function () {
+
+    delete $scope.queryDocs;
 
     var params = {path: "query", configSet: $scope.currentSchema, debug: "true", "wt": "json"};
 
