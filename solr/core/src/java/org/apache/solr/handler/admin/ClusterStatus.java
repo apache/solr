@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
@@ -46,6 +47,49 @@ public class ClusterStatus {
   private final ZkStateReader zkStateReader;
   private final ZkNodeProps message;
   private final String collection; // maybe null
+
+  /** Shard / collection health state. */
+  public enum Health {
+    /** All replicas up, leader exists. */
+    GREEN,
+    /** Some replicas down, leader exists. */
+    YELLOW,
+    /** Most replicas down, leader exists. */
+    ORANGE,
+    /** No leader or all replicas down. */
+    RED;
+
+    public static final float ORANGE_LEVEL = 0.5f;
+    public static final float RED_LEVEL = 0.0f;
+
+    public static Health calcShardHealth(float fractionReplicasUp, boolean hasLeader) {
+      if (hasLeader) {
+        if (fractionReplicasUp == 1.0f) {
+          return GREEN;
+        } else if (fractionReplicasUp > ORANGE_LEVEL) {
+          return YELLOW;
+        } else if (fractionReplicasUp > RED_LEVEL) {
+          return ORANGE;
+        } else {
+          return RED;
+        }
+      } else {
+        return RED;
+      }
+    }
+
+    /** Combine multiple states into one. Always reports as the worst state. */
+    public static Health combine(Collection<Health> states) {
+      Health res = GREEN;
+      for (Health state : states) {
+        if (state.ordinal() > res.ordinal()) {
+          res = state;
+        }
+      }
+      return res;
+    }
+  }
+
 
   public ClusterStatus(ZkStateReader zkStateReader, ZkNodeProps props) {
     this.zkStateReader = zkStateReader;
@@ -130,11 +174,12 @@ public class ClusterStatus {
         requestedShards.addAll(Arrays.asList(paramShards));
       }
 
-        byte[] bytes = Utils.toJSON(clusterStateCollection);
-        Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
-        collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
+      byte[] bytes = Utils.toJSON(clusterStateCollection);
+      Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
+      collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
 
       collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
+
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
         collectionStatus.put("aliases", collectionVsAliases.get(name));
       }
@@ -196,7 +241,7 @@ public class ClusterStatus {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
     }
     if (requestedShards == null || requestedShards.isEmpty()) {
-      return collection;
+      return postProcessCollectionJSON(collection);
     } else {
       Map<String, Object> shards = (Map<String, Object>) collection.get("shards");
       Map<String, Object>  selected = new HashMap<>();
@@ -207,11 +252,9 @@ public class ClusterStatus {
         selected.put(selectedShard, shards.get(selectedShard));
         collection.put("shards", selected);
       }
-      return collection;
+      return postProcessCollectionJSON(collection);
     }
   }
-
-
 
   /**
    * Walks the tree of collection status to verify that any replicas not reporting a "down" status is
@@ -242,5 +285,46 @@ public class ClusterStatus {
         }
       }
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Map<String,Object> postProcessCollectionJSON(Map<String, Object> collection) {
+    final Map<String, Map<String,Object>> shards = collection != null
+        ? (Map<String, Map<String,Object>>)collection.getOrDefault("shards", Collections.emptyMap())
+        : Collections.emptyMap();
+    final List<Health> healthStates = new ArrayList<>(shards.size());
+    shards.forEach((shardName, s) -> {
+      final Map<String, Map<String,Object>> replicas =
+          (Map<String, Map<String,Object>>)s.getOrDefault("replicas", Collections.emptyMap());
+      int[] totalVsActive = new int[2];
+      boolean hasLeader = false;
+      for (Map<String, Object> r : replicas.values()) {
+        totalVsActive[0]++;
+        boolean active = false;
+        if (Replica.State.ACTIVE.toString().equals(r.get("state"))) {
+          totalVsActive[1]++;
+          active = true;
+        }
+        if ("true".equals(r.get("leader")) && active) {
+          hasLeader = true;
+        }
+        String nodeName = (String)r.get(ZkStateReader.NODE_NAME_PROP);
+        if (nodeName != null) {
+          // UI needs the base_url set
+          r.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName));
+        }
+      }
+      float ratioActive;
+      if (totalVsActive[0] == 0) {
+        ratioActive = 0.0f;
+      } else {
+        ratioActive = (float) totalVsActive[1] / totalVsActive[0];
+      }
+      Health health = Health.calcShardHealth(ratioActive, hasLeader);
+      s.put("health", health.toString());
+      healthStates.add(health);
+    });
+    collection.put("health", Health.combine(healthStates).toString());
+    return collection;
   }
 }

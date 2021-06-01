@@ -16,27 +16,45 @@
  */
 package org.apache.solr.schema;
 
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.solr.cloud.ZkConfigSetService;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.util.DOMConfigNode;
+import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.apache.solr.schema.IndexSchema.SCHEMA;
 
 /** Base class for factories for IndexSchema implementations */
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /** Instantiates the configured schema factory, then calls create on it. */
   public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config) {
-    return newIndexSchemaFactory(config).create(resourceName, config);
+    return buildIndexSchema(resourceName, config, null);
+  }
+  /** Instantiates the configured schema factory, then calls create on it. */
+  public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config, ConfigSetService configSetService) {
+    return newIndexSchemaFactory(config).create(resourceName, config, configSetService);
   }
 
   /** Instantiates us from {@link SolrConfig}. */
@@ -54,7 +72,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
 
   /**
    * Returns the resource (file) name that will be used for the schema itself.  The answer may be a guess.
-   * Do not pass the result of this to {@link #create(String, SolrConfig)}.
+   * Do not pass the result of this to {@link #create(String, SolrConfig, ConfigSetService)}.
    * The input is the name coming from the {@link org.apache.solr.core.CoreDescriptor}
    * which acts as a default or asked-for name.
    */
@@ -65,25 +83,71 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   /**
    * Returns an index schema created from a local resource.  The input is usually from the core descriptor.
    */
-  public IndexSchema create(String resourceName, SolrConfig config) {
+  public IndexSchema create(String resourceName, SolrConfig config, ConfigSetService configSetService) {
     SolrResourceLoader loader = config.getResourceLoader();
     InputStream schemaInputStream = null;
 
     if (null == resourceName) {
       resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
     }
-
     try {
       schemaInputStream = loader.openResource(resourceName);
+      return new IndexSchema(resourceName, getConfigResource(configSetService, schemaInputStream, loader, resourceName), config.luceneMatchVersion, loader, config.getSubstituteProperties());
+    } catch (RuntimeException rte) {
+      throw rte;
     } catch (Exception e) {
       final String msg = "Error loading schema resource " + resourceName;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }
-    InputSource inputSource = new InputSource(schemaInputStream);
-    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
-    IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader, config.getSubstituteProperties());
-    return schema;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static ConfigResource getConfigResource(ConfigSetService configSetService, InputStream schemaInputStream, SolrResourceLoader loader, String name) throws IOException {
+    if (configSetService instanceof ZkConfigSetService && schemaInputStream instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+      ZkSolrResourceLoader.ZkByteArrayInputStream is = (ZkSolrResourceLoader.ZkByteArrayInputStream) schemaInputStream;
+      Map<String, VersionedConfig> configCache = (Map<String, VersionedConfig>) ((ZkConfigSetService) configSetService).getSolrCloudManager().getObjectCache()
+              .computeIfAbsent(ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
+      VersionedConfig cached = configCache.get(is.fileName);
+      if (cached != null) {
+        if (cached.version != is.getStat().getVersion()) {
+          configCache.remove(is.fileName);// this is stale. remove from cache
+        } else {
+          return () -> cached.data;
+        }
+      }
+      return () -> {
+        ConfigNode data = getParsedSchema(schemaInputStream, loader, name);// either missing or stale. create a new one
+        configCache.put(is.fileName, new VersionedConfig(is.getStat().getVersion(), data));
+        return data;
+      };
+    }
+    //this is not cacheable as it does not come from ZK
+    return () -> getParsedSchema(schemaInputStream,loader, name);
+  }
+
+  public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name) throws IOException, SAXException, ParserConfigurationException {
+    XmlConfigFile schemaConf = null;
+    InputSource inputSource = new InputSource(is);
+    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, "/" + SCHEMA + "/", null);
+    return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
+  }
+
+  public interface ConfigResource {
+
+    ConfigNode get() throws Exception;
+
+  }
+
+  public static class VersionedConfig {
+    final int version;
+    final ConfigNode data;
+
+    public VersionedConfig(int version, ConfigNode data) {
+      this.version = version;
+      this.data = data;
+    }
   }
 
 }

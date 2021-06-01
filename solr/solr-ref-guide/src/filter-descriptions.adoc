@@ -111,7 +111,7 @@ This filter converts alphabetic, numeric, and symbolic Unicode characters which 
 
 *Arguments:*
 
-`preserveOriginal`:: (boolean, default false) If true, the original token is preserved: "thé" \-> "the", "thé"
+`preserveOriginal`:: (boolean, default false) If true, the original token is preserved: "thé" -> "the", "thé"
 
 *Example:*
 
@@ -292,7 +292,7 @@ Collation allows sorting of text in a language-sensitive way. It is usually used
 
 == Daitch-Mokotoff Soundex Filter
 
-Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently. More information about how this works is available in the section on <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>>.
+Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently. More information about how this works is available in the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
 
 *Factory class:* `solr.DaitchMokotoffSoundexFilterFactory`
 
@@ -330,7 +330,7 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 == Double Metaphone Filter
 
-This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>> section.
+This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#,Phonetic Matching>> section.
 
 *Factory class:* `solr.DoubleMetaphoneFilterFactory`
 
@@ -1343,7 +1343,7 @@ Converts any uppercase letters in a token to the equivalent lowercase token. All
 
 == Managed Stop Filter
 
-This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#,managed from a REST API.>>
 
 *Arguments:*
 
@@ -1383,7 +1383,7 @@ See <<Stop Filter>> for example input/output.
 
 == Managed Synonym Filter
 
-This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
 
 .Managed Synonym Filter has been Deprecated
 [WARNING]
@@ -1397,7 +1397,7 @@ For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 == Managed Synonym Graph Filter
 
-This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
 
@@ -1687,7 +1687,7 @@ More complex pattern with capture group reference in the replacement. Tokens tha
 
 == Phonetic Filter
 
-This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package. For more information, see the section on <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>>.
+This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package. For more information, see the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
 
 *Factory class:* `solr.PhoneticFilterFactory`
 
@@ -2314,7 +2314,7 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-loading.adoc#resource-loading,Resource Loading>> for more information.
+`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-loading.adoc#,Resource Loading>> for more information.
 +
 There are two ways to specify synonym mappings:
 +
@@ -2693,35 +2693,35 @@ Note: although this filter produces correct token graphs, it cannot consume an i
 
 The rules for determining delimiters are determined as follows:
 
-* A change in case within a word: "CamelCase" \-> "Camel", "Case". This can be disabled by setting `splitOnCaseChange="0"`.
+* A change in case within a word: "CamelCase" -> "Camel", "Case". This can be disabled by setting `splitOnCaseChange="0"`.
 
-* A transition from alpha to numeric characters or vice versa: "Gonzo5000" \-> "Gonzo", "5000" "4500XL" \-> "4500", "XL". This can be disabled by setting `splitOnNumerics="0"`.
+* A transition from alpha to numeric characters or vice versa: "Gonzo5000" -> "Gonzo", "5000" "4500XL" -> "4500", "XL". This can be disabled by setting `splitOnNumerics="0"`.
 
-* Non-alphanumeric characters (discarded): "hot-spot" \-> "hot", "spot"
+* Non-alphanumeric characters (discarded): "hot-spot" -> "hot", "spot"
 
-* A trailing "'s" is removed: "O'Reilly's" \-> "O", "Reilly"
+* A trailing "'s" is removed: "O'Reilly's" -> "O", "Reilly"
 
-* Any leading or trailing delimiters are discarded: "--hot-spot--" \-> "hot", "spot"
+* Any leading or trailing delimiters are discarded: "--hot-spot--" -> "hot", "spot"
 
 *Factory class:* `solr.WordDelimiterGraphFilterFactory`
 
 *Arguments:*
 
-`generateWordParts`:: (integer, default 1) If non-zero, splits words at delimiters. For example:"CamelCase", "hot-spot" \-> "Camel", "Case", "hot", "spot"
+`generateWordParts`:: (integer, default 1) If non-zero, splits words at delimiters. For example:"CamelCase", "hot-spot" -> "Camel", "Case", "hot", "spot"
 
-`generateNumberParts`:: (integer, default 1) If non-zero, splits numeric strings at delimiters:"1947-32" \->*"1947", "32"
+`generateNumberParts`:: (integer, default 1) If non-zero, splits numeric strings at delimiters:"1947-32" -> *"1947", "32"
 
-`splitOnCaseChange`:: (integer, default 1) If 0, words are not split on camel-case changes:"BugBlaster-XL" \-> "BugBlaster", "XL". Example 1 below illustrates the default (non-zero) splitting behavior.
+`splitOnCaseChange`:: (integer, default 1) If 0, words are not split on camel-case changes:"BugBlaster-XL" -> "BugBlaster", "XL". Example 1 below illustrates the default (non-zero) splitting behavior.
 
-`splitOnNumerics`:: (integer, default 1) If 0, don't split words on transitions from alpha to numeric:"FemBot3000" \-> "Fem", "Bot3000"
+`splitOnNumerics`:: (integer, default 1) If 0, don't split words on transitions from alpha to numeric:"FemBot3000" -> "Fem", "Bot3000"
 
-`catenateWords`:: (integer, default 0) If non-zero, maximal runs of word parts will be joined: "hot-spot-sensor's" \-> "hotspotsensor"
+`catenateWords`:: (integer, default 0) If non-zero, maximal runs of word parts will be joined: "hot-spot-sensor's" -> "hotspotsensor"
 
-`catenateNumbers`:: (integer, default 0) If non-zero, maximal runs of number parts will be joined: 1947-32" \-> "194732"
+`catenateNumbers`:: (integer, default 0) If non-zero, maximal runs of number parts will be joined: 1947-32" -> "194732"
 
-`catenateAll`:: (0/1, default 0) If non-zero, runs of word and number parts will be joined: "Zap-Master-9000" \-> "ZapMaster9000"
+`catenateAll`:: (0/1, default 0) If non-zero, runs of word and number parts will be joined: "Zap-Master-9000" -> "ZapMaster9000"
 
-`preserveOriginal`:: (integer, default 0) If non-zero, the original token is preserved: "Zap-Master-9000" \-> "Zap-Master-9000", "Zap", "Master", "9000"
+`preserveOriginal`:: (integer, default 0) If non-zero, the original token is preserved: "Zap-Master-9000" -> "Zap-Master-9000", "Zap", "Master", "9000"
 
 `protected`:: (optional) The pathname of a file that contains a list of protected words that should be passed through without splitting.
 
@@ -2738,7 +2738,7 @@ $ => DIGIT
 . => DIGIT
 \u002C => DIGIT
 
-# Don't split on ZWJ: http://en.wikipedia.org/wiki/Zero-width_joiner
+# Don't split on ZWJ: https://en.wikipedia.org/wiki/Zero-width_joiner
 \u200D => ALPHANUM
 ----
 

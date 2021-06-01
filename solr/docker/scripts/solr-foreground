@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Run the initdb, then start solr in the foreground
+set -e
+
+if [[ "$VERBOSE" == "yes" ]]; then
+    set -x
+fi
+
+run-initdb
+
+exec solr-fg "$@"

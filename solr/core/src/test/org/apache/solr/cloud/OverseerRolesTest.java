@@ -26,10 +26,7 @@ import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -105,6 +102,10 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   @Test
   public void testOverseerRole() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
 
     logOverseerState();
     List<String> nodes = OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
@@ -157,9 +158,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     String leaderId = OverseerCollectionConfigSetProcessor.getLeaderId(zkClient());
     String leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
     log.info("### Sending QUIT to overseer {}", leader);
-    getOverseerJetty().getCoreContainer().getZkController().getOverseer().getStateUpdateQueue()
-        .offer(Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
-            "id", leaderId)));
+    getOverseerJetty().getCoreContainer().getZkController().getOverseer().sendQuitToOverseer(leaderId);
 
     waitForNewOverseer(15, s -> Objects.equals(leader, s) == false, false);
 
@@ -174,6 +173,10 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   @Test
   public void testDesignatedOverseerRestarts() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
     logOverseerState();
     // Remove the OVERSEER role, in case it was already assigned by another test in this suite
     for (String node: OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient())) {

@@ -76,7 +76,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     
     Map<String, String> collectionProperties = new HashMap<>();
     collectionProperties.put("config", "solrconfig-tlog.xml");
-    collectionProperties.put("schema", "schema-psuedo-fields.xml");
+    collectionProperties.put("schema", "schema-pseudo-fields.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
@@ -126,7 +126,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // a multi valued field (the field value is copied first, then
     // if the type lookup is done again later, we get the wrong thing). SOLR-4036
 
-    // score as psuedo field - precondition checks
+    // score as pseudo field - precondition checks
     for (String name : new String[] {"score", "val_ss"}) {
       try {
         FieldResponse frsp = new Field(name, params("includeDynamic","true",
@@ -147,7 +147,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
     SolrDocument doc = null;
     
-    // score as psuedo field
+    // score as pseudo field
     doc = assertSearchOneDoc(params("q","*:*", "fq", "id:42", "fl","id,score,val_ss,val2_ss"));
     assertEquals("42", doc.getFieldValue("id"));
     assertEquals(1.0F, doc.getFieldValue("score"));
@@ -156,7 +156,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // TODO: update this test & TestPseudoReturnFields to index docs using a (multivalued) "val_ss" instead of "ssto"
     //
     // that way we can first sanity check a single value in a multivalued field is returned correctly
-    // as a "List" of one element, *AND* then we could be testing that a (single valued) psuedo-field correctly
+    // as a "List" of one element, *AND* then we could be testing that a (single valued) pseudo-field correctly
     // overrides that actual (real) value in a multivalued field (ie: not returning a an List)
     //
     // (NOTE: not doing this yet due to how it will impact most other tests, many of which are currently

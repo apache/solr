@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -42,7 +43,6 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -81,6 +81,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Boolean USE_PER_REPLICA_STATE = Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
   public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
 
@@ -108,6 +109,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private Map<String, Object> clusterProperties = new HashMap<>();
 
     private boolean trackJettyMetrics;
+    private boolean useDistributedCollectionConfigSetExecution;
+    private boolean useDistributedClusterStateUpdate;
 
     /**
      * Create a builder
@@ -118,6 +121,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     public Builder(int nodeCount, Path baseDir) {
       this.nodeCount = nodeCount;
       this.baseDir = baseDir;
+      // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which collection API strategy
+      // to use (distributed or Overseer based) and which cluster update strategy to use (distributed if collection API
+      // is distributed, but Overseer based or distributed randomly chosen if Collection API is Overseer based)
+      this.useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
+      this.useDistributedClusterStateUpdate = useDistributedCollectionConfigSetExecution || LuceneTestCase.random().nextInt(2) == 0;
     }
 
     /**
@@ -186,6 +194,57 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     /**
+     * This method makes the MiniSolrCloudCluster use the "other" Collection API execution strategy than it normally would.
+     * When some test classes call this method (and some don't) we make sure that a run of multiple tests with a single
+     * seed will exercise both code lines (distributed and Overseer based Collection API) so regressions can be spotted
+     * faster.<p>
+     *
+     * The real need is for a few tests covering reasonable use cases to call this method. If you're adding a new test,
+     * you don't have to call it (but it's ok if you do).
+     */
+    public Builder useOtherCollectionConfigSetExecution() {
+      // Switch from Overseer to distributed Collection execution and vice versa
+      useDistributedCollectionConfigSetExecution = !useDistributedCollectionConfigSetExecution;
+      // Reverse distributed cluster state updates as well if possible (state can't be Overseer based if Collections API is distributed)
+      useDistributedClusterStateUpdate = !useDistributedClusterStateUpdate || useDistributedCollectionConfigSetExecution;
+      return this;
+    }
+
+    /**
+     * Force the cluster Collection and config state API execution as well as the cluster state update strategy to be
+     * either Overseer based or distributed. <b>This method can be useful when
+     * debugging tests</b> failing in only one of the two modes to have all local runs exhibit the issue, as well obviously for
+     * tests that are not compatible with one of the two modes.
+     * <p>
+     * If this method is not called, the strategy being used will be random if the configuration passed to the cluster
+     * ({@code solr.xml} equivalent) contains a placeholder similar to:
+     * <pre>
+     * {@code
+     * <solrcloud>
+     *   ....
+     *   <str name="distributedClusterStateUpdates">${solr.distributedClusterStateUpdates:false}</str>
+     *   <str name="distributedCollectionConfigSetExecution">${solr.distributedCollectionConfigSetExecution:false}</str>
+     *   ....
+     * </solrcloud>
+     * }</pre>
+     * For an example of a configuration supporting this setting, see {@link MiniSolrCloudCluster#DEFAULT_CLOUD_SOLR_XML}.
+     * When a test sets a different {@code solr.xml} config (using {@link #withSolrXml}), if the config does not contain
+     * the placeholder, the strategy will be defined by the values assigned to {@code useDistributedClusterStateUpdates}
+     * and {@code useDistributedCollectionConfigSetExecution} in {@link org.apache.solr.core.CloudConfig.CloudConfigBuilder}.
+     *
+     * @param distributedCollectionConfigSetApi When {@code true}, Collection and Config Set API commands are executed in
+     *                    a distributed way by nodes. When {@code false}, they are executed by Overseer.
+     * @param distributedClusterStateUpdates When {@code true}, cluster state updates are handled in a distributed way by nodes. When
+     *                    {@code false}, cluster state updates are handled by Overseer.<p>
+     *                    If {@code distributedCollectionConfigSetApi} is {@code true} then this parameter must be {@code true}.
+     */
+    public Builder withDistributedClusterStateUpdates(boolean distributedCollectionConfigSetApi, boolean distributedClusterStateUpdates) {
+      useDistributedCollectionConfigSetExecution = distributedCollectionConfigSetApi;
+      useDistributedClusterStateUpdate = distributedClusterStateUpdates;
+      return this;
+    }
+
+    /**
      * Set a cluster property
      *
      * @param propertyName  the property name
@@ -216,12 +275,21 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
+      // Two lines below will have an impact on how the MiniSolrCloudCluster and therefore the test run if the config being
+      // used in the test does have the appropriate placeholders. See for example DEFAULT_CLOUD_SOLR_XML in MiniSolrCloudCluster.
+      // Hard coding values here will impact such tests.
+      // To hard code behavior for tests not having these placeholders - and for SolrCloud as well for that matter! -
+      // change the values assigned to useDistributedClusterStateUpdates and useDistributedCollectionConfigSetExecution in
+      // org.apache.solr.core.CloudConfig.CloudConfigBuilder. Do not forget then to revert before commit!
+      System.setProperty("solr.distributedCollectionConfigSetExecution", Boolean.toString(useDistributedCollectionConfigSetExecution));
+      System.setProperty("solr.distributedClusterStateUpdates", Boolean.toString(useDistributedClusterStateUpdate));
+
       JettyConfig jettyConfig = jettyConfigBuilder.build();
       MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
-        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
+        cluster.uploadConfigSet(config.path, config.name);
       }
 
       if (clusterProperties.size() > 0) {

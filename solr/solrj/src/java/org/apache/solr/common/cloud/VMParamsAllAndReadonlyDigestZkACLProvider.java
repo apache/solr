@@ -88,7 +88,7 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
                                       String digestReadonlyUsername, String digestReadonlyPassword) {
 
       try {
-      List<ACL> result = new ArrayList<ACL>();
+      List<ACL> result = new ArrayList<>(2);
   
       // Not to have to provide too much credentials and ACL information to the process it is assumed that you want "ALL"-acls
       // added to the user you are using to connect to ZK (if you are using VMParamsSingleSetCredentialsDigestZkCredentialsProvider)
@@ -109,7 +109,7 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
       
       return result;
     } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("JVM mis-configured: missing SHA-1 algorithm", e);
     }
   }
 

@@ -266,7 +266,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    */
   public boolean isAbsolute(String path) {
     // back compat
-    return new File(path).isAbsolute();
+    return Path.of(path).isAbsolute();
   }
   
   public static long sizeOfDirectory(Directory directory) throws IOException {
@@ -419,7 +419,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     final DirectoryFactory dirFactory;
     if (info != null) {
       log.debug(info.className);
-      dirFactory = config.getResourceLoader().newInstance(info.className, DirectoryFactory.class);
+      dirFactory = config.getResourceLoader().newInstance (info, DirectoryFactory.class, true);
       // allow DirectoryFactory instances to access the CoreContainer
       dirFactory.initCoreContainer(cc);
       dirFactory.init(info.initArgs);

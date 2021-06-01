@@ -48,6 +48,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.Adler32;
@@ -68,7 +69,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -523,7 +523,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       name = "snapshot." + name;
     }
 
-    RestoreCore restoreCore = new RestoreCore(repo, core, locationUri, name);
+    RestoreCore restoreCore = RestoreCore.create(repo, core, locationUri, name);
     try {
       MDC.put("RestoreCore.core", core.getName());
       MDC.put("RestoreCore.backupLocation", location);
@@ -771,11 +771,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                                                      final Map<String, FileInfo> confFileInfoCache) {
     List<Map<String, Object>> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
-      File confDir = new File(core.getResourceLoader().getConfigDir());
       Checksum checksum = null;
       for (int i = 0; i < nameAndAlias.size(); i++) {
         String cf = nameAndAlias.getName(i);
-        File f = new File(confDir, cf);
+        File f = new File(core.getResourceLoader().getConfigDir(), cf);
         if (!f.exists() || f.isDirectory()) continue; //must not happen
         FileInfo info = confFileInfoCache.get(cf);
         if (info == null || info.lastmodified != f.lastModified() || info.size != f.length()) {
@@ -883,13 +882,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : parentContext.nullString()),
         true, "indexSize", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().toString() : parentContext.nullString()),
          true, "indexVersion", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().generation : parentContext.nullNumber()),
         true, GENERATION, getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? core.getIndexDir() : parentContext.nullString()),
         true, "indexPath", getCategory().toString(), scope);
     solrMetricsContext.gauge(() -> isLeader,
          true, "isLeader", getCategory().toString(), scope);
@@ -912,15 +911,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           map.put("downloadSpeed", val / elapsed);
         }
         Properties props = loadReplicationProperties();
-        addVal(map, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
-        addVal(map, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
-        addVal(map, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
-        addVal(map, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
-        addVal(map, IndexFetcher.TIMES_FAILED, props, Integer.class);
-        addVal(map, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
-        addVal(map, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-        addVal(map, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
-        addVal(map, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
+        addReplicationProperties(map::putNoEx, props);
       }
     });
     solrMetricsContext.gauge(fetcherMap, true, "fetcher", getCategory().toString(), scope);
@@ -989,18 +980,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } else if (isPollingDisabled()) {
         follower.add(NEXT_EXECUTION_AT, "Polling disabled");
       }
-      addVal(follower, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
-      addVal(follower, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
-      addVal(follower, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
-      addVal(follower, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
-      addVal(follower, IndexFetcher.CONF_FILES_REPLICATED, props, Integer.class);
-      addVal(follower, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
-      addVal(follower, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Integer.class);
-      addVal(follower, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-      addVal(follower, IndexFetcher.TIMES_FAILED, props, Integer.class);
-      addVal(follower, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
-      addVal(follower, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
-      addVal(follower, IndexFetcher.CLEARED_LOCAL_IDX, props, Long.class);
+      addReplicationProperties(follower::add, props);
 
       follower.add("currentDate", new Date().toString());
       follower.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
@@ -1104,17 +1084,25 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return details;
   }
 
-  private void addVal(NamedList<Object> nl, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
-    Object val = formatVal(key, props, clzz);
-    if (val != null) {
-      nl.add(key, val);
-    }
+  private void addReplicationProperties(BiConsumer<String, Object> consumer, Properties props) {
+    addVal(consumer, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
+    addVal(consumer, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
+    addVal(consumer, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
+    addVal(consumer, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
+    addVal(consumer, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
+    addVal(consumer, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
+    addVal(consumer, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
+    addVal(consumer, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+    addVal(consumer, IndexFetcher.TIMES_FAILED, props, Integer.class);
+    addVal(consumer, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
+    addVal(consumer, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+    addVal(consumer, IndexFetcher.CLEARED_LOCAL_IDX, props, Boolean.class);
   }
 
-  private void addVal(MapWriter.EntryWriter ew, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
+  private void addVal(BiConsumer<String, Object> consumer, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
-      ew.putNoEx(key, val);
+      consumer.accept(key, val);
     }
   }
 
@@ -1135,6 +1123,22 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         l.add(new Date(Long.parseLong(s1)).toString());
       }
       return l;
+    } else if (clzz == Long.class) {
+      try {
+        Long l = Long.parseLong(s);
+        return l;
+      } catch (NumberFormatException e) {
+        return null;
+      }
+    } else if (clzz == Integer.class) {
+      try {
+        Integer i = Integer.parseInt(s);
+        return i;
+      } catch (NumberFormatException e) {
+        return null;
+      }
+    } else if (clzz == Boolean.class) {
+      return Boolean.parseBoolean(s);
     } else {
       return s;
     }
@@ -1204,6 +1208,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         log.info("Poll disabled");
         return;
       }
+      ExecutorUtil.setServerThreadFlag(true); // so PKI auth works
       try {
         log.debug("Polling for index modifications");
         markScheduledExecutionStart();
@@ -1211,6 +1216,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (pollListener != null) pollListener.onComplete(core, fetchResult);
       } catch (Exception e) {
         log.error("Exception in fetching index", e);
+      } finally {
+        ExecutorUtil.setServerThreadFlag(null);
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(
@@ -1367,55 +1374,55 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return Boolean.TRUE.equals( enable );
   }
 
+  private final CloseHook startShutdownHook = new CloseHook() {
+    @Override
+    public void preClose(SolrCore core) {
+      if (executorService != null)
+        executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
+    }
+
+    @Override
+    public void postClose(SolrCore core) {
+      if (pollingIndexFetcher != null) {
+        pollingIndexFetcher.destroy();
+      }
+      if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
+        currentIndexFetcher.destroy();
+      }
+    }
+  };
+  private final CloseHook finishShutdownHook = new CloseHook() {
+    @Override
+    public void preClose(SolrCore core) {
+      ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
+      if (restoreFuture != null) {
+        restoreFuture.cancel(false);
+      }
+    }
+
+    @Override
+    public void postClose(SolrCore core) {
+    }
+  };
+
   /**
    * register a closehook
    */
   private void registerCloseHook() {
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        if (executorService != null) executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
-      }
-
-      @Override
-      public void postClose(SolrCore core) {
-        if (pollingIndexFetcher != null) {
-          pollingIndexFetcher.destroy();
-        }
-        if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-          currentIndexFetcher.destroy();
-        }
-      }
-    });
-
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
-        if (restoreFuture != null) {
-          restoreFuture.cancel(false);
-        }
-      }
-
-      @Override
-      public void postClose(SolrCore core) {}
-    });
+    core.addCloseHook(startShutdownHook);
+    core.addCloseHook(finishShutdownHook);
   }
 
   public void shutdown() {
-    if (executorService != null) executorService.shutdown();
-    if (pollingIndexFetcher != null) {
-      pollingIndexFetcher.destroy();
-    }
-    if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-      currentIndexFetcher.destroy();
-    }
-    ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
-    if (restoreFuture != null) {
-      restoreFuture.cancel(false);
-    }
-    
+    startShutdownHook.preClose(core);
+    startShutdownHook.postClose(core);
+    finishShutdownHook.preClose(core);
+    finishShutdownHook.postClose(core);
+
     ExecutorUtil.shutdownAndAwaitTermination(executorService);
+
+    core.removeCloseHook(startShutdownHook);
+    core.removeCloseHook(finishShutdownHook);
   }
 
   /**
@@ -1494,7 +1501,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     protected String tlogFileName;
     protected String sOffset;
     protected String sLen;
-    protected String compress;
+    protected final boolean compress;
     protected boolean useChecksum;
 
     protected long offset = -1;
@@ -1516,7 +1523,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       
       sOffset = params.get(OFFSET);
       sLen = params.get(LEN);
-      compress = params.get(COMPRESSION);
+      compress = Boolean.parseBoolean(params.get(COMPRESSION));
       useChecksum = params.getBool(CHECKSUM, false);
       indexGen = params.getLong(GENERATION);
       if (useChecksum) {
@@ -1560,7 +1567,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     protected void createOutputStream(OutputStream out) {
       out = new CloseShieldOutputStream(out); // DeflaterOutputStream requires a close call, but don't close the request outputstream
-      if (Boolean.parseBoolean(compress)) {
+      if (compress) {
         fos = new FastOutputStream(new DeflaterOutputStream(out));
       } else {
         fos = new FastOutputStream(out);
@@ -1721,7 +1728,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     protected File initFile() {
       //if it is a conf file read from config directory
-      return new File(core.getResourceLoader().getConfigDir(), cfileName);
+      return core.getResourceLoader().getConfigPath().resolve(cfileName).toFile();
     }
 
   }

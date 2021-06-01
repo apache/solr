@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -52,16 +53,25 @@ public class ReplicateFromLeader {
 
   /**
    * Start a replication handler thread that will periodically pull indices from the shard leader
+   *
+   * <p>This is separate from the ReplicationHandler that listens at /replication, used for recovery
+   * and leader actions. It is simpler to discard the entire polling ReplicationHandler rather then
+   * worrying about disabling polling and correctly setting all of the leader bits if we need to reset.
+   *
+   * <p>TODO: It may be cleaner to extract the polling logic use that directly instead of creating
+   * what might be a fairly heavyweight instance here.
+   *
    * @param switchTransactionLog if true, ReplicationHandler will rotate the transaction log once
    * the replication is done
    */
-  public void startReplication(boolean switchTransactionLog) throws InterruptedException {
+  public void startReplication(boolean switchTransactionLog) {
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         if (cc.isShutDown()) {
           return;
         } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in "
+                  + CloudUtil.getLoadedCoreNamesAsString(cc));
         }
       }
       SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
@@ -78,7 +88,22 @@ public class ReplicateFromLeader {
 
       NamedList<Object> followerConfig = new NamedList<>();
       followerConfig.add("fetchFromLeader", Boolean.TRUE);
-      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, switchTransactionLog);
+
+      // don't commit on leader version zero for PULL replicas as PULL should only get its index state from leader
+      boolean skipCommitOnLeaderVersionZero = switchTransactionLog;
+      if (!skipCommitOnLeaderVersionZero) {
+        CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
+        if (cloudDescriptor != null) {
+          Replica replica =
+              cc.getZkController().getZkStateReader().getCollection(cloudDescriptor.getCollectionName())
+                  .getSlice(cloudDescriptor.getShardId()).getReplica(cloudDescriptor.getCoreNodeName());
+          if (replica != null && replica.getType() == Replica.Type.PULL) {
+            skipCommitOnLeaderVersionZero = true; // only set this to true if we're a PULL replica, otherwise use value of switchTransactionLog
+          }
+        }
+      }
+      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, skipCommitOnLeaderVersionZero);
+
       followerConfig.add("pollInterval", pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("follower", followerConfig);

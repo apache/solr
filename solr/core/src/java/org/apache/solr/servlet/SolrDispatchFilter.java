@@ -16,6 +16,10 @@
  */
 package org.apache.solr.servlet;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.naming.NoInitialContextException;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ReadListener;
@@ -54,11 +58,11 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentracing.Scope;
 import io.opentracing.Span;
-import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import io.opentracing.util.GlobalTracer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
@@ -73,7 +77,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
@@ -87,7 +90,7 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
-import org.apache.solr.util.tracing.GlobalTracer;
+import org.apache.solr.util.tracing.HttpServletCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +118,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private SolrMetricManager metricManager;
   private String registryName;
   private volatile boolean closeOnDestroy = true;
+  private Properties extraProperties;
 
   private RateLimitManager rateLimitManager;
 
@@ -146,78 +150,75 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public static final String SOLR_LOG_LEVEL = "solr.log.level";
 
   @Override
-  public void init(FilterConfig config) throws ServletException
-  {
+  public void init(FilterConfig config) throws ServletException {
     SSLConfigurationsFactory.current().init();
     if (log.isTraceEnabled()) {
       log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     }
     CoreContainer coresInit = null;
-    try{
-
-    StartupLoggingUtils.checkLogDir();
-    if (log.isInfoEnabled()) {
-      log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
-    }
-    logWelcomeBanner();
-    String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
-    if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
-      StartupLoggingUtils.muteConsole();
-    }
-    String logLevel = System.getProperty(SOLR_LOG_LEVEL);
-    if (logLevel != null) {
-      log.info("Log level override, property solr.log.level={}", logLevel);
-      StartupLoggingUtils.changeLogLevel(logLevel);
-    }
-
-    String exclude = config.getInitParameter("excludePatterns");
-    if(exclude != null) {
-      String[] excludeArray = exclude.split(",");
-      excludePatterns = new ArrayList<>();
-      for (String element : excludeArray) {
-        excludePatterns.add(Pattern.compile(element));
-      }
-    }
     try {
-      Properties extraProperties = (Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE);
-      if (extraProperties == null)
-        extraProperties = new Properties();
+      // "extra" properties must be init'ed first so we know things like "do we have a zkHost"
+      // wrap as defaults (if set) so we can modify w/o polluting the Properties provided by our caller
+      this.extraProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded
+        ((Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE));
+      
+      StartupLoggingUtils.checkLogDir();
+      if (log.isInfoEnabled()) {
+        log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
+      }
+      
+      logWelcomeBanner();
+      
+      String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
+      if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
+        StartupLoggingUtils.muteConsole();
+      }
+      String logLevel = System.getProperty(SOLR_LOG_LEVEL);
+      if (logLevel != null) {
+        log.info("Log level override, property solr.log.level={}", logLevel);
+        StartupLoggingUtils.changeLogLevel(logLevel);
+      }
+      
+      String exclude = config.getInitParameter("excludePatterns");
+      if(exclude != null) {
+        String[] excludeArray = exclude.split(",");
+        excludePatterns = new ArrayList<>();
+        for (String element : excludeArray) {
+          excludePatterns.add(Pattern.compile(element));
+        }
+      }
 
-      String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-      final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
-      coresInit = createCoreContainer(solrHomePath, extraProperties);
+      coresInit = createCoreContainer(computeSolrHome(config), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-
+      
       SolrZkClient zkClient = null;
       ZkController zkController = coresInit.getZkController();
-
+      
       if (zkController != null) {
         zkClient = zkController.getZkClient();
       }
-
+      
       RateLimitManager.Builder builder = new RateLimitManager.Builder(zkClient);
-
+      
       this.rateLimitManager = builder.build();
-
+      
       if (zkController != null) {
         zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
       }
-
+      
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }
-    }
-    catch( Throwable t ) {
+    } catch( Throwable t ) {
       // catch this so our filter still works
       log.error( "Could not start Solr. Check solr/home property and the logs");
       SolrCore.log( t );
       if (t instanceof Error) {
         throw (Error) t;
       }
-    }
-
-    }finally{
+      
+    } finally{
       log.trace("SolrDispatchFilter.init() done");
       this.cores = coresInit; // crucially final assignment 
       init.countDown();
@@ -243,6 +244,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         });
       });
       metricManager.registerGauge(null, registryName, sysprops, metricTag, SolrMetricManager.ResolutionStrategy.IGNORE, "properties", "system");
+      MetricsMap sysenv = new MetricsMap(map -> {
+        System.getenv().forEach((k, v) -> {
+          if (!hiddenSysProps.contains(k)) {
+            map.putNoEx(String.valueOf(k), v);
+          }
+        });
+      });
+      metricManager.registerGauge(null, registryName, sysenv, metricTag, SolrMetricManager.ResolutionStrategy.IGNORE, "env", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }
@@ -279,18 +288,76 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     return System.getProperty("jetty.port");
   }
 
-  /* We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty */
+  /** 
+   * We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty 
+   * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
+   * @see #extraProperties
+   * @see #init
+   */
   private boolean isCloudMode() {
-    return ((System.getProperty("zkHost") != null && !StringUtils.isEmpty(System.getProperty("zkHost")))
-    || System.getProperty("zkRun") != null);
+    assert null != extraProperties; // we should never be called w/o this being initialized
+    return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST)) || (null != System.getProperty("zkRun"));
   }
 
+  /**
+   * Returns the effective Solr Home to use for this node, based on looking up the value in this order:
+   * <ol>
+   * <li>attribute in the FilterConfig</li>
+   * <li>JNDI: via java:comp/env/solr/home</li>
+   * <li>The system property solr.solr.home</li>
+   * <li>Look in the current working directory for a solr/ directory</li>
+   * </ol>
+   * <p>
+   *
+   * @return the Solr home, absolute and normalized.
+   * @see #SOLRHOME_ATTRIBUTE
+   */
+  private static Path computeSolrHome(FilterConfig config) {
+
+    // start with explicit check of servlet config...
+    String source = "servlet config: " + SOLRHOME_ATTRIBUTE;
+    String home = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
+
+    if (null == home) {
+      final String lookup = "java:comp/env/solr/home";
+      // Try JNDI
+      source = "JNDI: " + lookup;
+      try {
+        Context c = new InitialContext();
+        home = (String) c.lookup(lookup);
+      } catch (NoInitialContextException e) {
+        log.debug("JNDI not configured for solr (NoInitialContextEx)");
+      } catch (NamingException e) {
+        log.debug("No /solr/home in JNDI");
+      } catch (RuntimeException ex) {
+        log.warn("Odd RuntimeException while testing for JNDI: ", ex);
+      }
+    }
+
+    if (null == home) {
+      // Now try system property
+      final String prop = "solr.solr.home";
+      source = "system property: " + prop;
+      home = System.getProperty(prop);
+    }
+
+    if (null == home) {
+      // if all else fails, assume default dir
+      home = "solr/";
+      source = "defaulted to '" + home + "' ... could not find system property or JNDI";
+    }
+    final Path solrHome = Paths.get(home).toAbsolutePath().normalize();
+    log.info("Solr Home: {} (source: {})", solrHome, source);
+    
+    return solrHome;
+  }
+  
   /**
    * Override this to change CoreContainer initialization
    * @return a CoreContainer to hold this server's cores
    */
-  protected CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
-    NodeConfig nodeConfig = loadNodeConfig(solrHome, extraProperties);
+  protected CoreContainer createCoreContainer(Path solrHome, Properties nodeProps) {
+    NodeConfig nodeConfig = loadNodeConfig(solrHome, nodeProps);
     final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
     coreContainer.load();
     return coreContainer;
@@ -305,8 +372,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
       log.warn("Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
     }
-
-    String zkHost = System.getProperty("zkHost");
+    nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
+    String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
@@ -356,7 +423,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         httpClient = null;
         cc.shutdown();
       }
-      GlobalTracer.get().close();
     }
   }
   
@@ -369,10 +435,31 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!(_request instanceof HttpServletRequest)) return;
     HttpServletRequest request = closeShield((HttpServletRequest)_request, retry);
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
-    Scope scope = null;
-    Span span = null;
+
+    String requestPath = ServletUtils.getPathAfterContext(request);
+    // No need to even create the HttpSolrCall object if this path is excluded.
+    if (excludePatterns != null) {
+      for (Pattern p : excludePatterns) {
+        Matcher matcher = p.matcher(requestPath);
+        if (matcher.lookingAt()) {
+          chain.doFilter(request, response);
+          return;
+        }
+      }
+    }
+
+    Tracer tracer = cores == null ? GlobalTracer.get() : cores.getTracer();
+    String hostAndPort = request.getServerName() + "_" + request.getServerPort();
+    Span span = tracer.buildSpan(request.getMethod() + ":" + hostAndPort)
+        .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
+        .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
+        .withTag(Tags.HTTP_URL, request.getRequestURL().toString())
+        .start();
+    request.setAttribute(Tracer.class.getName(), tracer);
+    request.setAttribute(Span.class.getName(), span);
     boolean accepted = false;
-    try {
+    try (var scope = tracer.scopeManager().activate(span)) {
+      assert scope != null; // prevent javac warning about scope being unused
 
       if (cores == null || cores.isShutDown()) {
         try {
@@ -383,18 +470,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         if (cores == null || cores.isShutDown()) {
           log.error(msg);
           throw new UnavailableException(msg);
-        }
-      }
-
-      String requestPath = ServletUtils.getPathAfterContext(request);
-      // No need to even create the HttpSolrCall object if this path is excluded.
-      if (excludePatterns != null) {
-        for (Pattern p : excludePatterns) {
-          Matcher matcher = p.matcher(requestPath);
-          if (matcher.lookingAt()) {
-            chain.doFilter(request, response);
-            return;
-          }
         }
       }
 
@@ -411,24 +486,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
         response.sendError(429, errorMessage);
       }
-
-      SpanContext parentSpan = GlobalTracer.get().extract(request);
-      Tracer tracer = GlobalTracer.getTracer();
-
-      Tracer.SpanBuilder spanBuilder = null;
-      String hostAndPort = request.getServerName() + "_" + request.getServerPort();
-      if (parentSpan == null) {
-        spanBuilder = tracer.buildSpan(request.getMethod() + ":" + hostAndPort);
-      } else {
-        spanBuilder = tracer.buildSpan(request.getMethod() + ":" + hostAndPort)
-            .asChildOf(parentSpan);
-      }
-
-      spanBuilder
-          .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
-          .withTag(Tags.HTTP_URL.getKey(), request.getRequestURL().toString());
-      span = spanBuilder.start();
-      scope = tracer.scopeManager().activate(span);
 
       AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
       if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
@@ -470,10 +527,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } finally {
-      if (span != null) span.finish();
-      if (scope != null) scope.close();
-
-      GlobalTracer.get().clearContext();
       consumeInputFully(request, response);
       SolrRequestInfo.reset();
       SolrRequestParsers.cleanupMultipartFiles(request);
@@ -481,6 +534,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
       }
+      span.finish();
     }
   }
   

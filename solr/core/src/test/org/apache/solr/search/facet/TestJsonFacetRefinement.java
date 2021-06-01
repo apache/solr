@@ -42,7 +42,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     
@@ -63,7 +63,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
 
 
@@ -506,7 +506,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   
     initServers();
     final Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3); // we only use 2, but assert 3 to also test empty shard
@@ -596,7 +596,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   public void testSortedFacetRefinementPushingNonRefinedBucketBackIntoTopN() throws Exception {
     initServers();
     final Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3); // we only use 2, but assert 3 to also test empty shard
@@ -828,7 +828,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   public void testProcessEmptyRefinement() throws Exception {
     initServers();
     final Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3); // we only use 2, but assert at least 3 to also test empty shard
@@ -884,7 +884,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   private int initSomeDocsWhere1ShardHasOnlyParentFacetField() throws Exception {
     initServers();
     final Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
 
     final List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 2);
@@ -1043,7 +1043,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   public void doBasicRefinement(ModifiableSolrParams p) throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
     
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3);
@@ -1476,7 +1476,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   public void testIndexAscRefineConsistency() throws Exception {
     initServers();
     final Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()));
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3);

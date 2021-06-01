@@ -42,7 +42,6 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
@@ -454,8 +453,8 @@ public class SchemaManager {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version,
-            core.getLatestSchema().getSchemaUpdateLock());
+        return new ManagedIndexSchema(core.getSolrConfig(), name, () -> IndexSchemaFactory.getParsedSchema(in, zkLoader,  core.getLatestSchema().getResourceName()), true, name, version,
+                core.getLatestSchema().getSchemaUpdateLock());
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
       }

@@ -176,13 +176,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void setSolrDisableShardsWhitelist() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
   }
 
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void clearSolrDisableShardsWhitelist() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
 
   private static String getHostContextSuitableForServletContext() {
@@ -682,23 +682,20 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       log.info("starting stress...");
       Thread[] threads = new Thread[nThreads];
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Thread() {
-          @Override
-          public void run() {
-            for (int j = 0; j < stress; j++) {
-              int which = r.nextInt(clients.size());
-              SolrClient client = clients.get(which);
-              try {
-                QueryResponse rsp = client.query(new ModifiableSolrParams(params));
-                if (verifyStress) {
-                  compareResponses(rsp, controlRsp);
-                }
-              } catch (SolrServerException | IOException e) {
-                throw new RuntimeException(e);
+        threads[i] = new Thread(() -> {
+          for (int j = 0; j < stress; j++) {
+            int which = r.nextInt(clients.size());
+            SolrClient client = clients.get(which);
+            try {
+              QueryResponse rsp1 = client.query(new ModifiableSolrParams(params));
+              if (verifyStress) {
+                compareResponses(rsp1, controlRsp);
               }
+            } catch (SolrServerException | IOException e) {
+              throw new RuntimeException(e);
             }
           }
-        };
+        }, "StressRunner");
         threads[i].start();
       }
 

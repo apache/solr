@@ -22,17 +22,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.CloudUtil;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -41,11 +47,12 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
@@ -62,16 +69,16 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   @Test
   @ShardsFixed(num = 2)
   public void test() throws Exception {
+    final boolean isDistributedCollectionApi;
     try (CloudSolrClient client = createCloudClient(null)) {
+      isDistributedCollectionApi = new CollectionAdminRequest.RequestApiDistributedProcessing().process(client).getIsCollectionApiDistributed();
       CollectionAdminRequest.Create req;
       if (useTlogReplicas()) {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 0, 1, 1);
       } else {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 1, 0, 1);
       }
-      setV2(req);
       client.request(req);
-      assertV2CallsCount();
       createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
     }
 
@@ -85,9 +92,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusWithCollection();
     clusterStatusWithCollectionAndShard();
     clusterStatusWithCollectionAndMultipleShards();
+    clusterStatusWithCollectionHealthState();
     clusterStatusWithRouteKey();
     clusterStatusAliasTest();
-    clusterStatusRolesTest();
+    if (!isDistributedCollectionApi) {
+      clusterStatusRolesTest();
+    }
     clusterStatusBadCollectionTest();
     replicaPropTest();
     clusterStatusZNodeVersion();
@@ -232,7 +242,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       waitForRecoveriesToFinish(collection, false);
 
       // Now try deleting the configset and doing a clusterstatus.
-      String parent = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
+      String parent = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet;
       deleteThemAll(client.getZkStateReader().getZkClient(), parent);
       client.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 
@@ -338,6 +348,64 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
+  private void clusterStatusWithCollectionHealthState() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      final CollectionAdminRequest.ClusterStatus request = new CollectionAdminRequest.ClusterStatus();
+      request.setCollectionName(COLLECTION_NAME);
+      NamedList<Object> rsp = request.process(client).getResponse();
+      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      Map<String, Object> collection = (Map<String, Object>) Utils.getObjectByPath(cluster, false, "collections/" + COLLECTION_NAME);
+      assertEquals("collection health", "GREEN", collection.get("health"));
+      Map<String, Object> shardStatus = (Map<String, Object>) collection.get("shards");
+      assertEquals(2, shardStatus.size());
+      String health = (String) Utils.getObjectByPath(shardStatus, false, "shard1/health");
+      assertEquals("shard1 health", "GREEN", health);
+      health = (String) Utils.getObjectByPath(shardStatus, false, "shard2/health");
+      assertEquals("shard2 health", "GREEN", health);
+
+      // bring some replicas down
+      JettySolrRunner jetty = chaosMonkey.getShard("shard1", 0);
+      String nodeName = jetty.getNodeName();
+      jetty.stop();
+      ZkStateReader zkStateReader = client.getZkStateReader();
+      zkStateReader.waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && !n.contains(nodeName));
+
+      rsp = request.process(client).getResponse();
+      collection = (Map<String, Object>) Utils.getObjectByPath(rsp, false, "cluster/collections/" + COLLECTION_NAME);
+      assertFalse("collection health should not be GREEN", "GREEN".equals(collection.get("health")));
+      shardStatus = (Map<String, Object>) collection.get("shards");
+      assertEquals(2, shardStatus.size());
+      String health1 = (String) Utils.getObjectByPath(shardStatus, false, "shard1/health");
+      String health2 = (String) Utils.getObjectByPath(shardStatus, false, "shard2/health");
+      assertTrue("shard1=" + health1 + ", shard2=" + health2, !"GREEN".equals(health1) || !"GREEN".equals(health2));
+
+      // bring them up again
+      jetty.start();
+      SolrCloudManager cloudManager = new SolrClientCloudManager(null, client);
+      zkStateReader.waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
+      CloudUtil.waitForState(cloudManager, COLLECTION_NAME, 30, TimeUnit.SECONDS, (liveNodes, coll) -> {
+        for (Replica r : coll.getReplicas()) {
+          if (!r.isActive(liveNodes)) {
+            return false;
+          }
+        }
+        return true;
+      });
+      rsp = request.process(client).getResponse();
+      collection = (Map<String, Object>) Utils.getObjectByPath(rsp, false, "cluster/collections/" + COLLECTION_NAME);
+      assertEquals("collection health", "GREEN", collection.get("health"));
+      shardStatus = (Map<String, Object>) collection.get("shards");
+      assertEquals(2, shardStatus.size());
+      health = (String) Utils.getObjectByPath(shardStatus, false, "shard1/health");
+      assertEquals("shard1 health", "GREEN", health);
+      health = (String) Utils.getObjectByPath(shardStatus, false, "shard2/health");
+      assertEquals("shard2 health", "GREEN", health);
+
+    }
+  }
+
 
   private void listCollection() throws IOException, SolrServerException {
     try (CloudSolrClient client = createCloudClient(null)) {
@@ -414,8 +482,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusZNodeVersion() throws Exception {
     String cname = "clusterStatusZNodeVersion";
     try (CloudSolrClient client = createCloudClient(null)) {
-      setV2(CollectionAdminRequest.createCollection(cname, "conf1", 1, 1)).process(client);
-      assertV2CallsCount();
+      CollectionAdminRequest.createCollection(cname, "conf1", 1, 1).process(client);
       waitForRecoveriesToFinish(cname, true);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -438,9 +505,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(znodeVersion);
 
       CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(cname, "shard1");
-      setV2(addReplica);
       addReplica.process(client);
-      assertV2CallsCount();
       waitForRecoveriesToFinish(cname, true);
 
       rsp = client.request(request);
@@ -770,7 +835,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           "replica", c1_s1_r1,
           "property", "testprop",
           "property.value", "nonsense",
-          OverseerCollectionMessageHandler.SHARD_UNIQUE, "true");
+          CollectionHandlingUtils.SHARD_UNIQUE, "true");
 
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
@@ -787,7 +852,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           "replica", c1_s1_r1,
           "property", "property.testprop",
           "property.value", "true",
-          OverseerCollectionMessageHandler.SHARD_UNIQUE, "false");
+          CollectionHandlingUtils.SHARD_UNIQUE, "false");
 
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
@@ -818,7 +883,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
             "replica", c1_s1_r1,
             "property", "preferredLeader",
             "property.value", "true",
-            OverseerCollectionMessageHandler.SHARD_UNIQUE, "false");
+            CollectionHandlingUtils.SHARD_UNIQUE, "false");
         fail("Should have thrown an exception, setting shardUnique=false is not allowed for 'preferredLeader'.");
       } catch (SolrException se) {
         assertTrue("Should have received a specific error message",

@@ -26,15 +26,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.StringUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -45,6 +45,11 @@ import org.slf4j.LoggerFactory;
  * in bin/solr it made sense to keep the individual transfer methods in a central place, so here it is.
  */
 public class ZkMaintenanceUtils {
+  /** ZkNode where named configs are stored */
+  public static final String CONFIGS_ZKNODE = "/configs";
+  public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+  /** files matching this pattern will not be uploaded to ZkNode /configs */
+  public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String ZKNODE_DATA_FILE = "zknode.data";
 
@@ -217,21 +222,6 @@ public class ZkMaintenanceUtils {
     }
   }
 
-  // This not just a copy operation since the config manager takes care of construction the znode path to configsets
-  public static void downConfig(SolrZkClient zkClient, String confName, Path confPath) throws IOException {
-    ZkConfigManager manager = new ZkConfigManager(zkClient);
-
-    // Try to download the configset
-    manager.downloadConfigDir(confName, confPath);
-  }
-
-  // This not just a copy operation since the config manager takes care of construction the znode path to configsets
-  public static void upConfig(SolrZkClient zkClient, Path confPath, String confName) throws IOException {
-    ZkConfigManager manager = new ZkConfigManager(zkClient);
-
-    // Try to download the configset
-    manager.uploadConfigDir(confPath, confName);
-  }
 
   // yeah, it's recursive :(
   public static void clean(SolrZkClient zkClient, String path) throws InterruptedException, KeeperException {
@@ -260,11 +250,14 @@ public class ZkMaintenanceUtils {
       return;
     }
 
-    TreeSet<String> paths = new TreeSet<>(Comparator.comparingInt(String::length).reversed());
+    ArrayList<String> paths = new ArrayList<>();
 
     traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
       if (!znode.equals("/") && filter.test(znode)) paths.add(znode);
     });
+
+    // sort the list in descending order to ensure that child entries are deleted first
+    paths.sort(Comparator.comparingInt(String::length).reversed());
 
     for (String subpath : paths) {
       if (!subpath.equals("/")) {
@@ -329,7 +322,7 @@ public class ZkMaintenanceUtils {
 
   private static int copyDataDown(SolrZkClient zkClient, String zkPath, File file) throws IOException, KeeperException, InterruptedException {
     byte[] data = zkClient.getData(zkPath, null, null, true);
-    if (data != null && data.length > 1) { // There are apparently basically empty ZNodes.
+    if (data != null && data.length > 0) { // There are apparently basically empty ZNodes.
       log.info("Writing file {}", file);
       Files.write(file.toPath(), data);
       return data.length;
@@ -425,14 +418,19 @@ public class ZkMaintenanceUtils {
   // Will return empty string if the path is just "/"
   // Will return empty string if the path is just ""
   public static String getZkParent(String path) {
-    // Remove trailing slash if present.
-    if (StringUtils.endsWith(path, "/")) {
-      path = StringUtils.substringBeforeLast(path, "/");
-    }
-    if (StringUtils.contains(path, "/") == false) {
+    if (StringUtils.isEmpty(path) || "/".equals(path)) {
       return "";
     }
-    return (StringUtils.substringBeforeLast(path, "/"));
+    // Remove trailing slash if present.
+    int endIndex = path.length() - 1;
+    if (path.endsWith("/")) {
+      endIndex--;
+    }
+    int index = path.lastIndexOf("/", endIndex);
+    if (index == -1) {
+      return "";
+    }
+    return path.substring(0, index);
   }
 
   // Take into account Windows file separators when making a Znode's name.

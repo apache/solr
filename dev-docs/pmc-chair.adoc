@@ -48,7 +48,7 @@ Once their ICLA is on file, the Infra team will set up their account and grant t
 
 If the person already has an ICLA on file, anyone on the PMC can go to the  https://whimsy.apache.org/roster/committee/lucene[Lucene roster in Whimsy] and add the person.
 
-See also http://apache.org/dev/pmc.html#noncommitter for details on the process.
+See also https://apache.org/dev/pmc.html#noncommitter for details on the process.
 
 === Jira and Confluence Permissions
 
@@ -70,7 +70,7 @@ The board will not respond. After 72 hours, check that the mail appears in the B
 
 Once the 72 hours has passed, the Chair can go to the https://whimsy.apache.org/roster/committee/lucene[Lucene roster in Whimsy] and change the person from a Committer to a member of the PMC.
 
-See also: http://www.apache.org/dev/pmc.html#newpmc.
+See also: https://www.apache.org/dev/pmc.html#newpmc.
 
 == Security Issues
 

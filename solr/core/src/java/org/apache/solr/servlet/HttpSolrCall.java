@@ -109,13 +109,11 @@ import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MarkerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
@@ -502,10 +500,8 @@ public class HttpSolrCall {
    */
   public Action call() throws IOException {
     MDCLoggingContext.reset();
-    Span activeSpan = GlobalTracer.getTracer().activeSpan();
-    if (activeSpan != null) {
-      MDCLoggingContext.setTracerId(activeSpan.context().toTraceId());
-    }
+    Span activeSpan = (Span) req.getAttribute(Span.class.getName()); // never null
+    MDCLoggingContext.setTracerId(activeSpan.context().toTraceId()); // handles empty string
 
     MDCLoggingContext.setNode(cores);
 
@@ -556,13 +552,13 @@ public class HttpSolrCall {
           // unless we have been explicitly told not to, do cache validation
           // if we fail cache validation, execute the query
           if (config.getHttpCachingConfig().isNever304() ||
-              !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
+                  !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
             SolrQueryResponse solrRsp = new SolrQueryResponse();
-              /* even for HEAD requests, we need to execute the handler to
-               * ensure we don't get an error (and to make sure the correct
-               * QueryResponseWriter is selected and we get the correct
-               * Content-Type)
-               */
+            /* even for HEAD requests, we need to execute the handler to
+             * ensure we don't get an error (and to make sure the correct
+             * QueryResponseWriter is selected and we get the correct
+             * Content-Type)
+             */
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
             mustClearSolrRequestInfo = true;
             execute(solrRsp);
@@ -570,7 +566,7 @@ public class HttpSolrCall {
               EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
               if (shouldAudit(eventType)) {
                 cores.getAuditLoggerPlugin().doAudit(
-                    new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+                        new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
               }
             }
             HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
@@ -707,7 +703,7 @@ public class HttpSolrCall {
         // encoding issues with Tomcat
         if (header != null && !header.getName().equalsIgnoreCase(TRANSFER_ENCODING_HEADER)
             && !header.getName().equalsIgnoreCase(CONNECTION_HEADER)) {
-          
+
           // NOTE: explicitly using 'setHeader' instead of 'addHeader' so that
           // the remote nodes values for any response headers will overide any that
           // may have already been set locally (ex: by the local jetty's RewriteHandler config)
@@ -1052,13 +1048,13 @@ public class HttpSolrCall {
             // if it's by core name, make sure they match
             continue;
           }
-          if (replica.getStr(BASE_URL_PROP).equals(cores.getZkController().getBaseUrl())) {
+          if (replica.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }
 
           if (origCorename != null) {
-            coreUrl = replica.getStr(BASE_URL_PROP) + "/" + origCorename;
+            coreUrl = replica.getBaseUrl() + "/" + origCorename;
           } else {
             coreUrl = replica.getCoreUrl();
             if (coreUrl.endsWith("/")) {

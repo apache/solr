@@ -102,8 +102,6 @@ public class Grouping {
   private boolean getGroupedDocSet;
   private boolean getDocList; // doclist needed for debugging or highlighting
   private Query query;
-  private DocSet filter;
-  private Filter luceneFilter;
   private NamedList<Object> grouped = new SimpleOrderedMap<>();
   private Set<Integer> idSet = new LinkedHashSet<>();  // used for tracking unique docs when we need a doclist
   private int maxMatches;  // max number of matches from any grouping command
@@ -309,7 +307,7 @@ public class Grouping {
     qr.setDocListAndSet(out);
 
     SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    final Filter luceneFilter = pf.filter;
+    final Query filterQuery = pf.filter;
     maxDoc = searcher.maxDoc();
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
@@ -364,7 +362,7 @@ public class Grouping {
     }
 
     if (allCollectors != null) {
-      searchWithTimeLimiter(luceneFilter, allCollectors);
+      searchWithTimeLimiter(filterQuery, allCollectors);
 
       if(allCollectors instanceof DelegatingCollector) {
         ((DelegatingCollector) allCollectors).finish();
@@ -394,14 +392,14 @@ public class Grouping {
             signalCacheWarning = true;
             log.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
             log.warn("Please increase cache size or disable group caching.");
-            searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
+            searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
           }
         } else {
           if (pf.postFilter != null) {
             pf.postFilter.setLastDelegate(secondPhaseCollectors);
             secondPhaseCollectors = pf.postFilter;
           }
-          searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
+          searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
         }
         if (secondPhaseCollectors instanceof DelegatingCollector) {
           ((DelegatingCollector) secondPhaseCollectors).finish();
@@ -430,7 +428,7 @@ public class Grouping {
    * Invokes search with the specified filter and collector.  
    * If a time limit has been specified, wrap the collector in a TimeLimitingCollector
    */
-  private void searchWithTimeLimiter(final Filter luceneFilter, Collector collector) throws IOException {
+  private void searchWithTimeLimiter(final Query filterQuery, Collector collector) throws IOException {
     if (cmd.getTimeAllowed() > 0) {
       if (timeLimitingCollector == null) {
         timeLimitingCollector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), cmd.getTimeAllowed());
@@ -446,7 +444,7 @@ public class Grouping {
       collector = timeLimitingCollector;
     }
     try {
-      searcher.search(QueryUtils.combineQueryAndFilter(query, luceneFilter), collector);
+      searcher.search(QueryUtils.combineQueryAndFilter(query, filterQuery), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
       log.warn("Query: {}; ", query, x);
       qr.setPartialResults(true);

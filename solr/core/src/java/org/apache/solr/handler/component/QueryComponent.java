@@ -52,6 +52,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -114,6 +115,8 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
+
 
 /**
  * TODO!
@@ -129,13 +132,21 @@ public class QueryComponent extends SearchComponent
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
   {
-
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
     SolrQueryResponse rsp = rb.rsp;
+
+    if (rb.isDistrib) {
+      boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
+
+      if (isCancellableQuery) {
+        // Generate Query ID
+        rb.queryID = generateQueryID(req);
+      }
+    }
 
     // Set field flags    
     ReturnFields returnFields = new SolrReturnFields( req );
@@ -189,14 +200,6 @@ public class QueryComponent extends SearchComponent
       rb.setSortSpec( parser.getSortSpec(true) );
       rb.setQparser(parser);
 
-      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
-      if (null != cursorStr) {
-        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(),
-                                                     rb.getSortSpec());
-        cursorMark.parseSerializedTotem(cursorStr);
-        rb.setCursorMark(cursorMark);
-      }
-
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
@@ -240,7 +243,7 @@ public class QueryComponent extends SearchComponent
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
 
-    if (null != rb.getCursorMark()) {
+    if (null != params.get(CursorMarkParams.CURSOR_MARK_PARAM)) {
       // It's hard to imagine, conceptually, what it would mean to combine
       // grouping with a cursor - so for now we just don't allow the combination at all
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not use Grouping with " +
@@ -359,15 +362,29 @@ public class QueryComponent extends SearchComponent
 
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
-    if (null != rb.getCursorMark() && 0 < timeAllowed) {
-      // fundamentally incompatible
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not search using both " +
-                              CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
-    }
 
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
+
+    boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
+
+    if (isCancellableQuery) {
+      // Set the queryID for the searcher to consume
+      String queryID = params.get(ShardParams.QUERY_ID);
+
+      cmd.setQueryCancellable(true);
+
+      if (queryID == null) {
+        if (rb.isDistrib) {
+          throw new IllegalStateException("QueryID is null for distributed query");
+        }
+
+        queryID = rb.queryID;
+      }
+
+      cmd.setQueryID(queryID);
+    }
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
@@ -641,6 +658,12 @@ public class QueryComponent extends SearchComponent
     if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
       return;
     }
+
+    if (rb.queryID != null) {
+      // Remove the current queryID from the active list
+      rb.req.getCore().getCancellableQueryTracker().releaseQueryID(rb.queryID);
+    }
+
     if (rb.grouping()) {
       groupedFinishStage(rb);
     } else {
@@ -1535,6 +1558,25 @@ public class QueryComponent extends SearchComponent
     }
 
     doPrefetch(rb);
+  }
+
+  private static String generateQueryID(SolrQueryRequest req) {
+    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+    String nodeName = req.getCore().getCoreContainer().getHostName();
+
+    if (zkController != null) {
+      nodeName = zkController.getNodeName();
+    }
+
+    final String localQueryID = req.getCore().getCancellableQueryTracker().generateQueryID(req);
+
+    boolean isCustom = req.getParams().get(QUERY_UUID, null) != null;
+
+    if (!isCustom && nodeName != null) {
+      return nodeName.concat(localQueryID);
+    }
+
+    return localQueryID;
   }
 
   /**

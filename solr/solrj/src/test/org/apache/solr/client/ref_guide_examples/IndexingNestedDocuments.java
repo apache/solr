@@ -25,14 +25,11 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-
 import org.apache.solr.cloud.SolrCloudTestCase;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.ExternalPaths;
-
 import org.junit.After;
 import org.junit.BeforeClass;
 
@@ -70,7 +67,9 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
    */
   public void testIndexingAnonKids() throws Exception {
     final String collection = "test_anon";
-    CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection(collection);
     
     //
@@ -151,7 +150,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
   }
   
   /**
-   * Demo of using <code>NestPath</code> related psuedo-fields when indexing hierarchical documents.
+   * Demo of using <code>NestPath</code> related pseudo-fields when indexing hierarchical documents.
    * This test code is used as an 'include' from the ref-guide
    */
   public void testIndexingUsingNestPath() throws Exception {

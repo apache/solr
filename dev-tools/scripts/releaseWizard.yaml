@@ -16,7 +16,7 @@
 #
 
 # =====================================================================
-# This file contains the definition TODO steps and commands to run for the
+# This file contains the definition TO-DO steps and commands to run for the
 # releaseWizard.py script. It also contains Jinja2 templates for use in those
 # definitions. See documentation for "groups" below the templates.
 # Edit this file with an editor with YAML support, such as Sublime Text
@@ -54,11 +54,6 @@ templates:
           still many manual steps and it is also important that the RM validates
           and QAs the process, validating that the right commands are run, and that
           the output from scripts are correct before proceeding.
-
-    DISCLAIMER: This is an alpha version. The wizard may be buggy and may generate
-                faulty commands, commands that won't work on your OS or with all
-                versions of tooling etc. So please keep the old ReleaseTODO handy
-                for cross-checking for now :)
   vote_logic: |
     {% set passed = plus_binding >= 3 and minus < plus_binding %}
     {% set too_few = plus_binding < 3 %}
@@ -285,10 +280,10 @@ groups:
       voting rules, create a PGP/GPG key for use with signing and more. Please familiarise
       yourself with the resources listed below.
     links:
-    - http://www.apache.org/dev/release-publishing.html
-    - http://www.apache.org/legal/release-policy.html
-    - http://www.apache.org/dev/release-signing.html
-    - https://wiki.apache.org/lucene-java/ReleaseTodo
+    - https://infra.apache.org/release-publishing.html
+    - https://www.apache.org/legal/release-policy.html
+    - https://infra.apache.org/release-signing.html
+    - https://cwiki.apache.org/confluence/display/LUCENE/ReleaseTodo
   - !Todo
     id: tools
     title: Necessary tools are installed
@@ -326,8 +321,8 @@ groups:
         fingerprint for the key.
     function: configure_pgp
     links:
-    - http://www.apache.org/dev/release-signing.html
-    - http://www.apache.org/dev/openpgp.html#apache-wot
+    - https://infra.apache.org/release-signing.html
+    - https://infra.apache.org/openpgp.html#apache-wot
     - https://id.apache.org
     - https://dist.apache.org/repos/dist/release/lucene/KEYS
   - !Todo
@@ -979,8 +974,8 @@ groups:
         tee: true
     post_description: 'Note at this point you will see the Jenkins job "Lucene-Solr-SmokeRelease-master" begin to fail, until you run the "Generate Backcompat Indexes" '
   - !Todo
-    id: publish_maven
-    title: Publish maven artifacts
+    id: stage_maven
+    title: Stage the maven artifacts for publishing
     vars:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
@@ -988,15 +983,22 @@ groups:
       confirm_each_command: true
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
-      - !Command
-        cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'lucene', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
-        logfile: publish_lucene_maven.log
-      - !Command
-        cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
-        logfile: publish_solr_maven.log
-    post_description: |
+        - !Command
+          cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'lucene', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
+          logfile: publish_lucene_maven.log
+        - !Command
+          cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
+          logfile: publish_solr_maven.log
+    post_description: The artifacts are not published yet, please proceed with the next step to actually publish!
+    links:
+      - https://wiki.apache.org/lucene-java/PublishMavenArtifacts
+  - !Todo
+    id: publish_maven
+    depends: stage_maven
+    title: Publish the staged maven artifacts
+    description: |
       Once you have transferred all maven artifacts to repository.apache.org,
-      you will need to:
+      you will need to do some manual steps to actually release them to Maven Central:
 
       * Close the staging repository
       . Log in to https://repository.apache.org/ with your ASF credentials
@@ -1039,10 +1041,9 @@ groups:
     description: |
       Ensure your refrigerator has at least 2 beers - the svn import operation can take a while,
       depending on your upload bandwidth. We'll publish this directly to the production tree.
-      At the end of the task, the two links below shall work.
+      At the end of the task, the link below shall work.
     links:
-    - http://lucene.apache.org/core/{{ version }}
-    - http://lucene.apache.org/solr/{{ version }}
+    - https://solr.apache.org/{{ version }}
     vars:
       release_tag: releases/lucene-solr/{{ release_version }}
       version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
@@ -1248,15 +1249,13 @@ groups:
     post_description: |
       Wait a few minutes for the build to happen. You can follow the site build at https://ci2.apache.org/#/builders/3
 
-      Verify on https://lucene.apache.org that the site is OK.
+      Verify on https://solr.apache.org that the site is OK.
 
-      You can now also verify that http://lucene.apache.org/solr/api/solr-core/ and http://lucene.apache.org/core/api/core/
-      redirects to the latest version
+      You can now also verify that https://solr.apache.org/api/solr-core/ redirects to the latest version
     links:
       - https://ci2.apache.org/#/builders/3
-      - https://lucene.apache.org
-      - http://lucene.apache.org/solr/api/solr-core/
-      - http://lucene.apache.org/core/api/core/
+      - https://solr.apache.org
+      - https://solr.apache.org/api/solr-core/
   - !Todo
     id: update_doap
     title: Update the DOAP files
@@ -1385,6 +1384,16 @@ groups:
     links:
     - https://en.wikipedia.org/wiki/Apache_Lucene
     - https://en.wikipedia.org/wiki/Apache_Solr
+  - !Todo
+    id: add_to_apache_reporter
+    title: Add the new version to the Apache Release Reporter
+    description: |
+      Go to the Apache Release Reporter and add a release for lucene.
+      Fill in the same date that you used for the release in previous steps.
+      Do not use a product name prefix for the version, as this is the main release of the lucene PMC.
+      Just use the version of this release: {{ release_version }}
+    links:
+      - https://reporter.apache.org/addrelease.html?lucene
 - !TodoGroup
   id: post_release
   title: Tasks to do after release.
@@ -1510,114 +1519,6 @@ groups:
       - !Command
         cmd: git add -u .  && git commit -m "Add next bugfix version {{ next_version }}"  && git push
         logfile: commit-stable.log
-  - !Todo
-    id: backcompat_release
-    title: Generate Backcompat Indexes for release branch
-    description: |
-      After each version of Lucene is released, compressed CFS, non-CFS, and sorted indexes created with 
-      the newly released version are added to `lucene/backwards-codecs/src/test/org/apache/lucene/index/`, 
-      for use in testing backward index compatibility via org.apache.lucene.index.TestBackwardsCompatibility, 
-      which is also located under the `backwards-codecs/` module. There are also three indexes created only 
-      with major Lucene versions: moreterms, empty, and dvupdates. These indexes are created via methods 
-      on `TestBackwardsCompatibility` itself - see comments in the source for more information.
-
-      There is a script (`dev-tools/scripts/addBackcompatIndexes.py`) that automates most of the process.
-      It downloads the source for the specified release; generates indexes for the current release using 
-      `TestBackwardsCompatibility`; compresses the indexes and places them in the correct place in the source 
-      tree; modifies TestBackwardsCompatibility.java to include the generated indexes in the list of indexes 
-      to test; and then runs `TestBackwardsCompatibility`.
-      
-      In this and the next two steps we'll guide you through using this tool on each of the branches.
-    depends: 
-    - increment_release_version
-    vars:
-      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add back-compat indices to release branch
-      commands:
-      - !Command
-        cmd: git checkout {{ release_branch }} && git pull --ff-only && git clean -df && git checkout -- .
-        tee: true
-        logfile: checkout.log
-      - !Command
-        cmd: "{{ gradle_cmd }} clean"
-      - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
-        logfile: add-backcompat.log
-      - !Command
-        cmd: git diff --staged
-        comment: Check the git diff before committing
-        tee: true
-      - !Command
-        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
-        logfile: commit.log
-  - !Todo
-    id: backcompat_stable
-    title: Generate Backcompat Indexes for stable branch
-    description: |
-      Now generate back-compat for stable branch ({{ stable_branch }})
-    depends: 
-    - increment_release_version
-    vars:
-      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add back-compat indices to {{ stable_branch }}
-      commands:
-      - !Command
-        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
-        tee: true
-        logfile: checkout.log
-      - !Command
-        cmd: "{{ gradle_cmd }} clean"
-      - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
-        logfile: add-backcompat.log
-      - !Command
-        cmd: git diff --staged
-        comment: Check the git diff before committing
-        tee: true
-      - !Command
-        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
-        logfile: commit.log
-  - !Todo
-    id: backcompat_master
-    title: Generate Backcompat Indexes for unstable branch
-    description: |
-      Now generate back-compat for unstable (master) branch.
-      Note that this time we do not specify `--no-cleanup` meaning the tmp folder will be deleted
-    depends: 
-    - increment_release_version
-    vars:
-      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
-      version: "{{ set_java_home(master_version) }}"
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add back-compat indices to master
-      commands:
-      - !Command
-        cmd: git checkout master && git pull --ff-only && git clean -df && git checkout -- .
-        tee: true
-        logfile: checkout.log
-      - !Command
-        cmd: "{{ gradle_cmd }} clean"
-      - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
-        logfile: add-backcompat.log
-      - !Command
-        cmd: git diff --staged
-        comment: Check the git diff before committing
-        tee: true
-      - !Command
-        cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
-        logfile: commit.log
-    post_description: |
-      When doing a major version release, eg. 8.0.0, you might also need to reenable some 
-      backward compatibility tests for corner cases. To find them, run grep -r assume 
-      lucene/backward-codecs/, which should find tests that have been disabled on master 
-      because there was no released Lucene version to test against.
-      {{ set_java_home(release_version) }}
   - !Todo
     id: jira_release
     title: Mark version as released in JIRA

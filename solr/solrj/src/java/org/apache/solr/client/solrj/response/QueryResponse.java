@@ -51,10 +51,13 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _spellInfo = null;
   private List<NamedList<Object>> _clusterInfo = null;
   private NamedList<Object> _jsonFacetingInfo = null;
-  private Map<String,NamedList<Object>> _suggestInfo = null;
+  private NamedList<NamedList<Object>> _suggestInfo = null;
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Object>> _termsInfo = null;
   private NamedList<SolrDocumentList> _moreLikeThisInfo = null;
+  private NamedList<String> _tasksInfo = null;
+  private String _cancellationInfo = null;
+  private String _taskStatusCheckInfo = null;
   private String _cursorMarkNext = null;
 
   // Grouping response
@@ -170,7 +173,7 @@ public class QueryResponse extends SolrResponseBase
         // Don't call extractJsonFacetingInfo(_jsonFacetingInfo) here in an effort to do it lazily
       }
       else if ( "suggest".equals( n ) )  {
-        _suggestInfo = (Map<String,NamedList<Object>>) res.getVal( i );
+        _suggestInfo = (NamedList<NamedList<Object>>) res.getVal( i );
         extractSuggesterInfo(_suggestInfo);
       }
       else if ( "stats".equals( n ) )  {
@@ -183,6 +186,15 @@ public class QueryResponse extends SolrResponseBase
       }
       else if ( "moreLikeThis".equals( n ) ) {
         _moreLikeThisInfo = (NamedList<SolrDocumentList>) res.getVal( i );
+      }
+      else if ("taskList".equals( n )) {
+        _tasksInfo = (NamedList<String>) res.getVal( i );
+      }
+      else if ("cancellationResult".equals (n)) {
+        _cancellationInfo = (String) res.getVal( i );
+      }
+      else if ("taskResult".equals (n)) {
+        _taskStatusCheckInfo = (String) res.getVal( i );
       }
       else if ( CursorMarkParams.CURSOR_MARK_NEXT.equals( n ) ) {
         _cursorMarkNext = (String) res.getVal( i );
@@ -203,7 +215,7 @@ public class QueryResponse extends SolrResponseBase
     _jsonFacetingResponse = new NestableJsonFacet(facetInfo);
   }
 
-  private void extractSuggesterInfo(Map<String, NamedList<Object>> suggestInfo) {
+  private void extractSuggesterInfo(NamedList<NamedList<Object>> suggestInfo) {
     _suggestResponse = new SuggesterResponse(suggestInfo);
   }
 
@@ -590,6 +602,18 @@ public class QueryResponse extends SolrResponseBase
 
   public NamedList<SolrDocumentList> getMoreLikeThis() {
     return _moreLikeThisInfo;
+  }
+
+  public NamedList<String> getTasksInfo() {
+    return _tasksInfo;
+  }
+
+  public String getCancellationInfo() {
+    return _cancellationInfo;
+  }
+
+  public String getTaskStatusCheckInfo() {
+    return _taskStatusCheckInfo;
   }
   
   /**

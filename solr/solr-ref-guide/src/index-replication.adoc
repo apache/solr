@@ -21,7 +21,7 @@ Index Replication distributes complete copies of a leader index to one or more f
 The figure below shows a Solr configuration using index replication. The leader server's index is replicated on the followers.
 
 .A Solr index can be replicated across multiple follower servers, which then process requests.
-image::images/index-replication/worddav2b7e14725d898b4104cdd9c502fc77cd.png[image,width=159,height=235]
+image::images/index-replication/leader-follower-replication.png[image,width=203,height=235]
 
 
 == Index Replication in Solr
@@ -38,7 +38,7 @@ Solr includes a Java implementation of index replication that works over HTTP:
 .Replication In SolrCloud
 [NOTE]
 ====
-Although there is no explicit concept of "leader/follower" nodes in a <<solrcloud.adoc#solrcloud,SolrCloud>> cluster, the `ReplicationHandler` discussed on this page is still used by SolrCloud as needed to support "shard recovery" – but this is done in a peer to peer manner.
+Although there is no explicit concept of "leader/follower" nodes in a <<solrcloud.adoc#,SolrCloud>> cluster, the `ReplicationHandler` discussed on this page is still used by SolrCloud as needed to support "shard recovery" – but this is done in a peer to peer manner.
 
 When using SolrCloud, the `ReplicationHandler` must be available via the `/replication` path. Solr does this implicitly unless overridden explicitly in your `solrconfig.xml`, but if you wish to override the default behavior, make certain that you do not explicitly set any of the "leader" or "follower" configuration options mentioned below, or they will interfere with normal SolrCloud operation.
 ====

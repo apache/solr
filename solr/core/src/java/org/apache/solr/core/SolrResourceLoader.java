@@ -18,10 +18,8 @@ package org.apache.solr.core;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -42,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -64,6 +63,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeningClassLoader;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -100,6 +100,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private CoreContainer coreContainer;
   private PackageListeningClassLoader schemaLoader ;
 
+  private PackageListeningClassLoader coreReloadingClassLoader ;
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
@@ -109,7 +110,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   // Provide a registry so that managed resources can register themselves while the XML configuration
   // documents are being parsed ... after all are registered, they are asked by the RestManager to
   // initialize themselves. This two-step process is required because not all resources are available
-  // (such as the SolrZkClient) when XML docs are being parsed.    
+  // (such as the SolrZkClient) when XML docs are being parsed.
   private RestManager.Registry managedResourceRegistry;
 
   /** @see #reloadLuceneSPI() */
@@ -127,10 +128,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       schemaLoader = createSchemaLoader();
     }
     return schemaLoader;
-  }
-
-  public SolrResourceLoader() {
-    this(SolrPaths.locateSolrHome(), null);
   }
 
   /**
@@ -152,6 +149,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
 
+  /**
+   * Creates a loader.
+   * @param instanceDir - base directory for this resource loader, must not be null
+   */
   public SolrResourceLoader(Path instanceDir) {
     this(instanceDir, null);
   }
@@ -160,18 +161,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * This loader will delegate to Solr's classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
-   *
-   * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
-   * @see SolrPaths#locateSolrHome()
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
     if (instanceDir == null) {
-      this.instanceDir = SolrPaths.locateSolrHome();
-      log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
-    } else {
-      this.instanceDir = instanceDir;
-      log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
+      throw new NullPointerException("SolrResourceLoader instanceDir must be non-null");
     }
+
+    this.instanceDir = instanceDir;
+    log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
 
     if (parent == null) {
       parent = getClass().getClassLoader();
@@ -299,8 +296,16 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     });
   }
 
+  public Path getConfigPath() {
+    return instanceDir.resolve("conf");
+  }
+
+  /**
+   * @deprecated use {@link #getConfigPath()}
+   */
+  @Deprecated(since="9.0.0")
   public String getConfigDir() {
-    return instanceDir.resolve("conf").toString();
+    return getConfigPath().toString();
   }
 
   /**
@@ -649,15 +654,29 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     }
   }
 
+  void initCore(SolrCore core) {
+    this.coreName = core.getName();
+    this.config = core.getSolrConfig();
+    this.coreId = core.uniqueId;
+    this.coreContainer = core.getCoreContainer();
+    SolrCore.Provider coreProvider = core.coreProvider;
+
+    this.coreReloadingClassLoader = new PackageListeningClassLoader(core.getCoreContainer(),
+            this, s -> config.maxPackageVersion(s), null){
+      @Override
+      protected void doReloadAction(Ctx ctx) {
+        log.info("Core reloading classloader issued reload for: {}/{} ", coreName, coreId);
+        coreProvider.reload();
+      }
+    };
+    core.getPackageListeners().addListener(coreReloadingClassLoader, true);
+
+  }
 
   /**
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
   public void inform(SolrCore core) {
-    this.coreName = core.getName();
-    this.config = core.getSolrConfig();
-    this.coreId = core.uniqueId;
-    this.coreContainer = core.getCoreContainer();
     if(getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
 
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
@@ -838,6 +857,47 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   public List<SolrInfoBean> getInfoMBeans() {
     return Collections.unmodifiableList(infoMBeans);
   }
+  /**
+   * Load a class using an appropriate {@link SolrResourceLoader} depending of the package on that class
+   * @param registerCoreReloadListener register a listener for the package and reload the core if the package is changed.
+   *                                   Use this sparingly. This will result in core reloads across all the cores in
+   *                                   all collections using this configset
+   */
+  public  <T> Class<? extends T> findClass( PluginInfo info, Class<T>  type, boolean registerCoreReloadListener) {
+    if(info.cName.pkg == null) return findClass(info.className, type);
+    return _classLookup(info,
+            (Function<PackageLoader.Package.Version, Class<? extends T>>) ver -> ver.getLoader().findClass(info.cName.className, type), registerCoreReloadListener);
+
+  }
+
+
+  private  <T> T _classLookup(PluginInfo info, Function<PackageLoader.Package.Version, T> fun, boolean registerCoreReloadListener ) {
+    PluginInfo.ClassName cName = info.cName;
+    if (registerCoreReloadListener) {
+      if (coreReloadingClassLoader == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core not set");
+      }
+      return fun.apply(coreReloadingClassLoader.findPackageVersion(cName, true));
+    } else {
+      return fun.apply(coreReloadingClassLoader.findPackageVersion(cName, false));
+    }
+  }
+
+  /**
+   *Create a n instance of a class using an appropriate {@link SolrResourceLoader} depending on the package of that class
+   * @param registerCoreReloadListener register a listener for the package and reload the core if the package is changed.
+   *                                   Use this sparingly. This will result in core reloads across all the cores in
+   *                                   all collections using this configset
+   */
+  public <T> T newInstance(PluginInfo info, Class<T> type, boolean registerCoreReloadListener) {
+    if(info.cName.pkg == null) {
+      return newInstance(info.cName.className == null?
+                      type.getName():
+                      info.cName.className ,
+              type);
+    }
+    return _classLookup( info, version -> version.getLoader().newInstance(info.cName.className, type), registerCoreReloadListener);
+  }
 
   private PackageListeningClassLoader createSchemaLoader() {
     CoreContainer cc = getCoreContainer();
@@ -861,27 +921,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
-    File confFile = new File(loader.getConfigDir(), resourceName);
+    Path confFile = loader.getConfigPath().resolve(resourceName);
     try {
-      File parentDir = confFile.getParentFile();
-      if (!parentDir.isDirectory()) {
-        if (!parentDir.mkdirs()) {
-          final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
-          log.error(msg);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
-        }
-      }
-      try (OutputStream out = new FileOutputStream(confFile);) {
-        out.write(content);
-      }
-      log.info("Written confile {}", resourceName);
+      Files.createDirectories(confFile.getParent());
+      Files.write(confFile, content);
+      log.info("Written conf file {}", resourceName);
     } catch (IOException e) {
       final String msg = "Error persisting conf file " + resourceName;
       log.error(msg, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
     } finally {
       try {
-        IOUtils.fsync(confFile.toPath(), false);
+        IOUtils.fsync(confFile, false);
       } catch (IOException e) {
         final String msg = "Error syncing conf file " + resourceName;
         log.error(msg, e);

@@ -148,7 +148,7 @@ example/
 dist/solr-<component>-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,
   one or more of these will be required.  The core library is
-  required at a minimum. (see http://wiki.apache.org/solr/SolrPlugins
+  required at a minimum. (see https://solr.apache.org/guide/solr-plugins.html
   for more information).
 
 docs/index.html
@@ -195,7 +195,7 @@ possession, use, and/or re-export to another country, of
 encryption software.  BEFORE using any encryption software, please
 check your country's laws, regulations and policies concerning the
 import, possession, or use, and re-export of encryption software, to
-see if this is permitted.  See <http://www.wassenaar.org/> for more
+see if this is permitted.  See <https://www.wassenaar.org/> for more
 information.
 
 The U.S. Government Department of Commerce, Bureau of Industry and
@@ -213,4 +213,4 @@ software:
 
 Apache Solr uses the Apache Tika which uses the Bouncy Castle generic encryption libraries for
 extracting text content and metadata from encrypted PDF files.
-See http://www.bouncycastle.org/ for more details on Bouncy Castle.
+See https://www.bouncycastle.org/ for more details on Bouncy Castle.

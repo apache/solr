@@ -52,8 +52,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-    return FSDirectory.open(new File(path).toPath(), lockFactory);
+    return FSDirectory.open(Path.of(path), lockFactory);
   }
   
   @Override
@@ -80,26 +79,11 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   
   @Override
   public String normalize(String path) throws IOException {
-    String cpath = new File(path).getCanonicalPath();
-    
-    return super.normalize(cpath);
+    return super.normalize(new File(path).getCanonicalPath());
   }
-  
-  @Override
-  public boolean exists(String path) throws IOException {
-    // we go by the persistent storage ... 
-    File dirFile = new File(path);
-    return dirFile.canRead() && dirFile.list().length > 0;
-  }
-  
+
   public boolean isPersistent() {
     return true;
-  }
-  
-  @Override
-  public boolean isAbsolute(String path) {
-    // back compat
-    return new File(path).isAbsolute();
   }
   
   @Override

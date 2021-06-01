@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -29,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -40,7 +40,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -76,12 +75,12 @@ public class CloudUtil {
         for (Replica replica : slice.getReplicas()) {
 
           String cnn = replica.getName();
-          String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          String baseUrl = replica.getBaseUrl();
           log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
 
           if (thisCnn != null && thisCnn.equals(cnn)
               && !thisBaseUrl.equals(baseUrl)) {
-            if (cc.getLoadedCoreNames().contains(desc.getName())) {
+            if (cc.isLoaded(desc.getName())) {
               cc.unload(desc.getName());
             }
 
@@ -125,7 +124,7 @@ public class CloudUtil {
   public static String unifiedResourcePath(SolrResourceLoader loader) {
     return (loader instanceof ZkSolrResourceLoader) ?
             ((ZkSolrResourceLoader) loader).getConfigSetZkPath() + "/" :
-            loader.getConfigDir() + File.separator;
+            loader.getConfigPath() + "/";
   }
 
   /**Read the list of public keys from ZK
@@ -285,5 +284,15 @@ public class CloudUtil {
     };
   }
 
-
+  /**
+   * Builds a string with sorted {@link CoreContainer#getLoadedCoreNames()} while truncating to the first 20 cores.
+   */
+  static String getLoadedCoreNamesAsString(CoreContainer coreContainer) {
+    List<String> loadedCoreNames = coreContainer.getLoadedCoreNames();
+    if (loadedCoreNames.size() <= 20) {
+      loadedCoreNames.sort(null);
+    }
+    return loadedCoreNames.stream().limit(20).collect(Collectors.toList())
+            + (loadedCoreNames.size() > 20 ? "...(truncated from " + loadedCoreNames.size() + " cores)" : "");
+  }
 }

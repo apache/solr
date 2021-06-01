@@ -104,15 +104,19 @@ public interface CollectionParams {
     ADDREPLICA(true, LockLevel.SHARD),
     MOVEREPLICA(true, LockLevel.SHARD),
     OVERSEERSTATUS(false, LockLevel.NONE),
+    // For testing. Could eventually be exposed publicly if needed
+    DISTRIBUTEDAPIPROCESSING(false, LockLevel.NONE),
     LIST(false, LockLevel.NONE),
     CLUSTERSTATUS(false, LockLevel.NONE),
     ADDREPLICAPROP(true, LockLevel.REPLICA),
     DELETEREPLICAPROP(true, LockLevel.REPLICA),
-    BALANCESHARDUNIQUE(true, LockLevel.SHARD),
+    BALANCESHARDUNIQUE(true, LockLevel.COLLECTION),
     REBALANCELEADERS(true, LockLevel.COLLECTION),
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
     BACKUP(true, LockLevel.COLLECTION),
     RESTORE(true, LockLevel.COLLECTION),
+    LISTBACKUP(false, LockLevel.NONE),
+    DELETEBACKUP(true, LockLevel.COLLECTION),
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
@@ -141,7 +145,7 @@ public interface CollectionParams {
     CollectionAction(boolean isWrite, LockLevel level) {
       this.isWrite = isWrite;
       this.lockLevel = level;
-      lowerName = toString().toLowerCase(Locale.ROOT);
+      lowerName = name().toLowerCase(Locale.ROOT);
     }
 
     public static CollectionAction get(String p) {

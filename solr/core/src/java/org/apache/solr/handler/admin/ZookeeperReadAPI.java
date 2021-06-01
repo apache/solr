@@ -45,7 +45,6 @@ import org.apache.zookeeper.data.Stat;
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
 /**
@@ -65,7 +64,7 @@ public class ZookeeperReadAPI {
   }
   @EndPoint(path = "/cluster/zk/data/*",
       method = SolrRequest.METHOD.GET,
-      permission = COLL_READ_PERM)
+      permission = ZK_READ_PERM)
   public void readNode(SolrQueryRequest req, SolrQueryResponse rsp) {
     String path = req.getPathTemplateValues().get("*");
     if (path == null || path.isEmpty()) path = "/";
@@ -101,6 +100,11 @@ public class ZookeeperReadAPI {
     String path = req.getPathTemplateValues().get("*");
     if (path == null || path.isEmpty()) path = "/";
     try {
+      Stat stat = coreContainer.getZkController().getZkClient().exists(path, null, true);
+      rsp.add("stat", (MapWriter) ew -> printStat(ew, stat));
+      if(!req.getParams().getBool("c", true)) {
+        return;
+      }
       List<String> l = coreContainer.getZkController().getZkClient().getChildren(path, null, false);
       String prefix = path.endsWith("/") ? path : path + "/";
 
@@ -114,7 +118,7 @@ public class ZookeeperReadAPI {
       }
       rsp.add(path, (MapWriter) ew -> {
         for (Map.Entry<String, Stat> e : stats.entrySet()) {
-          printStat(ew, e.getKey(), e.getValue());
+         ew.put(e.getKey(), (MapWriter) ew1 -> printStat(ew1, e.getValue()));
         }
       });
     } catch (KeeperException.NoNodeException e) {
@@ -126,20 +130,18 @@ public class ZookeeperReadAPI {
     }
   }
 
-  private void printStat(MapWriter.EntryWriter ew, String s, Stat stat) throws IOException {
-    ew.put(s, (MapWriter) ew1 -> {
-      ew1.put("version", stat.getVersion());
-      ew1.put("aversion", stat.getAversion());
-      ew1.put("children", stat.getNumChildren());
-      ew1.put("ctime", stat.getCtime());
-      ew1.put("cversion", stat.getCversion());
-      ew1.put("czxid", stat.getCzxid());
-      ew1.put("ephemeralOwner", stat.getEphemeralOwner());
-      ew1.put("mtime", stat.getMtime());
-      ew1.put("mzxid", stat.getMzxid());
-      ew1.put("pzxid", stat.getPzxid());
-      ew1.put("dataLength", stat.getDataLength());
-    });
+  private void printStat(MapWriter.EntryWriter ew, Stat stat) throws IOException {
+    ew.put("version", stat.getVersion());
+    ew.put("aversion", stat.getAversion());
+    ew.put("children", stat.getNumChildren());
+    ew.put("ctime", stat.getCtime());
+    ew.put("cversion", stat.getCversion());
+    ew.put("czxid", stat.getCzxid());
+    ew.put("ephemeralOwner", stat.getEphemeralOwner());
+    ew.put("mtime", stat.getMtime());
+    ew.put("mzxid", stat.getMzxid());
+    ew.put("pzxid", stat.getPzxid());
+    ew.put("dataLength", stat.getDataLength());
   }
 
 }

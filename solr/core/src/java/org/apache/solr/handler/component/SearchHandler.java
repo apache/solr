@@ -16,16 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
@@ -34,6 +24,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
@@ -43,11 +34,14 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -60,10 +54,13 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.FAILURE;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.STATUS;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.solr.common.params.CommonParams.*;
 
 
 /**
@@ -161,8 +158,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         }
 
         @Override
-        public PluginInfo pluginInfo() {
-          return null;
+        public Map<String , PackageAPI.PkgVersion> packageDetails() {
+          return Collections.emptyMap();
         }
 
         @Override
@@ -239,7 +236,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     return result;
   }
 
-  private ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
+  public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCore().getCoreContainer();
@@ -347,6 +344,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       subt.stop();
     }
 
+    { // Once all of our components have been prepared, check if this request involves a SortSpec.
+      // If it does, and if our request includes a cursorMark param, then parse & init the CursorMark state
+      // (This must happen after the prepare() of all components, because any component may have modified the SortSpec)
+      final SortSpec spec = rb.getSortSpec();
+      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+      if (null != spec && null != cursorStr) {
+        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
+        cursorMark.parseSerializedTotem(cursorStr);
+        rb.setCursorMark(cursorMark);
+      }
+    }
+    
     if (!rb.isDistrib) {
       // a normal non-distributed request
 
@@ -379,6 +388,13 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         log.warn("Query: {}; ", req.getParamString(), ex);
         if( rb.rsp.getResponse() == null) {
           rb.rsp.addResponse(new SolrDocumentList());
+
+          // If a cursorMark was passed, and we didn't progress, set
+          // the nextCursorMark to the same position
+          String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+          if (null != cursorStr) {
+            rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, cursorStr);
+          }
         }
         if(rb.isDebug()) {
           NamedList debug = new NamedList();
@@ -433,6 +449,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
               params.set(CommonParams.OMIT_HEADER, false);
+
+              // Distributed request -- need to send queryID as a part of the distributed request
+              params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
@@ -513,8 +532,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         StringWriter trace = new StringWriter();
         cause.printStackTrace(new PrintWriter(trace));
         nl.add("trace", trace.toString() );
-      }
-      else {
+      } else if (rb.getResults() != null) {
         nl.add("numFound", rb.getResults().docList.matches());
         nl.add("numFoundExact", rb.getResults().docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
         nl.add("maxScore", rb.getResults().docList.maxScore());

@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2020 The Apache Software Foundation
+ Copyright 2006-2021 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -38,7 +38,7 @@ This product includes jquery.form Javascript library created by Mike Alsup
 Copyright 2006-2014 (c) M. Alsup, https://github.com/malsup/form/
 
 This product includes the jstree Javascript library created by Ivan Bozhanov
-Copyright (c) 2013-2014 Ivan Bozhanov, https://github.com/vakata/jstree
+Copyright (c) 2013-2020 Ivan Bozhanov, https://github.com/vakata/jstree
 
 This product includes jquery.timeago.js Javascript library by Ryan McGeary
 Copyright (c) 2008-2014, Ryan McGeary, https://github.com/rmm5t/jquery-timeago
@@ -129,7 +129,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2020 The Apache Software Foundation
+Copyright 2001-2021 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -221,7 +221,7 @@ and Edmond Nolan.
 The Polish analyzer (stempel) comes with a default
 stopword list that is BSD-licensed created by the Carrot2 project. The file resides
 in stempel/src/resources/org/apache/lucene/analysis/pl/stopwords.txt.
-See http://project.carrot2.org/license.html.
+See https://project.carrot2.org/license.html.
 
 The SmartChineseAnalyzer source code (smartcn) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
@@ -439,13 +439,12 @@ http://sourceforge.jp/projects/jsonic/
 =========================================================================
 ==     Carrot2 Notice                                                  ==
 =========================================================================
-Copyright (C) 2002-2010, Dawid Weiss, Stanislaw Osinski.
+Copyright (C) 2002-2020, Dawid Weiss, Stanislaw Osinski.
 Portions (C) Contributors listed in "carrot2.CONTRIBUTORS" file.
 All rights reserved.
 
 This product includes software developed by the Carrot2 Project.
-
-See http://project.carrot2.org/
+See https://project.carrot2.org/
 
 =========================================================================
 ==     Guava Notice                                                    ==
@@ -597,3 +596,63 @@ Noggit is a  fast streaming JSON parser for java. The code is included
 into Solr codebase.
 
 https://github.com/yonik/noggit
+
+=========================================================================
+==         ui-grid notice                                               ==
+=========================================================================
+
+This product includes the Angular UI UI Grid JavaScript library.
+Copyright (c) 2015 the AngularUI Team, http://angular-ui.github.com
+
+
+=========================================================================
+==         grpc notice                                                 ==
+=========================================================================
+Copyright 2014 The gRPC Authors
+
+This product contains a modified portion of 'OkHttp', an open source
+HTTP & SPDY client for Android and Java applications, which can be obtained
+at:
+
+  * LICENSE:
+    * okhttp/third_party/okhttp/LICENSE (Apache License 2.0)
+  * HOMEPAGE:
+    * https://github.com/square/okhttp
+  * LOCATION_IN_GRPC:
+    * okhttp/third_party/okhttp
+
+This product contains a modified portion of 'Envoy', an open source
+cloud-native high-performance edge/middle/service proxy, which can be
+obtained at:
+
+  * LICENSE:
+    * xds/third_party/envoy/LICENSE (Apache License 2.0)
+  * NOTICE:
+    * xds/third_party/envoy/NOTICE
+  * HOMEPAGE:
+    * https://www.envoyproxy.io
+  * LOCATION_IN_GRPC:
+    * xds/third_party/envoy
+
+This product contains a modified portion of 'protoc-gen-validate (PGV)',
+an open source protoc plugin to generate polyglot message validators,
+which can be obtained at:
+
+  * LICENSE:
+    * xds/third_party/protoc-gen-validate/LICENSE (Apache License 2.0)
+  * NOTICE:
+      * xds/third_party/protoc-gen-validate/NOTICE
+  * HOMEPAGE:
+    * https://github.com/envoyproxy/protoc-gen-validate
+  * LOCATION_IN_GRPC:
+    * xds/third_party/protoc-gen-validate
+
+This product contains a modified portion of 'udpa',
+an open source universal data plane API, which can be obtained at:
+
+  * LICENSE:
+    * xds/third_party/udpa/LICENSE (Apache License 2.0)
+  * HOMEPAGE:
+    * https://github.com/cncf/udpa
+  * LOCATION_IN_GRPC:
+    * xds/third_party/udpa

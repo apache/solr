@@ -48,10 +48,14 @@ public class CloudConfig {
 
   private final String pkiHandlerPublicKeyPath;
 
+  private final boolean useDistributedClusterStateUpdates;
+
+  private final boolean useDistributedCollectionConfigSetExecution;
+
   CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames,
               int leaderVoteWait, int leaderConflictResolveWait, String zkCredentialsProviderClass, String zkACLProviderClass,
               int createCollectionWaitTimeTillActive, boolean createCollectionCheckLeaderActive, String pkiHandlerPrivateKeyPath,
-              String pkiHandlerPublicKeyPath) {
+              String pkiHandlerPublicKeyPath, boolean useDistributedClusterStateUpdates, boolean useDistributedCollectionConfigSetExecution) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -66,6 +70,12 @@ public class CloudConfig {
     this.createCollectionCheckLeaderActive = createCollectionCheckLeaderActive;
     this.pkiHandlerPrivateKeyPath = pkiHandlerPrivateKeyPath;
     this.pkiHandlerPublicKeyPath = pkiHandlerPublicKeyPath;
+    this.useDistributedClusterStateUpdates = useDistributedClusterStateUpdates;
+    this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
+
+    if (useDistributedCollectionConfigSetExecution && !useDistributedClusterStateUpdates) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'useDistributedCollectionConfigSetExecution' can't be true if useDistributedClusterStateUpdates is false");
+    }
 
     if (this.hostPort == -1)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostPort' must be configured to run SolrCloud");
@@ -129,6 +139,14 @@ public class CloudConfig {
     return pkiHandlerPublicKeyPath;
   }
 
+  public boolean getDistributedClusterStateUpdates() {
+    return useDistributedClusterStateUpdates;
+  }
+
+  public boolean getDistributedCollectionConfigSetExecution() {
+    return useDistributedCollectionConfigSetExecution;
+  }
+
   public static class CloudConfigBuilder {
 
     private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 45000;
@@ -137,7 +155,7 @@ public class CloudConfig {
     private static final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = 45;  // 45 seconds
     private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false;
 
-    private String zkHost = System.getProperty("zkHost");
+    private String zkHost;
     private int zkClientTimeout = Integer.getInteger("zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
     private final int hostPort;
     private final String hostName;
@@ -151,6 +169,8 @@ public class CloudConfig {
     private boolean createCollectionCheckLeaderActive = DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE;
     private String pkiHandlerPrivateKeyPath;
     private String pkiHandlerPublicKeyPath;
+    private boolean useDistributedClusterStateUpdates = false;
+    private boolean useDistributedCollectionConfigSetExecution = false;
 
     public CloudConfigBuilder(String hostName, int hostPort) {
       this(hostName, hostPort, null);
@@ -217,10 +237,21 @@ public class CloudConfig {
       return this;
     }
 
+    public CloudConfigBuilder setUseDistributedClusterStateUpdates(boolean useDistributedClusterStateUpdates) {
+      this.useDistributedClusterStateUpdates = useDistributedClusterStateUpdates;
+      return this;
+    }
+
+    public CloudConfigBuilder setUseDistributedCollectionConfigSetExecution(boolean useDistributedCollectionConfigSetExecution) {
+      this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
+      return this;
+    }
+
     public CloudConfig build() {
       return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait,
           leaderConflictResolveWait, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
-          createCollectionCheckLeaderActive, pkiHandlerPrivateKeyPath, pkiHandlerPublicKeyPath);
+          createCollectionCheckLeaderActive, pkiHandlerPrivateKeyPath, pkiHandlerPublicKeyPath,
+          useDistributedClusterStateUpdates, useDistributedCollectionConfigSetExecution);
     }
   }
 }

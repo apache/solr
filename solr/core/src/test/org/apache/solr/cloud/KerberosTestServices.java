@@ -39,20 +39,21 @@ public class KerberosTestServices {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private volatile MiniKdc kdc;
-  private volatile JaasConfiguration jaasConfiguration;
-  private volatile Configuration savedConfig;
+  private final JaasConfiguration jaasConfiguration;
+  private final Configuration savedConfig;
   private volatile Locale savedLocale;
+  private final boolean debug;
 
-  private volatile File workDir;
+  private final File workDir;
 
   private KerberosTestServices(File workDir,
                                JaasConfiguration jaasConfiguration,
                                Configuration savedConfig,
-                               Locale savedLocale) {
+                               boolean debug) {
     this.jaasConfiguration = jaasConfiguration;
     this.savedConfig = savedConfig;
-    this.savedLocale = savedLocale;
     this.workDir = workDir;
+    this.debug = debug;
   }
 
   public MiniKdc getKdc() {
@@ -60,7 +61,8 @@ public class KerberosTestServices {
   }
 
   public void start() throws Exception {
-    if (brokenLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage())) {
+    if (incompatibleLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage())) {
+      savedLocale = Locale.getDefault();
       Locale.setDefault(Locale.US);
     }
 
@@ -72,7 +74,7 @@ public class KerberosTestServices {
       try {
         bindException = false;
 
-        kdc = getKdc(workDir);
+        kdc = getKdc(workDir, debug);
         kdc.start();
       } catch (BindException e) {
         FileUtils.deleteDirectory(workDir); // clean directory
@@ -94,7 +96,7 @@ public class KerberosTestServices {
     if (kdc != null) kdc.stop();
     Configuration.setConfiguration(savedConfig);
     Krb5HttpClientBuilder.regenerateJaasConfiguration();
-    Locale.setDefault(savedLocale);
+    if (savedLocale != null) Locale.setDefault(savedLocale);
   }
 
   public static Builder builder() {
@@ -105,9 +107,10 @@ public class KerberosTestServices {
    * Returns a MiniKdc that can be used for creating kerberos principals
    * and keytabs.  Caller is responsible for starting/stopping the kdc.
    */
-  private static MiniKdc getKdc(File workDir) throws Exception {
+  private static MiniKdc getKdc(File workDir, boolean debug) throws Exception {
     Properties conf = MiniKdc.createConf();
     conf.setProperty("kdc.port", "0");
+    conf.setProperty("debug", String.valueOf(debug));
     return new MiniKdc(conf, workDir);
   }
 
@@ -144,7 +147,7 @@ public class KerberosTestServices {
         clientOptions.put("debug", "true");
       }
       clientEntry = new AppConfigurationEntry[]{
-          new AppConfigurationEntry(getKrb5LoginModuleName(),
+          new AppConfigurationEntry(krb5LoginModuleName,
               AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
               clientOptions)};
       if(serverPrincipal!=null && serverKeytab!=null) {
@@ -152,7 +155,7 @@ public class KerberosTestServices {
         serverOptions.put("principal", serverPrincipal);
         serverOptions.put("keytab", serverKeytab.getAbsolutePath());
         serverEntry =  new AppConfigurationEntry[]{
-            new AppConfigurationEntry(getKrb5LoginModuleName(),
+            new AppConfigurationEntry(krb5LoginModuleName,
                 AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
                 serverOptions)};
       }
@@ -181,27 +184,19 @@ public class KerberosTestServices {
       }
       return null;
     }
-
-    private String getKrb5LoginModuleName() {
-      String krb5LoginModuleName;
-      if (System.getProperty("java.vendor").contains("IBM")) {
-        krb5LoginModuleName = "com.ibm.security.auth.module.Krb5LoginModule";
-      } else {
-        krb5LoginModuleName = "com.sun.security.auth.module.Krb5LoginModule";
-      }
-      return krb5LoginModuleName;
-    }
   }
 
+  public final static String krb5LoginModuleName =
+    System.getProperty("java.vendor").contains("IBM") ?
+      "com.ibm.security.auth.module.Krb5LoginModule" :
+      "com.sun.security.auth.module.Krb5LoginModule";
+
   /**
-   *  These Locales don't generate dates that are compatibile with Hadoop MiniKdc.
+   *  These Locales don't generate dates that are compatible with Hadoop MiniKdc.
+   *  See LocaleTest.java and https://issues.apache.org/jira/browse/DIRKRB-753
    */
-  private final static List<String> brokenLanguagesWithMiniKdc =
-      Arrays.asList(
-          new Locale("th").getLanguage(),
-          new Locale("ja").getLanguage(),
-          new Locale("hi").getLanguage()
-      );
+  private final static List<String> incompatibleLanguagesWithMiniKdc = Arrays.asList(
+    "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne", "ckb", "fa", "lrc", "ur", "ig");
 
   public static class Builder {
     private File kdcWorkDir;
@@ -210,14 +205,17 @@ public class KerberosTestServices {
     private String serverPrincipal;
     private File serverKeytab;
     private String appName;
-    private Locale savedLocale;
+    private boolean debug = false;
 
-    public Builder() {
-      savedLocale = Locale.getDefault();
-    }
+    public Builder() { }
 
     public Builder withKdc(File kdcWorkDir) {
       this.kdcWorkDir = kdcWorkDir;
+      return this;
+    }
+
+    public Builder withDebug() {
+      this.debug = true;
       return this;
     }
 
@@ -248,7 +246,7 @@ public class KerberosTestServices {
             new JaasConfiguration(clientPrincipal, clientKeytab, serverPrincipal, serverKeytab) :
             new JaasConfiguration(clientPrincipal, clientKeytab, appName);
       }
-      return new KerberosTestServices(kdcWorkDir, jaasConfiguration, oldConfig, savedLocale);
+      return new KerberosTestServices(kdcWorkDir, jaasConfiguration, oldConfig, debug);
     }
   }
 }

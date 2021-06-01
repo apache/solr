@@ -41,7 +41,7 @@ import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   //only for debugging purposes
   public static final ThreadLocal<AtomicLong> v2Calls = new ThreadLocal<>();
-  static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/([^/])+/(?!shards)");
+  static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/([^/]+)/(?!shards)");
   private Object payload;
   private SolrParams solrParams;
   public final boolean useBinary;
@@ -162,6 +162,26 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
     public Builder withMethod(METHOD m) {
       this.method = m;
+      return this;
+    }
+
+    public Builder POST() {
+      this.method = METHOD.POST;
+      return this;
+    }
+
+    public Builder GET() {
+      this.method = METHOD.GET;
+      return this;
+    }
+
+    public Builder PUT() {
+      this.method = METHOD.PUT;
+      return this;
+    }
+
+    public Builder DELETE() {
+      this.method = METHOD.DELETE;
       return this;
     }
 

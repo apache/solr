@@ -27,6 +27,7 @@ import org.apache.solr.cluster.*;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
 
 import javax.annotation.Nonnull;
@@ -112,9 +113,15 @@ class SimpleClusterAbstractionsImpl {
      * with names equal to existing instances (See {@link ReplicaImpl} constructor).
      */
     public boolean equals(Object obj) {
-      if (obj == null) { return false; }
-      if (obj == this) { return true; }
-      if (obj.getClass() != getClass()) { return false; }
+      if (obj == null) {
+        return false;
+      }
+      if (obj == this) {
+        return true;
+      }
+      if (obj.getClass() != getClass()) {
+        return false;
+      }
       NodeImpl other = (NodeImpl) obj;
       return Objects.equals(this.nodeName, other.nodeName);
     }
@@ -127,7 +134,9 @@ class SimpleClusterAbstractionsImpl {
 
   static class SolrCollectionImpl implements SolrCollection {
     private final String collectionName;
-    /** Map from {@link Shard#getShardName()} to {@link Shard} */
+    /**
+     * Map from {@link Shard#getShardName()} to {@link Shard}
+     */
     private final Map<String, Shard> shards;
     private final DocCollection docCollection;
 
@@ -167,8 +176,22 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
+    public Set<String> getShardNames() {
+      return shards.keySet();
+    }
+
+    @Override
+    public String toString() {
+      return "SolrCollectionImpl{" +
+              "collectionName='" + collectionName + '\'' +
+              ", shards=" + shards.keySet() +
+              ", docCollection=" + docCollection +
+              '}';
+    }
+
+    @Override
     public String getCustomProperty(String customPropertyName) {
-      return docCollection.getStr(customPropertyName);
+      return docCollection.getStr(CollectionAdminParams.PROPERTY_PREFIX + customPropertyName);
     }
   }
 
@@ -207,12 +230,18 @@ class SimpleClusterAbstractionsImpl {
 
     private ShardState translateState(Slice.State state) {
       switch (state) {
-        case ACTIVE: return ShardState.ACTIVE;
-        case INACTIVE: return ShardState.INACTIVE;
-        case CONSTRUCTION: return ShardState.CONSTRUCTION;
-        case RECOVERY: return ShardState.RECOVERY;
-        case RECOVERY_FAILED: return ShardState.RECOVERY_FAILED;
-        default: throw new RuntimeException("Unexpected " + state);
+        case ACTIVE:
+          return ShardState.ACTIVE;
+        case INACTIVE:
+          return ShardState.INACTIVE;
+        case CONSTRUCTION:
+          return ShardState.CONSTRUCTION;
+        case RECOVERY:
+          return ShardState.RECOVERY;
+        case RECOVERY_FAILED:
+          return ShardState.RECOVERY_FAILED;
+        default:
+          throw new RuntimeException("Unexpected " + state);
       }
     }
 
@@ -253,19 +282,36 @@ class SimpleClusterAbstractionsImpl {
     }
 
     public boolean equals(Object obj) {
-      if (obj == null) { return false; }
-      if (obj == this) { return true; }
-      if (obj.getClass() != getClass()) { return false; }
+      if (obj == null) {
+        return false;
+      }
+      if (obj == this) {
+        return true;
+      }
+      if (obj.getClass() != getClass()) {
+        return false;
+      }
       ShardImpl other = (ShardImpl) obj;
       return Objects.equals(this.shardName, other.shardName)
-              && Objects.equals(this.collection, other.collection)
-              && Objects.equals(this.shardState, other.shardState)
-              && Objects.equals(this.replicas, other.replicas)
-              && Objects.equals(this.leader, other.leader);
+          && Objects.equals(this.collection, other.collection)
+          && Objects.equals(this.shardState, other.shardState)
+          && Objects.equals(this.replicas, other.replicas)
+          && Objects.equals(this.leader, other.leader);
     }
 
     public int hashCode() {
       return Objects.hash(shardName, collection, shardState);
+    }
+
+    @Override
+    public String toString() {
+      return "ShardImpl{" +
+              "shardName='" + shardName + '\'' +
+              ", collection='" + collection.getName() + '\'' +
+              ", shardState=" + shardState +
+              ", replicas=" + replicas.size() +
+              ", leader=" + leader +
+              '}';
     }
   }
 
@@ -311,20 +357,29 @@ class SimpleClusterAbstractionsImpl {
 
     private Replica.ReplicaType translateType(org.apache.solr.common.cloud.Replica.Type type) {
       switch (type) {
-        case NRT: return Replica.ReplicaType.NRT;
-        case TLOG: return Replica.ReplicaType.TLOG;
-        case PULL: return Replica.ReplicaType.PULL;
-        default: throw new RuntimeException("Unexpected " + type);
+        case NRT:
+          return Replica.ReplicaType.NRT;
+        case TLOG:
+          return Replica.ReplicaType.TLOG;
+        case PULL:
+          return Replica.ReplicaType.PULL;
+        default:
+          throw new RuntimeException("Unexpected " + type);
       }
     }
 
     private Replica.ReplicaState translateState(org.apache.solr.common.cloud.Replica.State state) {
       switch (state) {
-        case ACTIVE: return Replica.ReplicaState.ACTIVE;
-        case DOWN: return Replica.ReplicaState.DOWN;
-        case RECOVERING: return Replica.ReplicaState.RECOVERING;
-        case RECOVERY_FAILED: return Replica.ReplicaState.RECOVERY_FAILED;
-        default: throw new RuntimeException("Unexpected " + state);
+        case ACTIVE:
+          return Replica.ReplicaState.ACTIVE;
+        case DOWN:
+          return Replica.ReplicaState.DOWN;
+        case RECOVERING:
+          return Replica.ReplicaState.RECOVERING;
+        case RECOVERY_FAILED:
+          return Replica.ReplicaState.RECOVERY_FAILED;
+        default:
+          throw new RuntimeException("Unexpected " + state);
       }
     }
 
@@ -365,28 +420,50 @@ class SimpleClusterAbstractionsImpl {
      */
     static org.apache.solr.common.cloud.Replica.Type toCloudReplicaType(ReplicaType type) {
       switch (type) {
-        case NRT: return org.apache.solr.common.cloud.Replica.Type.NRT;
-        case TLOG: return org.apache.solr.common.cloud.Replica.Type.TLOG;
-        case PULL: return org.apache.solr.common.cloud.Replica.Type.PULL;
-        default: throw new IllegalArgumentException("Unknown " + type);
+        case NRT:
+          return org.apache.solr.common.cloud.Replica.Type.NRT;
+        case TLOG:
+          return org.apache.solr.common.cloud.Replica.Type.TLOG;
+        case PULL:
+          return org.apache.solr.common.cloud.Replica.Type.PULL;
+        default:
+          throw new IllegalArgumentException("Unknown " + type);
       }
     }
 
     public boolean equals(Object obj) {
-      if (obj == null) { return false; }
-      if (obj == this) { return true; }
-      if (obj.getClass() != getClass()) { return false; }
+      if (obj == null) {
+        return false;
+      }
+      if (obj == this) {
+        return true;
+      }
+      if (obj.getClass() != getClass()) {
+        return false;
+      }
       ReplicaImpl other = (ReplicaImpl) obj;
       return Objects.equals(this.replicaName, other.replicaName)
-              && Objects.equals(this.coreName, other.coreName)
-              && Objects.equals(this.shard, other.shard)
-              && Objects.equals(this.replicaType, other.replicaType)
-              && Objects.equals(this.replicaState, other.replicaState)
-              && Objects.equals(this.node, other.node);
+          && Objects.equals(this.coreName, other.coreName)
+          && Objects.equals(this.shard, other.shard)
+          && Objects.equals(this.replicaType, other.replicaType)
+          && Objects.equals(this.replicaState, other.replicaState)
+          && Objects.equals(this.node, other.node);
     }
 
     public int hashCode() {
       return Objects.hash(replicaName, coreName, shard, replicaType, replicaState, node);
+    }
+
+    @Override
+    public String toString() {
+      return "ReplicaImpl{" +
+              "replicaName='" + replicaName + '\'' +
+              ", coreName='" + coreName + '\'' +
+              ", shard='" + shard.getShardName() + '\'' +
+              ", replicaType=" + replicaType +
+              ", replicaState=" + replicaState +
+              ", node='" + node + '\'' +
+              '}';
     }
   }
 }

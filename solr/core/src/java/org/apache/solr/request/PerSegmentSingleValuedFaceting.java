@@ -31,7 +31,6 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -43,7 +42,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
 
@@ -64,8 +62,6 @@ class PerSegmentSingleValuedFaceting {
   String prefix;
 
   private final Predicate<BytesRef> termFilter;
-
-  Filter baseSet;
 
   int nThreads;
 
@@ -94,9 +90,6 @@ class PerSegmentSingleValuedFaceting {
   NamedList<Integer> getFacetCounts(Executor executor) throws IOException {
 
     CompletionService<SegFacet> completionService = new ExecutorCompletionService<>(executor);
-
-    // reuse the translation logic to go from top level set to per-segment set
-    baseSet = docs.getTopFilter();
 
     final List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     // The list of pending tasks that aren't immediately submitted
@@ -301,8 +294,12 @@ class PerSegmentSingleValuedFaceting {
       // count collection array only needs to be as big as the number of terms we are
       // going to collect counts for.
       final int[] counts = this.counts = new int[nTerms];
-      DocIdSet idSet = baseSet.getDocIdSet(context, null);  // this set only includes live docs
-      DocIdSetIterator iter = idSet.iterator();
+      final DocIdSetIterator iter = docs.iterator(context);  // this set only includes live docs
+
+      if (iter == null) {
+        // `DocIdSet.iterator()` can return null instead of empty DocIdSetIterator
+        return;
+      }
 
       if (prefix==null) {
         // specialized version when collecting counts for all terms

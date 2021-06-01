@@ -39,9 +39,6 @@ buildscript {
 // Configure license checksum folder for top-level projects.
 // (The file("licenses") inside the configure scope resolves
 // relative to the current project so they're not the same).
-configure(project(":lucene")) {
-  ext.licensesDir = file("licenses")
-}
 configure(project(":solr")) {
   ext.licensesDir = file("licenses")
 }
@@ -273,7 +270,10 @@ subprojects {
 
 // Add top-project level tasks validating dangling files
 // and regenerating dependency checksums.
-configure([project(":solr"), project(":lucene"),]) {
+def plist = []
+plist.add(project(":solr"))
+
+configure(plist) {
   def validationTasks = subprojects.collectMany { it.tasks.matching { it.name == "licenses" } }
   def jarInfoTasks = subprojects.collectMany { it.tasks.matching { it.name == "collectJarInfos" } }
 
@@ -333,9 +333,13 @@ configure([project(":solr"), project(":lucene"),]) {
     }
 
     doFirst {
-      def allReferenced = validationTasks.collectMany { task ->
-        task.project.jarInfos.collectMany { it.referencedFiles }
-      }.collect { it.toString() }
+      def allReferenced = validationTasks
+          // Only collect for enabled tasks: https://issues.apache.org/jira/browse/LUCENE-9780
+          .findAll { it.enabled }
+          .collectMany { task ->
+            task.project.jarInfos.collectMany { it.referencedFiles }
+          }
+          .collect { it.toString() }
 
       def patterns = ext.exclude
       def allExisting = fileTree(licensesDir, {
@@ -358,15 +362,6 @@ configure([project(":solr"), project(":lucene"),]) {
 // Exclude files that are not a result of direct dependencies but have to be there.
 // It would be probably better to move non-dependency licenses into the actual project
 // where they're used and only assemble them for the distribution package.
-configure(project(":lucene")) {
-  checkDanglingLicenseFiles {
-    exclude += [
-        "elegant-icon-font-*",
-        "ant-*",
-        "ivy-*",
-    ]
-  }
-}
 
 configure(project(":solr")) {
   checkDanglingLicenseFiles {

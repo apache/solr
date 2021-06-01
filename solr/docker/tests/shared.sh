@@ -25,7 +25,7 @@ function wait_for_container_and_solr {
 
   printf '\nWaiting for Solr...\n'
   local status
-  status=$(docker exec "$container_name" /opt/docker-solr/scripts/wait-for-solr.sh --max-attempts 60 --wait-seconds 1)
+  status=$(docker exec "$container_name" wait-for-solr.sh --max-attempts 60 --wait-seconds 1)
 #  echo "Got status from Solr: $status"
   if ! grep -E -i -q 'Solr is running' <<<"$status"; then
     echo "Solr did not start"
@@ -55,6 +55,7 @@ function wait_for_server_started {
   while true; do
     docker logs "$container_name" > "${log}" 2>&1
     if grep -E -q '(o\.e\.j\.s\.Server Started|Started SocketConnector)' "${log}" ; then
+      docker logs "$container_name"
       break
     fi
 

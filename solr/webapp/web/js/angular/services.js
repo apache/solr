@@ -43,6 +43,11 @@ solrAdminServices.factory('System',
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
     });
   }])
+.factory('ConfigSets',
+ ['$resource', function ($resource) {
+    return $resource('admin/configs', {'wt': 'json', '_': Date.now()}, {"configs": {params: {action: "LIST"}}
+    });
+ }])
 .factory('Cores',
   ['$resource', function($resource) {
     return $resource('admin/cores',
@@ -61,7 +66,7 @@ solrAdminServices.factory('System',
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
       "events": {params: {since:'0'}},
       "levels": {},
-      "setLevel": {}
+      "setLevel": {params: {nodes:'all'}}
       });
   }])
 .factory('Zookeeper',

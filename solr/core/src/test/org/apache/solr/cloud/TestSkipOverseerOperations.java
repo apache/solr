@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -33,8 +34,12 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestSkipOverseerOperations extends SolrCloudTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
   public void setupCluster() throws Exception {
@@ -53,6 +58,10 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
   }
   
   public void testSkipLeaderOperations() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
 
     String overseerLeader = getOverseerLeader();
     
@@ -121,13 +130,26 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     waitForState("Expected 2x1 for collection: " + collection, collection,
         clusterShape(2, 2));
     CollectionAdminResponse resp2 = CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
-    assertEquals(getNumLeaderOpeations(resp), getNumLeaderOpeations(resp2));
+
+    // When cluster state updates are done in a distributed way, the stats that this test is verifying are not available.
+    // See comment in OverseerStatusCmd.call().
+    // Keeping the rest of the test running in case other errors can happen and can be caught...
+    // Eventually maintain per node cluster state updates stats and be able to check them here? Longer term question...
+
+    if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      assertEquals(getNumLeaderOpeations(resp), getNumLeaderOpeations(resp2));
+    }
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSkipDownOperations() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      return;
+    }
+
     String overseerLeader = getOverseerLeader();
     List<JettySolrRunner> notOverseerNodes = cluster.getJettySolrRunners()
         .stream()
@@ -186,15 +208,30 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     waitForState("Expected 2x2 for collection: " + collection, collection,
         clusterShape(2, 4));
     CollectionAdminResponse resp2 = CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
-    // 2 for recovering state, 4 for active state
-    assertEquals(getNumStateOpeations(resp) + 6, getNumStateOpeations(resp2));
+
+    // See comment in testSkipLeaderOperations() above why this assert is skipped
+    if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      // 2 for recovering state, 4 for active state
+      assertEquals(getNumStateOpeations(resp) + 6, getNumStateOpeations(resp2));
+    }
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
+  /**
+   * Returns the value corresponding to stat: "overseer_operations", "leader", "requests"
+   * This stat (see {@link org.apache.solr.cloud.api.collections.OverseerStatusCmd} is updated when the cluster state
+   * updater processes a message of type {@link org.apache.solr.cloud.overseer.OverseerAction#LEADER} to set a shard leader<p>
+   *
+   * The update happens in org.apache.solr.cloud.Overseer.ClusterStateUpdater.processQueueItem()
+   */
   private int getNumLeaderOpeations(CollectionAdminResponse resp) {
     return (int) resp.getResponse().findRecursive("overseer_operations", "leader", "requests");
   }
 
+  /**
+   * "state" stats are when Overseer processes a {@link org.apache.solr.cloud.overseer.OverseerAction#STATE} message
+   * that sets replica properties
+   */
   private int getNumStateOpeations(CollectionAdminResponse resp) {
     return (int) resp.getResponse().findRecursive("overseer_operations", "state", "requests");
   }

@@ -41,7 +41,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
@@ -578,7 +578,7 @@ public class SolrDocumentFetcher {
       case SORTED:
         SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
         if (sdv != null && sdv.advanceExact(localId)) {
-          final BytesRef bRef = sdv.binaryValue();
+          final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
           if (ft instanceof BoolField) {
             return ft.toObject(schemaField, bRef);

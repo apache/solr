@@ -18,7 +18,7 @@
 
 Solr can support Basic authentication for users with the use of the BasicAuthPlugin.
 
-An authorization plugin is also available to configure Solr with permissions to perform various activities in the system. The authorization plugin is described in the section <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>.
+An authorization plugin is also available to configure Solr with permissions to perform various activities in the system. The authorization plugin is described in the section <<rule-based-authorization-plugin.adoc#,Rule-Based Authorization Plugin>>.
 
 == Enable Basic Authentication
 
@@ -26,7 +26,7 @@ To use Basic authentication, you must first create a `security.json` file. This 
 
 For Basic authentication, the `security.json` file must have an `authentication` part which defines the class being used for authentication. Usernames and passwords (as a sha256(password+salt) hash) could be added when the file is created, or can be added later with the Basic authentication API, described below.
 
-The `authorization` part is not related to Basic authentication, but is a separate authorization plugin designed to support fine-grained user access control. For more information, see the section <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>.
+The `authorization` part is not related to Basic authentication, but is a separate authorization plugin designed to support fine-grained user access control. For more information, see the section <<rule-based-authorization-plugin.adoc#,Rule-Based Authorization Plugin>>.
 
 An example `security.json` showing both sections is shown below to show how these plugins can work together:
 
@@ -64,20 +64,13 @@ If `blockUnknown` does not appear in the `security.json` file, it will default t
 
 If `realm` is not defined, it will default to `solr`.
 
-If you are using SolrCloud, you must upload `security.json` to ZooKeeper. You can use this example command, ensuring that the ZooKeeper port is correct:
-
-[source,bash]
-----
-$ bin/solr zk cp file:path_to_local_security.json zk:/security.json -z localhost:9983
-----
-
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+If you are using SolrCloud, you must upload `security.json` to ZooKeeper. An example command and more information about securing your setup can be found at <<authentication-and-authorization-plugins#in-solrcloud-mode,Authentication and Authorization Plugins In SolrCloud Mode>>.
 
 === Caveats
 
 There are a few things to keep in mind when using the Basic authentication plugin.
 
-* Credentials are sent in plain text by default. It's recommended to use SSL for communication when Basic authentication is enabled, as described in the section <<enabling-ssl.adoc#enabling-ssl,Enabling SSL>>.
+* Credentials are sent in plain text by default. It's recommended to use SSL for communication when Basic authentication is enabled, as described in the section <<enabling-ssl.adoc#,Enabling SSL>>.
 * A user who has access to write permissions to `security.json` will be able to modify all the permissions and how users have been assigned permissions. Special care should be taken to only grant access to editing security to appropriate users.
 * Your network should, of course, be secure. Even with Basic authentication enabled, you should not unnecessarily expose Solr to the outside world.
 
@@ -219,6 +212,26 @@ QueryResponse rsp = req.process(solrClient);
 ----
 
 While this is method is simple, it can often be inconvenient to ensure the credentials are provided everywhere they're needed.  It also doesn't work with the many `SolrClient` methods which don't consume `SolrRequest` objects.
+
+=== Per-Client credentials
+Http2SolrClient supports setting the credentials at the client level when building it. This will ensure all requests issued with this particular client get the Basic Authentication headers set.
+
+[source,java]
+----
+Http2SolrClient client = new Http2SolrClient.Builder(solrUrl)
+        .withBasicAuthCredentials(userName, password).build();
+QueryResponse rsp = req.process(client);
+----
+
+CloudHttp2SolrClient supports receiving an `Http2SolrClient.Builder` instance for creating its internal client, so to set the credentials at the client level you could use a code like:
+
+[source,java]
+----
+Http2SolrClient.Builder http2ClientBuilder = Http2SolrClient.Builder().withBasicAuthCredentials(userName, password);
+CloudHttp2SolrClient client = new CloudHttp2SolrClient.Builder(zkHostList, chroot)
+            .withInternalClientBuilder(http2ClientBuilder).build();
+QueryResponse rsp = req.process(client);
+----
 
 === Global (JVM) Basic Auth Credentials
 Alternatively, users can use SolrJ's `PreemptiveBasicAuthClientBuilderFactory` to add basic authentication credentials to _all_ requests automatically.
