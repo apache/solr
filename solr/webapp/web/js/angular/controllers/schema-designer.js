@@ -1593,6 +1593,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   $scope.editDocuments = function() {
     delete $scope.helpId;
     if ($scope.queryDocs) {
+      $scope.hasDocsOnServer = false; // so the updated docs apply
+      delete $scope.fileUpload;
       $scope.sampleDocuments = $scope.queryDocs;
       $scope.onSampleDocumentsChanged();
     }
