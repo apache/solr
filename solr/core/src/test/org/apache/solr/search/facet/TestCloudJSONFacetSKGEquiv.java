@@ -544,7 +544,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     { // trivial single level facet w/ prefix 
       Map<String,TermFacet> facets = new LinkedHashMap<>();
       facets.put("xxx", new TermFacet(multiStrField(9),
-                                      map("prefix", "2")));
+                                      Map.of("prefix", "2")));
       
       
       assertFacetSKGsAreConsistent(facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
@@ -841,11 +841,11 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     
     /** Assumes null for fore/back queries w/no options */
     public RelatednessFacet() {
-      this(null, null, map());
+      this(null, null, Collections.emptyMap());
     }
     /** Assumes no options */
     public RelatednessFacet(final String foreQ, final String backQ) {
-      this(foreQ, backQ, map());
+      this(foreQ, backQ, Collections.emptyMap());
     }
     public RelatednessFacet(final String foreQ, final String backQ,
                             final Map<String,Object> options) {

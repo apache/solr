@@ -1323,14 +1323,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return msp;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Map map(Object... params) {
-    LinkedHashMap ret = new LinkedHashMap();
-    for (int i=0; i<params.length; i+=2) {
-      Object o = ret.put(params[i], params[i+1]);
-      // TODO: handle multi-valued map?
-    }
-    return ret;
+  public static Map<String, String> map(String... params) {
+    return Utils.makeMap(params);
+  }
+
+  public static Map<String, Object> map(Object... params) {
+    return Utils.makeMap(params);
   }
 
   /**

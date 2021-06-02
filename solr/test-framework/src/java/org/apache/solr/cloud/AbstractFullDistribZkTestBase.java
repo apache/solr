@@ -387,10 +387,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
     List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
-    @SuppressWarnings({"rawtypes"})
-    List<CollectionAdminRequest> createReplicaRequests = Collections.synchronizedList(new ArrayList<>());
-    @SuppressWarnings({"rawtypes"})
-    List<CollectionAdminRequest> createPullReplicaRequests = Collections.synchronizedList(new ArrayList<>());
+    List<CollectionAdminRequest<CollectionAdminResponse>> createReplicaRequests = Collections.synchronizedList(new ArrayList<>());
+    List<CollectionAdminRequest<CollectionAdminResponse>> createPullReplicaRequests = Collections.synchronizedList(new ArrayList<>());
     StringBuilder sb = new StringBuilder();
 
     // HACK: Don't be fooled by the replication factor of '1'...
@@ -525,11 +523,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("createReplicaRequests"));
     
-    for (@SuppressWarnings({"rawtypes"})CollectionAdminRequest r : createReplicaRequests) {
+    for (CollectionAdminRequest<CollectionAdminResponse> r : createReplicaRequests) {
       customThreadPool.submit(() -> {
         CollectionAdminResponse response;
         try {
-          response = (CollectionAdminResponse) r.process(cloudClient);
+          response = r.process(cloudClient);
         } catch (SolrServerException | IOException e) {
           throw new RuntimeException(e);
         }
@@ -543,11 +541,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     customThreadPool = ExecutorUtil
         .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("createPullReplicaRequests"));
-    for (@SuppressWarnings({"rawtypes"})CollectionAdminRequest r : createPullReplicaRequests) {
+    for (CollectionAdminRequest<CollectionAdminResponse> r : createPullReplicaRequests) {
       customThreadPool.submit(() -> {
         CollectionAdminResponse response;
         try {
-          response = (CollectionAdminResponse) r.process(cloudClient);
+          response = r.process(cloudClient);
         } catch (SolrServerException | IOException e) {
           throw new RuntimeException(e);
         }

@@ -332,15 +332,22 @@ public class Utils {
     return makeMap(false, keyVals);
   }
 
+  public static Map<String, String> makeMap(String... keyVals) {
+    return makeMap(false, new LinkedHashMap<>(keyVals.length >> 1), keyVals);
+  }
+
   public static Map<String, Object> makeMap(boolean skipNulls, Object... keyVals) {
+    return makeMap(skipNulls, new LinkedHashMap<>(keyVals.length >> 1), keyVals);
+  }
+
+  private static <T> Map<String, T> makeMap(boolean skipNulls, Map<String, T> propMap, T[] keyVals) {
     if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
-    Map<String, Object> propMap = new LinkedHashMap<>(keyVals.length >> 1);
     for (int i = 0; i < keyVals.length; i += 2) {
-      Object keyVal = keyVals[i + 1];
-      if (skipNulls && keyVal == null) continue;
-      propMap.put(keyVals[i].toString(), keyVal);
+      T value = keyVals[i + 1];
+      if (skipNulls && value == null) continue;
+      propMap.put(keyVals[i].toString(), value);
     }
     return propMap;
   }

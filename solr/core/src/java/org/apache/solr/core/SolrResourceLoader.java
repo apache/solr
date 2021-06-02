@@ -567,16 +567,15 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     return newInstance(name, expectedType, empty);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static final Class[] NO_CLASSES = new Class[0];
+  private static final Class<?>[] NO_CLASSES = new Class<?>[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
+  @Override
+  public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class<?>[] params, Object[] args) {
     Class<? extends T> clazz = findClass(cName, expectedType, subPackages);
     if (clazz == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
