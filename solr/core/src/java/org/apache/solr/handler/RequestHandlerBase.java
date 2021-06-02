@@ -208,7 +208,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       TestInjection.injectLeaderTragedy(req.getCore());
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
         req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
-      SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
+      if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+        SolrPluginUtils.setDefaults(this, req, defaults, null, invariants);
+      } else {
+        SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
+      }
       req.getContext().remove(USEPARAM);
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
@@ -336,5 +340,3 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
   }
 }
-
-
