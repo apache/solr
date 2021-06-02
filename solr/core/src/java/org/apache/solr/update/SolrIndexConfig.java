@@ -270,11 +270,10 @@ public class SolrIndexConfig implements MapSerializable {
 
     if (mergedSegmentWarmerInfo != null) {
       // TODO: add infostream -> normal logging system (there is an issue somewhere)
-      @SuppressWarnings({"rawtypes"})
       IndexReaderWarmer warmer = core.getResourceLoader().newInstance(mergedSegmentWarmerInfo.className,
                                                                         IndexReaderWarmer.class,
                                                                         null,
-                                                                        new Class[] { InfoStream.class },
+                                                                        new Class<?>[] { InfoStream.class },
                                                                         new Object[] { iwc.getInfoStream() });
       iwc.setMergedSegmentWarmer(warmer);
     }
@@ -303,7 +302,7 @@ public class SolrIndexConfig implements MapSerializable {
         mpfClassName,
         MergePolicyFactory.class,
         NO_SUB_PACKAGES,
-        new Class[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class },
+        new Class<?>[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class },
         new Object[] {resourceLoader, mpfArgs, schema });
 
     return mpf.getMergePolicy();
