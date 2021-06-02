@@ -41,7 +41,6 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -1151,7 +1150,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         return newFieldQuery
             (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
-        if (raw) {// assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
+        if (raw) {
           return new RawQuery(sf, queryTerms);
         } else {
           if (queryTerms.size() == 1) {
@@ -1164,13 +1163,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             for (String queryTerm : queryTerms) {
               try {
                 subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
-              } catch (Exception e) {
-                /*
-                This happens when a field tries to parse a query term of incompatible type
-                e.g.
-                a numerical field trying to parse a textual query term
-                 */
-                subqs.add(new MatchNoDocsQuery(queryTerm + " is not compatible with " + field));
+              } catch (Exception e) { // assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
+                // for edismax: ignore parsing failures
               }
             }
             if (subqs.size() == 1) {

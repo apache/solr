@@ -419,32 +419,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType","edismax", "mm","0", "q","Terminator: 100", "qf","movies_t foo_i"),
             twor);
 
-    /*
-     * in multi-field search with different analysis per field
-     * sow=true implies the minimum should match is "per document"
-     * i.e a document to be a match must contain all the mm query terms anywhere at least once
-     * sow=false implies the minimum should match is "per field"
-     * i.e a document to be a match must contain all the mm query terms in a single field at least once
-     */
     assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","true"),
-        nor); //no document contains both terms, even in separate fields
-
+            nor);
+    // When sow=false, the per-field query structures differ (no "Terminator" query on integer field foo_i),
+    // so a dismax-per-field is constructed.  As a result, mm=100% is applied per-field instead of per-term;
+    // since there is only one term (100) required in the foo_i field's dismax, the query can match docs that
+    // only have the 100 term in the foo_i field, and don't necessarily have "Terminator" in any field.
     assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","false"),
-            nor); //no document contains both terms, in a field
+            oner);
     assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i"), // default sow=false
-        nor); //no document contains both terms, in a field
+        oner);
 
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i","sow","true"),
-          oner); //document 46 contains both terms, Terminator in movies_t and 8 in foo_i
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i","sow","false"),
-            nor); //no document contains both terms, in a field
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i"),
+            oner);
 
-    assertQ(req("defType","edismax", "mm","100%", "q","mission impossible Terminator: 8", "qf","movies_t foo_i","sow","true"),
-        oner); //document 46 contains all terms, mission, impossible, Terminator in movies_t and 8 in foo_i
-    assertQ(req("defType","edismax", "mm","100%", "q","mission impossible Terminator: 8", "qf","movies_t foo_i","sow","false"),
-        nor); //no document contains all terms, in a field
-
-    
     assertQ(req("defType","edismax", "mm","0", "q","movies_t:Terminator 100", "qf","movies_t foo_i"),
             twor);
     
