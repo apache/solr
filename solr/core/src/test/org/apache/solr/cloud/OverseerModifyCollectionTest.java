@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -39,7 +40,6 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testModifyColl() throws Exception {
 
     final String collName = "modifyColl";
@@ -47,18 +47,18 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collName, "conf1", 1, 2)
         .process(cluster.getSolrClient());
 
-    //Modify configSet
+    // Modify configSet
     RequestStatusState requestStatusState = CollectionAdminRequest.modifyCollection(collName,
-            map("collection.configName", "conf2")
-    ).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    assertEquals(requestStatusState.getKey(), "completed");
+            Collections.singletonMap("collection.configName", "conf2"))
+            .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    assertEquals(requestStatusState, RequestStatusState.COMPLETED);
 
     assertEquals("conf2", getConfigNameFromZk(collName));
     
     //Try an invalid config name
     Exception e = expectThrows(Exception.class, () -> {
       CollectionAdminRequest.modifyCollection(collName,
-              map("collection.configName", "notARealConfigName")
+              Collections.singletonMap("collection.configName", "notARealConfigName")
       ).process(cluster.getSolrClient());
     });
 
