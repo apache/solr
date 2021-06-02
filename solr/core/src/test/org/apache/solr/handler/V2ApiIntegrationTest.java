@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -160,8 +161,10 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testCollectionsApi() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
+    V2Request req1 = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
+    assertEquals(COLL_NAME, req1.getCollection());
     @SuppressWarnings({"rawtypes"})
-    Map result = resAsMap(client, new V2Request.Builder("/c/"+COLL_NAME+"/get/_introspect").build());
+    Map result = resAsMap(client, req1);
     assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/collections/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
@@ -179,6 +182,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .build());
   }
 
+  @Test
+  public void testSelect() throws Exception {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    final V2Response v2Response = new V2Request.Builder("/c/" + COLL_NAME + "/select")
+        .withMethod(SolrRequest.METHOD.GET)
+        .withParams(params("q", "-*:*"))
+        .build()
+        .process(cloudClient);
+    assertEquals(0, ((SolrDocumentList)v2Response.getResponse().get("response")).getNumFound());
+  }
+  
   @SuppressWarnings({"rawtypes"})
   private Map resAsMap(CloudSolrClient client, V2Request request) throws SolrServerException, IOException {
     NamedList<Object> rsp = client.request(request);

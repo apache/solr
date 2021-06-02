@@ -89,8 +89,6 @@ This registry is returned at `solr.jetty` and includes the following information
 * connection and request timers,
 * meters for responses by HTTP class (1xx, 2xx, etc.)
 
-In the future, metrics will be added for shard leaders and cluster nodes, including aggregations from per-core metrics.
-
 == Metrics Configuration
 
 The metrics available in your system can be customized by modifying the `<metrics>` element in `solr.xml`.
@@ -103,13 +101,12 @@ for example `<metrics enabled="true">`.
 
 The default value of this attribute is `true`, meaning that metrics are being collected, processed and
 reported by Solr according to the configured metric reporters. They are also available from the
-metrics and metrics history APIs.
+metrics APIs.
 
-The `false` value of this attribute (`<metrics enabled="false">`) turns off metrics collection, processing,
-and the collection of metrics history. Internally, all metrics suppliers are replaced by singleton no-op
+The `false` value of this attribute (`<metrics enabled="false">`) turns off metrics collection and processing.
+Internally, all metrics suppliers are replaced by singleton no-op
 implementations, which effectively removes nearly all overheads related to metrics collection.
-All reporter configurations are skipped, and the metrics
-and metrics history APIs stop reporting any metrics and only return an `<error>`
+All reporter configurations are skipped, and the metrics APIs stop reporting any metrics and only return an `<error>`
 element in their responses.
 
 === The <metrics> <hiddenSysProps> Element
@@ -425,169 +422,6 @@ example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.m5_rate 3.8003171557510305 1482932097
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.m15_rate 4.0623076220244245 1482932097
 example.solr.jetty.org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses.mean_rate 0.5698031798408144 1482932097
-----
-
-=== Ganglia Reporter
-
-The http://ganglia.info[Ganglia] reporter uses the `org.apache.solr.metrics.reporters.SolrGangliaReporter` class.
-
-It take the following arguments, in addition to the common arguments <<Reporter Arguments,above>>.
-
-`host`::
-The host name where Ganglia server is running (required).
-
-`port`::
-The port number for the server.
-
-`multicast`::
-When `true` use multicast UDP communication, otherwise use UDP unicast. Default is `false`.
-
-=== Shard and Cluster Reporters
-These two reporters can be used for aggregation of metrics reported from replicas to shard leader (the "shard" reporter),
-and from any local registry to the Overseer node.
-
-Metric reports from these reporters are periodically sent as batches of regular SolrInputDocuments,
-so they can be processed by any Solr handler. By default they are sent to `/admin/metrics/collector` handler
-(an instance of `MetricsCollectorHandler`) on a target node, which aggregates these reports and keeps them in
-additional local metric registries so that they can be accessed using `/admin/metrics` handler,
-and re-reported elsewhere as necessary.
-
-In case of shard reporter the target node is the shard leader, in case of cluster reporter the
-target node is the Overseer leader.
-
-==== Shard Reporter
-This reporter uses predefined `shard` group, and the implementing class must be (a subclass of)
-`solr.SolrShardReporter`. It publishes selected metrics from replicas to the node where shard leader is
-located. Reports use a target registry name that is the replica's registry name with a `.leader` suffix, e.g., for a
-SolrCore name `collection1_shard1_replica_n3` the target registry name is
-`solr.core.collection1.shard1.replica_n3.leader`.
-
-The following configuration properties are supported:
-
-`handler`::
-The handler path where reports are sent. Default is `/admin/metrics/collector`.
-
-`period`::
-How often reports are sent, in seconds. Default is `60`. Setting this to `0` disables the reporter.
-
-`filter`::
-An optional regular expression(s) matching selected metrics to be reported.
-+
-The following filter expressions are used by default:
-+
-[source,text]
-----
-TLOG.*
-CORE\.fs.*
-REPLICATION.*
-INDEX\.flush.*
-INDEX\.merge\.major.*
-UPDATE\./update/.*requests
-QUERY\./select.*requests
-----
-
-Example configuration:
-[source,xml]
-----
-      <reporter name="test" group="shard" class="solr.SolrShardReporter">
-        <int name="period">11</int>
-        <str name="filter">UPDATE\./update/.*requests</str>
-        <str name="filter">QUERY\./select.*requests</str>
-      </reporter>
-----
-
-==== Cluster Reporter
-This reporter uses predefined `cluster` group and the implementing class must be (a subclass of)
-`solr.SolrClusterReporter`. It publishes selected metrics from any local registry to the Overseer leader node.
-
-The following configuration properties are supported:
-
-`handler`::
-The handler path where reports are sent. Default is `/admin/metrics/collector`.
-
-`period`::
-How often reports are sent, in seconds. Default is `60`. Setting this to `0` disables the reporter.
-
-`report`::
-report configuration(s), see below.
-
-Each report configuration consists of the following properties:
-
-`registry`::
-A regular expression pattern matching local source registries (see `SolrMetricManager.registryNames(String...)`), may contain regex capture groups (required).
-
-`group`::
-The target registry name where metrics will be grouped. This can be a regular expression pattern that contains back-references to capture groups collected by registry pattern (required).
-
-`label`::
-An optional prefix to prepend to metric names, may contain back-references to capture groups collected by registry pattern.
-
-`filter`::
-An optional regular expression(s) matching selected metrics to be reported.
-
-The following report specifications are used by default (their result is a single additional metric registry in Overseer, called
-`solr.cluster`):
-
-[source,xml]
-----
-   <lst name="report">
-    <str name="group">cluster</str>
-    <str name="registry">solr\.jetty</str>
-    <str name="label">jetty</str>
-   </lst>
-   <lst name="report">
-    <str name="group">cluster</str>
-    <str name="registry">solr\.node</str>
-    <str name="label">node</str>
-    <str name="filter">CONTAINER\.cores\..*</str>
-    <str name="filter">CONTAINER\.fs\..*</str>
-   </lst>
-   <lst name="report">
-     <str name="group">cluster</str>
-     <str name="label">jvm</str>
-     <str name="registry">solr\.jvm</str>
-     <str name="filter">memory\.total\..*</str>
-     <str name="filter">memory\.heap\..*</str>
-     <str name="filter">os\.SystemLoadAverage</str>
-     <str name="filter">os\.FreePhysicalMemorySize</str>
-     <str name="filter">os\.FreeSwapSpaceSize</str>
-     <str name="filter">os\.OpenFileDescriptorCount</str>
-     <str name="filter">threads\.count</str>
-   </lst>
-   <lst name="report">
-    <str name="group">cluster</str>
-    <str name="registry">solr\.core\.(.*)\.leader</str>
-    <str name="label">leader.$1</str>
-    <str name="filter">QUERY\./select/.*</str>
-    <str name="filter">UPDATE\./update/.*</str>
-    <str name="filter">INDEX\..*</str>
-    <str name="filter">TLOG\..*</str>
-   </lst>
-
-----
-
-Example configuration:
-[source,xml]
-----
-         <reporter name="test" group="cluster" class="solr.SolrClusterReporter">
-           <str name="handler">/admin/metrics/collector</str>
-           <int name="period">11</int>
-           <lst name="report">
-             <str name="group">aggregated_jvms</str>
-             <str name="label">jvm</str>
-             <str name="registry">solr\.jvm</str>
-             <str name="filter">memory\.total\..*</str>
-             <str name="filter">memory\.heap\..*</str>
-             <str name="filter">os\.SystemLoadAverage</str>
-             <str name="filter">threads\.count</str>
-           </lst>
-           <lst name="report">
-             <str name="group">aggregated_shard_leaders</str>
-             <str name="registry">solr\.collection\.(.*)\.leader</str>
-             <str name="label">leader.$1</str>
-             <str name="filter">UPDATE\./update/.*</str>
-           </lst>
-         </reporter>
 ----
 
 == Core Level Metrics

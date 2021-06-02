@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -41,16 +42,17 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15405")
 public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
   private static MiniDFSCluster dfsCluster;
   private static String hdfsUri;
   private static FileSystem fs;
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     hdfsUri = HdfsTestUtil.getURI(dfsCluster);
-    
+
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
@@ -60,10 +62,10 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     }
 
     System.setProperty("solr.ulog.dir", hdfsUri + "/solr/shard1");
-    
+
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     IOUtils.closeQuietly(fs);
@@ -90,14 +92,14 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     ((DirectUpdateHandler2) uhandler).getCommitTracker().setTimeUpperBound(100);
     ((DirectUpdateHandler2) uhandler).getCommitTracker().setOpenSearcher(false);
     final UpdateLog ulog = uhandler.getUpdateLog();
-    
+
     clearIndex();
     assertU(commit());
-    
+
     // we hammer on init in a background thread to make
     // sure we don't run into any filesystem already closed
     // problems (SOLR-7113)
-    
+
     Thread thread = new Thread() {
       public void run() {
         int cnt = 0;
@@ -114,7 +116,7 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
         }
       }
     };
-    
+
     Thread thread2 = new Thread() {
       public void run() {
         int cnt = 0;

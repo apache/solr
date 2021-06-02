@@ -2018,7 +2018,7 @@ Solr includes two classes for stemming Norwegian, `NorwegianLightStemFilterFacto
 
 Another option is to use the Snowball Porter Stemmer with an argument of language="Norwegian".
 
-Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
+For normalization, there is a `NorwegianNormalizationFilterFactory` which is a variant of the <<Scandinavian,Scandinavian normalization filters>> but with folding rules tuned for Norwegian.
 
 ==== Norwegian Light Stemmer
 
@@ -2124,6 +2124,50 @@ The `NorwegianMinimalStemFilterFactory` stems plural forms of Norwegian nouns on
 *Tokenizer to Filter:* "bilens"
 
 *Out:* "bil"
+
+==== Norwegian Normalization Filter
+
+This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØåÅ and folded variants (ae, oe and aa) by transforming them to æÆøØåÅ. This is a variant of `ScandinavianNormalizationFilter`, with folding rules customized for Norwegian.
+
+*Factory class:* `solr.NorwegianNormalizationFilterFactory`
+
+*Arguments:* None
+
+*Example:*
+
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-lang-norwegian]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="lowercase"/>
+<filter name="norwegianNormalization"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-lang-norwegian]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<analyzer>
+<tokenizer class="solr.StandardTokenizerFactory"/>
+<filter class="solr.LowerCaseFilterFactory"/>
+<filter class="solr.NorwegianNormalizationFilterFactory"/>
+</analyzer>
+----
+====
+--
+
+*In:* "blåbærsyltetøj blåbärsyltetöj blaabaarsyltetoej blabarsyltetoj"
+
+*Tokenizer to Filter:* "blåbærsyltetøy", "blåbärsyltetöy", "blaabaersyltetoey", "blabarsyltetoy"
+
+*Out:* "blåbærsyltetøy", "blåbærsyltetøy", "blåbærsyltetøy", "blabarsyltetoy"
 
 === Persian
 
