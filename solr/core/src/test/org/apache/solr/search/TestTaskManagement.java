@@ -194,7 +194,6 @@ public class TestTaskManagement extends SolrCloudTestCase {
         GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", params);
         NamedList<Object> queryResponse = cluster.getSolrClient().request(request);
 
-        @SuppressWarnings({"unchecked"})
         String result = (String) queryResponse.get("taskStatus");
 
         assertTrue(result.contains("inactive"));

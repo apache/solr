@@ -169,7 +169,6 @@ public class ClusterAPI {
     configSetsHandler.handleRequestBody(req, rsp);
   }
 
-  @SuppressWarnings({"rawtypes"})
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Object... def) {
     Map<String, Object> m = Utils.makeMap(def);
     return wrapParams(req, m);

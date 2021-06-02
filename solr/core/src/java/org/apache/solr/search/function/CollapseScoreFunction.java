@@ -41,8 +41,7 @@ public class CollapseScoreFunction extends ValueSource {
     return 1213241257;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     return new CollapseScoreFunctionValues(context);
   }
 

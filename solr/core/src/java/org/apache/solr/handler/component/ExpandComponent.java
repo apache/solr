@@ -131,7 +131,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void process(ResponseBuilder rb) throws IOException {
 
@@ -220,7 +219,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        @SuppressWarnings("resource")
         LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -390,7 +388,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(values != null) {
       //Get The Top Level SortedDocValues again so we can re-iterate:
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        @SuppressWarnings("resource")
         LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {

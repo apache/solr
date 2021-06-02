@@ -72,7 +72,6 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
   
-  @SuppressWarnings({"unchecked"})
   @Test
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   public void testPackageStoreManagement() throws Exception {
@@ -197,8 +196,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   }
 
 
-  @SuppressWarnings({"rawtypes"})
-  public static class Fetcher implements Callable {
+  public static class Fetcher implements Callable<NavigableObject> {
     String url;
     JettySolrRunner jetty;
     public Fetcher(String s, JettySolrRunner jettySolrRunner){

@@ -186,7 +186,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.core.collection1"));
     values = (NamedList) values.get("solr.core.collection1");
     assertEquals(1, values.size());
-    @SuppressWarnings({"rawtypes"})
     MapWriter writer = (MapWriter) values.get("CACHE.core.fieldCache");
     assertNotNull(writer);
     assertNotNull(writer._get("entries_count", null));

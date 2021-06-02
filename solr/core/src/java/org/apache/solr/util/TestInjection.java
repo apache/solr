@@ -97,7 +97,6 @@ public class TestInjection {
       return null;
     } else {
       try {
-        @SuppressWarnings({"unchecked"})
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {

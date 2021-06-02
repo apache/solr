@@ -45,7 +45,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public void merge(Object facetResult, Context mcontext) {
     super.merge(facetResult, mcontext);
     if (numReturnedPerShard == null) {

@@ -1304,7 +1304,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context
+    public FunctionValues getValues(Map<Object, Object> context
             , LeafReaderContext readerContext) throws IOException {
       return new LongDocValues(this) {
         @Override
@@ -1410,8 +1410,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
-        @SuppressWarnings({"unchecked"})
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
         final FunctionValues vals =  source.getValues(context, readerContext);
         return new DoubleDocValues(this) {
           @Override
@@ -1458,10 +1457,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
-        @SuppressWarnings({"unchecked"})
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
         final FunctionValues aVals =  a.getValues(context, readerContext);
-        @SuppressWarnings({"unchecked"})
         final FunctionValues bVals =  b.getValues(context, readerContext);
         return new DoubleDocValues(this) {
           @Override
@@ -1476,7 +1473,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public void createWeight(@SuppressWarnings({"rawtypes"})Map context, IndexSearcher searcher) throws IOException {
+      public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
       }
 
       @Override
@@ -1516,7 +1513,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context,
+    public FunctionValues getValues(Map<Object, Object> context,
                                     LeafReaderContext readerContext) throws IOException {
       return new BoolDocValues(this) {
         @Override
@@ -1577,8 +1574,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context
+    public FunctionValues getValues(Map<Object, Object> context
             , LeafReaderContext readerContext) throws IOException {
       if (context.get(this) == null) {
         SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
@@ -1603,8 +1599,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
-    public void createWeight(@SuppressWarnings({"rawtypes"})Map context, IndexSearcher searcher) throws IOException {
+    public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
       context.put(this, this);
     }
 

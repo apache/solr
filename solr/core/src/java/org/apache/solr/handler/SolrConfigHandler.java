@@ -253,7 +253,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               @SuppressWarnings({"rawtypes"})
               Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
               if (pluginNameVsPluginInfo != null) {
-                @SuppressWarnings({"rawtypes"})
                 Object o = pluginNameVsPluginInfo instanceof MapSerializable ?
                        pluginNameVsPluginInfo:
                         pluginNameVsPluginInfo.get(componentName);
@@ -323,7 +322,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       } else if (plugin instanceof PluginInfo) {
         pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
       }
-      @SuppressWarnings({"rawtypes"})
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);
       if (useParams != null || useParamsInReq != null) {

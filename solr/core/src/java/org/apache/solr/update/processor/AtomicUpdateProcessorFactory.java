@@ -116,7 +116,6 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
      * will be treated as conventional updates.
      * 4. retry when encounter version conflict
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void processAdd(AddUpdateCommand cmd)
         throws IOException {
