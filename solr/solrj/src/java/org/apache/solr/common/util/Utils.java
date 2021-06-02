@@ -329,25 +329,20 @@ public class Utils {
   }
 
   public static Map<String, Object> makeMap(Object... keyVals) {
-    return makeMap(false, keyVals);
+    return _makeMap(keyVals);
   }
 
   public static Map<String, String> makeMap(String... keyVals) {
-    return makeMap(false, new LinkedHashMap<>(keyVals.length >> 1), keyVals);
+    return _makeMap(keyVals);
   }
 
-  public static Map<String, Object> makeMap(boolean skipNulls, Object... keyVals) {
-    return makeMap(skipNulls, new LinkedHashMap<>(keyVals.length >> 1), keyVals);
-  }
-
-  private static <T> Map<String, T> makeMap(boolean skipNulls, Map<String, T> propMap, T[] keyVals) {
+  private static <T> Map<String, T> _makeMap(T[] keyVals) {
     if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
+    Map<String, T> propMap = new LinkedHashMap<>(); // Cost of oversizing LHM is low, don't compute initialCapacity
     for (int i = 0; i < keyVals.length; i += 2) {
-      T value = keyVals[i + 1];
-      if (skipNulls && value == null) continue;
-      propMap.put(keyVals[i].toString(), value);
+      propMap.put(String.valueOf(keyVals[i]), keyVals[i + 1]);
     }
     return propMap;
   }

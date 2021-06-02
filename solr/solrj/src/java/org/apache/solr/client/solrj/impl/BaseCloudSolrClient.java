@@ -538,8 +538,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     final NamedList<Throwable> exceptions = new NamedList<>();
-    @SuppressWarnings({"rawtypes"})
-    final NamedList<NamedList> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
+    final NamedList<NamedList<?>> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
 
     long start = System.nanoTime();
 
