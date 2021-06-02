@@ -219,7 +219,6 @@ public class PackageManager implements Closeable {
   public Map<String, SolrPackageInstance> getPackagesDeployedAsClusterLevelPlugins() {
     Map<String, String> packageVersions = new HashMap<>();
     MultiValuedMap<String, PluginMeta> packagePlugins = new HashSetValuedHashMap<>(); // map of package name to multiple values of pluginMeta (Map<String, String>)
-    @SuppressWarnings({"unchecked"})
     Map<String, Object> result;
     try {
       result = (Map<String, Object>) Utils.executeGET(solrClient.getHttpClient(),

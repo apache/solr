@@ -74,7 +74,6 @@ public class SelectStream extends TupleStream implements Expressible {
     selectedEvaluators = new LinkedHashMap<>();
   }
   
-  @SuppressWarnings({"unchecked"})
   public SelectStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);

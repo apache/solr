@@ -323,7 +323,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
       Thread thread = new Thread("READER" + i) {
         Random rand = new Random(random().nextInt());
 
-        @SuppressWarnings("unchecked")
         @Override
         public void run() {
           try {
