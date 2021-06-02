@@ -154,6 +154,8 @@ _(raw; not yet edited)_
 
 * SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000".
 
+* SOLR-15409: Zookeeper client libraries upgraded to 3.7.0, which may not be compatible with your existing server installations
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the

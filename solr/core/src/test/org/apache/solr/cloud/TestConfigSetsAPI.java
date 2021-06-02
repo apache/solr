@@ -1121,10 +1121,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     DeleteNoErrorChecking delete = new DeleteNoErrorChecking();
     verifyException(solrClient, delete, NAME);
 
-    // ConfigSet doesn't exist
-    delete.setConfigSetName("configSetBogus");
-    verifyException(solrClient, delete, "ConfigSet does not exist");
-
     // ConfigSet is immutable
     delete.setConfigSetName("configSet");
     verifyException(solrClient, delete, "Requested delete of immutable ConfigSet");
@@ -1148,11 +1144,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final String configSet = "testDelete";
     getConfigSetService().uploadConfig(configSet, configset("configset-2"));
+    assertDelete(solrClient, configSet, true);
+    assertDelete(solrClient, "configSetBogus", false);
+    solrClient.close();
+  }
 
+  private void assertDelete(SolrClient solrClient, String configSet, boolean assertExists) throws IOException, SolrServerException {
     SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
-      assertTrue(getConfigSetService().checkConfigExists(configSet));
+      assertEquals(assertExists, getConfigSetService().checkConfigExists(configSet));
 
       Delete delete = new Delete();
       delete.setConfigSetName(configSet);
@@ -1162,8 +1163,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     } finally {
       zkClient.close();
     }
-
-    solrClient.close();
   }
 
   @Test

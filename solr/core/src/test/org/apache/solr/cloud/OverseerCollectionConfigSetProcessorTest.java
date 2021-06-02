@@ -547,7 +547,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             return null;
           }}).when(distribStateManagerMock).makePath(anyString());
 
-    zkClientData.put("/configs/myconfig", new byte[1]);
+    zkClientData.put("/configs/"+CONFIG_NAME, new byte[1]);
+    zkClientData.put("/configs/"+CONFIG_NAME+"/solrconfig.xml", new byte[1]);
 
     when(solrMetricsContextMock.getChildContext(any(Object.class))).thenReturn(solrMetricsContextMock);
 
