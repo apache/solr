@@ -27,6 +27,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -167,11 +169,14 @@ public class TestTaskManagement extends SolrCloudTestCase {
             presentQueryIDs.add(Integer.parseInt(entry.getKey()));
         }
 
-        assertTrue(presentQueryIDs.size() > 0 && presentQueryIDs.size() <= 50);
-
+        assertThat(presentQueryIDs.size(), betweenInclusive(0, 50));
         for (int value : presentQueryIDs) {
-            assertTrue(value >= 0 && value < 50);
+            assertThat(value, betweenInclusive(0, 49));
         }
+    }
+
+    private static Matcher<Integer> betweenInclusive(int lower, int upper) {
+        return Matchers.allOf(Matchers.greaterThanOrEqualTo(lower), Matchers.lessThanOrEqualTo(upper));
     }
 
     @SuppressWarnings("unchecked")

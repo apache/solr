@@ -17,7 +17,15 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -92,8 +100,9 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.internal.util.reflection.FieldSetter;
+import org.mockito.internal.configuration.plugins.Plugins;
 import org.mockito.invocation.InvocationOnMock;
+import org.mockito.plugins.MemberAccessor;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1378,7 +1387,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private SolrZkClient electNewOverseer(String address)
       throws InterruptedException, TimeoutException, IOException,
-      KeeperException, ParserConfigurationException, SAXException, NoSuchFieldException, SecurityException {
+      KeeperException, ParserConfigurationException, SAXException, NoSuchFieldException, SecurityException, IllegalAccessException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     zkClients.add(zkClient);
     ZkStateReader reader = new ZkStateReader(zkClient);
@@ -1407,12 +1416,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
     return zkClient;
   }
 
-  private ZkController createMockZkController(String zkAddress, SolrZkClient zkClient, ZkStateReader reader) throws InterruptedException, NoSuchFieldException, SecurityException, SessionExpiredException {
+  private ZkController createMockZkController(String zkAddress, SolrZkClient zkClient, ZkStateReader reader) throws InterruptedException, NoSuchFieldException, SecurityException, SessionExpiredException, IllegalAccessException {
     ZkController zkController = mock(ZkController.class);
 
     if (zkClient == null) {
       SolrZkClient newZkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-      Mockito.doAnswer(
+      doAnswer(
           new Answer<Void>() {
             public Void answer(InvocationOnMock invocation) {
               newZkClient.close();
@@ -1432,9 +1441,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
     ClusterSingletons singletons = new ClusterSingletons(() -> true, r -> r.run());
     // don't wait for all singletons
     singletons.setReady();
-    FieldSetter.setField(mockAlwaysUpCoreContainer, CoreContainer.class.getDeclaredField("clusterSingletons"), singletons);
-    FieldSetter.setField(zkController, ZkController.class.getDeclaredField("zkClient"), zkClient);
-    FieldSetter.setField(zkController, ZkController.class.getDeclaredField("cc"), mockAlwaysUpCoreContainer);
+    final MemberAccessor accessor = Plugins.getMemberAccessor();
+    accessor.set(CoreContainer.class.getDeclaredField("clusterSingletons"), mockAlwaysUpCoreContainer, singletons);
+    accessor.set(ZkController.class.getDeclaredField("zkClient"), zkController, zkClient);
+    accessor.set(ZkController.class.getDeclaredField("cc"), zkController, mockAlwaysUpCoreContainer);
     when(zkController.getCoreContainer()).thenReturn(mockAlwaysUpCoreContainer);
     when(zkController.getZkClient()).thenReturn(zkClient);
     when(zkController.getZkStateReader()).thenReturn(reader);

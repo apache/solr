@@ -54,15 +54,6 @@ public class AttributeValuesImpl implements AttributeValues {
   }
 
   @Override
-  public Optional<String> getEnvironmentVariable(Node node, String name) {
-    Map<Node, String> nodeToValue = systemSnitchToNodeToValue.get(AttributeFetcherImpl.getSystemEnvSnitchTag(name));
-    if (nodeToValue == null) {
-      return Optional.empty();
-    }
-    return Optional.ofNullable(nodeToValue.get(node));
-  }
-
-  @Override
   @SuppressWarnings("unchecked")
   public <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric) {
     Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(metric);
