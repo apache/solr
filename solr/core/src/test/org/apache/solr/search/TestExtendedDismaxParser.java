@@ -112,10 +112,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "72", "text_sw", "wifi ATM"));
     assertU(adoc("id", "73", "shingle23", "A B X D E"));
     assertU(adoc("id", "74", "isocharfilter", "niño"));
-    assertU(adoc("id", "75", "trait_ss", "multi term"));
-    assertU(adoc("id", "76", "foo_i", "101"));
-    assertU(adoc("id", "77", "foo_i", "102"));
-
 //    assertU(adoc("id", "74", "text_pick_best", "tabby"));
 //    assertU(adoc("id", "74", "text_as_distinct", "persian"));
 
@@ -419,32 +415,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType","edismax", "mm","0", "q","Terminator: 100", "qf","movies_t foo_i"),
             twor);
 
-    /*
-     * in multi-field search with different analysis per field
-     * sow=true implies the minimum should match is "per document"
-     * i.e a document to be a match must contain all the mm query terms anywhere at least once
-     * sow=false implies the minimum should match is "per field"
-     * i.e a document to be a match must contain all the mm query terms in a single field at least once
-     */
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","true"),
-        nor); //no document contains both terms, even in separate fields
-
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","false"),
-            nor); //no document contains both terms, in a field
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i"), // default sow=false
-        nor); //no document contains both terms, in a field
-
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i","sow","true"),
-          oner); //document 46 contains both terms, Terminator in movies_t and 8 in foo_i
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i","sow","false"),
-            nor); //no document contains both terms, in a field
-
-    assertQ(req("defType","edismax", "mm","100%", "q","mission impossible Terminator: 8", "qf","movies_t foo_i","sow","true"),
-        oner); //document 46 contains all terms, mission, impossible, Terminator in movies_t and 8 in foo_i
-    assertQ(req("defType","edismax", "mm","100%", "q","mission impossible Terminator: 8", "qf","movies_t foo_i","sow","false"),
-        nor); //no document contains all terms, in a field
-
     
+
     assertQ(req("defType","edismax", "mm","0", "q","movies_t:Terminator 100", "qf","movies_t foo_i"),
             twor);
     
@@ -724,20 +696,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         nor);
     
     assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 mytrait_ss^5.0"), oner);
-    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0","sow","true"), twor);
-    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0", "mm", "100%","sow","true"), oner);
-    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","who^10.0 where^3.0", "f.who.qf","name^2.0", "f.where.qf", "mytrait_ss^5.0","sow","true"), oner);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0"), twor);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias^10.0", "f.myalias.qf","name^2.0 trait_ss^5.0", "mm", "100%"), oner);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","who^10.0 where^3.0", "f.who.qf","name^2.0", "f.where.qf", "mytrait_ss^5.0"), oner);
     
-    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias", "f.myalias.qf","name mytrait_ss", "uf", "myalias","sow","true"), oner);
+    assertQ(req("defType","edismax", "q","Zapp Obnoxious", "qf","myalias", "f.myalias.qf","name mytrait_ss", "uf", "myalias"), oner);
     
-    assertQ(req("defType","edismax", "uf","who", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0", "qf", "id","sow","true"), twor);
-    assertQ(req("defType","edismax", "uf","* -name", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0","sow","true"), twor);
+    assertQ(req("defType","edismax", "uf","who", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0", "qf", "id"), twor);
+    assertQ(req("defType","edismax", "uf","* -name", "q","who:(Zapp Obnoxious)", "f.who.qf", "name^2.0 trait_ss^5.0"), twor);
     
   }
   
   public void testAliasingBoost() throws Exception {
-    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.1","sow","true"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
-    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.1","sow","true"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
+    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias", "f.myalias.qf","name trait_ss^0.1"), "//result/doc[1]/str[@name='id']=42", "//result/doc[2]/str[@name='id']=47");//doc 42 should score higher than 46
+    assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.1"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
   }
   
   /** SOLR-13203 **/
@@ -1787,40 +1759,41 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertThat(parsedquery, anyOf(containsString("((name:stigma | title:stigma))"), containsString("((title:stigma | name:stigma))")));
   }
 
-    @Test 
-    public void testQf_stringFieldWithSowFalse_shouldBuildSingleQueryClause() throws Exception
-    {
-        assertJQ(req("qf", "trait_ss", "defType", "edismax", "q", "multi term", "sow", "false"),
-            "/response/numFound==1", "/response/docs/[0]/id=='75'");
-
-        String parsedquery = getParsedQuery(
-            req("qf", "trait_ss", "q", "multi term", "defType", "edismax", "sow", "false", "debugQuery", "true"));
-        assertThat(parsedquery, anyOf(containsString("((trait_ss:multi term))")));
-    }
-
-    @Test
-    public void testQf_numericField_shouldBuildMultipleQueryClausesIndependentlyOfSow() throws Exception
-    {
-        assertJQ(req("qf", "foo_i", "defType", "edismax", "q", "101 102", "sow", "false"),
-            "/response/numFound==2", "/response/docs/[0]/id=='76'", "/response/docs/[1]/id=='77'");
-
-        String parsedquery = getParsedQuery(
-            req("qf", "foo_i", "q", "101 102", "defType", "edismax", "sow", "false", "debugQuery", "true"));
-        assertThat(parsedquery, anyOf(containsString("foo_i:[101 TO 101]"), containsString("foo_i:[102 TO 102]")));
-
-        assertJQ(req("qf", "foo_i", "defType", "edismax", "q", "101 102", "sow", "true"),
-            "/response/numFound==2", "/response/docs/[0]/id=='76'", "/response/docs/[1]/id=='77'");
-
-        parsedquery = getParsedQuery(
-            req("qf", "foo_i", "q", "101 102", "defType", "edismax", "sow", "true", "debugQuery", "true"));
-        assertThat(parsedquery, anyOf(containsString("foo_i:[101 TO 101]"), containsString("foo_i:[102 TO 102]")));
-    }
-
   private static String getParsedQuery(SolrQueryRequest request) throws Exception {
     String resp = h.query(request);
     return (String) BaseTestHarness.evaluateXPath(resp, "//str[@name='parsedquery']/text()", XPathConstants.STRING);
   }
   
+  public void testSplitOnWhitespace_shouldRespectMinimumShouldMatch(){
+        String oner = "*[count(//doc)=1]";
+        String nor = "*[count(//doc)=0]";
+        /*
+         * in multi-field search with different analysis per field
+         * sow=true causes the minimum should match to be "per document"
+         * i.e a document to be a match must contain all the mm query terms anywhere at least once
+         * sow=false causes the minimum should match to be "per field"
+         * i.e a document to be a match must contain all the mm query terms in a single field at least once
+         * See  https://issues.apache.org/jira/browse/SOLR-12779 for additional details
+         */
+        assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","true"),
+            nor); //no document contains both terms, in a field or in multiple field
+
+        assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","false"),
+            nor); //no document contains both terms in a field
+        assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i"), // default sow=false
+            nor); //no document contains both terms in a field
+
+        assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i","sow","true"),
+            oner); //document 46 contains both terms, Terminator in movies_t and 8 in foo_i
+        assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i","sow","false"),
+            nor); //no document contains both terms in a field
+
+        assertQ(req("defType","edismax", "mm","100%", "q","mission impossible Terminator: 8", "qf","movies_t foo_i","sow","true"),
+            oner); //document 46 contains all terms, mission, impossible, Terminator in movies_t and 8 in foo_i
+        assertQ(req("defType","edismax", "mm","100%", "q","mission impossible Terminator: 8", "qf","movies_t foo_i","sow","false"),
+            nor); //no document contains all terms, in a field
+    }
+    
   public void testSplitOnWhitespace_Different_Field_Analysis() throws Exception {
     // When the *structure* of produced queries is different in each field, 
     // sow=true produces boolean-of-dismax query structure,

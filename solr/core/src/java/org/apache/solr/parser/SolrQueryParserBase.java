@@ -62,7 +62,6 @@ import org.apache.solr.query.FilterQuery;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
@@ -1156,9 +1155,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         } else {
           if (queryTerms.size() == 1) {
             return ft.getFieldQuery(parser, sf, queryTerms.get(0));
-          } else if(ft instanceof StrField){
-            String queryText = String.join(" ", queryTerms);
-            return ft.getFieldQuery(parser, sf, queryText);
           } else {
             List<Query> subqs = new ArrayList<>();
             for (String queryTerm : queryTerms) {
@@ -1166,7 +1162,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
                 subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
               } catch (Exception e) {
                 /*
-                This happens when a field tries to parse a query term of incompatible type
+                This happens when a field tries to parse a query term that has a type incompatible with the field
                 e.g.
                 a numerical field trying to parse a textual query term
                  */
