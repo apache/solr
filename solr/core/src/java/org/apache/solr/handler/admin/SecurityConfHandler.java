@@ -196,8 +196,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
    * The data object defaults to EMPTY_MAP if not set
    */
   public static class SecurityConfig {
-    @SuppressWarnings({"unchecked"})
-    private Map<String, Object> data = Collections.EMPTY_MAP;
+    private Map<String, Object> data = Collections.emptyMap();
     private int version = -1;
 
     public SecurityConfig() {}

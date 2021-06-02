@@ -76,7 +76,6 @@ public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   protected String fieldName = null;
 
-  @SuppressWarnings("unchecked")
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     Object obj = args.remove(FIELD_PARAM);

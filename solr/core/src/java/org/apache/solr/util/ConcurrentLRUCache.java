@@ -596,8 +596,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
 
     @Override
-    protected boolean lessThan(@SuppressWarnings({"rawtypes"})CacheEntry a,
-                               @SuppressWarnings({"rawtypes"})CacheEntry b) {
+    protected boolean lessThan(CacheEntry<K,V> a,
+                               CacheEntry<K,V> b) {
       // reverse the parameter order so that the queue keeps the oldest items
       return b.lastAccessedCopy < a.lastAccessedCopy;
     }

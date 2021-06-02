@@ -286,7 +286,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Expected Map for range but got " + obj.getClass().getSimpleName() + " = " + obj);
       }
-      @SuppressWarnings({"unchecked"})
       Range range;
       @SuppressWarnings({"unchecked"})
       Map<String, Object> interval = (Map<String, Object>) obj;

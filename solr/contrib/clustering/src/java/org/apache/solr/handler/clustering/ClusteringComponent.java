@@ -243,7 +243,6 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void inform(SolrCore core) {
     declaredEngines.forEach(engineEntry -> {

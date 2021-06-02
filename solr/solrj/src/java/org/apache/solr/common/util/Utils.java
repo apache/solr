@@ -321,19 +321,28 @@ public class Utils {
     }
   }
 
-  public static Map<String, Object> makeMap(Object... keyVals) {
-    return makeMap(false, keyVals);
+  public static <V> Map<String, V> makeMap(String k1, V v1, String k2, V v2) {
+    Map<String, V> map = new LinkedHashMap<>(2, 1);
+    map.put(k1, v1);
+    map.put(k2, v2);
+    return map;
   }
 
-  public static Map<String, Object> makeMap(boolean skipNulls, Object... keyVals) {
+  public static Map<String, Object> makeMap(Object... keyVals) {
+    return _makeMap(keyVals);
+  }
+
+  public static Map<String, String> makeMap(String... keyVals) {
+    return _makeMap(keyVals);
+  }
+
+  private static <T> Map<String, T> _makeMap(T[] keyVals) {
     if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
-    Map<String, Object> propMap = new LinkedHashMap<>(keyVals.length >> 1);
+    Map<String, T> propMap = new LinkedHashMap<>(); // Cost of oversizing LHM is low, don't compute initialCapacity
     for (int i = 0; i < keyVals.length; i += 2) {
-      Object keyVal = keyVals[i + 1];
-      if (skipNulls && keyVal == null) continue;
-      propMap.put(keyVals[i].toString(), keyVal);
+      propMap.put(String.valueOf(keyVals[i]), keyVals[i + 1]);
     }
     return propMap;
   }
@@ -520,7 +529,9 @@ public class Utils {
           if (o instanceof MapWriter) {
             o = getVal(o, null, idx);
           } else if (o instanceof Map) {
-            o = getVal(new MapWriterMap((Map) o), null, idx);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) o;
+            o = getVal(new MapWriterMap(map), null, idx);
           } else {
             @SuppressWarnings({"rawtypes"})
             List l = (List) o;
@@ -883,8 +894,7 @@ public class Utils {
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private static List<FieldWriter> getReflectData(Class c) throws IllegalAccessException {
+  private static List<FieldWriter> getReflectData(Class<?> c) throws IllegalAccessException {
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
     //we should not cache the class references of objects loaded from packages because they will not get garbage collected
     //TODO fix that later

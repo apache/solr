@@ -230,7 +230,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     );
   }
   
-  @SuppressWarnings("unchecked")
   @Test
   public void testRelativeIndexDirLocation() throws Exception {
     SolrCore core = h.getCore();
@@ -288,7 +287,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     checker.close();
   }
   
-    @SuppressWarnings("unchecked")
     @Test
   public void testRebuildOnCommit() throws Exception {
     SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "/spellCheckCompRH", "spellcheck", "true");
