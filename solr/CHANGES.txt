@@ -131,6 +131,10 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15421: ConfigSet API also checks for solrconfig.xml when checking the existence of a configset (Andras Salamon via David Smiley)
 
+* SOLR-15392: Distributed Tracing request span operation names are now composed of a command/verb
+  and a templated path.  The collection or core name is now in the db.instance tag.
+  (David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -281,7 +285,7 @@ Other Changes
   (David Smiley, Christine Poerschke)
 
 * SOLR-15283: Overhaul distributed-tracing.  Solr's "samplePercentage" is gone; tracing is either
-  enabled and you always have trace IDs or it isn't, based on wether you configure a tracing plugin.
+  enabled and you always have trace IDs or it isn't, based on whether you configure a tracing plugin.
   Reporting of traces to a server like Zipkin is a configuration matter of the tracing plugin you
   use.  The Jaeger plugin is now completely configurable via system properties or environment vars,
   not by values in solr.xml. (David Smiley)

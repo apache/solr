@@ -189,7 +189,7 @@ public class ApiBag {
         result = specCopy;
       }
       if (isCoreSpecific) {
-        List<String> pieces = req.getHttpSolrCall() == null ? null : ((V2HttpCall) req.getHttpSolrCall()).pieces;
+        List<String> pieces = req.getHttpSolrCall() == null ? null : ((V2HttpCall) req.getHttpSolrCall()).getPathSegments();
         if (pieces != null) {
           String prefix = "/" + pieces.get(0) + "/" + pieces.get(1);
           List<String> paths = result.getMap("url", NOT_NULL).getList("paths", NOT_NULL);
