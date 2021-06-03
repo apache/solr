@@ -99,7 +99,6 @@ public class SolrSuggester implements Accountable {
    * Uses the <code>config</code> and the <code>core</code> to initialize the underlying 
    * Lucene suggester
    * */
-  @SuppressWarnings({"unchecked"})
   public String init(NamedList<?> config, SolrCore core) {
     log.info("init: {}", config);
     
@@ -116,7 +115,7 @@ public class SolrSuggester implements Accountable {
       log.info("No {} parameter was provided falling back to {}", LOOKUP_IMPL, lookupImpl);
     }
 
-    contextFilterQueryAnalyzer = new TokenizerChain(new StandardTokenizerFactory(Collections.EMPTY_MAP), null);
+    contextFilterQueryAnalyzer = new TokenizerChain(new StandardTokenizerFactory(Collections.emptyMap()), null);
 
     // initialize appropriate lookup instance
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);

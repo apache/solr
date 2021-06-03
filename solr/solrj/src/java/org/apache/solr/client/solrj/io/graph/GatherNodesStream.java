@@ -419,8 +419,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       localContext.setSolrClientCache(context.getSolrClientCache());
       localContext.setStreamFactory(context.getStreamFactory());
 
-      for(Object key :context.getEntries().keySet()) {
-        localContext.put(key, context.get(key));
+      for(Map.Entry<String, Object> entry : context.getEntries().entrySet()) {
+        localContext.put(entry.getKey(), entry.getValue());
       }
 
       traversal = new Traversal();
@@ -445,7 +445,6 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     tupleStream.open();
   }
 
-  @SuppressWarnings({"unchecked"})
   private class JoinRunner implements Callable<List<Tuple>> {
 
     private List<String> nodes;

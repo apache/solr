@@ -17,6 +17,7 @@
 
 package org.apache.solr.schema;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -48,7 +49,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
   public void testAddTheSameFieldTwice() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     SchemaRequest.Update fieldAddition = new SchemaRequest.AddField
-        (Utils.makeMap("name","myfield", "type","string"));
+        (Map.of("name","myfield", "type","string"));
     SchemaResponse.UpdateResponse updateResponse = fieldAddition.process(client, COLLECTION);
 
     BaseHttpSolrClient.RemoteExecutionException ex = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class,

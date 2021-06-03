@@ -644,8 +644,10 @@ public class ZkTestServer {
 
       while (true) {
         try {
-          zooThread.join();
-          ObjectReleaseTracker.release(zooThread);
+          if (zooThread != null) {
+            zooThread.join();
+            ObjectReleaseTracker.release(zooThread);
+          }
           zooThread = null;
           break;
         } catch (InterruptedException e) {

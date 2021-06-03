@@ -38,8 +38,7 @@ enum SolrMethod {
 
   public final Method method;
 
-  @SuppressWarnings({"rawtypes"})
-  SolrMethod(Class clazz, String methodName, Class... argumentTypes) {
+  SolrMethod(Class<?> clazz, String methodName, Class<?>... argumentTypes) {
     this.method = Types.lookupMethod(clazz, methodName, argumentTypes);
   }
 }

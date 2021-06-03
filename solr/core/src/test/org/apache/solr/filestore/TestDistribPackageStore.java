@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -40,6 +41,8 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -69,7 +72,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
   
-  @SuppressWarnings({"unchecked"})
+  @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   public void testPackageStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
@@ -103,7 +107,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           new V2Request.Builder("/node/files/package/mypkg/v1.0")
               .withMethod(SolrRequest.METHOD.GET)
               .build(),
-          Utils.makeMap(
+          Map.of(
               ":files:/package/mypkg/v1.0[0]:name", "runtimelibs.jar",
               ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
               ":files:/package/mypkg/v1.0[0]:sig[0]", "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ=="
@@ -115,14 +119,13 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           new V2Request.Builder("/node/files/package/mypkg")
               .withMethod(SolrRequest.METHOD.GET)
               .build(),
-          Utils.makeMap(
+          Map.of(
               ":files:/package/mypkg[0]:name", "v1.0",
               ":files:/package/mypkg[0]:dir", "true"
           )
       );
 
-      @SuppressWarnings({"rawtypes"})
-      Map expected = Utils.makeMap(
+      Map<String,Object> expected = Map.of(
           ":files:/package/mypkg/v1.0/runtimelibs.jar:name", "runtimelibs.jar",
           ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
       );
@@ -131,13 +134,13 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           "/package/mypkg/v1.0/runtimelibs_v2.jar",
           null
       );
-      expected = Utils.makeMap(
+      expected = Map.of(
           ":files:/package/mypkg/v1.0/runtimelibs_v2.jar:name", "runtimelibs_v2.jar",
           ":files:/package/mypkg/v1.0[0]:sha512",
           "bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417"
       );
       checkAllNodesForFile(cluster,"/package/mypkg/v1.0/runtimelibs_v2.jar", expected, false);
-      expected = Utils.makeMap(
+      expected = Map.of(
           ":files:/package/mypkg/v1.0", (Predicate<Object>) o -> {
             @SuppressWarnings({"rawtypes"})
             List l = (List) o;
@@ -193,8 +196,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   }
 
 
-  @SuppressWarnings({"rawtypes"})
-  public static class Fetcher implements Callable {
+  public static class Fetcher implements Callable<NavigableObject> {
     String url;
     JettySolrRunner jetty;
     public Fetcher(String s, JettySolrRunner jettySolrRunner){
@@ -217,15 +219,24 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
   public static NavigableObject assertResponseValues(int repeats, SolrClient client,
                                                      @SuppressWarnings({"rawtypes"})SolrRequest req,
-                                                     @SuppressWarnings({"rawtypes"})Map vals) throws Exception {
+                                                     Map<String, Object> vals) throws Exception {
     Callable<NavigableObject> callable = () -> req.process(client);
 
     return assertResponseValues(repeats, callable,vals);
   }
 
+  /**
+   * Evaluate the given predicates or objects against the given values, obtained by running a given callable.
+   * The values to verify are either predicates to evaluate directly, or strings to compare for equality.
+   * @param repeats how many attempts to make with the Callable
+   * @param callable the code to execute getting a result
+   * @param vals the values to check in the result, this is a map of paths to predicates or values
+   * @return the final passing result of the callable
+   * @throws Exception if the callable throws an Exception, or on interrupt between retries
+   */
   @SuppressWarnings({"unchecked"})
   public static NavigableObject assertResponseValues(int repeats,  Callable<NavigableObject> callable,
-                                                     @SuppressWarnings({"rawtypes"})Map vals) throws Exception {
+                                                     Map<String, Object> vals) throws Exception {
     NavigableObject rsp = null;
 
     for (int i = 0; i < repeats; i++) {
@@ -238,26 +249,29 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         if (i >= repeats - 1) throw e;
         continue;
       }
-      for (Object e : vals.entrySet()) {
-        @SuppressWarnings({"rawtypes"})
-        Map.Entry entry = (Map.Entry) e;
-        String k = (String) entry.getKey();
+      boolean passed = true;
+      for (Map.Entry<String, Object> entry : vals.entrySet()) {
+        String k = entry.getKey();
         List<String> key = StrUtils.split(k, '/');
 
         Object val = entry.getValue();
-        @SuppressWarnings({"rawtypes"})
-        Predicate p = val instanceof Predicate ? (Predicate) val : o -> {
-          String v = o == null ? null : String.valueOf(o);
-          return Objects.equals(val, o);
+        // TODO: This map should just be <String,Predicate> and we should instead provide a static eq() method for callers
+        Predicate<Object> p = val instanceof Predicate ? (Predicate<Object>) val : o -> {
+          String v = o == null ? null : o.toString();
+          return Objects.equals(val, v);
         };
-        boolean isPass = p.test(rsp._get(key, null));
-        if (isPass) return rsp;
-        else if (i >= repeats - 1) {
-          fail("req: " + callable.toString() +" . attempt: " + i + " Mismatch for value : '" + key + "' in response , " + Utils.toJSONString(rsp));
+        Object actual = rsp._get(key, null);
+        passed = passed && p.test(actual); // Important: check all of the values, not just the first one
+        if (!passed && i >= repeats - 1) {
+          String description = rsp.toString();
+          if (rsp instanceof SimpleSolrResponse) {
+            description = ((SimpleSolrResponse) rsp).getResponse().toString();
+          }
+          // we know these are unequal but call assert instead of fail() because it gives a better error message
+          assertEquals("Failed on path " + key + " of " + description + "after attempt #" + (i+1),
+              val, Utils.toJSONString(actual));
         }
-
       }
-
     }
     return rsp;
   }
@@ -269,7 +283,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       Object resp = Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", null);
       System.out.println("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true" + " ,is: " + resp);
     }
-    checkAllNodesForFile(cluster,path, Utils.makeMap(":files:" + path + ":name", (Predicate<Object>) Objects::nonNull), false);
+    checkAllNodesForFile(cluster,path, Map.of(":files:" + path + ":name", (Predicate<Object>) Objects::nonNull), false);
   }
 
   public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)

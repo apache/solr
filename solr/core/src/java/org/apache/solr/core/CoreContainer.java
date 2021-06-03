@@ -471,7 +471,7 @@ public class CoreContainer {
   }
 
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     int newVersion = readVersion(authenticationConfig);
@@ -508,7 +508,7 @@ public class CoreContainer {
           getResourceLoader().newInstance(pluginClassName,
               AuthenticationPlugin.class,
               null,
-              new Class[]{CoreContainer.class},
+              new Class<?>[]{CoreContainer.class},
               new Object[]{this}));
     }
     if (authenticationPlugin != null) {
@@ -2006,9 +2006,8 @@ public class CoreContainer {
 
   // ---------------- CoreContainer request handlers --------------
 
-  @SuppressWarnings({"rawtypes"})
   protected <T> T createHandler(String path, String handlerClass, Class<T> clazz) {
-    T handler = loader.newInstance(handlerClass, clazz, null, new Class[]{CoreContainer.class}, new Object[]{this});
+    T handler = loader.newInstance(handlerClass, clazz, null, new Class<?>[]{CoreContainer.class}, new Object[]{this});
     if (handler instanceof SolrRequestHandler) {
       containerHandlers.put(path, (SolrRequestHandler) handler);
     }

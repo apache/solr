@@ -276,7 +276,7 @@ public class BlobRepository {
    *
    * @param ref The reference that is already there. Doing multiple calls with same ref will not matter
    */
-  public void decrementBlobRefCount(@SuppressWarnings({"rawtypes"})BlobContentRef ref) {
+  public void decrementBlobRefCount(BlobContentRef<?> ref) {
     if (ref == null) return;
     synchronized (ref.blob.references) {
       if (!ref.blob.references.remove(ref)) {

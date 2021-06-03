@@ -210,7 +210,6 @@ public class SolrRequestInfo {
       }
 
       @Override
-      @SuppressWarnings({"unchecked"})
       public void set(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
         SolrRequestInfo me = (SolrRequestInfo) ctx.get();
         if (me != null) {

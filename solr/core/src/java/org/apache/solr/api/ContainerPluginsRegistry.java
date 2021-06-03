@@ -56,7 +56,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * This class manages the container-level plugins and their Api-s. It is
@@ -253,9 +252,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return path;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private static  Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
-    return (Map) makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
+  private static Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
+    return Utils.makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
   }
 
   private static class ApiHolder extends Api {
@@ -294,7 +292,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     public final String pkg;
 
     private PackageLoader.Package.Version pkgVersion;
-    private Class klas;
+    private Class<?> klas;
     Object instance;
 
     ApiHolder get(EndPoint endPoint) {
@@ -315,7 +313,6 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     public PluginMeta getInfo() {
       return info.copy();
     }
-    @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMetaHolder infoHolder, List<String> errs) {
       this.holder = infoHolder;
       this.info = infoHolder.meta;
@@ -394,7 +391,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     public void init() throws Exception {
       if (this.holders != null) return;
       Constructor constructor = klas.getConstructors()[0];
@@ -410,7 +407,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         if (c != null) {
           Map<String, Object> original = (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
           holder.meta.config = mapper.readValue(Utils.toJSON(original), c);
-          ((ConfigurablePlugin) instance).configure(holder.meta.config);
+          ((ConfigurablePlugin<MapWriter>) instance).configure(holder.meta.config);
 
         }
       }
@@ -432,9 +429,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   /**
    * Get the generic type of a {@link ConfigurablePlugin}
    */
-  @SuppressWarnings("rawtypes")
-  public static Class getConfigClass(ConfigurablePlugin<?> o) {
-    Class klas = o.getClass();
+  @SuppressWarnings("unchecked")
+  public static <T extends MapWriter> Class<T> getConfigClass(ConfigurablePlugin<T> o) {
+    Class<?> klas = o.getClass();
     do {
       Type[] interfaces = klas.getGenericInterfaces();
       for (Type type : interfaces) {
@@ -443,8 +440,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           Type rawType = parameterizedType.getRawType();
           if (rawType == ConfigurablePlugin.class ||
               // or if a super interface is a ConfigurablePlugin
-              ((rawType instanceof Class) && ConfigurablePlugin.class.isAssignableFrom((Class) rawType))) {
-            return (Class) parameterizedType.getActualTypeArguments()[0];
+              ((rawType instanceof Class<?>) && ConfigurablePlugin.class.isAssignableFrom((Class<?>) rawType))) {
+
+            return (Class<T>) parameterizedType.getActualTypeArguments()[0];
           }
         }
       }

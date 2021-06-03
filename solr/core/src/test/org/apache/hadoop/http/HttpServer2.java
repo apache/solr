@@ -712,7 +712,6 @@ public final class HttpServer2 implements FilterContainer {
       if (conf.getBoolean(
           CommonConfigurationKeys.HADOOP_JETTY_LOGS_SERVE_ALIASES,
           CommonConfigurationKeys.DEFAULT_HADOOP_JETTY_LOGS_SERVE_ALIASES)) {
-        @SuppressWarnings("unchecked")
         Map<String, String> params = logContext.getInitParams();
         params.put("org.eclipse.jetty.servlet.Default.aliases", "true");
       }
@@ -731,7 +730,6 @@ public final class HttpServer2 implements FilterContainer {
     staticContext.setResourceBase(appDir + "/static");
     staticContext.addServlet(DefaultServlet.class, "/*");
     staticContext.setDisplayName("static");
-    @SuppressWarnings("unchecked")
     Map<String, String> params = staticContext.getInitParams();
     params.put("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
     params.put("org.eclipse.jetty.servlet.Default.gzip", "true");
@@ -1529,7 +1527,6 @@ public final class HttpServer2 implements FilterContainer {
         return result;
       }
 
-      @SuppressWarnings("unchecked")
       @Override
       public Map<String, String[]> getParameterMap() {
         Map<String, String[]> result = new HashMap<>();

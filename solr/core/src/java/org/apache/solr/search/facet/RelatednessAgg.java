@@ -124,7 +124,7 @@ public class RelatednessAgg extends AggValueSource {
   }
 
   @Override
-  public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 

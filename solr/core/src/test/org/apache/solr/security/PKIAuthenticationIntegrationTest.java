@@ -19,6 +19,7 @@ package org.apache.solr.security;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
@@ -35,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
@@ -45,8 +45,8 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     final String SECURITY_CONF = Utils.toJSONString
-      (makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
-               "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
+      (Map.of("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
+          "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
     
     configureCluster(2)
       .addConfig("conf", configset("cloud-minimal"))

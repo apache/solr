@@ -183,7 +183,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public TopGroups<BytesRef> result() throws IOException {
     return topGroups;
   }

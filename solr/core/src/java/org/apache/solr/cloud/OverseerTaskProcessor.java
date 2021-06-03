@@ -487,7 +487,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     return isClosed;
   }
 
-  @SuppressWarnings("unchecked")
   private void markTaskAsRunning(QueueEvent head, String asyncId)
       throws KeeperException, InterruptedException {
     runningZKTasks.add(head.getId());

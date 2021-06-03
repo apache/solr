@@ -182,14 +182,12 @@ public class StreamFactory implements Serializable {
     return namedParameters;
   }
 
-  @SuppressWarnings({"unchecked"})
-  public List<StreamExpressionParameter> getOperandsOfType(StreamExpression expression,
-                                                           @SuppressWarnings({"rawtypes"})Class ... clazzes) {
+  public List<StreamExpressionParameter> getOperandsOfType(StreamExpression expression, Class<?>... clazzes) {
     List<StreamExpressionParameter> parameters = new ArrayList<>();
     
     parameterLoop:
      for (StreamExpressionParameter parameter : expression.getParameters()) {
-      for (@SuppressWarnings({"rawtypes"})Class clazz : clazzes) {
+      for (Class<?> clazz : clazzes) {
         if (!clazz.isAssignableFrom(parameter.getClass())) {
           continue parameterLoop; // go to the next parameter since this parameter cannot be assigned to at least one of the classes
         }
@@ -199,9 +197,7 @@ public class StreamFactory implements Serializable {
     return parameters;
   }
   
-  @SuppressWarnings({"unchecked"})
-  public List<StreamExpression> getExpressionOperandsRepresentingTypes(StreamExpression expression,
-                                                                       @SuppressWarnings({"rawtypes"})Class ... clazzes) {
+  public List<StreamExpression> getExpressionOperandsRepresentingTypes(StreamExpression expression, Class<?>... clazzes) {
     List<StreamExpression> matchingStreamExpressions = new ArrayList<>();
     List<StreamExpression> allStreamExpressions = getExpressionOperands(expression);
     
@@ -209,7 +205,7 @@ public class StreamFactory implements Serializable {
     for (StreamExpression streamExpression : allStreamExpressions) {
       Supplier<Class<? extends Expressible>> classSupplier = functionNames.get(streamExpression.getFunctionName());
       if (classSupplier != null) {
-        for (@SuppressWarnings({"rawtypes"})Class clazz : clazzes) {
+        for (Class<?> clazz : clazzes) {
           if (!clazz.isAssignableFrom(classSupplier.get())) {
             continue parameterLoop;
           }
@@ -220,11 +216,10 @@ public class StreamFactory implements Serializable {
     return matchingStreamExpressions;   
   }
   
-  @SuppressWarnings({"unchecked"})
-  public boolean doesRepresentTypes(StreamExpression expression, @SuppressWarnings({"rawtypes"})Class ... clazzes) {
+  public boolean doesRepresentTypes(StreamExpression expression, Class<?>... clazzes) {
     Supplier<Class<? extends Expressible>> classSupplier = functionNames.get(expression.getFunctionName());
     if (classSupplier != null) {
-      for (@SuppressWarnings({"rawtypes"})Class clazz : clazzes) {
+      for (Class<?> clazz : clazzes) {
         if (!clazz.isAssignableFrom(classSupplier.get())) {
           return false;
         }
@@ -270,15 +265,14 @@ public class StreamFactory implements Serializable {
   public TupleStream constructStream(String expressionClause) throws IOException {
     return constructStream(StreamExpressionParser.parse(expressionClause));
   }
-  @SuppressWarnings({"rawtypes"})
   public TupleStream constructStream(StreamExpression expression) throws IOException {
     String function = expression.getFunctionName();
     Supplier<Class<? extends Expressible>> classSupplier = functionNames.get(function);
 
     if (classSupplier != null) {
       Class<? extends Expressible> clazz =  classSupplier.get();
-      if (Expressible.class.isAssignableFrom(clazz) && TupleStream.class.isAssignableFrom(clazz)) {
-        return (TupleStream)createInstance(clazz, new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+      if (TupleStream.class.isAssignableFrom(clazz)) {
+        return createInstance(clazz.asSubclass(TupleStream.class), new Class<?>[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
       }
     }
     
@@ -289,22 +283,20 @@ public class StreamFactory implements Serializable {
     return constructMetric(StreamExpressionParser.parse(expressionClause));
   }
 
-  @SuppressWarnings({"rawtypes"})
   public Metric constructMetric(StreamExpression expression) throws IOException {
     String function = expression.getFunctionName();
     Supplier<Class<? extends Expressible>> classSupplier = functionNames.get(function);
     if (classSupplier != null) {
       Class<? extends Expressible> clazz = classSupplier.get();
-      if (Expressible.class.isAssignableFrom(clazz) && Metric.class.isAssignableFrom(clazz)) {
-        return (Metric)createInstance(clazz, new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+      if (Metric.class.isAssignableFrom(clazz)) {
+        return createInstance(clazz.asSubclass(Metric.class), new Class<?>[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
       }
     }
     
     throw new IOException(String.format(Locale.ROOT, "Invalid metric expression %s - function '%s' is unknown (not mapped to a valid Metric)", expression, expression.getFunctionName()));
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public StreamComparator constructComparator(String comparatorString, @SuppressWarnings({"rawtypes"})Class comparatorType) throws IOException {
+  public StreamComparator constructComparator(String comparatorString, Class<? extends StreamComparator> comparatorType) throws IOException {
     if (comparatorString.contains(",")) {
       String[] parts = comparatorString.split(",");
       StreamComparator[] comps = new StreamComparator[parts.length];
@@ -342,7 +334,7 @@ public class StreamFactory implements Serializable {
         throw new IOException(String.format(Locale.ROOT, "Invalid comparator expression %s - expecting 'left=right order'",comparatorString));
       }
       
-      return (StreamComparator) createInstance(comparatorType, new Class[]{ String.class, String.class, ComparatorOrder.class }, new Object[]{ leftFieldName, rightFieldName, ComparatorOrder.fromString(order) });
+      return createInstance(comparatorType, new Class<?>[]{ String.class, String.class, ComparatorOrder.class }, new Object[]{ leftFieldName, rightFieldName, ComparatorOrder.fromString(order) });
     } else {
       // expected format is "field order"
       String[] parts = comparatorString.split(" ");
@@ -353,12 +345,11 @@ public class StreamFactory implements Serializable {
       String fieldName = parts[0].trim();
       String order = parts[1].trim();
       
-      return (StreamComparator) createInstance(comparatorType, new Class[]{ String.class, ComparatorOrder.class }, new Object[]{ fieldName, ComparatorOrder.fromString(order) });
+      return createInstance(comparatorType, new Class<?>[]{ String.class, ComparatorOrder.class }, new Object[]{ fieldName, ComparatorOrder.fromString(order) });
     }
   }
     
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public StreamEqualitor constructEqualitor(String equalitorString, Class equalitorType) throws IOException {
+  public StreamEqualitor constructEqualitor(String equalitorString, Class<? extends StreamEqualitor> equalitorType) throws IOException {
     if (equalitorString.contains(",")) {
       String[] parts = equalitorString.split(",");
       StreamEqualitor[] eqs = new StreamEqualitor[parts.length];
@@ -382,7 +373,7 @@ public class StreamFactory implements Serializable {
         leftFieldName = rightFieldName = equalitorString.trim();
       }
       
-      return (StreamEqualitor) createInstance(equalitorType, new Class[]{ String.class, String.class }, new Object[]{ leftFieldName, rightFieldName });
+      return createInstance(equalitorType, new Class<?>[]{ String.class, String.class }, new Object[]{ leftFieldName, rightFieldName });
     }
   }
   
@@ -390,33 +381,31 @@ public class StreamFactory implements Serializable {
     return constructMetric(StreamExpressionParser.parse(expressionClause));
   }
 
-  @SuppressWarnings({"rawtypes"})
   public StreamOperation constructOperation(StreamExpression expression) throws IOException {
     String function = expression.getFunctionName();
     Supplier<Class<? extends Expressible>> classSupplier = functionNames.get(function);
     if (classSupplier != null) {
       Class<? extends Expressible> clazz = classSupplier.get();
-      if (Expressible.class.isAssignableFrom(clazz) && StreamOperation.class.isAssignableFrom(clazz)) {
-        return (StreamOperation) createInstance(clazz, new Class[]{StreamExpression.class, StreamFactory.class}, new Object[]{expression, this});
+      if (StreamOperation.class.isAssignableFrom(clazz)) {
+        return createInstance(clazz.asSubclass(StreamOperation.class), new Class<?>[]{StreamExpression.class, StreamFactory.class}, new Object[]{expression, this});
       }
     }
 
     throw new IOException(String.format(Locale.ROOT, "Invalid operation expression %s - function '%s' is unknown (not mapped to a valid StreamOperation)", expression, expression.getFunctionName()));
   }
   
-  public org.apache.solr.client.solrj.io.eval.StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
+  public StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
     return constructEvaluator(StreamExpressionParser.parse(expressionClause));
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public org.apache.solr.client.solrj.io.eval.StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException {
+  public StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException {
     String function = expression.getFunctionName();
     Supplier<Class<? extends Expressible>> classSupplier = functionNames.get(function);
 
     if (classSupplier != null) {
       Class<? extends Expressible> clazz = classSupplier.get();
-      if (Expressible.class.isAssignableFrom(clazz) && StreamEvaluator.class.isAssignableFrom(clazz)) {
-        return (org.apache.solr.client.solrj.io.eval.StreamEvaluator)createInstance(clazz, new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+      if (StreamEvaluator.class.isAssignableFrom(clazz)) {
+        return createInstance(clazz.asSubclass(StreamEvaluator.class), new Class<?>[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
       }
     }
     
