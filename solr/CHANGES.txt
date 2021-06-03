@@ -312,6 +312,13 @@ Bug Fixes
 
 * SOLR-15334: Return error response when failing auth in PKIAuthPlugin (Mike Drob)
 
+==================  8.10.0 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-15311: Support ASYNC parameter in MODIFYCOLLECTION (Nazerke Seidan, David Smiley)
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
