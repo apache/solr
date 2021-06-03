@@ -93,7 +93,7 @@ Otherwise, "x,y" for PointType or "x y" for RPT field types.
 A spatial indexed field.
 
 `score`::
-(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-parameters-in-queries.adoc#,local parameter>>_ determines what scores will be produced.
+(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-params.adoc#,local param>>_ determines what scores will be produced.
 Valid values are:
 
 * `none`: A fixed score of 1.0. (the default)

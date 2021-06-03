@@ -1,5 +1,6 @@
 = Deployment Guide
-:page-children: installation-deployment, \
+:page-children: solr-control-script-reference, \
+    installation-deployment, \
     scaling-solr, \
     monitoring-solr, \
     securing-solr, \
@@ -23,6 +24,10 @@
 
 [.lead]
 The Deployment Guide covers installation, upgrades, deployments, monitoring, and client integrations.
+
+****
+<<solr-control-script-reference.adoc#,*Solr Control Script Reference*>>: The options available to the `bin/solr` or `bin\solr.cmd` scripts.
+****
 
 ****
 <<installation-deployment.adoc#,*Installation and Deployment*>>:

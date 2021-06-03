@@ -63,7 +63,7 @@ The old format is officially deprecated, and support for it is likely to be remo
 For the time-being the old format can be created by defining a parameter `incremental=false`.
 Again, though, this support is likely to be removed in Solr 9.0.
 
-More documentation on backups is available at <<making-and-restoring-backups.adoc#,Making and Restoring Backups>>.
+More documentation on backups is available at <<backup-restore.adoc#,Backup and Restore>>.
 
 New Collections API commands for backups:
 
@@ -73,7 +73,7 @@ See <<collection-management.adoc#listbackup,List Backups>> for more details.
 
 A new option for backup repository is also available in 8.9, which is to use Google Cloud Storage (GCS).
 This is a contrib (located in `contrib/gcs-repository`).
-See <<making-and-restoring-backups.adoc#gcsbackuprepository,GCSBackupRepository>> for configuration details.
+See <<backup-restore.adoc#gcsbackuprepository,GCSBackupRepository>> for configuration details.
 The Solr community is working to add support for S3 buckets in the near future.
 
 *Nested Docs*
@@ -93,7 +93,7 @@ See <<collapse-and-expand-results.adoc#block-collapsing,Block Collapsing>> for d
 *In-Place Updates*
 
 A new request parameter `update.partial.requireInPlace=true` allows telling Solr to "fail fast" if all of the necessary conditions are not satisfied to allow an in-place update to succeed.
-See also <<updating-parts-of-documents.adoc#in-place-updates,In-Place Updates>>.
+See also <<partial-document-updates.adoc#in-place-updates,In-Place Updates>>.
 
 *Metrics History*
 

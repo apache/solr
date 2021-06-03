@@ -19,7 +19,7 @@
 [.lead]
 Solr features a Web interface that provides online access to many Solr configuration options and features.
 
-== Overview of the Solr Admin UI
+== Overview of the Admin UI
 
 === Dashboard
 

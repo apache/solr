@@ -590,7 +590,7 @@ Specifies if the query will be boosted by the interesting term relevance. It can
 
 === Query Parser Query and Response
 
-The structure of a MoreLikeThis query parser request is like a query using <<local-parameters-in-queries.adoc#,local params>>, as in:
+The structure of a MoreLikeThis query parser request is like a query using <<local-params.adoc#,local params>>, as in:
 
 [source,bash]
 ----

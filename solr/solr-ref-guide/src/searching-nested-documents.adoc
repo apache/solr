@@ -175,7 +175,7 @@ Note that in the above example, the `/` characters in the `\_nest_path_` were "d
 
 (You can see that only a single level of of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param).
 
-You may find it more convenient to use <<local-parameters-in-queries#parameter-dereferencing,parameter references>> in conjunction with <<other-parsers#other-parsers,other parsers>> that do not treat `/` as a special character to express the same query in a more verbose form:
+You may find it more convenient to use <<local-params#parameter-dereferencing,parameter references>> in conjunction with <<other-parsers#other-parsers,other parsers>> that do not treat `/` as a special character to express the same query in a more verbose form:
 
 [source,text]
 ----

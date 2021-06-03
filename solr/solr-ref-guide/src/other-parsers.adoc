@@ -20,7 +20,7 @@ In addition to the main query parsers discussed earlier, there are several other
 
 This section details the other parsers, and gives examples for how they might be used.
 
-Many of these parsers are expressed the same way as <<local-parameters-in-queries.adoc#,Local Parameters in Queries>>.
+Many of these parsers are expressed the same way as <<local-params.adoc#,Local Params>>.
 
 == Block Join Query Parsers
 
@@ -104,7 +104,7 @@ q={!boost b=div(1,add(1,price))}name:foo
 
 The `<<function-queries.adoc#query-function,query(...)>>` function is particularly useful for situations where you want to multiply (or divide) the score for each document matching your main query by the score that document would have from another query.
 
-This example uses <<local-parameters-in-queries.adoc#parameter-dereferencing,local parameter variables>> to create a query for `name:foo` which is boosted by the scores from the independently specified query `category:electronics`:
+This example uses <<local-params.adoc#parameter-dereferencing,local param variables>> to create a query for `name:foo` which is boosted by the scores from the independently specified query `category:electronics`:
 
 [source,text]
 ----
@@ -519,7 +519,7 @@ Information about how to use this query parser is with the documentation about M
 
 == Nested Query Parser
 
-The `NestedParser` extends the `QParserPlugin` and creates a nested query, with the ability for that query to redefine its type via local parameters. This is useful in specifying defaults in configuration and letting clients indirectly reference them.
+The `NestedParser` extends the `QParserPlugin` and creates a nested query, with the ability for that query to redefine its type via local params. This is useful in specifying defaults in configuration and letting clients indirectly reference them.
 
 Example:
 

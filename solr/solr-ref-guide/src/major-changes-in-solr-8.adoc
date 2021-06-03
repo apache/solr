@@ -447,9 +447,9 @@ See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote72[7.2 Relea
 
 When upgrading to Solr 7.2, users should be aware of the following major changes from v7.1:
 
-*Local Parameters*
+*Local Params*
 
-* Starting a query string with <<local-parameters-in-queries.adoc#,local parameters>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local parameters will be parsed to only contexts in which the default parser is "<<other-parsers.adoc#lucene-query-parser,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
+* Starting a query string with <<local-params.adoc#,local params>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local params will be parsed to only contexts in which the default parser is "<<other-parsers.adoc#lucene-query-parser,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
 +
 So, if `defType=edismax` then `q={!myparser ...}` won't work. In that example, put the desired query parser into the `defType` parameter.
 +
@@ -459,7 +459,7 @@ If you must have full backwards compatibility, use `luceneMatchVersion=7.1.0` or
 
 *eDisMax Query Parser*
 
-* The eDisMax parser by default no longer allows subqueries that specify a Solr parser using either local parameters, or the older `\_query_` magic field trick.
+* The eDisMax parser by default no longer allows subqueries that specify a Solr parser using either local params, or the older `\_query_` magic field trick.
 +
 For example, `{!prefix f=myfield v=enterp}` or `\_query_:"{!prefix f=myfield v=enterp}"` are not supported by default any longer. If you want to allow power-users to do this, set `uf=* _query_` or some other value that includes `\_query_`.
 +

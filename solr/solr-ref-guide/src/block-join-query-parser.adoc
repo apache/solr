@@ -85,7 +85,7 @@ You can search for `q=+(someParents) -(blockMask)` to find a cause if you encoun
 
 === Filtering and Tagging
 
-`{!child}` also supports `filters` and `excludeTags` local parameters like the following:
+`{!child}` also supports `filters` and `excludeTags` local params like the following:
 
 [source,text]
 ?q={!child of=<blockMask> filters=$parentfq excludeTags=certain}<someParents>
@@ -146,7 +146,7 @@ You can search for `q=+(blockMask) +(someChildren)` to find a cause.
 
 === Filtering and Tagging
 
-The `{!parent}` query supports `filters` and `excludeTags` local parameters like the following:
+The `{!parent}` query supports `filters` and `excludeTags` local params like the following:
 
 [source,text]
 ?q={!parent which=<blockMask> filters=$childfq excludeTags=certain}<someChildren>

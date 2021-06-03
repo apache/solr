@@ -33,7 +33,7 @@ The CollapsingQParserPlugin fully supports the QueryElevationComponent.
 
 === Collapsing Query Parser Options
 
-The CollapsingQParser accepts the following local parameters:
+The CollapsingQParser accepts the following local params:
 
 `field`::
 The field that is being collapsed on. The field must be a single valued String, Int or Float-type of field.

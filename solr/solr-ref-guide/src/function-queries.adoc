@@ -332,7 +332,7 @@ Returns the product of multiple values or functions, which are specified in a co
 * `mul(x,y)`
 
 === query Function
-Returns the score for the given subquery, or the default value for documents not matching the query. Any type of subquery is supported through either parameter de-referencing `$otherparam` or direct specification of the query string in the <<local-parameters-in-queries.adoc#,Local Parameters>> through the `v` key.
+Returns the score for the given subquery, or the default value for documents not matching the query. Any type of subquery is supported through either parameter de-referencing `$otherparam` or direct specification of the query string in the <<local-params.adoc#,local params>> through the `v` key.
 
 *Syntax Examples*
 

@@ -27,7 +27,7 @@ When executing a request, a document transformer can be used by including it in 
 fl=id,name,score,[shard]
 ----
 
-Some transformers allow, or require, local parameters which can be specified as key value pairs inside the brackets:
+Some transformers allow, or require, local params which can be specified as key value pairs inside the brackets:
 
 [source,plain]
 ----
@@ -86,7 +86,7 @@ In addition to using these request parameters, you can configure additional name
 </transformer>
 ----
 
-The `value` option forces an explicit value to always be used, while the `defaultValue` option provides a default that can still be overridden using the `v` and `t` local parameters.
+The `value` option forces an explicit value to always be used, while the `defaultValue` option provides a default that can still be overridden using the `v` and `t` local params.
 
 
 === [explain] - ExplainAugmenterFactory
@@ -318,7 +318,7 @@ q=*:*&fl=*,**foo**:[subquery]&**foo.**q=to be continued&**foo.**rows=10&**foo.**
 
 ==== Document Field as an Input for Subquery Parameters
 
-It's necessary to pass some document field values as a parameter for subquery. It's supported via an implicit *`row.__fieldname__`* parameter, and can be (but might not only) referred via local parameters syntax:
+It's necessary to pass some document field values as a parameter for subquery. It's supported via an implicit *`row.__fieldname__`* parameter, and can be (but might not only) referred via local params syntax:
 
 [source,plain,subs="quotes"]
 q=name:john&fl=name,id,depts:[subquery]&depts.q={!terms f=id **v=$row.dept_id**}&depts.rows=10

@@ -1,4 +1,4 @@
-= Solr Tutorial
+= Solr Tutorials
 :experimental:
 :page-children: tutorial-techproducts, \
     tutorial-films, \

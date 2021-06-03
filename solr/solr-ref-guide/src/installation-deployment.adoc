@@ -38,8 +38,8 @@ This section covers system requirements, installation, upgrades, and deployments
 | <<jvm-settings.adoc#,JVM Settings>>: Java Virtual Machines best practices
 | <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>: SolrCloud cluster upgrades.
 | <<backup-restore.adoc#,Backup and Restore>>: Solr backup strategies.
-| <<solr-in-docker#,Running Solr in Docker>>: Solr's Docker image.
-| <<solr-on-hdfs.adoc#,Running Solr on HDFS>>: Store Solr indexes and transaction logs in HDFS.
+| <<solr-in-docker#,Solr in Docker>>: Solr's Docker image.
+| <<solr-on-hdfs.adoc#,Solr on HDFS>>: Store Solr indexes and transaction logs in HDFS.
 |===
 // end::install-sections[]
 ****

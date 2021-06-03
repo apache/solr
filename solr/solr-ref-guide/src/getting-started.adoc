@@ -1,10 +1,9 @@
 = Getting Started
-:page-children: a-quick-overview, \
-    solr-admin-ui, \
+:page-children: introduction, \
     solr-concepts, \
     solr-tutorial, \
-    solr-control-script-reference, \
-    solr-glossary
+    solr-admin-ui, \
+    about-this-guide
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -25,18 +24,15 @@
 [.lead]
 Solr makes it easy for programmers to develop sophisticated, high-performance search applications with advanced features.
 
-This section introduces you to the basic Solr architecture and features to help you get up and running quickly. It covers the following topics:
+This section introduces you to the basic Solr architecture and features to help you get up and running quickly.
+It covers the following topics:
 
 ****
-<<a-quick-overview.adoc#,*A Quick Overview*>>: A high-level overview of how Solr works.
-****
-
-****
-<<solr-admin-ui.adoc#,*Using the Solr Admin UI*>>: Solr's Web-based interface for administering Solr.
+<<introduction.adoc#,*Introduction to Solr*>>: Short introduction to Solr's primary features.
 ****
 
 ****
-<<solr-concepts.adoc#,*Introduction to Solr Concepts*>>: Beginner information on Solr and information retrieval concepts.
+<<solr-concepts.adoc#,*Solr Concepts*>>: Beginner information on Solr and information retrieval concepts.
 
 // This pulls the sub-section list from the child page to reduce errors
 include::solr-concepts.adoc[tag=concept-sections]
@@ -47,9 +43,9 @@ include::solr-concepts.adoc[tag=concept-sections]
 ****
 
 ****
-<<solr-control-script-reference.adoc#,*Solr Control Script Reference*>>: The options available to the `bin/solr` or `bin\solr.cmd` scripts.
+<<solr-admin-ui.adoc#,*Solr Admin UI*>>: Solr's Web-based interface for administering Solr.
 ****
 
 ****
-<<solr-glossary.adoc#,*Solr Glossary*>>: Solr's terminology in one place.
+<<about-this-guide.adoc#,*About this Guide*>>: How to use this Reference Guide.
 ****

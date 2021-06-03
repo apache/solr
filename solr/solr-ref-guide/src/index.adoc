@@ -1,9 +1,8 @@
 = Apache Solr Reference Guide
-:page-children: about-this-guide, \
-    getting-started, \
+:page-children: getting-started, \
     deployment-guide, \
     configuration-guide, \
-    schema-and-indexing, \
+    schema-indexing-guide, \
     query-guide, \
     solr-upgrade-notes, \
     how-to-contribute
@@ -95,7 +94,7 @@ Covers tuning Solr's configuration files for your use case. Includes sections on
 [sidebar.col]
 ****
 
-*<<schema-and-indexing.adoc#,Schema and Indexing Guide>>*
+*<<schema-indexing-guide.adoc#,Schema and Indexing Guide>>*
 
 Covers all aspects of configuring Solr's schema and indexing documents.
 ****

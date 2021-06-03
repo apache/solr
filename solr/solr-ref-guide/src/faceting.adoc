@@ -295,7 +295,7 @@ http://localhost:8983/solr/techproducts/select?q=*:*&facet.pivot=cat,popularity,
 
 === Combining Stats Component With Pivots
 
-In addition to some of the <<Local Parameters for Faceting,general local parameters>> supported by other types of faceting, a `stats` local parameters can be used with `facet.pivot` to refer to <<stats-component.adoc#,`stats.field`>> instances (by tag) that you would like to have computed for each Pivot Constraint.
+In addition to some of the <<Local Params for Faceting,general local params>> supported by other types of faceting, a `stats` local params can be used with `facet.pivot` to refer to <<stats-component.adoc#,`stats.field`>> instances (by tag) that you would like to have computed for each Pivot Constraint.
 
 In the example below, two different (overlapping) sets of statistics are computed for each of the facet.pivot result hierarchies:
 
@@ -573,9 +573,9 @@ Interval faceting supports output key replacement described below. Output keys c
 &facet=true
 ----
 
-== Local Parameters for Faceting
+== Local Params for Faceting
 
-The <<local-parameters-in-queries.adoc#,LocalParams syntax>> allows overriding global settings. It can also provide a method of adding metadata to other parameter values, much like XML attributes.
+The <<local-params.adoc#,LocalParams syntax>> allows overriding global settings. It can also provide a method of adding metadata to other parameter values, much like XML attributes.
 
 === Tagging and Excluding Filters
 
@@ -602,7 +602,7 @@ To return counts for doctype values that are currently not selected, tag filters
 
 `q=mainquery&fq=status:public&fq={!tag=dt}doctype:pdf&facet=true&facet.field={!ex=dt}doctype`
 
-Filter exclusion is supported for all types of facets. Both the `tag` and `ex` local parameters may specify multiple values by separating them with commas.
+Filter exclusion is supported for all types of facets. Both the `tag` and `ex` local params may specify multiple values by separating them with commas.
 
 === Changing the Output Key
 

@@ -149,7 +149,7 @@ For example: http://meyerweb.com/eric/tools/dencoder/.
 === cache Local Parameter
 
 Solr caches the results of filter queries by default in the <<caches-warming.adoc#filter-cache,filter cache>>.
-To disable it, use the boolean `cache` <<local-parameters-in-queries.adoc#,local parameter>>, such as `fq={!geofilt cache=false}...`.
+To disable it, use the boolean `cache` <<local-params.adoc#,local param>>, such as `fq={!geofilt cache=false}...`.
 Do this when you think a query is unlikely to be repeated.
 
 Non-cached filter queries also support the `cost` local parameter to provide a _hint_ as to the order in which they are evaluated.

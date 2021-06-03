@@ -1,8 +1,9 @@
-= Introduction to Solr Concepts
-:page-children: overview-of-documents-fields-and-schema-design, \
-    introduction-to-solr-indexing, \
-    overview-of-searching-in-solr, \
-    relevance
+= Solr Concepts
+:page-children: documents-fields-schema-design, \
+    solr-indexing, \
+    searching-in-solr, \
+    relevance, \
+    solr-glossary
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -23,17 +24,17 @@
 [.lead]
 This section covers essential information retrieval concepts and an introduction to how they are implemented in Solr.
 
-*TODO* Also probably rename some of these pages.
-
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::concept-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<overview-of-documents-fields-and-schema-design.adoc#,Overview of Documents, Fields, and Schema Design>>: An introduction to how Solr breaks documents into fields.
-| <<introduction-to-solr-indexing.adoc#,Introduction to Solr Indexing>>: The process of adding documents or other data to Solr for later searching.
-| <<overview-of-searching-in-solr.adoc#,Overview of Searching in Solr>>: The basic building blocks of asking Solr questions.
+| <<documents-fields-schema-design.adoc#,Documents, Fields, and Schema Design>>: An introduction to how Solr breaks documents into fields.
+| <<solr-indexing.adoc#,Solr Indexing>>: The process of adding documents or other data to Solr for later searching.
+| <<searching-in-solr.adoc#,Searching in Solr>>: The basic building blocks of asking Solr questions.
 | <<relevance.adoc#,Relevance>>: A beginner's guide to understanding what relevance means in the search context.
+| <<solr-glossary.adoc#,Solr Glossary>>: Commonly used Solr terminology.
+|
 |===
 // end::concept-sections[]
 ****

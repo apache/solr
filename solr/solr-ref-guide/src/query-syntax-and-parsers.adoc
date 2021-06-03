@@ -6,7 +6,7 @@
     dismax-query-parser, \
     edismax-query-parser, \
     function-queries, \
-    local-parameters-in-queries, \
+    local-params, \
     json-request-api, \
     searching-nested-documents, \
     block-join-query-parser, \
@@ -54,7 +54,7 @@ Query parsers are also called `QParserPlugins`. They are all subclasses of {solr
 | <<dismax-query-parser.adoc#,DisMax Query Parser>>: The DisMax query parser.
 | <<edismax-query-parser.adoc#,Extended DisMax Query Parser>>: The Extended DisMax (eDisMax) Query Parser.
 | <<function-queries.adoc#,Function Queries>>: Parameters for generating relevancy scores using values from one or more numeric fields.
-| <<local-parameters-in-queries.adoc#,Local Parameters in Queries>>: How to add local arguments to queries.
+| <<local-params.adoc#,Local Params>>: How to add local arguments to queries.
 | <<json-request-api.adoc#,JSON Request API>>: Solr's JSON Request API.
 | <<searching-nested-documents.adoc#,Searching Nested Documents>>: Constructing nested and hierarchical queries.
 | <<block-join-query-parser.adoc#,Block Join Query Parser>>: Query parser dedicated to searching nested documents.
