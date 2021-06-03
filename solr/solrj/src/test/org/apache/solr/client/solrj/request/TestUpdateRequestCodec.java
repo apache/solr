@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -157,15 +158,15 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
   //this format accepts a 1:1 mapping of the json format and javabin format
-  @SuppressWarnings({"unchecked"})
   public void testStreamableInputDocFormat() throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    Map m = Utils.makeMap("id","1","desc" ,"The desc 1");
+    Map<String, Object> m = new LinkedHashMap<>();
+    m.put("id", "1");
+    m.put("desc", "The desc 1");
     m.put(CHILDDOC, (MapWriter) ew -> {
       ew.put("id","1.1");
       ew.put("desc" ,"The desc 1.1");
       ew.put(CHILDDOC, (IteratorWriter) iw -> {
-        iw.add(Utils.makeMap("id", "1.1.1","desc","The desc 1.1.1"));
+        iw.add(Map.of("id", "1.1.1","desc","The desc 1.1.1"));
         iw.add((MapWriter) ew1 -> {
           ew1.put("id", "1.1.2");
           ew1.put("desc", "The desc 1.1.2");
@@ -177,8 +178,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
       ew.put("des", "The desc 2");
     };
 
-    @SuppressWarnings({"rawtypes"})
-    List l = new ArrayList();
+    List<Object> l = new ArrayList<>();
     l.add(m);
     l.add(m2);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();

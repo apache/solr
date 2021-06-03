@@ -213,7 +213,6 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
     throw new SolrException(SERVER_ERROR, "selector was never initialized, inform(SolrCore) never called???");
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
@@ -259,7 +258,6 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
    * init helper method that should only be called when we know for certain that both the
    * "source" and "dest" init params do <em>not</em> exist.
    */
-  @SuppressWarnings("unchecked")
   private void initSimpleRegexReplacement(@SuppressWarnings({"rawtypes"})NamedList args) {
     // The syntactic sugar for the case where there is only one regex pattern for source and the same pattern
     // is used for the destination pattern...

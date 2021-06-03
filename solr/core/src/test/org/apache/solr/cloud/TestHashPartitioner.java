@@ -270,7 +270,6 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
 
 
 
-  @SuppressWarnings({"unchecked"})
   DocCollection createCollection(int nSlices, DocRouter router) {
     List<Range> ranges = router.partitionRange(nSlices, router.fullRange());
 

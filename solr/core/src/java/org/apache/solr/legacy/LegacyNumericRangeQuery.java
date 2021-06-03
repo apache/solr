@@ -340,7 +340,7 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
   }
 
   @Override
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public final boolean equals(final Object o) {
     if (o==this) return true;
     if (!super.equals(o))

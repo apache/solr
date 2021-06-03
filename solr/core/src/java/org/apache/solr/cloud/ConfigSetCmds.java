@@ -183,10 +183,6 @@ public class ConfigSetCmds {
   }
 
   private static void deleteConfigSet(String configSetName, boolean force, CoreContainer coreContainer) throws IOException {
-    if (!coreContainer.getConfigSetService().checkConfigExists(configSetName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ConfigSet does not exist to delete: " + configSetName);
-    }
-
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
 
     for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {

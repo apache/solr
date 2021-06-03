@@ -65,7 +65,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.EMPTY_MAP;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySortedSet;
 import static org.apache.solr.common.cloud.UrlScheme.HTTP;
 import static org.apache.solr.common.util.Utils.fromJSON;
@@ -403,7 +403,7 @@ public class ZkStateReader implements SolrCloseable {
       if (securityNodeListener != null) {
         addSecurityNodeWatcher(pair -> {
           ConfigData cd = new ConfigData();
-          cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+          cd.data = pair.first() == null || pair.first().length == 0 ? emptyMap() : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
           cd.version = pair.second() == null ? -1 : pair.second().getVersion();
           securityData = cd;
           securityNodeListener.run();
@@ -965,13 +965,14 @@ public class ZkStateReader implements SolrCloseable {
     loadClusterProperties();
   };
 
-  @SuppressWarnings("unchecked")
   private void loadClusterProperties() {
     try {
       while (true) {
         try {
           byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
-          this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
+          @SuppressWarnings("unchecked")
+          Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(data);
+          this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat(properties);
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
 
           // Make the urlScheme globally accessible
@@ -1074,7 +1075,6 @@ public class ZkStateReader implements SolrCloseable {
     return COLLECTIONS_ZKNODE + '/' + collection + '/' + COLLECTION_PROPS_ZKNODE;
   }
 
-  @SuppressWarnings("unchecked")
   private VersionedCollectionProps fetchCollectionProperties(String collection, Watcher watcher) throws KeeperException, InterruptedException {
     final String znodePath = getCollectionPropsPath(collection);
     // lazy init cache cleaner once we know someone is using collection properties.
@@ -1089,7 +1089,9 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(znodePath, watcher, stat, true);
-        return new VersionedCollectionProps(stat.getVersion(), (Map<String, String>) Utils.fromJSON(data));
+        @SuppressWarnings("unchecked")
+        Map<String, String> props = (Map<String, String>) Utils.fromJSON(data);
+        return new VersionedCollectionProps(stat.getVersion(), props);
       } catch (ClassCastException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to parse collection properties for collection " + collection, e);
       } catch (KeeperException.NoNodeException e) {
@@ -1102,7 +1104,7 @@ public class ZkStateReader implements SolrCloseable {
             continue;
           }
         }
-        return new VersionedCollectionProps(-1, EMPTY_MAP);
+        return new VersionedCollectionProps(-1, emptyMap());
       }
     }
   }
@@ -1111,10 +1113,10 @@ public class ZkStateReader implements SolrCloseable {
    * Returns the content of /security.json from ZooKeeper as a Map
    * If the files doesn't exist, it returns null.
    */
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings("unchecked")
   public ConfigData getSecurityProps(boolean getFresh) {
     if (!getFresh) {
-      if (securityData == null) return new ConfigData(EMPTY_MAP, -1);
+      if (securityData == null) return new ConfigData(emptyMap(), -1);
       return new ConfigData(securityData.data, securityData.version);
     }
     try {

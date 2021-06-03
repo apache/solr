@@ -58,7 +58,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.CR
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -141,7 +140,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     if (clusterState.hasCollection(tempSourceCollectionName)) {
       log.info("Deleting temporary collection: {}", tempSourceCollectionName);
-      Map<String, Object> props = makeMap(
+      Map<String, Object> props = Map.of(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
           NAME, tempSourceCollectionName);
 
@@ -232,7 +231,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
 
     // create a temporary collection with just one node on the shard leader
     String configName = sourceCollection.getConfigName();
-    Map<String, Object> props = makeMap(
+    Map<String, Object> props = Utils.makeMap(
         Overseer.QUEUE_OPERATION, CREATE.toLower(),
         NAME, tempSourceCollectionName,
         NRT_REPLICAS, 1,
@@ -370,7 +369,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     }
     try {
       log.info("Deleting temporary collection: {}", tempSourceCollectionName);
-      props = makeMap(
+      props = Map.of(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
           NAME, tempSourceCollectionName);
       new DeleteCollectionCmd(ccc).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);

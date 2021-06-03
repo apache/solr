@@ -67,7 +67,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * This class contains helper methods used by commands of the Collection API. Previously these methods were in
@@ -98,7 +97,8 @@ public class CollectionHandlingUtils {
 
   static final String SKIP_CREATE_REPLICA_IN_CLUSTER_STATE = "skipCreateReplicaInClusterState";
 
-  public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS = Collections.unmodifiableMap(makeMap(
+  // Immutable Maps are null-hostile, so build our own
+  public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS = Collections.unmodifiableMap(Utils.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
       ZkStateReader.NRT_REPLICAS, "1",
@@ -248,7 +248,7 @@ public class CollectionHandlingUtils {
 
   static void cleanupCollection(String collectionName, @SuppressWarnings({"rawtypes"})NamedList results, CollectionCommandContext ccc) throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
-    Map<String, Object> props = makeMap(
+    Map<String, Object> props = Map.of(
         Overseer.QUEUE_OPERATION, DELETE.toLower(),
         NAME, collectionName);
     new DeleteCollectionCmd(ccc).call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), results);

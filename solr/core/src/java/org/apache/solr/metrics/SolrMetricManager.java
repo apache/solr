@@ -1003,7 +1003,6 @@ public class SolrMetricManager {
    *                      component instances.
    * @throws Exception if any argument is missing or invalid
    */
-  @SuppressWarnings({"rawtypes"})
   public void loadReporter(String registry, SolrResourceLoader loader, CoreContainer coreContainer, SolrCore solrCore, PluginInfo pluginInfo, String tag) throws Exception {
     if (registry == null || pluginInfo == null || pluginInfo.name == null || pluginInfo.className == null) {
       throw new IllegalArgumentException("loadReporter called with missing arguments: " +
@@ -1015,7 +1014,7 @@ public class SolrMetricManager {
         pluginInfo.className,
         SolrMetricReporter.class,
         new String[0],
-    new Class[]{SolrMetricManager.class, String.class},
+        new Class<?>[]{SolrMetricManager.class, String.class},
         new Object[]{this, registry}
     );
     // prepare MDC for plugins that want to use its properties

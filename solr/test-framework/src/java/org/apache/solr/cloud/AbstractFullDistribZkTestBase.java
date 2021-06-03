@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -388,10 +387,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
     List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
-    @SuppressWarnings({"rawtypes"})
-    List<CollectionAdminRequest> createReplicaRequests = Collections.synchronizedList(new ArrayList<>());
-    @SuppressWarnings({"rawtypes"})
-    List<CollectionAdminRequest> createPullReplicaRequests = Collections.synchronizedList(new ArrayList<>());
+    List<CollectionAdminRequest<CollectionAdminResponse>> createReplicaRequests = Collections.synchronizedList(new ArrayList<>());
+    List<CollectionAdminRequest<CollectionAdminResponse>> createPullReplicaRequests = Collections.synchronizedList(new ArrayList<>());
     StringBuilder sb = new StringBuilder();
 
     // HACK: Don't be fooled by the replication factor of '1'...
@@ -526,11 +523,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("createReplicaRequests"));
     
-    for (@SuppressWarnings({"rawtypes"})CollectionAdminRequest r : createReplicaRequests) {
+    for (CollectionAdminRequest<CollectionAdminResponse> r : createReplicaRequests) {
       customThreadPool.submit(() -> {
         CollectionAdminResponse response;
         try {
-          response = (CollectionAdminResponse) r.process(cloudClient);
+          response = r.process(cloudClient);
         } catch (SolrServerException | IOException e) {
           throw new RuntimeException(e);
         }
@@ -544,11 +541,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     customThreadPool = ExecutorUtil
         .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("createPullReplicaRequests"));
-    for (@SuppressWarnings({"rawtypes"})CollectionAdminRequest r : createPullReplicaRequests) {
+    for (CollectionAdminRequest<CollectionAdminResponse> r : createPullReplicaRequests) {
       customThreadPool.submit(() -> {
         CollectionAdminResponse response;
         try {
-          response = (CollectionAdminResponse) r.process(cloudClient);
+          response = r.process(cloudClient);
         } catch (SolrServerException | IOException e) {
           throw new RuntimeException(e);
         }
@@ -2045,7 +2042,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                                   int numShards ) throws Exception {
     int numNrtReplicas = useTlogReplicas()?0:replicationFactor;
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
-    Map<String, Object> props = makeMap(
+    Map<String, Object> props = Map.of(
         ZkStateReader.NRT_REPLICAS, numNrtReplicas,
         ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
         ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),

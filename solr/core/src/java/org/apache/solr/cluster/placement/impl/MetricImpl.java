@@ -46,7 +46,6 @@ public abstract class MetricImpl<T> implements Metric<T> {
    * Bytes to gigabytes converter. Supports converting number or string
    * representations of raw values expressed in bytes.
    */
-  @SuppressWarnings("unchecked")
   public static final Function<Object, Double> BYTES_TO_GB_CONVERTER = v -> {
     double sizeInBytes;
     if (!(v instanceof Number)) {

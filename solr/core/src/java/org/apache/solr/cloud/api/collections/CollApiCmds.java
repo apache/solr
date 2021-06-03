@@ -185,7 +185,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @SuppressWarnings("unchecked")
     public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
@@ -222,7 +221,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @SuppressWarnings("unchecked")
     public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);

@@ -48,7 +48,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Construct ZKNodeProps from map.
    */
   public ZkNodeProps(Map<String,Object> propMap) {
-    this.propMap = propMap;
+    this.propMap = new HashMap<>(propMap); // We need propMap to be mutable
 
     // don't store base_url if we have a node_name to recompute from when we read back from ZK
     // sub-classes that know they need a base_url (Replica) can eagerly compute in their ctor
@@ -80,6 +80,10 @@ public class ZkNodeProps implements JSONWriter.Writable {
     this( Utils.makeMap((Object[]) keyVals) );
   }
 
+  /**
+   * @deprecated use {@link ZkNodeProps#ZkNodeProps(String...)}
+   */
+  @Deprecated(since = "9.0.0")
   public static ZkNodeProps fromKeyVals(Object... keyVals)  {
     return new ZkNodeProps( Utils.makeMap(keyVals) );
   }

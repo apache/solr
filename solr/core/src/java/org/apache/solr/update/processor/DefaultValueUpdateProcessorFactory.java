@@ -52,7 +52,6 @@ public class DefaultValueUpdateProcessorFactory
 
   protected Object defaultValue = null;
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 

@@ -161,23 +161,20 @@ public class ClusterAPI {
     if (path == null || path.isBlank()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file in a configSet, a filePath must be provided in the url after the name of the configSet.");
     }
-    req = wrapParams(req,
-            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
+    req = wrapParams(req, Map.of("action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
             CommonParams.NAME, req.getPathTemplateValues().get("name"),
             ConfigSetParams.FILE_PATH, path,
             ConfigSetParams.OVERWRITE, true,
-            ConfigSetParams.CLEANUP, false);
+            ConfigSetParams.CLEANUP, false));
     configSetsHandler.handleRequestBody(req, rsp);
   }
 
-  @SuppressWarnings({"rawtypes"})
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Object... def) {
-    Map m = Utils.makeMap(def);
+    Map<String, Object> m = Utils.makeMap(def);
     return wrapParams(req, m);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static SolrQueryRequest wrapParams(SolrQueryRequest req, Map m) {
+  public static SolrQueryRequest wrapParams(SolrQueryRequest req, Map<String, Object> m) {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     m.forEach((k, v) -> {
       if(v == null) return;

@@ -38,9 +38,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.solr.client.solrj.response.schema.SchemaResponse.*;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class RouteFieldTest extends SolrCloudTestCase {
 
@@ -72,8 +72,8 @@ public class RouteFieldTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient()).getStatus());
 
     List<SchemaRequest.Update> updateList = new ArrayList<>();
-    updateList.add(new SchemaRequest.AddField(makeMap("name", ROUTE_FIELD, "type", "string", "indexed", "true", "stored", "true")));
-    updateList.add(new SchemaRequest.AddField(makeMap("name", "sorter", "type", "int", "indexed", "true", "stored", "true")));
+    updateList.add(new SchemaRequest.AddField(Map.of("name", ROUTE_FIELD, "type", "string", "indexed", "true", "stored", "true")));
+    updateList.add(new SchemaRequest.AddField(Map.of("name", "sorter", "type", "int", "indexed", "true", "stored", "true")));
     SchemaRequest.MultiUpdate multiUpdateRequest = new SchemaRequest.MultiUpdate(updateList);
     UpdateResponse multipleUpdatesResponse = multiUpdateRequest.process(cluster.getSolrClient(), COLL_ROUTE);
     assertNull("Error adding fields", multipleUpdatesResponse.getResponse().get("errors"));
