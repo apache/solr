@@ -317,7 +317,8 @@ Bug Fixes
 Bug Fixes
 ---------------------
 
-* SOLR-15311: Support ASYNC parameter in MODIFYCOLLECTION (Nazerke Seidan, David Smiley)
+* SOLR-15311: Support ASYNC parameter in MODIFYCOLLECTION (Nazerke Seidan, Christine Poerschke, David Smiley)
+* ```
 
 ==================  8.9.0 ==================
 
