@@ -524,7 +524,11 @@ public class DistributedClusterStateUpdater {
       String collectionStatePath = ZkStateReader.getCollectionPath(updater.getCollectionName());
       Stat stat = new Stat();
       byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat, true);
-      ClusterState clusterState = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
+
+      // If configName is not in state.json, we read it from old location due to backward compatibility reason
+      // TODO in Solr 10 this code should no longer read configName from old place
+      ClusterState clusterState = ClusterState.createFromJsonWithConfigName(
+              stat.getVersion(), data, Collections.emptySet(), updater.getCollectionName(), zkStateReader.getZkClient());
       return clusterState;
     }
   }

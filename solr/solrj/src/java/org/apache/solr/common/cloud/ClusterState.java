@@ -233,6 +233,41 @@ public class ClusterState implements JSONWriter.Writable {
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
+  /**
+   *
+   * Backward compatibility reason
+   * This can be removed in Solr 10
+   */
+  @SuppressWarnings({"unchecked"})
+  @Deprecated
+  public static ClusterState createFromJsonWithConfigName(int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
+    if (bytes == null || bytes.length == 0) {
+      return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
+    }
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    if (stateMap.containsKey(coll)) {
+      Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
+      if (!props.containsKey(ZkStateReader.CONFIGNAME_PROP)) {
+        try {
+          // read configName from collections/collection node
+          String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
+          byte[] data = zkClient.getData(path, null, null, true);
+          if (data != null && data.length > 0) {
+            ZkNodeProps configProp = ZkNodeProps.load(data);
+            String configName = configProp.getStr(ZkStateReader.CONFIGNAME_PROP);
+            if (configName != null) {
+              props.put(ZkStateReader.CONFIGNAME_PROP, configName);
+              stateMap.put(coll, props);
+            }
+          }
+        } catch (KeeperException | InterruptedException e) {
+          // do nothing
+        }
+      }
+    }
+    return createFromCollectionMap(version, stateMap, liveNodes);
+  }
+
   public static ClusterState createFromCollectionMap(int version, Map<String, Object> stateMap, Set<String> liveNodes) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {

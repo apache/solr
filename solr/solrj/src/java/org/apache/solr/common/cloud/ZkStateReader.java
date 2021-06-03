@@ -1426,7 +1426,11 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
-        ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
+
+        // If configName is not in state.json, we read it from old location due to backward compatibility reason
+        // TODO in Solr 10 this code should no longer read configName from old place
+        ClusterState state = ClusterState.createFromJsonWithConfigName(stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
+
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {
