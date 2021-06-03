@@ -320,11 +320,28 @@ Bug Fixes
 
 ==================  8.10.0 ==================
 
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
 Bug Fixes
 ---------------------
+* SOLR-15311: Support async parameter in MODIFYCOLLECTION
+  (Nazerke Seidan, Christine Poerschke, David Smiley)
 
-* SOLR-15311: Support ASYNC parameter in MODIFYCOLLECTION (Nazerke Seidan, Christine Poerschke, David Smiley)
-* ```
+Other Changes
+---------------------
+(No changes)
 
 ==================  8.9.0 ==================
 
