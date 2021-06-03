@@ -127,8 +127,7 @@ public class StrField extends PrimitiveFieldType {
     } else if (schemaField.multiValued()) {
       return new SortedSetDocValuesRefIterator(DocValues.getSortedSet(reader, fieldName));
     } else {
-      //SortedDocValues is a subclass of BinaryDocValues
-      return new BinaryDocValuesRefIterator(DocValues.getSorted(reader, fieldName));
+      return new SortedDocValuesRefIterator(DocValues.getSorted(reader, fieldName));
     }
   }
 

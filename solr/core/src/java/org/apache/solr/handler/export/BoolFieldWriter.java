@@ -22,10 +22,11 @@ import java.io.IOException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 
 class BoolFieldWriter extends StringFieldWriter {
-  public BoolFieldWriter(String field, FieldType fieldType) {
-    super(field, fieldType);
+  public BoolFieldWriter(SchemaField field, FieldType fieldType, int nLeaves) {
+    super(field, fieldType, nLeaves);
   }
 
   protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType) throws IOException {

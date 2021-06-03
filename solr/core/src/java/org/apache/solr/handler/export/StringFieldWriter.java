@@ -106,7 +106,7 @@ class StringFieldWriter extends FieldWriter {
       this.lastOrd = stringValue.currentOrd;
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      DocValuesRefIterator vals = dvRefIterCache.getDocValuesRefIterator(sortDoc.docId, reader, sortDoc.ord);
+      DocValuesRefIterator vals = dvRefIterCache.getDocValuesRefIterator(sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (!vals.advanceExact(sortDoc.docId)) {
         return false;
       }

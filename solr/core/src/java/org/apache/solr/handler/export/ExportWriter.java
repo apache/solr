@@ -529,7 +529,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, nLeaves);
         } else {
-          writers[i] = new BoolFieldWriter(field, fieldType);
+          writers[i] = new BoolFieldWriter(schemaField, fieldType, nLeaves);
         }
       } else {
         throw new IOException("Export fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
@@ -540,7 +540,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   private static final FieldWriter EMPTY_FIELD_WRITER = new FieldWriter() {
     @Override
-    public boolean write(SortDoc sortDoc, LeafReader reader, EntryWriter out, int fieldIndex) throws IOException {
+    public boolean write(SortDoc sortDoc, LeafReaderContext reader, EntryWriter out, int fieldIndex) throws IOException {
       return false;
     }
   };

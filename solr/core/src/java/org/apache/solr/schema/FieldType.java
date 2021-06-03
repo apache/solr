@@ -44,6 +44,7 @@ import org.apache.lucene.index.DocValuesIterator;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -729,6 +730,18 @@ public abstract class FieldType extends FieldProperties {
       } else {
         return backing.lookupOrd(ord);
       }
+    }
+  }
+
+  protected static class SortedDocValuesRefIterator extends WrappedDocValuesRefIterator<SortedDocValues> {
+
+    protected SortedDocValuesRefIterator(SortedDocValues backing) {
+      super(backing);
+    }
+
+    @Override
+    public BytesRef nextRef() throws IOException {
+      return backing.lookupOrd(backing.ordValue());
     }
   }
 

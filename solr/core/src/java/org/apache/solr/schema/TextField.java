@@ -564,8 +564,7 @@ public class TextField extends FieldType implements SchemaAware {
       if (schemaField.multiValued()) {
         return new SortedSetDocValuesRefIterator(DocValues.getSortedSet(reader, schemaField.getName()));
       } else {
-        //SortedDocValues is a subclass of BinaryDocValues
-        return new BinaryDocValuesRefIterator(DocValues.getSorted(reader, schemaField.getName()));
+        return new SortedDocValuesRefIterator(DocValues.getSorted(reader, schemaField.getName()));
       }
     }
     SchemaField storedDVField = getStoredDocValuesField(schemaField);
