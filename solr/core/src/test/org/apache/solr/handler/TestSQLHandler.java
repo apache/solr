@@ -1928,4 +1928,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
     return t;
   }
 
+  @Test
+  public void testLike() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "text_t", "foobar", "str_s", "a")
+        .add("id", "2", "text_t", "foobaz", "str_s", "a")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    SolrParams sParams = mapParams(CommonParams.QT, "/sql",
+        "stmt",
+        "select id from collection1 where str_s IN ('a')");
+
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    List<Tuple> tuples = getTuples(sParams, baseUrl);
+  }
 }

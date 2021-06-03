@@ -36,6 +36,9 @@
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="true" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="true" precisionStep="0" positionIncrementGap="0"/>
 
+  <fieldType name="integer" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
+  <field name="requestDate" type="integer" docValues="true" multiValued="false" indexed="true" stored="false"/>
+
   <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
