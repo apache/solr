@@ -66,9 +66,10 @@ There are no attributes that you can specify in the `<solr>` tag, which is the r
 `configSetService`::
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from ConfigSetService , and you must provide a constructor with one param which the type is `org.apache.solr.core.CoreContainer` . For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter which the type is `org.apache.solr.core.CoreContainer`.
+For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
-If this attribute isn't set, Solr uses the default configSetService , with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
+If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
 
 `adminHandler`::
 This attribute does not need to be set.
@@ -105,7 +106,7 @@ Solr will normally only access folders relative to `$SOLR_HOME`, `$SOLR_DATA_HOM
 
 [#_allow_urls]
 `allowUrls`::
-Comma-separated list of Solr hosts to allow. The http/https protocol may be omitted, and only the host and port are checked, i.e. `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
+Comma-separated list of Solr hosts to allow. The http/https protocol may be omitted, and only the host and port are checked, i.e., `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
 When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be allowed or Solr will forbid the request. In Solr cloud mode, this allow-list is added to the cluster's live nodes to determine which hosts are allowed. The allow-list can also be configured with the `solr.allowUrls` system property (see its use in `solr.in.sh`).
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
 
