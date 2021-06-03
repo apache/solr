@@ -44,7 +44,12 @@ Modifying your schema will never modify any documents that are already indexed. 
 See the section <<reindexing.adoc#,Reindexing>> for more information about reindexing.
 ====
 
-The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr -e techproducts
+----
 
 ////
 // TODO this needs to probably go away with v2 APIs?

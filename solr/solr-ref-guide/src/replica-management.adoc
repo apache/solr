@@ -20,7 +20,12 @@
 A replica is a physical copy of a shard.  Replicas enhance fail over by providing additional copies of the data
 and enhance scalability by providing additional capacity for searching.
 
-The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr -c -e techproducts
+----
 
 [[addreplica]]
 == ADDREPLICA: Add Replica

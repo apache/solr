@@ -27,7 +27,12 @@ CoreAdmin actions can be executed by via HTTP requests that specify an `action` 
 
 All action names are uppercase, and are defined in depth in the sections below.
 
-The examples assume you have started Solr via `bin/solr start -DconfigSetBaseDir=./server/solr/configsets -e techproducts`.
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr start -DconfigSetBaseDir=./server/solr/configsets -e techproducts
+----
 
 [[coreadmin-status]]
 == STATUS

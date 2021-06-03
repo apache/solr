@@ -21,7 +21,12 @@ In SolrCloud, a shard is a logical partition of a collection. This partition sto
 
 The number of shards you have helps to determine how many documents a single collection can contain in total, and also impacts search performance.
 
-The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr -c -e techproducts
+----
 
 [[splitshard]]
 == SPLITSHARD: Split a Shard
