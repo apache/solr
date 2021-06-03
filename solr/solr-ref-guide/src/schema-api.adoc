@@ -51,22 +51,6 @@ All of the examples in this section assume you are running the "techproducts" So
 bin/solr -e techproducts
 ----
 
-////
-// TODO this needs to probably go away with v2 APIs?
-
-== Schema API Entry Points
-
-* `/schema`: <<Retrieve the Entire Schema,retrieve>> the schema, or <<Modify the Schema,modify>> the schema to add, remove, or replace fields, dynamic fields, copy fields, or field types
-* `/schema/fields`: <<List Fields,retrieve information>> about all defined fields or a specific named field
-* `/schema/dynamicfields`: <<List Dynamic Fields,retrieve information>> about all dynamic field rules or a specific named dynamic rule
-* `/schema/fieldtypes`: <<List Field Types,retrieve information>> about all field types or a specific field type
-* `/schema/copyfields`: <<List Copy Fields,retrieve information>> about copy fields
-* `/schema/name`: <<Show Schema Name,retrieve>> the schema name
-* `/schema/version`: <<Show the Schema Version,retrieve>> the schema version
-* `/schema/uniquekey`: <<List UniqueKey,retrieve>> the defined uniqueKey
-* `/schema/similarity`: <<Show Global Similarity,retrieve>> the global similarity definition
-////
-
 == Modify the Schema
 
 To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
