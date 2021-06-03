@@ -34,6 +34,8 @@ All of the examples in this section assume you are running the "techproducts" So
 bin/solr start -DconfigSetBaseDir=./server/solr/configsets -e techproducts
 ----
 
+We are passing in the explicit relative path for the `configSetBaseDir` to enable creating new cores using the `sample_techproducts_configs` configset in the examples below.
+
 [[coreadmin-status]]
 == STATUS
 
@@ -110,15 +112,13 @@ http://localhost:8983/solr/admin/cores?action=CREATE&&name=techproducts_v2&confi
 If you have already existing core files deployed on disk, and need to just create the Solr core from them then the url will look something like
 [source,bash]
 ----
-admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data
+http://localhost:8983/solr/admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data
 ----
 ====
 
 [example.tab-pane#v2coreadmin-create]
 ====
 [.tab-label]*V2 API*
-
-Assumes SOLR-15372 is committed.
 
 [source,bash]
 ----
