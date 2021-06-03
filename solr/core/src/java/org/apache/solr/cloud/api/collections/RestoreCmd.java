@@ -86,7 +86,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     try (RestoreContext restoreContext = new RestoreContext(message, ccc)) {
       if (state.hasCollection(restoreContext.restoreCollectionName)) {

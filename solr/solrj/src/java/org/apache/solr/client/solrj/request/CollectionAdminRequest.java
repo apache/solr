@@ -2652,9 +2652,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    */
   public static class RequestApiDistributedProcessingResponse extends CollectionAdminResponse {
     public boolean getIsCollectionApiDistributed() {
-      @SuppressWarnings({"rawtypes"})
-      Boolean isDistributedApi = (Boolean) getResponse().get("isDistributedApi");
-      return isDistributedApi;
+      return (Boolean) getResponse().get("isDistributedApi");
     }
   }
 

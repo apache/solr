@@ -82,7 +82,6 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
    *          how many times to retry; 0 means no retries
    *          true if it's OK to retry non-idempotent requests that have been sent
    */
-  @SuppressWarnings("unchecked")
   public SolrHttpRequestRetryHandler(final int retryCount) {
     this(retryCount, Arrays.asList(InterruptedIOException.class, UnknownHostException.class,
         ConnectException.class, SSLException.class));

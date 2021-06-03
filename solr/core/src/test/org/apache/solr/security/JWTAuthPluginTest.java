@@ -326,7 +326,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
-    assertTrue(resp.getErrorMessage().contains("not a whitelisted"));
+    assertTrue(resp.getErrorMessage().contains("not a permitted algorithm"));
   }
 
   @Test

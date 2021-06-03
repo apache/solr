@@ -115,7 +115,6 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void prepare(ResponseBuilder rb) throws IOException {
 
     SolrParams params = rb.req.getParams();

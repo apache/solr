@@ -37,8 +37,7 @@ import java.nio.ByteBuffer;
  */
 public class DocumentObjectBinder {
 
-  @SuppressWarnings({"rawtypes"})
-  private final Map<Class, List<DocField>> infocache = new ConcurrentHashMap<>();
+  private final Map<Class<?>, List<DocField>> infocache = new ConcurrentHashMap<>();
 
   public DocumentObjectBinder() {
   }
@@ -119,7 +118,7 @@ public class DocumentObjectBinder {
     }
   }
 
-  private List<DocField> getDocFields(@SuppressWarnings({"rawtypes"})Class clazz) {
+  private List<DocField> getDocFields(Class<?> clazz) {
     List<DocField> fields = infocache.get(clazz);
     if (fields == null) {
       synchronized(infocache) {
@@ -130,10 +129,9 @@ public class DocumentObjectBinder {
   }
 
   @SuppressForbidden(reason = "Needs access to possibly private @Field annotated fields/methods")
-  private List<DocField> collectInfo(@SuppressWarnings({"rawtypes"})Class clazz) {
+  private List<DocField> collectInfo(Class<?> clazz) {
     List<DocField> fields = new ArrayList<>();
-    @SuppressWarnings({"rawtypes"})
-    Class superClazz = clazz;
+    Class<?> superClazz = clazz;
     List<AccessibleObject> members = new ArrayList<>();
 
     while (superClazz != null && superClazz != Object.class) {
@@ -163,8 +161,7 @@ public class DocumentObjectBinder {
     private java.lang.reflect.Field field;
     private Method setter;
     private Method getter;
-    @SuppressWarnings({"rawtypes"})
-    private Class type;
+    private Class<?> type;
     private boolean isArray;
     private boolean isList;
     private List<DocField> child;
@@ -235,8 +232,7 @@ public class DocumentObjectBinder {
       if (field != null) {
         type = field.getType();
       } else {
-        @SuppressWarnings({"rawtypes"})
-        Class[] params = setter.getParameterTypes();
+        Class<?>[] params = setter.getParameterTypes();
         if (params.length != 1) {
           throw new BindingException("Invalid setter method (" + setter +
               "). A setter must have one and only one parameter but we found " + params.length + " parameters.");

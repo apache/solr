@@ -69,7 +69,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public void mergeBucketList(List<SimpleOrderedMap> bucketList, Context mcontext) {
     for (SimpleOrderedMap bucketRes : bucketList) {
       Comparable bucketVal = (Comparable)bucketRes.get("val");
