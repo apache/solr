@@ -1150,7 +1150,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         return newFieldQuery
             (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
-        if (raw) {// assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
+        if (raw) {
           return new RawQuery(sf, queryTerms);
         } else {
           if (queryTerms.size() == 1) {
@@ -1161,6 +1161,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
               try {
                 subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
               } catch (Exception e) {
+                // assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
+                // ExtendedDismaxQueryParser is a lenient query parser 
                 // This happens when a field tries to parse a query term that has a type incompatible with the field
                 // e.g.
                 // a numerical field trying to parse a textual query term
