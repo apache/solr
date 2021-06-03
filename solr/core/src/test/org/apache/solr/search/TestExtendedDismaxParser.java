@@ -1783,7 +1783,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
         String parsedquery = getParsedQuery(
             req("qf", "trait_ss", "q", "multi term", "defType", "edismax", "sow", "false", "debugQuery", "true"));
-        assertThat(parsedquery, anyOf(containsString("((trait_ss:multi term))")));
+        assertThat(parsedquery, containsString("((trait_ss:multi term))"));
     }
 
     @Test
@@ -1794,14 +1794,14 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
         String parsedquery = getParsedQuery(
             req("qf", "foo_i", "q", "101 102", "defType", "edismax", "sow", "false", "debugQuery", "true"));
-        assertThat(parsedquery, anyOf(containsString("foo_i:[101 TO 101]"), containsString("foo_i:[102 TO 102]")));
+        assertThat(parsedquery, allOf(containsString("foo_i:[101 TO 101]"), containsString("foo_i:[102 TO 102]")));
 
         assertJQ(req("qf", "foo_i", "defType", "edismax", "q", "101 102", "sow", "true"),
             "/response/numFound==2", "/response/docs/[0]/id=='76'", "/response/docs/[1]/id=='77'");
 
         parsedquery = getParsedQuery(
             req("qf", "foo_i", "q", "101 102", "defType", "edismax", "sow", "true", "debugQuery", "true"));
-        assertThat(parsedquery, anyOf(containsString("foo_i:[101 TO 101]"), containsString("foo_i:[102 TO 102]")));
+        assertThat(parsedquery, allOf(containsString("foo_i:[101 TO 101]"), containsString("foo_i:[102 TO 102]")));
     }
 
   private static String getParsedQuery(SolrQueryRequest request) throws Exception {
