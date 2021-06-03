@@ -1160,8 +1160,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             for (String queryTerm : queryTerms) {
               try {
                 subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
-              } catch (Exception e) {
-                // assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
+              } catch (Exception e) { // assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
                 // ExtendedDismaxQueryParser is a lenient query parser 
                 // This happens when a field tries to parse a query term that has a type incompatible with the field
                 // e.g.
