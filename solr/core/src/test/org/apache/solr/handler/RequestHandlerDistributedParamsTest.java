@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 
 public class RequestHandlerDistributedParamsTest extends SolrTestCaseJ4 {
@@ -76,6 +77,23 @@ public class RequestHandlerDistributedParamsTest extends SolrTestCaseJ4 {
 
     // when
     SolrQueryRequest req = req(ShardParams.IS_SHARD, "true");
+    handler.handleRequest(req, new SolrQueryResponse());
+
+    // then
+    assertNull(req.getParams().get("foo"));
+  }
+
+  @Test
+  public void shouldNotAppendParamsInDistributedRequestWhenShardHandlerDiffers() {
+    // given
+    NamedList<String> appends = new NamedList<>();
+    appends.add("foo", "appended");
+    NamedList<NamedList<String>> init = new NamedList<>();
+    init.add("appends", appends);
+    handler.init(init);
+
+    // when
+    SolrQueryRequest req = req(ShardParams.IS_SHARD, "true", ShardParams.SHARDS_QT, "/special-handler", CommonParams.QT, "/select");
     handler.handleRequest(req, new SolrQueryResponse());
 
     // then

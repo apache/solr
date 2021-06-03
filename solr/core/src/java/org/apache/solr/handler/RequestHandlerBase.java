@@ -19,12 +19,14 @@ package org.apache.solr.handler;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
+
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -208,7 +210,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       TestInjection.injectLeaderTragedy(req.getCore());
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
         req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
-      if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      if (req.getParams().getBool(ShardParams.IS_SHARD, false)
+        && Objects.equals(req.getParams().get(ShardParams.SHARDS_QT), req.getParams().get(CommonParams.QT))) {
         SolrPluginUtils.setDefaults(this, req, defaults, null, invariants);
       } else {
         SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
