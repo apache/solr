@@ -121,7 +121,6 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
 
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
         MetricUtils.ALL_PROPERTIES, false, false, false, false, (k, o) -> {
-      @SuppressWarnings({"rawtypes"})
       Map<String, Object> v = new HashMap<>();
       if (o != null) {
         ((MapWriter) o).toMap(v);

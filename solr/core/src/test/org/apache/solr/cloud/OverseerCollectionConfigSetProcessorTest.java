@@ -593,7 +593,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   protected void issueCreateJob(Integer numberOfSlices,
       Integer replicationFactor, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
     Map<String,Object> propMap = Utils.makeMap(
-        Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+        (Object) Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
         ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
         "name", COLLECTION_NAME,
         "collection.configName", CONFIG_NAME,

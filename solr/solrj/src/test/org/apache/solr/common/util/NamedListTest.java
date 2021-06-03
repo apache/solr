@@ -153,11 +153,11 @@ public class NamedListTest extends SolrTestCase {
     assertEquals("value3c", test3);
     // Checking that invalid values return null.
     String test4 = (String) nl.findRecursive("key3", "key3c", "invalid");
-    assertEquals(null, test4);
+    assertNull(test4);
     String test5 = (String) nl.findRecursive("key3", "invalid", "invalid");
-    assertEquals(null, test5);
+    assertNull(test5);
     String test6 = (String) nl.findRecursive("invalid", "key3c");
-    assertEquals(null, test6);
+    assertNull(test6);
     // Verify that retrieved NamedList objects have the right type.
     Object test7 = nl.findRecursive("key2", "key2b");
     assertTrue(test7 instanceof NamedList);
@@ -208,7 +208,7 @@ public class NamedListTest extends SolrTestCase {
     assertEquals("Val1_", nl.get("key1"));
     assertEquals("Val1_", m.get("key1"));
     assertEquals(0, nl.indexOf("key1", 0));
-    m.putAll(Utils.makeMap("key1", "Val1__", "key2", "Val2"));
+    m.putAll(Map.of("key1", "Val1__", "key2", "Val2"));
     assertEquals("Val1__", nl.get("key1"));
     assertEquals("Val1__", m.get("key1"));
     assertEquals(0, nl.indexOf("key1", 0));

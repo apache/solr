@@ -206,7 +206,6 @@ public abstract class FieldMutatingUpdateProcessorFactory
    * Will error if any unexpected init args are found, so subclasses should
    * remove any subclass-specific init args before calling this method.
    */
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 

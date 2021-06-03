@@ -135,7 +135,6 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
    *
    * Any default circuit breakers should be registered here.
    */
-  @SuppressWarnings({"rawtypes"})
   public static CircuitBreakerManager build(PluginInfo pluginInfo) {
     boolean enabled = pluginInfo == null ? false : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
     CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);

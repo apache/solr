@@ -65,7 +65,6 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
 
   String delimiter = ", ";
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     Object d = args.remove("delimiter");
