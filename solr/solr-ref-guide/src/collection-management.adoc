@@ -275,6 +275,7 @@ The attributes that can be modified are:
 * replicationFactor
 * collection.configName
 * readOnly
+* async
 * other custom properties that use a `property.` prefix
 
 See the <<create,CREATE action>> section above for details on these attributes.
