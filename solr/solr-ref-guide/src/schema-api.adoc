@@ -844,7 +844,7 @@ http://localhost:8983/techproducts/schema/fields
 [source,bash]
 ----
 
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fields?wt=json"
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fields"
 ----
 ====
 --
@@ -934,7 +934,7 @@ http://localhost:8983/techproducts/schema/dynamicfields
 [source,bash]
 ----
 
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/dynamicfields?wt=json"
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/dynamicfields"
 ----
 ====
 --
@@ -1033,7 +1033,7 @@ curl http://localhost:8983/solr/techproducts/schema/fieldtypes
 [tab-label]*V2 API*
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fieldtypes?wt=json"
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fieldtypes"
 ----
 ====
 --
@@ -1136,7 +1136,7 @@ curl http://localhost:8983/solr/techproducts/schema/copyfields
 [tab-label]*V2 API*
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/copyfields?wt=json"
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/copyfields"
 ----
 ====
 --
@@ -1213,7 +1213,7 @@ curl http://localhost:8983/solr/techproducts/schema/name
 [tab-label]*V2 API*
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/name?wt=json"
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/name"
 ----
 ====
 --
@@ -1270,7 +1270,7 @@ curl http://localhost:8983/solr/techproducts/schema/version
 [tab-label]*V2 API*
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/version?wt=json"
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/version"
 ----
 ====
 --
@@ -1327,7 +1327,7 @@ curl http://localhost:8983/solr/techproducts/schema/uniquekey
 [tab-label]*V2 API*
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/uniquekey?wt=json"
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/uniquekey"
 ----
 ====
 --
@@ -1383,7 +1383,7 @@ curl http://localhost:8983/solr/techproducts/schema/similarity
 [tab-label]*V2 API*
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/similarity?wt=json"
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/similarity"
 ----
 ====
 --
