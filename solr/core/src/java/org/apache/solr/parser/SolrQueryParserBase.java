@@ -1164,7 +1164,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
                 // This happens when a field tries to parse a query term that has a type incompatible with the field
                 // e.g.
                 // a numerical field trying to parse a textual query term
-                subqs.add(new MatchNoDocsQuery(queryTerm + " is not compatible with " + field));
+                subqs.add(new MatchNoDocsQuery());
               }
             }
             if (subqs.size() == 1) {
