@@ -19,11 +19,11 @@ package org.apache.solr.common.util;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
@@ -31,11 +31,11 @@ public class TestValidatingJsonMap extends SolrTestCaseJ4 {
 
   public void testBasic() throws Exception {
     ValidatingJsonMap m = ValidatingJsonMap.wrap(
-        makeMap("a", Boolean.TRUE,
+        Map.of("a", Boolean.TRUE,
                 "b", Boolean.FALSE,
                 "i", 10,
                 "l" , Arrays.asList("X", "Y"),
-            "c", makeMap("d", "D")));
+            "c", Map.of("d", "D")));
     assertEquals(Boolean.TRUE, m.getBool("a", Boolean.FALSE));
     assertEquals(Boolean.FALSE, m.getBool("b", Boolean.TRUE));
     assertEquals(Integer.valueOf(10), m.getInt("i",0));

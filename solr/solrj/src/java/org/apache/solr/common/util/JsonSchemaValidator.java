@@ -120,10 +120,9 @@ enum Type {
   NULL(null),
   UNKNOWN(Object.class);
 
-  @SuppressWarnings({"rawtypes"})
-  Class type;
+  Class<?> type;
 
-  Type(@SuppressWarnings({"rawtypes"})Class type) {
+  Type(Class<?> type) {
     this.type = type;
   }
 

@@ -549,9 +549,9 @@ Intervals must begin with either '(' or '[', be followed by the start value, the
 
 For example:
 
-* (1,10) \-> will include values greater than 1 and lower than 10
-* [1,10) \-> will include values greater or equal to 1 and lower than 10
-* [1,10] \-> will include values greater or equal to 1 and lower or equal to 10
+* (1,10) -> will include values greater than 1 and lower than 10
+* [1,10) -> will include values greater or equal to 1 and lower than 10
+* [1,10] -> will include values greater or equal to 1 and lower or equal to 10
 
 The initial and end values cannot be empty.
 
@@ -622,4 +622,6 @@ This local parameter overrides default logic for `facet.sort`. if `facet.sort` i
 
 == Related Topics
 
-See also <<spatial-search.adoc#,Heatmap Faceting (Spatial)>>.
+See <<spatial-search.adoc#,Spatial Search>> for examples of faceting by distance and generating heatmaps via faceting.
+
+See <<response-writers.adoc#json-nl, Response Writers>> for details on the `json.nl` parameter for controlling the format for writing out field facet data when using the JSON response writer.

@@ -84,7 +84,6 @@ public abstract class AbstractPluginLoader<T>
    * @param className - class name for requested plugin.  In the above example: "solr.ClassName"
    * @param node - the XML node defining this plugin
    */
-  @SuppressWarnings("unchecked")
   protected T create(SolrClassLoader loader, String name, String className, ConfigNode node ) throws Exception
   {
     return loader.newInstance(className, pluginClassType, getDefaultPackages());

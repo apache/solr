@@ -62,6 +62,7 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import io.opentracing.util.GlobalTracer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
@@ -447,7 +448,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     }
 
-    Tracer tracer = cores.getTracer();
+    Tracer tracer = cores == null ? GlobalTracer.get() : cores.getTracer();
     String hostAndPort = request.getServerName() + "_" + request.getServerPort();
     Span span = tracer.buildSpan(request.getMethod() + ":" + hostAndPort)
         .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))

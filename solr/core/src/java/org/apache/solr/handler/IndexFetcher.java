@@ -299,7 +299,7 @@ public class IndexFetcher {
   /**
    * Gets the latest commit version and generation from the leader
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   NamedList getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
@@ -677,12 +677,12 @@ public class IndexFetcher {
         markReplicationStop();
         return successfulInstall ? IndexFetchResult.INDEX_FETCH_SUCCESS : IndexFetchResult.INDEX_FETCH_FAILURE;
       } catch (ReplicationHandlerException e) {
-        log.error("User aborted Replication");
+        log.error("User aborted Replication", e);
         return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
-        throw new InterruptedException("Index fetch interrupted");
+        throw (InterruptedException)(new InterruptedException("Index fetch interrupted").initCause(e));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       }
@@ -1411,7 +1411,6 @@ public class IndexFetcher {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
       return Collections.emptyList();
     //build a map with alias/name as the key
-    @SuppressWarnings({"rawtypes"})
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
     @SuppressWarnings({"rawtypes"})
     NamedList names = new NamedList();
@@ -1490,7 +1489,6 @@ public class IndexFetcher {
     return timeElapsed;
   }
 
-  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getConfFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;

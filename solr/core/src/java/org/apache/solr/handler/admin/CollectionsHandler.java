@@ -559,7 +559,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
 
-    @SuppressWarnings({"unchecked"})
     CREATEALIAS_OP(CREATEALIAS, (req, rsp, h) -> {
       String alias = req.getParams().get(NAME);
       SolrIdentifierValidator.validateAliasName(alias);
@@ -569,7 +568,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       HashMap<String,Object> possiblyModifiedParams = new HashMap<>();
       try {
         // note that RA specific validation occurs here.
-        routedAlias = RoutedAlias.fromProps(alias, req.getParams().toMap(possiblyModifiedParams));
+        req.getParams().toMap(possiblyModifiedParams);
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        // This is awful because RoutedAlias lies about what types it wants
+        Map<String, String> temp = (Map<String, String>) (Map) possiblyModifiedParams;
+        routedAlias = RoutedAlias.fromProps(alias, temp);
       } catch (SolrException e) {
         // we'll throw this later if we are in fact creating a routed alias.
         ex = e;
@@ -733,7 +736,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
-          DELETE_METRICS_HISTORY,
           FOLLOW_ALIASES);
       return map;
     }),
@@ -771,7 +773,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
-          DELETE_METRICS_HISTORY,
           COUNT_PROP, REPLICA_PROP,
           SHARD_ID_PROP,
           ONLY_IF_DOWN,

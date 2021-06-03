@@ -523,7 +523,6 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
     if (existingField == null) return;
-    @SuppressWarnings({"rawtypes"})
     final Collection<Object> original = existingField.getValues();
     if (fieldVal instanceof Collection) {
       for (Object object : (Collection) fieldVal) {
@@ -616,7 +615,7 @@ public class AtomicUpdateDocumentMerger {
     }
   }
 
-  private void removeFieldValueWithNumericFudging(String fieldName, @SuppressWarnings({"rawtypes"}) Collection<Object> original, Object toRemove) {
+  private void removeFieldValueWithNumericFudging(String fieldName, Collection<Object> original, Object toRemove) {
     if (original.size() == 0) {
       return;
     }

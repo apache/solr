@@ -47,14 +47,13 @@ import static org.apache.solr.common.util.Utils.getDeepCopy;
 public class RequestParams implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @SuppressWarnings({"rawtypes"})
-  private final Map data;
+  private final Map<String, Object> data;
   private final Map<String, ParamSet> paramsets = new LinkedHashMap<>();
   private final int znodeVersion;
 
-  @SuppressWarnings({"rawtypes"})
-  public RequestParams(Map data, int znodeVersion) {
-    if (data == null) data = Collections.EMPTY_MAP;
+  @SuppressWarnings("rawtypes")
+  public RequestParams(Map<String, Object> data, int znodeVersion) {
+    if (data == null) data = Collections.emptyMap();
     this.data = data;
     Map paramsets = (Map) data.get(NAME);
     if (paramsets != null) {
@@ -125,14 +124,12 @@ public class RequestParams implements MapSerializable {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Map<String, Object> toMap(Map<String, Object> map) {
     return getMapWithVersion(data, znodeVersion);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Map<String, Object> getMapWithVersion(Map<String, Object> data, int znodeVersion) {
-    Map result = new LinkedHashMap();
+    Map<String, Object> result = new LinkedHashMap<>();
     result.put(ConfigOverlay.ZNODEVER, znodeVersion);
     result.putAll(data);
     return result;
@@ -157,10 +154,12 @@ public class RequestParams implements MapSerializable {
           log.debug("latest version of {}/{} in ZK  is : {}", resourceLoader.getConfigSetZkPath(), RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
         }
         if (stat == null) {
-          requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
+          requestParams = new RequestParams(Collections.emptyMap(), -1);
         } else if (requestParams == null || stat.getVersion() > requestParams.getZnodeVersion()) {
           Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
-          requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
+          @SuppressWarnings("unchecked")
+          Map<String, Object> data = (Map<String, Object>)  o[0];
+          requestParams = new RequestParams(data, (Integer) o[1]);
           if (log.isInfoEnabled()) {
             log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
           }
@@ -172,7 +171,9 @@ public class RequestParams implements MapSerializable {
 
     } else {
       Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
-      requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> data = (Map<String, Object>)  o[0];
+      requestParams = new RequestParams(data, (Integer) o[1]);
     }
 
     return requestParams;
@@ -197,7 +198,7 @@ public class RequestParams implements MapSerializable {
 
     } catch (IOException e) {
       //no problem no overlay.json file
-      return new Object[]{Collections.EMPTY_MAP, -1};
+      return new Object[]{Collections.emptyMap(), -1};
     }
   }
 

@@ -209,7 +209,6 @@ public final class DocExpirationUpdateProcessorFactory
     throw confErr(arg + " " + errMsg);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 

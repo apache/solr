@@ -67,7 +67,6 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     doTestDeepPivotStats();
   }
   
-  @SuppressWarnings({"rawtypes"})
   private void sanityCheckIndividualShards() throws Exception {
     assertEquals("This test assumes exactly 3 shards/clients", 3, clients.size());
     

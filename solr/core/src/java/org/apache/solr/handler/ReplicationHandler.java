@@ -1099,14 +1099,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     addVal(consumer, IndexFetcher.CLEARED_LOCAL_IDX, props, Boolean.class);
   }
 
-  private void addVal(BiConsumer<String, Object> consumer, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
+  private void addVal(BiConsumer<String, Object> consumer, String key, Properties props, Class<?> clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
       consumer.accept(key, val);
     }
   }
 
-  private Object formatVal(String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
+  private Object formatVal(String key, Properties props, Class<?> clzz) {
     String s = props.getProperty(key);
     if (s == null || s.trim().length() == 0) return null;
     if (clzz == Date.class) {
@@ -1208,6 +1208,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         log.info("Poll disabled");
         return;
       }
+      ExecutorUtil.setServerThreadFlag(true); // so PKI auth works
       try {
         log.debug("Polling for index modifications");
         markScheduledExecutionStart();
@@ -1215,6 +1216,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (pollListener != null) pollListener.onComplete(core, fetchResult);
       } catch (Exception e) {
         log.error("Exception in fetching index", e);
+      } finally {
+        ExecutorUtil.setServerThreadFlag(null);
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(

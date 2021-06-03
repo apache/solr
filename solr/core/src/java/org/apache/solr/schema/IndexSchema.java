@@ -1379,9 +1379,8 @@ public class IndexSchema {
   /**
    * Get a map of property name -&gt; value for the whole schema.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map getNamedPropertyValues() {
-    return getNamedPropertyValues(null, new MapSolrParams(Collections.EMPTY_MAP));
+  public Map<String, Object> getNamedPropertyValues() {
+    return getNamedPropertyValues(null, new MapSolrParams(Collections.emptyMap()));
   }
 
   public static class SchemaProps implements MapSerializable {

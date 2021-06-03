@@ -477,10 +477,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   private static Map<String, Level> savedClassLogLevels = new HashMap<>();
 
   public static void initClassLogLevels() {
-    @SuppressWarnings({"rawtypes"})
-    Class currentClass = RandomizedContext.current().getTargetClass();
-    @SuppressWarnings({"unchecked"})
-    LogLevel annotation = (LogLevel) currentClass.getAnnotation(LogLevel.class);
+    Class<?> currentClass = RandomizedContext.current().getTargetClass();
+    LogLevel annotation = currentClass.getAnnotation(LogLevel.class);
     if (annotation == null) {
       return;
     }
@@ -1031,10 +1029,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             + "\n\txml response was: " + response
             + "\n\trequest was:" + req.getParamString();
 
-        log.error(msg);
-        throw new RuntimeException(msg);
+        fail(msg);
       }
-
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
@@ -1327,14 +1323,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return msp;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Map map(Object... params) {
-    LinkedHashMap ret = new LinkedHashMap();
-    for (int i=0; i<params.length; i+=2) {
-      Object o = ret.put(params[i], params[i+1]);
-      // TODO: handle multi-valued map?
-    }
-    return ret;
+  public static Map<String, String> map(String... params) {
+    return Utils.makeMap(params);
+  }
+
+  public static Map<String, Object> map(Object... params) {
+    return Utils.makeMap(params);
   }
 
   /**
@@ -2984,8 +2978,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.clearProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST);
   }
 
-  @SuppressWarnings({"unchecked"})
-  protected <T> T pickRandom(T... options) {
+  @SafeVarargs
+  protected static <T> T pickRandom(T... options) {
     return options[random().nextInt(options.length)];
   }
   
@@ -3035,7 +3029,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @lucene.experimental
    * @lucene.internal
    */
-  @SuppressWarnings({"rawtypes"})
   private static void randomizeNumericTypesProperties() {
 
     final boolean useDV = random().nextBoolean();
@@ -3073,7 +3066,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     }
-    for (Map.Entry<Class,String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
+    for (Map.Entry<Class<?>,String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
       System.setProperty("solr.tests." + entry.getKey().getSimpleName() + "FieldType",
                          entry.getValue());
 
@@ -3099,7 +3092,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
     System.clearProperty("solr.tests.numeric.points");
     System.clearProperty("solr.tests.numeric.points.dv");
-    for (@SuppressWarnings({"rawtypes"})Class c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
+    for (Class<?> c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
       System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
     }
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
@@ -3115,8 +3108,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static boolean isChildDoc(Object o) {
     if(o instanceof Collection) {
-      @SuppressWarnings({"rawtypes"})
-      Collection col = (Collection) o;
+      Collection<?> col = (Collection<?>) o;
       if(col.size() == 0) {
         return false;
       }
@@ -3125,8 +3117,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return o instanceof SolrInputDocument;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
+  private static final Map<Class<?>,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
   
   /**
    * A Map of "primitive" java "numeric" types and the string name of the <code>class</code> used in the
@@ -3137,8 +3128,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #randomizeNumericTypesProperties
    */
-  @SuppressWarnings({"rawtypes"})
-  protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
+  protected static final Map<Class<?>,String> RANDOMIZED_NUMERIC_FIELDTYPES
     = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
 
 }

@@ -212,7 +212,8 @@ public class SolrException extends RuntimeException {
 
     return null;
   }
-  
+
+  // TODO: This doesn't handle cause loops
     public static Throwable getRootCause(Throwable t) {
     while (true) {
       Throwable cause = t.getCause();
@@ -225,7 +226,6 @@ public class SolrException extends RuntimeException {
     return t;
   }
 
-  @SuppressWarnings({"unchecked"})
   public void logInfoWithMdc(Logger logger, String msg) {
     Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
     MDC.setContextMap(mdcContext);

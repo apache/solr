@@ -90,7 +90,7 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
       }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes"})
     @Override
     public void clean(AtomicReference ctx) {
       Scope scope = (Scope) ctx.get();

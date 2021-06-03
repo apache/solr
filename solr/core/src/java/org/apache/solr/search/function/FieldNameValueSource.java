@@ -39,8 +39,7 @@ public class FieldNameValueSource extends ValueSource {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     throw new UnsupportedOperationException("FieldNameValueSource should not be directly used: " + this);
   }
 
