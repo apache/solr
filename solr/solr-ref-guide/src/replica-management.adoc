@@ -70,7 +70,7 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=techpr
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "add-replica":{
       "shard":"shard1",
@@ -242,7 +242,7 @@ http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "move-replica":{
       "replica":"core_node6",
@@ -393,7 +393,7 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&collection=te
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "add-replica-property":{
       "shard":"shard1",
@@ -495,7 +495,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&collection
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "delete-replica-property":{
       "shard":"shard1",

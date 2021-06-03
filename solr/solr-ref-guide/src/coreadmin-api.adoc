@@ -122,7 +122,7 @@ http://localhost:8983/solr/admin/cores?action=CREATE&name=_core-name_&instanceDi
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json' -d '
   {
     "create": {
       "name": "techproducts_v2",
@@ -220,7 +220,7 @@ http://localhost:8983/solr/admin/cores?action=RELOAD&core=techproducts
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/techproducts -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/cores/techproducts -H 'Content-Type: application/json' -d '
   {
     "reload": {}
   }

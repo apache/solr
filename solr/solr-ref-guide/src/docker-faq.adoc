@@ -112,7 +112,7 @@ SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data solr)
 docker exec -it --user=solr $SOLR_CONTAINER solr create_core -c gettingstarted
 
 # make a change to the config, using the config API
-docker exec -it --user=solr $SOLR_CONTAINER curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d'{
+docker exec -it --user=solr $SOLR_CONTAINER curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
     "set-property" : {"query.filterCache.autowarmCount":1000},
     "unset-property" :"query.filterCache.size"}'
 

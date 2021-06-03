@@ -65,7 +65,7 @@ http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=techpr
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "split":{
       "shard":"shard1"
@@ -227,7 +227,7 @@ http://localhost:8983/solr/admin/collections?action=CREATESHARD&shard=newShardNa
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "create":{
       "shard":"newShardName"
@@ -386,7 +386,7 @@ http://localhost:8983/solr/admin/collections?action=FORCELEADER&collection=techp
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1 -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1 -H 'Content-Type: application/json' -d '
   {
     "force-leader":{}
   }
