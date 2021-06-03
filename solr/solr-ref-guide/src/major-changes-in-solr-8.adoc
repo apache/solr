@@ -488,7 +488,7 @@ Existing users of this feature should not have to change anything. However, they
 ** If a reporter configures the `group="shard"` attribute then please also configure the `class="org.apache.solr.metrics.reporters.solr.SolrShardReporter"` attribute.
 ** If a reporter configures the `group="cluster"` attribute then please also configure the  `class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter"` attribute.
 +
-See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and Cluster Reporters>> for more information.
+See the section in Metrics Reporting: Shard and Cluster Reporters for more information.
 
 *Streaming Expressions*
 

@@ -65,8 +65,9 @@ http://localhost:8983/api/collections/techproducts/config
 The response will be the Solr configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`.
 
 
-It's possible to restrict the returned config to a top-level section, such as, `query`, `requestHandler` or `updateHandler`.
-To do this, append the name of the section to the `config` endpoint. For example, to retrieve configuration for all request handlers:
+It's possible to restrict the returned configuration to a top-level section, such as, `query`, `requestHandler` or `updateHandler`.
+To do this, append the name of the section to the `config` endpoint.
+For example, to retrieve configuration for all request handlers:
 
 [.dynamic-tabs]
 --
@@ -927,6 +928,6 @@ Any component can register a listener using:
 
 `SolrCore#addConfListener(Runnable listener)`
 
-to get notified for config changes.
+to get notified of configuration changes.
 This is not very useful if the files modified result in core reloads (i.e., `configoverlay.xml` or the schema).
 Components can use this to reload the files they are interested in.

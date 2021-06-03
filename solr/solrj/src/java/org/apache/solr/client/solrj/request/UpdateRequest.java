@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
@@ -235,7 +234,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   }
 
   private interface ReqSupplier<T extends LBSolrClient.Req> {
-    T get(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, List<String> servers);
+    T get(UpdateRequest request, List<String> servers);
   }
 
   private <T extends LBSolrClient.Req> Map<String, T> getRoutes(DocRouter router,

@@ -81,7 +81,6 @@ public class SchemaResponse extends SolrResponseBase {
     return analyzerDefinition;
   }
 
-  @SuppressWarnings("unchecked")
   private static FieldTypeDefinition createFieldTypeDefinition(NamedList<Object> fieldTypeNamedList) {
     FieldTypeDefinition fieldTypeDefinition = new FieldTypeDefinition();
     fillFieldTypeDefinition(fieldTypeDefinition, fieldTypeNamedList);
@@ -236,7 +235,6 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void setResponse(NamedList<Object> response) {
     super.setResponse(response);
 
@@ -253,7 +251,6 @@ public class SchemaResponse extends SolrResponseBase {
     private String schemaName;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
@@ -270,7 +267,6 @@ public class SchemaResponse extends SolrResponseBase {
     private float schemaVersion;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
@@ -305,7 +301,6 @@ public class SchemaResponse extends SolrResponseBase {
     List<Map<String, Object>> fields;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
@@ -339,7 +334,6 @@ public class SchemaResponse extends SolrResponseBase {
     List<Map<String, Object>> dynamicFields;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
@@ -355,7 +349,6 @@ public class SchemaResponse extends SolrResponseBase {
     private String uniqueKey;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
@@ -371,7 +364,6 @@ public class SchemaResponse extends SolrResponseBase {
     Map<String, Object> similarity;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
@@ -388,7 +380,6 @@ public class SchemaResponse extends SolrResponseBase {
     List<Map<String, Object>> copyFields;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
@@ -422,7 +413,6 @@ public class SchemaResponse extends SolrResponseBase {
     List<FieldTypeRepresentation> fieldTypes;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
@@ -436,7 +426,6 @@ public class SchemaResponse extends SolrResponseBase {
 
   public static class UpdateResponse extends SolrResponseBase {
     @Override
-    @SuppressWarnings("unchecked")
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
     }

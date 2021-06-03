@@ -39,8 +39,6 @@ New Features
 
 * SOLR-15164: Implement Task Management Interface (Atri Sharma, with extensive review and perf testing by Anshum Gupta, Mike Drob and Houston Putman)
 
-* SOLR-15090: A new 'gcs-repository' contrib can be used to store and retrieve backups from Google Cloud Storage. (Jason Gerlowski, Shalin Mangar, Cao Manh Dat)
-
 * SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
 
 Improvements
@@ -130,6 +128,12 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15335: Docker: Solr has capability to build functionally-identical local and official Docker image. (hossman, Houston Putman)
 
 * SOLR-15414: Use ConfigSet API instead of Zookeeper data node to list out configsets available in Solr Admin UI. (Nazerke Seidan via Eric Pugh)
+
+* SOLR-15421: ConfigSet API also checks for solrconfig.xml when checking the existence of a configset (Andras Salamon via David Smiley)
+
+* SOLR-15392: Distributed Tracing request span operation names are now composed of a command/verb
+  and a templated path.  The collection or core name is now in the db.instance tag.
+  (David Smiley)
 
 Other Changes
 ----------------------
@@ -228,8 +232,6 @@ Other Changes
 * SOLR-14912: Clean up solr-extraction contrib to produce solr-extraction-* jar
   (instead of solr-cell-*). (Dawid Weiss)
 
-* SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
-
 * SOLR-14035: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local alternative.
   (Alex Bulygin via Christine Poerschke)
 
@@ -283,7 +285,7 @@ Other Changes
   (David Smiley, Christine Poerschke)
 
 * SOLR-15283: Overhaul distributed-tracing.  Solr's "samplePercentage" is gone; tracing is either
-  enabled and you always have trace IDs or it isn't, based on wether you configure a tracing plugin.
+  enabled and you always have trace IDs or it isn't, based on whether you configure a tracing plugin.
   Reporting of traces to a server like Zipkin is a configuration matter of the tracing plugin you
   use.  The Jaeger plugin is now completely configurable via system properties or environment vars,
   not by values in solr.xml. (David Smiley)
@@ -295,7 +297,15 @@ Other Changes
 
 * SOLR-15222: userfiles dir will only be created in SolrCloud mode (Mike Drob)
 
+* SOLR-15401: Document the new NorwegianNormalizationFilter introduced in LUCENE-9929. (janhoy)
+
 * SOLR-15409: Upgrade to Zookeeper 3.7.0 (Mike Drob)
+
+* SOLR-15416: Remove metrics history collection (and MetricsHistoryHandler). (ab)
+
+* SOLR-15439: Upgrade jose4j library used for JWT authentication processing, to v0.7.7 (janhoy)
+
+* SOLR-15385: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley)
 
 Bug Fixes
 ---------------------
@@ -326,6 +336,11 @@ New Features
 * SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with new Solr Cluster row (janhoy)
 
 * SOLR-15397: Expose zookeeper status in the Prometheus exporter (janhoy)
+
+* SOLR-15090: A new 'gcs-repository' contrib can be used to store and retrieve backups from Google Cloud Storage. (Jason Gerlowski, Shalin Mangar, Cao Manh Dat)
+
+* SOLR-12697: In contrib/ltr FieldValueFeature support "stored=false docValues=true" a.k.a. pure DocValues fields.
+  (Stanislav Livotov, Erick Erickson, Tobias Kässmann, Tom Gilke, Christine Poerschke)
 
 Improvements
 ---------------------
@@ -399,6 +414,9 @@ Bug Fixes
 * SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
   allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
 
+* SOLR-15418: The V2 API threw errors for GET requests to collection handlers like /select.
+  (David Smiley)
+
 * SOLR-15424: Solr replication UI wraps ETA time on top of next line (janhoy)
 
 * SOLR-15399: IndexFetcher should not issue a local commit for PULL replicas when leader's version is zero (Timothy Potter)
@@ -411,6 +429,10 @@ Other Changes
   be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
 
 * SOLR-15377: Improve IndexFetcher's exception logging upon replication errors. (Torsten Bøgh Köster, Christine Poerschke)
+
+* SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
+
+* SOLR-15316: Upgrade Jetty to 9.4.41.v20210516 (janhoy, Mike Drob)
 
 ==================  8.8.2 ==================
 

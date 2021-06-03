@@ -22,8 +22,7 @@ public interface SolrClassLoader {
 
     <T> T newInstance(String cname, Class<T> expectedType, String... subpackages);
 
-    @SuppressWarnings({"rawtypes"})
-    <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args);
+    <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class<?>[] params, Object[] args);
 
     <T> Class<? extends T> findClass(String cname, Class<T> expectedType);
 }

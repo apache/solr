@@ -38,13 +38,11 @@ import org.apache.solr.common.params.SolrParams;
 
 public class StreamContext implements Serializable {
 
-  @SuppressWarnings({"rawtypes"})
-  private Map entries = new HashMap();
-  @SuppressWarnings({"rawtypes"})
-  private Map tupleContext = new HashMap();
+  private Map<String, Object> entries = new HashMap<String, Object>();
+  private Map<String, String> tupleContext = new HashMap<>();
   private Map<String, Object> lets = new HashMap<>();
-  @SuppressWarnings({"rawtypes"})
-  private ConcurrentMap objectCache;
+  // TODO: This might be ok as a Map<String, Map<String, Object>>
+  private ConcurrentMap<String, Object> objectCache;
   public int workerID;
   public int numWorkers;
   private SolrClientCache clientCache;
@@ -54,12 +52,11 @@ public class StreamContext implements Serializable {
   private SolrParams requestParams;
   private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
 
-  @SuppressWarnings({"rawtypes"})
-  public ConcurrentMap getObjectCache() {
+  public ConcurrentMap<String, Object> getObjectCache() {
     return this.objectCache;
   }
 
-  public void setObjectCache(@SuppressWarnings({"rawtypes"})ConcurrentMap objectCache) {
+  public void setObjectCache(ConcurrentMap<String, Object> objectCache) {
     this.objectCache = objectCache;
   }
 
@@ -71,8 +68,7 @@ public class StreamContext implements Serializable {
     return entries.get(key);
   }
 
-  @SuppressWarnings({"unchecked"})
-  public void put(Object key, Object value) {
+  public void put(String key, Object value) {
     this.entries.put(key, value);
   }
 
@@ -80,8 +76,7 @@ public class StreamContext implements Serializable {
     return entries.containsKey(key);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public Map getEntries() {
+  public Map<String, Object> getEntries() {
     return this.entries;
   }
 
@@ -105,8 +100,8 @@ public class StreamContext implements Serializable {
     this.streamFactory = streamFactory;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public Map getTupleContext() {
+  // TODO: This could probably be replaced with an Optional, since the only key ever used is "null"
+  public Map<String, String> getTupleContext() {
     return tupleContext;
   }
 

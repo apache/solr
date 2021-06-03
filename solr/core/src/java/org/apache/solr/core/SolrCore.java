@@ -1918,7 +1918,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Warning: although a lambda is concise, it may be inappropriate to simply return the IndexReader because it might
    * be closed soon after this method returns; it really depends.
    */
-  @SuppressWarnings("unchecked")
   public <R> R withSearcher(IOFunction<SolrIndexSearcher, R> lambda) throws IOException {
     final RefCounted<SolrIndexSearcher> refCounted = getSearcher();
     try {
@@ -2873,7 +2872,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return def;
   }
 
-  public void initDefaultPlugin(Object plugin, @SuppressWarnings({"rawtypes"})Class type) {
+  public void initDefaultPlugin(Object plugin, Class<?> type) {
     if (plugin instanceof SolrMetricProducer) {
       coreMetricManager.registerMetricProducer(type.getSimpleName() + ".default", (SolrMetricProducer) plugin);
     }
@@ -3231,8 +3230,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       throw new IllegalArgumentException("invalid key format, must end in /N where N is the version number");
     }
     // define the blob
-    @SuppressWarnings({"rawtypes"})
-    BlobRepository.BlobContentRef blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
+    BlobRepository.BlobContentRef<Object> blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
     addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {

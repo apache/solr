@@ -144,8 +144,7 @@ If the field specified is null in the document, the document will be rejected.
 Please note that <<realtime-get.adoc#,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
 `perReplicaState`::
-If `true` the states of individual replicas will be maintained as individual child of the `state.json`.
-default is `false`
+If `true` the states of individual replicas will be maintained as individual child of the `state.json`. The default is `false`.
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.

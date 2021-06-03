@@ -574,7 +574,7 @@ If `true`, multiples the computed payload factor by the score of the original qu
 
 === Payload Check Parser
 
-`PayloadCheckQParser` only matches when the matching terms also have the specified relationship to the payloads.  The default relationship is equals, however, inequality matching can also be performed. The main query, for both of these parsers, is parsed straightforwardly from the field type's query analysis into a `SpanQuery`. The generated `SpanQuery` will be either a `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted. The net effect is that the main query always operates in a manner similar to a phrase query in the standard lucene parser (thus ignoring any value for `q.op`).
+`PayloadCheckQParser` only matches when the matching terms also have the specified relationship to the payloads.  The default relationship is equals, however, inequality matching can also be performed. The main query, for both of these parsers, is parsed straightforwardly from the field type's query analysis into a `SpanQuery`. The generated `SpanQuery` will be either a `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted. The net effect is that the main query always operates in a manner similar to a phrase query in the standard Lucene parser (thus ignoring any value for `q.op`).
 
 NOTE: If when the field analysis is applied to the query, it alters the number of tokens, the final number of tokens must match the number of payloads supplied in the `payloads` parameter. If there is a mismatch between the number of query tokens, and the number of payload values supplied with this query, the query will not match.
 
@@ -737,7 +737,7 @@ The non-unary operators (everything but `NOT`) support both infix `(a AND b AND 
 
 `SwitchQParser` is a `QParserPlugin` that acts like a "switch" or "case" statement.
 
-The primary input string is trimmed and then prefixed with `case.` for use as a key to lookup a "switch case" in the parser's local params. If a matching local param is found the resulting param value will then be parsed as a subquery, and returned as the parse result.
+The primary input string is trimmed and then prefixed with `case.` for use as a key to lookup a "switch case" in the parser's local params. If a matching local param is found the resulting parameter value will then be parsed as a subquery, and returned as the parse result.
 
 The `case` local param can be optionally be specified as a switch case to match missing (or blank) input strings. The `default` local param can optionally be specified as a default case to use if the input string does not match any other switch case local params. If default is not specified, then any input which does not match a switch case local param will result in a syntax error.
 
