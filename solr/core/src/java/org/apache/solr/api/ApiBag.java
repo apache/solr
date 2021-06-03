@@ -70,17 +70,15 @@ public class ApiBag {
   /**Register a POJO annotated with {@link EndPoint}
    * @param o the instance to be used for invocations
    */
-  @SuppressWarnings({"unchecked"})
   public synchronized List<Api> registerObject(Object o) {
     List<Api> l = AnnotatedApi.getApis(o);
     for (Api api : l) {
-      register(api, Collections.EMPTY_MAP);
+      register(api, Collections.emptyMap());
     }
     return l;
   }
-  @SuppressWarnings({"unchecked"})
   public synchronized void register(Api api) {
-    register(api, Collections.EMPTY_MAP);
+    register(api, Collections.emptyMap());
   }
   public synchronized void register(Api api, Map<String, String> nameSubstitutes) {
     try {

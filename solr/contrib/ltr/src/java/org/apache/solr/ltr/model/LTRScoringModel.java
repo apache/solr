@@ -89,7 +89,6 @@ public abstract class LTRScoringModel implements Accountable {
   protected final List<Normalizer> norms;
   private Integer hashCode; // cached since it shouldn't actually change after construction
 
-  @SuppressWarnings({"rawtypes"})
   public static LTRScoringModel getInstance(SolrResourceLoader solrResourceLoader,
       String className, String name, List<Feature> features,
       List<Normalizer> norms,
@@ -102,7 +101,7 @@ public abstract class LTRScoringModel implements Accountable {
           className,
           LTRScoringModel.class,
           new String[0], // no sub packages
-          new Class[] { String.class, List.class, List.class, String.class, List.class, Map.class },
+          new Class<?>[] { String.class, List.class, List.class, String.class, List.class, Map.class },
           new Object[] { name, features, norms, featureStoreName, allFeatures, params });
       if (params != null) {
         SolrPluginUtils.invokeSetters(model, params.entrySet());

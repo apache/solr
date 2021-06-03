@@ -576,7 +576,6 @@ public abstract class SlotAcc implements Closeable {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
         ArrayList<Object> lst = new ArrayList<>(3);

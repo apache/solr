@@ -135,42 +135,40 @@ public @interface RandomizeSSL {
     /**
      * Returns an SSLRandomizer suitable for the specified (test) class
      */
-    public static final SSLRandomizer getSSLRandomizerForClass(@SuppressWarnings({"rawtypes"})Class clazz) {
+    public static final SSLRandomizer getSSLRandomizerForClass(Class<?> clazz) {
 
-      @SuppressWarnings({"unchecked"})
-      final SuppressSSL suppression = (SuppressSSL) clazz.getAnnotation(SuppressSSL.class);
-      if (null != suppression) {
+      final SuppressSSL suppressSSL = clazz.getAnnotation(SuppressSSL.class);
+      if (null != suppressSSL) {
         // Even if this class has a RandomizeSSL annotation, any usage of SuppressSSL -- even in a
         // super class -- overrules that.
         //
         // (If it didn't work this way, it would be a pain in the ass to quickly disable SSL for a
         // broad hierarchy of tests)
-        return new SSLRandomizer(0.0D, 0.0D, suppression.toString());
+        return new SSLRandomizer(0.0D, 0.0D, suppressSSL.toString());
       }
 
-      @SuppressWarnings({"unchecked"})
-      final RandomizeSSL annotation = (RandomizeSSL) clazz.getAnnotation(RandomizeSSL.class);
+      final RandomizeSSL randomizeSSL = clazz.getAnnotation(RandomizeSSL.class);
       
-      if (null == annotation) {
+      if (null == randomizeSSL) {
         return new SSLRandomizer(0.0D, 0.0D, RandomizeSSL.class.getName() + " annotation not specified");
       }
 
-      final double def = Double.isNaN(annotation.value()) ? DEFAULT_ODDS : annotation.value();
+      final double def = Double.isNaN(randomizeSSL.value()) ? DEFAULT_ODDS : randomizeSSL.value();
       if (def < 0.0D || 1.0D < def) {
         throw new IllegalArgumentException
-          (clazz.getName() + ": default value is not a ratio between 0 and 1: " + annotation.toString());
+          (clazz.getName() + ": default value is not a ratio between 0 and 1: " + randomizeSSL.toString());
       }
-      final double ssl = Double.isNaN(annotation.ssl()) ? def : annotation.ssl();
+      final double ssl = Double.isNaN(randomizeSSL.ssl()) ? def : randomizeSSL.ssl();
       if (ssl < 0.0D || 1.0D < ssl) {
         throw new IllegalArgumentException
-          (clazz.getName() + ": ssl value is not a ratio between 0 and 1: " + annotation.toString());
+          (clazz.getName() + ": ssl value is not a ratio between 0 and 1: " + randomizeSSL.toString());
       }
-      final double clientAuth = Double.isNaN(annotation.clientAuth()) ? ssl : annotation.clientAuth();
+      final double clientAuth = Double.isNaN(randomizeSSL.clientAuth()) ? ssl : randomizeSSL.clientAuth();
       if (clientAuth < 0.0D || 1 < clientAuth) {
         throw new IllegalArgumentException
-          (clazz.getName() + ": clientAuth value is not a ratio between 0 and 1: " + annotation.toString());
+          (clazz.getName() + ": clientAuth value is not a ratio between 0 and 1: " + randomizeSSL.toString());
       }
-      return new SSLRandomizer(ssl, clientAuth, annotation.toString());
+      return new SSLRandomizer(ssl, clientAuth, randomizeSSL.toString());
     }
   }
 }

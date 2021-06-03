@@ -47,7 +47,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.PackageStoreAPI;
@@ -312,7 +311,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               .build();
       addPkgVersionReq.process(cluster.getSolrClient());
 
-      waitForAllNodesToSync(cluster, "/cluster/package", Utils.makeMap(
+      waitForAllNodesToSync(cluster, "/cluster/package", Map.of(
               ":result:packages:mypkg[0]:version", "1.0",
               ":result:packages:mypkg[0]:files[0]", FILE1
       ));
@@ -537,7 +536,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   }
 
-  @SuppressWarnings("unchecked")
   public static void waitForAllNodesToSync(MiniSolrCloudCluster cluster, String path, Map<String, Object> expected) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");

@@ -201,12 +201,12 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     
   }
 
-  @SuppressWarnings({"rawtypes", "deprecation"})
+  @SuppressWarnings("deprecation")
   public void testLoadDeprecatedFactory() throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(DeprecatedTokenFilterFactory.class.getName(), TokenFilterFactory.class, null,
-        new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });
+        new Class<?>[] { Map.class }, new Object[] { new HashMap<String,String>() });
     // TODO: How to check that a warning was printed to log file?
     loader.close();    
   }
@@ -215,8 +215,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     clearCache();
 
     SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
-    @SuppressWarnings({"rawtypes"})
-    Class[] params = { Map.class };
+    Class<?>[] params = { Map.class };
     Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
     final String className = "solr.NGramTokenizerFactory";
 

@@ -74,8 +74,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    *
    * @see SolrRequest#setBasicAuthCredentials
    */
-  @SuppressWarnings({"rawtypes"})
-  private static <T extends SolrRequest> T setBasicAuthCredentials(T req, String user) {
+  private static <T extends SolrRequest<?>> T setBasicAuthCredentials(T req, String user) {
     assert null != user;
     req.setBasicAuthCredentials(user, user);
     return req;
@@ -93,28 +92,28 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       .collect(Collectors.toMap(Function.identity(), Function.identity()));
 
     final String SECURITY_JSON = Utils.toJSONString
-      (Utils.makeMap("authorization",
-                     Utils.makeMap("class", RuleBasedAuthorizationPlugin.class.getName(),
+      (Map.of("authorization",
+                     Map.of("class", RuleBasedAuthorizationPlugin.class.getName(),
                                    "user-role", roles,
                                    // NOTE: permissions order matters!
                                    "permissions", Arrays.asList(// any authn user can 'read' or hit /stream
-                                                                Utils.makeMap("name","read",
+                                                                Map.of("name","read",
                                                                               "role","*"),
-                                                                Utils.makeMap("name","stream",
+                                                                Map.of("name","stream",
                                                                               "collection", "*",
                                                                               "path", "/stream",
                                                                               "role","*"),
                                                                 // per collection write perms
-                                                                Utils.makeMap("name","update",
+                                                                Map.of("name","update",
                                                                               "collection", COLLECTION_X,
                                                                               "role", WRITE_X_USER),
-                                                                Utils.makeMap("name","update",
+                                                                Map.of("name","update",
                                                                               "collection", COLLECTION_Y,
                                                                               "role", WRITE_Y_USER),
-                                                                Utils.makeMap("name","all",
+                                                                Map.of("name","all",
                                                                               "role",ADMIN_USER))),
                      "authentication",
-                     Utils.makeMap("class", BasicAuthPlugin.class.getName(),
+                     Map.of("class", BasicAuthPlugin.class.getName(),
                                    "blockUnknown",true,
                                    "credentials", credentials)));
     

@@ -105,10 +105,10 @@ public abstract class RoutedAlias {
 
         // v2 api case - the v2 -> v1 mapping mechanisms can't handle this conversion because they expect
         // strings or arrays of strings, not lists of objects.
+        // TODO: The generic types for props are a lie
         if (props.containsKey("router.routerList")) {
-          @SuppressWarnings({"unchecked", "rawtypes"})
-          HashMap tmp = new HashMap(props);
-          @SuppressWarnings({"unchecked", "rawtypes"})
+          HashMap<String, Object> tmp = new HashMap<>(props);
+          @SuppressWarnings({"unchecked"})
           List<Map<String, Object>> v2RouterList = (List<Map<String, Object>>) tmp.get("router.routerList");
           Map<String, Object> o = v2RouterList.get(i);
           for (Map.Entry<String, Object> entry : o.entrySet()) {

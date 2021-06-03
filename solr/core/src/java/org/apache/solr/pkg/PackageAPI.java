@@ -264,7 +264,6 @@ public class PackageAPI {
     }
 
     @Command(name = "add")
-    @SuppressWarnings({"unchecked"})
     public void add(PayloadObj<Package.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
       Package.AddVersion add = payload.get();

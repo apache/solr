@@ -219,7 +219,6 @@ public class MetricUtils {
       }
     };
     if (o instanceof MapWriter) {
-      @SuppressWarnings({"unchecked"})
       MapWriter writer = (MapWriter) o;
       writer._forEachEntry(consumer);
     } else if (o instanceof Map) {
@@ -229,7 +228,6 @@ public class MetricUtils {
         consumer.accept(entry.getKey(), entry.getValue());
       }
     } else if (o instanceof IteratorWriter) {
-      @SuppressWarnings({"unchecked"})
       IteratorWriter writer = (IteratorWriter) o;
       final String name = prefix != null ? prefix : "value";
       try {
