@@ -64,7 +64,7 @@ The examples assume you have started Solr via `bin/solr start -c -e techproducts
 
 == Modify the Schema
 
-To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/api/<collections|cores>/<name>/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
+To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
 
 * `add-field`: add a new field with parameters you provide.
 * `delete-field`: delete a field.
@@ -794,6 +794,8 @@ curl http://localhost:8983/solr/techproducts/schema?wt=schema.xml
 
 === List Fields
 
+Get a list of all fields.
+
 `GET /_collection_/schema/fields`
 
 `GET /_collection_/schema/fields/_fieldname_`
@@ -836,12 +838,27 @@ If `multiValued` is defined as either true or false (most likely true), that wil
 
 ==== List Fields Examples
 
-Get a list of all fields.
-
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-fields]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema/fields
+http://localhost:8983/techproducts/schema/fields
 ----
+====
+
+[example.tab-pane#v2list-fields]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fields?wt=json"
+----
+====
+--
 
 The sample output below has been truncated to only show a few fields.
 
@@ -911,10 +928,27 @@ The output will include each dynamic field rule and the defined configuration fo
 
 Get a list of all dynamic field declarations:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-dynamicfields]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema/dynamicfields
+http://localhost:8983/techproducts/schema/dynamicfields
 ----
+====
+
+[example.tab-pane#v2list-dynamicfields]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/dynamicfields?wt=json"
+----
+====
+--
 
 The sample output below has been truncated.
 
@@ -994,10 +1028,26 @@ The output will include each field type and any defined configuration for the ty
 
 Get a list of all field types.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-fieldtypes]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/fieldtypes
 ----
+====
+
+[example.tab-pane#v2list-fieldtypes]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fieldtypes?wt=json"
+----
+====
+--
 
 The sample output below has been truncated to show a few different field types from different parts of the list.
 
@@ -1081,10 +1131,26 @@ The output will include the `source` and `dest` (destination) of each copy field
 
 Get a list of all copyFields.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-copyfields]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/copyfields
 ----
+====
+
+[example.tab-pane#v2list-copyfields]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/copyfields?wt=json"
+----
+====
+--
 
 The sample output below has been truncated to the first few copy definitions.
 
@@ -1142,10 +1208,27 @@ The output will be simply the name given to the schema.
 
 Get the schema name.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-schemaname]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/name
 ----
+====
+
+[example.tab-pane#v2list-schemaname]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/name?wt=json"
+----
+====
+--
+
 
 [source,json]
 ----
@@ -1182,10 +1265,26 @@ The output will simply be the schema version in use.
 
 Get the schema version:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-schemaversion]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/version
 ----
+====
+
+[example.tab-pane#v2list-schemaversion]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/version?wt=json"
+----
+====
+--
 
 [source,json]
 ----
@@ -1223,10 +1322,26 @@ The output will include simply the field name that is defined as the uniqueKey f
 
 List the uniqueKey.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-schemauniquekey]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/uniquekey
 ----
+====
+
+[example.tab-pane#v2list-schemauniquekey]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/uniquekey?wt=json"
+----
+====
+--
 
 [source,json]
 ----
@@ -1263,10 +1378,26 @@ The output will include the class name of the global similarity defined (if any)
 
 Get the similarity implementation.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-schemasimilarity]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/similarity
 ----
+====
+
+[example.tab-pane#v2list-schemasimilarity]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/similarity?wt=json"
+----
+====
+--
 
 [source,json]
 ----
