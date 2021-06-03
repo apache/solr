@@ -45,12 +45,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   /**
    * "Lazily loaded" cores cache with limited size. When the max size is reached, the least
    * accessed core is evicted to make room for a new core.
-   * <p>Note about Caffeine cache stats:
-   * Since we are using {@link Cache#asMap()},
-   * {@link com.github.benmanes.caffeine.cache.stats.CacheStats} are not updated when we call
-   * any method of the Map view of the cache. This means
-   * {@link com.github.benmanes.caffeine.cache.stats.CacheStats} are not accurate and should
-   * not be used.
    */
   protected final Cache<String, SolrCore> transientCores;
 
@@ -152,7 +146,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   @Override
   public SolrCore getCore(String name) {
-    return name == null ? null : transientCores.asMap().get(name);
+    return name == null ? null : transientCores.getIfPresent(name);
   }
 
   @Override
