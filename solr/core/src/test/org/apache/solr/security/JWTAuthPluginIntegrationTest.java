@@ -446,7 +446,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper();
     MockWebServer mockWebServer = mockWebServerWrapper.getMockWebServer();
     try {
-      SSLContext sslContext = SSLContext.getInstance("TLS");
+      SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(sslFactory.getKeyManagerFactory().get().getKeyManagers(),
           sslFactory.getTrustManagerFactory().get().getTrustManagers(), null);
       SSLSocketFactory sf = sslContext.getSocketFactory();
