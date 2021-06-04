@@ -78,7 +78,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
       testJwk.put("alg", rsaJsonWebKey.getAlgorithm());
       testJwk.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
 
-      trustedPemCert = Files.readString(TEST_PATH().resolve("security").resolve("jwt_idpCert.pem"));
+      trustedPemCert = Files.readString(TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem"));
     } catch (JoseException | IOException e) {
       fail("Failed static initialization: " + e.getMessage());
     }
@@ -494,10 +494,10 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithTruestedCertsFile() {
+  public void initWithTrustedCertsFile() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
-    authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_idpCert.pem").toString());
+    authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem").toString());
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
     assertEquals(2, plugin.getIssuerConfigs().get(0).getTrustedCerts().size());
