@@ -56,12 +56,11 @@ public class InitParams {
       paths = Set.copyOf(StrUtils.splitSmart(pathStr, ','));
     }
     this.paths = paths;
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList) p.initArgs.get(DEFAULTS);
+    NamedList<?> nl = (NamedList<?>) p.initArgs.get(DEFAULTS);
     defaults = nl == null ? null : nl.getImmutableCopy();
-    nl = (NamedList) p.initArgs.get(INVARIANTS);
+    nl = (NamedList<?>) p.initArgs.get(INVARIANTS);
     invariants = nl == null ? null : nl.getImmutableCopy();
-    nl = (NamedList) p.initArgs.get(APPENDS);
+    nl = (NamedList<?>) p.initArgs.get(APPENDS);
     appends = nl == null ? null : nl.getImmutableCopy();
   }
 
@@ -94,7 +93,7 @@ public class InitParams {
 
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public void apply(PluginInfo info) {
     if (!info.isFromSolrConfig()) {
       //if this is a component implicitly defined in code it should be overridden by initPrams
@@ -120,7 +119,7 @@ public class InitParams {
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static void merge(NamedList first, NamedList second, NamedList sink, String name, boolean appends) {
     if (first == null && second == null) return;
-    if (first == null) first = new NamedList();
+    if (first == null) first = new NamedList<>();
     NamedList nl = first.clone();
     if (appends) {
       if (second != null) nl.addAll(second);

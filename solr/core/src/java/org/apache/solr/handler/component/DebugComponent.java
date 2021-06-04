@@ -265,8 +265,7 @@ public class DebugComponent extends SearchComponent
       return namedList;
     }
     NamedList<Object> responseNL = shardResponse.getSolrResponse().getResponse();
-    @SuppressWarnings("unchecked")
-    NamedList<Object> responseHeader = (NamedList<Object>)responseNL.get("responseHeader");
+    NamedList<?> responseHeader = (NamedList<?>)responseNL.get("responseHeader");
     if(responseHeader != null) {
       namedList.add("QTime", responseHeader.get("QTime").toString());
     }
@@ -297,7 +296,7 @@ public class DebugComponent extends SearchComponent
           dest = new LinkedHashSet<>((Collection<?>) dest);
         }
         if (source instanceof Collection) {
-          ((Collection)dest).addAll((Collection)source);
+          ((Collection)dest).addAll((Collection<?>)source);
         } else {
           ((Collection)dest).add(source);
         }
@@ -321,8 +320,7 @@ public class DebugComponent extends SearchComponent
 
     if (source instanceof NamedList && dest instanceof NamedList) {
       NamedList<Object> tmp = new NamedList<>();
-      @SuppressWarnings("unchecked")
-      NamedList<Object> sl = (NamedList<Object>)source;
+      NamedList<?> sl = (NamedList<?>)source;
       @SuppressWarnings("unchecked")
       NamedList<Object> dl = (NamedList<Object>)dest;
       for (int i=0; i<sl.size(); i++) {

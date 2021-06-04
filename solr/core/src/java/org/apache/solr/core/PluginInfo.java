@@ -118,7 +118,7 @@ public class PluginInfo implements MapSerializable {
       if (NAME.equals(entry.getKey()) || CLASS_NAME.equals(entry.getKey())) continue;
       Object value = entry.getValue();
       if (value instanceof List) {
-        List list = (List) value;
+        List<?> list = (List<?>) value;
         if (!list.isEmpty() && list.get(0) instanceof Map) {//this is a subcomponent
           for (Object o : list) {
             if (o instanceof Map) o = new NamedList<>((Map) o);

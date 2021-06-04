@@ -279,7 +279,6 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   public class ApiInfo implements ReflectMapWriter {
     List<ApiHolder> holders;
 

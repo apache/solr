@@ -309,11 +309,10 @@ public class ApiBag {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   public static List<CommandOperation> getCommandOperations(ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
-      parsedCommands = CommandOperation.readCommands(Collections.singleton(stream), new NamedList());
+      parsedCommands = CommandOperation.readCommands(Collections.singleton(stream), new NamedList<>());
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands",e);
     }

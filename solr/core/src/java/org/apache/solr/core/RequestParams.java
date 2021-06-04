@@ -51,16 +51,14 @@ public class RequestParams implements MapSerializable {
   private final Map<String, ParamSet> paramsets = new LinkedHashMap<>();
   private final int znodeVersion;
 
-  @SuppressWarnings("rawtypes")
   public RequestParams(Map<String, Object> data, int znodeVersion) {
     if (data == null) data = Collections.emptyMap();
     this.data = data;
-    Map paramsets = (Map) data.get(NAME);
+    Map<?,?> paramsets = (Map<?,?>) data.get(NAME);
     if (paramsets != null) {
-      for (Object o : paramsets.entrySet()) {
-        Map.Entry e = (Map.Entry) o;
+      for (Map.Entry<?,?> e : paramsets.entrySet()) {
         if (e.getValue() instanceof Map) {
-          Map value = (Map) e.getValue();
+          Map<?,?> value = (Map<?,?>) e.getValue();
           this.paramsets.put((String) e.getKey(), createParamSet(value, 0l));
         }
       }
@@ -71,7 +69,7 @@ public class RequestParams implements MapSerializable {
   @SuppressWarnings({"rawtypes"})
   public static ParamSet createParamSet(Map map, Long version) {
     Map copy = getDeepCopy(map, 3);
-    Map meta = (Map) copy.remove("");
+    Map<?,?> meta = (Map<?,?>) copy.remove("");
     if (meta == null && version != null) {
       meta = Collections.singletonMap("v", version);
     }
