@@ -44,35 +44,16 @@ Modifying your schema will never modify any documents that are already indexed. 
 See the section <<reindexing.adoc#,Reindexing>> for more information about reindexing.
 ====
 
-////
-// Commented out section because this makes less sense with 2 API endpoints available.
-The base address for the API is `\http://<host>:<port>/solr/<collection_name>`. If, for example, you run Solr's "```cloud```" example (via the `bin/solr` command shown below), which creates a "```gettingstarted```" collection, then the base URL for that collection (as in all the sample URLs in this section) would be: `\http://localhost:8983/solr/gettingstarted`.
+All of the examples in this section assume you are running the "techproducts" Solr example:
 
 [source,bash]
 ----
-bin/solr -e cloud -noprompt
+bin/solr -e techproducts
 ----
-////
-
-////
-// TODO this needs to probably go away with v2 APIs?
-
-== Schema API Entry Points
-
-* `/schema`: <<Retrieve the Entire Schema,retrieve>> the schema, or <<Modify the Schema,modify>> the schema to add, remove, or replace fields, dynamic fields, copy fields, or field types
-* `/schema/fields`: <<List Fields,retrieve information>> about all defined fields or a specific named field
-* `/schema/dynamicfields`: <<List Dynamic Fields,retrieve information>> about all dynamic field rules or a specific named dynamic rule
-* `/schema/fieldtypes`: <<List Field Types,retrieve information>> about all field types or a specific field type
-* `/schema/copyfields`: <<List Copy Fields,retrieve information>> about copy fields
-* `/schema/name`: <<Show Schema Name,retrieve>> the schema name
-* `/schema/version`: <<Show the Schema Version,retrieve>> the schema version
-* `/schema/uniquekey`: <<List UniqueKey,retrieve>> the defined uniqueKey
-* `/schema/similarity`: <<Show Global Similarity,retrieve>> the global similarity definition
-////
 
 == Modify the Schema
 
-To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/api/<collections|cores>/<name>/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
+To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
 
 * `add-field`: add a new field with parameters you provide.
 * `delete-field`: delete a field.
@@ -112,7 +93,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"sell_by",
      "type":"pdate",
      "stored":true }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -126,7 +107,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"sell_by",
      "type":"pdate",
      "stored":true }
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -146,7 +127,7 @@ For example, to delete a field named "sell_by", you would POST the following req
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field" : { "name":"sell_by" }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -157,7 +138,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field" : { "name":"sell_by" }
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -182,7 +163,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"sell_by",
      "type":"date",
      "stored":false }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -196,7 +177,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"sell_by",
      "type":"date",
      "stored":false }
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -221,7 +202,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"*_s",
      "type":"string",
      "stored":true }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -235,7 +216,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"*_s",
      "type":"string",
      "stored":true }
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -255,7 +236,7 @@ For example, to delete a dynamic field rule matching "*_s", you can POST a reque
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-dynamic-field":{ "name":"*_s" }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -266,7 +247,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-dynamic-field":{ "name":"*_s" }
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -291,7 +272,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"*_s",
      "type":"text_general",
      "stored":false }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -305,7 +286,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"*_s",
      "type":"text_general",
      "stored":false }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 --
@@ -340,7 +321,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
         "filters":[{
            "name":"wordDelimiter",
            "preserveOriginal":"0" }]}}
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 
 Note in this example that we have only defined a single analyzer section that will apply to index analysis and query analysis.
@@ -365,7 +346,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "queryAnalyzer":{
         "tokenizer":{
            "name":"keyword" }}}
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -387,7 +368,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "queryAnalyzer":{
         "tokenizer":{
            "name":"keyword" }}}
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -407,7 +388,7 @@ For example, to delete the field type named "myNewTxtField", you can make a POST
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field-type":{ "name":"myNewTxtField" }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -418,7 +399,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field-type":{ "name":"myNewTxtField" }
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -446,7 +427,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "analyzer":{
         "tokenizer":{
            "name":"standard" }}}
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -463,7 +444,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "analyzer":{
         "tokenizer":{
            "name":"standard" }}}
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -496,7 +477,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-copy-field":{
      "source":"shelf",
      "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -509,7 +490,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-copy-field":{
      "source":"shelf",
      "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -531,7 +512,7 @@ For example, to delete a rule to copy the field "shelf" to the "location" field,
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 ====
 
@@ -542,7 +523,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}' http://localhost:8983/api/collections/gettingstarted/schema
+}' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
 --
@@ -576,7 +557,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
       "name":"sell_by",
       "type":"myNewTxtField",
       "stored":true }
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 
 Or, the same command can be repeated, as in this example:
@@ -595,7 +576,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-copy-field":{
      "source":"shelf",
       "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 
 Finally, repeated commands can be sent as an array:
@@ -610,7 +591,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      { "name":"location",
        "type":"myNewTxtField",
        "stored":true }]
-}' http://localhost:8983/solr/gettingstarted/schema
+}' http://localhost:8983/solr/techproducts/schema
 ----
 
 === Schema Changes among Replicas
@@ -659,7 +640,7 @@ Get the entire schema in JSON.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema
+curl http://localhost:8983/solr/techproducts/schema
 ----
 
 [source,json]
@@ -723,7 +704,7 @@ Get the entire schema in XML.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema?wt=xml
+curl http://localhost:8983/solr/techproducts/schema?wt=xml
 ----
 
 [source,xml]
@@ -777,7 +758,7 @@ Get the entire schema in "schema.xml" format.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema?wt=schema.xml
+curl http://localhost:8983/solr/techproducts/schema?wt=schema.xml
 ----
 
 [source,xml]
@@ -801,6 +782,8 @@ curl http://localhost:8983/solr/gettingstarted/schema?wt=schema.xml
 ----
 
 === List Fields
+
+Get a list of all fields.
 
 `GET /_collection_/schema/fields`
 
@@ -844,12 +827,27 @@ If `multiValued` is defined as either true or false (most likely true), that wil
 
 ==== List Fields Examples
 
-Get a list of all fields.
-
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-fields]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fields
+http://localhost:8983/techproducts/schema/fields
 ----
+====
+
+[example.tab-pane#v2list-fields]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fields"
+----
+====
+--
 
 The sample output below has been truncated to only show a few fields.
 
@@ -919,10 +917,27 @@ The output will include each dynamic field rule and the defined configuration fo
 
 Get a list of all dynamic field declarations:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-dynamicfields]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/dynamicfields
+http://localhost:8983/techproducts/schema/dynamicfields
 ----
+====
+
+[example.tab-pane#v2list-dynamicfields]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/dynamicfields"
+----
+====
+--
 
 The sample output below has been truncated.
 
@@ -1002,10 +1017,26 @@ The output will include each field type and any defined configuration for the ty
 
 Get a list of all field types.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-fieldtypes]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fieldtypes
+curl http://localhost:8983/solr/techproducts/schema/fieldtypes
 ----
+====
+
+[example.tab-pane#v2list-fieldtypes]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fieldtypes"
+----
+====
+--
 
 The sample output below has been truncated to show a few different field types from different parts of the list.
 
@@ -1089,10 +1120,26 @@ The output will include the `source` and `dest` (destination) of each copy field
 
 Get a list of all copyFields.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-copyfields]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/copyfields
+curl http://localhost:8983/solr/techproducts/schema/copyfields
 ----
+====
+
+[example.tab-pane#v2list-copyfields]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/copyfields"
+----
+====
+--
 
 The sample output below has been truncated to the first few copy definitions.
 
@@ -1150,10 +1197,27 @@ The output will be simply the name given to the schema.
 
 Get the schema name.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-schemaname]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/name
+curl http://localhost:8983/solr/techproducts/schema/name
 ----
+====
+
+[example.tab-pane#v2list-schemaname]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/name"
+----
+====
+--
+
 
 [source,json]
 ----
@@ -1190,10 +1254,26 @@ The output will simply be the schema version in use.
 
 Get the schema version:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-schemaversion]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/version
+curl http://localhost:8983/solr/techproducts/schema/version
 ----
+====
+
+[example.tab-pane#v2list-schemaversion]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/version"
+----
+====
+--
 
 [source,json]
 ----
@@ -1231,10 +1311,26 @@ The output will include simply the field name that is defined as the uniqueKey f
 
 List the uniqueKey.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-schemauniquekey]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/uniquekey
+curl http://localhost:8983/solr/techproducts/schema/uniquekey
 ----
+====
+
+[example.tab-pane#v2list-schemauniquekey]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/uniquekey"
+----
+====
+--
 
 [source,json]
 ----
@@ -1271,10 +1367,26 @@ The output will include the class name of the global similarity defined (if any)
 
 Get the similarity implementation.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1list-schemasimilarity]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/similarity
+curl http://localhost:8983/solr/techproducts/schema/similarity
 ----
+====
+
+[example.tab-pane#v2list-schemasimilarity]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections/techproducts/schema/similarity"
+----
+====
+--
 
 [source,json]
 ----
