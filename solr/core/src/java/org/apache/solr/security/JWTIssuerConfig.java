@@ -381,8 +381,9 @@ public class JWTIssuerConfig {
      * @param url the Url to connect to for JWK details.
      */
     private HttpsJwks create(String url) {
+      final URL jwksUrl;
       try {
-        URL jwksUrl = new URL(url);
+        jwksUrl = new URL(url);
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
@@ -393,6 +394,9 @@ public class JWTIssuerConfig {
       if (trustedCerts != null) {
         Get getWithCustomTrust = new Get();
         getWithCustomTrust.setTrustedCertificates(trustedCerts);
+        if ("localhost".equals(jwksUrl.getHost())) {
+          getWithCustomTrust.setHostnameVerifier((hostname, session) -> true);
+        }
         httpsJkws.setSimpleHttpGet(getWithCustomTrust);
       }
       return httpsJkws;
@@ -437,6 +441,9 @@ public class JWTIssuerConfig {
           Get httpGet = new Get();
           if (trustedCerts != null) {
             httpGet.setTrustedCertificates(trustedCerts);
+            if ("localhost".equals(url.getHost())) {
+              httpGet.setHostnameVerifier((hostname, session) -> true);
+            }
           }
           SimpleResponse resp = httpGet.get(url.toString());
           return parse(IOUtils.toInputStream(resp.getBody(), StandardCharsets.UTF_8));

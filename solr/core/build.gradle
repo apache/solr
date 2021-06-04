@@ -150,6 +150,5 @@ dependencies {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
   testImplementation('no.nav.security:mock-oauth2-server')
-  testImplementation('io.github.hakky54:sslcontext-kickstart-for-pem')
 }
 

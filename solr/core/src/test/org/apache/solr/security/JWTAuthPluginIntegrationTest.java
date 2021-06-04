@@ -16,8 +16,6 @@
  */
 package org.apache.solr.security;
 
-import nl.altindag.ssl.SSLFactory;
-import nl.altindag.ssl.util.PemUtils;
 import no.nav.security.mock.oauth2.MockOAuth2Server;
 import no.nav.security.mock.oauth2.OAuth2Config;
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper;
@@ -40,6 +38,7 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.TimeOut;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -53,10 +52,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.X509ExtendedKeyManager;
-import javax.net.ssl.X509ExtendedTrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,6 +66,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.KeyStore;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +89,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   protected static final int NUM_SHARDS = 2;
   protected static final int REPLICATION_FACTOR = 1;
   private static String mockOAuthToken;
-  private static String mockOAuthSecurityJson;
+  private static Path pemFilePath;
+  private static Path wrongPemFilePath;
   private final String COLLECTION = "jwtColl";
   private static String jwtStaticTestToken;
   private String baseUrl;
@@ -100,13 +101,16 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    Path pemFile = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("solr-ssl.pem");
-    mockOAuth2Server = createMockOAuthServer(pemFile,"secret");
+
+    Path p12Cert = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
+    pemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
+    wrongPemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
+
+    mockOAuth2Server = createMockOAuthServer(p12Cert,"secret");
     mockOAuth2Server.start();
     mockOAuthToken = mockOAuth2Server.issueToken("default",
         "myClientId",
         new DefaultOAuth2TokenCallback()).serialize();
-    mockOAuthSecurityJson = createMockOAuthSecurityJson(pemFile);
     initStaticJwt();
   }
 
@@ -132,12 +136,13 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void extractCertificateFromPem() throws IOException {
-    assertEquals(1330, extractCertificateFromPem(SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("solr-ssl.pem")).length());
+    String cert = extractCertificateFromPem(pemFilePath);
+    assertEquals(2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());
   }
 
   @Test
   public void mockOAuth2Server() throws Exception {
-    configureClusterMockOauth(2);
+    configureClusterMockOauth(2, pemFilePath);
 
     // First attempt without token fails
     Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
@@ -146,6 +151,12 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     // Second attempt with token from Oauth mock server succeeds
     headers = getHeaders(baseUrl + "/admin/info/system", mockOAuthToken);
     assertEquals("200", headers.get("code"));
+  }
+
+  @Test
+  public void mockOAuth2ServerWrongPEMInTruststore() throws Exception {
+    // JWTAuthPlugin throws SSLHandshakeException when fetching JWK, so this trips cluster init
+    expectThrows(Exception.class, () -> configureClusterMockOauth(2, wrongPemFilePath));
   }
 
   public void testStaticJwtKeys() throws Exception {
@@ -252,9 +263,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
   }
 
-  private void configureClusterMockOauth(int numNodes) throws Exception {
+  private void configureClusterMockOauth(int numNodes, Path pemFilePath) throws Exception {
     configureCluster(numNodes)// nodes
-        .withSecurityJson(mockOAuthSecurityJson)
+        .withSecurityJson(createMockOAuthSecurityJson(pemFilePath))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
@@ -412,7 +423,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
     String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
-    String pemCert = extractCertificateFromPem(pemFilePath);
+    String pemCert = extractCertificateFromPem(pemFilePath).replaceAll("\n", "\\\\n");
     return "{\n" +
         "  \"authentication\" : {\n" +
         "    \"class\": \"solr.JWTAuthPlugin\",\n" +
@@ -424,7 +435,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private static String extractCertificateFromPem(Path pemFilePath) throws IOException {
-    String raw = Files.readString(pemFilePath).replaceAll("\n", "\\\\n");
+    String raw = Files.readString(pemFilePath);
     int from = raw.indexOf("-----BEGIN CERTIFICATE-----");
     int end = raw.lastIndexOf("-----END CERTIFICATE-----") + 25;
     return raw.substring(from, end);
@@ -432,23 +443,23 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   /**
    * Create and return a MockOAuth2Server with given SSL certificate
-   * @param pemFilepath path to a pem certificate file
+   * @param p12CertPath path to a p12 certificate store
    * @param secretKeyPass password to secret key
    */
-  private static MockOAuth2Server createMockOAuthServer(Path pemFilepath, String secretKeyPass) {
-    X509ExtendedKeyManager keyManager = PemUtils.loadIdentityMaterial(pemFilepath, secretKeyPass.toCharArray());
-    X509ExtendedTrustManager trustManager = PemUtils.loadTrustMaterial(pemFilepath);
-    SSLFactory sslFactory = SSLFactory.builder()
-        .withIdentityMaterial(keyManager)
-        .withTrustMaterial(trustManager)
-        .build();
-
-    MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper();
-    MockWebServer mockWebServer = mockWebServerWrapper.getMockWebServer();
+  private static MockOAuth2Server createMockOAuthServer(Path p12CertPath, String secretKeyPass) {
     try {
+      final KeyStore keystore = KeyStore.getInstance("pkcs12");
+      keystore.load(Files.newInputStream(p12CertPath), secretKeyPass.toCharArray());
+      final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      keyManagerFactory.init(keystore, secretKeyPass.toCharArray());
+      final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+          TrustManagerFactory.getDefaultAlgorithm());
+      trustManagerFactory.init(keystore);
+
+      MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper();
+      MockWebServer mockWebServer = mockWebServerWrapper.getMockWebServer();
       SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-      sslContext.init(sslFactory.getKeyManagerFactory().get().getKeyManagers(),
-          sslFactory.getTrustManagerFactory().get().getTrustManagers(), null);
+      sslContext.init(keyManagerFactory.getKeyManagers(), /*trustManagerFactory.getTrustManagers()*/ null, null);
       SSLSocketFactory sf = sslContext.getSocketFactory();
       mockWebServer.useHttps(sf, false);
 
