@@ -92,11 +92,11 @@ public class RequestWriter {
             updateRequest.getDocIterator() == null;
   }
 
-  public String getPath(@SuppressWarnings({"rawtypes"})SolrRequest req) {
+  public String getPath(SolrRequest<?> req) {
     return req.getPath();
   }
 
-  public void write(@SuppressWarnings({"rawtypes"})SolrRequest request, OutputStream os) throws IOException {
+  public void write(SolrRequest<?> request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
       BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));

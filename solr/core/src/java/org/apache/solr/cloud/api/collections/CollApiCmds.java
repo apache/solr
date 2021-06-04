@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -184,7 +185,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @SuppressWarnings("unchecked")
     public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
@@ -221,7 +221,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @SuppressWarnings("unchecked")
     public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
@@ -324,6 +323,7 @@ public class CollApiCmds {
 
             if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
                 && !updateKey.equals(Overseer.QUEUE_OPERATION)
+                && !updateKey.equals(CommonAdminParams.ASYNC)
                 && updateEntry.getValue() != null // handled below in a separate conditional
                 && !updateEntry.getValue().equals(c.get(updateKey))) {
               return false;

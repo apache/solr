@@ -150,7 +150,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
     }
 
     @Override
-    public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context,
+    public FunctionValues getValues(Map<Object, Object> context,
         LeafReaderContext readerContext) throws IOException {
       throw new UnsupportedOperationException(this + " is only for sorting");
     }

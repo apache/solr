@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -46,15 +47,13 @@ public class FakeDeletionPolicy extends IndexDeletionPolicy implements NamedList
     return var2;
   }
 
-  //  @Override
   @Override
-  public void onCommit(@SuppressWarnings({"rawtypes"})List arg0) throws IOException {
+  public void onCommit(List<? extends IndexCommit> arg0) throws IOException {
     System.setProperty("onCommit", "test.org.apache.solr.core.FakeDeletionPolicy.onCommit");
   }
 
-  //  @Override
   @Override
-  public void onInit(@SuppressWarnings({"rawtypes"})List arg0) throws IOException {
+  public void onInit(List<? extends IndexCommit> arg0) throws IOException {
     System.setProperty("onInit", "test.org.apache.solr.core.FakeDeletionPolicy.onInit");
   }
 }

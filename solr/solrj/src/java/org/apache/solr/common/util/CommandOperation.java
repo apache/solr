@@ -171,9 +171,8 @@ public class CommandOperation {
     return s;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private Map errorDetails() {
-    return Utils.makeMap(name, commandData, ERR_MSGS, errors);
+  private Map<String, Object> errorDetails() {
+    return Map.of(name, commandData, ERR_MSGS, errors);
   }
 
   public boolean hasError() {

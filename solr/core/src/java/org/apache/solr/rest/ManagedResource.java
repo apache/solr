@@ -170,7 +170,6 @@ public abstract class ManagedResource {
   /**
    * Invoked when this object determines it needs to reload the stored data.
    */
-  @SuppressWarnings("unchecked")
   protected synchronized void reloadFromStorage() throws SolrException {
     String resourceId = getResourceId();
     Object data = null;

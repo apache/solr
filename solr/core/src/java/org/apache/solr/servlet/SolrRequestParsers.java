@@ -17,12 +17,14 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.Part;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -41,8 +43,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import io.opentracing.Span;
-import io.opentracing.noop.NoopSpan;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -171,10 +171,6 @@ public class SolrRequestParsers {
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
 
-    Span span = (Span) req.getAttribute(Span.class.getName()); // not null but maybe in some tests?
-    if (span != null && !(span instanceof NoopSpan)) {
-      span.setTag("params", params.toString());
-    }
     SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 
     // Handlers and login will want to know the path. If it contains a ':'
@@ -188,6 +184,7 @@ public class SolrRequestParsers {
     return sreq;
   }
 
+  /** For embedded Solr use; not related to HTTP. */
   public SolrQueryRequest buildRequestFrom(SolrCore core, SolrParams params, Collection<ContentStream> streams) throws Exception {
     return buildRequestFrom(core, params, streams, new RTimerTree(), null);
   }
@@ -515,12 +512,12 @@ public class SolrRequestParsers {
    */
   static class HttpRequestContentStream extends ContentStreamBase
   {
-    private final HttpServletRequest req;
-    
-    public HttpRequestContentStream( HttpServletRequest req ) {
-      this.req = req;
-      
-      contentType = req.getContentType();
+    private final InputStream inputStream;
+
+    public HttpRequestContentStream(HttpServletRequest req, InputStream inputStream) {
+      this.inputStream = inputStream;
+
+      this.contentType = req.getContentType();
       // name = ???
       // sourceInfo = ???
       
@@ -536,7 +533,7 @@ public class SolrRequestParsers {
       // so that it does not trip our test assert in our close shield
       // in SolrDispatchFilter - we must allow closes from getStream
       // due to the other impls of ContentStream
-      return new CloseShieldInputStream(req.getInputStream());
+      return new CloseShieldInputStream(inputStream);
     }
   }
 
@@ -549,7 +546,22 @@ public class SolrRequestParsers {
     public SolrParams parseParamsAndFillStreams( 
         final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
     {
-      streams.add( new HttpRequestContentStream( req ) );
+      // If we wrongly add a stream that actually has no content, then it can confuse
+      //  some of our code that sees a stream but has no content-type.
+      // If we wrongly don't add a stream, then obviously we'll miss data.
+      final ServletInputStream inputStream = req.getInputStream(); // don't close it
+      if (req.getContentLengthLong() >= 0 || req.getHeader("Transfer-Encoding") != null
+            || inputStream.available() > 0) {
+        streams.add(new HttpRequestContentStream(req, inputStream));
+      } else if (!req.getMethod().equals("GET")) { // GET shouldn't have data
+        // We're not 100% sure there is no data, so check by reading a byte (and put back).
+        PushbackInputStream pbInputStream = new PushbackInputStream(inputStream);
+        int b = pbInputStream.read();
+        if (b != -1) {
+          pbInputStream.unread(b); // put back
+          streams.add(new HttpRequestContentStream(req, pbInputStream));
+        }
+      }
       return parseQueryString( req.getQueryString() );
     }
   }

@@ -154,7 +154,6 @@ public class Aliases {
    * @return an unmodifiable Map of collection aliases mapped to a comma delimited string of the collection(s) the
    * alias maps to. Does not return null.
    */
-  @SuppressWarnings("unchecked")
   public Map<String, String> getCollectionAliasMap() {
     return Collections.unmodifiableMap(convertMapOfListToMapOfCommaDelimited(collectionAliases));
   }

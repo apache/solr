@@ -233,7 +233,6 @@ public final class HttpCacheHeaderUtil {
    * 
    * @return true if no request processing is necessary and HTTP response status has been set, false otherwise.
    */
-  @SuppressWarnings("unchecked")
   public static boolean checkETagValidators(final HttpServletRequest req,
                                             final HttpServletResponse resp,
                                             final Method reqMethod,

@@ -79,7 +79,7 @@ specified as a named list (`<lst>`) structure with nested typed parameters. If
 specified, the script context will get a "params" object, otherwise there will be no "params" object available.
 
 
-== Script execution context
+== Script Execution Context
 
 Every script has some variables provided to it.
 
@@ -205,7 +205,7 @@ def finish()
 end
 ----
 
-==== Known issues
+==== Known Issues
 
 The following in JRuby does not work as expected for some reason, though it does work properly in JavaScript:
 
