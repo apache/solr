@@ -19,13 +19,15 @@ allprojects {
   apply plugin: 'base'
 
   group "org.apache"
+  
+  def lucenePrereleaseBuild = '5'
 
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
     maven {
-      name "ApacheSnapshots"
-      url 'https://repository.apache.org/content/repositories/snapshots/'
+      name "LucenePrerelease${lucenePrereleaseBuild}"
+      url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
     }
   }
 
