@@ -29,11 +29,10 @@ import org.apache.solr.search.ValueSourceParser;
  *
  **/
 public class DummyValueSourceParser extends ValueSourceParser {
-  @SuppressWarnings({"rawtypes"})
-  private NamedList args;
+  private NamedList<Object> args;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     this.args = args;
   }
 

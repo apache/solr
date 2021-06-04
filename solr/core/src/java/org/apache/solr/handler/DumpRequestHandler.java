@@ -120,13 +120,12 @@ public class DumpRequestHandler extends RequestHandlerBase
   private List<String> subpaths;
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     super.init(args);
     if(args !=null) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList nl = (NamedList) args.get(PluginInfo.DEFAULTS);
-      if(nl!=null) subpaths = nl.getAll("subpath");
+      @SuppressWarnings("unchecked")
+      NamedList<String> nl = (NamedList<String>) args.get(PluginInfo.DEFAULTS);
+      if (nl!=null) subpaths = nl.getAll("subpath");
     }
   }
 }

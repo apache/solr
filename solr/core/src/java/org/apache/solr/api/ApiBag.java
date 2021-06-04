@@ -167,7 +167,7 @@ public class ApiBag {
       this.isCoreSpecific = isCoreSpecific;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"unchecked"})
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
 
       String cmd = req.getParams().get("command");
@@ -199,8 +199,8 @@ public class ApiBag {
                   .collect(Collectors.toList()));
         }
       }
-      List l = (List) rsp.getValues().get("spec");
-      if (l == null) rsp.getValues().add("spec", l = new ArrayList());
+      List<Object> l = (List<Object>) rsp.getValues().get("spec");
+      if (l == null) rsp.getValues().add("spec", l = new ArrayList<>());
       l.add(result);
     }
   }
@@ -208,10 +208,10 @@ public class ApiBag {
   public static Map<String, JsonSchemaValidator> getParsedSchema(ValidatingJsonMap commands) {
     Map<String, JsonSchemaValidator> validators = new HashMap<>();
     for (Object o : commands.entrySet()) {
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry cmd = (Map.Entry) o;
+      @SuppressWarnings("unchecked")
+      Map.Entry<String, Map<?,?>> cmd = (Map.Entry<String, Map<?,?>>) o;
       try {
-        validators.put((String) cmd.getKey(), new JsonSchemaValidator((Map) cmd.getValue()));
+        validators.put(cmd.getKey(), new JsonSchemaValidator(cmd.getValue()));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in api spec", e);
       }
@@ -301,8 +301,8 @@ public class ApiBag {
     Object specObj = info == null ? null : info.attributes.get("spec");
     if (specObj == null) specObj = "emptySpec";
     if (specObj instanceof Map) {
-      @SuppressWarnings({"rawtypes"})
-      Map map = (Map) specObj;
+        assert false : "got a map from a string";
+      Map<?,?> map = (Map<?,?>) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
       return Utils.getSpec((String) specObj);
@@ -341,8 +341,7 @@ public class ApiBag {
       }
 
     }
-    @SuppressWarnings({"rawtypes"})
-    List<Map> errs = CommandOperation.captureErrors(commandsCopy);
+    List<Map<String, Object>> errs = CommandOperation.captureErrors(commandsCopy);
     if (!errs.isEmpty()) {
       throw new ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error in command payload", errs);
     }
@@ -350,16 +349,14 @@ public class ApiBag {
   }
 
   public static class ExceptionWithErrObject extends SolrException {
-    @SuppressWarnings({"rawtypes"})
-    private List<Map> errs;
+    private final List<Map<String, Object>> errs;
 
-    public ExceptionWithErrObject(ErrorCode code, String msg, @SuppressWarnings({"rawtypes"})List<Map> errs) {
+    public ExceptionWithErrObject(ErrorCode code, String msg, List<Map<String, Object>> errs) {
       super(code, msg);
       this.errs = errs;
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public List<Map> getErrs() {
+    public List<Map<String, Object>> getErrs() {
       return errs;
     }
 

@@ -111,7 +111,7 @@ public class TrackingBackupRepository implements BackupRepository {
     }
 
     @Override
-    public void init(@SuppressWarnings("rawtypes") NamedList args) {
+    public void init(NamedList<Object> args) {
         BackupRepositoryFactory factory = (BackupRepositoryFactory) args.get("factory");
         SolrResourceLoader loader = (SolrResourceLoader) args.get("loader");
         String repoName = (String) args.get("delegateRepoName");

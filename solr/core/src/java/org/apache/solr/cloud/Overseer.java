@@ -417,8 +417,7 @@ public class Overseer implements SolrCloseable {
         return;
       }
       try {
-        @SuppressWarnings({"rawtypes"})
-        Map m = (Map) Utils.fromJSON(data);
+        Map<?,?> m = (Map<?,?>) Utils.fromJSON(data);
         String id = (String) m.get(ID);
         if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {

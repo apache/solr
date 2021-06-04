@@ -59,7 +59,7 @@ public class InfoHandler extends RequestHandlerBase  {
 
 
   @Override
-  final public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  final public void init(NamedList<Object> args) {
 
   }
 

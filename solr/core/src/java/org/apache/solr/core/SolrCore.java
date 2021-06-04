@@ -208,8 +208,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
-  @SuppressWarnings({"rawtypes"})
-  private final NamedList configSetProperties;
+  private final NamedList<Object> configSetProperties;
   private final String dataDir;
   private final String ulogDir;
   private final UpdateHandler updateHandler;
@@ -366,8 +365,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     this.schema = replacementSchema;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public NamedList getConfigSetProperties() {
+  public NamedList<Object> getConfigSetProperties() {
     return configSetProperties;
   }
 
@@ -2909,7 +2907,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * RestManager provides basic storage support for managed resource data, such as to
    * persist stopwords to ZooKeeper if running in SolrCloud mode.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected RestManager initRestManager() throws SolrException {
 
     PluginInfo restManagerPluginInfo =
@@ -2923,7 +2921,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       if (restManagerPluginInfo.initArgs != null) {
-        initArgs = (NamedList<String>) restManagerPluginInfo.initArgs;
+        // TODO this is actually unsafe, the RMPI.initArgs can have objects too.
+        initArgs = (NamedList<String>) (NamedList) restManagerPluginInfo.initArgs;
       }
     }
 

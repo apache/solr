@@ -34,14 +34,12 @@ public class ConfigSet {
 
   private final SchemaSupplier schemaSupplier;
 
-  @SuppressWarnings({"rawtypes"})
-  private final NamedList properties;
+  private final NamedList<Object> properties;
 
   private final boolean trusted;
 
-  @SuppressWarnings({"rawtypes"})
   public ConfigSet(String name, SolrConfig solrConfig, SchemaSupplier indexSchemaSupplier,
-                   NamedList properties, boolean trusted) {
+                   NamedList<Object> properties, boolean trusted) {
     this.name = name;
     this.solrconfig = solrConfig;
     this.schemaSupplier = indexSchemaSupplier;
@@ -70,8 +68,7 @@ public class ConfigSet {
     return schema;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public NamedList getProperties() {
+  public NamedList<Object> getProperties() {
     return properties;
   }
 

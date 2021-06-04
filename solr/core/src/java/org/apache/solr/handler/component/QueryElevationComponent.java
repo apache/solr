@@ -162,7 +162,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   protected long cacheVersion;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     this.initArgs = args.toSolrParams();
   }
 

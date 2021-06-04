@@ -225,20 +225,18 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  public void init(NamedList args) {
+  public void init(NamedList<Object> args) {
     super.init(args);
 
     if (args != null) {
-      @SuppressWarnings("unchecked")
-      NamedList<Object> initParams = (NamedList<Object>) args;
+      NamedList<Object> initParams = args;
       for (Map.Entry<String, Object> entry : initParams) {
         if (!INIT_SECTION_ENGINE.equals(entry.getKey())) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unrecognized configuration entry: " + entry.getKey());
         }
 
-        declaredEngines.add(new EngineEntry(((NamedList<Object>) entry.getValue()).toSolrParams()));
+        declaredEngines.add(new EngineEntry(((NamedList<?>) entry.getValue()).toSolrParams()));
       }
     }
   }

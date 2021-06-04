@@ -166,7 +166,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     
     Locale locale;
     String localeParam = (String)args.remove(LOCALE_PARAM);
@@ -182,7 +182,6 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
       defaultTimeZone = ZoneId.of(defaultTimeZoneParam.toString());
     }
 
-    @SuppressWarnings({"unchecked"})
     Collection<String> formatsParam = args.removeConfigArgs(FORMATS_PARAM);
     if (null != formatsParam) {
       for (String value : formatsParam) {

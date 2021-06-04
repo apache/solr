@@ -113,8 +113,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList<Object> args) {
     super.init(args);
     threadManager = LTRThreadModule.getInstance(args);
     SolrPluginUtils.invokeSetters(this, args);

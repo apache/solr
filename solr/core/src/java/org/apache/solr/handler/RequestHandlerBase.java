@@ -55,8 +55,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
  */
 public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport {
 
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList initArgs = null;
+  protected NamedList<Object> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
@@ -129,7 +128,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
    */
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     initArgs = args;
 
     if (args != null) {

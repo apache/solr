@@ -39,7 +39,6 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
   private static SpellingQueryConverter queryConverter;
 
   @BeforeClass
-  @SuppressWarnings({"rawtypes"})
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     //Index something with a title
@@ -49,7 +48,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(adoc("id", "3", "teststop", "solr foo")));
     assertNull(h.validateUpdate(commit()));
     queryConverter = new SimpleQueryConverter();
-    queryConverter.init(new NamedList());
+    queryConverter.init(new NamedList<>());
   }
   
   @AfterClass
@@ -58,11 +57,9 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
-    @SuppressWarnings({"rawtypes"})
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
 
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
@@ -97,11 +94,9 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testFieldType() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
-    @SuppressWarnings({"rawtypes"})
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
@@ -111,7 +106,6 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop");
-    spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
@@ -143,11 +137,9 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
    * No indexDir location set
    */
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testRAMDirectory() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
-    @SuppressWarnings({"rawtypes"})
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
 
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
@@ -155,7 +147,6 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop");
-    spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
 
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);

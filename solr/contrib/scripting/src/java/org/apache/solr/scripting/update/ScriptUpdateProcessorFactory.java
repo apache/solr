@@ -178,8 +178,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   private ScriptEngineCustomizer scriptEngineCustomizer;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    @SuppressWarnings({"unchecked"})
+  public void init(NamedList<Object> args) {
     Collection<String> scripts =
       args.removeConfigArgs(SCRIPT_ARG);
     if (scripts.isEmpty()) {

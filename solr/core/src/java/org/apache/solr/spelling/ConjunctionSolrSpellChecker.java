@@ -82,7 +82,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   }
   
   @Override
-  public String init(@SuppressWarnings("rawtypes") NamedList config, SolrCore core) {
+  public String init(NamedList<Object> config, SolrCore core) {
     for (int i = 0; i < checkers.size(); i++) {
       SolrSpellChecker c = checkers.get(i);
       String dn = c.init(config, core);

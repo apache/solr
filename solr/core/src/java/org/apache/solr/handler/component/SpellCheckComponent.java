@@ -109,7 +109,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   protected QueryConverter queryConverter;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     super.init(args);
     this.initParams = args;
   }
@@ -724,13 +724,13 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         if (initParams.getName(i).equals("spellchecker")) {
           Object cfg = initParams.getVal(i);
           if (cfg instanceof NamedList) {
-            addSpellChecker(core, hasDefault, (NamedList) cfg);
+            addSpellChecker(core, hasDefault, (NamedList<Object>) cfg);
           } else if (cfg instanceof Map) {
-            addSpellChecker(core, hasDefault, new NamedList((Map) cfg));
+            addSpellChecker(core, hasDefault, new NamedList<>((Map) cfg));
           } else if (cfg instanceof List) {
             for (Object o : (List) cfg) {
               if (o instanceof Map) {
-                addSpellChecker(core, hasDefault, new NamedList((Map) o));
+                addSpellChecker(core, hasDefault, new NamedList<>((Map) o));
               }
             }
           }
@@ -760,7 +760,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  @SuppressWarnings({"rawtypes"})private boolean addSpellChecker(SolrCore core, boolean hasDefault, @SuppressWarnings({"rawtypes"})NamedList spellchecker) {
+  private boolean addSpellChecker(SolrCore core, boolean hasDefault, NamedList<Object> spellchecker) {
     String className = (String) spellchecker.get("classname");
     if (className == null) className = (String) spellchecker.get("class");
     // TODO: this is a little bit sneaky: warn if class isnt supplied

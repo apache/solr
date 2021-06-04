@@ -103,7 +103,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     super.init( args );
     hiddenFiles = initHidden(invariants);
   }

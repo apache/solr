@@ -40,10 +40,9 @@ public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     super.init(args);
     this.initArgs = args;
-
   }
 
   @Override

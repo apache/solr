@@ -151,8 +151,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   }
 
   public static boolean getImmutable(SolrCore core) {
-    @SuppressWarnings({"rawtypes"})
-    NamedList configSetProperties = core.getConfigSetProperties();
+    NamedList<?> configSetProperties = core.getConfigSetProperties();
     if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
     return immutable != null && Boolean.parseBoolean(immutable.toString());

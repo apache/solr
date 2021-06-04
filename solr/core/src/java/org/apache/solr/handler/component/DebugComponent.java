@@ -78,7 +78,6 @@ public class DebugComponent extends SearchComponent
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
@@ -92,12 +91,10 @@ public class DebugComponent extends SearchComponent
         results = rb.getResults().docList;
       }
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
+      NamedList<Object> stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
           rb.getQueryString(), rb.wrap(rb.getQuery()), results, rb.isDebugQuery(), rb.isDebugResults());
       
-      @SuppressWarnings({"rawtypes"})
-      NamedList info = rb.getDebugInfo();
+      NamedList<Object> info = rb.getDebugInfo();
       if( info == null ) {
         rb.setDebugInfo( stdinfo );
         info = stdinfo;
@@ -217,15 +214,13 @@ public class DebugComponent extends SearchComponent
             // this should only happen when using shards.tolerant=true
             continue;
           }
-          @SuppressWarnings({"rawtypes"})
-          NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
+          NamedList<Object> sdebug = (NamedList<Object>)srsp.getSolrResponse().getResponse().get("debug");
 
-          info = (NamedList)merge(sdebug, info, EXCLUDE_SET);
+          info = (NamedList<Object>)merge(sdebug, info, EXCLUDE_SET);
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
             hasGetDebugResponses = true;
             if (rb.isDebugResults()) {
-              @SuppressWarnings({"rawtypes"})
-              NamedList sexplain = (NamedList)sdebug.get("explain");
+              NamedList<Object> sexplain = (NamedList<Object>)sdebug.get("explain");
               SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
             }
           }

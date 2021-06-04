@@ -42,15 +42,14 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
 public class PluginInfo implements MapSerializable {
   public final String name, className, type, pkgName;
   public final ClassName cName;
-  @SuppressWarnings({"rawtypes"})
-  public final NamedList initArgs;
+  public final NamedList<Object> initArgs;
   public final Map<String, String> attributes;
   public final List<PluginInfo> children;
   private boolean isFromSolrConfig;
 
 
 
-  public PluginInfo(String type, Map<String, String> attrs, @SuppressWarnings({"rawtypes"})NamedList initArgs, List<PluginInfo> children) {
+  public PluginInfo(String type, Map<String, String> attrs, NamedList<Object> initArgs, List<PluginInfo> children) {
     this.type = type;
     this.name = attrs.get(NAME);
     cName = parseClassName(attrs.get(CLASS_NAME));
@@ -58,7 +57,7 @@ public class PluginInfo implements MapSerializable {
     this.pkgName = cName.pkg;
     this.initArgs = initArgs;
     attributes = unmodifiableMap(attrs);
-    this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
+    this.children = children == null ? Collections.emptyList(): unmodifiableList(children);
     isFromSolrConfig = false;
   }
 
@@ -114,7 +113,7 @@ public class PluginInfo implements MapSerializable {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public PluginInfo(String type, Map<String,Object> map) {
     LinkedHashMap m = new LinkedHashMap<>(map);
-    initArgs = new NamedList();
+    initArgs = new NamedList<>();
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       if (NAME.equals(entry.getKey()) || CLASS_NAME.equals(entry.getKey())) continue;
       Object value = entry.getValue();
@@ -139,7 +138,7 @@ public class PluginInfo implements MapSerializable {
     this.className = cName.className;
     this.pkgName = cName.pkg;
     attributes = unmodifiableMap(m);
-    this.children =  Collections.<PluginInfo>emptyList();
+    this.children =  Collections.emptyList();
     isFromSolrConfig = true;
   }
 
@@ -154,7 +153,7 @@ public class PluginInfo implements MapSerializable {
       PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
       if (pluginInfo.isEnabled()) children.add(pluginInfo);
     }
-    return children.isEmpty() ? Collections.<PluginInfo>emptyList() : unmodifiableList(children);
+    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
   }
 
   @Override
@@ -218,8 +217,7 @@ public class PluginInfo implements MapSerializable {
     for (PluginInfo child : children) if(type.equals(child.type)) result.add(child);
     return result;
   }
-  @SuppressWarnings({"rawtypes"})
-  public static final PluginInfo EMPTY_INFO = new PluginInfo("",Collections.<String,String>emptyMap(), new NamedList(),Collections.<PluginInfo>emptyList());
+  public static final PluginInfo EMPTY_INFO = new PluginInfo("", Collections.emptyMap(), new NamedList<>(), Collections.emptyList());
 
   private static final HashSet<String> NL_TAGS = new HashSet<>
     (asList("lst", "arr",

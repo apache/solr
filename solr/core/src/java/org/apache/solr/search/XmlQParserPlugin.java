@@ -66,11 +66,10 @@ import org.apache.solr.schema.IndexSchema;
 public class XmlQParserPlugin extends QParserPlugin {
   public static final String NAME = "xmlparser";
 
-  @SuppressWarnings({"rawtypes"})
-  private NamedList args;
+  private NamedList<Object> args;
 
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args ) {
+  public void init(NamedList<Object> args ) {
     super.init(args);
     this.args = args;
   }

@@ -93,7 +93,7 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList initArgs) {
+  public void init(NamedList<Object> initArgs) {
     super.init(initArgs);
     if (initArgs != null) {
       params = initArgs.toSolrParams();

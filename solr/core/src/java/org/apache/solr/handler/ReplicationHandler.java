@@ -1435,9 +1435,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
-      @Override
-      public void init(@SuppressWarnings({"rawtypes"})NamedList args) {/*no op*/ }
-
       /**
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as well
        */

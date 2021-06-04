@@ -105,7 +105,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
   
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
     super.init(args);
     this.initParams = args;
   }

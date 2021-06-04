@@ -299,7 +299,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       if (m.get(ASYNC) != null) {
         String asyncId = m.getStr(ASYNC);
-        NamedList<String> r = new NamedList<>();
+        NamedList<Object> r = new NamedList<>();
 
         if (coreContainer.getZkController().claimAsyncId(asyncId)) {
           boolean success = false;
@@ -321,7 +321,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         } else {
           r.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
         }
-        r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
+        r.add(CoreAdminParams.REQUESTID, m.get(ASYNC));
 
         return new OverseerSolrResponse(r);
       }
@@ -756,7 +756,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String extCollectionName = req.getParams().get(COLLECTION_PROP);
       String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
           .getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
-      if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
+      if (!ImplicitDocRouter.NAME.equals(((Map<?,?>) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
         throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
       copy(req.getParams(), map,
           REPLICATION_FACTOR,

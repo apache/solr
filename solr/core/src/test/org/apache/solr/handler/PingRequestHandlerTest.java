@@ -73,12 +73,11 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     handler.inform(h.getCore());
   }
   
-  @SuppressWarnings({"rawtypes"})
   public void testPingWithNoHealthCheck() throws Exception {
     
     // for this test, we don't want any healthcheck file configured at all
     handler = new PingRequestHandler();
-    handler.init(new NamedList());
+    handler.init(new NamedList<>());
     handler.inform(h.getCore());
 
     SolrQueryResponse rsp = null;

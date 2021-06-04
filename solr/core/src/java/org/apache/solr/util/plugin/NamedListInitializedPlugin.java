@@ -25,5 +25,5 @@ import org.apache.solr.common.util.NamedList;
  * @since solr 1.3
  */
 public interface NamedListInitializedPlugin {
-  void init( @SuppressWarnings({"rawtypes"})NamedList args );
+  default void init(NamedList<Object> args) {}
 }

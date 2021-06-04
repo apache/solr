@@ -119,7 +119,6 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
    * @see DistributedUpdateProcessorFactory
    */
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void init(PluginInfo info) {
     final String infomsg = "updateRequestProcessorChain \"" + 
       (null != info.name ? info.name : "") + "\"" + 
@@ -158,7 +157,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       // by default, add distrib processor immediately before run
       DistributedUpdateProcessorFactory distrib
         = new DistributedUpdateProcessorFactory();
-      distrib.init(new NamedList());
+      distrib.init(new NamedList<>());
       list.add(runIndex, distrib);
 
       log.debug("inserting DistributedUpdateProcessorFactory into {}", infomsg);

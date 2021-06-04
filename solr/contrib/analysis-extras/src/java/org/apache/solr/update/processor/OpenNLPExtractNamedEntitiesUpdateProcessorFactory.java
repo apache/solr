@@ -214,7 +214,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
 
     // high level (loose) check for which type of config we have.
     //
@@ -572,7 +572,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
   }
 
   /** macro */
-  private static SelectorParams parseSelectorParams(@SuppressWarnings({"rawtypes"})NamedList args) {
+  private static SelectorParams parseSelectorParams(NamedList<Object> args) {
     return FieldMutatingUpdateProcessorFactory.parseSelectorParams(args);
   }
 }

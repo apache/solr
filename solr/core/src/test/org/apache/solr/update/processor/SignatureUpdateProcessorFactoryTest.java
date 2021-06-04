@@ -227,7 +227,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   public void testFailNonIndexedSigWithOverwriteDupes() throws Exception {
     SolrCore core = h.getCore();
     SignatureUpdateProcessorFactory f = new SignatureUpdateProcessorFactory();
-    NamedList<String> initArgs = new NamedList<>();
+    NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("overwriteDupes", "true");
     initArgs.add("signatureField", "signatureField_sS");
     f.init(initArgs);
@@ -306,7 +306,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     try {
       req.setContentStreams(Collections.singletonList(ContentStreamBase.create(new BinaryRequestWriter(), ureq)));
       UpdateRequestHandler h = new UpdateRequestHandler();
-      h.init(new NamedList());
+      h.init(new NamedList<>());
       h.handleRequestBody(req, new SolrQueryResponse());
     } finally {
       req.close();

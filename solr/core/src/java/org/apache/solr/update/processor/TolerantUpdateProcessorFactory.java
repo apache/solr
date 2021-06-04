@@ -93,11 +93,9 @@ public class TolerantUpdateProcessorFactory extends UpdateRequestProcessorFactor
 
   private boolean informed = false;
   
-  @SuppressWarnings("rawtypes")
   @Override
-  public void init( NamedList args ) {
-
-    Object maxErrorsObj = args.get(MAX_ERRORS_PARAM); 
+  public void init(NamedList<Object> args ) {
+    Object maxErrorsObj = args.get(MAX_ERRORS_PARAM);
     if (maxErrorsObj != null) {
       try {
         defaultMaxErrors = Integer.parseInt(maxErrorsObj.toString());

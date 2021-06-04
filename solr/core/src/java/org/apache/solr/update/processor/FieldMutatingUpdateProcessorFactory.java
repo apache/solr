@@ -139,10 +139,9 @@ public abstract class FieldMutatingUpdateProcessorFactory
   }
 
 
-  @SuppressWarnings({"unchecked"})
-  public static SelectorParams parseSelectorParams(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public static SelectorParams parseSelectorParams(NamedList<Object> args) {
     SelectorParams params = new SelectorParams();
-    
+
     params.fieldName = new HashSet<>(args.removeConfigArgs("fieldName"));
     params.typeName = new HashSet<>(args.removeConfigArgs("typeName"));
 
@@ -170,10 +169,8 @@ public abstract class FieldMutatingUpdateProcessorFactory
     return params;
   }
                                
-  public static Collection<SelectorParams> parseSelectorExclusionParams(
-          @SuppressWarnings({"rawtypes"})NamedList args) {
+  public static Collection<SelectorParams> parseSelectorExclusionParams(NamedList<Object> args) {
     Collection<SelectorParams> exclusions = new ArrayList<>();
-    @SuppressWarnings({"unchecked"})
     List<Object> excList = args.getAll("exclude");
     for (Object excObj : excList) {
       if (null == excObj) {
@@ -184,8 +181,8 @@ public abstract class FieldMutatingUpdateProcessorFactory
         throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
             "'exclude' init param must be <lst/>");
       }
-      @SuppressWarnings({"rawtypes"})
-      NamedList exc = (NamedList) excObj;
+      @SuppressWarnings({"unchecked"})
+      NamedList<Object> exc = (NamedList<Object>) excObj;
       exclusions.add(parseSelectorParams(exc));
       if (0 < exc.size()) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -207,7 +204,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
    * remove any subclass-specific init args before calling this method.
    */
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
 
     inclusions = parseSelectorParams(args);
     exclusions = parseSelectorExclusionParams(args);

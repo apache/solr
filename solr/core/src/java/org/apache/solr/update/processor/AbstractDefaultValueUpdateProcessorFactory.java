@@ -45,7 +45,7 @@ public abstract class AbstractDefaultValueUpdateProcessorFactory
   protected String fieldName = null;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<Object> args) {
 
     Object obj = args.remove("fieldName");
     if (null == obj && null == fieldName) {
