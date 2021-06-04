@@ -49,7 +49,7 @@ public class RawValueTransformerFactory extends TransformerFactory
   }
   
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     if(defaultUserArgs!=null&&defaultUserArgs.startsWith("wt=")) {
       applyToWT = defaultUserArgs.substring(3);

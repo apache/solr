@@ -37,7 +37,7 @@ public class RegexpBoostProcessorFactory extends UpdateRequestProcessorFactory {
     private final Map<Object, Object> sharedObjectCache = new HashMap<>();
 
     @Override
-    public void init(final NamedList<Object> args) {
+    public void init(final NamedList<?> args) {
         if (args != null) {
           this.params = args.toSolrParams();
         }

@@ -30,7 +30,7 @@ public class URLClassifyProcessorFactory extends UpdateRequestProcessorFactory {
   private SolrParams params;
   
   @Override
-  public void init(final NamedList<Object> args) {
+  public void init(final NamedList<?> args) {
     if (args != null) {
       this.params = args.toSolrParams();
     }

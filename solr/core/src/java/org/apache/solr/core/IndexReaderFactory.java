@@ -32,10 +32,9 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    * <p>
    * The args are user-level initialization parameters that may be specified
    * when declaring an indexReaderFactory in solrconfig.xml
-   *
    */
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
    Object v = args.get("setTermIndexDivisor");
    if (v != null) {
      throw new IllegalArgumentException("Illegal parameter 'setTermIndexDivisor'");

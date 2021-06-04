@@ -225,12 +225,11 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
 
     if (args != null) {
-      NamedList<Object> initParams = args;
-      for (Map.Entry<String, Object> entry : initParams) {
+      for (Map.Entry<String, ?> entry : args) {
         if (!INIT_SECTION_ENGINE.equals(entry.getKey())) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unrecognized configuration entry: " + entry.getKey());

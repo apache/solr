@@ -48,7 +48,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
   private long maxDocumentSize = 1024 * 1024;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     maxDocumentSize = args.toSolrParams().required().getLong(LIMIT_SIZE_PARAM);
     args.remove(LIMIT_SIZE_PARAM);
 

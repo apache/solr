@@ -992,14 +992,14 @@ public class SolrPluginUtils {
     return out;
   }
 
-  public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs) {
+  public static void invokeSetters(Object bean, Iterable<? extends Map.Entry<String,?>> initArgs) {
     invokeSetters(bean, initArgs, false);
   }
 
-  public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs, boolean lenient) {
+  public static void invokeSetters(Object bean, Iterable<? extends Map.Entry<String,?>> initArgs, boolean lenient) {
     if (initArgs == null) return;
     final Class<?> clazz = bean.getClass();
-    for (Map.Entry<String,Object> entry : initArgs) {
+    for (Map.Entry<String,?> entry : initArgs) {
       String key = entry.getKey();
       String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
       try {

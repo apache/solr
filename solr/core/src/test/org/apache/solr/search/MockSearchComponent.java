@@ -27,7 +27,7 @@ public class MockSearchComponent extends SearchComponent {
   private String testParam = null;
   
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     testParam = (String) args.get("testParam");
   }

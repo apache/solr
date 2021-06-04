@@ -73,7 +73,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     assert codec == null;
     String compressionModeStr = (String)args.get(COMPRESSION_MODE);

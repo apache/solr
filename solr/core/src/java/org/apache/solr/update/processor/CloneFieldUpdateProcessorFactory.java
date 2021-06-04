@@ -197,7 +197,7 @@ public class CloneFieldUpdateProcessorFactory
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
 
     // high level (loose) check for which type of config we have.
     // 
@@ -225,7 +225,7 @@ public class CloneFieldUpdateProcessorFactory
    * init helper method that should only be called when we know for certain that both the 
    * "source" and "dest" init params do <em>not</em> exist.
    */
-  private void initSimpleRegexReplacement(NamedList<Object> args) {
+  private void initSimpleRegexReplacement(NamedList<?> args) {
     // The syntactic sugar for the case where there is only one regex pattern for source and the same pattern
     // is used for the destination pattern...
     //
@@ -280,8 +280,7 @@ public class CloneFieldUpdateProcessorFactory
    * init helper method that should only be called when we know for certain that both the 
    * "source" and "dest" init params <em>do</em> exist.
    */
-  @SuppressWarnings("unchecked")
-  private void initSourceSelectorSyntax(NamedList<Object> args) {
+  private void initSourceSelectorSyntax(NamedList<?> args) {
     // Full and complete syntax where source and dest are mandatory.
     //
     // source may be a single string or a selector.
@@ -299,17 +298,17 @@ public class CloneFieldUpdateProcessorFactory
     Object d = args.remove(DEST_PARAM);
     assert null != d;
     
-    List<Object> sources = args.getAll(SOURCE_PARAM);
+    List<?> sources = args.getAll(SOURCE_PARAM);
     assert null != sources;
 
     if (1 == sources.size()) {
       if (sources.get(0) instanceof NamedList) {
         // nested set of selector options
-        NamedList<Object> selectorConfig = (NamedList<Object>) args.remove(SOURCE_PARAM);
+        NamedList<?> selectorConfig = (NamedList<?>) args.remove(SOURCE_PARAM);
 
         srcInclusions = parseSelectorParams(selectorConfig);
 
-        List<Object> excList = selectorConfig.getAll("exclude");
+        List<?> excList = selectorConfig.getAll("exclude");
 
         for (Object excObj : excList) {
           if (null == excObj) {
@@ -320,7 +319,7 @@ public class CloneFieldUpdateProcessorFactory
             throw new SolrException(SERVER_ERROR, "Init param '" + SOURCE_PARAM +
                                     "' child 'exclude' must be <lst/>");
           }
-          NamedList<Object> exc = (NamedList<Object>) excObj;
+          NamedList<?> exc = (NamedList<?>) excObj;
           srcExclusions.add(parseSelectorParams(exc));
           if (0 < exc.size()) {
             throw new SolrException(SERVER_ERROR, "Init param '" + SOURCE_PARAM +
@@ -351,7 +350,7 @@ public class CloneFieldUpdateProcessorFactory
     }
     
     if (d instanceof NamedList) {
-      NamedList<Object> destList = (NamedList<Object>) d;
+      NamedList<?> destList = (NamedList<?>) d;
 
       Object patt = destList.remove(PATTERN_PARAM);
       Object replacement = destList.remove(REPLACEMENT_PARAM);
@@ -467,7 +466,7 @@ public class CloneFieldUpdateProcessorFactory
   }
 
   /** macro */
-  private static SelectorParams parseSelectorParams(NamedList<Object> args) {
+  private static SelectorParams parseSelectorParams(NamedList<?> args) {
     return FieldMutatingUpdateProcessorFactory.parseSelectorParams(args);
   }
 

@@ -96,7 +96,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   private DirectSpellChecker checker = new DirectSpellChecker();
   
   @Override
-  public String init(NamedList<Object> config, SolrCore core) {
+  public String init(NamedList<?> config, SolrCore core) {
 
     SolrParams params = config.toSolrParams();
 

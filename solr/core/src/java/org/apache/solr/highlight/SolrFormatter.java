@@ -24,13 +24,8 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public interface SolrFormatter extends SolrInfoBean, NamedListInitializedPlugin {
 
-  /** <code>init</code> will be called just once, immediately after creation.
-   * <p>The args are user-level initialization parameters that
-   * may be specified when declaring a request handler in
-   * solrconfig.xml
-   */
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args);
+  public void init(NamedList<?> args);
 
   /**
    * Return a {@link org.apache.lucene.search.highlight.Formatter} appropriate for this field.

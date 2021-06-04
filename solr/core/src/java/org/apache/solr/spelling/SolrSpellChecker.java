@@ -56,7 +56,7 @@ public abstract class SolrSpellChecker {
   protected String field;
   protected String fieldTypeName;
 
-  public String init(NamedList<Object> config, SolrCore core) {
+  public String init(NamedList<?> config, SolrCore core) {
     name = (String)config.get(DICTIONARY_NAME);
     if (name == null) {
       name = DEFAULT_DICTIONARY_NAME;

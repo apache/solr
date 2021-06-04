@@ -76,7 +76,7 @@ public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   protected String fieldName = null;
 
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
 
     Object obj = args.remove(FIELD_PARAM);
     if (null != obj) {

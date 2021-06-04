@@ -53,7 +53,7 @@ public class DefaultValueUpdateProcessorFactory
   protected Object defaultValue = null;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     Object obj = args.remove("value");
     if (null == obj) {
       throw new SolrException

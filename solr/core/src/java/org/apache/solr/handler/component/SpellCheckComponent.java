@@ -109,7 +109,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   protected QueryConverter queryConverter;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
   }
@@ -817,7 +817,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+    public void init(@SuppressWarnings({"rawtypes"}) NamedList<?> args) {
     }
 
     @Override

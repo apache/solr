@@ -40,7 +40,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
   private String contentType = CONTENT_TYPE_JSON_UTF8;
 
   @Override
-  public void init(NamedList<Object> namedList) {
+  public void init(NamedList<?> namedList) {
     String contentType = (String) namedList.get("content-type");
     if (contentType != null) {
       this.contentType = contentType;

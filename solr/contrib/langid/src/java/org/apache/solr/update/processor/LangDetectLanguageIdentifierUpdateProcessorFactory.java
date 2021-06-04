@@ -67,10 +67,10 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
   /**
    * The UpdateRequestProcessor may be initialized in solrconfig.xml similarly
    * to a RequestHandler, with defaults, appends and invariants.
-   * @param args a NamedList with the configuration parameters 
+   * @param args a NamedList with the configuration parameters
    */
   @Override
-  public void init(NamedList<Object> args )
+  public void init(NamedList<?> args )
   {
     try {
       loadData();

@@ -86,7 +86,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     threadManager = LTRThreadModule.getInstance(args);
     SolrPluginUtils.invokeSetters(this, args);

@@ -29,11 +29,11 @@ public class AbstractSolrEventListener implements SolrEventListener {
   public AbstractSolrEventListener(SolrCore core) {
     this.core = core;
   }
-  private NamedList<Object> args;
-  public NamedList<Object> getArgs() { return args; }
+  private NamedList<?> args;
+  public NamedList<?> getArgs() { return args; }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     this.args = args.clone();
   }
 

@@ -29,10 +29,10 @@ import org.apache.solr.search.ValueSourceParser;
  *
  **/
 public class DummyValueSourceParser extends ValueSourceParser {
-  private NamedList<Object> args;
+  private NamedList<?> args;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     this.args = args;
   }
 

@@ -40,7 +40,7 @@ public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initArgs = args;
   }

@@ -107,7 +107,7 @@ public class PreAnalyzedUpdateProcessorFactory extends FieldMutatingUpdateProces
   private String parserImpl;
 
   @Override
-  public void init(final NamedList<Object> args) {
+  public void init(final NamedList<?> args) {
     parserImpl = (String)args.get("parser");
     args.remove("parser");
     // initialize inclusion / exclusion patterns

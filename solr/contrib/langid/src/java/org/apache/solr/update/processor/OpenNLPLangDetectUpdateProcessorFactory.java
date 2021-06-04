@@ -61,7 +61,7 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
   private SolrResourceLoader solrResourceLoader;
 
   @Override
-  public void init(NamedList<Object> args )
+  public void init(NamedList<?> args )
   {
     if (args != null) {
       Object o;

@@ -32,7 +32,7 @@ import org.apache.solr.util.SolrPluginUtils;
 public class LTRInterleavingTransformerFactory extends TransformerFactory {
   
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     SolrPluginUtils.invokeSetters(this, args);
   }

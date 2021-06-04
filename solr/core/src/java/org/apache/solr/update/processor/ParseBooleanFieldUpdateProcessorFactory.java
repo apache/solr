@@ -103,7 +103,7 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     Object caseSensitiveParam = args.remove(CASE_SENSITIVE_PARAM);
     if (null != caseSensitiveParam) {
       if (caseSensitiveParam instanceof Boolean) {

@@ -115,28 +115,29 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     assertNull(clusterState.getCollectionOrNull(collectionName));
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void testModifyCollection() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("replicationFactor", 25);
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       client.request(request);
       NamedList<Object> rsp = CollectionAdminRequest.getClusterStatus().setCollectionName(COLLECTION_NAME)
           .process(client).getResponse();
-      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
-      Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
-      int replicationFactor = Integer.parseInt(collection.get("replicationFactor").toString());
-      assertEquals(25, replicationFactor);
+      {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+        int replicationFactor = Integer.parseInt(collection.get("replicationFactor").toString());
+        assertEquals(25, replicationFactor);
+      }
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
@@ -150,13 +151,16 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       rsp = CollectionAdminRequest.getClusterStatus().setCollectionName(COLLECTION_NAME)
           .process(client).getResponse();
       System.out.println(rsp);
-      cluster = (NamedList<Object>) rsp.get("cluster");
+      cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      collections = (NamedList<Object>) cluster.get("collections");
+      collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
-      collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
-      assertNull(collection.get("replicationFactor"));
+      {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+        assertNull(collection.get("replicationFactor"));
+      }
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
@@ -184,8 +188,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("numShards", "1");
       params.set("replicationFactor", "1");
       params.set("nrtReplicas", "2");
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       try {
@@ -232,8 +235,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("numShards", "1");
       params.set("replicationFactor", "1");
       params.set("collection.configName", configSet);
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       client.request(request);
@@ -247,12 +249,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       client.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 
       final CollectionAdminRequest.ClusterStatus req = CollectionAdminRequest.getClusterStatus();
-      NamedList<Object> rsp = client.request(req);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      NamedList<?> rsp = client.request(req);
+      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull("Testing to insure collections are returned", collections.get(COLLECTION_NAME1));
     }
@@ -274,11 +274,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     request.setPath("/admin/collections");
 
     NamedList<Object> rsp = client.request(request);
-    @SuppressWarnings({"unchecked"})
-    NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+    NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
     assertNotNull("Cluster state should not be null", cluster);
-    @SuppressWarnings({"unchecked"})
-    NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+    NamedList<?> collections = (NamedList<?>) cluster.get("collections");
     assertNotNull("Collections should not be null in cluster state", collections);
     assertEquals(1, collections.size());
     @SuppressWarnings({"unchecked"})
@@ -294,16 +292,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
       params.set("shard", SHARD1);
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
@@ -326,11 +321,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       request.setShardName(SHARD1 + "," + SHARD2);
 
       NamedList<Object> rsp = request.process(client).getResponse();
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
@@ -354,7 +347,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       final CollectionAdminRequest.ClusterStatus request = new CollectionAdminRequest.ClusterStatus();
       request.setCollectionName(COLLECTION_NAME);
       NamedList<Object> rsp = request.process(client).getResponse();
-      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
       Map<String, Object> collection = (Map<String, Object>) Utils.getObjectByPath(cluster, false, "collections/" + COLLECTION_NAME);
       assertEquals("collection health", "GREEN", collection.get("health"));
@@ -411,13 +404,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
-      @SuppressWarnings({"unchecked"})
-      List<String> collections = (List<String>) rsp.get("collections");
+      List<?> collections = (List<?>) rsp.get("collections");
       assertTrue("control_collection was not found in list", collections.contains("control_collection"));
       assertTrue(DEFAULT_COLLECTION + " was not found in list", collections.contains(DEFAULT_COLLECTION));
       assertTrue(COLLECTION_NAME + " was not found in list", collections.contains(COLLECTION_NAME));
@@ -431,22 +422,18 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(COLLECTION_NAME1));
       assertEquals(4, collections.size());
 
-      @SuppressWarnings({"unchecked"})
-      List<String> liveNodes = (List<String>) cluster.get("live_nodes");
+      List<?> liveNodes = (List<?>) cluster.get("live_nodes");
       assertNotNull("Live nodes should not be null", liveNodes);
       assertFalse(liveNodes.isEmpty());
     }
@@ -458,16 +445,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", COLLECTION_NAME);
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      NamedList<?> collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
       @SuppressWarnings({"unchecked"})
@@ -488,8 +472,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", cname);
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
@@ -547,8 +530,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
       params.set(ShardParams._ROUTE_, "a!");
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
@@ -580,8 +562,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "myalias");
       params.set("collections", DEFAULT_COLLECTION + "," + COLLECTION_NAME);
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       client.request(request);
@@ -653,8 +634,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());
       params.set("node", replica.getNodeName());
       params.set("role", "overseer");
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
       client.request(request);
 
@@ -665,14 +645,12 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
       @SuppressWarnings({"unchecked"})
       Map<String, Object> roles = (Map<String, Object>) cluster.get("roles");
       assertNotNull("Role information should not be null", roles);
-      @SuppressWarnings({"unchecked"})
-      List<String> overseer = (List<String>) roles.get("overseer");
+      List<?> overseer = (List<?>) roles.get("overseer");
       assertNotNull(overseer);
       assertEquals(1, overseer.size());
       assertTrue(overseer.contains(replica.getNodeName()));
@@ -684,8 +662,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "bad_collection_name");
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       try {

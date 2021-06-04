@@ -52,7 +52,7 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
 public final class FieldLengthUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     // no length specific init args
     super.init(args);
   }

@@ -78,7 +78,7 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
   private boolean literalReplacementEnabled = true;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
 
     Object patternParam = args.remove(PATTERN_PARAM);
 

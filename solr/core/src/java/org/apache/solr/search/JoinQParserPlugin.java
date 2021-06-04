@@ -173,7 +173,7 @@ public class JoinQParserPlugin extends QParserPlugin {
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     routerField = (String) args.get("routerField");
 
     if (args.get("allowSolrUrls") != null) {

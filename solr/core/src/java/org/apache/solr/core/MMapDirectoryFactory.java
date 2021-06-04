@@ -46,7 +46,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private int maxChunk;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     SolrParams params = args.toSolrParams();
     maxChunk = params.getInt("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);

@@ -158,7 +158,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     inclusions = FieldMutatingUpdateProcessorFactory.parseSelectorParams(args);
     validateSelectorParams(inclusions);
     inclusions.fieldNameMatchesSchemaField = false;  // Explicitly (non-configurably) require unknown field names
@@ -192,9 +192,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     }
   }
 
-  private static List<TypeMapping> parseTypeMappings(NamedList<Object> args) {
+  private static List<TypeMapping> parseTypeMappings(NamedList<?> args) {
     List<TypeMapping> typeMappings = new ArrayList<>();
-    List<Object> typeMappingsParams = args.getAll(TYPE_MAPPING_PARAM);
+    List<?> typeMappingsParams = args.getAll(TYPE_MAPPING_PARAM);
     for (Object typeMappingObj : typeMappingsParams) {
       if (null == typeMappingObj) {
         throw new SolrException(SERVER_ERROR, "'" + TYPE_MAPPING_PARAM + "' init param cannot be null");
@@ -202,8 +202,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       if ( ! (typeMappingObj instanceof NamedList) ) {
         throw new SolrException(SERVER_ERROR, "'" + TYPE_MAPPING_PARAM + "' init param must be a <lst>");
       }
-      @SuppressWarnings({"unchecked"})
-      NamedList<Object> typeMappingNamedList = (NamedList<Object>)typeMappingObj;
+      NamedList<?> typeMappingNamedList = (NamedList<?>)typeMappingObj;
 
       Object fieldTypeObj = typeMappingNamedList.remove(FIELD_TYPE_PARAM);
       if (null == fieldTypeObj) {
@@ -246,8 +245,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         if ( ! (copyFieldObj instanceof NamedList)) {
           throw new SolrException(SERVER_ERROR, "'" + COPY_FIELD_PARAM + "' init param must be a <lst>");
         }
-        @SuppressWarnings("unchecked")
-        NamedList<Object> copyFieldNamedList = (NamedList<Object>)copyFieldObj;
+        NamedList<?> copyFieldNamedList = (NamedList<?>)copyFieldObj;
         // dest
         Object destObj = copyFieldNamedList.remove(DEST_PARAM);
         if (null == destObj) {

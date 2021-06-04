@@ -454,7 +454,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
   }

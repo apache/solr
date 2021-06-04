@@ -66,7 +66,7 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
   String delimiter = ", ";
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     Object d = args.remove("delimiter");
     if (null != d) delimiter = d.toString();
 

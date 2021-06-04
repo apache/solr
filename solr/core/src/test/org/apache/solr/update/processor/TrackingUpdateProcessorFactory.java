@@ -87,7 +87,7 @@ public final class TrackingUpdateProcessorFactory
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     if (args != null && args.indexOf("group",0) >= 0) {
       group = (String) args.get("group");
       log.debug("Init URP, group '{}'", group);

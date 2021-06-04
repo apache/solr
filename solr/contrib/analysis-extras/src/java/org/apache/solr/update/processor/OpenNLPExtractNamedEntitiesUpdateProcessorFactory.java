@@ -214,7 +214,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
 
     // high level (loose) check for which type of config we have.
     //

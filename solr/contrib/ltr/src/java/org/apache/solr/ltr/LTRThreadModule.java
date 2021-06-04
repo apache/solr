@@ -58,7 +58,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 final public class LTRThreadModule extends CloseHook implements NamedListInitializedPlugin  {
 
-  public static LTRThreadModule getInstance(NamedList<Object> args) {
+  public static LTRThreadModule getInstance(NamedList<?> args) {
 
     final LTRThreadModule threadManager;
     final NamedList<Object> threadManagerArgs = extractThreadModuleParams(args);
@@ -76,11 +76,11 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
 
   private static String CONFIG_PREFIX = "threadModule.";
 
-  private static NamedList<Object> extractThreadModuleParams(NamedList<Object> args) {
+  private static NamedList<Object> extractThreadModuleParams(NamedList<?> args) {
 
     // gather the thread module args from amongst the general args
     final NamedList<Object> extractedArgs = new NamedList<>();
-    for (final Map.Entry<String, Object> entry : args) {
+    for (final Map.Entry<String, ?> entry : args) {
       final String key = entry.getKey();
       if (key.startsWith(CONFIG_PREFIX)) {
         extractedArgs.add(key.substring(CONFIG_PREFIX.length()), entry.getValue());
@@ -115,7 +115,7 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     if (args != null) {
       SolrPluginUtils.invokeSetters(this, args);
     }

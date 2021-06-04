@@ -105,7 +105,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList<Object> args )  {
+  public void init(NamedList<?> args )  {
 
     Object tmp = args.remove("versionField");
     if (null == tmp) {

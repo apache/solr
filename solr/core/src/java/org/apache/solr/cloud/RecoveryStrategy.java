@@ -79,10 +79,10 @@ import org.slf4j.LoggerFactory;
 public class RecoveryStrategy implements Runnable, Closeable {
 
   public static class Builder implements NamedListInitializedPlugin {
-    private NamedList<Object> args;
+    private NamedList<?> args;
 
     @Override
-    public void init(NamedList<Object> args) {
+    public void init(NamedList<?> args) {
       this.args = args;
     }
 

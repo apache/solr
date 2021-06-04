@@ -166,7 +166,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   }
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     
     Locale locale;
     String localeParam = (String)args.remove(LOCALE_PARAM);

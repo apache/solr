@@ -178,7 +178,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   private ScriptEngineCustomizer scriptEngineCustomizer;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     Collection<String> scripts =
       args.removeConfigArgs(SCRIPT_ARG);
     if (scripts.isEmpty()) {

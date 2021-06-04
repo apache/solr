@@ -53,7 +53,7 @@ public final class TruncateFieldUpdateProcessorFactory
   private int maxLength = 0;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
 
     Object lengthParam = args.remove(MAX_LENGTH_PARAM);
     if (null == lengthParam) {
