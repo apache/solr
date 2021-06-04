@@ -192,10 +192,8 @@ public class MetricsMap implements Gauge<Map<String,Object>>, MapWriter, Dynamic
         if (jmxAttributes != null && jmxAttributes.containsKey(k)) {
           return;
         }
-        @SuppressWarnings({"rawtypes"})
-        Class type = v.getClass();
-        @SuppressWarnings({"rawtypes"})
-        OpenType typeBox = determineType(type);
+        Class<?> type = v.getClass();
+        OpenType<?> typeBox = determineType(type);
         if (type.equals(String.class) || typeBox == null) {
           attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
               null, true, false, false));
@@ -214,12 +212,11 @@ public class MetricsMap implements Gauge<Map<String,Object>>, MapWriter, Dynamic
     return new MBeanInfo(getClass().getName(), "MetricsMap", attrInfoArr, null, null, null);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private OpenType determineType(Class type) {
+  private OpenType<?> determineType(Class<?> type) {
     try {
       for (Field field : SimpleType.class.getFields()) {
         if (field.getType().equals(SimpleType.class)) {
-          SimpleType candidate = (SimpleType) field.get(SimpleType.class);
+          SimpleType<?> candidate = (SimpleType<?>) field.get(SimpleType.class);
           if (candidate.getTypeName().equals(type.getName())) {
             return candidate;
           }

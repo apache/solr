@@ -27,7 +27,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -187,7 +186,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.core.collection1"));
     values = (NamedList) values.get("solr.core.collection1");
     assertEquals(1, values.size());
-    @SuppressWarnings({"rawtypes"})
     MapWriter writer = (MapWriter) values.get("CACHE.core.fieldCache");
     assertNotNull(writer);
     assertNotNull(writer._get("entries_count", null));
@@ -367,9 +365,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCoreContainer().getCore("collection1");//;.getRequestHandlers().put("/dumphandler", new DumpRequestHandler());
     RefreshablePluginHolder pluginHolder =null;
     try {
-      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, Utils.makeMap("name", "/dumphandler", "class", DumpRequestHandler.class.getName()));
+      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, Map.of("name", "/dumphandler", "class", DumpRequestHandler.class.getName()));
       DumpRequestHandler requestHandler = new DumpRequestHandler();
-      requestHandler.gaugevals =  Utils.makeMap("d_k1","v1", "d_k2","v2");
+      requestHandler.gaugevals =  Map.of("d_k1","v1", "d_k2","v2");
       pluginHolder = new RefreshablePluginHolder(info, requestHandler);
       core.getRequestHandlers().put("/dumphandler",
 
@@ -397,7 +395,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(null, resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
 
     DumpRequestHandler requestHandler = new DumpRequestHandler();
-    requestHandler.gaugevals =  Utils.makeMap("d_k1","v1.1", "d_k2","v2.1");
+    requestHandler.gaugevals =  Map.of("d_k1","v1.1", "d_k2","v2.1");
     pluginHolder.reset(requestHandler);
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true", "key", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),

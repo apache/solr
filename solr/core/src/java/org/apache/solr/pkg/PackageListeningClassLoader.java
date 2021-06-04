@@ -113,8 +113,7 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
-    public <T> T newInstance(String cname, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
+    public <T> T newInstance(String cname, Class<T> expectedType, String[] subPackages, Class<?>[] params, Object[] args) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if (cName.pkg == null) {
             return fallbackClassLoader.newInstance(cname, expectedType, subPackages, params, args);

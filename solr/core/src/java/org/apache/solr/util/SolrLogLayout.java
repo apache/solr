@@ -237,7 +237,6 @@ public class SolrLogLayout extends AbstractStringLayout {
     return sb.toString();
   }
 
-  @SuppressWarnings({"unchecked"})
   private Map<String, Object> getReplicaProps(ZkController zkController, SolrCore core) {
     final String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     DocCollection collection = zkController.getClusterState().getCollectionOrNull(collectionName);
@@ -245,7 +244,7 @@ public class SolrLogLayout extends AbstractStringLayout {
     if (replica != null) {
       return replica.getProperties();
     }
-    return Collections.EMPTY_MAP;
+    return Collections.emptyMap();
   }
   
   private void addFirstLine(StringBuilder sb, String msg) {

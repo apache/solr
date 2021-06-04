@@ -702,7 +702,6 @@ public class SolrCLI implements CLIO {
    * Utility function for sending HTTP GET request to Solr and then doing some
    * validation of the response.
    */
-  @SuppressWarnings({"unchecked"})
   public static Map<String,Object> getJson(HttpClient httpClient, String getUrl) throws Exception {
     try {
       // ensure we're requesting JSON back from Solr

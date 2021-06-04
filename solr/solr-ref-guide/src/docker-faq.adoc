@@ -247,7 +247,7 @@ SOLR_OPTS=-XX:-UseLargePages
 In your Solr Admin UI, you will see listed under the JVM args both the original `-XX:+UseLargePages`
 set by the `GC_TUNE` environment variable and further down the list the overriding `-XX:-UseLargePages` argument.
 
-== I'm confused about the different invocations of solr -- help?
+== I'm confused about the different invocations of Solr -- help?
 
 The different invocations of the Solr docker image can look confusing, because the name of the
 image is "solr" and the Solr command is also "solr", and the image interprets various arguments in
