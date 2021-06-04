@@ -49,7 +49,7 @@ public class PathTrie<T> {
 
   public void insert(List<String> parts, Map<String, String> replacements, T o) {
     if (parts.isEmpty()) {
-      root.obj = o;
+      attachValueToNode(root, o);
       return;
     }
     replaceTemplates(parts, replacements);
@@ -120,7 +120,16 @@ public class PathTrie<T> {
 
   }
 
-  class Node {
+  /**
+   * Attaches the provided object to the PathTrie node
+   *
+   * The default implementation overwrites any existing values, but this can be overwritten by subclasses.
+   */
+  protected void attachValueToNode(PathTrie.Node node, T o) {
+    node.obj = o;
+  }
+
+  public class Node {
     String name;
     Map<String, Node> children;
     T obj;
@@ -138,6 +147,9 @@ public class PathTrie<T> {
       name = part;
       if (path.isEmpty()) obj = o;
     }
+
+    public T getObject() { return obj; }
+    public void setObject(T o) { obj = o; }
 
 
     private synchronized void insert(List<String> path, T o) {
@@ -164,25 +176,7 @@ public class PathTrie<T> {
       if (!path.isEmpty()) {
         matchedChild.insert(path, o);
       } else {
-        matchedChild.obj = o;
-        // Each PathTrie leaf node can only hold a single "value" (i.e. Api).  This results in "last-registered-API-wins"
-        // behavior whenever Solr attempts to register multiple API classes for the same path.
-        // This is a roadblock for adopting David's suggestion of having each API command reside in its own Java class
-        // (since only the last command registered would actually work at runtime).
-        //
-        // There's a few ways this might be fixed.
-        //
-        // 1. PathTrie.Node might change its 'obj' instanceVar from 'T' to 'Set<T>', and add values to the Set anytime
-        // it finds that 'obj != null' during an insertion.  This would probably involve changing the return types for
-        // various PathTrie methods to Set<T> as well, which might be a pain?  idk how much this class is used.
-        //
-        // 2. We could create a CompoundApi class to be an abstraction that wraps/delegates to N Api classes that all
-        // share the same URL path and method.
-        //
-        // 3. The registry in ApiBag could instantiate a PathTrie<Set<Api>>, and the logic here could check whether 'T'
-        // is a 'Collection' and if so append to the collection instead of overwriting. This is probably the easiest change but feels pretty hacky.
-        //
-        // 4. Something else?  I don't love any of the ideas above.
+        attachValueToNode(matchedChild, o);
       }
 
     }
