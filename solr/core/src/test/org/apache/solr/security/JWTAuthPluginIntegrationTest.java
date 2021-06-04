@@ -63,6 +63,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -101,7 +102,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-
+    // Setup an OAuth2 mock server with SSL
     Path p12Cert = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
     pemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     wrongPemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
@@ -156,7 +157,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   public void mockOAuth2ServerWrongPEMInTruststore() throws Exception {
     // JWTAuthPlugin throws SSLHandshakeException when fetching JWK, so this trips cluster init
-    expectThrows(Exception.class, () -> configureClusterMockOauth(2, wrongPemFilePath));
+    configureClusterMockOauth(2, wrongPemFilePath);
+    // Auth is not setup
+    assertNull(cluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin());
   }
 
   public void testStaticJwtKeys() throws Exception {
@@ -263,12 +266,19 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
   }
 
+  @SuppressWarnings("BusyWait")
   private void configureClusterMockOauth(int numNodes, Path pemFilePath) throws Exception {
     configureCluster(numNodes)// nodes
-        .withSecurityJson(createMockOAuthSecurityJson(pemFilePath))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
+    String securityJson = createMockOAuthSecurityJson(pemFilePath);
+    cluster.getZkClient().setData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
+    for(int i = 0; i < 5; i++) { // Wait up to 1s for the security.json change to take effect
+      if (cluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin() == null) {
+        Thread.sleep(200);
+      } else break;
+    }
     baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     cluster.waitForAllNodes(10);
   }
