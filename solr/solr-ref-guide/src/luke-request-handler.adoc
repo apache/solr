@@ -42,11 +42,11 @@ Choose whether /luke should return the index-flags for each field. Fetching and 
 
 == LukeRequestHandler Examples
 
-The following examples assume you are running Solr's `techproducts` example configuration:
+All of the examples in this section assume you are running the "techproducts" Solr example:
 
 [source,bash]
 ----
-bin/solr start -e techproducts
+bin/solr -e techproducts
 ----
 
 To return summary information about the index:
