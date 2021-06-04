@@ -57,7 +57,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
     List<String> names0 = new ArrayList<>();
     names0.add( MoreLikeThisComponent.COMPONENT_NAME );
     
-    NamedList<Object> args = new NamedList<>();
+    NamedList<List<String>> args = new NamedList<>();
     args.add( SearchHandler.INIT_COMPONENTS, names0 );
     try (SearchHandler handler = new SearchHandler()) {
       handler.init(args);

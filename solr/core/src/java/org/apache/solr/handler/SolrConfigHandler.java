@@ -342,8 +342,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), req.getOriginalParams());
         r.getContext().put(USEPARAM, useParams);
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
+        NamedList<?> nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
         SolrPluginUtils.setDefaults(r,
             getSolrParamsFromNamedList(nl, DEFAULTS),
             getSolrParamsFromNamedList(nl, APPENDS),

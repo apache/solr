@@ -172,7 +172,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   @Override
-  final public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
+  final public void init(NamedList<?> args) {
 
   }
 

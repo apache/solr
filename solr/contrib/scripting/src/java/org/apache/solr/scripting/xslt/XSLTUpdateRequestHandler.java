@@ -49,7 +49,7 @@ import org.xml.sax.XMLReader;
 public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     setAssumeContentType("application/xml");
 

@@ -227,7 +227,7 @@ public class IndexFetcher {
     return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyConnectionManager(), true);
   }
 
-  public IndexFetcher(@SuppressWarnings({"rawtypes"})final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
+  public IndexFetcher(final NamedList<?> initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
     Object fetchFromLeader = initArgs.get(FETCH_FROM_LEADER);
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
@@ -285,10 +285,10 @@ public class IndexFetcher {
     this.leaderUrl = leaderUrl;
   }
 
-  @SuppressWarnings({"unchecked"})
-  protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+  protected <T> T getParameter(NamedList<?> initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
+      @SuppressWarnings("unchecked")
       T temp = (T) initArgs.get(configKey);
       toReturn = (temp != null) ? temp : defaultValue;
     }
@@ -299,8 +299,7 @@ public class IndexFetcher {
   /**
    * Gets the latest commit version and generation from the leader
    */
-  @SuppressWarnings({"rawtypes"})
-  NamedList getLatestVersion() throws IOException {
+  NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
@@ -338,8 +337,7 @@ public class IndexFetcher {
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
         .build()) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList response = client.request(req);
+      NamedList<?> response = client.request(req);
 
       List<Map<String, Object>> files = (List<Map<String,Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null)
@@ -420,8 +418,7 @@ public class IndexFetcher {
         }
       }
       //get the current 'replicateable' index version in the leader
-      @SuppressWarnings({"rawtypes"})
-      NamedList response;
+      NamedList<?> response;
       try {
         response = getLatestVersion();
       } catch (Exception e) {
@@ -1406,14 +1403,12 @@ public class IndexFetcher {
    *
    * @return a list of configuration files which have changed on the leader and need to be downloaded.
    */
-  @SuppressWarnings({"unchecked"})
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
       return Collections.emptyList();
     //build a map with alias/name as the key
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
-    @SuppressWarnings({"rawtypes"})
-    NamedList names = new NamedList();
+    NamedList<String> names = new NamedList<>();
     for (Map<String, Object> map : confFilesToDownload) {
       //if alias is present that is the name the file may have in the follower
       String name = (String) (map.get(ALIAS) == null ? map.get(NAME) : map.get(ALIAS));
@@ -1770,8 +1765,7 @@ public class IndexFetcher {
       }
 
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList response;
+      NamedList<?> response;
       InputStream is = null;
 
       // TODO use shardhandler
@@ -1880,8 +1874,7 @@ public class IndexFetcher {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  NamedList getDetails() throws IOException, SolrServerException {
+  NamedList<Object> getDetails() throws IOException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
     params.set("follower", false);

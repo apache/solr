@@ -97,8 +97,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
    */
   public static final String COMPONENT_NAME = "spellcheck";
 
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList initParams;
+  protected NamedList<?> initParams;
 
 
   /**

@@ -87,7 +87,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   private XMLInputFactory inputFactory;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
 
     inputFactory = XMLInputFactory.newInstance();

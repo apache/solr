@@ -381,7 +381,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       init("schema12.xml");
       SolrCore core = h.getCore();
 
-      NamedList<Object> args = new NamedList<>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "string");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
@@ -727,7 +727,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     try {
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
-      NamedList<Object> args = new NamedList<>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.CONFIG_FILE, configFile.getName());
       comp.init(args);
       comp.inform(h.getCore());
@@ -918,7 +918,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       init("schema12.xml");
       SolrCore core = h.getCore();
 
-      NamedList<Object> args = new NamedList<>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "text");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 

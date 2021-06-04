@@ -44,8 +44,7 @@ public class DumpRequestHandler extends RequestHandlerBase
     rsp.add( "params", req.getParams().toNamedList() );
     String[] parts = req.getParams().getParams("urlTemplateValues");
     if (parts != null && parts.length > 0) {
-      @SuppressWarnings({"rawtypes"})
-      Map map = new LinkedHashMap<>();
+      Map<String, String> map = new LinkedHashMap<>();
       rsp.getValues().add("urlTemplateValues", map);
       for (String part : parts) {
         map.put(part, req.getPathTemplateValues().get(part));
@@ -71,8 +70,7 @@ public class DumpRequestHandler extends RequestHandlerBase
     }
 
     if(req.getParams().getBool("getdefaults", false)){
-      @SuppressWarnings({"rawtypes"})
-      NamedList def = (NamedList) initArgs.get(PluginInfo.DEFAULTS);
+      NamedList<?> def = (NamedList<?>) initArgs.get(PluginInfo.DEFAULTS);
       rsp.add("getdefaults", def);
     }
 
@@ -120,7 +118,7 @@ public class DumpRequestHandler extends RequestHandlerBase
   private List<String> subpaths;
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     if(args !=null) {
       @SuppressWarnings("unchecked")

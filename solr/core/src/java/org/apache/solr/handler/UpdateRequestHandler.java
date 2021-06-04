@@ -113,7 +113,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   };
 
   @Override
-  public void init(NamedList<Object> args) {
+  public void init(NamedList<?> args) {
     super.init(args);
 
     // Since backed by a non-thread safe Map, it should not be modifiable

@@ -49,13 +49,17 @@ public class PluginInfo implements MapSerializable {
 
 
 
-  public PluginInfo(String type, Map<String, String> attrs, NamedList<Object> initArgs, List<PluginInfo> children) {
+  public PluginInfo(String type, Map<String, String> attrs, NamedList<?> initArgs, List<PluginInfo> children) {
     this.type = type;
     this.name = attrs.get(NAME);
     cName = parseClassName(attrs.get(CLASS_NAME));
     this.className = cName.className;
     this.pkgName = cName.pkg;
-    this.initArgs = initArgs;
+    // Make a shallow copy for type safety
+    this.initArgs = new NamedList<>();
+    for (Map.Entry<String, ?> entry : initArgs) {
+      this.initArgs.add(entry.getKey(), entry.getValue());
+    }
     attributes = unmodifiableMap(attrs);
     this.children = children == null ? Collections.emptyList(): unmodifiableList(children);
     isFromSolrConfig = false;

@@ -59,9 +59,7 @@ public class InfoHandler extends RequestHandlerBase  {
 
 
   @Override
-  final public void init(NamedList<Object> args) {
-
-  }
+  final public void init(NamedList<?> args) { }
 
   /**
    * The instance of CoreContainer this handler handles. This should be the CoreContainer instance that created this
