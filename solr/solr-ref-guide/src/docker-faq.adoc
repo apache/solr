@@ -112,7 +112,7 @@ SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data solr)
 docker exec -it --user=solr $SOLR_CONTAINER solr create_core -c gettingstarted
 
 # make a change to the config, using the config API
-docker exec -it --user=solr $SOLR_CONTAINER curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d'{
+docker exec -it --user=solr $SOLR_CONTAINER curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
     "set-property" : {"query.filterCache.autowarmCount":1000},
     "unset-property" :"query.filterCache.size"}'
 
@@ -247,7 +247,7 @@ SOLR_OPTS=-XX:-UseLargePages
 In your Solr Admin UI, you will see listed under the JVM args both the original `-XX:+UseLargePages`
 set by the `GC_TUNE` environment variable and further down the list the overriding `-XX:-UseLargePages` argument.
 
-== I'm confused about the different invocations of solr -- help?
+== I'm confused about the different invocations of Solr -- help?
 
 The different invocations of the Solr docker image can look confusing, because the name of the
 image is "solr" and the Solr command is also "solr", and the image interprets various arguments in

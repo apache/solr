@@ -47,7 +47,6 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  */
 public final class RemoveBlankFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     // no trim specific init args

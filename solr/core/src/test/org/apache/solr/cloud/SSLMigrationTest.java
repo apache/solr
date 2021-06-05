@@ -22,7 +22,6 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -42,8 +41,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * We want to make sure that when migrating between http and https modes the
@@ -118,16 +115,13 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   }
   
   private void setUrlScheme(String value) throws Exception {
-    @SuppressWarnings("rawtypes")
-    Map m = makeMap("action", CollectionAction.CLUSTERPROP.toString()
+    Map<String, String> m = Map.of("action", CollectionAction.CLUSTERPROP.toString()
         .toLowerCase(Locale.ROOT), "name", "urlScheme", "val", value);
-    @SuppressWarnings("unchecked")
     SolrParams params = new MapSolrParams(m);
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     
-    List<String> urls = new ArrayList<String>();
+    List<String> urls = new ArrayList<>();
     for(Replica replica : getReplicas()) {
       urls.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
     }

@@ -54,13 +54,13 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void init(NamedList initArgs) {
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList initArgs) {
     if (initArgs == null || initArgs.size() == 0) {
       return;
     }
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
 
+    @SuppressWarnings("unchecked")
     final Iterable<Map.Entry<String,Object>> args = initArgs;
     for (final Map.Entry<String,Object> entry : args) {
       final String queryName = entry.getKey();
@@ -71,7 +71,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
             queryBuilderClassName,
             SolrSpanQueryBuilder.class,
             null,
-            new Class[] {String.class, Analyzer.class, SolrQueryRequest.class, SpanQueryBuilder.class},
+            new Class<?>[] {String.class, Analyzer.class, SolrQueryRequest.class, SpanQueryBuilder.class},
             new Object[] {defaultField, analyzer, req, this});
 
         this.addSpanQueryBuilder(queryName, spanQueryBuilder);
@@ -81,7 +81,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
             queryBuilderClassName,
             SolrQueryBuilder.class,
             null,
-            new Class[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class},
+            new Class<?>[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class},
             new Object[] {defaultField, analyzer, req, this});
 
         this.addQueryBuilder(queryName, queryBuilder);

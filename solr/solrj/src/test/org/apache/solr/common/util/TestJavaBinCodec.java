@@ -398,21 +398,19 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertNull(grandChildDocuments.get(0).getChildDocuments());
   }
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testStringCaching() throws Exception {
-    Map<String, Object> m = Utils.makeMap("key1", "val1", "key2", "val2");
+    Map<String, Object> m = Map.of("key1", "val1", "key2", "val2");
     byte[] b1 = getBytes(m);//copy 1
     byte[] b2 = getBytes(m);//copy 2
-    Map m1 = (Map) getObject(b1);
-    Map m2 = (Map) getObject(b1);
+    Map<?,?> m1 = (Map<?,?>) getObject(b1);
+    Map<?,?> m2 = (Map<?,?>) getObject(b2);
 
-    List l1 = new ArrayList<>(m1.keySet());
-    List l2 = new ArrayList<>(m2.keySet());
+    List<?> l1 = new ArrayList<>(m1.keySet());
+    List<?> l2 = new ArrayList<>(m2.keySet());
 
-    assertTrue(l1.get(0).equals(l2.get(0)));
-    assertFalse(l1.get(0) == l2.get(0));
-    assertTrue(l1.get(1).equals(l2.get(1)));
-    assertFalse(l1.get(1) == l2.get(1));
+    assertEquals(l1, l2);
+    assertNotSame(l1.get(0), l2.get(0));
+    assertNotSame(l1.get(1), l2.get(1));
 
     JavaBinCodec.StringCache stringCache = new JavaBinCodec.StringCache(new MapBackedCache<>(new HashMap<>()));
 
@@ -420,16 +418,15 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     try (JavaBinCodec c1 = new JavaBinCodec(null, stringCache);
          JavaBinCodec c2 = new JavaBinCodec(null, stringCache)) {
 
-      m1 = (Map) c1.unmarshal(new ByteArrayInputStream(b1));
-      m2 = (Map) c2.unmarshal(new ByteArrayInputStream(b2));
+      m1 = (Map<?,?>) c1.unmarshal(new ByteArrayInputStream(b1));
+      m2 = (Map<?,?>) c2.unmarshal(new ByteArrayInputStream(b2));
 
       l1 = new ArrayList<>(m1.keySet());
       l2 = new ArrayList<>(m2.keySet());
     }
-    assertTrue(l1.get(0).equals(l2.get(0)));
-    assertTrue(l1.get(0) == l2.get(0));
-    assertTrue(l1.get(1).equals(l2.get(1)));
-    assertTrue(l1.get(1) == l2.get(1));
+    assertEquals(l1, l2);
+    assertSame(l1.get(0), l2.get(0));
+    assertSame(l1.get(1), l2.get(1));
 
 
   }

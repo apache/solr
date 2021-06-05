@@ -73,7 +73,7 @@ public class DelegatingCloudManager implements SolrCloudManager {
     }
 
     @Override
-    public SolrResponse request(@SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException {
+    public <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException {
         return delegate.request(req);
     }
 

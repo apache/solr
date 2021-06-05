@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.overseer;
 
 import java.util.Collections;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -26,7 +27,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 
 import static org.mockito.Mockito.*;
@@ -45,7 +45,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     when(dataProvider.getDistribStateManager()).thenReturn(mockStateManager);
 
     ClusterStateMutator mutator = new ClusterStateMutator(dataProvider);
-    ZkNodeProps message = new ZkNodeProps(Utils.makeMap(
+    ZkNodeProps message = new ZkNodeProps(Map.of(
         "name", "xyz",
         "numShards", "1"
     ));
@@ -55,7 +55,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertEquals(1, collection.getSlicesMap().size());
 
     ClusterState state = new ClusterState(Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
-    message = new ZkNodeProps(Utils.makeMap(
+    message = new ZkNodeProps(Map.of(
         "name", "abc",
         "numShards", "2",
         "router.name", "implicit",

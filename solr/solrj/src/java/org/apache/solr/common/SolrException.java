@@ -226,7 +226,6 @@ public class SolrException extends RuntimeException {
     return t;
   }
 
-  @SuppressWarnings({"unchecked"})
   public void logInfoWithMdc(Logger logger, String msg) {
     Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
     MDC.setContextMap(mdcContext);

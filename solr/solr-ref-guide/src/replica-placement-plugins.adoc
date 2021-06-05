@@ -41,7 +41,7 @@ plugins can be added - they have to implement a `PlacementPluginFactory` interfa
 configuration entry may also contain a `config` element if the plugin implements the
 `ConfigurablePlugin` interface.
 
-=== Legacy replica placement
+=== Legacy Replica Placement
 By default Solr 9.0 uses a legacy method for replica placements, which doesn't use a placement
 plugin at all. This method is used whenever the placement plugin configuration is missing or
 invalid.
@@ -210,7 +210,7 @@ must be located only on the nodes that are labeled with one or more of the match
 Correspondingly, the plugin configuration can specify that a particular collection must be placed
 only on the nodes that match at least one of the (comma-separated) labels defined here.
 
-=== Example configurations
+=== Example Configurations
 This is a simple configuration that uses default values:
 
 [source,bash]

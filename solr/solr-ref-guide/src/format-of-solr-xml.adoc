@@ -66,9 +66,10 @@ There are no attributes that you can specify in the `<solr>` tag, which is the r
 `configSetService`::
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from ConfigSetService , and you must provide a constructor with one param which the type is `org.apache.solr.core.CoreContainer` . For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter which the type is `org.apache.solr.core.CoreContainer`.
+For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
-If this attribute isn't set, Solr uses the default configSetService , with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
+If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
 
 `adminHandler`::
 This attribute does not need to be set.
@@ -105,7 +106,7 @@ Solr will normally only access folders relative to `$SOLR_HOME`, `$SOLR_DATA_HOM
 
 [#_allow_urls]
 `allowUrls`::
-Comma-separated list of Solr hosts to allow. The http/https protocol may be omitted, and only the host and port are checked, i.e. `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
+Comma-separated list of Solr hosts to allow. The http/https protocol may be omitted, and only the host and port are checked, i.e., `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
 When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the list of hosts needs to be allowed or Solr will forbid the request. In Solr cloud mode, this allow-list is added to the cluster's live nodes to determine which hosts are allowed. The allow-list can also be configured with the `solr.allowUrls` system property (see its use in `solr.in.sh`).
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
 
@@ -120,9 +121,9 @@ The directory under which configsets for Solr cores can be found. Defaults to `$
 
 [[global-maxbooleanclauses]]
 `maxBooleanClauses`::
-Sets the maximum number of clauses allowed in any boolean query.
+Sets the maximum number of (nested) clauses allowed in any query.
 +
-This global limit provides a safety constraint on the number of clauses allowed in any boolean queries against any collection -- regardless of whether those clauses were explicitly specified in a query string, or were the result of query expansion/re-writing from a more complex type of query based on the terms in the index.
+This global limit provides a safety constraint on the total number of clauses allowed in any query against any collection -- regardless of whether those clauses were explicitly specified in a query string, or were the result of query expansion/re-writing from a more complex type of query based on the terms in the index.  This limit is enforced at multiple points in the Lucene code base, both to prevent primative query objects (mainly `BooleanQuery`) from being constructed with an excessive number of clauses in a way that may exhaust the JVM Heap, but also to ensure that no composite query (made up of multiple primative queries) can be executed with an excessive _total_ number of nested clauses in a way that may cause a search thread to use excessive CPU.
 +
 In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.  This is the same system property used in the `_default` configset for the <<query-settings-in-solrconfig#maxbooleanclauses,`<maxBooleanClauses>` setting of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
 +

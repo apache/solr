@@ -232,6 +232,7 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
+  // Req should be parameterized too, but that touches a whole lotta code
   public static class Req {
     @SuppressWarnings({"rawtypes"})
     protected SolrRequest request;
