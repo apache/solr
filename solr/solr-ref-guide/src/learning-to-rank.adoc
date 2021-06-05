@@ -63,7 +63,7 @@ The LTR contrib module includes several feature classes as well as support for c
 |===
 |Feature |Class |Example parameters |<<External Feature Information>>
 |field length |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldLengthFeature.html[FieldLengthFeature] |`{"field":"title"}` |not (yet) supported
-|field value |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] |`{"field":"hits"}` |not (yet) supported
+|field value |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] or {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/PrefetchingFieldValueFeature.html[PrefetchingFieldValueFeature] |`{"field":"hits"}` |not (yet) supported
 |original score |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/OriginalScoreFeature.html[OriginalScoreFeature] |`{}` |not applicable
 |solr query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified)` `,3.16e-11,1,1)"}` |supported
 |solr filter query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"fq":["{!terms f=category}book"]}` |supported

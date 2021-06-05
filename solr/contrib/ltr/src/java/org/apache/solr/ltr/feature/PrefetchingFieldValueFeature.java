@@ -1,0 +1,149 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.ltr.feature;
+
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SolrDocumentFetcher;
+import org.apache.solr.search.SolrIndexSearcher;
+
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * This feature returns the value of a field in the current document.
+ * The field must have stored="true" or docValues="true" properties.
+ * Example configuration:
+ * <pre>{
+  "name":  "rawHits",
+  "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+  "params": {
+      "field": "hits"
+  }
+}</pre>
+ */
+public class PrefetchingFieldValueFeature extends FieldValueFeature {
+  // used to store all fields from all PrefetchingFieldValueFeatures
+  private Set<String> prefetchFields;
+
+  public void setField(String field) {
+    this.field = field;
+  }
+
+  public void setPrefetchFields(Set<String> fields) {
+    prefetchFields = fields;
+  }
+
+  @Override
+  public LinkedHashMap<String,Object> paramsToMap() {
+    final LinkedHashMap<String,Object> params = defaultParamsToMap();
+    params.put("field", field);
+    return params;
+  }
+
+  @Override
+  protected void validate() throws FeatureException {
+    if (field == null || field.isEmpty()) {
+      throw new FeatureException(getClass().getSimpleName()+
+          ": field must be provided");
+    }
+  }
+
+  public PrefetchingFieldValueFeature(String name, Map<String,Object> params) {
+    super(name, params);
+  }
+
+  @Override
+  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
+      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
+          throws IOException {
+    return new PrefetchingFieldValueFeatureWeight(searcher, request, originalQuery, efi);
+  }
+
+  @VisibleForTesting
+  public Set<String> getPrefetchFields(){
+    return prefetchFields;
+  }
+
+  public class PrefetchingFieldValueFeatureWeight extends FieldValueFeatureWeight {
+    private final SchemaField schemaField;
+    private final SolrDocumentFetcher docFetcher;
+
+    public PrefetchingFieldValueFeatureWeight(IndexSearcher searcher,
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
+      super(searcher, request, originalQuery, efi);
+      if (searcher instanceof SolrIndexSearcher) {
+        schemaField = ((SolrIndexSearcher) searcher).getSchema().getFieldOrNull(field);
+      } else {
+        schemaField = null;
+      }
+      this.docFetcher = request.getSearcher().getDocFetcher();
+    }
+
+    /**
+     * Return a FeatureScorer that work with stored fields and makes use of the cache if the configured field is stored
+     * and has no docValues.
+     * Otherwise, delegate the work to the FieldValueFeature.
+     *
+     * @param context the segment this FeatureScorer is working with
+     * @return FeatureScorer for the current segment and field
+     * @throws IOException as defined by abstract class Feature
+     */
+    @Override
+    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
+      if (schemaField != null && !schemaField.stored() && schemaField.hasDocValues()) {
+        return super.scorer(context);
+      }
+      return new PrefetchingFieldValueFeatureScorer(this, context,
+          DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+    }
+
+    /**
+     * A FeatureScorer that reads the stored value for a field
+     * docFetcher does not request a single field but all the prefetchFields to improve performance through caching
+     */
+    public class PrefetchingFieldValueFeatureScorer extends FieldValueFeatureScorer {
+
+      public PrefetchingFieldValueFeatureScorer(FeatureWeight weight,
+          LeafReaderContext context, DocIdSetIterator itr) {
+        super(weight, context, itr);
+      }
+
+      @Override
+      public float score() throws IOException {
+        try {
+          final Document document = docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
+
+          return super.parseStoredFieldValue(document.getField(field));
+        } catch (final IOException e) {
+          throw new FeatureException(
+              e.toString() + ": " +
+                  "Unable to extract feature for "
+                  + name, e);
+        }
+      }
+    }
+  }
+}

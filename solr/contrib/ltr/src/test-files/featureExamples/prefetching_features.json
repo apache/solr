@@ -1,0 +1,26 @@
+[
+  {
+    "name": "storedLongFieldFeature",
+    "class": "org.apache.solr.ltr.feature.TestPrefetchingFieldValueFeature$ObservingPrefetchingFieldValueFeature",
+    "params" : {
+        "field" : "storedLongField"
+    },
+    "store": "feature-store-for-test"
+  },
+  {
+    "name": "storedFloatFieldFeature",
+    "class": "org.apache.solr.ltr.feature.TestPrefetchingFieldValueFeature$ObservingPrefetchingFieldValueFeature",
+    "params" : {
+        "field" : "storedFloatField"
+    },
+    "store": "feature-store-for-test"
+  },
+  {
+    "name": "storedDoubleFieldFeature",
+    "class": "org.apache.solr.ltr.feature.TestPrefetchingFieldValueFeature$ObservingPrefetchingFieldValueFeature",
+    "params" : {
+        "field" : "storedDoubleField"
+    },
+    "store": "feature-store-for-test"
+  }
+]

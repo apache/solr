@@ -65,7 +65,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public class FieldValueFeature extends Feature {
 
-  private String field;
+  String field;
   private Set<String> fieldAsSet;
 
   public String getField() {
@@ -166,32 +166,35 @@ public class FieldValueFeature extends Feature {
         try {
           final Document document = context.reader().document(itr.docID(),
               fieldAsSet);
-          final IndexableField indexableField = document.getField(field);
-          if (indexableField == null) {
-            return getDefaultValue();
-          }
-          final Number number = indexableField.numericValue();
-          if (number != null) {
-            return number.floatValue();
-          } else {
-            final String string = indexableField.stringValue();
-            if (string.length() == 1) {
-              // boolean values in the index are encoded with the
-              // a single char contained in TRUE_TOKEN or FALSE_TOKEN
-              // (see BoolField)
-              if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
-                return 1;
-              }
-              if (string.charAt(0) == BoolField.FALSE_TOKEN[0]) {
-                return 0;
-              }
-            }
-          }
+          return parseStoredFieldValue(document.getField(field));
         } catch (final IOException e) {
           throw new FeatureException(
               e.toString() + ": " +
                   "Unable to extract feature for "
                   + name, e);
+        }
+      }
+
+      float parseStoredFieldValue(IndexableField indexableField) throws IOException {
+        if (indexableField == null) {
+          return getDefaultValue();
+        }
+        final Number number = indexableField.numericValue();
+        if (number != null) {
+          return number.floatValue();
+        } else {
+          final String string = indexableField.stringValue();
+          if (string.length() == 1) {
+            // boolean values in the index are encoded with the
+            // a single char contained in TRUE_TOKEN or FALSE_TOKEN
+            // (see BoolField)
+            if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
+              return 1;
+            }
+            if (string.charAt(0) == BoolField.FALSE_TOKEN[0]) {
+              return 0;
+            }
+          }
         }
         return getDefaultValue();
       }
