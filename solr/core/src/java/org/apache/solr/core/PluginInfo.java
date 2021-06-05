@@ -57,8 +57,10 @@ public class PluginInfo implements MapSerializable {
     this.pkgName = cName.pkg;
     // Make a shallow copy for type safety
     this.initArgs = new NamedList<>();
-    for (Map.Entry<String, ?> entry : initArgs) {
-      this.initArgs.add(entry.getKey(), entry.getValue());
+    if (initArgs != null) {
+      for (Map.Entry<String, ?> entry : initArgs) {
+        this.initArgs.add(entry.getKey(), entry.getValue());
+      }
     }
     attributes = unmodifiableMap(attrs);
     this.children = children == null ? Collections.emptyList(): unmodifiableList(children);

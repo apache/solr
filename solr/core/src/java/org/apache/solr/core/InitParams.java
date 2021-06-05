@@ -38,12 +38,9 @@ public class InitParams {
   public static final String TYPE = "initParams";
   public final String name;
   public final Set<String> paths;
-  @SuppressWarnings({"rawtypes"})
-  public final NamedList defaults;
-  @SuppressWarnings({"rawtypes"})
-  public final NamedList invariants;
-  @SuppressWarnings({"rawtypes"})
-  public final NamedList  appends;
+  public final NamedList<?> defaults;
+  public final NamedList<?> invariants;
+  public final NamedList<?>  appends;
   final private PluginInfo pluginInfo;
   private final Set<String> KNOWN_KEYS = ImmutableSet.of(DEFAULTS, INVARIANTS, APPENDS);
 
@@ -93,17 +90,16 @@ public class InitParams {
 
   }
 
-  @SuppressWarnings({"rawtypes"})
   public void apply(PluginInfo info) {
     if (!info.isFromSolrConfig()) {
       //if this is a component implicitly defined in code it should be overridden by initPrams
-      merge(defaults, (NamedList) info.initArgs.get(DEFAULTS), info.initArgs, DEFAULTS, false);
+      merge(defaults, (NamedList<?>) info.initArgs.get(DEFAULTS), info.initArgs, DEFAULTS, false);
     } else {
       //if the args is initialized from solrconfig.xml inside the requestHandler it should be taking precedence over  initParams
-      merge((NamedList) info.initArgs.get(DEFAULTS), defaults, info.initArgs, DEFAULTS, false);
+      merge((NamedList<?>) info.initArgs.get(DEFAULTS), defaults, info.initArgs, DEFAULTS, false);
     }
-    merge((NamedList) info.initArgs.get(INVARIANTS), invariants, info.initArgs, INVARIANTS, false);
-    merge((NamedList) info.initArgs.get(APPENDS), appends, info.initArgs, APPENDS, true);
+    merge((NamedList<?>) info.initArgs.get(INVARIANTS), invariants, info.initArgs, INVARIANTS, false);
+    merge((NamedList<?>) info.initArgs.get(APPENDS), appends, info.initArgs, APPENDS, true);
 
     if (pluginInfo.initArgs != null) {
       for (int i = 0; i < pluginInfo.initArgs.size(); i++) {
@@ -116,23 +112,21 @@ public class InitParams {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private static void merge(NamedList first, NamedList second, NamedList sink, String name, boolean appends) {
+  @SuppressWarnings("unchecked")
+  private static void merge(NamedList<?> first, NamedList<?> second, NamedList<Object> sink, String name, boolean appends) {
     if (first == null && second == null) return;
     if (first == null) first = new NamedList<>();
-    NamedList nl = first.clone();
+    NamedList<Object> nl = (NamedList<Object>) first.clone();
     if (appends) {
-      if (second != null) nl.addAll(second);
+      if (second != null) nl.addAll((NamedList<Object>) second);
     } else {
       Set<String> a = new HashSet<>();
       Set<String> b = new HashSet<>();
-      for (Object o : first) {
-        Map.Entry<String, Object> e = (Map.Entry) o;
+      for (Map.Entry<String, ?> e : first) {
         a.add(e.getKey());
       }
       if (second != null) {
-        for (Object o : second) {
-          Map.Entry<String, Object> e = (Map.Entry) o;
+        for (Map.Entry<String, ?> e : second) {
           b.add(e.getKey());
         }
       }

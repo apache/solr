@@ -132,12 +132,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<?> collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
-      {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
-        int replicationFactor = Integer.parseInt(collection.get("replicationFactor").toString());
-        assertEquals(25, replicationFactor);
-      }
+      assertEquals("25", collections._getStr(List.of(COLLECTION_NAME, "replicationFactor"), null));
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
@@ -156,11 +151,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       collections = (NamedList<?>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertEquals(1, collections.size());
-      {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
-        assertNull(collection.get("replicationFactor"));
-      }
+      assertNull(collections._getStr(List.of(COLLECTION_NAME, "replicationFactor"), null));
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());

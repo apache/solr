@@ -499,9 +499,6 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     }
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes"}) NamedList<?> args) {}
-
-    @Override
     public void newSearcher(SolrIndexSearcher newSearcher,
                             SolrIndexSearcher currentSearcher) {
       long thisCallCount = callCount.incrementAndGet();

@@ -18,14 +18,10 @@ package org.apache.solr.highlight;
 
 import org.apache.lucene.search.highlight.Formatter;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public interface SolrFormatter extends SolrInfoBean, NamedListInitializedPlugin {
-
-  @Override
-  public void init(NamedList<?> args);
 
   /**
    * Return a {@link org.apache.lucene.search.highlight.Formatter} appropriate for this field.
