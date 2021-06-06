@@ -23,12 +23,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrDocumentFetcher;
-import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,7 +35,7 @@ import java.util.Set;
  * Example configuration:
  * <pre>{
   "name":  "rawHits",
-  "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+  "class": "org.apache.solr.ltr.feature.PrefetchingFieldValueFeature",
   "params": {
       "field": "hits"
   }
@@ -48,27 +45,13 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
   // used to store all fields from all PrefetchingFieldValueFeatures
   private Set<String> prefetchFields;
 
-  public void setField(String field) {
-    this.field = field;
-  }
-
   public void setPrefetchFields(Set<String> fields) {
     prefetchFields = fields;
   }
 
-  @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = defaultParamsToMap();
-    params.put("field", field);
-    return params;
-  }
-
-  @Override
-  protected void validate() throws FeatureException {
-    if (field == null || field.isEmpty()) {
-      throw new FeatureException(getClass().getSimpleName()+
-          ": field must be provided");
-    }
+  @VisibleForTesting
+  public Set<String> getPrefetchFields(){
+    return prefetchFields;
   }
 
   public PrefetchingFieldValueFeature(String name, Map<String,Object> params) {
@@ -82,28 +65,17 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
     return new PrefetchingFieldValueFeatureWeight(searcher, request, originalQuery, efi);
   }
 
-  @VisibleForTesting
-  public Set<String> getPrefetchFields(){
-    return prefetchFields;
-  }
-
   public class PrefetchingFieldValueFeatureWeight extends FieldValueFeatureWeight {
-    private final SchemaField schemaField;
     private final SolrDocumentFetcher docFetcher;
 
     public PrefetchingFieldValueFeatureWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(searcher, request, originalQuery, efi);
-      if (searcher instanceof SolrIndexSearcher) {
-        schemaField = ((SolrIndexSearcher) searcher).getSchema().getFieldOrNull(field);
-      } else {
-        schemaField = null;
-      }
       this.docFetcher = request.getSearcher().getDocFetcher();
     }
 
     /**
-     * Return a FeatureScorer that work with stored fields and makes use of the cache if the configured field is stored
+     * Return a FeatureScorer that works with stored fields and makes use of the cache if the configured field is stored
      * and has no docValues.
      * Otherwise, delegate the work to the FieldValueFeature.
      *
@@ -136,7 +108,7 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
         try {
           final Document document = docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
 
-          return super.parseStoredFieldValue(document.getField(field));
+          return super.parseStoredFieldValue(document.getField(getField()));
         } catch (final IOException e) {
           throw new FeatureException(
               e.toString() + ": " +

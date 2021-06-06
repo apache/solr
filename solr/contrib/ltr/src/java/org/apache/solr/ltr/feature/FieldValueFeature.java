@@ -65,7 +65,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public class FieldValueFeature extends Feature {
 
-  String field;
+  private String field;
   private Set<String> fieldAsSet;
 
   public String getField() {
@@ -104,7 +104,7 @@ public class FieldValueFeature extends Feature {
   }
 
   public class FieldValueFeatureWeight extends FeatureWeight {
-    private final SchemaField schemaField;
+    protected final SchemaField schemaField;
 
     public FieldValueFeatureWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
@@ -175,7 +175,7 @@ public class FieldValueFeature extends Feature {
         }
       }
 
-      float parseStoredFieldValue(IndexableField indexableField) throws IOException {
+      protected float parseStoredFieldValue(IndexableField indexableField) throws IOException {
         if (indexableField == null) {
           return getDefaultValue();
         }
