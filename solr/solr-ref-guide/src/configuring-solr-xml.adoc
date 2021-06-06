@@ -143,9 +143,10 @@ Defaults to `$SOLR_HOME/configsets`.
 
 [[global-maxbooleanclauses]]
 `maxBooleanClauses`::
-Sets the maximum number of clauses allowed in any boolean query.
+Sets the maximum number of (nested) clauses allowed in any query.
 +
-This global limit provides a safety constraint on the number of clauses allowed in any boolean queries against any collection, regardless of whether those clauses were explicitly specified in a query string, or were the result of query expansion/re-writing from a more complex type of query based on the terms in the index.
+This global limit provides a safety constraint on the total number of clauses allowed in any query against any collection -- regardless of whether those clauses were explicitly specified in a query string, or were the result of query expansion/re-writing from a more complex type of query based on the terms in the index.
+This limit is enforced at multiple points in  Lucene, both to prevent primitive query objects (mainly `BooleanQuery`) from being constructed with an excessive number of clauses in a way that may exhaust the JVM heap, but also to ensure that no composite query (made up of multiple primitive queries) can be executed with an excessive _total_ number of nested clauses in a way that may cause a search thread to use excessive CPU.
 +
 In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.
 This is the same system property used in the `_default` configset for the <<caches-warming.adoc#maxbooleanclauses-element,`<maxBooleanClauses>` element of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.

@@ -239,7 +239,7 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
   {
     "create-alias":{
       "name":"testalias",
@@ -315,7 +315,7 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
   {
     "create-alias" : {
       "name": "somethingTemporalThisWayComes",
@@ -409,7 +409,7 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
   {
     "create-alias":{
       "name":"dra_test1",
@@ -537,7 +537,7 @@ http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
 {
   "set-alias-property":{
     "name":"techproducts_alias",
@@ -596,7 +596,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
 {
   "delete-alias":{
     "name":"testalias"

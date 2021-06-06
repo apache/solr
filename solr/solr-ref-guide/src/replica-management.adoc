@@ -20,7 +20,12 @@
 A replica is a physical copy of a shard.  Replicas enhance fail over by providing additional copies of the data
 and enhance scalability by providing additional capacity for searching.
 
-The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr -c -e techproducts
+----
 
 [[addreplica]]
 == ADDREPLICA: Add Replica
@@ -65,7 +70,7 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=techpr
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "add-replica":{
       "shard":"shard1",
@@ -237,7 +242,7 @@ http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "move-replica":{
       "replica":"core_node6",
@@ -388,7 +393,7 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&collection=te
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "add-replica-property":{
       "shard":"shard1",
@@ -490,7 +495,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&collection
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "delete-replica-property":{
       "shard":"shard1",

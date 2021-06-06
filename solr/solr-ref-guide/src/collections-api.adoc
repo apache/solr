@@ -60,7 +60,7 @@ http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collec
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Content-Type: application/json' -d '
   {
     "split": {
       "shard": "shard1",

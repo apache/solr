@@ -21,7 +21,12 @@ In SolrCloud, a shard is a logical partition of a collection. This partition sto
 
 The number of shards you have helps to determine how many documents a single collection can contain in total, and also impacts search performance.
 
-The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr -c -e techproducts
+----
 
 [[splitshard]]
 == SPLITSHARD: Split a Shard
@@ -60,7 +65,7 @@ http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=techpr
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "split":{
       "shard":"shard1"
@@ -222,7 +227,7 @@ http://localhost:8983/solr/admin/collections?action=CREATESHARD&shard=newShardNa
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "create":{
       "shard":"newShardName"
@@ -381,7 +386,7 @@ http://localhost:8983/solr/admin/collections?action=FORCELEADER&collection=techp
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1 -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1 -H 'Content-Type: application/json' -d '
   {
     "force-leader":{}
   }
