@@ -16,73 +16,69 @@
 package org.apache.solr.ltr;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.misc.document.LazyDocument;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.PrefetchingFieldValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrDocumentFetcher;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
+
 
 public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRerankBase {
 
   private MiniSolrCloudCluster solrCluster;
   String solrconfig = "solrconfig-ltr.xml";
-  String solrconfigLazy = "solrconfig-ltr-lazy.xml";
   String schema = "schema.xml";
 
   SortedMap<ServletHolder,String> extraServlets = null;
 
-  private static final String FEATURE_STORE_NAME = "test";
-  private static final int NUM_FEATURES = 6;
-  private static final String[] FIELD_NAMES = new String[]{"storedIntField", "storedLongField",
+  private static final String STORED_FEATURE_STORE_NAME = "stored-feature-store";
+  private static final String[] STORED_FIELD_NAMES = new String[]{"storedIntField", "storedLongField",
       "storedFloatField", "storedDoubleField", "storedStrNumField", "storedStrBoolField"};
-  private static final String[] FEATURE_NAMES = new String[]{"storedIntFieldFeature", "storedLongFieldFeature",
+  private static final String[] STORED_FEATURE_NAMES = new String[]{"storedIntFieldFeature", "storedLongFieldFeature",
       "storedFloatFieldFeature", "storedDoubleFieldFeature", "storedStrNumFieldFeature", "storedStrBoolFieldFeature"};
-  private static final String MODEL_WEIGHTS = "{\"weights\":{\"storedIntFieldFeature\":0.1,\"storedLongFieldFeature\":0.1," +
+  private static final String STORED_MODEL_WEIGHTS = "{\"weights\":{\"storedIntFieldFeature\":0.1,\"storedLongFieldFeature\":0.1," +
       "\"storedFloatFieldFeature\":0.1,\"storedDoubleFieldFeature\":0.1," +
       "\"storedStrNumFieldFeature\":0.1,\"storedStrBoolFieldFeature\":0.1}}";
+
+  private static final String DV_FEATURE_STORE_NAME = "dv-feature-store";
+  private static final String[] DV_FIELD_NAMES = new String[]{"dvIntPopularity", "dvLongPopularity",
+      "dvFloatPopularity", "dvDoublePopularity"};
+  private static final String[] DV_FEATURE_NAMES = new String[]{"dvIntPopularityFeature", "dvLongPopularityFeature",
+      "dvFloatPopularityFeature", "dvDoublePopularityFeature"};
+  private static final String DV_MODEL_WEIGHTS = "{\"weights\":{\"dvIntPopularityFeature\":1.0,\"dvLongPopularityFeature\":1.0," +
+      "\"dvFloatPopularityFeature\":1.0,\"dvDoublePopularityFeature\":1.0}}";
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    extraServlets = setupTestInit(solrconfig, schema, true);
+    System.setProperty("enable.update.log", "true");
+
+    int numberOfShards = random().nextInt(4) + 1;
+    int numberOfReplicas = random().nextInt(2) + 1;
+
+    System.out.println("numberOfShards " + numberOfShards);
+    System.out.println("numberOfReplicas " + numberOfReplicas);
+
+    int numberOfNodes = numberOfShards * numberOfReplicas;
+
+    setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes);
   }
 
   @Override
@@ -93,177 +89,74 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
     super.tearDown();
   }
 
-  public void afterSetUp(String configName) throws Exception {
-    extraServlets = setupTestInit(configName, schema, true);
-    System.setProperty("enable.update.log", "true");
+  @Test
+  public void testRanking() throws Exception {
+    setUpStoredFieldModelAndFeatures();
+    // just a basic sanity check that we can work with the PrefetchingFieldValueFeature
+    final SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
+    query.setRequestHandler("/query");
+    query.add("fl", "*,score");
+    query.add("rows", "4");
 
-    // we do not want to test the scoring / ranking but the interaction with the cache
-    // because the scoring itself behaves just like the FieldValueFeature
-    // so just one shard, replica and node serve the purpose
-    setupSolrCluster(1, 1, 1);
+    // Normal term match
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='2'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='4'");
+
+    query.add("rq", "{!ltr model=stored-fields-model reRankDocs=8}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
+
+    query.setQuery("*:*");
+    query.remove("rows");
+    query.add("rows", "8");
+    query.remove("rq");
+    query.add("rq", "{!ltr model=stored-fields-model reRankDocs=8}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
   }
 
   @Test
-  public void testSimpleQuery() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    afterSetUp(solrconfig);
+  public void testDelegationToFieldValueFeature() throws Exception {
+    setUpDocValueModelAndFeatures();
+    assertU(adoc("id", "21", "popularity", "21", "title", "docValues"));
+    assertU(adoc("id", "22", "popularity", "22", "title", "docValues"));
+    assertU(adoc("id", "23", "popularity", "23", "title", "docValues"));
+    assertU(adoc("id", "24", "popularity", "24", "title", "docValues"));
+    assertU(commit());
 
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
+    // only use fields that are not stored but have docValues
+    // the PrefetchingFieldValueWeight should delegate the work to a FieldValueFeatureScorer
+    final SolrQuery query = new SolrQuery("{!func}sub(24,field(popularity))");
     query.setRequestHandler("/query");
-    query.setParam("rows", "8");
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
+    query.add("fl", "*,score");
+    query.add("fq", "title:docValues");
+    query.add("rows", "4");
 
-    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
+    // Normal term match
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='21'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='22'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='23'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='24'");
 
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
+    // check that the PrefetchingFieldValueFeature delegates the work for docValue fields (reRanking works)
+    query.add("rq", "{!ltr model=doc-value-model reRankDocs=4}");
 
-    assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            // doc with id 1 has no values set for 3 of the 6 feature fields
-            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES - 3)
-            .count());
-      } else {
-        // all the fields were loaded at once
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES)
-            .count());
-      }
-    }
-    assertTheResponse(queryResponse);
-  }
-
-  @Test
-  public void testSimpleQueryLazy() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    afterSetUp(solrconfigLazy);
-
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    query.setRequestHandler("/query");
-    query.setParam("rows", "8");
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
-
-    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
-
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
-
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            // doc with id 1 has no values set for 3 of the 6 feature fields
-            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES - 3)
-            .count());
-      } else {
-        // all the fields were loaded at once
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES)
-            .count());
-      }
-    }
-    assertTheResponse(queryResponse);
-  }
-
-  @Test
-  public void testSimpleQueryBreakPrefetching() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(true);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    afterSetUp(solrconfig);
-
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    query.setRequestHandler("/query");
-    query.setParam("rows", "8");
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
-
-    QueryResponse queryResponse =
-        solrCluster.getSolrClient().query(COLLECTION,query);
-
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
-
-    assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        // doc with id 1 has no values set for 3 of the 6 feature fields
-        assertEquals(NUM_FEATURES - 3, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      } else {
-        // each single field used for a feature gets loaded separately
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      }
-    }
-    assertTheResponse(queryResponse);
-  }
-
-  @Test
-  public void testSimpleQueryLazyBreakPrefetching() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(true);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    afterSetUp(solrconfigLazy);
-
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    query.setRequestHandler("/query");
-    query.setParam("rows", "8");
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
-
-    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
-
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
-
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        // doc with id 1 has no values set for 3 of the 6 feature fields
-        assertEquals(NUM_FEATURES - 3, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      } else {
-        // each single field used for a feature gets loaded separately
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      }
-    }
-    assertTheResponse(queryResponse);
-  }
-
-  private void assertTheResponse(QueryResponse queryResponse) {
-    assertEquals(8, queryResponse.getResults().getNumFound());
-    assertEquals("8", queryResponse.getResults().get(0).get("id").toString());
-    assertEquals(expectedFeatures[7],
-        queryResponse.getResults().get(0).get("features").toString());
-    assertEquals("7", queryResponse.getResults().get(1).get("id").toString());
-    assertEquals(expectedFeatures[6],
-        queryResponse.getResults().get(1).get("features").toString());
-    assertEquals("6", queryResponse.getResults().get(2).get("id").toString());
-    assertEquals(expectedFeatures[5],
-        queryResponse.getResults().get(2).get("features").toString());
-    assertEquals("5", queryResponse.getResults().get(3).get("id").toString());
-    assertEquals(expectedFeatures[4],
-        queryResponse.getResults().get(3).get("features").toString());
-    assertEquals("4", queryResponse.getResults().get(4).get("id").toString());
-    assertEquals(expectedFeatures[3],
-        queryResponse.getResults().get(4).get("features").toString());
-    assertEquals("3", queryResponse.getResults().get(5).get("id").toString());
-    assertEquals(expectedFeatures[2],
-        queryResponse.getResults().get(5).get("features").toString());
-    assertEquals("2", queryResponse.getResults().get(6).get("id").toString());
-    assertEquals(expectedFeatures[1],
-        queryResponse.getResults().get(6).get("features").toString());
-    assertEquals("1", queryResponse.getResults().get(7).get("id").toString());
-    assertEquals(expectedFeatures[0],
-      queryResponse.getResults().get(7).get("features").toString());
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='24'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='23'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='22'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='21'");
   }
 
   private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
@@ -284,7 +177,6 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
         break;
       }
     }
-    loadModelsAndFeatures();
   }
 
   private void createCollection(String name, String config, int numShards, int numReplicas)
@@ -307,8 +199,8 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
     doc.setField("title", title);
     doc.setField("description", description);
     doc.setField("popularity", popularity);
+    // check that empty values will be read as default
     if (popularity != 1) {
-      // check that empty values will be read as default
       doc.setField("storedIntField", popularity);
       doc.setField("storedLongField", popularity);
       doc.setField("storedFloatField", ((float) popularity) / 10);
@@ -317,22 +209,6 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
       doc.setField("storedStrBoolField", popularity % 2 == 0 ? "T" : "F");
     }
     solrCluster.getSolrClient().add(collection, doc);
-  }
-
-  private static final String[] expectedFeatures = createExpectations();
-
-  private static String[] createExpectations() {
-    // doc 1 has no values for some fields so we have to set the defaults
-    final List<String> expectedFeatures = new ArrayList<>(Collections.singleton(
-        "storedIntFieldFeature=-1.0,storedLongFieldFeature=-2.0,storedFloatFieldFeature=-3.0," +
-            "storedDoubleFieldFeature=0.0,storedStrNumFieldFeature=0.0,storedStrBoolFieldFeature=0.0"));
-    expectedFeatures.addAll(IntStream.rangeClosed(2, 8).boxed()
-        .map(docId ->
-            String.format(Locale.ROOT, "storedIntFieldFeature=%s.0,storedLongFieldFeature=%s.0,storedFloatFieldFeature=0.%s," +
-                    "storedDoubleFieldFeature=0.%s,storedStrNumFieldFeature=%s,storedStrBoolFieldFeature=%s",
-                docId, docId, docId, docId, docId % 2 == 0 ? "0.0" : "1.0", docId % 2 == 0 ? "1.0" : "0.0"))
-        .collect(toList()));
-    return expectedFeatures.toArray(String[]::new);
   }
 
   private void indexDocuments(final String collection)
@@ -355,22 +231,39 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
     solrCluster.getSolrClient().commit(collection, true, true);
   }
 
-  private void loadModelsAndFeatures() throws Exception {
-    for (int i = 0 ; i < FEATURE_NAMES.length; i++) {
+  private void setUpStoredFieldModelAndFeatures() throws Exception {
+    for (int i = 0; i < STORED_FEATURE_NAMES.length; i++) {
       loadFeature(
-          FEATURE_NAMES[i],
-          ObservingPrefetchingFieldValueFeature.class.getName(),
-          FEATURE_STORE_NAME,
-          "{\"field\":\"" + FIELD_NAMES[i] + "\"}"
+          STORED_FEATURE_NAMES[i],
+          PrefetchingFieldValueFeature.class.getName(),
+          STORED_FEATURE_STORE_NAME,
+          "{\"field\":\"" + STORED_FIELD_NAMES[i] + "\"}"
       );
     }
     loadModel(
-        "powpularityS-model",
+        "stored-fields-model",
         LinearModel.class.getName(),
-        FEATURE_NAMES,
-        FEATURE_STORE_NAME,
-        MODEL_WEIGHTS
+        STORED_FEATURE_NAMES,
+        STORED_FEATURE_STORE_NAME,
+        STORED_MODEL_WEIGHTS
     );
+    reloadCollection(COLLECTION);
+  }
+
+  public void setUpDocValueModelAndFeatures() throws Exception {
+    for (int i = 0; i < DV_FEATURE_NAMES.length; i++) {
+      loadFeature(
+          DV_FEATURE_NAMES[i],
+          PrefetchingFieldValueFeature.class.getName(),
+          DV_FEATURE_STORE_NAME,
+          "{\"field\":\"" + DV_FIELD_NAMES[i] + "\"}"
+      );
+    }
+    loadModel("doc-value-model",
+        LinearModel.class.getName(),
+        DV_FEATURE_NAMES,
+        DV_FEATURE_STORE_NAME,
+        DV_MODEL_WEIGHTS);
     reloadCollection(COLLECTION);
   }
 
@@ -388,131 +281,5 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");
-  }
-
-  /**
-   * This class is used to track which fields of the documents were loaded.
-   * It is used to assert that the prefetching mechanism works as intended.
-   */
-  final public static class ObservingPrefetchingFieldValueFeature extends PrefetchingFieldValueFeature {
-    private String field;
-    private Set<String> prefetchFields;
-    // this boolean can be used to mimic the behavior of the original FieldVAlueFeature
-    // this is used to compare the behavior of the two Features so that the purpose of the Prefetching on becomes clear
-    private static final AtomicBoolean breakPrefetching = new AtomicBoolean(false);
-    public static Map<String, List<List<String>>> loadedFields = new HashMap<>();
-
-    public ObservingPrefetchingFieldValueFeature(String name, Map<String, Object> params) {
-      super(name, params);
-    }
-
-    public void setField(String field) {
-      this.field = field;
-      super.setField(field);
-    }
-
-    public void setPrefetchFields(Set<String> fields) {
-      if(breakPrefetching.get()) {
-        prefetchFields = Set.of(field, "id"); // only prefetch own field (and id needed for map-building below)
-        super.setPrefetchFields(Set.of(field, "id"));
-      } else {
-        fields.add("id");
-        prefetchFields = fields; // also prefetch all fields that all other PrefetchingFieldValueFeatures need
-        super.setPrefetchFields(fields);
-      }
-    }
-
-    public static void setBreakPrefetching(boolean disable) {
-      breakPrefetching.set(disable);
-    }
-
-    @Override
-    public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
-                                     SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
-        throws IOException {
-      return new ObservingPrefetchingFieldValueFeatureWeight(searcher, request, originalQuery, efi);
-    }
-
-    public class ObservingPrefetchingFieldValueFeatureWeight extends PrefetchingFieldValueFeatureWeight {
-      private final SchemaField schemaField;
-      private final SolrDocumentFetcher docFetcher;
-
-      public ObservingPrefetchingFieldValueFeatureWeight(IndexSearcher searcher, SolrQueryRequest request,
-                                                         Query originalQuery, Map<String, String[]> efi) {
-        super(searcher, request, originalQuery, efi);
-        if (searcher instanceof SolrIndexSearcher) {
-          schemaField = ((SolrIndexSearcher) searcher).getSchema().getFieldOrNull(field);
-        } else {
-          schemaField = null;
-        }
-        this.docFetcher = request.getSearcher().getDocFetcher();
-      }
-
-      @Override
-      public FeatureScorer scorer(LeafReaderContext context) throws IOException {
-        if (schemaField != null && !schemaField.stored() && schemaField.hasDocValues()) {
-          return super.scorer(context);
-        }
-        return new ObservingPrefetchingFieldValueFeatureScorer(this, context,
-            DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
-      }
-
-      public class ObservingPrefetchingFieldValueFeatureScorer extends PrefetchingFieldValueFeatureScorer {
-
-        LeafReaderContext context = null;
-        public ObservingPrefetchingFieldValueFeatureScorer(FeatureWeight weight,
-                                                  LeafReaderContext context, DocIdSetIterator itr) {
-          super(weight, context, itr);
-          this.context = context;
-        }
-
-        @Override
-        public float score() throws IOException {
-          try {
-            final Document document = docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
-
-            float fieldValue = super.score();
-
-            List<String> loadedLazyFields = document.getFields().stream()
-                .filter(field -> field instanceof LazyDocument.LazyField)
-                .map(indexableField -> (LazyDocument.LazyField) indexableField)
-                .filter(LazyDocument.LazyField::hasBeenLoaded)
-                .map(LazyDocument.LazyField::name)
-                .filter(fieldName -> !fieldName.equals("id"))
-                .collect(Collectors.toList());
-
-            List<String> loadedStoredFields = document.getFields().stream()
-                .filter(field -> field instanceof StoredField)
-                .map(indexableField -> (StoredField) indexableField)
-                .map(Field::name)
-                .filter(fieldName -> !fieldName.equals("id"))
-                .collect(Collectors.toList());
-
-            loadedLazyFields.addAll(loadedStoredFields);
-            String id = document.get("id");
-            // this can be null if
-            if (id != null) {
-              handleLoadedFields(id, loadedLazyFields);
-            }
-
-            return fieldValue;
-
-          } catch (final IOException e) {
-            throw new FeatureException(
-                e.toString() + ": " +
-                    "Unable to extract feature for "
-                    + name, e);
-          }
-        }
-
-        private synchronized void handleLoadedFields(String id, List<String> loadedLazyFields) {
-          Map<String, List<List<String>>> presentLoadedFields = loadedFields;
-          List<List<String>> maybePresentList = presentLoadedFields.getOrDefault(id, new ArrayList<>());
-          maybePresentList.add(loadedLazyFields);
-          presentLoadedFields.put(id, maybePresentList);
-          loadedFields = presentLoadedFields;
-        }
-      }
-    }
   }
 }
