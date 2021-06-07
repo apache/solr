@@ -147,6 +147,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop");
+    spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
 
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);

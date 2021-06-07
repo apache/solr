@@ -143,6 +143,7 @@ public class PluginInfo implements MapSerializable {
     cName = parseClassName((String) m.get(CLASS_NAME));
     this.className = cName.className;
     this.pkgName = cName.pkg;
+    // TODO This is super dangerous and maybe the whole method should go away, but a lot of things rely on it
     attributes = unmodifiableMap(m);
     this.children =  Collections.emptyList();
     isFromSolrConfig = true;

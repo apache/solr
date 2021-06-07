@@ -301,7 +301,8 @@ public class ApiBag {
     Object specObj = info == null ? null : info.attributes.get("spec");
     if (specObj == null) specObj = "emptySpec";
     if (specObj instanceof Map) {
-        assert false : "got a map from a string";
+      // Value from Map<String,String> can be a Map because in PluginInfo(String, Map) we assign a Map<String, Object>
+      // assert false : "got a map when this should only be Strings";
       Map<?,?> map = (Map<?,?>) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
