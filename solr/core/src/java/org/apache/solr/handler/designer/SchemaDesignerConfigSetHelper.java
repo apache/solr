@@ -226,8 +226,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     // Using the SchemaAPI vs. working on the schema directly because SchemaField.create methods are package protected
     log.info("Sending {} request for configSet {}: {}", action, mutableId, addJson);
     SchemaResponse.UpdateResponse schemaResponse = addAction.process(cloudClient(), mutableId);
-    if (schemaResponse.getStatus() != 0) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, schemaResponse.getException());
+    Exception exc = schemaResponse.getException();
+    if (exc instanceof SolrException) {
+      throw (SolrException) exc;
+    } else if (schemaResponse.getStatus() != 0) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exc);
     }
 
     return objectName;
