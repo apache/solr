@@ -41,6 +41,8 @@ New Features
 
 * SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
 
+* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
