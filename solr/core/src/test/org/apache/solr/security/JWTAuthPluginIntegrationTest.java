@@ -48,7 +48,6 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -120,12 +119,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     if (mockOAuth2Server != null) {
       mockOAuth2Server.shutdown();
     }
-  }
-
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
   }
 
   @Override
@@ -266,7 +259,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
   }
 
-  @SuppressWarnings("BusyWait")
   private void configureClusterMockOauth(int numNodes, Path pemFilePath) throws Exception {
     configureCluster(numNodes)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
