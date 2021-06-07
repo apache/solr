@@ -116,7 +116,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
             jsonWebKeys.addAll(hjwks.getJsonWebKeys());
           } catch (SSLHandshakeException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Failed to connect with {}, do you have the correct SSL certificate configured?" + hjwks.getLocation(), e);
+                "Failed to connect with " + hjwks.getLocation() + ", do you have the correct SSL certificate configured?", e);
           }
         }
       } else {
