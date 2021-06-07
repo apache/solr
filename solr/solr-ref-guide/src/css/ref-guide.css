@@ -151,16 +151,6 @@ i
   margin: 50px 10px 20px 10px;
 }
 
-/* Special rules for homepage (index.html) so rows are all the same height */
-.row.match-my-cols {
-    display: table;
-}
-
-.row.match-my-cols [class*="col-"] {
-    float: none;
-    display: table-cell;
-    vertical-align: top;
-}
 
 /* General text paragraphs */
 
@@ -1184,6 +1174,17 @@ table tfoot th,
 table thead th
 {
     font-weight: bold;
+}
+
+/* Special formatting for tables on index.adoc home page */
+.home-table table th,
+.home-table table th a {
+    color: #D9411E;
+    font-size: 1.125em;
+}
+
+.home-table table thead {
+    background-color: #fff;
 }
 
 tbody tr th

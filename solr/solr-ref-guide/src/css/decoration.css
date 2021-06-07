@@ -21,13 +21,6 @@
     border-color: #CDCECF;
 }
 
-/* used for Download Solr button on docs home page */
-.btn-home {
-  color: #ffffff;
-  background-color: #F35B38;
-  border-color: #E6E7E8;
-}
-
 /* used for query parser labels in query-parameters.adoc */
 
 .badge-lucene {
@@ -43,18 +36,6 @@
 .badge-edismax {
   background-color: #FF833D;
   color: white;
-}
-
-/* Used for SolrCloud / User-Managed labels in scaling-solr.adoc child pages */
-
-.badge-solrcloud {
-  background-color: #FF833D;
-  color: white;
-}
-
-.badge-userManaged {
-  background-color: #A5DBFF;
-  color: black;
 }
 
 input

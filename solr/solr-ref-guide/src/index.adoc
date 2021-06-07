@@ -37,74 +37,25 @@ Welcome to Apache Solr(TM), the open source solution for search and analytics.
 Solr is the fast open source search platform built on Apache Lucene(TM) that provides scalable indexing and search, as well as faceting, hit highlighting and advanced analysis/tokenization capabilities. Solr and Lucene are managed by the http://www.apache.org/[Apache Software Foundation].
 
 This Reference Guide is the official Solr documentation, written and published by Lucene/Solr committers.
-
-++++
-<p><a class="btn btn-home btn-lg" href="https://solr.apache.org/downloads.html" role="button">Download Solr</a></p>
-++++
 ****
 
 The Guide includes the following sections:
 
-[.container]
---
-.Getting Started with Solr
-[sidebar.col]
 ****
+[.home-table,cols="1,1,1",frame=none,grid=none,stripes=none]
+|===
+^| <<getting-started.adoc#,Getting Started>> ^| <<deployment-guide.adoc#,Deployment Guide>> ^| <<configuration-guide.adoc#,Configuration Guide>>
 
-The *<<getting-started.adoc#,Getting Started>>* section guides you through the installation and setup of Solr. A detailed tutorial for first-time users shows many of Solr's features.
+| Introductory concepts and tutorials. | Installation, monitoring, scaling, and deploying to production. | Tuning Solr's configuration files for your use case.
 
-****
---
+|===
 
---
+[.home-table,cols="1,1,1",frame=none,grid=none,stripes=none]
+|===
+^| <<schema-indexing-guide.adoc#,Schema & Indexing Guide>> ^| <<query-guide.adoc#,Query Guide>> ^| <<solr-upgrade-notes.adoc#,Solr Upgrade Notes>>
 
-'''
+| Configuring Solr's schema and indexing documents. | All aspects of Solr queries. | Change notes for Solr releases.
 
---
-
---
-.Deployment Guide
-[sidebar.col]
-****
-
-*<<deployment-guide.adoc#,Deployment Guide>>*
-
-This section includes information about installing Solr, taking it to production and how to run it in HDFS or AWS.
-
-*<<solr-upgrade-notes.adoc#,Solr Upgrade Notes>>*: Notes for upgrading between minor versions and migrating to the next major version.
-****
-
-.Configuration Guide
-[sidebar.col]
-****
-*<<configuration-guide.adoc#,Configuration Guide>>*
-
-Covers tuning Solr's configuration files for your use case. Includes sections on securing Solr, scaling Solr, and integrating plugins.
-****
---
-
---
-
-'''
-
---
-
---
-.Schema and Indexing Guide
-[sidebar.col]
-****
-
-*<<schema-indexing-guide.adoc#,Schema and Indexing Guide>>*
-
-Covers all aspects of configuring Solr's schema and indexing documents.
-****
-
-.Query Guide
-[sidebar.col]
-****
-*<<query-guide.adoc#,Query Guide>>*
-
-This section presents an overview of the search process in Solr. It describes the main components used in searches, including request handlers, query parsers, and response writers. It lists the query parameters that can be passed to Solr, and it describes features such as boosting and faceting, which can be used to fine-tune search results.
+|===
 
 ****
---

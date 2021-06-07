@@ -184,13 +184,13 @@ If re-indexing is too onerous, use this mechanism in Solr 8.
 
 === solr.xml maxBooleanClauses now enforced recursively
 
-Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<format-of-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
+Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
 
 In previous versios of Solr, this option was a hard limit on the number of clauses in any `BooleanQuery` object - but it was only enforced for the _direct_ clauses.  Starting with Solr 9, this global limit is now also enforced against the total number of clauses in a _nested_ query structure.
 
 Users who upgrade from prior versions of Solr may find that some requests involving complex internal query structures (Example: long query strings using `edismax` with many `qf` and `pf` fields that include query time synonym expansion) which worked in the past now hit this limit and fail.
 
-User's in this situation are advised to consider the complexity f their queries/configuration, and increase the value of `<<format-of-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` if warranted.
+User's in this situation are advised to consider the complexity f their queries/configuration, and increase the value of `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` if warranted.
 
 === base_url removed from stored state
 
