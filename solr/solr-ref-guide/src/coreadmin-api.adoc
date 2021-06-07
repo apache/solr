@@ -27,17 +27,63 @@ CoreAdmin actions can be executed by via HTTP requests that specify an `action` 
 
 All action names are uppercase, and are defined in depth in the sections below.
 
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr start -DconfigSetBaseDir=./server/solr/configsets -e techproducts
+----
+
+We are passing in the explicit relative path for the `configSetBaseDir` to enable creating new cores using the `sample_techproducts_configs` configset in the examples below.
+
 [[coreadmin-status]]
 == STATUS
 
 The `STATUS` action returns the status of all running Solr cores, or status for only the named core.
 
-`admin/cores?action=STATUS&core=_core-name_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-status]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=STATUS&core=techproducts
+
+----
+====
+
+[example.tab-pane#v2coreadmin-status]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cores/
+----
+
+To get the status for a single core:
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cores/techproducts
+----
+
+To skip returning information about the index:
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cores?indexInfo=false
+----
+
+====
+--
 
 === STATUS Parameters
 
 `core`::
-The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`.
+The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required in v1, and part of the url in the v2 API.
 
 `indexInfo`::
 If `false`, information about the index will not be returned with a core STATUS request. In Solr implementations with a large number of cores (i.e., more than hundreds), retrieving the index information for each core can take a lot of time and isn't always required. The default is `true`.
@@ -50,6 +96,43 @@ The `CREATE` action creates a new core and registers it.
 If a Solr core with the given name already exists, it will continue to handle requests while the new core is initializing. When the new core is ready, it will take new requests and the old core will be unloaded.
 
 `admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-create]
+====
+[.tab-label]*V1 API*
+
+Assuming you are using an existing configSet to create your new core:
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=CREATE&&name=techproducts_v2&configSet=sample_techproducts_configs
+
+----
+
+If you have already existing core files deployed on disk, and need to just create the Solr core from them then the url will look something like
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data
+----
+====
+
+[example.tab-pane#v2coreadmin-create]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json' -d '
+  {
+    "create": {
+      "name": "techproducts_v2",
+      "configSet": "sample_techproducts_configs"
+    }
+  }
+'
+----
+====
+--
 
 Note that this command is the only one of the Core Admin API commands that *does not* support the `core` parameter. Instead, the `name` parameter is required, as shown below.
 
@@ -118,7 +201,33 @@ http://localhost:8983/solr/admin/cores?action=CREATE&name=my_core&collection=my_
 
 The RELOAD action loads a new core from the configuration of an existing, registered Solr core. While the new core is initializing, the existing one will continue to handle requests. When the new Solr core is ready, it takes over and the old core is unloaded.
 
-`admin/cores?action=RELOAD&core=_core-name_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-reload]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=RELOAD&core=techproducts
+
+----
+====
+
+[example.tab-pane#v2coreadmin-reload]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/techproducts -H 'Content-Type: application/json' -d '
+  {
+    "reload": {}
+  }
+'
+----
+====
+--
 
 This is useful when you've made changes to a Solr core's configuration on disk, such as adding new field definitions. Calling the RELOAD action lets you apply the new configuration without having to restart Solr.
 
@@ -130,7 +239,7 @@ RELOAD performs "live" reloads of SolrCore, reusing some existing objects. Some 
 === RELOAD Core Parameters
 
 `core`::
-The name of the core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required.
+The name of the core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required in v1, and part of the url in the v2 API.
 
 [[coreadmin-rename]]
 == RENAME

@@ -86,8 +86,8 @@ The default value is `10`. That is, by default, Solr returns 10 documents at a t
 
 == canCancel Parameter
 
-This parameter defines if this query is cancellable i.e. can be cancelled during execution using the
-task management interface.
+This parameter defines if this query is cancellable during execution using the
+<<task-management.adoc#,task management>> interface.
 
 == queryUUID Parameter
 
