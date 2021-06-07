@@ -160,8 +160,8 @@ Let's comment on this config:
 <10> Set the client id registered with Identity Provider
 <11> Configure the issuer id. Will be used for validating tokens. A token's 'iss' claim must match one of the configured issuer IDs.
 <12> Configure the audience claim. A token's 'aud' claim must match 'aud' for one of the configured issuers.
-<13> This issuer is auto configured through discovery, so 'iss' and JWK settings are not required
-<14> Provides SSL certificates to trust to support self-signed SSL in the issuers.
+<13> This issuer is auto-configured through discovery, so 'iss' and JWK settings are not required
+<14> Provides SSL certificate(s) to trust IdP https communication.
 
 === Using non-SSL URLs
 In production environments you should always use SSL protected HTTPS connections, otherwise you open yourself up to attacks.
