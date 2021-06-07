@@ -504,6 +504,24 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void initWithInvalidIdpCertString() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCerts", "-----BEGIN CERTIFICATE-----\nINVALID-----END CERTIFICATE-----\n");
+    plugin = new JWTAuthPlugin();
+    expectThrows(SolrException.class, () -> plugin.init(authConf));
+  }
+
+  @Test
+  public void initWithInvalidTrustedCertsFile() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_plugin_idp_invalidcert.pem").toString());
+    plugin = new JWTAuthPlugin();
+    expectThrows(SolrException.class, () -> plugin.init(authConf));
+  }
+
+  @Test
   public void initWithIdpCertWrongDoubleConfig() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
