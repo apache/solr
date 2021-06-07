@@ -169,9 +169,9 @@ However, in development, it may be useful to use regular http urls, and bypass t
 security check that Solr performs. To support this you can set the environment variable `solr.auth.jwt.allowOutboundHttp=true`.
 
 === Trusting the IdP server
-All communication with issuer server (IdP) is done over HTTPS. If the issuer uses a self signed SSL certificate, the connection will fail since the plugin enforces verification of SSL certificates on outbound traffic. By default, the root certificates present in Java's TrustStore (default or custom provided) are consulted. If you do not want to place the IdP certificates in Java's TrustStore, you can configure this plugin with either `trustedCertsFile` or `trustedCerts` options to provide a set of certificates to use when talking to IdP. This has the extra benefit of also working even if Solr is not started in SSL mode.
+All communication with the Oauth2 server (IdP) is done over HTTPS. By default, Java's built-in TrustStore is used. However, by configuring one of the options `trustedCertsFile` or `trustedCerts`, the plugin will *instead* trust the set of certificates provided, not any certificate signed by a root CA. This is both more secure and also lets you trust self-signed certificates. It also has the benefit of working even if Solr is not started in SSL mode.
 
-Please configure either `trustedCerts` or `trustedCertsFile`, not both.
+Please configure either the `trustedCerts` or `trustedCertsFile` option. Configuring both will cause an error.
 
 == Editing JWT Authentication Plugin Configuration
 
