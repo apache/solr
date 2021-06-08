@@ -37,7 +37,9 @@
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="true" precisionStep="0" positionIncrementGap="0"/>
 
   <fieldType name="integer" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
-  <field name="requestDate" type="integer" docValues="true" multiValued="false" indexed="true" stored="false"/>
+  <field name="dateAsInt" type="integer" docValues="true" multiValued="false" indexed="true" stored="false"/>
+  <field name="dateAsTInt" type="tint" docValues="true" multiValued="false" indexed="true" stored="false"/>
+  <copyField source="dateAsInt" dest="dateAsTInt" />
 
   <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>

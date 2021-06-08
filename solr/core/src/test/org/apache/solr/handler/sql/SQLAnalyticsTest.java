@@ -52,6 +52,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.SolrDefaultStreamFactory;
+import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,6 +62,7 @@ import org.junit.Test;
  */
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
+@LogLevel("org.apache.solr.handler.sql=DEBUG;org.apache.solr.client.solrj.io.stream=DEBUG")
 public class SQLAnalyticsTest extends SolrCloudTestCase {
 
   private static final String ALIAS_NAME = "SOME_ALIAS_WITH_MANY_COLLS";
@@ -97,6 +99,8 @@ public class SQLAnalyticsTest extends SolrCloudTestCase {
       dists[i] = new NormalDistribution(rand, i + 1, 1d);
     }
 
+    Locale[] locales = Locale.getAvailableLocales();
+
     // used for creating a int holding date values, like 20210101
     final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
     final Calendar cal = Calendar.getInstance();
@@ -120,8 +124,10 @@ public class SQLAnalyticsTest extends SolrCloudTestCase {
             .forEach(docId -> ur.add(id, UUID.randomUUID().toString(),
                 "a_s", "hello" + docId,
                 "a_i", String.valueOf(docId % CARDINALITY),
+                "b_s", rand.nextBoolean() ? "foo" : null,
                 "b_i", rand.nextBoolean() ? "1" : "0",
-                "requestDate", nextDateAsInt(cal, incr.getAndIncrement(), sdf),
+                "dateAsInt", nextDateAsInt(cal, incr.getAndIncrement(), sdf),
+                "locale_s", locales[rand.nextInt(locales.length)].toString(),
                 "a_d", String.valueOf(dists[docId % dists.length].sample())));
         ur.commit(cluster.getSolrClient(), collectionName);
       } catch (SolrServerException | IOException e) {
@@ -178,11 +184,53 @@ public class SQLAnalyticsTest extends SolrCloudTestCase {
    */
   @Test
   public void testMinMaxInteger() throws Exception {
-    SolrParams params = sqlParams("select min(requestDate), max(requestDate) from "+ALIAS_NAME);
-    for (int i=0; i < 10; i++) {
+    SolrParams params = sqlParams("SELECT min(dateAsInt), max(dateAsInt) from $ALIAS");
+    List<SortedMap<Object, Object>> collect = new LinkedList<>();
+    //for (int i=0; i < 100; i++) {
       List<Tuple> tuples = getTuples(params, sqlUrl(ALIAS_NAME));
-      System.out.println(">> "+i+": "+toMap(tuples.get(0)));
+      collect.add(toMap(tuples.get(0)));
+    //}
+
+    for (int i=0; i < collect.size(); i++) {
+      System.out.println(">> "+i+": "+collect.get(i));
     }
+  }
+
+  /*
+  
+   */
+  @Test
+  public void testGroupByIntDate() throws Exception {
+    SolrParams params = sqlParams("SELECT dateAsInt, count(*) FROM $ALIAS GROUP BY dateAsInt ORDER BY dateAsInt desc limit 1000");
+    List<Tuple> tuples = getTuples(params, sqlUrl(ALIAS_NAME));
+    tuples.forEach(t -> System.out.println(toMap(t)));
+  }
+
+  @Test
+  public void testColIsNotNull() throws Exception {
+    SolrParams params = sqlParams("SELECT dateAsInt, a_s, b_s FROM $ALIAS WHERE b_s=\"foo\"");
+    List<Tuple> tuples = getTuples(params, sqlUrl(ALIAS_NAME));
+    tuples.forEach(t -> System.out.println(toMap(t)));
+  }
+
+  @Test
+  public void testWhereWildcard() throws Exception {
+    SolrParams params = sqlParams("SELECT a_s, count(*) as cnt FROM $ALIAS WHERE a_s='hello*' GROUP BY a_s ORDER BY count(*) desc LIMIT 10");
+    List<Tuple> tuples = getTuples(params, sqlUrl(ALIAS_NAME));
+    System.out.println("\n\n>> SQL returned: "+tuples.size());
+    tuples.forEach(t -> System.out.println(toMap(t)));
+  }
+
+
+  /*
+  select interpretation_requestLocale, interpretation_clusteringSignature, count(*) as requestCount
+  from production_canonical_view where requestDate >= 20210501 and requestDate <= '20210507' and interpretation_flowDomain = 'cannedDialog' and interpretation_requestLocale = 'en_AU' group by interpretation_requestLocale, interpretation_clusteringSignature order by count(*) desc limit 500
+   */
+  @Test
+  public void testFilterByIntDate() throws Exception {
+    SolrParams params = sqlParams("SELECT locale_s, count(*) FROM $ALIAS WHERE dateAsInt >= 20210101 GROUP BY locale_s ORDER BY count(*) desc limit 10");
+    List<Tuple> tuples = getTuples(params, sqlUrl(ALIAS_NAME));
+    tuples.forEach(t -> System.out.println(t.getFields()));
   }
 
   private String sqlUrl(String aliasName) {
@@ -190,7 +238,8 @@ public class SQLAnalyticsTest extends SolrCloudTestCase {
   }
 
   private SolrParams sqlParams(String sql) {
-    return toParams(Map.of(CommonParams.QT, "/sql", "stmt", sql));
+    String evalSql = sql.replace("$ALIAS", ALIAS_NAME);
+    return toParams(Map.of(CommonParams.QT, "/sql", "stmt", evalSql));
   }
 
   private SolrParams toParams(Map<String,String> map) {
@@ -236,6 +285,8 @@ public class SQLAnalyticsTest extends SolrCloudTestCase {
   }
 
   List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
+    //StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(cluster.getZkServer().getZkAddress());
+    //System.out.println(">> stream: "+tupleStream.toExplanation(factory));
     List<Tuple> tuples = new ArrayList<>();
     try (tupleStream) {
       tupleStream.open();
