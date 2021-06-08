@@ -27,8 +27,11 @@ import org.apache.solr.common.util.NamedList;
 public interface NamedListInitializedPlugin {
   /**
    * <code>init</code> will be called just once, immediately after creation.
-   * <p>The args are user-level initialization parameters that
-   * may be specified, usually in solrconfig.xml
+   *
+   * <p>Source of the initialization arguments will typically be solrconfig.xml,
+   * but will ultimately depends on the plugin itself
+   *
+   * @param args non-null list of initialization parameters (may be empty)
    */
   default void init(NamedList<?> args) {}
 }
