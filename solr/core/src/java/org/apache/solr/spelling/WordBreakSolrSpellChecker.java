@@ -117,8 +117,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   private static final Pattern spacePattern = Pattern.compile("\\s+");
 
   @Override
-  public String init(@SuppressWarnings("rawtypes") NamedList config,
-      SolrCore core) {
+  public String init(NamedList<?> config, SolrCore core) {
     String name = super.init(config, core);
     combineWords = boolParam(config, PARAM_COMBINE_WORDS);
     breakWords = boolParam(config, PARAM_BREAK_WORDS);
@@ -160,14 +159,13 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     return name;
   }
   
-  private String strParam(@SuppressWarnings("rawtypes") NamedList config,
+  private String strParam(NamedList<?> config,
       String paramName) {
     Object o = config.get(paramName);
     return o == null ? null : o.toString();
   }
   
-  private boolean boolParam(@SuppressWarnings("rawtypes") NamedList config,
-      String paramName) {
+  private boolean boolParam(NamedList<?> config, String paramName) {
     String s = strParam(config, paramName);
     if ("true".equalsIgnoreCase(s) || "on".equalsIgnoreCase(s)) {
       return true;
@@ -175,7 +173,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     return false;
   }
   
-  private int intParam(@SuppressWarnings("rawtypes") NamedList config,
+  private int intParam(NamedList<?> config,
       String paramName) {
     Object o = config.get(paramName);
     if (o == null) {

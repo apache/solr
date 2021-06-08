@@ -19,17 +19,11 @@ package org.apache.solr.response;
 import java.io.Writer;
 import java.io.IOException;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class PythonResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PYTHON_ASCII="text/x-python;charset=US-ASCII";
 
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
-    /* NOOP */
-  }
-  
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     PythonWriter w = new PythonWriter(writer, req, rsp);

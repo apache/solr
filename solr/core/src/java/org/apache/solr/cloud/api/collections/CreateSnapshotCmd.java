@@ -129,8 +129,7 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     Set<String> failedShards = new HashSet<>();
 
     shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
-    @SuppressWarnings({"rawtypes"})
-    NamedList success = (NamedList) shardRequestResults.get("success");
+    NamedList<?> success = (NamedList<?>) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for ( int i = 0 ; i < success.size() ; i++) {

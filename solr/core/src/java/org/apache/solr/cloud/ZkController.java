@@ -2194,8 +2194,7 @@ public class ZkController implements Closeable {
       @SuppressWarnings({"rawtypes"})
       Map roles = (Map) Utils.fromJSON(data);
       if (roles == null) return;
-      @SuppressWarnings({"rawtypes"})
-      List nodeList = (List) roles.get("overseer");
+      List<?> nodeList = (List<?>) roles.get("overseer");
       if (nodeList == null) return;
       if (nodeList.contains(getNodeName())) {
         ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.ADDROLE.toString().toLowerCase(Locale.ROOT),

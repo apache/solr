@@ -60,13 +60,11 @@ public class HdfsBackupRepository implements BackupRepository {
   private Configuration hdfsConfig = null;
   private FileSystem fileSystem = null;
   private Path baseHdfsPath = null;
-  @SuppressWarnings("rawtypes")
-  private NamedList config = null;
+  private NamedList<?> config = null;
   protected int copyBufferSize = HdfsDirectory.DEFAULT_BUFFER_SIZE;
 
-  @SuppressWarnings("rawtypes")
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     this.config = args;
 
     log.warn("HDFS support in Solr has been deprecated as of 8.6. See SOLR-14021 for details.");

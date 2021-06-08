@@ -83,7 +83,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     //try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
     try (XSLTUpdateRequestHandler handler = new XSLTUpdateRequestHandler()) {
-      handler.init(new NamedList<String>());
+      handler.init(new NamedList<>());
       handler.handleRequestBody(req, rsp);
     }
     StringWriter sw = new StringWriter(32000);

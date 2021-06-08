@@ -151,8 +151,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   }
 
   public static boolean getImmutable(SolrCore core) {
-    @SuppressWarnings({"rawtypes"})
-    NamedList configSetProperties = core.getConfigSetProperties();
+    NamedList<?> configSetProperties = core.getConfigSetProperties();
     if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
     return immutable != null && Boolean.parseBoolean(immutable.toString());
@@ -343,8 +342,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), req.getOriginalParams());
         r.getContext().put(USEPARAM, useParams);
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
+        NamedList<?> nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
         SolrPluginUtils.setDefaults(r,
             getSolrParamsFromNamedList(nl, DEFAULTS),
             getSolrParamsFromNamedList(nl, APPENDS),

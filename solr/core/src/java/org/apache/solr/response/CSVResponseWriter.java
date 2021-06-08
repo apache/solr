@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastWriter;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.internal.csv.CSVPrinter;
 import org.apache.solr.internal.csv.CSVStrategy;
 import org.apache.solr.request.SolrQueryRequest;
@@ -45,10 +44,6 @@ import org.apache.solr.search.ReturnFields;
  */
 
 public class CSVResponseWriter implements QueryResponseWriter {
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
-  }
 
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
