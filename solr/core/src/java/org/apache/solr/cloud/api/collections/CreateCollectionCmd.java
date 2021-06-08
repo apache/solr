@@ -559,10 +559,16 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           }
 
           collectionProps.remove(ZkStateReader.NUM_SHARDS_PROP);  // we don't put numShards in the collections properties
+          collectionProps.remove(ZkStateReader.CONFIGNAME_PROP); // we don't write configName on a zk collection node
 
-          ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
-          stateManager.makePath(collectionPath, Utils.toJSON(zkProps), CreateMode.PERSISTENT, false);
-
+          if (collectionProps.size() > 0) {
+            ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
+            // create a node with collectionProps data
+            stateManager.makePath(collectionPath, Utils.toJSON(zkProps), CreateMode.PERSISTENT, false);
+          } else {
+            // create a node without data
+            stateManager.makePath(collectionPath);
+          }
         } catch (KeeperException e) {
           //TODO shouldn't the stateManager ensure this does not happen; should throw AlreadyExistsException
           // it's okay if the node already exists

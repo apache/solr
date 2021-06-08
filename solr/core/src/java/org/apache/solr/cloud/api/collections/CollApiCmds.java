@@ -300,6 +300,13 @@ public class CollApiCmds {
 
       if (configName != null) {
         CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getCoreContainer().getConfigSetService(), configName);
+
+        // Back-compatibility reason: update configName in old location
+        // TODO in Solr 10 this code should go away
+        String collPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName;
+        if (ccc.getSolrCloudManager().getDistribStateManager().hasData(collPath)) {
+          ccc.getSolrCloudManager().getDistribStateManager().setData(collPath, Utils.toJSON(Map.of(ZkStateReader.CONFIGNAME_PROP, configName)), -1);
+        }
       }
 
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
