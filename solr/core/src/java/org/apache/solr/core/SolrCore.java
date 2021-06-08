@@ -208,7 +208,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
-  private final NamedList<Object> configSetProperties;
+  private final NamedList<?> configSetProperties;
   private final String dataDir;
   private final String ulogDir;
   private final UpdateHandler updateHandler;
@@ -365,7 +365,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     this.schema = replacementSchema;
   }
 
-  public NamedList<Object> getConfigSetProperties() {
+  public NamedList<?> getConfigSetProperties() {
     return configSetProperties;
   }
 

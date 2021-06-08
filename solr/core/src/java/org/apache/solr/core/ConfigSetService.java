@@ -196,15 +196,13 @@ public abstract class ConfigSetService {
    * @param dcore the core's CoreDescriptor
    * @return a ConfigSet
    */
-  @SuppressWarnings({"rawtypes"})
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
 
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
 
     try {
-
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
-      NamedList<Object> properties = loadConfigSetProperties(dcore, coreLoader);
+      NamedList<?> properties = loadConfigSetProperties(dcore, coreLoader);
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
       NamedList<?> flags = loadConfigSetFlags(dcore, coreLoader);
 

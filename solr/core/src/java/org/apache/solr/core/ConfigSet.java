@@ -34,12 +34,12 @@ public class ConfigSet {
 
   private final SchemaSupplier schemaSupplier;
 
-  private final NamedList<Object> properties;
+  private final NamedList<?> properties;
 
   private final boolean trusted;
 
   public ConfigSet(String name, SolrConfig solrConfig, SchemaSupplier indexSchemaSupplier,
-                   NamedList<Object> properties, boolean trusted) {
+                   NamedList<?> properties, boolean trusted) {
     this.name = name;
     this.solrconfig = solrConfig;
     this.schemaSupplier = indexSchemaSupplier;
@@ -68,7 +68,7 @@ public class ConfigSet {
     return schema;
   }
 
-  public NamedList<Object> getProperties() {
+  public NamedList<?> getProperties() {
     return properties;
   }
 
