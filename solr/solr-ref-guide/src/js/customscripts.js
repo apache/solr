@@ -67,3 +67,18 @@ $(document).ready(function () {
     });
 
 });
+
+// Forces all non-solr.apache.org links to open in new tab
+$(document).ready(function () {
+  $("a[href^=http]").each(function(){
+    var all_links = document.querySelectorAll('a');
+    for (var i = 0; i < all_links.length; i++){
+       var a = all_links[i];
+       if(a.hostname != location.hostname) {
+               a.rel = 'noopener';
+               a.target = '_blank';
+       }
+}
+  }
+)
+})
