@@ -84,20 +84,8 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
     return new AllValuesOrNoneFieldMutatingUpdateProcessor(getSelector(), next) {
       @Override
       protected Object mutateValue(Object srcVal) {
-        if (srcVal instanceof CharSequence) {
-          String stringVal = caseSensitive ? srcVal.toString() : srcVal.toString().toLowerCase(Locale.ROOT);
-          if (trueValues.contains(stringVal)) {
-            return true;
-          } else if (falseValues.contains(stringVal)) {
-            return false;
-          } else {
-            return SKIP_FIELD_VALUE_LIST_SINGLETON;
-          }
-        }
-        if (srcVal instanceof Boolean) {
-          return srcVal;
-        }
-        return SKIP_FIELD_VALUE_LIST_SINGLETON;
+        Object parsed = parsePossibleBoolean(srcVal, caseSensitive, trueValues, falseValues);
+        return parsed != null ? parsed : SKIP_FIELD_VALUE_LIST_SINGLETON;
       }
     };
   }
@@ -149,5 +137,22 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
       FieldType type = schema.getFieldTypeNoEx(fieldName);
       return (null == type) || (type instanceof BoolField);
     };
+  }
+
+  public static Object parsePossibleBoolean(Object srcVal, boolean caseSensitive, Set<String> trueValues, Set<String> falseValues) {
+    if (srcVal instanceof CharSequence) {
+      String stringVal = caseSensitive ? srcVal.toString() : srcVal.toString().toLowerCase(Locale.ROOT);
+      if (trueValues.contains(stringVal)) {
+        return true;
+      } else if (falseValues.contains(stringVal)) {
+        return false;
+      } else {
+        return null;
+      }
+    }
+    if (srcVal instanceof Boolean) {
+      return srcVal;
+    }
+    return null;
   }
 }
