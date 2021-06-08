@@ -68,6 +68,10 @@ public class FieldValueFeature extends Feature {
   private String field;
   private Set<String> fieldAsSet;
 
+  public Set<String> getFieldAsSet() {
+    return fieldAsSet;
+  }
+
   public String getField() {
     return field;
   }
@@ -175,7 +179,7 @@ public class FieldValueFeature extends Feature {
         }
       }
 
-      protected float parseStoredFieldValue(IndexableField indexableField) throws IOException {
+      protected float parseStoredFieldValue(IndexableField indexableField) {
         if (indexableField == null) {
           return getDefaultValue();
         }

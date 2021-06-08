@@ -37,9 +37,7 @@ import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.PrefetchingFieldValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrDocumentFetcher;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
@@ -60,6 +58,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.solr.ltr.feature.PrefetchingFieldValueFeature.DISABLE_PREFETCHING_FIELD_VALUE_FEATURE;
 
 public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRerankBase {
 
@@ -217,6 +216,82 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
     SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
     query.setRequestHandler("/query");
     query.setParam("rows", "8");
+    query.setFields("id,features:[fv]");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
+
+    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
+
+    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
+
+    for (SolrDocument doc : queryResponse.getResults()) {
+      String docId = (String) doc.getFirstValue("id");
+      if (docId.equals("1")) {
+        // doc with id 1 has no values set for 3 of the 6 feature fields
+        assertEquals(NUM_FEATURES - 3, loadedFields.get(docId).stream()
+            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
+            .count());
+      } else {
+        // each single field used for a feature gets loaded separately
+        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
+            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
+            .count());
+      }
+    }
+    assertTheResponse(queryResponse);
+  }
+
+  @Test
+  public void testSimpleQueryDisablePrefetching() throws Exception {
+    // tests the same behavior as BreakPrefetching but makes sure, that param gets read correctly
+    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false); // do not break prefetching...
+    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
+    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, "false");
+    // needed to clear cache because we make assertions on its content
+    reloadCollection(COLLECTION);
+
+    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
+    query.setRequestHandler("/query");
+    query.setParam("rows", "8");
+    query.setParam(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, "true");  // ...but disable it
+    query.setFields("id,features:[fv]");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
+
+    QueryResponse queryResponse =
+        solrCluster.getSolrClient().query(COLLECTION,query);
+
+    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
+
+    assertEquals(loadedFields.size(), queryResponse.getResults().size());
+    for (SolrDocument doc : queryResponse.getResults()) {
+      String docId = (String) doc.getFirstValue("id");
+      if (docId.equals("1")) {
+        // doc with id 1 has no values set for 3 of the 6 feature fields
+        assertEquals(NUM_FEATURES - 3, loadedFields.get(docId).stream()
+            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
+            .count());
+      } else {
+        // each single field used for a feature gets loaded separately
+        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
+            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
+            .count());
+      }
+    }
+    assertTheResponse(queryResponse);
+  }
+
+  @Test
+  public void testSimpleQueryLazyDisablePrefetching() throws Exception {
+    // tests the same behavior as LazyBreakPrefetching but makes sure, that param gets read correctly
+    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false); // do not break prefetching...
+    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
+    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, "true");
+    // needed to clear cache because we make assertions on its content
+    reloadCollection(COLLECTION);
+
+    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
+    query.setRequestHandler("/query");
+    query.setParam("rows", "8");
+    query.setParam(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, "true");  // ...but disable it
     query.setFields("id,features:[fv]");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
 
@@ -435,9 +510,8 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
    * It is used to assert that the prefetching mechanism works as intended.
    */
   final public static class ObservingPrefetchingFieldValueFeature extends PrefetchingFieldValueFeature {
-    private String field;
     private Set<String> prefetchFields;
-    // this boolean can be used to mimic the behavior of the original FieldVAlueFeature
+    // this boolean can be used to mimic the behavior of the original FieldValueFeature
     // this is used to compare the behavior of the two Features so that the purpose of the Prefetching on becomes clear
     private static final AtomicBoolean breakPrefetching = new AtomicBoolean(false);
     public static Map<String, List<List<String>>> loadedFields = new HashMap<>();
@@ -446,15 +520,10 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
       super(name, params);
     }
 
-    public void setField(String field) {
-      this.field = field;
-      super.setField(field);
-    }
-
     public void setPrefetchFields(Set<String> fields) {
       if(breakPrefetching.get()) {
-        prefetchFields = Set.of(field, "id"); // only prefetch own field (and id needed for map-building below)
-        super.setPrefetchFields(Set.of(field, "id"));
+        prefetchFields = Set.of(getField(), "id"); // only prefetch own field (and id needed for map-building below)
+        super.setPrefetchFields(Set.of(getField(), "id"));
       } else {
         fields.add("id");
         prefetchFields = fields; // also prefetch all fields that all other PrefetchingFieldValueFeatures need
@@ -474,17 +543,13 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
     }
 
     public class ObservingPrefetchingFieldValueFeatureWeight extends PrefetchingFieldValueFeatureWeight {
-      private final SchemaField schemaField;
       private final SolrDocumentFetcher docFetcher;
+      private final Boolean disablePrefetching;
 
       public ObservingPrefetchingFieldValueFeatureWeight(IndexSearcher searcher, SolrQueryRequest request,
                                                          Query originalQuery, Map<String, String[]> efi) {
         super(searcher, request, originalQuery, efi);
-        if (searcher instanceof SolrIndexSearcher) {
-          schemaField = ((SolrIndexSearcher) searcher).getSchema().getFieldOrNull(field);
-        } else {
-          schemaField = null;
-        }
+        disablePrefetching = request.getParams().getBool(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, false);
         this.docFetcher = request.getSearcher().getDocFetcher();
       }
 
@@ -498,7 +563,6 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
       }
 
       public class ObservingPrefetchingFieldValueFeatureScorer extends PrefetchingFieldValueFeatureScorer {
-
         LeafReaderContext context = null;
         public ObservingPrefetchingFieldValueFeatureScorer(FeatureWeight weight,
                                                   LeafReaderContext context, DocIdSetIterator itr) {
@@ -509,9 +573,13 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
         @Override
         public float score() throws IOException {
           try {
-            final Document document = docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
-
-            float fieldValue = super.score();
+            final Document document;
+            if(disablePrefetching) {
+              document = docFetcher.doc(context.docBase + itr.docID(), Set.of(getField(), "id"));
+            } else {
+              document = docFetcher.doc(context.docBase + itr.docID(), Set.of(prefetchFields.toArray(new String[]{"id"})));
+            }
+            float fieldValue = super.parseStoredFieldValue(document.getField(getField()));
 
             List<String> loadedLazyFields = document.getFields().stream()
                 .filter(field -> field instanceof LazyDocument.LazyField)

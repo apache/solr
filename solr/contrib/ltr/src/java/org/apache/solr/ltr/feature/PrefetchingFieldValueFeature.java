@@ -22,6 +22,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrDocumentFetcher;
 
@@ -44,6 +45,8 @@ import java.util.Set;
 public class PrefetchingFieldValueFeature extends FieldValueFeature {
   // used to store all fields from all PrefetchingFieldValueFeatures
   private Set<String> prefetchFields;
+  // can be used for debugging to only fetch the field this features uses
+  public static final String DISABLE_PREFETCHING_FIELD_VALUE_FEATURE = "disablePrefetchingFieldValueFeature";
 
   public void setPrefetchFields(Set<String> fields) {
     prefetchFields = fields;
@@ -67,10 +70,13 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
 
   public class PrefetchingFieldValueFeatureWeight extends FieldValueFeatureWeight {
     private final SolrDocumentFetcher docFetcher;
+    private final Boolean disablePrefetching;
 
     public PrefetchingFieldValueFeatureWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(searcher, request, originalQuery, efi);
+
+      disablePrefetching = request.getParams().getBool(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, false);
       // get the searcher directly from the request to be sure that we have a SolrIndexSearcher
       this.docFetcher = request.getSearcher().getDocFetcher();
     }
@@ -107,14 +113,20 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
       @Override
       public float score() throws IOException {
         try {
-          final Document document = docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
-
+          final Document document;
+          if(disablePrefetching) {
+            document = docFetcher.doc(context.docBase + itr.docID(), getFieldAsSet());
+          } else {
+            document = docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
+          }
           return super.parseStoredFieldValue(document.getField(getField()));
         } catch (final IOException e) {
+          final String prefetchedFields = disablePrefetching ? getField() : StrUtils.join(prefetchFields, ',');
           throw new FeatureException(
               e.toString() + ": " +
-                  "Unable to extract feature for "
-                  + name, e);
+                  "Unable to extract feature for " + name +
+                  " , tried to prefetch fields " + prefetchedFields +
+                  ".\nSet " + DISABLE_PREFETCHING_FIELD_VALUE_FEATURE + " to true to fetch fields individually (only for debugging purposes).", e);
         }
       }
     }
