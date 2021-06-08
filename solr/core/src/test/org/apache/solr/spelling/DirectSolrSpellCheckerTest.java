@@ -32,7 +32,6 @@ import org.junit.Test;
  * Simple tests for {@link DirectSolrSpellChecker}
  */
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
-@SuppressWarnings({"rawtypes"})
 public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
 
   private static SpellingQueryConverter queryConverter;
@@ -48,15 +47,13 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(adoc("id", "4", "teststop", "another foo")));
     assertNull(h.validateUpdate(commit()));
     queryConverter = new SimpleQueryConverter();
-    queryConverter.init(new NamedList());
+    queryConverter.init(new NamedList<>());
   }
   
   @Test
-  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
-    @SuppressWarnings({"rawtypes"})
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");
     spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2); // we will try "fob"

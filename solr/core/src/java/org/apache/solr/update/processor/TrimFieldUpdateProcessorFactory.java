@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -44,13 +43,6 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  * @since 4.0.0
  */
 public final class TrimFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    // no trim specific init args
-    super.init(args);
-  }
-
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,

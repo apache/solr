@@ -129,7 +129,6 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
   }
 
-  @SuppressWarnings("rawtypes")
   public void listSnapshots(String collectionName) {
     CollectionAdminRequest.ListSnapshots listSnaps = new CollectionAdminRequest.ListSnapshots(collectionName);
     CollectionAdminResponse resp;
@@ -137,7 +136,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       resp = listSnaps.process(solrClient);
       Preconditions.checkState(resp.getStatus() == 0, "The LISTSNAPSHOTS request failed. The status code is " + resp.getStatus());
 
-      NamedList apiResult = (NamedList) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
+      NamedList<?> apiResult = (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
       for (int i = 0; i < apiResult.size(); i++) {
         CLIO.out(apiResult.getName(i));
       }
@@ -424,7 +423,6 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     return false;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Collection<CollectionSnapshotMetaData> listCollectionSnapshots(String collectionName)
       throws SolrServerException, IOException {
     CollectionAdminRequest.ListSnapshots listSnapshots = new CollectionAdminRequest.ListSnapshots(collectionName);
@@ -432,11 +430,11 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
     Preconditions.checkState(resp.getStatus() == 0);
 
-    NamedList apiResult = (NamedList) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
+    NamedList<?> apiResult = (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
     for (int i = 0; i < apiResult.size(); i++) {
-      result.add(new CollectionSnapshotMetaData((NamedList<Object>)apiResult.getVal(i)));
+      result.add(new CollectionSnapshotMetaData((NamedList<?>)apiResult.getVal(i)));
     }
 
     return result;

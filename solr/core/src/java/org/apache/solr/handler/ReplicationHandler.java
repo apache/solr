@@ -960,8 +960,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Properties props = loadReplicationProperties();
       if (showFollowerDetails) {
         try {
-          @SuppressWarnings({"rawtypes"})
-          NamedList nl = fetcher.getDetails();
+          NamedList<Object> nl = fetcher.getDetails();
           follower.add("leaderDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
           log.warn(
@@ -1072,8 +1071,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (follower.size() > 0)
       details.add("follower", follower);
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList snapshotStats = snapShootDetails;
+    NamedList<?> snapshotStats = snapShootDetails;
     if (snapshotStats != null)
       details.add(CMD_BACKUP, snapshotStats);
 
@@ -1241,16 +1239,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else {
       numberBackupsToKeep = 0;
     }
-    @SuppressWarnings({"rawtypes"})
-    NamedList follower = getObjectWithBackwardCompatibility(initArgs,  "follower",  "slave");
+    NamedList<?> follower = getObjectWithBackwardCompatibility(initArgs,  "follower",  "slave");
     boolean enableFollower = isEnabled( follower );
     if (enableFollower) {
       currentIndexFetcher = pollingIndexFetcher = new IndexFetcher(follower, this, core);
       setupPolling((String) follower.get(POLL_INTERVAL));
       isFollower = true;
     }
-    @SuppressWarnings({"rawtypes"})
-    NamedList leader = getObjectWithBackwardCompatibility(initArgs, "leader", "master");
+    NamedList<?> leader = getObjectWithBackwardCompatibility(initArgs, "leader", "master");
     boolean enableLeader = isEnabled( leader );
 
     if (enableLeader || (enableFollower && !currentIndexFetcher.fetchFromLeader)) {
@@ -1279,12 +1275,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
         log.info("Replication enabled for following config files: {}", includeConfFiles);
       }
-      @SuppressWarnings({"rawtypes"})
-      List backup = leader.getAll("backupAfter");
+      List<?> backup = leader.getAll("backupAfter");
       boolean backupOnCommit = backup.contains("commit");
       boolean backupOnOptimize = !backupOnCommit && backup.contains("optimize");
-      @SuppressWarnings({"rawtypes"})
-      List replicateAfter = leader.getAll(REPLICATE_AFTER);
+      List<?> replicateAfter = leader.getAll(REPLICATE_AFTER);
       replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = !replicateOnCommit && replicateAfter.contains("optimize");
 
@@ -1365,7 +1359,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   // check leader or follower is enabled
-  private boolean isEnabled( @SuppressWarnings({"rawtypes"})NamedList params ){
+  private boolean isEnabled(NamedList<?> params ){
     if( params == null ) return false;
     Object enable = params.get( "enable" );
     if( enable == null ) return true;
@@ -1435,9 +1429,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
-      @Override
-      public void init(@SuppressWarnings({"rawtypes"})NamedList args) {/*no op*/ }
-
       /**
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as well
        */
