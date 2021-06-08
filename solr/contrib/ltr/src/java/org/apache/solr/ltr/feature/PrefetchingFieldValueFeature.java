@@ -71,6 +71,7 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
     public PrefetchingFieldValueFeatureWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(searcher, request, originalQuery, efi);
+      // get the searcher directly from the request to be sure that we have a SolrIndexSearcher
       this.docFetcher = request.getSearcher().getDocFetcher();
     }
 
