@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -332,6 +333,7 @@ public class CollApiCmds {
 
             if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
                 && !updateKey.equals(Overseer.QUEUE_OPERATION)
+                && !updateKey.equals(CommonAdminParams.ASYNC)
                 && updateEntry.getValue() != null // handled below in a separate conditional
                 && !updateEntry.getValue().equals(c.get(updateKey))) {
               return false;
