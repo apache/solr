@@ -15,37 +15,13 @@
  */
 package org.apache.solr.ltr;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.ltr.feature.PrefetchingFieldValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
-import org.apache.solr.util.RestTestHarness;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.AfterClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toList;
-
-
-public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRerankBase {
-
-  private MiniSolrCloudCluster solrCluster;
-  String solrconfig = "solrconfig-ltr.xml";
-  String schema = "schema.xml";
-
-  SortedMap<ServletHolder,String> extraServlets = null;
+public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTROnSolrCloudBase {
 
   private static final String STORED_FEATURE_STORE_NAME = "stored-feature-store";
   private static final String[] STORED_FIELD_NAMES = new String[]{"storedIntField", "storedLongField",
@@ -64,34 +40,8 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
   private static final String DV_MODEL_WEIGHTS = "{\"weights\":{\"dvIntPopularityFeature\":1.0,\"dvLongPopularityFeature\":1.0," +
       "\"dvFloatPopularityFeature\":1.0,\"dvDoublePopularityFeature\":1.0}}";
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    extraServlets = setupTestInit(solrconfig, schema, true);
-    System.setProperty("enable.update.log", "true");
-
-    int numberOfShards = random().nextInt(4) + 1;
-    int numberOfReplicas = random().nextInt(2) + 1;
-
-    System.out.println("numberOfShards " + numberOfShards);
-    System.out.println("numberOfReplicas " + numberOfReplicas);
-
-    int numberOfNodes = numberOfShards * numberOfReplicas;
-
-    setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes);
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    restTestHarness.close();
-    restTestHarness = null;
-    solrCluster.shutdown();
-    super.tearDown();
-  }
-
   @Test
   public void testRanking() throws Exception {
-    setUpStoredFieldModelAndFeatures();
     // just a basic sanity check that we can work with the PrefetchingFieldValueFeature
     final SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
     query.setRequestHandler("/query");
@@ -127,7 +77,6 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
 
   @Test
   public void testDelegationToFieldValueFeature() throws Exception {
-    setUpDocValueModelAndFeatures();
     assertU(adoc("id", "21", "popularity", "21", "title", "docValues"));
     assertU(adoc("id", "22", "popularity", "22", "title", "docValues"));
     assertU(adoc("id", "23", "popularity", "23", "title", "docValues"));
@@ -159,39 +108,7 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='21'");
   }
 
-  private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
-    JettyConfig jc = buildJettyConfig("/solr");
-    jc = JettyConfig.builder(jc).withServlets(extraServlets).build();
-    solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome.toPath(), jc);
-    File configDir = tmpSolrHome.toPath().resolve("collection1/conf").toFile();
-    solrCluster.uploadConfigSet(configDir.toPath(), "conf1");
-
-    solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
-
-    createCollection(COLLECTION, "conf1", numShards, numReplicas);
-    indexDocuments(COLLECTION);
-    for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
-      if (!solrRunner.getCoreContainer().getCores().isEmpty()){
-        String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
-        restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName);
-        break;
-      }
-    }
-  }
-
-  private void createCollection(String name, String config, int numShards, int numReplicas)
-      throws Exception {
-    CollectionAdminResponse response;
-    CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(name, config, numShards, numReplicas);
-    response = create.process(solrCluster.getSolrClient());
-
-    if (response.getStatus() != 0 || response.getErrorMessages() != null) {
-      fail("Could not create collection. Response" + response.toString());
-    }
-    solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
-  }
-
+  @Override
   void indexDocument(String collection, String id, String title, String description, int popularity)
     throws Exception{
     SolrInputDocument doc = new SolrInputDocument();
@@ -211,24 +128,10 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
     solrCluster.getSolrClient().add(collection, doc);
   }
 
-  private void indexDocuments(final String collection)
-       throws Exception {
-    final int collectionSize = 8;
-    // put documents in random order to check that advanceExact is working correctly
-    List<Integer> docIds = IntStream.rangeClosed(1, collectionSize).boxed().collect(toList());
-    Collections.shuffle(docIds, random());
-
-    int docCounter = 1;
-    for (int docId : docIds) {
-      final int popularity = docId;
-      indexDocument(collection, String.valueOf(docId), "a1", "bloom", popularity);
-      // maybe commit in the middle in order to check that everything works fine for multi-segment case
-      if (docCounter == collectionSize / 2 && random().nextBoolean()) {
-        solrCluster.getSolrClient().commit(collection);
-      }
-      docCounter++;
-    }
-    solrCluster.getSolrClient().commit(collection, true, true);
+  @Override
+  void loadModelsAndFeatures() throws Exception {
+    setUpStoredFieldModelAndFeatures();
+    setUpDocValueModelAndFeatures();
   }
 
   private void setUpStoredFieldModelAndFeatures() throws Exception {
@@ -265,21 +168,5 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestRera
         DV_FEATURE_STORE_NAME,
         DV_MODEL_WEIGHTS);
     reloadCollection(COLLECTION);
-  }
-
-  private void reloadCollection(String collection) throws Exception {
-    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(collection);
-    CollectionAdminResponse response = reloadRequest.process(solrCluster.getSolrClient());
-    assertEquals(0, response.getStatus());
-    assertTrue(response.isSuccess());
-  }
-
-  @AfterClass
-  public static void after() throws Exception {
-    if (null != tmpSolrHome) {
-      FileUtils.deleteDirectory(tmpSolrHome);
-      tmpSolrHome = null;
-    }
-    System.clearProperty("managed.schema.mutable");
   }
 }

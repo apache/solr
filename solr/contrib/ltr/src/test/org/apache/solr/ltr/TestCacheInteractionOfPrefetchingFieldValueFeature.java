@@ -15,7 +15,6 @@
  */
 package org.apache.solr.ltr;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -25,12 +24,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.ltr.feature.FeatureException;
@@ -38,12 +32,8 @@ import org.apache.solr.ltr.feature.PrefetchingFieldValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrDocumentFetcher;
-import org.apache.solr.util.RestTestHarness;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.AfterClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,7 +42,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -60,12 +49,8 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toList;
 import static org.apache.solr.ltr.feature.PrefetchingFieldValueFeature.DISABLE_PREFETCHING_FIELD_VALUE_FEATURE;
 
-public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRerankBase {
-
-  private MiniSolrCloudCluster solrCluster;
+public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTROnSolrCloudBase {
   private final String LAZY_FIELD_LOADING_CONFIG_KEY = "solr.query.enableLazyFieldLoading";
-
-  SortedMap<ServletHolder,String> extraServlets = null;
 
   private static final String FEATURE_STORE_NAME = "test";
   private static final int NUM_FEATURES = 6;
@@ -78,23 +63,11 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
       "\"storedStrNumFieldFeature\":0.1,\"storedStrBoolFieldFeature\":0.1}}";
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
-
-    extraServlets = setupTestInit("solrconfig-ltr.xml", "schema.xml", true);
-    System.setProperty("enable.update.log", "true");
+  void setupSolrCluster(int numShards, int numReplicas) throws Exception {
     // we do not want to test the scoring / ranking but the interaction with the cache
     // because the scoring itself behaves just like the FieldValueFeature
     // so just one shard, replica and node serve the purpose
     setupSolrCluster(1, 1, 1);
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    restTestHarness.close();
-    restTestHarness = null;
-    solrCluster.shutdown();
-    super.tearDown();
   }
 
   @Test
@@ -344,40 +317,7 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
       queryResponse.getResults().get(7).get("features").toString());
   }
 
-  private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
-    JettyConfig jc = buildJettyConfig("/solr");
-    jc = JettyConfig.builder(jc).withServlets(extraServlets).build();
-    solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome.toPath(), jc);
-    File configDir = tmpSolrHome.toPath().resolve("collection1/conf").toFile();
-    solrCluster.uploadConfigSet(configDir.toPath(), "conf1");
-
-    solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
-
-    createCollection(COLLECTION, "conf1", numShards, numReplicas);
-    indexDocuments(COLLECTION);
-    for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
-      if (!solrRunner.getCoreContainer().getCores().isEmpty()){
-        String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
-        restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName);
-        break;
-      }
-    }
-    loadModelAndFeatures();
-  }
-
-  private void createCollection(String name, String config, int numShards, int numReplicas)
-      throws Exception {
-    CollectionAdminResponse response;
-    CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(name, config, numShards, numReplicas);
-    response = create.process(solrCluster.getSolrClient());
-
-    if (response.getStatus() != 0 || response.getErrorMessages() != null) {
-      fail("Could not create collection. Response" + response.toString());
-    }
-    solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
-  }
-
+  @Override
   void indexDocument(String collection, String id, String title, String description, int popularity)
     throws Exception{
     SolrInputDocument doc = new SolrInputDocument();
@@ -413,27 +353,8 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
     return expectedFeatures.toArray(String[]::new);
   }
 
-  private void indexDocuments(final String collection)
-       throws Exception {
-    final int collectionSize = 8;
-    // put documents in random order to check that advanceExact is working correctly
-    List<Integer> docIds = IntStream.rangeClosed(1, collectionSize).boxed().collect(toList());
-    Collections.shuffle(docIds, random());
-
-    int docCounter = 1;
-    for (int docId : docIds) {
-      final int popularity = docId;
-      indexDocument(collection, String.valueOf(docId), "a1", "bloom", popularity);
-      // maybe commit in the middle in order to check that everything works fine for multi-segment case
-      if (docCounter == collectionSize / 2 && random().nextBoolean()) {
-        solrCluster.getSolrClient().commit(collection);
-      }
-      docCounter++;
-    }
-    solrCluster.getSolrClient().commit(collection, true, true);
-  }
-
-  private void loadModelAndFeatures() throws Exception {
+  @Override
+  void loadModelsAndFeatures() throws Exception {
     for (int i = 0 ; i < FEATURE_NAMES.length; i++) {
       loadFeature(
           FEATURE_NAMES[i],
@@ -450,13 +371,6 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
         MODEL_WEIGHTS
     );
     reloadCollection(COLLECTION);
-  }
-
-  private void reloadCollection(String collection) throws Exception {
-    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(collection);
-    CollectionAdminResponse response = reloadRequest.process(solrCluster.getSolrClient());
-    assertEquals(0, response.getStatus());
-    assertTrue(response.isSuccess());
   }
 
   public void setUpDocValueModelAndFeatures() throws Exception {
@@ -493,16 +407,6 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestRera
             "\"storedFloatField\":1.0,\"storedDoubleField\":1.0," +
             "\"storedStringField\":1.0,\"storedStrNumField\":1.0,\"storedStrBoolField\":1.0}}");
     reloadCollection(COLLECTION);
-  }
-
-  @AfterClass
-  public static void after() throws Exception {
-    if (null != tmpSolrHome) {
-      FileUtils.deleteDirectory(tmpSolrHome);
-      tmpSolrHome = null;
-    }
-    aftertest();
-    System.clearProperty("managed.schema.mutable");
   }
 
   /**
