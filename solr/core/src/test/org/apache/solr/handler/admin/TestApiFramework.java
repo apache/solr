@@ -95,7 +95,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     Api api = V2HttpCall.getApiInfo(containerHandlers, fullPath, "POST",
         fullPath, parts);
     assertNotNull(api);
-    assertConditions(api.getSpec(), Utils.makeMap(
+    assertConditions(api.getSpec(), Map.of(
         "/methods[0]", "POST",
         "/commands/create", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
@@ -104,7 +104,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     parts = new HashMap<>();
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello/shards", "POST",
         null, parts);
-    assertConditions(api.getSpec(), Utils.makeMap(
+    assertConditions(api.getSpec(), Map.of(
         "/methods[0]", "POST",
         "/commands/split", NOT_NULL,
         "/commands/add-replica", NOT_NULL
@@ -114,7 +114,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     parts = new HashMap<>();
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello/shards/shard1", "POST",
         null, parts);
-    assertConditions(api.getSpec(), Utils.makeMap(
+    assertConditions(api.getSpec(), Map.of(
         "/methods[0]", "POST",
         "/commands/force-leader", NOT_NULL
     ));
@@ -125,7 +125,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     parts = new HashMap<>();
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST",
         null, parts);
-    assertConditions(api.getSpec(), Utils.makeMap(
+    assertConditions(api.getSpec(), Map.of(
         "/methods[0]", "POST",
         "/commands/add-replica-property", NOT_NULL,
         "/commands/delete-replica-property", NOT_NULL
@@ -134,7 +134,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello/shards/shard1/replica1", "DELETE",
         null, parts);
-    assertConditions(api.getSpec(), Utils.makeMap(
+    assertConditions(api.getSpec(), Map.of(
         "/methods[0]", "DELETE",
         "/url/params/onlyIfDown/type", "boolean"
     ));
@@ -161,7 +161,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertTrue(methodNames.contains("GET"));
 
     rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", GET, mockCC);
-    assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
+    assertConditions(rsp.getValues().asMap(2), Map.of(
         "/availableSubPaths", NOT_NULL,
         "availableSubPaths /collections/hello/config/jmx", NOT_NULL,
         "availableSubPaths /collections/hello/schema", NOT_NULL,

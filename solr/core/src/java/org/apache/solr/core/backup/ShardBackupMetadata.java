@@ -112,8 +112,7 @@ public class ShardBackupMetadata {
     }
 
     private void store(OutputStream os) throws IOException {
-        @SuppressWarnings({"rawtypes"})
-        Map<String, Map> map = new HashMap<>();
+        Map<String, Map<String, Object>> map = new HashMap<>();
 
         for (BackedFile backedFile : allFiles.values()) {
             Map<String, Object> fileMap = new HashMap<>();

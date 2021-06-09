@@ -32,10 +32,9 @@ import org.apache.solr.common.util.NamedList;
 public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
   private final PivotHead<?> pivotHead;
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public PivotFacet(String name, PivotNode<?> topPivot) {
     super(name);
-    this.pivotHead = new PivotHead(topPivot);
+    this.pivotHead = new PivotHead<>(topPivot);
   }
 
   @Override

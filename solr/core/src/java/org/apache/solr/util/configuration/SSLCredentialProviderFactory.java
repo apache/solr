@@ -22,8 +22,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.HadoopSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
@@ -38,8 +40,7 @@ public class SSLCredentialProviderFactory {
   public static final String DEFAULT_PROVIDER_CHAIN = "env;sysprop";
   public static final String PROVIDER_CHAIN_KEY = "solr.ssl.credential.provider.chain";
 
-  @SuppressWarnings({"rawtypes"})
-  private final static ImmutableMap<String, Class> defaultProviders = ImmutableMap.of(
+  private static final Map<String, Class<? extends AbstractSSLCredentialProvider>> defaultProviders = ImmutableMap.of(
       "env", EnvSSLCredentialProvider.class,
       "sysprop", SysPropSSLCredentialProvider.class,
       "hadoop", HadoopSSLCredentialProvider.class

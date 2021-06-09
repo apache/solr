@@ -112,7 +112,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                 }
               }
             }
-            wrapParams(req, new CommandOperation("", Collections.EMPTY_MAP), commands.get(0), true);
+            wrapParams(req, new CommandOperation("", Collections.emptyMap()), commands.get(0), true);
             commands.get(0).invoke(req, rsp, apiHandler);
           }
 

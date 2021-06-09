@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.common.util.NamedList;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,11 +30,6 @@ public class MockEventListener implements SolrEventListener {
 
   public MockEventListener() {
     createCounter.incrementAndGet();
-  }
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    /* NOOP */
   }
 
   @Override

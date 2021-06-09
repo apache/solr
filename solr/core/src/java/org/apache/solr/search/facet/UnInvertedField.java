@@ -600,7 +600,6 @@ public class UnInvertedField extends DocTermOrds {
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
 
-  @SuppressWarnings("unchecked")
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
     SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {

@@ -321,8 +321,7 @@ public class PackageStoreAPI {
           int idx = path.lastIndexOf('/');
           String fileName = path.substring(idx + 1);
           String parentPath = path.substring(0, path.lastIndexOf('/'));
-          @SuppressWarnings({"rawtypes"})
-          List l = packageStore.list(parentPath, s -> s.equals(fileName));
+          List<PackageStore.FileDetails> l = packageStore.list(parentPath, s -> s.equals(fileName));
           rsp.add("files", Collections.singletonMap(path, l.isEmpty() ? null : l.get(0)));
           return;
         }

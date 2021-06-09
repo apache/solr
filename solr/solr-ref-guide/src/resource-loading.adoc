@@ -31,7 +31,7 @@ Restarting all affected Solr nodes also works.
 
 <<config-sets.adoc#,Configsets>> are the directories containing solrconfig.xml, the schema, and resources referenced by them.
 In SolrCloud they are in ZooKeeper whereas in standalone they are on the file system.
-In either mode, configSets might be shared or might be dedicated to a configSet.
+In either mode, configsets might be shared or might be dedicated to a configset.
 Prefer to put resources here.
 
 == Resources in Other Places

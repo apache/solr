@@ -86,7 +86,6 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void doEdit(SolrQueryRequest req, SolrQueryResponse rsp, String path, final String key, final Object plugin)
       throws IOException {
     ConfigEditablePlugin configEditablePlugin = null;
@@ -110,14 +109,16 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     for (int count = 1; count <= 3 ; count++ ) {
       SecurityConfig securityConfig = getSecurityConfig(true);
       Map<String, Object> data = securityConfig.getData();
+      @SuppressWarnings("unchecked")
       Map<String, Object> latestConf = (Map<String, Object>) data.get(key);
       if (latestConf == null) {
         throw new SolrException(SERVER_ERROR, "No configuration present for " + key);
       }
       List<CommandOperation> commandsCopy = CommandOperation.clone(ops);
+      @SuppressWarnings("unchecked")
       Map<String, Object> out = configEditablePlugin.edit(Utils.getDeepCopy(latestConf, 4) , commandsCopy);
       if (out == null) {
-        List<Map> errs = CommandOperation.captureErrors(commandsCopy);
+        List<Map<String, Object>> errs = CommandOperation.captureErrors(commandsCopy);
         if (!errs.isEmpty()) {
           rsp.add(CommandOperation.ERR_MSGS, errs);
           return;
@@ -128,7 +129,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
         if(!Objects.equals(latestConf.get("class") , out.get("class"))){
           throw new SolrException(SERVER_ERROR, "class cannot be modified");
         }
-        Map meta = getMapValue(out, "");
+        Map<String, Object> meta = getMapValue(out, "");
         meta.put("v", securityConfig.getVersion()+1);//encode the expected zkversion
         data.put(key, out);
         
@@ -196,8 +197,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
    * The data object defaults to EMPTY_MAP if not set
    */
   public static class SecurityConfig {
-    @SuppressWarnings({"unchecked"})
-    private Map<String, Object> data = Collections.EMPTY_MAP;
+    private Map<String, Object> data = Collections.emptyMap();
     private int version = -1;
 
     public SecurityConfig() {}

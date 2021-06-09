@@ -213,9 +213,8 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
     throw new SolrException(SERVER_ERROR, "selector was never initialized, inform(SolrCore) never called???");
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
 
     // high level (loose) check for which type of config we have.
     //
@@ -259,8 +258,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
    * init helper method that should only be called when we know for certain that both the
    * "source" and "dest" init params do <em>not</em> exist.
    */
-  @SuppressWarnings("unchecked")
-  private void initSimpleRegexReplacement(@SuppressWarnings({"rawtypes"})NamedList args) {
+  private void initSimpleRegexReplacement(NamedList<?> args) {
     // The syntactic sugar for the case where there is only one regex pattern for source and the same pattern
     // is used for the destination pattern...
     //
@@ -315,8 +313,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
    * init helper method that should only be called when we know for certain that both the
    * "source" and "dest" init params <em>do</em> exist.
    */
-  @SuppressWarnings("unchecked")
-  private void initSourceSelectorSyntax(@SuppressWarnings({"rawtypes"})NamedList args) {
+  private void initSourceSelectorSyntax(NamedList<?> args) {
     // Full and complete syntax where source and dest are mandatory.
     //
     // source may be a single string or a selector.
@@ -334,18 +331,17 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
     Object d = args.remove(DEST_PARAM);
     assert null != d;
 
-    List<Object> sources = args.getAll(SOURCE_PARAM);
+    List<?> sources = args.getAll(SOURCE_PARAM);
     assert null != sources;
 
     if (1 == sources.size()) {
       if (sources.get(0) instanceof NamedList) {
         // nested set of selector options
-        @SuppressWarnings({"rawtypes"})
-        NamedList selectorConfig = (NamedList) args.remove(SOURCE_PARAM);
+        NamedList<?> selectorConfig = (NamedList<?>) args.remove(SOURCE_PARAM);
 
         srcInclusions = parseSelectorParams(selectorConfig);
 
-        List<Object> excList = selectorConfig.getAll("exclude");
+        List<?> excList = selectorConfig.getAll("exclude");
 
         for (Object excObj : excList) {
           if (null == excObj) {
@@ -356,8 +352,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
             throw new SolrException(SERVER_ERROR, "Init param '" + SOURCE_PARAM +
                 "' child 'exclude' must be <lst/>");
           }
-          @SuppressWarnings({"rawtypes"})
-          NamedList exc = (NamedList) excObj;
+          NamedList<?> exc = (NamedList<?>) excObj;
           srcExclusions.add(parseSelectorParams(exc));
           if (0 < exc.size()) {
             throw new SolrException(SERVER_ERROR, "Init param '" + SOURCE_PARAM +
@@ -389,8 +384,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
     }
 
     if (d instanceof NamedList) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList destList = (NamedList) d;
+      NamedList<?> destList = (NamedList<?>) d;
 
       Object patt = destList.remove(PATTERN_PARAM);
       Object replacement = destList.remove(REPLACEMENT_PARAM);
@@ -574,7 +568,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
   }
 
   /** macro */
-  private static SelectorParams parseSelectorParams(@SuppressWarnings({"rawtypes"})NamedList args) {
+  private static SelectorParams parseSelectorParams(NamedList<?> args) {
     return FieldMutatingUpdateProcessorFactory.parseSelectorParams(args);
   }
 }

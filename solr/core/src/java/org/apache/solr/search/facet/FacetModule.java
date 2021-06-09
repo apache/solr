@@ -91,7 +91,6 @@ public class FacetModule extends SearchComponent {
     SolrParams params = rb.req.getParams();
 
     boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
-    @SuppressWarnings({"unchecked"})
     Map<String, Object> facetInfo = null;
     if (isShard) {
       String jfacet = params.get(FACET_INFO);

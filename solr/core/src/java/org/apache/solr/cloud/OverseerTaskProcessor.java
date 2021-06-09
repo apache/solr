@@ -441,8 +441,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
-    @SuppressWarnings({"rawtypes"})
-    Map m = (Map) Utils.fromJSON(data);
+    Map<?,?> m = (Map<?,?>) Utils.fromJSON(data);
     return  (String) m.get(ID);
   }
 
@@ -487,7 +486,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     return isClosed;
   }
 
-  @SuppressWarnings("unchecked")
   private void markTaskAsRunning(QueueEvent head, String asyncId)
       throws KeeperException, InterruptedException {
     runningZKTasks.add(head.getId());

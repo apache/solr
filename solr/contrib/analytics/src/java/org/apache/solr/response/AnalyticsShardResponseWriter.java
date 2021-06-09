@@ -27,7 +27,6 @@ import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.stream.AnalyticsShardResponseParser;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -53,9 +52,6 @@ public class AnalyticsShardResponseWriter implements BinaryQueryResponseWriter {
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return BinaryResponseParser.BINARY_CONTENT_TYPE;
   }
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
 
   /**
    * Manages the streaming of analytics reduction data if no exception occurred.

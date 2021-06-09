@@ -77,7 +77,7 @@ you can simply run:
 docker-compose up -d
 ----
 
-=== Single-command demo
+=== Single-Command Demo
 
 For quick demos of Solr docker, there is a single command that starts Solr, creates a collection called "demo", and loads sample data into it:
 
@@ -86,7 +86,7 @@ For quick demos of Solr docker, there is a single command that starts Solr, crea
 docker run --name solr_demo -d -p 8983:8983 solr solr-demo
 ----
 
-== How the image works
+== How the Image Works
 
 The container contains an installation of Solr, as installed by the <<taking-solr-to-production.adoc#service-installation-script,service installation script>>.
 This stores the Solr distribution in `/opt/solr`, and configures Solr to use `/var/solr` to store data and logs, using the `/etc/default/solr` file for configuration.
@@ -96,7 +96,7 @@ If you want to use custom configuration, mount it in the appropriate place. See 
 
 The Solr docker distribution adds scripts in `/opt/solr/docker/scripts` to make it easier to use under Docker, for example to create cores on container startup.
 
-=== Creating cores
+=== Creating Cores
 
 When Solr runs in standalone mode, you create "cores" to store data. On a non-Docker Solr, you would run the server in the background, then use the <<solr-control-script-reference.adoc#,Solr control script>> to create cores and load data. With Solr docker you have various options.
 
@@ -133,7 +133,7 @@ Finally, you can run your own command-line and specify what to do, and even invo
 docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr solr bash -c "precreate-core gettingstarted && source /mysetup.sh && solr-foreground"
 ----
 
-=== Creating collections
+=== Creating Collections
 
 In a "SolrCloud" cluster you create "collections" to store data; and again you have several options for creating a core.
 
@@ -163,9 +163,9 @@ curl 'http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingsta
 ----
 
 If you want to use a custom config for your collection, you first need to upload it, and then refer to it by name when you create the collection.
-See the Ref guide on how to use the <<solr-control-script-reference.adoc#upload-a-configuration-set,ZooKeeper upload>> or the <<configsets-api.adoc#configsets-upload,ConfigSet API>>.
+See the Ref guide on how to use the <<solr-control-script-reference.adoc#upload-a-configuration-set,ZooKeeper upload>> or the <<configsets-api.adoc#configsets-upload,Configsets API>>.
 
-=== Loading your own data
+=== Loading Your Own Data
 
 There are several ways to load data; let's look at the most common ones.
 
@@ -193,7 +193,7 @@ docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr post  -c 
 
 Alternatively, you can make the data available on a volume at Solr start time, and then load it from `docker exec` or a custom start script.
 
-=== solr.in.sh configuration
+=== solr.in.sh Configuration
 
 In Solr it is common to configure settings in https://github.com/apache/solr/blob/main/solr/bin/solr.in.sh[solr.in.sh],
 as documented in the <<taking-solr-to-production.adoc#environment-overrides-include-file,Taking Solr to Production page>>.
@@ -214,7 +214,7 @@ docker run -d -p 8983:8983 -e SOLR_HEAP=800m solr
 
 You can also mount your own config file. Do no modify the values that are set at the end of the file.
 
-=== Extending the image
+=== Extending the Image
 
 The Solr docker image has an extension mechanism. At run time, before starting Solr, the container will execute scripts
 in the `/docker-entrypoint-initdb.d/` directory. You can add your own scripts there either by using mounted volumes
@@ -294,7 +294,7 @@ Changes:
 
 The Solr docker image runs Solr under https://github.com/krallin/tini[tini], to make signal handling work better; in particular, this allows you to `kill -9` the JVM. If you run `docker run --init`, or use `init: true` in `docker-compose.yml`, or have added `--init` to `dockerd`, docker will start its `tini` and docker-solr will notice it is not PID 1, and just `exec` Solr. If you do not run with `--init`, then the docker entrypoint script detects that it is running as PID 1, and will start the `tini` present in the docker-solr image, and run Solr under that. If you really do not want to run `tini`, and just run Solr as PID 1 instead, then you can set the `TINI=no` environment variable.
 
-== Out of memory handling
+== Out of Memory Handling
 
 You can use the `OOM` environment variable to control the behaviour of the Solr JVM when an out-of-memory error occurs.
 If you specify `OOM=exit`, Solr docker will add `-XX:+ExitOnOutOfMemoryError` to the JVM arguments, so that the JVM will exit.

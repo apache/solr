@@ -378,12 +378,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
     public final String tagName, metricsAttribute;
-    @SuppressWarnings("rawtypes")
-    public final Class type;
+    public final Class<?> type;
 
 
-    @SuppressWarnings("rawtypes")
-    Variable(String tagName, String metricsAttribute, Class type) {
+    Variable(String tagName, String metricsAttribute, Class<?> type) {
       this.tagName = tagName;
       this.metricsAttribute = metricsAttribute;
       this.type = type;

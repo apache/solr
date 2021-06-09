@@ -670,7 +670,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     private List<ScoreDoc> list = new ArrayList<>();
 
     @SuppressWarnings({"unchecked"})
-    public TestCollector(@SuppressWarnings({"rawtypes"})PriorityQueue pq) {
+    public TestCollector(PriorityQueue pq) {
       super(pq);
     }
 
@@ -738,7 +738,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     private List<ScoreDoc> list = new ArrayList<>();
 
     @SuppressWarnings({"unchecked"})
-    public TestCollector1(@SuppressWarnings({"rawtypes"})PriorityQueue pq) {
+    public TestCollector1(PriorityQueue pq) {
       super(pq);
     }
 

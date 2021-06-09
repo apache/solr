@@ -71,8 +71,7 @@ public class ReverseOrdFieldSource extends ValueSource {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
     final LeafReader r;
     Object o = context.get("searcher");

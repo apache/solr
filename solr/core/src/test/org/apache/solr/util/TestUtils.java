@@ -305,8 +305,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals("corestatus_test_shard2_replica_n3", Utils.getObjectByPath(m, false,asList("success[3]", "value", "core") ));
     assertEquals(5033L, Utils.getObjectByPath(m, false,asList("success[3]", "value", "responseHeader", "QTime") ));
     final int[] count = {0};
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    NamedList nl = new NamedList(m);
+    NamedList<?> nl = new NamedList<>(m);
     nl._forEachEntry("success", (o, o2) -> count[0]++);
     assertEquals(count[0], 4);
   }
