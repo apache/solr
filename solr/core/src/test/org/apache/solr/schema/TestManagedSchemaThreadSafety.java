@@ -171,7 +171,6 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     return zkController;
   }
 
-  @SuppressWarnings({"rawtypes"})
   private Runnable indexSchemaLoader(String configsetName, final ZkController zkController) {
     return () -> {
       try {
@@ -179,7 +178,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
         SolrConfig solrConfig = SolrConfig.readFromResourceLoader(loader, "solrconfig.xml", true, null);
 
         ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
-        factory.init(new NamedList());
+        factory.init(new NamedList<>());
         factory.create("schema.xml", solrConfig, null);
       }
       catch (Exception e) {

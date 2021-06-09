@@ -68,7 +68,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   private boolean shouldUpgrade = false;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     SolrParams params = args.toSolrParams();
     isMutable = params.getBool("mutable", true);
     args.remove("mutable");

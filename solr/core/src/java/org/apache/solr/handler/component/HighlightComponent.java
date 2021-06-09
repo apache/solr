@@ -168,8 +168,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
       // No highlighting if there is no query -- consider q.alt=*:*
       if( highlightQuery != null ) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList sumData = highlighter.doHighlighting(
+        NamedList<Object> sumData = highlighter.doHighlighting(
                 rb.getResults().docList,
                 highlightQuery,
                 req, defaultHighlightFields );
@@ -277,7 +276,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     return "highlighting";
   }
 
-  protected Object convertHighlights(@SuppressWarnings({"rawtypes"})NamedList hl) {
+  protected Object convertHighlights(NamedList<Object> hl) {
     return hl;
   }
 
@@ -289,8 +288,8 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {
     @SuppressWarnings({"unchecked"})
     Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[])objArr;
-    @SuppressWarnings({"rawtypes"})
-    NamedList hl = (NamedList)obj;
+    @SuppressWarnings("unchecked")
+    NamedList<Object> hl = (NamedList<Object>) obj;
     SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(hl, resultIds, arr);
   }
 

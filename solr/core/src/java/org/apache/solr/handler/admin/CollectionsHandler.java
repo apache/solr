@@ -82,6 +82,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -171,7 +172,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   @Override
-  final public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
+  final public void init(NamedList<?> args) {
 
   }
 
@@ -205,11 +206,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (action == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
+      final String collection = params.get(COLLECTION);
+      MDCLoggingContext.setCollection(collection);
+      TraceUtils.setDbInstance(req, collection);
       CollectionOperation operation = CollectionOperation.get(action);
       if (log.isDebugEnabled()) {
         log.debug("Invoked Collection Action: {} with params {}", action.toLower(), req.getParamString());
       }
-      MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
@@ -296,7 +299,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       if (m.get(ASYNC) != null) {
         String asyncId = m.getStr(ASYNC);
-        NamedList<String> r = new NamedList<>();
+        NamedList<Object> r = new NamedList<>();
 
         if (coreContainer.getZkController().claimAsyncId(asyncId)) {
           boolean success = false;
@@ -318,7 +321,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         } else {
           r.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
         }
-        r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
+        r.add(CoreAdminParams.REQUESTID, m.get(ASYNC));
 
         return new OverseerSolrResponse(r);
       }
@@ -753,7 +756,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String extCollectionName = req.getParams().get(COLLECTION_PROP);
       String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
           .getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
-      if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
+      if (!ImplicitDocRouter.NAME.equals(((Map<?,?>) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
         throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
       copy(req.getParams(), map,
           REPLICATION_FACTOR,
