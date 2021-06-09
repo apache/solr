@@ -66,6 +66,14 @@ The `/sql` handler is the front end of the Parallel SQL interface. All SQL queri
 
 By default, the `/sql` request handler is configured as an implicit handler, meaning that it is always enabled in every Solr installation and no further configuration is required.
 
+==== Authorization for SQL Requests
+
+If your Solr cluster is configured to use the <<rule-based-authorization-plugin.adoc#,Rule-based Authorization Plugin>>,
+then you need to grant `GET` and `POST` permission on the `/sql`, `/select`, and `/export` endpoints for all collections you intend to execute SQL queries against.
+
+Prior to Solr 9.0, you'll also need to grant `GET` permission on the `/admin/luke` endpoint for all collections queried using SQL; the JDBC driver uses this endpoint to get schema metadata for the collection.
+As of Solr 9.0, the Solr executes the request to the `/admin/luke` endpoint using the internal PKI principal.
+
 [IMPORTANT]
 ====
 As described below in the section <<Best Practices>>, you may want to set up a separate collection for parallelized SQL queries. If you have high cardinality fields and a large amount of data, please be sure to review that section and consider using a separate collection.
