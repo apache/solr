@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -45,9 +44,6 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * @since solr 1.3
  */
 public abstract class QueryConverter implements NamedListInitializedPlugin {
-  @SuppressWarnings({"rawtypes"})
-  private NamedList args;
-
   protected Analyzer analyzer;
   
   /**
@@ -75,10 +71,6 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
    * </p>
    */
   public static final int TERM_IN_BOOLEAN_QUERY_FLAG = 131072;
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    this.args = args;
-  }
 
   /**
    * Returns the Collection of {@link Token}s for

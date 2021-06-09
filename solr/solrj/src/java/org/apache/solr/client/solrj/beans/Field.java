@@ -26,7 +26,7 @@ import java.lang.annotation.Retention;
 
 /**
  * This class can be used to annotate a field or a setter an any class
- * and SlrJ would help you convert to SolrInputDocument and from SolrDocument
+ * and SolrJ would help you convert to SolrInputDocument and from SolrDocument
  *
  * @since solr 1.3
  */

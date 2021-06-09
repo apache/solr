@@ -27,16 +27,11 @@ import java.util.ArrayList;
 import org.apache.solr.client.solrj.io.graph.Traversal;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.GraphHandler;
 import org.apache.solr.request.SolrQueryRequest;
 
 
 public class GraphMLResponseWriter implements QueryResponseWriter {
-
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    /* NOOP */
-  }
 
   public String getContentType(SolrQueryRequest req, SolrQueryResponse res) {
     return "application/xml";

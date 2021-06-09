@@ -181,6 +181,7 @@ public class CacheConfig implements MapSerializable{
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
+    // TODO: Should not create new HashMap?
     return new HashMap<>(args);
   }
 

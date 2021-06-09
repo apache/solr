@@ -54,7 +54,7 @@ public class TestConfigsApi extends SolrTestCaseJ4 {
       ClusterAPI o = new ClusterAPI(null, handler);
       apiBag.registerObject(o);
       apiBag.registerObject(o.configSetCommands);
-//      for (Api api : handler.getApis()) apiBag.register(api, EMPTY_MAP);
+//      for (Api api : handler.getApis()) apiBag.register(api, emptyMap());
       compareOutput(apiBag, "/cluster/configs/sample", DELETE, null, null,
           "{name :sample, operation:delete}");
     }

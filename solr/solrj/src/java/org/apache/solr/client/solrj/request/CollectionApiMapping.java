@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,8 +50,8 @@ public class CollectionApiMapping {
         POST,
         CREATESHARD,
         "create",
-        Utils.makeMap("createNodeSet", V2ApiConstants.NODE_SET),
-        Utils.makeMap("property.", "coreProperties.")) {
+        Map.of("createNodeSet", V2ApiConstants.NODE_SET),
+        Map.of("property.", "coreProperties.")) {
       @Override
       public String getParamSubstitute(String param) {
         return super.getParamSubstitute(param);
@@ -62,9 +61,8 @@ public class CollectionApiMapping {
         POST,
         SPLITSHARD,
         "split",
-        Utils.makeMap(
-            "split.key", "splitKey"),
-        Utils.makeMap("property.", "coreProperties.")),
+        Map.of("split.key", "splitKey"),
+        Map.of("property.", "coreProperties.")),
     DELETE_SHARD(PER_COLLECTION_PER_SHARD_DELETE,
         DELETE, DELETESHARD),
 
@@ -73,7 +71,8 @@ public class CollectionApiMapping {
         ADDREPLICA,
         "add-replica",
         null,
-        Utils.makeMap("property.", "coreProperties.")),
+        Map.of("property.", "coreProperties.")),
+
     DELETE_REPLICA(PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE,
         DELETE, DELETEREPLICA),
     SYNC_SHARD(PER_COLLECTION_PER_SHARD_COMMANDS,
@@ -105,16 +104,14 @@ public class CollectionApiMapping {
 
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action,
          String commandName,
-         @SuppressWarnings({"rawtypes"})Map paramsToAttrs) {
+         Map<String, String> paramsToAttrs) {
       this(endPoint, method, action, commandName, paramsToAttrs, Collections.emptyMap());
     }
 
-    // lame... the Maps aren't typed simply because callers want to use Utils.makeMap which yields object vals
-    @SuppressWarnings("unchecked")
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action,
          String commandName,
-         @SuppressWarnings({"rawtypes"})Map paramsToAttrs,
-         @SuppressWarnings({"rawtypes"})Map prefixParamsToAttrs) {
+         Map<String, String> paramsToAttrs,
+         Map<String, String> prefixParamsToAttrs) {
       this.action = action;
       this.commandName = commandName;
       this.endPoint = endPoint;

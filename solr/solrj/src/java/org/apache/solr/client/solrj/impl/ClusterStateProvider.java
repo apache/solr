@@ -99,9 +99,8 @@ public interface ClusterStateProvider extends SolrCloseable {
   /**
    * Obtain a cluster property, or null if it doesn't exist.
    */
-  @SuppressWarnings({"unchecked"})
-  default <T> T getClusterProperty(String propertyName) {
-    return (T) getClusterProperties().get(propertyName);
+  default Object getClusterProperty(String propertyName) {
+    return getClusterProperties().get(propertyName);
   }
 
   /**

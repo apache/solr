@@ -210,9 +210,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
-  protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
+  protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<>(numDeletesToKeep) {
     @Override
-    protected boolean removeEldestEntry(@SuppressWarnings({"rawtypes"})Map.Entry eldest) {
+    protected boolean removeEldestEntry(Map.Entry<BytesRef, LogPtr> eldest) {
       return size() > numDeletesToKeep;
     }
   };

@@ -188,7 +188,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
 
-      executeCommand(baseUrl + authzPrefix, cl, Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
+      executeCommand(baseUrl + authzPrefix, cl, Utils.toJSONString(singletonMap("set-permission", Map.of
           ("collection", "x",
               "path", "/update/*",
               "role", "dev"))), "harry", "HarryIsUberCool" );
@@ -196,7 +196,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/collection", "x", 20);
       assertAuthMetricsMinimums(8, 3, 5, 0, 0, 0);
 
-      executeCommand(baseUrl + authzPrefix, cl,Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
+      executeCommand(baseUrl + authzPrefix, cl,Utils.toJSONString(singletonMap("set-permission", Map.of
           ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
       assertAuthMetricsMinimums(10, 4, 6, 0, 0, 0);

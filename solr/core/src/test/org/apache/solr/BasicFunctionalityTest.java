@@ -452,7 +452,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testRequestHandlerBaseException() {
     final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler = new RequestHandlerBase() {
@@ -464,7 +463,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           throw new RuntimeException(tmp);
         }
       };
-    handler.init(new NamedList());
+    handler.init(new NamedList<>());
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
     h.getCore().execute(handler, 

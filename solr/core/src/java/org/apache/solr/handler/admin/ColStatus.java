@@ -185,9 +185,9 @@ public class ColStatus {
           NamedList<Object> rsp = client.request(req);
           rsp.remove("responseHeader");
           leaderMap.add("segInfos", rsp);
-          NamedList<Object> segs = (NamedList<Object>)rsp.get("segments");
+          NamedList<?> segs = (NamedList<?>)rsp.get("segments");
           if (segs != null) {
-            for (Map.Entry<String, Object> entry : segs) {
+            for (Map.Entry<String, ?> entry : segs) {
               NamedList<Object> fields = (NamedList<Object>)((NamedList<Object>)entry.getValue()).get("fields");
               if (fields != null) {
                 for (Map.Entry<String, Object> fEntry : fields) {

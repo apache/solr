@@ -54,10 +54,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   // in this way, we prevent a Base ConfigSet from being deleted while it is being copied
   // but don't prevent different ConfigSets from being created with the same Base ConfigSet
   // at the same time.
-  @SuppressWarnings({"rawtypes"})
-  final private Set configSetWriteWip;
-  @SuppressWarnings({"rawtypes"})
-  final private Set configSetReadWip;
+  final private Set<String> configSetWriteWip;
+  final private Set<String> configSetReadWip;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -69,10 +67,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
-    @SuppressWarnings({"rawtypes"})
-    NamedList results = new NamedList();
+    NamedList<Object> results = new NamedList<>();
     try {
       if (!operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -108,8 +104,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       }
 
       results.add("Operation " + operation + " caused exception:", e);
-      @SuppressWarnings({"rawtypes"})
-      SimpleOrderedMap nl = new SimpleOrderedMap();
+      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
       nl.add("msg", e.getMessage());
       nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
       results.add("exception", nl);
@@ -148,7 +143,6 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     markExclusive(configSetName, baseConfigSet);
   }
 
-  @SuppressWarnings({"unchecked"})
   private void markExclusive(String configSetName, String baseConfigSetName) {
     synchronized (configSetWriteWip) {
       configSetWriteWip.add(configSetName);

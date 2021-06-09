@@ -63,13 +63,11 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     deleteReplica(clusterState, message, results,null);
   }
 
 
-  @SuppressWarnings("unchecked")
   void deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
           throws KeeperException, IOException, InterruptedException {
     if (log.isDebugEnabled()) {

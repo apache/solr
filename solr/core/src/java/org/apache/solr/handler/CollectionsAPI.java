@@ -87,7 +87,6 @@ public class CollectionsAPI {
     public class CollectionsCommands {
 
         @Command(name = V2_BACKUP_CMD)
-        @SuppressWarnings("unchecked")
         public void backupCollection(PayloadObj<BackupCollectionPayload> obj) throws Exception {
             final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
             v1Params.put(ACTION, CollectionAction.BACKUP.toLower());
@@ -151,7 +150,6 @@ public class CollectionsAPI {
         }
 
         @Command(name= V2_DELETE_ALIAS_CMD)
-        @SuppressWarnings("unchecked")
         public void deleteAlias(PayloadObj<DeleteAliasPayload> obj) throws Exception {
             final DeleteAliasPayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
@@ -161,7 +159,6 @@ public class CollectionsAPI {
         }
 
         @Command(name = V2_CREATE_COLLECTION_CMD)
-        @SuppressWarnings("unchecked")
         public void create(PayloadObj<CreatePayload> obj) throws Exception {
             final CreatePayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());

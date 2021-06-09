@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -542,15 +543,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     }
   }
 
-  private  <T> Class<? extends T> getPackageClass(String cname, Class<T> expectedType) {
+  private <T> Class<? extends T> getPackageClass(String cname, Class<T> expectedType) {
     PluginInfo.ClassName cName = PluginInfo.parseClassName(cname);
     if (cName.pkg == null) return null;
     ResourceLoaderAware aware = CURRENT_AWARE.get();
     if (aware != null) {
       //this is invoked from a component
       //let's check if it's a schema component
-      @SuppressWarnings("rawtypes")
-      Class type = assertAwareCompatibility(ResourceLoaderAware.class, aware);
+      Class<?> type = assertAwareCompatibility(ResourceLoaderAware.class, aware);
       if (schemaResourceLoaderComponents.contains(type)) {
         //this is a schema component
         //lets use schema classloader
@@ -567,16 +567,15 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     return newInstance(name, expectedType, empty);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static final Class[] NO_CLASSES = new Class[0];
+  private static final Class<?>[] NO_CLASSES = new Class<?>[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
+  @Override
+  public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class<?>[] params, Object[] args) {
     Class<? extends T> clazz = findClass(cName, expectedType, subPackages);
     if (clazz == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -771,8 +770,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   /**
    * Keep a list of classes that are allowed to implement each 'Aware' interface
    */
-  @SuppressWarnings({"rawtypes"})
-  private static final Map<Class, Class[]> awareCompatibility;
+  private static final Map<Class<?>, Class<?>[]> awareCompatibility;
 
   static {
     awareCompatibility = new HashMap<>();
@@ -809,8 +807,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   /**If these components are trying to load classes, use schema classloader
    *
    */
-  @SuppressWarnings("rawtypes")
-  private static final ImmutableSet<Class> schemaResourceLoaderComponents = ImmutableSet.of(
+  private static final Set<Class<?>> schemaResourceLoaderComponents = ImmutableSet.of(
       CharFilterFactory.class,
       TokenFilterFactory.class,
       TokenizerFactory.class,
@@ -819,14 +816,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   /**
    * Utility function to throw an exception if the class is invalid
    */
-  @SuppressWarnings({"rawtypes"})
-  public static Class assertAwareCompatibility(Class aware, Object obj) {
-    Class[] valid = awareCompatibility.get(aware);
+  public static Class<?> assertAwareCompatibility(Class<?> aware, Object obj) {
+    Class<?>[] valid = awareCompatibility.get(aware);
     if (valid == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unknown Aware interface: " + aware);
     }
-    for (Class v : valid) {
+    for (Class<?> v : valid) {
       if (v.isInstance(obj)) {
         return v;
       }
@@ -835,7 +831,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     builder.append("Invalid 'Aware' object: ").append(obj);
     builder.append(" -- ").append(aware.getName());
     builder.append(" must be an instance of: ");
-    for (Class v : valid) {
+    for (Class<?> v : valid) {
       builder.append("[").append(v.getName()).append("] ");
     }
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, builder.toString());

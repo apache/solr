@@ -21,7 +21,6 @@ import java.io.InputStream;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.apache.solr.handler.loader.ContentStreamLoader;
@@ -49,11 +48,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
     return PermissionNameProvider.Name.READ_PERM;
-  }
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    super.init(args);
   }
 
   @Override

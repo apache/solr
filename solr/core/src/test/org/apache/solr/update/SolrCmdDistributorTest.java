@@ -302,10 +302,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         try (SolrCore core = cores.getCore("collection1")) {
           core.getUpdateHandler().registerCommitCallback(new SolrEventListener() {
             @Override
-            public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-            }
-
-            @Override
             public void postSoftCommit() {
             }
 

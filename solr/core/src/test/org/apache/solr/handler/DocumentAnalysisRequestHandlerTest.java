@@ -55,11 +55,10 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
 
   @Override
   @Before
-  @SuppressWarnings({"rawtypes"})
   public void setUp() throws Exception {
     super.setUp();
     handler = new DocumentAnalysisRequestHandler();
-    handler.init(new NamedList());
+    handler.init(new NamedList<>());
   }
 
   /**
