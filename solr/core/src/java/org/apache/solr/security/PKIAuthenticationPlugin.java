@@ -59,19 +59,19 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
 
+  /**
+   * Mark the current thread as a server thread and set a flag in SolrRequestInfo to indicate you want
+   * to send a request as the server identity instead of as the authenticated user.
+   *
+   * @param enabled If true, enable the current thread to make requests with the server identity.
+   * @see SolrRequestInfo#setUseServerToken(boolean) 
+   */
   public static void withServerIdentity(final boolean enabled) {
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-    if (enabled) {
-      if (requestInfo != null) {
-        requestInfo.setUseServerToken(true);
-      }
-      ExecutorUtil.setServerThreadFlag(true);
-    } else {
-      if (requestInfo != null) {
-        requestInfo.setUseServerToken(false);
-      }
-      ExecutorUtil.setServerThreadFlag(null);
+    if (requestInfo != null) {
+      requestInfo.setUseServerToken(enabled);
     }
+    ExecutorUtil.setServerThreadFlag(enabled ? enabled : null);
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

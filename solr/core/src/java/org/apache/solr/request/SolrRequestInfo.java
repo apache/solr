@@ -201,6 +201,10 @@ public class SolrRequestInfo {
     this.action = action;
   }
 
+  /**
+   * Used when making remote requests to other Solr nodes from the thread associated with this request,
+   * true means the server token header should be used instead of the Principal associated with the request.
+   */
   public boolean useServerToken() {
     return useServerToken;
   }
