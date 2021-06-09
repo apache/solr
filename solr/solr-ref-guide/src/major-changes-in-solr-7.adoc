@@ -40,7 +40,7 @@ To provide additional flexibility, two new types of replicas have been added, na
 
 As part of this change, the traditional type of replica is now named NRT. If you do not explicitly define a number of TLOG or PULL replicas, Solr defaults to creating NRT replicas. If this model is working for you, you will not have to change anything.
 
-See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more details on the new replica modes, and how define the replica type in your cluster.
+See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more details on the new replica modes, and how define the replica type in your cluster.
 
 === Autoscaling
 Solr autoscaling is a new suite of features in Solr to make managing a SolrCloud cluster easier and more automated.

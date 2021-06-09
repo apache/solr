@@ -115,7 +115,7 @@ There are several ways to control how queries are routed.
 
 === Limiting Which Shards are Queried
 
-While one of the advantages of using SolrCloud is the ability to query very large collections distributed across various shards, in some cases you may have configured Solr so you know <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,you are only interested in results from a specific subset of shards>>.
+While one of the advantages of using SolrCloud is the ability to query very large collections distributed across various shards, in some cases you may have configured Solr so you know <<solrcloud-shards-indexing.adoc#document-routing,you are only interested in results from a specific subset of shards>>.
 You have the option of searching over all of your data or just parts of it.
 
 Because SolrCloud automatically load balances queries, a query across all shards for a collection is simply a query that does not define a `shards` parameter:
@@ -263,7 +263,7 @@ The `\_route_` parameter can be used to specify a route key which is used to fig
 For example, if you have a document with a unique key "user1!123", then specifying the route key as "_route_=user1!" (notice the trailing '!' character) will route the request to the shard which hosts that user.
 You can specify multiple route keys separated by comma.
 This parameter can be leveraged when we have shard data by users.
-See <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,Document Routing>> for more information
+See <<solrcloud-shards-indexing.adoc#document-routing,Document Routing>> for more information
 
 [source,plain]
 ----

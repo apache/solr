@@ -19,7 +19,7 @@
 
 Installation of Solr on Unix-compatible or Windows servers generally requires simply extracting (or, unzipping) the download package.
 
-Please be sure to review the <<solr-system-requirements.adoc#,Solr System Requirements>> before starting Solr.
+Please be sure to review the <<system-requirements.adoc#,System Requirements>> before starting Solr.
 
 == Available Solr Packages
 

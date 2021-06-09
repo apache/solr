@@ -1,5 +1,5 @@
 = Installation and Deployment
-:page-children: solr-system-requirements, \
+:page-children: system-requirements, \
     installing-solr, \
     taking-solr-to-production, \
     jvm-settings, \
@@ -32,7 +32,7 @@ This section covers system requirements, installation, upgrades, and deployments
 // tag::install-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<solr-system-requirements.adoc#,Solr System Requirements>>: Solr system requirements.
+| <<system-requirements.adoc#,System Requirements>>: Solr system requirements.
 | <<installing-solr.adoc#,Installing Solr>>:  Solr installation process.
 | <<taking-solr-to-production.adoc#,Taking Solr to Production>>: Solr as a service and production considerations.
 | <<jvm-settings.adoc#,JVM Settings>>: Java Virtual Machines best practices.

@@ -86,7 +86,7 @@ The `compositeId` router hashes the value in the uniqueKey field and looks up th
 When using the `implicit` router, the `shards` parameter is required.
 When using the `compositeId` router, the `numShards` parameter is required.
 +
-For more information, see also the section <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,Document Routing>>.
+For more information, see also the section <<solrcloud-shards-indexing.adoc#document-routing,Document Routing>>.
 
 `numShards`::
 The number of shards to be created as part of the collection.
@@ -102,7 +102,7 @@ The default is `1`.
 +
 This will create a NRT type of replica.
 If you want another type of replica, see the `tlogReplicas` and `pullReplica` parameters below.
-See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `nrtReplicas`::
 The number of NRT (Near-Real-Time) replicas to create for this collection.
@@ -112,13 +112,13 @@ If you want all of your replicas to be of this type, you can simply use `replica
 `tlogReplicas`::
 The number of TLOG replicas to create for this collection.
 This type of replica maintains a transaction log but only updates its index via replication from a leader.
-See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `pullReplicas`::
 The number of PULL replicas to create for this collection.
 This type of replica does not maintain a transaction log and only updates its index via replication from a leader.
 This type is not eligible to become a leader and should not be the only type of replicas in the collection.
-See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `createNodeSet` (v1), `nodeSet` (v2)::
 Allows defining the nodes to spread the new collection across.

@@ -38,7 +38,7 @@ This operates in much the same way as the request handler but since it is a quer
 `MoreLikeThis` constructs a Lucene query based on terms in a document.
 It does this by pulling terms from the list of fields provided with the request.
 
-For best results, the fields should have stored term vectors (`termVectors=true`), which can be <<defining-fields.adoc#,configured in the schema>>.
+For best results, the fields should have stored term vectors (`termVectors=true`), which can be <<fields.adoc#,configured in the schema>>.
 If term vectors are not stored, MoreLikeThis can generate terms from stored fields.
 The field used for the `uniqueKey` must also be stored in order for MoreLikeThis to work properly.
 

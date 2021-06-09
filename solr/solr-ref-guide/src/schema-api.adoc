@@ -94,7 +94,7 @@ The `add-field` command adds a new field definition to your schema.
 If a field with the same name exists an error is thrown.
 
 All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API.
-These request attributes are described in detail in the section <<defining-fields.adoc#,Defining Fields>>.
+These request attributes are described in detail in the section <<fields.adoc#,Fields>>.
 
 For example, to define a new stored field named "sell_by", of type "pdate", you would POST the following request:
 
@@ -168,7 +168,7 @@ Note that you must supply the full definition for a field - this command will *n
 If the field does not exist in the schema an error is thrown.
 
 All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API.
-These request attributes are described in detail in the section <<defining-fields.adoc#,Defining Fields>>.
+These request attributes are described in detail in the section <<fields.adoc#,Fields>>.
 
 For example, to replace the definition of an existing field "sell_by", to make it be of type "date" and to not be stored, you would POST the following request:
 
@@ -323,7 +323,7 @@ The `add-field-type` command adds a new field type to your schema.
 
 All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request.
 The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc.
-Details of all of the available options are described in the section <<solr-field-types.adoc#,Solr Field Types>>.
+Details of all of the available options are described in the section <<field-types.adoc#,Field Types>>.
 
 For example, to create a new field type named "myNewTxtField", you can POST a request as follows:
 
@@ -442,7 +442,7 @@ If the field type does not exist in the schema an error is thrown.
 
 All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request.
 The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc.
-Details of all of the available options are described in the section <<solr-field-types.adoc#,Solr Field Types>>.
+Details of all of the available options are described in the section <<field-types.adoc#,Field Types>>.
 
 For example, to replace the definition of a field type named "myNewTxtField", you can make a POST request as follows:
 
@@ -880,7 +880,7 @@ The output will include each field and any defined configuration for each field.
 The defined configuration can vary for each field, but will minimally include the field `name`, the `type`, if it is `indexed` and if it is `stored`.
 
 If `multiValued` is defined as either true or false (most likely true), that will also be shown.
-See the section <<defining-fields.adoc#,Defining Fields>> for more information about each parameter.
+See the section <<fields.adoc#,Fields>> for more information about each parameter.
 
 ==== List Fields Examples
 
@@ -1079,7 +1079,7 @@ If `false`, the default, only explicitly specified field properties will be incl
 The output will include each field type and any defined configuration for the type.
 The defined configuration can vary for each type, but will minimally include the field type `name` and the `class`.
 If query or index analyzers, tokenizers, or filters are defined, those will also be shown with other defined parameters.
-See the section <<solr-field-types.adoc#,Solr Field Types>> for more information about how to configure various types of fields.
+See the section <<field-types.adoc#,Field Types>> for more information about how to configure various types of fields.
 
 ==== List Field Type Examples
 

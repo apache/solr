@@ -633,7 +633,7 @@ Collections created with older versions will continue to work.
 
 *Distributed Tracing Support*
 
-This release adds support for tracing requests in Solr. Please review the section <<solr-tracing.adoc#,Distributed Solr Tracing>> for details on how to configure this feature.
+This release adds support for tracing requests in Solr. Please review the section <<distributed-tracing.adoc#,Distributed Tracing>> for details on how to configure this feature.
 
 === Solr 8.1
 

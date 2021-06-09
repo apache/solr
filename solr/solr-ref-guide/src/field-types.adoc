@@ -1,4 +1,4 @@
-= Solr Field Types
+= Field Types
 :page-children: field-type-definitions-and-properties, \
     field-types-included-with-solr, \
     currencies-exchange-rates, \
@@ -23,22 +23,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The field type defines how Solr should interpret data in a field and how the field can be queried. There are many field types included with Solr by default, and they can also be defined locally.
+[.lead]
+The field type defines how Solr should interpret data in a field and how the field can be queried.
+There are many field types included with Solr by default, and they can also be defined locally.
 
-Topics covered in this section:
+****
 
-* <<field-type-definitions-and-properties.adoc#,Field Type Definitions and Properties>>
+[%autowidth.stretch,cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<field-type-definitions-and-properties.adoc#,Field Type Definitions and Properties>>
+| <<field-types-included-with-solr.adoc#,Field Types Included with Solr>>
+| <<currencies-exchange-rates.adoc#,Currencies and Exchange Rates>>
+| <<date-formatting-math.adoc#,Date Formatting and Date Math>>
+| <<enum-fields.adoc#,Enum Fields>>
+| <<external-files-processes.adoc#,External Files and Processes>>
+| <<field-properties-by-use-case.adoc#,Field Properties by Use Case>>
+|
+|===
 
-* <<field-types-included-with-solr.adoc#,Field Types Included with Solr>>
-
-* <<currencies-exchange-rates.adoc#,Currencies and Exchange Rates>>
-
-* <<date-formatting-math.adoc#,Date Formatting and Date Math>>
-
-* <<enum-fields.adoc#,Enum Fields>>
-
-* <<external-files-processes.adoc#,External Files and Processes>>
-
-* <<field-properties-by-use-case.adoc#,Field Properties by Use Case>>
-
-TIP: See also the {solr-javadocs}/core/org/apache/solr/schema/FieldType.html[FieldType Javadoc].
+****

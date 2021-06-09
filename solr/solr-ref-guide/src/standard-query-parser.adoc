@@ -218,9 +218,13 @@ Example:
 
 == Querying Specific Fields
 
-Data indexed in Solr is organized in fields, which are <<defining-fields.adoc#,defined in the Solr Schema>>. Searches can take advantage of fields to add precision to queries. For example, you can search for a term only in a specific field, such as a title field.
+Data indexed in Solr is organized in fields, which are <<fields.adoc#,defined in the Solr Schema>>.
+Searches can take advantage of fields to add precision to queries.
+For example, you can search for a term only in a specific field, such as a title field.
 
-The Schema defines one field as a default field. If you do not specify a field in a query, Solr searches only the default field. Alternatively, you can specify a different field or a combination of fields in a query.
+The Schema defines one field as a default field.
+If you do not specify a field in a query, Solr searches only the default field.
+Alternatively, you can specify a different field or a combination of fields in a query.
 
 To specify a field, type the field name followed by a colon ":" and then the term you are searching for within the field.
 

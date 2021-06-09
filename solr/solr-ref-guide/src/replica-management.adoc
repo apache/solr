@@ -136,7 +136,7 @@ The type of replica to create. These possible values are allowed:
 * `tlog`: The TLOG type maintains a transaction log but only updates its index via replication.
 * `pull`: The PULL type does not maintain a transaction log and only updates its index via replication. This type is not eligible to become a leader.
 +
-See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
+See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
 
 `nrtReplicas`::
 The number of `nrt` replicas that should be created (optional, defaults to 1 if `type` is `nrt` otherwise 0).

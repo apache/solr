@@ -1,5 +1,5 @@
 = SolrCloud Clusters
-:page-children: shards-and-indexing-data-in-solrcloud, \
+:page-children: solrcloud-shards-indexing, \
     solrcloud-recoveries-and-write-tolerance, \
     solrcloud-distributed-requests, \
     aliases, \
@@ -43,7 +43,7 @@ ZooKeeper is a critical component of SolrCloud, used to manage shard and replica
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
 2+^h| Functionality Overview
-| <<shards-and-indexing-data-in-solrcloud.adoc#,Shards and Indexing Data in SolrCloud>>: Leaders and replica types, and routing documents during indexing.
+| <<solrcloud-shards-indexing.adoc#,SolrCloud Shards and Indexing>>: Leaders and replica types, and routing documents during indexing.
 | <<solrcloud-recoveries-and-write-tolerance.adoc#,SolrCloud Recoveries and Write Tolerance>>: Recovery in a SolrCloud cluster.
 | <<solrcloud-distributed-requests.adoc#,SolrCloud Distributed Requests>>: Query routing in a SolrCloud cluster.
 | <<aliases.adoc#,Aliases>>: Alternative names for collections.

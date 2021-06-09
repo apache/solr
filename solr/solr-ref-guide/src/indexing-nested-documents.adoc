@@ -278,7 +278,7 @@ documents.
 [TIP]
 ====
 When using SolrCloud it is a _VERY_ good idea to use
-<<shards-and-indexing-data-in-solrcloud#document-routing,prefix based compositeIds>> with a
+<<solrcloud-shards-indexing.adoc#document-routing,prefix based compositeIds>> with a
 common prefix for all documents in the nested document tree.
 This makes it much easier to apply
 <<partial-document-updates#updating-child-documents,atomic updates to individual child documents>>

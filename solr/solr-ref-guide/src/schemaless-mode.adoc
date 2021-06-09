@@ -22,7 +22,7 @@ These Solr features, all controlled via `solrconfig.xml`, are:
 
 . Managed schema: Schema modifications are made at runtime through Solr APIs, which requires the use of a `schemaFactory` that supports these changes. See the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for more details.
 . Field value class guessing: Previously unseen fields are run through a cascading set of value-based parsers, which guess the Java class of field values - parsers for Boolean, Integer, Long, Float, Double, and Date are currently available.
-. Automatic schema field addition, based on field value class(es): Previously unseen fields are added to the schema, based on field value Java classes, which are mapped to schema field types - see <<solr-field-types.adoc#,Solr Field Types>>.
+. Automatic schema field addition, based on field value class(es): Previously unseen fields are added to the schema, based on field value Java classes, which are mapped to schema field types - see <<field-types.adoc#,Field Types>>.
 
 == Using the Schemaless Example
 

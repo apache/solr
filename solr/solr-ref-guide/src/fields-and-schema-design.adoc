@@ -1,6 +1,6 @@
 = Fields and Schema Design
-:page-children: solr-field-types, \
-    defining-fields, \
+:page-children:     fields, \
+    field-types, \
     copy-fields, \
     dynamic-fields, \
     docvalues, \
@@ -31,8 +31,8 @@ This section includes the following topics:
 // tag::fields-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<solr-field-types.adoc#,Solr Field Types>>: Field types in Solr, including the field types in the default Solr schema.
-| <<defining-fields.adoc#,Defining Fields>>: Fields in Solr.
+| <<fields.adoc#,Fields>>: Fields in Solr.
+| <<field-types.adoc#,Field Types>>: Field types in Solr, including the field types in the default Solr schema.
 | <<copy-fields.adoc#,Copy Fields>>: Fields with data copied from another field.
 | <<dynamic-fields.adoc#,Dynamic Fields>>: Fields that inherit field type properties at index time.
 | <<docvalues.adoc#,DocValues>>: DocValues indexes for faster lookups.

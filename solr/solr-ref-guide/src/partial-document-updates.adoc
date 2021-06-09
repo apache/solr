@@ -135,13 +135,13 @@ In-place updates avoid that.
 .Routing Updates using child document Ids in SolrCloud
 
 When SolrCloud receives document updates, the
-<<shards-and-indexing-data-in-solrcloud#document-routing,document routing>> rules for the collection is used to determine which shard should process the update based on the `id` of the document.
+<<solrcloud-shards-indexing.adoc#document-routing,document routing>> rules for the collection is used to determine which shard should process the update based on the `id` of the document.
 
 When sending an update that specifies the `id` of a _child document_ this will not work by default: the correct shard to send the document to is based on the `id` of the "Root" document for the block the child document is in, *not* the `id` of the child document being updated.
 
 Solr offers two solutions to address this:
 
-* Clients may specify a <<shards-and-indexing-data-in-solrcloud#document-routing,`\_route_` parameter>>, with the `id` of the Root document as the parameter value, on each update to tell Solr which shard should process the update.
+* Clients may specify a <<solrcloud-shards-indexing.adoc#document-routing,`\_route_` parameter>>, with the `id` of the Root document as the parameter value, on each update to tell Solr which shard should process the update.
 * Clients can use the (default) `compositeId` router's "prefix routing" feature when indexing all documents to ensure that all child/descendent documents in a Block use the same `id` prefix as the Root level document.
 This will cause Solr's default routing logic to automatically send child document updates to the correct shard.
 

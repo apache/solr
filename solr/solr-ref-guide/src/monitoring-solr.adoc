@@ -8,7 +8,7 @@
     monitoring-with-prometheus-and-grafana, \
     jmx-with-solr, \
     thread-dump, \
-    solr-tracing, \
+    distributed-tracing, \
     circuit-breakers, \
     rate-limiters, \
     task-management
@@ -46,7 +46,7 @@ This section covers tools and approaches for monitoring Solr via the web-based a
 | <<monitoring-with-prometheus-and-grafana.adoc#,Monitoring with Prometheus and Grafana>>: Monitor Solr with Prometheus and Grafana.
 | <<jmx-with-solr.adoc#,JMX with Solr>>: Java Management Extensions and Solr.
 | <<thread-dump.adoc#,Thread Dump Screen>>: Admin UI for information about each thread.
-| <<solr-tracing.adoc#,Distributed Solr Tracing>>: Distributed tracing for Solr requests.
+| <<distributed-tracing.adoc#,Distributed Solr Tracing>>: Distributed tracing for Solr requests.
 | <<circuit-breakers.adoc#,Circuit Breakers>>: Limit loads based on Java heap usage or CPU utilization.
 | <<rate-limiters.adoc#,Request Rate Limiters>> Limit concurrent requests by type.
 | <<task-management.adoc#,Task Management>> Control running tasks.

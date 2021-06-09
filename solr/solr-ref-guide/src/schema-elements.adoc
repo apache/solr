@@ -55,7 +55,7 @@ This example is not real XML, but shows the primary elements that make up a sche
 ----
 
 The most commonly defined elements are `types` and `fields`, where the field types and the actual fields are configured.
-The sections <<solr-field-types.adoc#,Solr Field Types>>, and <<defining-fields.adoc#,Defining Fields>> describe how to configure these for your schema.
+The sections <<field-types.adoc#,Field Types>>, and <<fields.adoc#,Fields>> describe how to configure these for your schema.
 
 These are supplemented by `copyFields`, described in <<copy-fields.adoc#,Copy Fields>>, and `dynamicFields`, described in <<dynamic-fields.adoc#,Dynamic Fields>>.
 

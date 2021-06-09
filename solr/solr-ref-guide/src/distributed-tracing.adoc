@@ -1,4 +1,4 @@
-= Distributed Solr Tracing
+= Distributed Tracing
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -24,7 +24,7 @@ At the moment, only Jaeger is supported out of the box.
 A sampled distributed tracing query request on Jaeger looks like this:
 
 .Tracing of a Solr query
-image::images/solr-tracing/query-request-tracing.png[]
+image::images/distributed-tracing/query-request-tracing.png[]
 
 == Configuring Tracer
 
@@ -61,7 +61,8 @@ Then Jaeger tracer is configured in `solr.xml` like this:
 <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator" />
 ----
 
-_There are no configuration elements in the XML_; instead, this 3rd party system is configured using System Properties or Environment Variables.  The full list are listed at https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].
+_There are no configuration elements in the XML_; instead, this 3rd party system is configured using System Properties or Environment Variables.
+The full list are listed at https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].
 
 For example, to use the probabilistic sampler, you could set this environment variable:
 
