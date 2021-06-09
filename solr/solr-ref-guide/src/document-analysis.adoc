@@ -54,8 +54,8 @@ It also serves as a guide so that you can configure your own analysis classes if
 | <<tokenizers.adoc#,Tokenizers>>: Tokenizers and tokenizer factory classes.
 | <<filters.adoc#,Filters>>: Filters and filter factory classes.
 | <<charfilterfactories.adoc#,CharFilterFactories>>: Filters for pre-processing input characters.
-| <<language-analysis.adoc#,Language Analysis>>: Tokenizers and filters for character set conversion or for use with specific languages.
-| <<analysis-screen.adoc#,Analysis Screen>>: Admin UI screen for testing and running your field analysis.
+| <<language-analysis.adoc#,Language Analysis>>: Tokenizers and filters for character set conversion and specific languages.
+| <<analysis-screen.adoc#,Analysis Screen>>: Admin UI for testing field analysis.
 |===
 // end::analysis-sections[]
 ****

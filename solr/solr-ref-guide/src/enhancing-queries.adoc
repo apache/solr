@@ -44,13 +44,13 @@ Finally, if you want to understand the terms in your index or get statistics fro
 // tag::queries-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<spell-checking.adoc#,Spell Checking>>: Spell check for user queries to correct mistakes on the fly.
-| <<suggester.adoc#,Suggester>>: Autosuggest component to suggest query terms while the user types.
-| <<morelikethis.adoc#,MoreLikeThis>>: Solr's similar results query component.
-| <<query-re-ranking.adoc#,Query Re-Ranking>>: Re-ranking top scoring documents from simple queries using more complex scores. *TODO* this is about query parsers, maybe should move?
-| <<learning-to-rank.adoc#,Learning to Rank>>: Use LTR to run machine learned ranking models in Solr.
+| <<spell-checking.adoc#,Spell Checking>>: Check user spelling of query terms.
+| <<suggester.adoc#,Suggester>>: Suggest query terms while the user types.
+| <<morelikethis.adoc#,MoreLikeThis>>: Get results similar to result documents.
+| <<query-re-ranking.adoc#,Query Re-Ranking>>: Re-rank top documents. *TODO* this is about query parsers, maybe should move?
+| <<learning-to-rank.adoc#,Learning to Rank>>: Use machine learned ranking models.
 | <<tagger-handler.adoc#,Tagger Handler>>: Basic named entity tagging in text.
-| <<analytics.adoc#,Analytics Component>>: A framework to compute complex analytics over a result set.
+| <<analytics.adoc#,Analytics Component>>: Compute complex analytics over a result set.
 | <<terms-component.adoc#,Terms Component>>: Access indexed terms and the documents that include them.
 | <<term-vector-component.adoc#,Term Vector Component>>: Term information about specific documents.
 | <<stats-component.adoc#,Stats Component>>: Get information from numeric fields within a document set.

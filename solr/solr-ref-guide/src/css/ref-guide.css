@@ -304,6 +304,14 @@ dt[id]{
    margin-top: -40px
 }
 
+/* used on scaling-solr for discrete headings in the sidebar block */
+h3[id].discrete,
+h4[id].discrete {
+  padding-top: 20px;
+  padding-bottom: 10px;
+  margin-top: -20px;
+}
+
 .sidebarblock > .title small,
 h1 small,
 h2 small,
@@ -1061,7 +1069,7 @@ table.tableblock th > p:last-child
     margin-bottom: 0;
 }
 
-table.spread
+.stretch table.tableblock
 {
     width: 100%;
 }

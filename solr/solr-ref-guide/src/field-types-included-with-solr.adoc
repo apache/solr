@@ -20,11 +20,9 @@ The following table lists the field types that are available in Solr and are rec
 The page further down, lists all the deprecated types for those migrating from older version of Solr.
 The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
 == Recommended Field Types
 
-[cols="25,75",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Class |Description
 |BBoxField | Indexes a single rectangle (bounding box) per document field and supports searching via a bounding box. See the section <<spatial-search.adoc#,Spatial Search>> for more information.

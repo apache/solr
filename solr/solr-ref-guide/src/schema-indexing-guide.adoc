@@ -24,28 +24,39 @@
 This Guide covers indexing documents in Solr.
 
 ****
-<<solr-schema.adoc#,*Solr Schema*>>: Solr's schema governs how documents are indexed and how terms in a query are interpreted.
+[discrete]
+=== Solr's Schema
+
+<<solr-schema.adoc#,*Solr Schema*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::solr-schema.adoc[tag=schema-sections]
 ****
 
 ****
-<<fields-and-schema-design.adoc#,*Fields and Schema Design*>>: This section describes how Solr organizes data in the index. It explains how a Solr schema defines the fields and field types which Solr uses to organize data within the document files it indexes.
+[discrete]
+=== Fields and Schema Design
+
+<<fields-and-schema-design.adoc#,*Fields and Schema Design*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::fields-and-schema-design.adoc[tag=fields-sections]
 ****
 
 ****
-<<document-analysis.adoc#,*Document Analysis in Solr*>>: This section explains how Solr prepares text for indexing and searching. Analyzers parse text and produce a stream of tokens, lexical units used for indexing and searching. Tokenizers break field data down into tokens. Filters perform other transformational or selective work on token streams.
+[discrete]
+=== Document Analysis
+
+<<document-analysis.adoc#,*Document Analysis in Solr*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::document-analysis.adoc[tag=analysis-sections]
 ****
 
 ****
-<<indexing-data-operations.adoc#,*Indexing and Data Operations*>>: This section describes the indexing process and basic index operations, such as commit, optimize, and rollback.
+[discrete]
+=== Indexing and Data Operations
+<<indexing-data-operations.adoc#,*Indexing and Data Operations*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::indexing-data-operations.adoc[tag=indexing-sections]

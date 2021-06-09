@@ -1,4 +1,4 @@
-= Collection Aliasing
+= Alias Management
 :toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -24,6 +24,8 @@ Some use cases for collection aliasing:
 
 * Time series data
 * Reindexing content behind the scenes
+
+For an overview of aliases in Solr, see the section <<aliases.adoc#,Aliases>>.
 
 [[createalias]]
 == CREATEALIAS: Create or Modify an Alias for a Collection

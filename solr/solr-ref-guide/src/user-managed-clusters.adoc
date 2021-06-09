@@ -18,15 +18,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-*TODO* intro content
+[.lead]
+User-managed clusters provide flexibility for local control over cluster activities, without ZooKeeper to coordinate them.
+
+This flexibility means that you are responsible for core management, document and query routing, failover, and load balancing.
 
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::user-managed-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<user-managed-index-replication.adoc#,User-Managed Index Replication>>: Detailed information about replicating your Solr indexes.
-| <<user-managed-distributed-search.adoc#,User-Managed Distributed Search>>: Detailed information about implementing distributed searching in Solr.
+| <<user-managed-index-replication.adoc#,User-Managed Index Replication>>: Replicating indexes across nodes.
+| <<user-managed-distributed-search.adoc#,User-Managed Distributed Search>>: Distributed searching in a user-managed cluster.
 |===
 // end::user-managed-sections[]
 ****

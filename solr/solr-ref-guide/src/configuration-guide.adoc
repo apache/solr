@@ -29,45 +29,45 @@
 This section covers configuration files and options for customizing your Solr installation.
 
 ****
-<<configuration-files.adoc#,*Solr Configuration Files*>>: Solr's major configuration files.
+[discrete]
+=== Configuration Overview
+
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<configuration-files.adoc#,Solr Configuration Files>>: Solr's major configuration files.
+| <<property-substitution.adoc#,Property Substitution in Configuration Files>>: Provide property values at startup or in shared property files.
+| <<core-discovery.adoc#,Core Discovery>>: Placement of `core.properties` and available property options.
+| <<config-sets.adoc#,Configsets>>: Use configsets to avoid duplicating effort when defining a new core.
+| <<resource-loading.adoc#,Resource Loading>>: Resolving word lists, model files, and related data.
+| <<configuring-solr-xml.adoc#,Configuring solr.xml>>: Global configuration options.
+|===
 ****
 
 ****
-<<property-substitution.adoc#,*Property Substitution in Configuration Files*>>: Provide property values at startup or in shared property files.
-****
+[discrete]
+=== solrconfig.xml
 
-****
-<<core-discovery.adoc#,*Core Discovery*>>: Placement of `core.properties` and available property options.
-****
-
-****
-<<configuring-solr-xml.adoc#,*Configuring solr.xml*>>: Define `solr.xml`, including the acceptable parameters for the `solr.xml` file.
-****
-
-****
-<<configuring-solrconfig-xml.adoc#,*Configuring solrconfig.xml*>>: Options for the main configuration file for Solr, `solrconfig.xml`.
+<<configuring-solrconfig-xml.adoc#,*Configuring solrconfig.xml*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::configuring-solrconfig-xml.adoc[tag=solrconfig-sections]
 ****
 
 ****
-<<configuration-apis.adoc#,*Configuration APIs*>>: Configuration APIs available.
+[discrete]
+=== Configuration APIs
+
+<<configuration-apis.adoc#,*Configuration APIs*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::configuration-apis.adoc[tag=configapi-sections]
 ****
 
 ****
-<<config-sets.adoc#,*Configsets*>>: Use configsets to avoid duplicating effort when defining a new core.
-****
+[discrete]
+=== Solr Plugins
 
-****
-<<resource-loading.adoc#,*Resource Loading*>>: Describes how word lists, model files, and other related data are resolved by the components that need them.
-****
-
-****
-<<solr-plugins.adoc#,*Solr Plugins*>>: Solr's plugin framework for add-on functionality.
+<<solr-plugins.adoc#,*Solr Plugins*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::solr-plugins.adoc[tag=plugin-sections]

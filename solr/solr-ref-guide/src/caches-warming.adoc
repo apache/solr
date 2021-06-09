@@ -173,8 +173,6 @@ Define it with the `regenerator` parameter as `regenerator="solr.NoOpRegenerator
 
 === Monitoring Cache Sizes and Usage
 
-*TODO*
-
 The section <<performance-statistics-reference.adoc#cache-statistics,Cache Statistics>> describes the metrics available for each cache.
 The metrics can be accessed in the <<plugins-stats-screen.adoc#,Solr Admin UI>> or in the <<metrics-reporting.adoc#metrics-api,Metrics API>>.
 

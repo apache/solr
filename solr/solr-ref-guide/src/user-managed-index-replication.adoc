@@ -43,7 +43,7 @@ Configuring replication is therefore similar to any normal request handler.
 .Replication In SolrCloud
 [NOTE]
 ====
-Although there is no explicit concept of leader or follower nodes in a <<clusters.adoc#solrcloud-mode,SolrCloud>> cluster, the `ReplicationHandler` discussed on this page is still used by SolrCloud as needed to support "shard recovery" – but this is done in a peer to peer manner.
+Although there is no explicit concept of leader or follower nodes in a <<cluster-types.adoc#solrcloud-mode,SolrCloud>> cluster, the `ReplicationHandler` discussed on this page is still used by SolrCloud as needed to support "shard recovery" – but this is done in a peer to peer manner.
 
 When using SolrCloud, the `ReplicationHandler` must be available via the `/replication` path.
 Solr does this implicitly unless overridden explicitly in your `solrconfig.xml`.

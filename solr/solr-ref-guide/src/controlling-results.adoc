@@ -41,17 +41,17 @@ Solr offers several ways to get results, or control how "pages" of results are r
 // tag::results-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<faceting.adoc#,Faceting>>: Detailed information about categorizing search results based on indexed terms.
-| <<json-facet-api.adoc#facet-analytics-module,JSON Facet API>>: Overview of Solr's JSON Facet API.
-| <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>: Collapse documents on according to grouping parameters and provide a way for clients to expand the results for users.
+| <<faceting.adoc#,Faceting>>: Categorize search results based on indexed terms.
+| <<json-facet-api.adoc#facet-analytics-module,JSON Facet API>>: JSON Facet API.
+| <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>: Collapse documents into groups and expand the results.
 | <<result-grouping.adoc#,Result Grouping>>: Group results based on common field values.
-| <<result-clustering.adoc#,Result Clustering>>: Detailed information about grouping search results based on cluster analysis applied to text fields. A bit like "unsupervised" faceting.
-| <<highlighting.adoc#,Highlighting>>: Detailed information about Solr's highlighting capabilities, including multiple underlying highlighter implementations.
-| <<query-elevation-component.adoc#,Query Elevation Component>>: How to force documents to the top of the results for certain queries.
-| <<document-transformers.adoc#,Document Transformers>>: Detailed information about using `DocTransformers` to add computed information to individual documents.
-| <<response-writers.adoc#,Response Writers>>: Detailed information about configuring and using Solr's response writers.
-| <<exporting-result-sets.adoc#,Exporting Result Sets>>: Functionality to export large result sets out of Solr.
-| <<pagination-of-results.adoc#,Pagination of Results>>: Detailed information about fetching paginated results for display in a UI, or for fetching all documents matching a query.
+| <<result-clustering.adoc#,Result Clustering>>: Group search results based on cluster analysis applied to text fields.
+| <<highlighting.adoc#,Highlighting>>: Highlighting search terms in document snippets.
+| <<query-elevation-component.adoc#,Query Elevation Component>>: Force documents to the top of the results for certain queries.
+| <<document-transformers.adoc#,Document Transformers>>: Compute information and add to individual documents.
+| <<response-writers.adoc#,Response Writers>>: Format options for search results.
+| <<exporting-result-sets.adoc#,Exporting Result Sets>>: Export large result sets out of Solr.
+| <<pagination-of-results.adoc#,Pagination of Results>>: Offering paginated results.
 |
 |===
 // end::results-sections[]

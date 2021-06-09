@@ -26,28 +26,47 @@ This section describes options to control how Solr works with user input and ret
 It covers the following topics:
 
 ****
-<<query-syntax-and-parsers.adoc#,*Query Syntax and Parsers*>>: Query parsers and supported syntax for user searches.
+[discrete]
+=== Query Syntax and Parsers
+
+<<query-syntax-and-parsers.adoc#,*Query Syntax and Parsers*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::query-syntax-and-parsers.adoc[tag=parser-sections]
 ****
 
 ****
-<<enhancing-queries.adoc#,*Enhancing Queries*>>: Augment user queries with other data from the index or based on machine learning.
+[discrete]
+=== Enhancing Queries
+<<enhancing-queries.adoc#,*Enhancing Queries*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::enhancing-queries.adoc[tag=queries-sections]
 ****
 
 ****
-<<controlling-results.adoc#,*Controlling Results*>>: Modify standard results as needed for your use case.
+[discrete]
+=== Controlling Results
+<<controlling-results.adoc#,*Controlling Results*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::controlling-results.adoc[tag=results-sections]
 ****
 
 ****
-<<streaming-expressions.adoc#,*Streaming Expressions*>>: A stream processing language with a suite of functions for many types of queries and parallel execution tasks.
+[discrete]
+=== Streaming Expressions
+<<streaming-expressions.adoc#,*Streaming Expressions*>>
 
-* *TODO* child page has no master list of sub-sections
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<stream-source-reference.adoc#,Stream Source Reference>>: Stream sources.
+| <<stream-decorator-reference.adoc#,Stream Decorator Reference>>: Stream decorators.
+| <<stream-evaluator-reference.adoc#,Stream Evaluator Reference>>: Stream evaluators.
+| <<math-expressions.adoc#,Math Expressions>>: Streaming expressions for math and analytics applications.
+| <<graph-traversal.adoc#,Graph Traversal>>: Graph queries using streaming expressions.
+| <<stream-api.adoc#,Stream Request Handler API>>: REST API for expression plugins and daemon control.
+| <<stream-screen.adoc#,Stream Screen>>: Admin UI screen for streaming expressions.
+|
+|===
 ****

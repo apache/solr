@@ -21,7 +21,7 @@ This screen provides status information about each collection & node in your clu
 .Only Visible When using SolrCloud
 [NOTE]
 ====
-The "Cloud" menu option is only available when Solr is running <<clusters.adoc#solrcloud-mode,SolrCloud>>.
+The "Cloud" menu option is only available when Solr is running <<cluster-types.adoc#solrcloud-mode,SolrCloud>>.
 User-managed clusters or single-node installations will not display this option.
 ====
 

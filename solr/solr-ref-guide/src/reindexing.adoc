@@ -125,7 +125,7 @@ A variation on this approch is to delete and recreate your collection using the 
 
 === Index to Another Collection
 
-Another approach is to use index to a new collection and use Solr's <<collection-aliasing.adoc#createalias,collection alias>> feature to seamlessly point the application to a new collection without downtime.
+Another approach is to use index to a new collection and use Solr's <<alias-management.adoc#createalias,collection alias>> feature to seamlessly point the application to a new collection without downtime.
 
 This option is only available for Solr installations running in SolrCloud mode.
 

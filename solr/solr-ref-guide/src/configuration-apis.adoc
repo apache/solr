@@ -25,20 +25,18 @@
 
 Solr includes several APIs that can be used to modify settings in `solrconfig.xml`.
 
-*TODO* add descriptions below
-
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::configapi-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<config-api.adoc#,Config API>>
-| <<request-parameters-api.adoc#,Request Parameters API>>
-| <<managed-resources.adoc#,Managed Resources>>
-| <<collections-api.adoc#,Collections API>>
-| <<configsets-api.adoc#,Configsets API>>
-| <<coreadmin-api.adoc#,CoreAdmin API>>
-| <<v2-api.adoc#,V2 API>>: Describes how to use the new V2 APIs, a redesigned API framework covering most Solr APIs.
+| <<config-api.adoc#,Config API>>: Configure `solrconfig.xml`.
+| <<request-parameters-api.adoc#,Request Parameters API>>: Override parameters in `solrconfig.xml`.
+| <<managed-resources.adoc#,Managed Resources>>: Programmatic control over resource files.
+| <<collections-api.adoc#,Collections API>>: Manage SolrCloud from cores to nodes.
+| <<configsets-api.adoc#,Configsets API>>: Manage configsets.
+| <<coreadmin-api.adoc#,CoreAdmin API>>: Manage Cores.
+| <<v2-api.adoc#,V2 API>>: The v2 API structure.
 |
 |===
 // end::configapi-sections[]

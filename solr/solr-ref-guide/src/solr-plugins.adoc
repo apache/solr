@@ -47,20 +47,15 @@ Plugins are packaged into a Java jar file and may have other dependent jar files
 
 The next sections describe some options:
 
-*TODO shorten up these descriptions*
-
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::plugin-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<libs.adoc#,Lib Directories>>: The `<lib/>` directive to put the plugin's JAR files on the filesystem.
-| <<package-manager.adoc#,Package Management>>:
-Manage packages of plugins in SolrCloud.
-| <<cluster-plugins.adoc#,Cluster Plugins>>:
-The API used for managing cluster-level plugins such as request handlers,
-cluster-level event producer, and replica placement plugins.
-|
+| <<libs.adoc#,Lib Directories>>: Plugins as libraries on the filesystem.
+| <<package-manager.adoc#,Package Management>>: Package-based plugins.
+| <<cluster-plugins.adoc#,Cluster Plugins>>: Cluster-level plugins.
+| <<replica-placement-plugins.adoc#,Replica Placement Plugins>>: Plugins specifically for replica placement.
 |===
 // end::plugin-sections[]
 ****

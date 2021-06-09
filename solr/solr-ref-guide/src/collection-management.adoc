@@ -172,7 +172,7 @@ The default is `false`, which means that the API will return the status of the s
 Starting with version 8.1 when a collection is created additionally an alias can be created
 that points to this collection.
 This parameter allows specifying the name of this alias, effectively combining
-this operation with <<collection-aliasing.adoc#createalias,CREATEALIAS>>
+this operation with <<alias-management.adoc#createalias,CREATEALIAS>>
 
 Collections are first created in read-write mode but can be put in `readOnly`
 mode using the <<collection-management.adoc#modifycollection,MODIFYCOLLECTION>> action.
@@ -1501,7 +1501,7 @@ Optionally, you can override some parameters documented below.
 
 While restoring, if a configset with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configset in ZooKeeper and use that.
 
-You can use the collection <<collection-aliasing.adoc#createalias,CREATEALIAS>> command to make sure clients don't need to change the endpoint to query or index against the newly restored collection.
+You can use the collection <<alias-management.adoc#createalias,CREATEALIAS>> command to make sure clients don't need to change the endpoint to query or index against the newly restored collection.
 
 === RESTORE Parameters
 

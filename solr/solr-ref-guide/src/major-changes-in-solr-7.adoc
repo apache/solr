@@ -49,9 +49,7 @@ At its core, Solr autoscaling provides users with a rule syntax to define prefer
 
 === Other Features & Enhancements
 
-// TODO 7.1 - update link to docs when complete
-* The Analytics Component has been refactored.
-** The documentation for this component is in progress; until it is available, please refer to https://issues.apache.org/jira/browse/SOLR-11144[SOLR-11144] for more details.
+* The <<analytics.adoc#,Analytics Component>> has been refactored.
 
 * There were several other new features released in earlier 6.x releases, which you may have missed:
 ** <<learning-to-rank.adoc#,Learning to Rank>>

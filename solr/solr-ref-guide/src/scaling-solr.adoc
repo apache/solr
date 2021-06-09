@@ -1,5 +1,5 @@
 = Scaling Solr
-:page-children: clusters, \
+:page-children: cluster-types, \
     user-managed-clusters, \
     solrcloud-clusters
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -19,9 +19,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr supports large implementations.
+[.lead]
+Solr supports large implementations by providing two distinct options for multi-node clusters.
 
-The section *<<clusters.adoc#,Solr Clusters>>* describes the two main approaches available for scaling.
+The section *<<cluster-types.adoc#,Solr Cluster Types>>* describes the two main approaches available for scaling.
 
 Both approaches share the ability to distribute parts of an index across multiple servers, a process called _sharding_.
 This allows for an index that is larger than any one server can host and maintain reasonable performance.
@@ -34,11 +35,13 @@ The differences between the approaches are then how each cluster is managed and 
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::scaling-sections[]
-*User-Managed Clusters*
+[discrete]
+==== User-Managed Clusters
 
 include::user-managed-clusters.adoc[tag=user-managed-sections]
 
-*SolrCloud Clusters*
+[discrete]
+==== SolrCloud Clusters
 
 include::solrcloud-clusters.adoc[tag=solrcloud-sections]
 

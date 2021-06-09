@@ -669,9 +669,7 @@ This parser takes the following parameters:
 q.operators::
 Comma-separated list of names of parsing operators to enable. By default, all operations are enabled, and this parameter can be used to effectively disable specific operators as needed, by excluding them from the list. Passing an empty string with this parameter disables all operators.
 +
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-+
-[cols="15,20,50,15",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Name |Operator |Description |Example query
 |`AND` |`+` |Specifies AND |`token1+token2`
@@ -849,9 +847,7 @@ An optional parameter used to determine which of several query implementations s
 
 The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML. Example:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Parameter |Value
 |defType |`xmlparser`
@@ -881,9 +877,7 @@ The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParser
 
 The XmlQParser implementation uses the {solr-javadocs}/core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class. XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[width="100%",cols="30,70",options="header"]
+[%autowidth.stretch,cols="30,70",options="header"]
 |===
 |XML element |QueryBuilder class
 |<BooleanQuery> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/BooleanQueryBuilder.html[BooleanQueryBuilder]

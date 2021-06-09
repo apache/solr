@@ -26,31 +26,46 @@
 The Deployment Guide covers installation, upgrades, deployments, monitoring, and client integrations.
 
 ****
+[discrete]
+=== Solr CLI
+
 <<solr-control-script-reference.adoc#,*Solr Control Script Reference*>>: The options available to the `bin/solr` or `bin\solr.cmd` scripts.
 ****
 
 ****
-<<installation-deployment.adoc#,*Installation and Deployment*>>:
+[discrete]
+=== Installation & Deployment
+
+<<installation-deployment.adoc#,*Installation and Deployment*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::installation-deployment.adoc[tag=install-sections]
 ****
 
 ****
-<<scaling-solr.adoc#,*Scaling Solr*>>: Cluster configuration options.
+[discrete]
+=== Scaling Solr
+
+<<scaling-solr.adoc#,*Scaling Solr*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::scaling-solr.adoc[tag=scaling-sections]
 ****
 
 ****
-<<monitoring-solr.adoc#,*Monitoring Solr*>>: Monitoring options for a production Solr instance.
+[discrete]
+=== Monitoring Solr
+
+<<monitoring-solr.adoc#,*Monitoring Solr*>>
 
 // This pulls the sub-section list from the child page to reduce errors
 include::monitoring-solr.adoc[tag=monitoring-sections]
 ****
 
 ****
+[discrete]
+=== Securing Solr
+
 <<securing-solr.adoc#,*Securing Solr*>>: Authentication and authorization plugins available with Solr. *TODO* format this like the others.
 
 Authentication Plugins:
@@ -71,6 +86,9 @@ Audit Logging and SSL:
 ****
 
 ****
+[discrete]
+=== Client APIs
+
 <<client-apis.adoc#,*Client APIs*>>: Access Solr through various client APIs, including JavaScript, JSON, and Ruby.
 
 // This pulls the sub-section list from the child page to reduce errors

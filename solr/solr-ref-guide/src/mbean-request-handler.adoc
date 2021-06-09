@@ -34,13 +34,7 @@ The output format. This operates the same as the <<response-writers.adoc#,`wt` p
 
 == MBeanRequestHandler Examples
 
-// TODO 7.1 - replace with link to tutorial
-All of the examples in this section assume you are running the "techproducts" Solr example:
-
-[source,bash]
-----
-bin/solr -e techproducts
-----
+All of the examples in this section assume you are running the <<tutorial-techproducts.adoc#,"techproducts" example>>.
 
 To return information about the CACHE category only:
 

@@ -60,13 +60,14 @@ assigns `fieldOne` a boost of 2.3, leaves `fieldTwo` with the default boost (bec
 
 === mm (Minimum Should Match) Parameter
 
-When processing queries, Lucene/Solr recognizes three types of clauses: mandatory, prohibited, and "optional" (also known as "should" clauses). By default, all words or phrases specified in the `q` parameter are treated as "optional" clauses unless they are preceded by a "+" or a "-". When dealing with these "optional" clauses, the `mm` parameter makes it possible to say that a certain minimum number of those clauses must match. The DisMax query parser offers great flexibility in how the minimum number can be specified.
+When processing queries, Lucene/Solr recognizes three types of clauses: mandatory, prohibited, and "optional" (also known as "should" clauses).
+By default, all words or phrases specified in the `q` parameter are treated as "optional" clauses unless they are preceded by a "+" or a "-".
+When dealing with these "optional" clauses, the `mm` parameter makes it possible to say that a certain minimum number of those clauses must match.
+The DisMax query parser offers great flexibility in how the minimum number can be specified.
 
 The table below explains the various ways that mm values can be specified.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,10,60",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Syntax |Example |Description
 |Positive integer |3 |Defines the minimum number of clauses that must match, regardless of how many clauses there are in total.

@@ -34,17 +34,17 @@ This section describes how Solr adds data to its index. It covers the following 
 // tag::indexing-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>: Solr's update handlers to index XML/XSLT, JSON and CSV data.
-| <<indexing-with-tika.adoc#,Indexing with Solr Cell and Apache Tika>>: The Solr Cell framework to upload data for indexing.
-| <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>: Index any JSON of your choice
+| <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>: Index XML/XSLT, JSON and CSV data.
+| <<indexing-with-tika.adoc#,Indexing with Solr Cell and Apache Tika>>: Use Tika to index data.
+| <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>: Index custom JSON data.
 | <<indexing-nested-documents.adoc#,Indexing Nested Documents>>: Indexing and schema configuration for nested documents.
-| <<post-tool.adoc#,Post Tool>>: The `post.jar` to quickly upload content to your system.
-| <<documents-screen.adoc#,Documents Screen>>: Form-based document updates using the Admin UI.
-| <<partial-document-updates.adoc#,Partial Document Updates>>: Atomic updates and optimistic concurrency for partial document updates.
-| <<reindexing.adoc#,Reindexing>>: When reindexing is required or recommended, and some strategies for completely reindexing your documents.
-| <<language-detection.adoc#,Language detection>>: Language identification during the indexing process.
-| <<de-duplication.adoc#,De-Duplication>>: Configuring Solr to mark duplicate documents as they are indexed.
-| <<content-streams.adoc#,Content Streams>>: Streaming content to Solr request handlers.
+| <<post-tool.adoc#,Post Tool>>: Quickly upload content to your system.
+| <<documents-screen.adoc#,Documents Screen>>: Admin UI for form-based document updates.
+| <<partial-document-updates.adoc#,Partial Document Updates>>: Atomic updates and optimistic concurrency.
+| <<reindexing.adoc#,Reindexing>>: When and how to reindex.
+| <<language-detection.adoc#,Language detection>>: Language identification during indexing.
+| <<de-duplication.adoc#,De-Duplication>>: Mark duplicate documents as they are indexed.
+| <<content-streams.adoc#,Content Streams>>: Stream content to request handlers.
 |
 |===
 // end::indexing-sections[]

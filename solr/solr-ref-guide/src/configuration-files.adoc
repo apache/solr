@@ -96,7 +96,7 @@ The Files screen in the Admin UI lets you browse & view configuration files (suc
 .The Files Screen
 image::images/configuration-files/files-screen.png[Files screen,height=400]
 
-If you are using <<clusters.adoc#solrcloud-mode,SolrCloud>>, the files displayed are the configuration files for this collection stored in ZooKeeper.
+If you are using <<cluster-types.adoc#solrcloud-mode,SolrCloud>>, the files displayed are the configuration files for this collection stored in ZooKeeper.
 In user-managed clusters or single-node installations, all files in the `conf` directory are displayed.
 
 The configuration files shown may or may not be used by the collection as use of the file depends on how they are referenced in either `solrconfig.xml` or your schema.
