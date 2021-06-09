@@ -17,15 +17,11 @@
 package org.apache.solr.handler.sql;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
@@ -34,6 +30,7 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.LukeRequest;
@@ -41,12 +38,11 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.SuppressForbidden;
+
+import com.google.common.collect.ImmutableMap;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 
 class SolrSchema extends AbstractSchema implements Closeable {
-  private static final SolrNamedThreadFactory threadFactory = new SolrNamedThreadFactory("SQLSchemaLukeRequest");
   final Properties properties;
   final SolrClientCache solrClientCache;
   private volatile boolean isClosed = false;
@@ -95,34 +91,21 @@ class SolrSchema extends AbstractSchema implements Closeable {
     return builder.build();
   }
 
-  @SuppressForbidden(reason = "Do not want the MDC to propagate the user principal, need PKI principal")
-  private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {
-    final String zk = this.properties.getProperty("zk");
-    // Need to run this in a background server thread so the PKI principal is used to authn / authz the luke request
-    // Not using the MDC aware executor framework b/c that propagates the principal from this thread, which is what we don't want here
-    ExecutorService service = Executors.newSingleThreadExecutor(threadFactory);
-    Map<String, LukeResponse.FieldInfo> fieldInfoMap;
+  private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
+    String zk = this.properties.getProperty("zk");
+    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    // Send the Luke request using the server identity vs. the logged in user
+    PKIAuthenticationPlugin.withServerIdentity(true);
     try {
-      Future<Map<String, LukeResponse.FieldInfo>> future = service.submit(() -> {
-        LukeRequest lukeRequest = new LukeRequest();
-        lukeRequest.setNumTerms(0);
-        ExecutorUtil.setServerThreadFlag(true);
-        try {
-          return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldInfo();
-        } finally {
-          ExecutorUtil.setServerThreadFlag(null);
-        }
-      });
-      fieldInfoMap = future.get();
-    } catch (ExecutionException ee) {
-      throw new RuntimeException(ee);
-    } catch (InterruptedException ie) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(ie);
+      LukeRequest lukeRequest = new LukeRequest();
+      lukeRequest.setNumTerms(0);
+      LukeResponse lukeResponse = lukeRequest.process(cloudSolrClient, collection);
+      return lukeResponse.getFieldInfo();
+    } catch (SolrServerException | IOException e) {
+      throw new RuntimeException(e);
     } finally {
-      service.shutdown();
+      PKIAuthenticationPlugin.withServerIdentity(false);
     }
-    return fieldInfoMap;
   }
 
   RelProtoDataType getRelDataType(String collection) {

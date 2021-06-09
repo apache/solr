@@ -58,6 +58,22 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
+
+  public static void withServerIdentity(final boolean enabled) {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (enabled) {
+      if (requestInfo != null) {
+        requestInfo.setUseServerToken(true);
+      }
+      ExecutorUtil.setServerThreadFlag(true);
+    } else {
+      if (requestInfo != null) {
+        requestInfo.setUseServerToken(false);
+      }
+      ExecutorUtil.setServerThreadFlag(null);
+    }
+  }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
@@ -282,7 +298,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private Optional<String> generateToken() {
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr;
-    if (reqInfo != null) {
+    if (reqInfo != null && !reqInfo.useServerToken()) {
       Principal principal = reqInfo.getUserPrincipal();
       if (principal == null) {
         log.debug("generateToken: principal is null");

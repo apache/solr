@@ -52,6 +52,7 @@ public class SolrRequestInfo {
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
   protected SolrDispatchFilter.Action action;
+  protected boolean useServerToken = false;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -198,6 +199,14 @@ public class SolrRequestInfo {
 
   public void setAction(SolrDispatchFilter.Action action) {
     this.action = action;
+  }
+
+  public boolean useServerToken() {
+    return useServerToken;
+  }
+
+  public void setUseServerToken(boolean use) {
+    this.useServerToken = use;
   }
 
   public static ExecutorUtil.InheritableThreadLocalProvider getInheritableThreadLocalProvider() {
