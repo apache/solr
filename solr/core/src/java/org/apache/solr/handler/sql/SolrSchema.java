@@ -17,11 +17,15 @@
 package org.apache.solr.handler.sql;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
@@ -30,7 +34,6 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.LukeRequest;
@@ -38,8 +41,7 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
-
-import com.google.common.collect.ImmutableMap;
+import org.apache.solr.common.util.ExecutorUtil;
 
 class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
@@ -90,17 +92,33 @@ class SolrSchema extends AbstractSchema implements Closeable {
     return builder.build();
   }
 
-  private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
-    String zk = this.properties.getProperty("zk");
-    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+  private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {
+    final String zk = this.properties.getProperty("zk");
+    // Need to run this in a background server thread so the PKI principal is used to authn / authz the luke request
+    // Not using the MDC aware executor framework b/c that propagates the principal from this thread, which is what we don't want here
+    ExecutorService service = Executors.newSingleThreadExecutor();
+    Map<String, LukeResponse.FieldInfo> fieldInfoMap;
     try {
-      LukeRequest lukeRequest = new LukeRequest();
-      lukeRequest.setNumTerms(0);
-      LukeResponse lukeResponse = lukeRequest.process(cloudSolrClient, collection);
-      return lukeResponse.getFieldInfo();
-    } catch (SolrServerException | IOException e) {
-      throw new RuntimeException(e);
+      Future<Map<String, LukeResponse.FieldInfo>> future = service.submit(() -> {
+        LukeRequest lukeRequest = new LukeRequest();
+        lukeRequest.setNumTerms(0);
+        ExecutorUtil.setServerThreadFlag(true);
+        try {
+          return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldInfo();
+        } finally {
+          ExecutorUtil.setServerThreadFlag(null);
+        }
+      });
+      fieldInfoMap = future.get();
+    } catch (ExecutionException ee) {
+      throw new RuntimeException(ee);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(ie);
+    } finally {
+      service.shutdown();
     }
+    return fieldInfoMap;
   }
 
   RelProtoDataType getRelDataType(String collection) {

@@ -218,6 +218,13 @@ public abstract class LBSolrClient extends SolrClient {
         throw new SolrServerException("Time allowed to handle this request exceeded"+suffix, previousEx);
       }
       if (serverStr == null) {
+        if (previousEx instanceof BaseHttpSolrClient.RemoteSolrException) {
+          BaseHttpSolrClient.RemoteSolrException rse = (BaseHttpSolrClient.RemoteSolrException)previousEx;
+          // if security exception, throw directly vs. wrapping ...
+          if (rse.code() == 401 || rse.code() == 403) {
+            throw rse;
+          }
+        }
         throw new SolrServerException("No live SolrServers available to handle this request"+suffix, previousEx);
       }
       numServersTried++;
