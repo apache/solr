@@ -221,9 +221,8 @@ public abstract class LBSolrClient extends SolrClient {
       // is authz related error
       if (previousEx instanceof BaseHttpSolrClient.RemoteSolrException) {
         BaseHttpSolrClient.RemoteSolrException rse = (BaseHttpSolrClient.RemoteSolrException)previousEx;
-        // if security exception, throw directly vs. wrapping ...
         if (rse.code() == 403) {
-          throw rse;
+          throw new SolrServerException(previousEx.getMessage(), previousEx);
         }
       }
 
