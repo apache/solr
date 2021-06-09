@@ -80,11 +80,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     return BinaryResponseParser.BINARY_CONTENT_TYPE;
   }
 
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    /* NOOP */
-  }
-
   public static class Resolver implements JavaBinCodec.ObjectResolver , JavaBinCodec.WritableDocFields {
     protected final SolrQueryRequest solrQueryRequest;
     protected IndexSchema schema;

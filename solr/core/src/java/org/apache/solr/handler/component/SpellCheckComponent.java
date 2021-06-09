@@ -97,8 +97,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
    */
   public static final String COMPONENT_NAME = "spellcheck";
 
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList initParams;
+  protected NamedList<?> initParams;
 
 
   /**
@@ -109,7 +108,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   protected QueryConverter queryConverter;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
   }
@@ -715,7 +714,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public void inform(SolrCore core) {
     if (initParams != null) {
       log.info("Initializing spell checkers");
@@ -724,13 +723,13 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         if (initParams.getName(i).equals("spellchecker")) {
           Object cfg = initParams.getVal(i);
           if (cfg instanceof NamedList) {
-            addSpellChecker(core, hasDefault, (NamedList) cfg);
+            addSpellChecker(core, hasDefault, (NamedList<?>) cfg);
           } else if (cfg instanceof Map) {
-            addSpellChecker(core, hasDefault, new NamedList((Map) cfg));
+            addSpellChecker(core, hasDefault, new NamedList<>((Map<String, ?>) cfg));
           } else if (cfg instanceof List) {
-            for (Object o : (List) cfg) {
+            for (Object o : (List<?>) cfg) {
               if (o instanceof Map) {
-                addSpellChecker(core, hasDefault, new NamedList((Map) o));
+                addSpellChecker(core, hasDefault, new NamedList<>((Map<String, ?>) o));
               }
             }
           }
@@ -760,7 +759,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  @SuppressWarnings({"rawtypes"})private boolean addSpellChecker(SolrCore core, boolean hasDefault, @SuppressWarnings({"rawtypes"})NamedList spellchecker) {
+  private boolean addSpellChecker(SolrCore core, boolean hasDefault, NamedList<?> spellchecker) {
     String className = (String) spellchecker.get("classname");
     if (className == null) className = (String) spellchecker.get("class");
     // TODO: this is a little bit sneaky: warn if class isnt supplied
@@ -814,10 +813,6 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       this.checker = checker;
       this.buildOnCommit = buildOnCommit;
       this.buildOnOptimize = buildOnOptimize;
-    }
-
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     }
 
     @Override

@@ -306,7 +306,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     try {
       req.setContentStreams(Collections.singletonList(ContentStreamBase.create(new BinaryRequestWriter(), ureq)));
       UpdateRequestHandler h = new UpdateRequestHandler();
-      h.init(new NamedList());
+      h.init(new NamedList<>());
       h.handleRequestBody(req, new SolrQueryResponse());
     } finally {
       req.close();

@@ -31,7 +31,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -245,10 +244,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     
     // if non enpty, then at least one offer failed (queues full)
     private StringBuffer fail = new StringBuffer();
-    
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
-    
+
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
       // No-Op

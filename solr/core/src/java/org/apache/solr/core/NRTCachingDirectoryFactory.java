@@ -36,8 +36,7 @@ public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
   private double maxCachedMB = DEFAULT_MAX_CACHED_MB;
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     SolrParams params = args.toSolrParams();
     maxMergeSizeMB = params.getDouble("maxMergeSizeMB", DEFAULT_MAX_MERGE_SIZE_MB);

@@ -215,8 +215,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 
-    @SuppressWarnings({"rawtypes"})
-    List<Map> errs = CommandOperation.captureErrors(cmds);
+    List<Map<String, Object>> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
       log.error("{}{}", ERR, Utils.toJSONString(errs));
       throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);

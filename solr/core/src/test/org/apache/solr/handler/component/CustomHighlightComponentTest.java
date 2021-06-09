@@ -50,12 +50,10 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    protected Object convertHighlights(@SuppressWarnings({"rawtypes"})NamedList hl) {
-      @SuppressWarnings({"rawtypes"})
-      final ArrayList<SimpleOrderedMap> hlMaps = new ArrayList<>();
+    protected Object convertHighlights(NamedList<Object> hl) {
+      final ArrayList<SimpleOrderedMap<Object>> hlMaps = new ArrayList<>();
       for (int i=0; i<hl.size(); ++i) {
-          @SuppressWarnings({"rawtypes"})
-          SimpleOrderedMap hlMap = new SimpleOrderedMap<Object>();
+          SimpleOrderedMap<Object> hlMap = new SimpleOrderedMap<>();
           hlMap.add(id_key, hl.getName(i));
           hlMap.add(snippets_key, hl.getVal(i));
           hlMaps.add(hlMap);

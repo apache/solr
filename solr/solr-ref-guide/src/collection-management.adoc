@@ -270,6 +270,9 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 `collection`::
 The name of the collection to be modified. This parameter is required.
 
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
 `_attribute_=_value_`::
 Key-value pairs of attribute names and attribute values.
 
@@ -280,7 +283,6 @@ The attributes that can be modified are:
 * replicationFactor
 * collection.configName
 * readOnly
-* async
 * other custom properties that use a `property.` prefix
 
 See the <<create,CREATE action>> section above for details on these attributes.

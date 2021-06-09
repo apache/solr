@@ -53,8 +53,7 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
    * Creates a collection (for use in a routed alias), waiting for it to be ready before returning.
    * If the collection already exists then this is not an error.<p>
    */
-  @SuppressWarnings({"rawtypes"})
-  static NamedList createCollectionAndWait(ClusterState clusterState, String aliasName, Map<String, String> aliasMetadata,
+  static NamedList<Object> createCollectionAndWait(ClusterState clusterState, String aliasName, Map<String, String> aliasMetadata,
                                     String createCollName, CollectionCommandContext ccc) throws Exception {
     // Map alias metadata starting with a prefix to a create-collection API request
     final ModifiableSolrParams createReqParams = new ModifiableSolrParams();
@@ -76,7 +75,7 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
         ccc.getCoreContainer().getCollectionsHandler());
     createMsgMap.put(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower());
 
-    NamedList results = new NamedList();
+    NamedList<Object> results = new NamedList<>();
     try {
       // Since we are running in the Overseer here, send the message directly to the Overseer CreateCollectionCmd.
       // note: there's doesn't seem to be any point in locking on the collection name, so we don't. We currently should
