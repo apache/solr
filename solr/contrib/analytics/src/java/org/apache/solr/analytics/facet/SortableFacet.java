@@ -79,13 +79,12 @@ public abstract class SortableFacet extends AnalyticsFacet {
    * @param facetResults to apply sorting options to
    * @return the sorted results
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   protected Iterable<FacetBucket> applyOptions(List<FacetBucket> facetResults) {
     // Sorting the buckets if a sort specification is provided
     if (sort == null || facetResults.isEmpty()) {
       return facetResults;
     }
-    Comparator comp = sort.getComparator();
+    Comparator<FacetBucket> comp = sort.getComparator();
     Collections.sort(facetResults, comp);
 
     Iterable<FacetBucket> facetResultsIter = facetResults;

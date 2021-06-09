@@ -141,7 +141,6 @@ public class MetricSuppliers {
   private static final double DEFAULT_ALPHA = 0.015;
   private static final long DEFAULT_WINDOW = 300;
 
-  @SuppressWarnings({"unchecked"})
   private static final Reservoir getReservoir(SolrResourceLoader loader, PluginInfo info) {
     if (info == null) {
       return new ExponentiallyDecayingReservoir();

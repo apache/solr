@@ -153,13 +153,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
   }
 
-  @SuppressWarnings({"unchecked"})
-  private void initReplicaListTransformers(@SuppressWarnings({"rawtypes"})NamedList routingConfig) {
+  private void initReplicaListTransformers(NamedList<?> routingConfig) {
     String defaultRouting = null;
     ReplicaListTransformerFactory stableRltFactory = null;
     ReplicaListTransformerFactory defaultRltFactory;
     if (routingConfig != null && routingConfig.size() > 0) {
-      Iterator<Entry<String,?>> iter = routingConfig.iterator();
+      Iterator<? extends Entry<String,?>> iter = routingConfig.iterator();
       do {
         Entry<String, ?> e = iter.next();
         String key = e.getKey();
@@ -195,8 +194,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
-    @SuppressWarnings({"rawtypes"})
-    NamedList args = info.initArgs;
+    NamedList<?> args = info.initArgs;
     this.scheme = getParameter(args, INIT_URL_SCHEME, null,sb);
     if(StringUtils.endsWith(this.scheme, "://")) {
       this.scheme = StringUtils.removeEnd(this.scheme, "://");
@@ -276,7 +274,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientBuilderPlugin.setup(defaultClient);
   }
 
-  protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+  protected <T> T getParameter(NamedList<?> initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
       @SuppressWarnings({"unchecked"})

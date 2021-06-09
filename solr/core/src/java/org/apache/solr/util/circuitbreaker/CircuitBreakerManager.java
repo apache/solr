@@ -145,7 +145,6 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
   }
 
   @VisibleForTesting
-  @SuppressWarnings({"rawtypes"})
   public static CircuitBreaker.CircuitBreakerConfig buildCBConfig(PluginInfo pluginInfo) {
     boolean enabled = false;
     boolean cpuCBEnabled = false;
@@ -155,7 +154,7 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
 
 
     if (pluginInfo != null) {
-      NamedList args = pluginInfo.initArgs;
+      NamedList<?> args = pluginInfo.initArgs;
 
       enabled = Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
 

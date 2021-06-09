@@ -84,8 +84,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   private static final String TV_KEY_WARNINGS = "warnings";
 
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList initParams;
+  protected NamedList<?> initParams;
 
   /**
    * Helper method for determining the list of fields that we should 
@@ -122,7 +121,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       return (null != fieldNames) ?
         fieldNames :
         // return empty set indicating no fields should be used
-        Collections.<String>emptySet();
+        Collections.emptySet();
     }
 
     // otherwise us the raw fldList as is, no special parsing or globs
@@ -454,7 +453,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
   }

@@ -86,8 +86,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   /** SolrConfig label to identify boolean value to build suggesters on startup */
   private static final String BUILD_ON_STARTUP_LABEL = "buildOnStartup";
 
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList initParams;
+  protected NamedList<?> initParams;
 
   /**
    * Key is the dictionary name used in SolrConfig, value is the corresponding {@link SolrSuggester}
@@ -105,7 +104,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
   
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
   }
@@ -117,8 +116,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       boolean hasDefault = false;
       for (int i = 0; i < initParams.size(); i++) {
         if (initParams.getName(i).equals(CONFIG_PARAM_LABEL)) {
-          @SuppressWarnings({"rawtypes"})
-          NamedList suggesterParams = (NamedList) initParams.getVal(i);
+          NamedList<?> suggesterParams = (NamedList<?>) initParams.getVal(i);
           SolrSuggester suggester = new SolrSuggester();
           String dictionary = suggester.init(suggesterParams, core);
           if (dictionary != null) {
@@ -499,9 +497,6 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       this.buildOnStartup = buildOnStartup;
       this.isCoreReload = isCoreReload;
     }
-
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher,

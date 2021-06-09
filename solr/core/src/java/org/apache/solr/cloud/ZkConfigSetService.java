@@ -105,8 +105,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
     try {
       return ConfigSetProperties.readFromResourceLoader(loader, ".");
     } catch (Exception ex) {

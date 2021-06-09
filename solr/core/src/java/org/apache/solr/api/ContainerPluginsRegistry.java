@@ -279,7 +279,6 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   public class ApiInfo implements ReflectMapWriter {
     List<ApiHolder> holders;
 
@@ -379,7 +378,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
       if (!errs.isEmpty()) return;
 
-      Constructor constructor = klas.getConstructors()[0];
+      Constructor<?> constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length > 1 ||
           (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] != CoreContainer.class)) {
         errs.add("Must have a no-arg constructor or CoreContainer constructor and it must not be a non static inner class");
@@ -394,7 +393,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     @SuppressWarnings({"unchecked"})
     public void init() throws Exception {
       if (this.holders != null) return;
-      Constructor constructor = klas.getConstructors()[0];
+      Constructor<?> constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length == 0) {
         instance = constructor.newInstance();
       } else if (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] == CoreContainer.class) {
