@@ -70,74 +70,34 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     setupSolrCluster(1, 1, 1);
   }
 
-  @Test
-  public void testSimpleQuery() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, "false");
-    // needed to clear cache because we make assertions on its content
-    reloadCollection(COLLECTION);
-
+  private SolrQuery composeSolrQuery() {
     SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
     query.setRequestHandler("/query");
     query.setParam("rows", "8");
     query.setFields("id,features:[fv]");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
+    return query;
+  }
+
+  @Test
+  public void testSimpleQuery() throws Exception {
+    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false);
+    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
+
+    String lazyLoadingEnabled = String.valueOf(random().nextBoolean());
+    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, lazyLoadingEnabled);
+
+    // needed to clear cache because we make assertions on its content
+    reloadCollection(COLLECTION);
+
+    SolrQuery query = composeSolrQuery();
 
     QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
 
     Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
 
     assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            // doc with id 1 has no values set for 3 of the 6 feature fields
-            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES - 3)
-            .count());
-      } else {
-        // all the fields were loaded at once
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES)
-            .count());
-      }
-    }
-    assertTheResponse(queryResponse);
-  }
-
-  @Test
-  public void testSimpleQueryLazy() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, "true");
-    // needed to clear cache because we make assertions on its content
-    reloadCollection(COLLECTION);
-
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    query.setRequestHandler("/query");
-    query.setParam("rows", "8");
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
-
-    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
-
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
-
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            // doc with id 1 has no values set for 3 of the 6 feature fields
-            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES - 3)
-            .count());
-      } else {
-        // all the fields were loaded at once
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES)
-            .count());
-      }
-    }
+    assertGroupedFieldLoading(queryResponse, loadedFields);
     assertTheResponse(queryResponse);
   }
 
@@ -145,15 +105,14 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
   public void testSimpleQueryBreakPrefetching() throws Exception {
     ObservingPrefetchingFieldValueFeature.setBreakPrefetching(true);
     ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, "false");
+
+    String lazyLoadingEnabled = String.valueOf(random().nextBoolean());
+    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, lazyLoadingEnabled);
+
     // needed to clear cache because we make assertions on its content
     reloadCollection(COLLECTION);
 
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    query.setRequestHandler("/query");
-    query.setParam("rows", "8");
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
+    SolrQuery query = composeSolrQuery();
 
     QueryResponse queryResponse =
         solrCluster.getSolrClient().query(COLLECTION,query);
@@ -161,55 +120,7 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
 
     assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        // doc with id 1 has no values set for 3 of the 6 feature fields
-        assertEquals(NUM_FEATURES - 3, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      } else {
-        // each single field used for a feature gets loaded separately
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      }
-    }
-    assertTheResponse(queryResponse);
-  }
-
-  @Test
-  public void testSimpleQueryLazyBreakPrefetching() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(true);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, "true");
-    // needed to clear cache because we make assertions on its content
-    reloadCollection(COLLECTION);
-
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    query.setRequestHandler("/query");
-    query.setParam("rows", "8");
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
-
-    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
-
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
-
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        // doc with id 1 has no values set for 3 of the 6 feature fields
-        assertEquals(NUM_FEATURES - 3, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      } else {
-        // each single field used for a feature gets loaded separately
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      }
-    }
+    assertSeparateFieldLoading(queryResponse, loadedFields);
     assertTheResponse(queryResponse);
   }
 
@@ -218,16 +129,15 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     // tests the same behavior as BreakPrefetching but makes sure, that param gets read correctly
     ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false); // do not break prefetching...
     ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, "false");
+
+    String lazyLoadingEnabled = String.valueOf(random().nextBoolean());
+    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, lazyLoadingEnabled);
+
     // needed to clear cache because we make assertions on its content
     reloadCollection(COLLECTION);
 
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    query.setRequestHandler("/query");
-    query.setParam("rows", "8");
+    SolrQuery query = composeSolrQuery();
     query.setParam(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, "true");  // ...but disable it
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
 
     QueryResponse queryResponse =
         solrCluster.getSolrClient().query(COLLECTION,query);
@@ -235,47 +145,16 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
 
     assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    for (SolrDocument doc : queryResponse.getResults()) {
-      String docId = (String) doc.getFirstValue("id");
-      if (docId.equals("1")) {
-        // doc with id 1 has no values set for 3 of the 6 feature fields
-        assertEquals(NUM_FEATURES - 3, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      } else {
-        // each single field used for a feature gets loaded separately
-        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
-            .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
-            .count());
-      }
-    }
+    assertSeparateFieldLoading(queryResponse, loadedFields);
     assertTheResponse(queryResponse);
   }
 
-  @Test
-  public void testSimpleQueryLazyDisablePrefetching() throws Exception {
-    // tests the same behavior as LazyBreakPrefetching but makes sure, that param gets read correctly
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false); // do not break prefetching...
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, "true");
-    // needed to clear cache because we make assertions on its content
-    reloadCollection(COLLECTION);
-
-    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    query.setRequestHandler("/query");
-    query.setParam("rows", "8");
-    query.setParam(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, "true");  // ...but disable it
-    query.setFields("id,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
-
-    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
-
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
-
+  private void assertSeparateFieldLoading(QueryResponse queryResponse, Map<String, List<List<String>>> loadedFields) {
     for (SolrDocument doc : queryResponse.getResults()) {
       String docId = (String) doc.getFirstValue("id");
       if (docId.equals("1")) {
         // doc with id 1 has no values set for 3 of the 6 feature fields
+        // so for this doc NUM_FEATURES - 3 means that all the fields were loaded after each other
         assertEquals(NUM_FEATURES - 3, loadedFields.get(docId).stream()
             .filter(fieldLoadedList -> fieldLoadedList.size() == 1)
             .count());
@@ -286,7 +165,24 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
             .count());
       }
     }
-    assertTheResponse(queryResponse);
+  }
+
+  private void assertGroupedFieldLoading(QueryResponse queryResponse, Map<String, List<List<String>>> loadedFields) {
+    for (SolrDocument doc : queryResponse.getResults()) {
+      String docId = (String) doc.getFirstValue("id");
+      if (docId.equals("1")) {
+        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
+            // doc with id 1 has no values set for 3 of the 6 feature fields
+            // so for this doc NUM_FEATURES - 3 means that all the fields were loaded at once
+            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES - 3)
+            .count());
+      } else {
+        // all the fields were loaded at once
+        assertEquals(NUM_FEATURES, loadedFields.get(docId).stream()
+            .filter(fieldLoadedList -> fieldLoadedList.size() == NUM_FEATURES)
+            .count());
+      }
+    }
   }
 
   private void assertTheResponse(QueryResponse queryResponse) {
@@ -483,30 +379,26 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
             } else {
               document = docFetcher.doc(context.docBase + itr.docID(), Set.of(prefetchFields.toArray(new String[]{"id"})));
             }
-            float fieldValue = super.parseStoredFieldValue(document.getField(getField()));
+            float fieldValue = super.parseStoredFieldValue(document.getField(getField())); // get from cache or compute
 
             List<String> loadedLazyFields = document.getFields().stream()
                 .filter(field -> field instanceof LazyDocument.LazyField)
                 .map(indexableField -> (LazyDocument.LazyField) indexableField)
-                .filter(LazyDocument.LazyField::hasBeenLoaded)
+                .filter(LazyDocument.LazyField::hasBeenLoaded)  // collect lazy fields that were loaded (value was read)
                 .map(LazyDocument.LazyField::name)
-                .filter(fieldName -> !fieldName.equals("id"))
+                .filter(fieldName -> !fieldName.equals("id")) // ignore id because it is not assigned to a feature
                 .collect(Collectors.toList());
 
             List<String> loadedStoredFields = document.getFields().stream()
                 .filter(field -> field instanceof StoredField)
                 .map(indexableField -> (StoredField) indexableField)
-                .map(Field::name)
-                .filter(fieldName -> !fieldName.equals("id"))
+                .map(Field::name)  // collect stored fields that were loaded
+                .filter(fieldName -> !fieldName.equals("id")) // ignore id because it is not assigned to a feature
                 .collect(Collectors.toList());
 
             loadedLazyFields.addAll(loadedStoredFields);
             String id = document.get("id");
-            // this can be null if
-            if (id != null) {
-              handleLoadedFields(id, loadedLazyFields);
-            }
-
+            handleLoadedFields(id, loadedLazyFields);
             return fieldValue;
 
           } catch (final IOException e) {
@@ -518,6 +410,9 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
         }
 
         private synchronized void handleLoadedFields(String id, List<String> loadedLazyFields) {
+          // for each document id we create a history of the fields that were loaded
+          // each inner list represents a state of loaded fields at the point when a feature value was calculated
+          // so each feature adds one state to this list
           Map<String, List<List<String>>> presentLoadedFields = loadedFields;
           List<List<String>> maybePresentList = presentLoadedFields.getOrDefault(id, new ArrayList<>());
           maybePresentList.add(loadedLazyFields);
