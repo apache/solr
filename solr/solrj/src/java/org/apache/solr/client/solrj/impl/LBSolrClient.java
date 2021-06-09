@@ -217,14 +217,17 @@ public abstract class LBSolrClient extends SolrClient {
       if (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime)) {
         throw new SolrServerException("Time allowed to handle this request exceeded"+suffix, previousEx);
       }
-      if (serverStr == null) {
-        if (previousEx instanceof BaseHttpSolrClient.RemoteSolrException) {
-          BaseHttpSolrClient.RemoteSolrException rse = (BaseHttpSolrClient.RemoteSolrException)previousEx;
-          // if security exception, throw directly vs. wrapping ...
-          if (rse.code() == 401 || rse.code() == 403) {
-            throw rse;
-          }
+
+      // is authz related error
+      if (previousEx instanceof BaseHttpSolrClient.RemoteSolrException) {
+        BaseHttpSolrClient.RemoteSolrException rse = (BaseHttpSolrClient.RemoteSolrException)previousEx;
+        // if security exception, throw directly vs. wrapping ...
+        if (rse.code() == 403) {
+          throw rse;
         }
+      }
+
+      if (serverStr == null) {
         throw new SolrServerException("No live SolrServers available to handle this request"+suffix, previousEx);
       }
       numServersTried++;
