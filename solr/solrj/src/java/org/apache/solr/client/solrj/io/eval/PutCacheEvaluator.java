@@ -37,18 +37,18 @@ public class PutCacheEvaluator extends RecursiveObjectEvaluator implements ManyV
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object doWork(Object... values) throws IOException {
-    ConcurrentMap objectCache = this.streamContext.getObjectCache();
+    ConcurrentMap<String, Object> objectCache = this.streamContext.getObjectCache();
     if(values.length == 3) {
       String space = (String)values[0];
       String key = (String)values[1];
       space = space.replace("\"", "");
       key = key.replace("\"", "");
       Object value = values[2];
-      ConcurrentMap spaceCache = (ConcurrentMap)objectCache.get(space);
+      @SuppressWarnings("unchecked")
+      ConcurrentMap<String, Object> spaceCache = (ConcurrentMap<String,Object>)objectCache.get(space);
       if(spaceCache == null) {
-        spaceCache = new ConcurrentHashMap();
+        spaceCache = new ConcurrentHashMap<>();
         objectCache.put(space, spaceCache);
       }
 

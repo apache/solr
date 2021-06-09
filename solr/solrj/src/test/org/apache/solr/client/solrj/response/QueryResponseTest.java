@@ -43,7 +43,6 @@ import org.junit.Test;
  * @since solr 1.3
  */
 @Limit(bytes=20000)
-@SuppressWarnings({"rawtypes"})
 public class QueryResponseTest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
@@ -65,7 +64,7 @@ public class QueryResponseTest extends SolrTestCase {
     int counter = 0;
     RangeFacet.Numeric price = null;
     RangeFacet.Date manufacturedateDt = null;
-    for (RangeFacet r : qr.getFacetRanges()){
+    for (RangeFacet<?,?> r : qr.getFacetRanges()){
       assertNotNull(r);
       if ("price".equals(r.getName())) {
         price = (RangeFacet.Numeric) r;

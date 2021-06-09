@@ -148,7 +148,6 @@ public class PlotStream extends TupleStream implements Expressible {
     return l;
   }
 
-  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
 
     if (finished) {
@@ -173,7 +172,9 @@ public class PlotStream extends TupleStream implements Expressible {
         values.put(param.getKey(), param.getValue().evaluateOverContext());
       }
 
+      @SuppressWarnings({"unchecked"})
       List<Number> y = (List<Number>)values.get("y");
+      @SuppressWarnings({"unchecked"})
       List<Number> x = (List<Number>)values.get("x");
 
       if(x == null) {

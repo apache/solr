@@ -37,15 +37,13 @@ public class GetCacheEvaluator extends RecursiveObjectEvaluator implements ManyV
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    ConcurrentMap objectCache = this.streamContext.getObjectCache();
+    ConcurrentMap<String, Object> objectCache = this.streamContext.getObjectCache();
     if(values.length == 2) {
       String space = (String)values[0];
       String key = (String)values[1];
       space = space.replace("\"", "");
       key = key.replace("\"", "");
-      @SuppressWarnings({"rawtypes"})
-      ConcurrentMap spaceCache = (ConcurrentMap)objectCache.get(space);
+      ConcurrentMap<?,?> spaceCache = (ConcurrentMap<?,?>)objectCache.get(space);
 
       if(spaceCache != null) {
         return spaceCache.get(key);

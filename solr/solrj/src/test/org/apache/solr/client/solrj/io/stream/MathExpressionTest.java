@@ -140,8 +140,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertEquals(tuples.size(), 1);
-      @SuppressWarnings({"rawtypes"})
-      List terms = (List)tuples.get(0).get("return-value");
+      List<?> terms = (List<?>)tuples.get(0).get("return-value");
       assertTrue(terms.get(0).equals("hello"));
       assertTrue(terms.get(1).equals("world"));
 
@@ -205,8 +204,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 1);
-      @SuppressWarnings({"rawtypes"})
-      List l = (List)tuples.get(0).get("test1_t");
+      List<?> l = (List<?>)tuples.get(0).get("test1_t");
       assertTrue(l.get(0).equals("l"));
       assertTrue(l.get(1).equals("b"));
       assertTrue(l.get(2).equals("c"));
@@ -313,7 +311,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
-    @SuppressWarnings({"unchecked"})
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(),  1);
     @SuppressWarnings({"unchecked"})

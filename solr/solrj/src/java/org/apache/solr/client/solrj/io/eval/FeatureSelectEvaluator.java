@@ -81,8 +81,7 @@ public class FeatureSelectEvaluator extends RecursiveObjectEvaluator implements 
   }
 
   private void loadFeatures(Object o, Set<String> features) {
-    @SuppressWarnings({"rawtypes"})
-    List list = (List)o;
+    List<?> list = (List<?>)o;
     for(Object v : list) {
       if(v instanceof List) {
         loadFeatures(v, features);

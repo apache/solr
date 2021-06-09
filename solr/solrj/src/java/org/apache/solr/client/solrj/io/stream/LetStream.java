@@ -47,10 +47,8 @@ public class LetStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
   private TupleStream stream;
   private StreamContext streamContext;
-  @SuppressWarnings({"rawtypes"})
-  private Map letParams = new LinkedHashMap();
+  private Map<String, Object> letParams = new LinkedHashMap<>();
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
 
@@ -64,7 +62,7 @@ public class LetStream extends TupleStream implements Expressible {
       currentName = name;
 
       if(name.equals("echo")) {
-        echo = new HashSet();
+        echo = new HashSet<>();
         String echoString = ((StreamExpressionNamedParameter) np).getParameter().toString().trim();
         if(echoString.equalsIgnoreCase("true")) {
           echoAll = true;
@@ -162,7 +160,6 @@ public class LetStream extends TupleStream implements Expressible {
     stream.close();
   }
 
-  @SuppressWarnings({"unchecked"})
   public void open() throws IOException {
     Map<String, Object> lets = streamContext.getLets();
     Set<Map.Entry<String, Object>> entries = letParams.entrySet();
@@ -199,8 +196,8 @@ public class LetStream extends TupleStream implements Expressible {
         evaluator.setStreamContext(streamContext);
         Object eo = evaluator.evaluate(eTuple);
         if(evaluator instanceof MemsetEvaluator) {
-          @SuppressWarnings({"rawtypes"})
-          Map mem = (Map)eo;
+          @SuppressWarnings({"unchecked"})
+          Map<String,Object> mem = (Map<String,Object>)eo;
           lets.putAll(mem);
         } else {
           lets.put(name, eo);

@@ -36,28 +36,26 @@ public class ClassificationEvaluation {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
-  public void putToMap(@SuppressWarnings({"rawtypes"})Map map) {
+  public void putToMap(Map<? super String, ? super Long> map) {
     map.put("truePositive_i",truePositive);
     map.put("trueNegative_i",trueNegative);
     map.put("falsePositive_i",falsePositive);
     map.put("falseNegative_i",falseNegative);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public Map toMap() {
-    HashMap map = new HashMap();
+  public Map<String, Long> toMap() {
+    HashMap<String, Long> map = new HashMap<>();
     putToMap(map);
     return map;
   }
 
-  public static ClassificationEvaluation create(@SuppressWarnings({"rawtypes"})Map map) {
+  public static ClassificationEvaluation create(Map<Object, ?> map) {
     ClassificationEvaluation evaluation = new ClassificationEvaluation();
     evaluation.addEvaluation(map);
     return evaluation;
   }
 
-  public void addEvaluation(@SuppressWarnings({"rawtypes"})Map map) {
+  public void addEvaluation(Map<Object, ?> map) {
     this.truePositive += (long) map.get("truePositive_i");
     this.trueNegative += (long) map.get("trueNegative_i");
     this.falsePositive += (long) map.get("falsePositive_i");

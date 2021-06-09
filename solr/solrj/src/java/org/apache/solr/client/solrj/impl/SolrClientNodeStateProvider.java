@@ -311,8 +311,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
     @Override
-    @SuppressWarnings({"rawtypes"})
-    public Map getZkJson(String path) throws KeeperException, InterruptedException {
+    public Map<?,?> getZkJson(String path) throws KeeperException, InterruptedException {
       return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
 

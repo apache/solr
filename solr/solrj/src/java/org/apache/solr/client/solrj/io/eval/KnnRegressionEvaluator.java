@@ -71,6 +71,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
       observations = (Matrix)values[0];
     } else if(values[0] instanceof List) {
       bivariate = true;
+      @SuppressWarnings({"unchecked"})
       List<Number> vec = (List<Number>)values[0];
       double[][] data = new double[vec.size()][1];
       for(int i=0; i<vec.size(); i++) {
@@ -82,7 +83,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     }
 
     if(values[1] instanceof List) {
-      outcomes = (List) values[1];
+      outcomes = (List<Number>) values[1];
     } else {
       throw new IOException("The second parameter for knnRegress should be outcome array. ");
     }
@@ -106,8 +107,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
       outcomeData[i] = outcomes.get(i).doubleValue();
     }
 
-    @SuppressWarnings({"rawtypes"})
-    Map map = new HashMap();
+    Map<String, Object> map = new HashMap<>();
     map.put("k", k);
     map.put("observations", observations.getRowCount());
     map.put("features", observations.getColumnCount());

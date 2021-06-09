@@ -288,11 +288,11 @@ public class CollectionApiMapping {
     String getSpecName();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Collection<String> getParamNames_(CommandOperation op, CommandMeta command) {
     Object o = op.getCommandData();
     if (o instanceof Map) {
-      Map map = (Map) o;
+      @SuppressWarnings("unchecked")
+      Map<String,Object> map = (Map<String, Object>) o;
       List<String> result = new ArrayList<>();
       collectKeyNames(map, result, "");
       return result;
@@ -305,7 +305,7 @@ public class CollectionApiMapping {
   public static void collectKeyNames(Map<String, Object> map, List<String> result, String prefix) {
     for (Map.Entry<String, Object> e : map.entrySet()) {
       if (e.getValue() instanceof Map) {
-        collectKeyNames((Map) e.getValue(), result, prefix + e.getKey() + ".");
+        collectKeyNames((Map<String, Object>) e.getValue(), result, prefix + e.getKey() + ".");
       } else {
         result.add(prefix + e.getKey());
       }

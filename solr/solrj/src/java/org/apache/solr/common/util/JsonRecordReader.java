@@ -343,7 +343,6 @@ public class JsonRecordReader {
         }
 
         @Override
-        @SuppressWarnings({"unchecked"})
         public void walk(int event) throws IOException {
           if (event == OBJECT_START) {
             walkObject();
@@ -354,8 +353,7 @@ public class JsonRecordReader {
                 // ensure that the value is of type List
                 final Object val = values.get(name);
                 if (val != null && !(val instanceof List)) {
-                  @SuppressWarnings({"rawtypes"})
-                  final ArrayList listVal = new ArrayList(1);
+                  final ArrayList<Object> listVal = new ArrayList<>(1);
                   listVal.add(val);
                   values.put(name, listVal);
                 }
@@ -458,8 +456,7 @@ public class JsonRecordReader {
       } else if (oldVal instanceof List) {
         ((List) oldVal).add(record);
       } else {
-        @SuppressWarnings({"rawtypes"})
-        ArrayList l = new ArrayList();
+        ArrayList<Object> l = new ArrayList<>();
         l.add(oldVal);
         l.add(record);
         values.put(key, l);
@@ -481,7 +478,6 @@ public class JsonRecordReader {
     }
 
 
-    @SuppressWarnings({"unchecked"})
     private void putValue(Map<String, Object> values, String fieldName, Object o) {
       if (o == null) return;
       Object val = values.get(fieldName);
@@ -490,13 +486,12 @@ public class JsonRecordReader {
         return;
       }
       if (val instanceof List) {
-        @SuppressWarnings({"rawtypes"})
-        List list = (List) val;
+        @SuppressWarnings({"unchecked"})
+        List<Object> list = (List<Object>) val;
         list.add(o);
         return;
       }
-      @SuppressWarnings({"rawtypes"})
-      ArrayList l = new ArrayList();
+      ArrayList<Object> l = new ArrayList<>();
       l.add(val);
       l.add(o);
       values.put(fieldName, l);
@@ -610,12 +605,10 @@ public class JsonRecordReader {
     public abstract void walk(int event) throws IOException;
   }
 
-  @SuppressWarnings({"unchecked"})
   public static List<Object> parseArrayFieldValue(int ev, JSONParser parser, MethodFrameWrapper runnable) throws IOException {
     assert ev == ARRAY_START;
 
-    @SuppressWarnings({"rawtypes"})
-    ArrayList lst = new ArrayList(2);
+    ArrayList<Object> lst = new ArrayList<>(2);
     for (; ; ) {
       ev = parser.nextEvent();
       if (ev == ARRAY_END) {
