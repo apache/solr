@@ -42,8 +42,11 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SuppressForbidden;
 
 class SolrSchema extends AbstractSchema implements Closeable {
+  private static final SolrNamedThreadFactory threadFactory = new SolrNamedThreadFactory("SQLSchemaLukeRequest");
   final Properties properties;
   final SolrClientCache solrClientCache;
   private volatile boolean isClosed = false;
@@ -92,11 +95,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
     return builder.build();
   }
 
+  @SuppressForbidden(reason = "Do not want the MDC to propagate the user principal, need PKI principal")
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {
     final String zk = this.properties.getProperty("zk");
     // Need to run this in a background server thread so the PKI principal is used to authn / authz the luke request
     // Not using the MDC aware executor framework b/c that propagates the principal from this thread, which is what we don't want here
-    ExecutorService service = Executors.newSingleThreadExecutor();
+    ExecutorService service = Executors.newSingleThreadExecutor(threadFactory);
     Map<String, LukeResponse.FieldInfo> fieldInfoMap;
     try {
       Future<Map<String, LukeResponse.FieldInfo>> future = service.submit(() -> {
