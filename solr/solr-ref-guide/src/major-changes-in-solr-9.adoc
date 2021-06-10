@@ -156,6 +156,8 @@ _(raw; not yet edited)_
 
 * SOLR-15409: Zookeeper client libraries upgraded to 3.7.0, which may not be compatible with your existing server installations
 
+* SOLR-15471: The language identification "whitelist" configuration is now an "allowlist" to better convey the meaning of the property
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the

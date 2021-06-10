@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *   Identifies the language of a set of input fields.
  *   Also supports mapping of field names based on detected language.
  * </p>
- * See <a href="https://lucene.apache.org/solr/guide/detecting-languages-during-indexing.html">Detecting Languages During Indexing</a> in reference guide
+ * See <a href="https://solr.apache.org/guide/detecting-languages-during-indexing.html">Detecting Languages During Indexing</a> in reference guide
  * @since 3.5
  * @lucene.experimental
  */
@@ -71,7 +71,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   protected boolean mapIndividual;
   protected boolean enforceSchema;
   protected double threshold;
-  protected HashSet<String> langWhitelist;
+  protected HashSet<String> langAllowlist;
   protected HashSet<String> mapIndividualFieldsSet;
   protected HashSet<String> allMapFieldsSet;
   protected HashMap<String,String> lcMap;
@@ -108,11 +108,15 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
         fallbackFields = params.get(FALLBACK_FIELDS).split(",");
       }
       overwrite = params.getBool(OVERWRITE, false);
-      langWhitelist = new HashSet<>();
+      langAllowlist = new HashSet<>();
       threshold = params.getDouble(THRESHOLD, DOCID_THRESHOLD_DEFAULT);
-      if(params.get(LANG_WHITELIST, "").length() > 0) {
-        for(String lang : params.get(LANG_WHITELIST, "").split(",")) {
-          langWhitelist.add(lang);
+      String legacyAllowList = params.get(LANG_WHITELIST, "");
+      if(legacyAllowList.length() > 0) {
+        log.warn(LANG_WHITELIST + " parameter is deprecated; use " + LANG_ALLOWLIST + " instead.");
+      }
+      if(params.get(LANG_ALLOWLIST, legacyAllowList).length() > 0) {
+        for(String lang : params.get(LANG_ALLOWLIST, "").split(",")) {
+          langAllowlist.add(lang);
         }
       }
 
@@ -234,7 +238,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
         doc.setField(langField, docLang);
       }
     } else {
-      // langField is set, we sanity check it against whitelist and fallback
+      // langField is set, we check it against allowlist and fallback
       docLang = resolveLanguage(doc.getFieldValue(langField).toString(), fallbackLang);
       docLangs.add(docLang);
       log.debug("Field {} already contained value {}, not overwriting.", langField, docLang);
@@ -344,7 +348,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     } else {
       DetectedLanguage lang = languages.get(0);
       String normalizedLang = normalizeLangCode(lang.getLangCode());
-      if(langWhitelist.isEmpty() || langWhitelist.contains(normalizedLang)) {
+      if(langAllowlist.isEmpty() || langAllowlist.contains(normalizedLang)) {
         if (log.isDebugEnabled()) {
           log.debug("Language detected {} with certainty {}", normalizedLang, lang.getCertainty());
         }
@@ -356,7 +360,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
         }
       } else {
         if (log.isDebugEnabled()) {
-          log.debug("Detected a language not in whitelist ({}), using fallback {}", lang.getLangCode(), fallbackLang);
+          log.debug("Detected a language not in allowlist ({}), using fallback {}", lang.getLangCode(), fallbackLang);
         }
         langStr = fallbackLang;
       }
