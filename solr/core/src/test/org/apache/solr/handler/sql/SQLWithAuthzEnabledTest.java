@@ -66,7 +66,7 @@ public class SQLWithAuthzEnabledTest extends SolrCloudTestCase {
                     SQL_USER, getSaltedHashedValue(PASS),
                     ADMIN_USER, getSaltedHashedValue(PASS)))));
 
-    configureCluster(3)
+    configureCluster(2)
         .addConfig("conf", configset("sql"))
         .withSecurityJson(SECURITY_JSON)
         .configure();
