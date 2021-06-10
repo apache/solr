@@ -112,7 +112,8 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       threshold = params.getDouble(THRESHOLD, DOCID_THRESHOLD_DEFAULT);
       String legacyAllowList = params.get(LANG_WHITELIST, "");
       if(legacyAllowList.length() > 0) {
-        log.warn(LANG_WHITELIST + " parameter is deprecated; use " + LANG_ALLOWLIST + " instead.");
+        // nowarn compile time string concatenation
+        log.warn(LANG_WHITELIST + " parameter is deprecated; use " + LANG_ALLOWLIST + " instead."); // nowarn
       }
       if(params.get(LANG_ALLOWLIST, legacyAllowList).length() > 0) {
         for(String lang : params.get(LANG_ALLOWLIST, "").split(",")) {
