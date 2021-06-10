@@ -97,10 +97,10 @@ public class ApiBag {
   }
 
   /**
-   * PathTrie extension that prevents combines the commands in the registered API with any that might already exist.
+   * PathTrie extension that combines the commands in the API being registered with any that have already been registered.
    *
-   * This is only possible for AnnotatedApis, which support the 'command' notion.  All other Api implementations will
-   * resort to the default "overwriting" behavior of PathTrue
+   * This is only possible currently for AnnotatedApis.  All other Api implementations will resort to the default
+   * "overwriting" behavior of PathTrie
    */
   class CommandAggregatingPathTrie extends PathTrie<Api> {
 
@@ -130,8 +130,6 @@ public class ApiBag {
       } else {
         final CommandAggregatingAnnotatedApi wrapperApi = new CommandAggregatingAnnotatedApi(alreadyRegistered);
         wrapperApi.combineWith(beingRegistered);
-
-
         node.setObject(wrapperApi);
       }
     }
@@ -152,10 +150,6 @@ public class ApiBag {
 
       // Reference to Api must be saved to to merge uncached values (i.e. 'spec') lazily
       combinedApis.add(api);
-
-      // Merge spec entries (method and url already match by virtue of PathTrie navigation, only 'commands' need merged)
-      //final Map<String, Object> newApiCommands = api.getSpec().getMap("commands");
-      //getSpec().getMap("commands").putAll(newApiCommands);
     }
 
     @Override
