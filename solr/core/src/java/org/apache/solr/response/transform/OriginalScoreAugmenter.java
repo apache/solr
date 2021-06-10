@@ -18,18 +18,16 @@ package org.apache.solr.response.transform;
 
 import org.apache.solr.common.SolrDocument;
 
-import java.io.IOException;
-
 /**
  * Simple Augmenter that adds the score
  *
  *
  * @since solr 4.0
  */
-public class ScoreAugmenter extends DocTransformer {
+public class OriginalScoreAugmenter extends DocTransformer {
   final String name;
 
-  public ScoreAugmenter( String display )
+  public OriginalScoreAugmenter(String display )
   {
     this.name = display;
   }
@@ -42,20 +40,18 @@ public class ScoreAugmenter extends DocTransformer {
 
   @Override
   public void transform(SolrDocument doc, int docid, float score) {
-    if( context != null && context.wantsScores() ) {
-        doc.setField( name, score );
-    }
+    // noop
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score, float originalScore) throws IOException {
-    if( context != null && context.wantsScores() ) {
-      doc.setField( name, score );
+  public void transform(SolrDocument doc, int docid, float score, float originalScore) {
+    if( context != null && context.wantsOriginalScores() ) {
+      doc.setField( name, originalScore );
     }
   }
 
   @Override
   public void transform(SolrDocument doc, int docid) {
-    transform(doc, docid, 0.0f);
+    transform(doc, docid, 0.0f, 0.0f);
   }
 }

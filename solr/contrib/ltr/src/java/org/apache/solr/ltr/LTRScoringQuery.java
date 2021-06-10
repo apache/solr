@@ -509,8 +509,8 @@ public class LTRScoringQuery extends Query implements Accountable {
       public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
         super(weight);
         docInfo = new DocInfo();
-        for (final Feature.FeatureWeight.FeatureScorer subSocer : featureScorers) {
-          subSocer.setDocInfo(docInfo);
+        for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
+          subScorer.setDocInfo(docInfo);
         }
         if (featureScorers.size() <= 1) {
           // future enhancement: allow the use of dense features in other cases

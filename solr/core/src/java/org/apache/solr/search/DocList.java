@@ -83,6 +83,8 @@ public interface DocList {
   /** True if scores were retained */
   public boolean hasScores();
 
+  public boolean hasOriginalScores();
+
   /** The maximum score for the search... only valid if
    * scores were retained (if hasScores()==true)
    */

@@ -26,7 +26,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
 /**
  * This feature returns the original score that the document had before performing
@@ -94,8 +93,7 @@ public class OriginalScoreFeature extends Feature {
         // This is done to improve the speed of feature extraction. Since this
         // was already scored in step 1
         // we shouldn't need to calc original score again.
-        final DocInfo docInfo = getDocInfo();
-        return (docInfo != null && docInfo.hasOriginalDocScore() ? docInfo.getOriginalDocScore() : in.score());
+        return in.score(); // FIXME bad for performance
       }
 
     }

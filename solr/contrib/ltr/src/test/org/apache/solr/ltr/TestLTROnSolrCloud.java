@@ -69,7 +69,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     extraServlets = setupTestInit(solrconfig, schema, true);
     System.setProperty("enable.update.log", "true");
 
-    int numberOfShards = random().nextInt(4)+1;
+    int numberOfShards = random().nextInt(4)+1;   // FIXME testSimpleQueryCustomSortByScoreWithSubResultSetAndRowsLessThanExistingDocs only works if both are set to 1
     int numberOfReplicas = random().nextInt(2)+1;
 
     int numberOfNodes = numberOfShards * numberOfReplicas;
@@ -189,6 +189,40 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       docCounter++;
     }
   }
+
+  @Test
+  public void testSimpleQueryCustomSortByScoreWithSubResultSetAndRowsLessThanExistingDocs() throws Exception {
+    final int reRankDocs = 2;
+    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
+    query.setRequestHandler("/query");
+    query.setFields("*,score,originalScore,[shard],[fv]");  // score & originalScore as fl are needed here to be able to use it for assertions
+    query.setParam("rows", "6");
+    query.setParam("sort", "score asc");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs="+reRankDocs+"}");
+    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    SolrDocumentList results = queryResponse.getResults();
+    assertEquals(6, results.size());
+    int docCounter = 0;
+    float lastScore = Float.MIN_VALUE;
+
+    for(SolrDocument d : results){
+
+      System.out.println("id " + d.getFieldValue("id") +
+          "  score " + d.getFieldValue("score") +
+          "  original " + d.getFieldValue("originalScore"));
+
+      float score = (float) d.getFieldValue("score");
+      if(docCounter < reRankDocs){
+        final float calculatedScore = calculateLTRScoreForDoc(d);
+        assertEquals(calculatedScore, score, 0.0);
+      } else if(docCounter > reRankDocs + 1) {
+        assertTrue(lastScore < score);
+      }
+      lastScore = score;
+      docCounter++;
+    }
+  }
+
   private float calculateLTRScoreForDoc(SolrDocument d) {
     Matcher matcher = Pattern.compile(",?(\\w+)=(-?[0-9]+\\.[0-9]+)").matcher((String) d.getFieldValue("[fv]"));
     Map<String, Float> weights = Splitter.on(",")

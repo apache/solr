@@ -44,7 +44,8 @@ public class SortedHitQueueManager {
       int absoluteReRankDocs = Math.min(reRankDocsSize, ss.getCount());
       reRankQueue = new ShardFieldSortedHitQueue(new SortField[]{SortField.FIELD_SCORE}, 
               absoluteReRankDocs, rb.req.getSearcher());
-      queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount() - absoluteReRankDocs, 
+      // TODO maybe an if is missing here?
+      queue = new ShardFieldSortedHitQueue(new SortField[]{new SortField("originalScore", SortField.Type.SCORE)}, ss.getOffset() + ss.getCount() - absoluteReRankDocs,
               rb.req.getSearcher(), false);
     } else {
       // reRanking is disabled, use one queue for all results
