@@ -2002,7 +2002,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     // no results
     params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT a_s FROM " + COLLECTIONORALIAS + " WHERE a_s='*MATCHNONE*'");
+        "stmt", "SELECT a_s FROM " + COLLECTIONORALIAS + " WHERE a_s LIKE '%MATCHNONE%'");
     tuples = getTuples(params, sqlUrl());
     assertEquals(0, tuples.size());
 
