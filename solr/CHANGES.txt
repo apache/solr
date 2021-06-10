@@ -139,6 +139,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   and a templated path.  The collection or core name is now in the db.instance tag.
   (David Smiley)
 
+* SOLR-15453: Update the content security policy in Jetty to allow image requests from local host and prevent security errors on the client side. (MarcusSorealheis via Houston Putman)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
