@@ -1,3 +1,4 @@
+
 = Major Changes in Solr 9
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -155,6 +156,9 @@ _(raw; not yet edited)_
 * SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000".
 
 * SOLR-15409: Zookeeper client libraries upgraded to 3.7.0, which may not be compatible with your existing server installations
+
+* SOLR-15470: The binary distribution no longer contains test-framework jars.
+
 
 === Upgrade Prerequisites in Solr 9
 
