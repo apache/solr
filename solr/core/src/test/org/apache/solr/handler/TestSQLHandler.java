@@ -1932,16 +1932,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
   public void testIn() throws Exception {
     new UpdateRequest()
         .add("id", "1", "text_t", "foobar", "str_s", "a")
-        .add("id", "2", "text_t", "foobaz", "str_s", "a")
+        .add("id", "2", "text_t", "foobaz", "str_s", "b")
+        .add("id", "3", "text_t", "foobaz", "str_s", "c")
+        .add("id", "4", "text_t", "foobaz", "str_s", "d")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql",
         "stmt",
-        "select id from collection1 where str_s IN ('a')");
+        "select id from collection1 where str_s IN ('a','b','c')");
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
     List<Tuple> tuples = getTuples(sParams, baseUrl);
-    assertEquals(2, tuples.size());
+    assertEquals(3, tuples.size());
   }
 
   private String sqlUrl() {
@@ -1986,7 +1988,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "3", "a_s", "hello-3", "b_s", "foo")
         .add("id", "4", "a_s", "world-4", "b_s", "foo")
         .add("id", "5", "a_s", "hello-5", "b_s", "foo")
-        .add("id", "6", "a_s", "world-6", "b_s", "foo")
+        .add("id", "6", "a_s", "world-6", "b_s", "bar")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams params = mapParams(CommonParams.QT, "/sql",
@@ -2010,6 +2012,39 @@ public class TestSQLHandler extends SolrCloudTestCase {
     params = mapParams(CommonParams.QT, "/sql",
         "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s LIKE 'foo'");
     tuples = getTuples(params, sqlUrl());
-    assertEquals(6, tuples.size());
+    assertEquals(5, tuples.size());
+
+    // NOT LIKE
+    params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s NOT LIKE 'f%'");
+    tuples = getTuples(params, sqlUrl());
+    assertEquals(1, tuples.size());
+
+    // leading wildcard
+    params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s LIKE '%oo'");
+    tuples = getTuples(params, sqlUrl());
+    assertEquals(5, tuples.size());
+  }
+
+  @Test
+  public void testBetween() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_i", "1")
+        .add("id", "2", "a_i", "2")
+        .add("id", "3", "a_i", "3")
+        .add("id", "4", "a_i", "4")
+        .add("id", "5", "a_i", "5")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    SolrParams params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT a_i FROM " + COLLECTIONORALIAS + " WHERE a_i BETWEEN 2 AND 4");
+    List<Tuple> tuples = getTuples(params, sqlUrl());
+    assertEquals(3, tuples.size());
+
+    params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT a_i FROM " + COLLECTIONORALIAS + " WHERE a_i NOT BETWEEN 2 AND 4");
+    tuples = getTuples(params, sqlUrl());
+    assertEquals(2, tuples.size());
   }
 }

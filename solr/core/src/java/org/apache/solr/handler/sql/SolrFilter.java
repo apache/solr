@@ -35,6 +35,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
 
+import static org.apache.calcite.sql.SqlKind.LIKE;
 import static org.apache.calcite.sql.SqlKind.LITERAL;
 import static org.apache.calcite.sql.SqlKind.NOT;
 
@@ -86,14 +87,14 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected String translateMatch(RexNode condition) {
       final SqlKind kind = condition.getKind();
-      if (kind.belongsTo(SqlKind.COMPARISON)) {
+      if (kind.belongsTo(SqlKind.COMPARISON) || kind == SqlKind.NOT) {
         return translateComparison(condition);
       } else if (condition.isA(SqlKind.AND)) {
         return "(" + translateAnd(condition) + ")";
       } else if (condition.isA(SqlKind.OR)) {
         return "(" + translateOr(condition) + ")";
       } else if (kind == SqlKind.LIKE) {
-        return translateLike(condition);
+        return translateLike(condition, false);
       } else if (kind == SqlKind.IS_NOT_NULL || kind == SqlKind.IS_NULL) {
         return translateIsNullOrIsNotNull(condition);
       } else {
@@ -114,7 +115,9 @@ class SolrFilter extends Filter implements SolrRel {
       final RexNode left = operands.get(0);
       if (left instanceof RexInputRef) {
         String name = fieldNames.get(((RexInputRef) left).getIndex());
-        return node.getKind() == SqlKind.IS_NOT_NULL ? "+" + name + ":*" : "(*:* -" + name + ":*)";
+        SqlKind kind = node.getKind();
+        this.negativeQuery = kind == SqlKind.IS_NOT_NULL;
+        return kind == SqlKind.IS_NOT_NULL ? "+" + name + ":*" : "(*:* -" + name + ":*)";
       }
 
       throw new AssertionError("expected field ref but found " + left);
@@ -154,7 +157,7 @@ class SolrFilter extends Filter implements SolrRel {
       }
     }
 
-    protected String translateLike(RexNode like) {
+    protected String translateLike(RexNode like, boolean isNegativeQuery) {
       Pair<String, RexLiteral> pair = getFieldValuePair(like);
       String terms = pair.getValue().toString().trim();
       terms = terms.replace("'", "").replace('%', '*').replace('_', '?');
@@ -162,15 +165,15 @@ class SolrFilter extends Filter implements SolrRel {
         terms = "\"" + terms + "\"";
       }
 
-      String clause = "{!complexphrase}" + pair.getKey() + ":" + terms;
-      this.negativeQuery = false;
-      return clause;
+      this.negativeQuery = isNegativeQuery;
+      return "{!complexphrase}" + pair.getKey() + ":" + terms;
     }
 
     protected String translateComparison(RexNode node) {
       final SqlKind kind = node.getKind();
       if (kind == NOT) {
-        return "-" + translateComparison(((RexCall) node).getOperands().get(0));
+        RexNode negated = ((RexCall) node).getOperands().get(0);
+        return "-" + (negated.getKind() == LIKE ? translateLike(negated, true) : translateComparison(negated));
       }
 
       Pair<String, RexLiteral> binaryTranslated = getFieldValuePair(node);

@@ -95,7 +95,7 @@ The JDBC Driver ships with SolrJ. Below is sample code for creating a connection
 ----
 Connection con = null;
 try {
-    con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1&aggregationMode=map_reduce&numWorkers=2");
+    con = DriverManager.getConnection("jdbc:solr://"   zkHost   "?collection=collection1&aggregationMode=map_reduce&numWorkers=2");
     stmt = con.createStatement();
     rs = stmt.executeQuery("SELECT a_s, sum(a_f) as sum FROM collection1 GROUP BY a_s ORDER BY sum desc");
 
@@ -244,12 +244,14 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 |>= |Greater than or equals |`fielda >= 10` | `fielda:[10 TO *]`
 |< |Less than |`fielda < 10` | `fielda:[* TO 10}`
 |\<= |Less than or equals |`fielda \<= 10` | `fielda:[* TO 10]`
+|IN |Specify multiple values (shorthand for multiple OR clasues) |`fielda IN (10,20,30)` | `(fielda:10 OR fielda:20 OR fielda:30)`
+|LIKE |Wildcard match on string or text fields |`fielda LIKE 'day%'` | `{!complexphrase}fielda:"day*"`
+|BETWEEN |Range match |`fielda BETWEEN 2 AND 2` | `((fielda: [2 TO *]) AND (fielda: [* TO 4]))`
 |===
 
-Some operators that are not supported are BETWEEN, LIKE and IN. However, there are workarounds for BETWEEN and LIKE.
-
-* BETWEEN can be supported with a range query, such as `field = [50 TO 100]`.
-* A simplistic LIKE can be used with a wildcard, such as `field = 'sam*'`.
+* IN, LIKE, BETWEEN support the NOT keyword to find rows where the condition is not true, such as `fielda NOT LIKE 'day%'`
+* String literals must be wrapped in single-quotes; double-quotes indicate database objects and not a string literal.
+* A simplistic LIKE can be used with an asterisk wildcard, such as `field = 'sam*'`; this is Solr specific and not part of the SQL standard.
 
 === ORDER BY Clause
 
