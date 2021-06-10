@@ -1929,7 +1929,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   @Test
-  public void testLike() throws Exception {
+  public void testIn() throws Exception {
     new UpdateRequest()
         .add("id", "1", "text_t", "foobar", "str_s", "a")
         .add("id", "2", "text_t", "foobaz", "str_s", "a")
@@ -1941,5 +1941,75 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
     List<Tuple> tuples = getTuples(sParams, baseUrl);
+    assertEquals(2, tuples.size());
+  }
+
+  private String sqlUrl() {
+    return cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+  }
+
+  @Test
+  public void testColIsNotNull() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "b_s", "foobar")
+        .add("id", "2", "b_s", "foobaz")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    SolrParams params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s IS NOT NULL");
+    List<Tuple> tuples = getTuples(params, sqlUrl());
+    assertEquals(2, tuples.size());
+  }
+
+  @Test
+  public void testColIsNull() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "b_s", "foobar")
+        .add("id", "2")
+        .add("id", "3", "b_s", "foobaz")
+        .add("id", "4")
+        .add("id", "5", "b_s", "bazbar")
+        .add("id", "6")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    SolrParams params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT id FROM " + COLLECTIONORALIAS + " WHERE b_s IS NULL");
+    List<Tuple> tuples = getTuples(params, sqlUrl());
+    assertEquals(3, tuples.size());
+  }
+
+  @Test
+  public void testLike() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo")
+        .add("id", "5", "a_s", "hello-5", "b_s", "foo")
+        .add("id", "6", "a_s", "world-6", "b_s", "foo")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    SolrParams params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT a_s FROM " + COLLECTIONORALIAS + " WHERE a_s LIKE 'h_llo-%'");
+    List<Tuple> tuples = getTuples(params, sqlUrl());
+    assertEquals(3, tuples.size());
+
+    // not technically valid SQL but we support it for legacy purposes, see: SOLR-15463
+    params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT a_s FROM " + COLLECTIONORALIAS + " WHERE a_s='world-*'");
+    tuples = getTuples(params, sqlUrl());
+    assertEquals(3, tuples.size());
+
+    // no results
+    params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT a_s FROM " + COLLECTIONORALIAS + " WHERE a_s='*MATCHNONE*'");
+    tuples = getTuples(params, sqlUrl());
+    assertEquals(0, tuples.size());
+
+    // like but without wildcard, should still work
+    params = mapParams(CommonParams.QT, "/sql",
+        "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s LIKE 'foo'");
+    tuples = getTuples(params, sqlUrl());
+    assertEquals(6, tuples.size());
   }
 }
