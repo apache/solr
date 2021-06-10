@@ -54,6 +54,8 @@ rolesClaim           ; What claim id to pull user roles from. The claim must the
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ;
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
 redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
+trustedCerts         ; One or more X.509 SSL certificates in plaintext PEM or PKCS#7 formats, that should be trusted when talking to IdPs. Newlines must be replaced with `\n`. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
+trustedCertsFile     ; Path to a file of type PEM, DER or PKCS#7, containing one or more X.509 SSL certificates that should be trusted when talking to IdPs. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
 issuers              ; List of issuers (Identity providers) to  support. See section <<issuer-configuration,Issuer configuration>> for configuration syntax ;
 |===
 
@@ -138,7 +140,8 @@ Let's look at a more complex configuration, this time with two issuers configure
         "wellKnownUrl": "https://example2.com/.well-known/oidc", <13>
         "aud": "https://example2.com/solr"
       }
-    ]
+    ],
+    "trustedCertsFile": "/path/to/certsFile.pem" <14>
   }
 }
 ----
@@ -157,12 +160,18 @@ Let's comment on this config:
 <10> Set the client id registered with Identity Provider
 <11> Configure the issuer id. Will be used for validating tokens. A token's 'iss' claim must match one of the configured issuer IDs.
 <12> Configure the audience claim. A token's 'aud' claim must match 'aud' for one of the configured issuers.
-<13> This issuer is auto configured through discovery, so 'iss' and JWK settings are not required
+<13> This issuer is auto-configured through discovery, so 'iss' and JWK settings are not required
+<14> Provides SSL certificate(s) to trust IdP https communication.
 
 === Using non-SSL URLs
 In production environments you should always use SSL protected HTTPS connections, otherwise you open yourself up to attacks.
 However, in development, it may be useful to use regular HTTP URLs, and bypass the security check that Solr performs.
 To support this you can set the environment variable `-Dsolr.auth.jwt.allowOutboundHttp=true` at startup.
+
+=== Trusting the IdP server
+All communication with the Oauth2 server (IdP) is done over HTTPS. By default, Java's built-in TrustStore is used. However, by configuring one of the options `trustedCertsFile` or `trustedCerts`, the plugin will *instead* trust the set of certificates provided, not any certificate signed by a root CA. This is both more secure and also lets you trust self-signed certificates. It also has the benefit of working even if Solr is not started in SSL mode.
+
+Please configure either the `trustedCerts` or `trustedCertsFile` option. Configuring both will cause an error.
 
 == Editing JWT Authentication Plugin Configuration
 
