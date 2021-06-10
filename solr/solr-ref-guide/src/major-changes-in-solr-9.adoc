@@ -159,7 +159,6 @@ _(raw; not yet edited)_
 
 * SOLR-15470: The binary distribution no longer contains test-framework jars.
 
-
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
