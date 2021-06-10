@@ -32,9 +32,8 @@ public class FakeDeletionPolicy extends IndexDeletionPolicy implements NamedList
   private String var1;
   private String var2;
 
-  //@Override
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     var1 = (String) args.get("var1");
     var2 = (String) args.get("var2");
   }

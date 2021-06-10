@@ -208,9 +208,8 @@ public class CommandOperation {
   public static final String ERR_MSGS = "errorMessages";
   public static final String ROOT_OBJ = "";
 
-  @SuppressWarnings({"rawtypes"})
-  public static List<Map> captureErrors(List<CommandOperation> ops) {
-    List<Map> errors = new ArrayList<>();
+  public static List<Map<String, Object>> captureErrors(List<CommandOperation> ops) {
+    List<Map<String, Object>> errors = new ArrayList<>();
     for (CommandOperation op : ops) {
       if (op.hasError()) {
         errors.add(op.errorDetails());
@@ -361,8 +360,7 @@ public class CommandOperation {
         ops.addAll(parse(stream.getReader(), singletonCommands));
       }
     }
-    @SuppressWarnings({"rawtypes"})
-    List<Map> errList = CommandOperation.captureErrors(ops);
+    List<Map<String, Object>> errList = CommandOperation.captureErrors(ops);
     if (!errList.isEmpty()) {
       resp.add(CommandOperation.ERR_MSGS, errList);
       return null;

@@ -860,12 +860,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
     if(luceneMatchVersion != null) result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion.toString());
     result.put("updateHandler", getUpdateHandlerInfo());
-    Map m = new LinkedHashMap();
+    Map<String, Object> m = new LinkedHashMap<>();
     result.put("query", m);
     m.put("useFilterForSortedQuery", useFilterForSortedQuery);
     m.put("queryResultWindowSize", queryResultWindowSize);
@@ -879,13 +878,15 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       String tag = plugin.getCleanTag();
       tag = tag.replace("/", "");
       if (plugin.options.contains(PluginOpts.REQUIRE_NAME)) {
-        LinkedHashMap items = new LinkedHashMap();
+        LinkedHashMap<String, Object> items = new LinkedHashMap<>();
         for (PluginInfo info : infos) {
           //TODO remove after fixing https://issues.apache.org/jira/browse/SOLR-13706
           if (info.type.equals("searchComponent") && info.name.equals("highlight")) continue;
           items.put(info.name, info);
         }
-        for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
+        for (Map.Entry<String, Map<String, Object>> e : overlay.getNamedPlugins(plugin.tag).entrySet()) {
+          items.put(e.getKey(), e.getValue());
+        }
         result.put(tag, items);
       } else {
         if (plugin.options.contains(MULTI_OK)) {
@@ -902,7 +903,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
 
     addCacheConfig(m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
-    m = new LinkedHashMap();
+    m = new LinkedHashMap<>();
     result.put("requestDispatcher", m);
     m.put("handleSelect", handleSelect);
     if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
@@ -916,8 +917,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private void addCacheConfig(Map queryMap, CacheConfig... cache) {
+  private void addCacheConfig(Map<String, Object> queryMap, CacheConfig... cache) {
     if (cache == null) return;
     for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
 

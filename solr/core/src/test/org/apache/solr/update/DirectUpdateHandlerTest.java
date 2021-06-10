@@ -32,7 +32,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.index.TieredMergePolicyFactory;
@@ -468,11 +467,6 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
       newSearcherCount.incrementAndGet();
       newSearcherOpenedAt.set(newSearcher.getOpenNanoTime());
-    }
-
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-
     }
   }
 }

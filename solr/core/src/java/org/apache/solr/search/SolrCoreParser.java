@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -54,15 +55,15 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"}) NamedList initArgs) {
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList<?> initArgs) {
     if (initArgs == null || initArgs.size() == 0) {
       return;
     }
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
 
-    @SuppressWarnings("unchecked")
-    final Iterable<Map.Entry<String,Object>> args = initArgs;
-    for (final Map.Entry<String,Object> entry : args) {
+    Iterator<? extends Map.Entry<String, ?>> it = initArgs.iterator();
+    while(it.hasNext()) {
+      Map.Entry<String, ?> entry = it.next();
       final String queryName = entry.getKey();
       final String queryBuilderClassName = (String)entry.getValue();
 

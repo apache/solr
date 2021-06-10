@@ -533,8 +533,7 @@ public class Utils {
             Map<String, Object> map = (Map<String, Object>) o;
             o = getVal(new MapWriterMap(map), null, idx);
           } else {
-            @SuppressWarnings({"rawtypes"})
-            List l = (List) o;
+            List<?> l = (List<?>) o;
             o = idx < l.size() ? l.get(idx) : null;
           }
         }
@@ -547,8 +546,7 @@ public class Utils {
           if (val instanceof IteratorWriter) {
             val = getValueAt((IteratorWriter) val, idx);
           } else {
-            @SuppressWarnings({"rawtypes"})
-            List l = (List) val;
+            List<?> l = (List<?>) val;
             val = idx < l.size() ? l.get(idx) : null;
           }
         }
@@ -601,7 +599,6 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object getVal(Object obj, String key, int idx) {
     if (obj instanceof MapWriter) {
       Object[] result = new Object[1];
@@ -615,7 +612,7 @@ public class Utils {
             if (idx < 0) {
               if (k.equals(key)) result[0] = v;
             } else {
-              if (++count == idx) result[0] = new MapWriterEntry(k, v);
+              if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
             }
             return this;
           }
@@ -624,7 +621,7 @@ public class Utils {
         throw new RuntimeException(e);
       }
       return result[0];
-    } else if (obj instanceof Map) return ((Map) obj).get(key);
+    } else if (obj instanceof Map) return ((Map<?,?>) obj).get(key);
     else throw new RuntimeException("must be a NamedList or Map");
   }
 
@@ -943,8 +940,7 @@ public class Utils {
 
 
 
-  @SuppressWarnings("rawtypes")
-  private static Map<Class, List<FieldWriter>> storedReflectData =   new ConcurrentHashMap<>();
+  private static Map<Class<?>, List<FieldWriter>> storedReflectData = new ConcurrentHashMap<>();
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;

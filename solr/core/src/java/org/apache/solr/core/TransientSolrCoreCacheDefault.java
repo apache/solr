@@ -49,8 +49,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       // deprecate this for 7.0?
       this.cacheSize = cfg.getTransientCacheSize();
     } else {
-      @SuppressWarnings({"rawtypes"})
-      NamedList args = cfg.getTransientCachePluginInfo().initArgs;
+      NamedList<?> args = cfg.getTransientCachePluginInfo().initArgs;
       Object obj = args.get("transientCacheSize");
       if (obj != null) {
         this.cacheSize = (int) obj;
@@ -65,8 +64,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       // Still handle just having transientCacheSize defined in the body of solr.xml not in a transient handler clause.
       this.cacheSize = cfg.getTransientCacheSize();
     } else {
-      @SuppressWarnings({"rawtypes"})
-      NamedList args = cfg.getTransientCachePluginInfo().initArgs;
+      NamedList<?> args = cfg.getTransientCachePluginInfo().initArgs;
       Object obj = args.get("transientCacheSize");
       if (obj != null) {
         this.cacheSize = (int) obj;
@@ -103,8 +101,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   public Collection<SolrCore> prepareForShutdown() {
     // Return a copy of the values
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    List<SolrCore> ret = new ArrayList(transientCores.values());
+    List<SolrCore> ret = new ArrayList<>(transientCores.values());
     transientCores.clear();
     return ret;
   }

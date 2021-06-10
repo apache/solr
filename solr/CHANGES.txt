@@ -41,6 +41,8 @@ New Features
 
 * SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
 
+* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
+
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
 Improvements
@@ -147,7 +149,7 @@ Other Changes
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
-* SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
+* SOLR-13655: Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
 * SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
 
@@ -320,6 +322,10 @@ Bug Fixes
 
 * SOLR-15334: Return error response when failing auth in PKIAuthPlugin (Mike Drob)
 
+* SOLR-15449: Edismax sow incorrectly affect mm parameter in multi field search (Alessandro Benedetti, Michael Gibney, David Smiley)
+
+* SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
+
 ==================  8.10.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -426,7 +432,10 @@ Bug Fixes
   (David Smiley)
 
 * SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
-  (Thomas Wöckinger, David Smiley)
+  (Thomas Wöckinger via David Smiley)
+
+* SOLR-15457: Fix JSON Faceting on EnumFieldType -- returned values should not be internal ordinals.
+  (Thomas Wöckinger via David Smiley)
 
 * SOLR-15273: Fix NullPointerException in StoredFieldsShardResponseProcessor that happened when a field name alias is
   used for the unique key field in searches with distributed result grouping. (limingnihao via Christine Poerschke)

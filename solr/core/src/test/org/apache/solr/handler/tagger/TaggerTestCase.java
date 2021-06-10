@@ -156,10 +156,9 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
 
     //build TestTag[] aTags from response ('a' is actual)
-    @SuppressWarnings({"rawtypes"})
-    List<NamedList> mTagsList = (List<NamedList>) rspValues.get("tags");
+    List<NamedList<Object>> mTagsList = (List<NamedList<Object>>) rspValues.get("tags");
     List<TestTag> aTags = new ArrayList<>();
-    for (@SuppressWarnings({"rawtypes"})NamedList map : mTagsList) {
+    for (NamedList<Object> map : mTagsList) {
       List<String> foundIds = (List<String>) map.get("ids");
       for (String id  : foundIds) {
         aTags.add(new TestTag(
@@ -206,8 +205,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     fail(message+": didn't expect "+actualsRemaining.first()+" (of "+actualsRemaining.size()+"); "+ error);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  class TestTag implements Comparable {
+  class TestTag implements Comparable<TestTag> {
     final int startOffset, endOffset;
     final String substring;
     final String docName;
@@ -244,8 +242,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
 
     @Override
-    public int compareTo(Object o) {
-      TestTag that = (TestTag) o;
+    public int compareTo(TestTag that) {
       return new CompareToBuilder()
           .append(this.startOffset, that.startOffset)
           .append(this.endOffset, that.endOffset)

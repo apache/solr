@@ -57,14 +57,13 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   private void testExistsBehavior(Class<? extends DirectoryFactory> clazz) throws Exception {
     final String path = createTempDir().toString() + "/" + clazz + "_somedir";
     DirectoryFactory dirFac = null;
     try {
       dirFac = clazz.getConstructor().newInstance();
       dirFac.initCoreContainer(null); // greybox testing directly against path
-      dirFac.init(new NamedList());
+      dirFac.init(new NamedList<>());
 
       assertFalse(path + " should not exist yet", dirFac.exists(path));
       Directory dir = dirFac.get(path, DirectoryFactory.DirContext.DEFAULT,
