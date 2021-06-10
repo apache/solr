@@ -1,4 +1,23 @@
-package org.apache.solr.handler.admin;
+/*
+ *
+ *  * Licensed to the Apache Software Foundation (ASF) under one or more
+ *  * contributor license agreements.  See the NOTICE file distributed with
+ *  * this work for additional information regarding copyright ownership.
+ *  * The ASF licenses this file to You under the Apache License, Version 2.0
+ *  * (the "License"); you may not use this file except in compliance with
+ *  * the License.  You may obtain a copy of the License at
+ *  *
+ *  *     http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *
+ */
+
+package org.apache.solr.handler.admin.api;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.SolrTestCaseJ4;
@@ -9,7 +28,9 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.handler.SpecificCollectionAPI;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.TestCollectionAPIs;
+import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -33,7 +54,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
- * Unit tests for the API mappings found in {@link org.apache.solr.handler.SpecificCollectionAPI}.
+ * Unit tests for the V2 APIs found in {@link org.apache.solr.handler.admin.api}.
  *
  * This test bears many similarities to {@link TestCollectionAPIs} which appears to test the mappings indirectly by
  * checking message sent to the ZK overseer (which is similar, but not identical to the v1 param list).  If there's no
@@ -44,7 +65,7 @@ import static org.mockito.Mockito.verify;
  * examples. In several instances, mutually exclusive JSON parameters are provided.  This is done to exercise conversion
  * of all parameters, even if particular combinations are never expected in the same request.
  */
-public class V2SpecificCollectionAPIMappingTest extends SolrTestCaseJ4 {
+public class V2CollectionAPIMappingTest extends SolrTestCaseJ4 {
   private ApiBag apiBag;
 
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
@@ -61,10 +82,7 @@ public class V2SpecificCollectionAPIMappingTest extends SolrTestCaseJ4 {
     queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
 
     apiBag = new ApiBag(false);
-    final SpecificCollectionAPI specificCollectionAPI = new SpecificCollectionAPI(mockCollectionsHandler);
-    apiBag.registerObject(specificCollectionAPI);
-    apiBag.registerObject(specificCollectionAPI.specificCollectionCommands);
-    apiBag.registerObject(specificCollectionAPI.modifyCollectionCommand);
+    ApiRegistrar.registerCollectionApis(apiBag, mockCollectionsHandler);
   }
 
   @Test

@@ -125,7 +125,7 @@ public class PathTrie<T> {
    *
    * The default implementation overwrites any existing values, but this can be overwritten by subclasses.
    */
-  protected void attachValueToNode(PathTrie.Node node, T o) {
+  protected void attachValueToNode(PathTrie<T>.Node node, T o) {
     node.obj = o;
   }
 

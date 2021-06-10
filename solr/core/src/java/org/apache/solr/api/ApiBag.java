@@ -109,7 +109,7 @@ public class ApiBag {
     }
 
     @Override
-    protected void attachValueToNode(PathTrie.Node node, Api o) {
+    protected void attachValueToNode(PathTrie<Api>.Node node, Api o) {
       if (node.getObject() == null) {
         super.attachValueToNode(node, o);
         return;
