@@ -58,6 +58,7 @@ dependencies {
    ":solr:contrib:analytics",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
+   ":solr:contrib:gcs-repository",
    ":solr:contrib:jaegertracer-configurator",
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
