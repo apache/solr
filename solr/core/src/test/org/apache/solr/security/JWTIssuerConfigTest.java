@@ -183,9 +183,6 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     assertEquals(500, e.code());
     // We open a connection in the code path to a server that doesn't exist, which causes this.  Should really be mocked.
     assertEquals("Well-known config could not be read from url http://127.0.0.1:45678/.well-known/config", e.getMessage());
-    
-            
-
   }
   
   @Test

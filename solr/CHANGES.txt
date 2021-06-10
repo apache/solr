@@ -43,6 +43,8 @@ New Features
 
 * SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
 
+* SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -147,7 +149,7 @@ Other Changes
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
-* SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
+* SOLR-13655: Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
 * SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
 
