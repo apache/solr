@@ -175,6 +175,45 @@ public class ResponseBuilder
     }
   }
 
+  /**
+   *  Override this method and the {@link ResponseBuilder#addShardInfo(Object, String, NamedList)}
+   *  method e.g. if you wish to return a list instead of a map container.
+   */
+  protected Object newShardsInfo() {
+    if (this.req.getParams().getInt("poc", 0) != 0) {
+      return new ArrayList<>();
+    }
+    return new SimpleOrderedMap<>();
+  }
+
+  /**
+   *  Override this method if you overrode the {@link ResponseBuilder#newShardsInfo()} method
+   *  or if you wish to remove or redact some <code>shardInfoValue</code> elements.
+   */
+  @SuppressWarnings("unchecked")
+  protected void addShardInfo(Object shardsInfo, String shardInfoName, NamedList<Object> shardInfoValue) {
+    if (this.req.getParams().getInt("poc", 0) != 0) {
+      if (this.req.getParams().getInt("poc", 0) == 1) {
+        shardInfoValue.add("shards", shardInfoName);
+        ((ArrayList<Object>)shardsInfo).add(shardInfoValue);
+      }
+      if (this.req.getParams().getInt("poc", 0) == 2) {
+        if (null != shardInfoValue.removeAll("shardAddress")) {
+          shardInfoValue.add("shardAddress", "***redacted***");
+        }
+        ((ArrayList<Object>)shardsInfo).add(shardInfoValue);
+      }
+      if (this.req.getParams().getInt("poc", 0) == 3) {
+        Object shardAddress = shardInfoValue.remove("shardAddress");
+        if (shardAddress != null) {
+          ((ArrayList<Object>)shardsInfo).add(shardAddress);
+        }
+      }
+      return;
+    }
+    ((NamedList<Object>)shardsInfo).add(shardInfoName, shardInfoValue);
+  }
+
   public Map<Object, ShardDoc> resultIds;
   // Maps uniqueKeyValue to ShardDoc, which may be used to
   // determine order of the doc or uniqueKey in the final

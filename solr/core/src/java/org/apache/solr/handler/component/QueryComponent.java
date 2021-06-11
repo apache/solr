@@ -867,10 +867,10 @@ public class QueryComponent extends SearchComponent
       // documents... we only need to order the top (rows+start)
       final ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
 
-      NamedList<Object> shardInfo = null;
+      Object shardsInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
-        shardInfo = new SimpleOrderedMap<>();
-        rb.rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);
+        shardsInfo = rb.newShardsInfo();
+        rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardsInfo);
       }
       
       long numFound = 0;
@@ -882,7 +882,7 @@ public class QueryComponent extends SearchComponent
         SolrDocumentList docs = null;
         NamedList<?> responseHeader = null;
 
-        if(shardInfo!=null) {
+        if(shardsInfo!=null) {
           SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
           
           if (srsp.getException() != null) {
@@ -914,7 +914,7 @@ public class QueryComponent extends SearchComponent
             nl.add("time", srsp.getSolrResponse().getElapsedTime());
           }
 
-          shardInfo.add(srsp.getShard(), nl);
+          rb.addShardInfo(shardsInfo, srsp.getShard(), nl);
         }
         // now that we've added the shard info, let's only proceed if we have no error.
         if (srsp.getException() != null) {
