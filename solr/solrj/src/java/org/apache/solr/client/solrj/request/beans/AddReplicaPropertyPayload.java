@@ -33,5 +33,5 @@ public class AddReplicaPropertyPayload implements ReflectMapWriter {
   public String value;
 
   @JsonProperty
-  public Boolean shardUnique = false;
+  public Boolean shardUnique = null;
 }

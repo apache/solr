@@ -29,6 +29,7 @@ import java.util.Map;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -58,7 +59,7 @@ public class ReloadCollectionAPI {
     final ReloadCollectionPayload v2Body = obj.get();
     final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.RELOAD.toLower());
-    v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
+    v1Params.put(NAME, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
   }

@@ -113,7 +113,7 @@ public class V2CollectionAPIMappingTest extends SolrTestCaseJ4 {
             "{ 'reload': {'async': 'requestTrackingId'}}");
 
     assertEquals(CollectionParams.CollectionAction.RELOAD.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
+    assertEquals("collName", v1Params.get(NAME));
     assertEquals("requestTrackingId", v1Params.get(ASYNC));
   }
 

@@ -24,7 +24,7 @@ public class BalanceShardUniquePayload implements ReflectMapWriter {
   public String property;
 
   @JsonProperty
-  public Boolean onlyactivenodes = true;
+  public Boolean onlyactivenodes = null;
 
   @JsonProperty
   public Boolean shardUnique;
