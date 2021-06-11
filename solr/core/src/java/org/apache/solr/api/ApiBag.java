@@ -20,6 +20,7 @@ package org.apache.solr.api;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
@@ -94,6 +96,75 @@ public class ApiBag {
     }
   }
 
+  /**
+   * PathTrie extension that combines the commands in the API being registered with any that have already been registered.
+   *
+   * This is only possible currently for AnnotatedApis.  All other Api implementations will resort to the default
+   * "overwriting" behavior of PathTrie
+   */
+  class CommandAggregatingPathTrie extends PathTrie<Api> {
+
+    public CommandAggregatingPathTrie(Set<String> reserved) {
+      super(reserved);
+    }
+
+    @Override
+    protected void attachValueToNode(PathTrie<Api>.Node node, Api o) {
+      if (node.getObject() == null) {
+        super.attachValueToNode(node, o);
+        return;
+      }
+
+      // If 'o' and 'node.obj' aren't both AnnotatedApi's then we can't aggregate the commands, so fallback to the
+      // default behavior
+      if ((!(o instanceof AnnotatedApi)) || (!(node.getObject() instanceof AnnotatedApi))) {
+        super.attachValueToNode(node, o);
+        return;
+      }
+
+      final AnnotatedApi beingRegistered = (AnnotatedApi) o;
+      final AnnotatedApi alreadyRegistered = (AnnotatedApi) node.getObject();
+      if (alreadyRegistered instanceof CommandAggregatingAnnotatedApi) {
+        final CommandAggregatingAnnotatedApi alreadyRegisteredAsCollapsing = (CommandAggregatingAnnotatedApi) alreadyRegistered;
+        alreadyRegisteredAsCollapsing.combineWith(beingRegistered);
+      } else {
+        final CommandAggregatingAnnotatedApi wrapperApi = new CommandAggregatingAnnotatedApi(alreadyRegistered);
+        wrapperApi.combineWith(beingRegistered);
+        node.setObject(wrapperApi);
+      }
+    }
+  }
+
+  class CommandAggregatingAnnotatedApi extends AnnotatedApi {
+
+    private Collection<AnnotatedApi> combinedApis;
+
+    protected CommandAggregatingAnnotatedApi(AnnotatedApi api) {
+      super(api.spec, api.getEndPoint(), api.getCommands(), null);
+      combinedApis = Lists.newArrayList();
+    }
+
+    public void combineWith(AnnotatedApi api) {
+      // Merge in new 'command' entries
+      getCommands().putAll(api.getCommands());
+
+      // Reference to Api must be saved to to merge uncached values (i.e. 'spec') lazily
+      combinedApis.add(api);
+    }
+
+    @Override
+    public ValidatingJsonMap getSpec() {
+      final ValidatingJsonMap aggregatedSpec = spec.getSpec();
+
+      for (AnnotatedApi combinedApi : combinedApis) {
+        final ValidatingJsonMap specToCombine = combinedApi.getSpec();
+        aggregatedSpec.getMap("commands").putAll(specToCombine.getMap("commands"));
+      }
+
+      return aggregatedSpec;
+    }
+  }
+
   @SuppressWarnings({"unchecked"})
   private void validateAndRegister(Api api, Map<String, String> nameSubstitutes) {
     ValidatingJsonMap spec = api.getSpec();
@@ -102,7 +173,7 @@ public class ApiBag {
     for (String method : methods) {
       PathTrie<Api> registry = apis.get(method);
 
-      if (registry == null) apis.put(method, registry = new PathTrie<>(ImmutableSet.of("_introspect")));
+      if (registry == null) apis.put(method, registry = new CommandAggregatingPathTrie(ImmutableSet.of("_introspect")));
       ValidatingJsonMap url = spec.getMap("url", NOT_NULL);
       ValidatingJsonMap params = url.getMap("params", null);
       if (params != null) {

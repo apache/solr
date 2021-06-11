@@ -38,15 +38,4 @@ public class TestV1toV2ApiMapper extends SolrTestCase {
     assertEquals("shard1", Utils.getObjectByPath(m,true,"/add-replica/shard"));
     assertEquals("NRT", Utils.getObjectByPath(m,true,"/add-replica/type"));
   }
-
-  @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testSetCollectionProperty() throws IOException {
-    CollectionAdminRequest.CollectionProp collectionProp = CollectionAdminRequest.setCollectionProperty("mycoll", "prop", "value");
-    V2Request v2r = V1toV2ApiMapper.convert(collectionProp).build();
-    Map<?,?> m = (Map<?,?>) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
-    assertEquals("/c/mycoll", v2r.getPath());
-    assertEquals("prop", Utils.getObjectByPath(m,true,"/set-collection-property/name"));
-    assertEquals("value", Utils.getObjectByPath(m,true,"/set-collection-property/value"));
-  }
 }
