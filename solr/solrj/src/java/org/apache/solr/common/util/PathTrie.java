@@ -49,7 +49,7 @@ public class PathTrie<T> {
 
   public void insert(List<String> parts, Map<String, String> replacements, T o) {
     if (parts.isEmpty()) {
-      root.obj = o;
+      attachValueToNode(root, o);
       return;
     }
     replaceTemplates(parts, replacements);
@@ -120,7 +120,16 @@ public class PathTrie<T> {
 
   }
 
-  class Node {
+  /**
+   * Attaches the provided object to the PathTrie node
+   *
+   * The default implementation overwrites any existing values, but this can be overwritten by subclasses.
+   */
+  protected void attachValueToNode(PathTrie<T>.Node node, T o) {
+    node.obj = o;
+  }
+
+  public class Node {
     String name;
     Map<String, Node> children;
     T obj;
@@ -138,6 +147,9 @@ public class PathTrie<T> {
       name = part;
       if (path.isEmpty()) obj = o;
     }
+
+    public T getObject() { return obj; }
+    public void setObject(T o) { obj = o; }
 
 
     private synchronized void insert(List<String> path, T o) {
@@ -164,7 +176,7 @@ public class PathTrie<T> {
       if (!path.isEmpty()) {
         matchedChild.insert(path, o);
       } else {
-        matchedChild.obj = o;
+        attachValueToNode(matchedChild, o);
       }
 
     }

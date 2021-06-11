@@ -42,6 +42,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.CollectionsAPI;
+import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -87,6 +88,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
       apiBag.registerObject(new CollectionsAPI(collectionsHandler));
       apiBag.registerObject(collectionsAPI.collectionsCommands);
+      ApiRegistrar.registerCollectionApis(apiBag, collectionsHandler);
       Collection<Api> apis = collectionsHandler.getApis();
       for (Api api : apis) apiBag.register(api, Collections.emptyMap());
 
