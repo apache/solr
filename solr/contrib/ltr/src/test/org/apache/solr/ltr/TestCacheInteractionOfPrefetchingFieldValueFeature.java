@@ -81,53 +81,35 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
 
   @Test
   public void testSimpleQuery() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
-
-    String lazyLoadingEnabled = String.valueOf(random().nextBoolean());
-    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, lazyLoadingEnabled);
-
-    // needed to clear cache because we make assertions on its content
-    reloadCollection(COLLECTION);
-
-    SolrQuery query = composeSolrQuery();
-
-    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION,query);
-
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
-
-    assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    assertGroupedFieldLoading(queryResponse, loadedFields);
-    assertTheResponse(queryResponse);
+    // test the normal behavior of the PrefetchingFieldValueFeature
+    // fields of all PrefetchingFieldValueFeatures are collected and read at once from the index
+    // we assert, that all field values for these fields are present at the document from the start
+    queryAndMakeAssertions(false, false, false);
   }
 
   @Test
   public void testSimpleQueryBreakPrefetching() throws Exception {
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(true);
-    ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
+    // test the difference to the behavior of the FieldValueFeature
+    // to do so, simulate the behavior of the FieldValueFeature by breaking the prefetching
+    // each PrefetchingFieldValueFeature only reads its field from the index
+    // we assert, that only the currently used field is read for the document
 
-    String lazyLoadingEnabled = String.valueOf(random().nextBoolean());
-    System.setProperty(LAZY_FIELD_LOADING_CONFIG_KEY, lazyLoadingEnabled);
-
-    // needed to clear cache because we make assertions on its content
-    reloadCollection(COLLECTION);
-
-    SolrQuery query = composeSolrQuery();
-
-    QueryResponse queryResponse =
-        solrCluster.getSolrClient().query(COLLECTION,query);
-
-    Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
-
-    assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    assertSeparateFieldLoading(queryResponse, loadedFields);
-    assertTheResponse(queryResponse);
+    // NOTE: this test does not test the new logic of the PrefetchingFieldValueFeature but should illustrate
+    // the difference to the FieldValueFeature
+    queryAndMakeAssertions(true, false, true);
   }
 
   @Test
   public void testSimpleQueryDisablePrefetching() throws Exception {
-    // tests the same behavior as BreakPrefetching but makes sure, that param gets read correctly
-    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(false); // do not break prefetching...
+    // test the option to disable the prefetching with a parameter (should be used for debugging)
+    // same behavior as when breakPrefetching is enabled
+    // each PrefetchingFieldValueFeature only reads its field from the index
+    // we assert, that only the currently used field is read for the document
+    queryAndMakeAssertions(false, true, true);
+  }
+
+  public void queryAndMakeAssertions(boolean breakPrefetching, boolean disablePrefetching, boolean separateLoading) throws Exception {
+    ObservingPrefetchingFieldValueFeature.setBreakPrefetching(breakPrefetching);
     ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
 
     String lazyLoadingEnabled = String.valueOf(random().nextBoolean());
@@ -137,7 +119,7 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     reloadCollection(COLLECTION);
 
     SolrQuery query = composeSolrQuery();
-    query.setParam(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, "true");  // ...but disable it
+    query.setParam(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, String.valueOf(disablePrefetching));
 
     QueryResponse queryResponse =
         solrCluster.getSolrClient().query(COLLECTION,query);
@@ -145,7 +127,11 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
 
     assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    assertSeparateFieldLoading(queryResponse, loadedFields);
+    if(separateLoading) {
+      assertSeparateFieldLoading(queryResponse, loadedFields); // assert, that all fields are loaded separately
+    } else {
+      assertGroupedFieldLoading(queryResponse, loadedFields); // assert, that all fields are loaded at once
+    }
     assertTheResponse(queryResponse);
   }
 
