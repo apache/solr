@@ -27,6 +27,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrDocumentFetcher;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,6 +53,19 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
 
   public void setPrefetchFields(Set<String> fields) {
     prefetchFields = fields;
+  }
+
+  // needed for loading from storage
+  public void setPrefetchFields(Collection<String> fields) {
+    prefetchFields = Set.of(fields.toArray(new String[fields.size()]));
+  }
+
+  @Override
+  public LinkedHashMap<String,Object> paramsToMap() {
+    final LinkedHashMap<String,Object> params = defaultParamsToMap();
+    params.put("field", getField());
+    params.put("prefetchFields", prefetchFields == null ? Collections.emptySet() : prefetchFields); // prevent NPE
+    return params;
   }
 
   @VisibleForTesting

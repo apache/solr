@@ -16,15 +16,18 @@
  */
 package org.apache.solr.ltr.feature;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.ltr.TestRerankBase;
+import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -97,6 +100,72 @@ public class TestPrefetchingFieldValueFeature extends TestRerankBase {
     assertTrue(ObservingPrefetchingFieldValueFeature.allPrefetchFields
         .containsAll(List.of("storedIntField", "storedLongField", "storedFloatField", "storedDoubleField")));
     assertEquals(1, ObservingPrefetchingFieldValueFeature.updateCount);
+  }
+
+  @Test
+  public void testThatPrefetchFieldsAreReturnedInOutputOfFeatureStore() throws Exception {
+    final String fstore = "feature-store-for-test";
+
+    // load initial features
+    loadFeature("storedIntField", ObservingPrefetchingFieldValueFeature.class.getName(), fstore,
+        "{\"field\":\"storedIntField\"}");
+    loadFeature("storedLongField", ObservingPrefetchingFieldValueFeature.class.getName(), fstore,
+        "{\"field\":\"storedLongField\"}");
+
+    assertJQ(ManagedFeatureStore.REST_END_POINT,"/featureStores==['"+fstore+"']");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
+        "/features/[0]/name=='storedIntField'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
+        "/features/[0]/params/prefetchFields==['storedIntField','storedLongField']");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
+        "/features/[1]/name=='storedLongField'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
+        "/features/[1]/params/prefetchFields==['storedIntField','storedLongField']");
+
+    // add another feature to test that new field is added to prefetchFields
+    loadFeature("storedDoubleField", ObservingPrefetchingFieldValueFeature.class.getName(), fstore,
+        "{\"field\":\"storedDoubleField\"}");
+
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
+        "/features/[0]/name=='storedIntField'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
+        "/features/[0]/params/prefetchFields==['storedIntField','storedDoubleField','storedLongField']");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
+        "/features/[1]/name=='storedLongField'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
+        "/features/[1]/params/prefetchFields==['storedIntField','storedDoubleField','storedLongField']");
+  }
+
+  @Test
+  public void testParamsToMapWithoutPrefetchFields() {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>();
+    params.put("field", "field"+random().nextInt(10));
+
+    // create a feature from the parameters
+    final PrefetchingFieldValueFeature featureA = (PrefetchingFieldValueFeature) Feature.getInstance(solrResourceLoader,
+        PrefetchingFieldValueFeature.class.getName(), "featureName", params);
+
+    // turn the feature back into parameters
+    final LinkedHashMap<String,Object> paramsB = featureA.paramsToMap();
+
+    // create feature B from feature A's parameters
+    final PrefetchingFieldValueFeature featureB = (PrefetchingFieldValueFeature) Feature.getInstance(solrResourceLoader,
+        PrefetchingFieldValueFeature.class.getName(), "featureName", paramsB);
+
+    // do not call equals() because of mismatch between prefetchFields and params
+    // (featureA has null for prefetchFields-param, featureB has empty set)
+    assertEquals(featureA.getName(), featureB.getName());
+    assertEquals(featureA.getField(), featureB.getField());
+    assertTrue(CollectionUtils.isEmpty(featureA.getPrefetchFields()) // featureA has null
+        && CollectionUtils.isEmpty(featureB.getPrefetchFields())); // featureB has empty set
+  }
+
+  @Test
+  public void testCompleteParamsToMap() throws Exception {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>();
+    params.put("field", "field"+random().nextInt(10));
+    params.put("prefetchFields", Set.of("field_1", "field_2"));
+    doTestParamsToMap(PrefetchingFieldValueFeature.class.getName(), params);
   }
 
   /**
