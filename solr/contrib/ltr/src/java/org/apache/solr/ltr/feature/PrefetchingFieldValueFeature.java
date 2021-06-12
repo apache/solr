@@ -128,21 +128,26 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
 
       @Override
       public float score() throws IOException {
+        final Document document = fetchDocument();
+        return super.parseStoredFieldValue(document.getField(getField()));
+      }
+
+      // not private to enable possible subclasses
+      protected Document fetchDocument() throws FeatureException {
         try {
-          final Document document;
           if(disablePrefetching) {
-            document = docFetcher.doc(context.docBase + itr.docID(), getFieldAsSet());
+            return docFetcher.doc(context.docBase + itr.docID(), getFieldAsSet());
           } else {
-            document = docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
+            return docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
           }
-          return super.parseStoredFieldValue(document.getField(getField()));
         } catch (final IOException e) {
           final String prefetchedFields = disablePrefetching ? getField() : StrUtils.join(prefetchFields, ',');
           throw new FeatureException(
               e.toString() + ": " +
                   "Unable to extract feature for " + name +
-                  " , tried to prefetch fields " + prefetchedFields +
-                  ".\nSet " + DISABLE_PREFETCHING_FIELD_VALUE_FEATURE + " to true to fetch fields individually (only for debugging purposes).", e);
+                  " , tried to fetch fields " + prefetchedFields +
+                  ".\nSet " + DISABLE_PREFETCHING_FIELD_VALUE_FEATURE + " to true to fetch fields individually " +
+                  "(only for debugging purposes).", e);
         }
       }
     }
