@@ -134,7 +134,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
                               double[] outcomes,
                               int k,
                               DistanceMeasure distanceMeasure,
-                              Map<?,?> map,
+                              Map<String,Object> map,
                               boolean scale,
                               boolean robust,
                               boolean bivariate) {

@@ -121,7 +121,7 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
     private List<String> columnLabels;
     private List<Cluster<ClusterPoint>> clusters;
 
-    public ClusterTuple(Map<?,?> fields,
+    public ClusterTuple(Map<String,Object> fields,
                         List<Cluster<ClusterPoint>> clusters,
                         List<String> columnLabels) {
       super(fields);

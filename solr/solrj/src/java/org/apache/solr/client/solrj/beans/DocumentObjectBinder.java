@@ -420,9 +420,7 @@ public class DocumentObjectBinder {
         } else if (val instanceof List) {
           list = (List<?>) val;
         } else {
-          List<Object> temp = new ArrayList<>();
-          temp.add(val);
-          list = temp;
+          list = Collections.singletonList(val);
         }
         set(obj, list.toArray((Object[]) Array.newInstance(type, list.size())));
       } else if (isList && !isContainedInMap) {

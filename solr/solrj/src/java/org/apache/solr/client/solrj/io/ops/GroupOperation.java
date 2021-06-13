@@ -105,14 +105,14 @@ public class GroupOperation implements ReduceOperation {
   }
 
   public Tuple reduce() {
-    LinkedList<Map<?,?>> ll = new LinkedList<>();
+    LinkedList<Map<String,Object>> ll = new LinkedList<>();
     while(priorityQueue.size() > 0) {
       ll.addFirst(priorityQueue.poll().getFields());
       //This will clear priority queue and so it will be ready for the next group.
     }
 
-    List<Map<?,?>> list = new ArrayList<>(ll);
-    Map<?,?> groupHead = list.get(0);
+    List<Map<String,Object>> list = new ArrayList<>(ll);
+    Map<String,Object> groupHead = list.get(0);
     Tuple tuple = new Tuple(groupHead);
     tuple.put("group", list);
     return tuple;

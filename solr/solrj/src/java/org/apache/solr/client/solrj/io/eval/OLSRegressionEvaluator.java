@@ -100,7 +100,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
     private MultipleLinearRegression multipleLinearRegression;
 
 
-    public MultipleRegressionTuple(MultipleLinearRegression multipleLinearRegression, Map<?,?> map) {
+    public MultipleRegressionTuple(MultipleLinearRegression multipleLinearRegression, Map<String,Object> map) {
       super(map);
       this.multipleLinearRegression = multipleLinearRegression;
     }

@@ -93,7 +93,7 @@ public class LoessEvaluator extends RecursiveNumericEvaluator implements ManyVal
   public static class LoessRegressionTuple extends Tuple {
     private PolynomialSplineFunction spline;
 
-    public LoessRegressionTuple(PolynomialSplineFunction spline, Map<?,?> map) {
+    public LoessRegressionTuple(PolynomialSplineFunction spline, Map<String,Object> map) {
       super(map);
       this.spline = spline;
     }
