@@ -217,6 +217,7 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**
    * Create a ClusterState from Json.
+   * This method doesn't support legacy configName location and thus don't call it where that's important
    * 
    * @param bytes a byte array of a Json representation of a mapping from collection name to the Json representation of a
    *              {@link DocCollection} as written by {@link #write(JSONWriter)}. It can represent
@@ -234,19 +235,26 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   /**
+   * Create a ClusterState from Json.
+   * This method supports legacy configName location
    *
-   * Backward compatibility reason
-   * This can be removed in Solr 10
+   * @param bytes a byte array of a Json representation of a mapping from collection name to the Json representation of a
+   *              {@link DocCollection} as written by {@link #write(JSONWriter)}. It can represent
+   *              one or more collections.
+   * @param liveNodes list of live nodes
+   * @param coll collection name
+   * @param zkClient ZK client
+   * @return the ClusterState
    */
   @SuppressWarnings({"unchecked"})
   @Deprecated
-  public static ClusterState createFromJsonWithConfigName(int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
+  public static ClusterState createFromJsonSupportingLegacyConfigName(int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
     if (bytes == null || bytes.length == 0) {
-      return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
+      return new ClusterState(liveNodes, Collections.emptyMap());
     }
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    if (stateMap.containsKey(coll)) {
-      Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
+    Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
+    if (props != null) {
       if (!props.containsKey(ZkStateReader.CONFIGNAME_PROP)) {
         try {
           // read configName from collections/collection node
@@ -258,6 +266,8 @@ public class ClusterState implements JSONWriter.Writable {
             if (configName != null) {
               props.put(ZkStateReader.CONFIGNAME_PROP, configName);
               stateMap.put(coll, props);
+            } else {
+              log.warn("configName is null, not found on {}", path);
             }
           }
         } catch (KeeperException | InterruptedException e) {

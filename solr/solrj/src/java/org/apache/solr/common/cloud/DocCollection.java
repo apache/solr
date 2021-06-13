@@ -56,7 +56,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final int znodeVersion;
 
   private final String name;
-  private String configName;
+  private final String configName;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final Slice[] activeSlicesArr;

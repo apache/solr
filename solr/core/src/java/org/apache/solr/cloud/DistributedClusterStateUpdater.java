@@ -525,9 +525,9 @@ public class DistributedClusterStateUpdater {
       Stat stat = new Stat();
       byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat, true);
 
-      // If configName is not in state.json, we read it from old location due to backward compatibility reason
-      // TODO in Solr 10 this code should no longer read configName from old place
-      ClusterState clusterState = ClusterState.createFromJsonWithConfigName(
+      // This factory method can detect a missing configName and supply it by reading it from the old ZK location.
+      // TODO in Solr 10 remove that factory method
+      ClusterState clusterState = ClusterState.createFromJsonSupportingLegacyConfigName(
               stat.getVersion(), data, Collections.emptySet(), updater.getCollectionName(), zkStateReader.getZkClient());
       return clusterState;
     }
