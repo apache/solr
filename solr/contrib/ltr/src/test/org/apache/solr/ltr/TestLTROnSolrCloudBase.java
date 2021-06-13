@@ -16,6 +16,7 @@
 package org.apache.solr.ltr;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -130,6 +131,20 @@ public class TestLTROnSolrCloudBase extends TestRerankBase {
     CollectionAdminResponse response = reloadRequest.process(solrCluster.getSolrClient());
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
+  }
+
+  /**
+   * Convenience method to assert the correct order of the topDocuments
+   * @param query the query to execute
+   * @param numFound how many docs should be found (not returned!)
+   * @param topIds the document ids from top to bottom
+   * @throws Exception if assertion fails
+   */
+  void assertOrderOfTopDocuments(SolrQuery query, int numFound, List<Integer> topIds) throws Exception {
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==" + numFound);
+    for(int i = 0; i < topIds.size(); i++) {
+      assertJQ("/query" + query.toQueryString(), "/response/docs/["+i+"]/id=='"+topIds.get(i)+"'");
+    }
   }
 
   @Override

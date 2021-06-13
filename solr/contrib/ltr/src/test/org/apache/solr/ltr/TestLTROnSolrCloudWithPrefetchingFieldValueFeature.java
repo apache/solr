@@ -21,6 +21,8 @@ import org.apache.solr.ltr.feature.PrefetchingFieldValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
 import org.junit.Test;
 
+import java.util.List;
+
 public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTROnSolrCloudBase {
 
   private static final String STORED_FEATURE_STORE_NAME = "stored-feature-store";
@@ -40,6 +42,14 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
   private static final String DV_MODEL_WEIGHTS = "{\"weights\":{\"dvIntPopularityFeature\":1.0,\"dvLongPopularityFeature\":1.0," +
       "\"dvFloatPopularityFeature\":1.0,\"dvDoublePopularityFeature\":1.0}}";
 
+  private static final String FEATURE_STORE_NAME_PARTLY_INVALID = "partly-invalid-feature-store";
+  private static final String[] FIELD_NAMES_PARTLY_INVALID = new String[]{"popularity", "storedIntField",
+      "storedDoubleField", "field", "notExisting"};
+  private static final String[] FEATURE_NAMES_PARTLY_INVALID = new String[]{"popularityFeature", "storedIntFieldFeature",
+      "storedDoubleFieldFeature", "fieldFeature", "notExistingFeature"};
+  private static final String MODEL_WEIGHTS_PARTLY_INVALID = "{\"weights\":{\"popularityFeature\":1.0," +
+      "\"storedIntFieldFeature\":1.0,\"storedDoubleFieldFeature\":1.0,\"fieldFeature\":1.0,\"notExistingFeature\":1.0}}";
+
   @Test
   public void testRanking() throws Exception {
     // just a basic sanity check that we can work with the PrefetchingFieldValueFeature
@@ -49,30 +59,15 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
     query.add("rows", "4");
 
     // Normal term match
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='2'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='4'");
+    assertOrderOfTopDocuments(query, 8, List.of(1, 2, 3, 4));
 
     query.add("rq", "{!ltr model=stored-fields-model reRankDocs=8}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
+    // reRanked match
+    assertOrderOfTopDocuments(query, 8, List.of(8, 7, 6, 5));
 
-    query.setQuery("*:*");
-    query.remove("rows");
-    query.add("rows", "8");
-    query.remove("rq");
-    query.add("rq", "{!ltr model=stored-fields-model reRankDocs=8}");
-
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
+    query.set("rows", "8");
+    assertOrderOfTopDocuments(query, 8, List.of(8, 7, 6, 5, 4, 3, 2, 1));
   }
 
   @Test
@@ -92,20 +87,52 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
     query.add("rows", "4");
 
     // Normal term match
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='21'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='22'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='23'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='24'");
+    assertOrderOfTopDocuments(query, 4, List.of(21, 22, 23, 24));
 
     // check that the PrefetchingFieldValueFeature delegates the work for docValue fields (reRanking works)
     query.add("rq", "{!ltr model=doc-value-model reRankDocs=4}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='24'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='23'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='22'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='21'");
+    assertOrderOfTopDocuments(query, 4, List.of(24, 23, 22, 21));
+  }
+
+  @Test
+  public void testBehaviorForInvalidAndEmptyFields() throws Exception {
+    assertU(adoc("id", "41", "popularity", "41", "storedIntField", "100", "storedDoubleField", "10", "field", "neither stored nor docValues"));
+    assertU(adoc("id", "42", "popularity", "42", "storedIntField", "200", "field", "neither stored nor docValues"));
+    assertU(adoc("id", "43", "popularity", "43", "storedIntField", "300", "field", "neither stored nor docValues"));
+    assertU(adoc("id", "44", "popularity", "44", "storedIntField", "400", "field", "neither stored nor docValues"));
+    assertU(adoc("id", "45", "popularity", "45", "storedIntField", "500", "storedDoubleField", "50","field", "neither stored nor docValues"));
+    assertU(adoc("id", "46", "popularity", "46", "storedIntField", "600","field", "neither stored nor docValues"));
+    assertU(commit());
+
+    final SolrQuery query = new SolrQuery("{!func}sub(46,field(popularity))");
+    query.setRequestHandler("/query");
+    query.add("fl", "*,score");
+    query.add("fq", "field:docValues");
+
+    // Normal term match
+    assertOrderOfTopDocuments(query, 6, List.of(41, 42, 43, 44, 45, 46));
+
+    // use a model and features with invalid fields
+    // field has no docValues and is not stored, notExisting does not exist, storedDoubleField is empty for some docs
+    query.set("fl", "*,score,features:[fv]");
+    query.remove("rows");
+    query.add("rq", "{!ltr model=partly-invalid-model reRankDocs=4}");
+
+    // reRanked match, for invalid fields the default value should be returned
+    assertOrderOfTopDocuments(query, 6, List.of(46, 45, 44, 43, 42, 41));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/features==" +
+        "'popularityFeature=46.0,storedIntFieldFeature=600.0,storedDoubleFieldFeature=0.0,fieldFeature=0.0,notExistingFeature=0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/features==" +
+        "'popularityFeature=45.0,storedIntFieldFeature=500.0,storedDoubleFieldFeature=50.0,fieldFeature=0.0,notExistingFeature=0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/features==" +
+        "'popularityFeature=44.0,storedIntFieldFeature=400.0,storedDoubleFieldFeature=0.0,fieldFeature=0.0,notExistingFeature=0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/features==" +
+        "'popularityFeature=43.0,storedIntFieldFeature=300.0,storedDoubleFieldFeature=0.0,fieldFeature=0.0,notExistingFeature=0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[4]/features==" +
+        "'popularityFeature=42.0,storedIntFieldFeature=200.0,storedDoubleFieldFeature=0.0,fieldFeature=0.0,notExistingFeature=0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[5]/features==" +
+        "'popularityFeature=41.0,storedIntFieldFeature=100.0,storedDoubleFieldFeature=10.0,fieldFeature=0.0,notExistingFeature=0.0'");
   }
 
   @Override
@@ -132,6 +159,7 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
   void loadModelsAndFeatures() throws Exception {
     setUpStoredFieldModelAndFeatures();
     setUpDocValueModelAndFeatures();
+    setUpModelAndFeaturesForInvalidFields();
   }
 
   private void setUpStoredFieldModelAndFeatures() throws Exception {
@@ -167,6 +195,23 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
         DV_FEATURE_NAMES,
         DV_FEATURE_STORE_NAME,
         DV_MODEL_WEIGHTS);
+    reloadCollection(COLLECTION);
+  }
+
+  public void setUpModelAndFeaturesForInvalidFields() throws Exception {
+    for (int i = 0; i < FEATURE_NAMES_PARTLY_INVALID.length; i++) {
+      loadFeature(
+          FEATURE_NAMES_PARTLY_INVALID[i],
+          PrefetchingFieldValueFeature.class.getName(),
+          FEATURE_STORE_NAME_PARTLY_INVALID,
+          "{\"field\":\"" + FIELD_NAMES_PARTLY_INVALID[i] + "\"}"
+      );
+    }
+    loadModel("partly-invalid-model",
+        LinearModel.class.getName(),
+        FEATURE_NAMES_PARTLY_INVALID,
+        FEATURE_STORE_NAME_PARTLY_INVALID,
+        MODEL_WEIGHTS_PARTLY_INVALID);
     reloadCollection(COLLECTION);
   }
 }
