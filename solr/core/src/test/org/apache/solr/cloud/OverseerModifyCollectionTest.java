@@ -17,14 +17,10 @@
 
 package org.apache.solr.cloud;
 
-import java.util.Map;
+import java.util.Collections;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
