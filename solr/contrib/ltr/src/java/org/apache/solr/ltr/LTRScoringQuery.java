@@ -223,6 +223,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     else{
       createWeightsParallel(searcher, scoreMode.needsScores(), featureWeights, features);
     }
+    // TODO: potential prefetchFields computation site?
     int i=0, j = 0;
     if (this.extractAllFeatures) {
       for (final Feature.FeatureWeight fw : featureWeights) {
