@@ -49,7 +49,6 @@ configure(project(":solr").subprojects) { prj ->
           case ":solr:contrib:clustering":
           case ":solr:contrib:extraction":
           case ":solr:contrib:gcs-repository":
-          case ":solr:contrib:jaegertracer-configurator":
           case ":solr:contrib:langid":
           case ":solr:contrib:ltr":
           case ":solr:contrib:prometheus-exporter":
