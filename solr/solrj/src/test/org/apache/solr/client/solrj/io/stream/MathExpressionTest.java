@@ -40,6 +40,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
+
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class MathExpressionTest extends SolrCloudTestCase {
@@ -6280,23 +6282,6 @@ public void testCache() throws Exception {
         (null != expected && null == actual) ||
         (null != expected && !expected.equals(actual))){
       throw new Exception("Longs not equal:"+expected+" : "+actual);
-    }
-
-    return true;
-  }
-
-  private boolean assertList(@SuppressWarnings({"rawtypes"})List list, Object... vals) throws Exception {
-
-    if(list.size() != vals.length) {
-      throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);
-    }
-
-    for(int i=0; i<list.size(); i++) {
-      Object a = list.get(i);
-      Object b = vals[i];
-      if(!a.equals(b)) {
-        throw new Exception("List items not equals:"+a+" : "+b);
-      }
     }
 
     return true;

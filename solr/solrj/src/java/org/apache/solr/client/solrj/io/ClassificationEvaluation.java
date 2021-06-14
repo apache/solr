@@ -49,13 +49,13 @@ public class ClassificationEvaluation {
     return map;
   }
 
-  public static ClassificationEvaluation create(Map<Object, ?> map) {
+  public static ClassificationEvaluation create(Map<String, ?> map) {
     ClassificationEvaluation evaluation = new ClassificationEvaluation();
     evaluation.addEvaluation(map);
     return evaluation;
   }
 
-  public void addEvaluation(Map<Object, ?> map) {
+  public void addEvaluation(Map<String, ?> map) {
     this.truePositive += (long) map.get("truePositive_i");
     this.trueNegative += (long) map.get("trueNegative_i");
     this.falsePositive += (long) map.get("falsePositive_i");

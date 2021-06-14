@@ -465,7 +465,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
           allWeights.add(shardWeights);
           this.error += tuple.getDouble("error");
           @SuppressWarnings({"unchecked"})
-          Map<Object, Object> shardEvaluation = (Map<Object, Object>) tuple.get("evaluation");
+          Map<String, Object> shardEvaluation = (Map<String, Object>) tuple.get("evaluation");
           this.evaluation.addEvaluation(shardEvaluation);
         }
 
