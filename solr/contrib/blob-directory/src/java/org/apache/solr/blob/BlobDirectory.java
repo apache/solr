@@ -17,6 +17,7 @@
 
 package org.apache.solr.blob;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -48,7 +49,7 @@ public class BlobDirectory extends FilterDirectory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String blobDirPath;
-  private final BlobStoreConnection blobStoreConnection;
+  private final BlobRepository blobRepository;
   /**
    * Map of {@link BlobFileSupplier} for each file created by this directory. Keys are file names.
    * Each {@link BlobFileSupplier} keeps a reference to the {@link IndexOutput} created for the
@@ -61,20 +62,33 @@ public class BlobDirectory extends FilterDirectory {
   private final Object lock = new Object();
   private volatile boolean isOpen;
 
-  public BlobDirectory(Directory delegate, String blobDirPath, BlobStoreConnection blobStoreConnection) throws IOException {
+  public BlobDirectory(Directory delegate, String blobDirPath, BlobRepository blobRepository) throws IOException {
     super(delegate);
     this.blobDirPath = blobDirPath;
-    this.blobStoreConnection = blobStoreConnection;
+    this.blobRepository = blobRepository;
     pullMissingFilesFromRepo();
   }
 
   private void pullMissingFilesFromRepo() throws IOException {
     Set<String> localFileNames = new HashSet<>(Arrays.asList(in.listAll()));
-    blobStoreConnection.pull(blobDirPath, this::openOutput, blobFile -> {
-      //TODO: We could also check the size and checksum.
-      return !localFileNames.remove(blobFile.fileName());
+    MutableInt numPulledFiles = log.isInfoEnabled() ? new MutableInt() : null;
+    blobRepository.pull(blobDirPath, this::openOutput, blobFileName -> {
+      // Select the blob files that are not present locally.
+      // The repository is dedicated to this replica, so there is no risk of same files with different content.
+      boolean selected = !localFileNames.remove(blobFileName);
+      if (selected && numPulledFiles != null) {
+        numPulledFiles.increment();
+      }
+      return selected;
     });
+    if (numPulledFiles != null && numPulledFiles.getValue() > 0) {
+      log.info("{} pulled {} files from the persistent repository {}",
+          this, numPulledFiles.getValue(), blobDirPath);
+    }
     for (String localFileName : localFileNames) {
+      // No file is expected to be present locally and not in the repository.
+      log.warn("{} contains a local file {} not present on the persistent repository {}; deleting it",
+          this, localFileName, blobDirPath);
       in.deleteFile(localFileName);
     }
   }
@@ -157,7 +171,7 @@ public class BlobDirectory extends FilterDirectory {
     }
 
     log.debug("Sync to repository writes={} deleted={}", writes, deletes);
-    blobStoreConnection.push(blobDirPath, writes, this::openInput, deletes);
+    blobRepository.push(blobDirPath, writes, this::openInput, deletes);
   }
 
   private IndexOutput openOutput(BlobFile blobFile) throws IOException {

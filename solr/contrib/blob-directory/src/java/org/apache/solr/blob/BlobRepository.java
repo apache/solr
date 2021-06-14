@@ -41,18 +41,19 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Connection to a {@link BackupRepository} to store persistently directories files.
+ * Accesses a {@link BackupRepository} to store persistently directories files.
  * Provides support to:
  * <ul>
  *   <li>List and pull repository files.</li>
  *   <li>Push local files to the repository.</li>
  * </ul>
  */
-public class BlobStoreConnection implements Closeable {
+public class BlobRepository implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -75,12 +76,12 @@ public class BlobStoreConnection implements Closeable {
    * @param streamBufferSize Size of the stream copy buffer, in bytes. This determines the size of the chunk
    *                         of data sent to the repository during files transfer. There is one buffer per thread.
    */
-  public BlobStoreConnection(BackupRepository repository, URI repositoryLocation, int maxThreads, int streamBufferSize) {
+  public BlobRepository(BackupRepository repository, URI repositoryLocation, int maxThreads, int streamBufferSize) {
     this.repository = Objects.requireNonNull(repository);
     this.repositoryLocation = Objects.requireNonNull(repositoryLocation);
     executor = ExecutorUtil.newMDCAwareCachedThreadPool(
         maxThreads,
-        new SolrNamedThreadFactory(BlobStoreConnection.class.getSimpleName()));
+        new SolrNamedThreadFactory(BlobRepository.class.getSimpleName()));
     streamBuffers = ThreadLocal.withInitial(() -> new byte[streamBufferSize]);
   }
 
@@ -120,7 +121,7 @@ public class BlobStoreConnection implements Closeable {
   public void pull(
       String blobDirPath,
       IOUtils.IOFunction<BlobFile, IndexOutput> outputSupplier,
-      BlobFileFilter fileFilter)
+      Predicate<String> fileFilter)
       throws IOException {
     URI blobDirUri = repository.resolve(repositoryLocation, blobDirPath);
     List<BlobFile> blobFiles = list(blobDirUri, fileFilter);
@@ -155,7 +156,7 @@ public class BlobStoreConnection implements Closeable {
                     () -> {
                       try (IndexInput in = inputSupplier.apply(blobFile);
                            OutputStream out = repository.createOutput(repository.resolve(blobDirUri, blobFile.fileName()))) {
-                        copyStream(in, out);
+                        copyStream(in, out::write);
                       }
                       return null;
                     })
@@ -180,13 +181,13 @@ public class BlobStoreConnection implements Closeable {
     }
   }
 
-  private void copyStream(IndexInput input, OutputStream output) throws IOException {
+  private void copyStream(IndexInput input, BytesWriter writer) throws IOException {
     byte[] buffer = streamBuffers.get();
     long remaining = input.length();
     while (remaining > 0) {
       int length = (int) Math.min(buffer.length, remaining);
       input.readBytes(buffer, 0, length, false);
-      output.write(buffer, 0, length);
+      writer.write(buffer, 0, length);
       remaining -= length;
     }
   }
@@ -199,12 +200,12 @@ public class BlobStoreConnection implements Closeable {
   /**
    * Lists the files in a specific directory of the repository and select them with the provided filter.
    */
-  private List<BlobFile> list(URI blobDirUri, BlobFileFilter fileFilter) throws IOException {
+  private List<BlobFile> list(URI blobDirUri, Predicate<String> fileFilter) throws IOException {
     String[] fileNames = repository.listAll(blobDirUri);
     List<BlobFile> blobFiles = new ArrayList<>(fileNames.length);
     for (String fileName : fileNames) {
       BlobFile blobFile = new BlobFile(fileName, -1, -1);
-      if (fileFilter.accept(blobFile)) {
+      if (fileFilter.test(blobFile.fileName())) {
         blobFiles.add(blobFile);
       }
     }
@@ -222,22 +223,11 @@ public class BlobStoreConnection implements Closeable {
                     () -> {
                       try (IndexInput in = repository.openInput(blobDirUri, blobFile.fileName(), IOContext.READ);
                            IndexOutput out = outputSupplier.apply(blobFile)) {
-                        copyStream(in, out);
+                        copyStream(in, out::writeBytes);
                       }
                       return null;
                     })
         .collect(Collectors.toList());
-  }
-
-  private void copyStream(IndexInput input, IndexOutput output) throws IOException {
-    byte[] buffer = streamBuffers.get();
-    long remaining = input.length();
-    while (remaining > 0) {
-      int length = (int) Math.min(buffer.length, remaining);
-      input.readBytes(buffer, 0, length, false);
-      output.writeBytes(buffer, 0, length);
-      remaining -= length;
-    }
   }
 
   @Override
@@ -251,10 +241,13 @@ public class BlobStoreConnection implements Closeable {
   }
 
   /**
-   * Filters {@link BlobFile}s.
+   * Writes bytes to a stream.
    */
-  public interface BlobFileFilter {
-
-    boolean accept(BlobFile blobFile) throws IOException;
+  private interface BytesWriter {
+    /**
+     * Writes <code>len</code> bytes from the specified byte array
+     * starting at offset <code>off</code> to this writer.
+     */
+    void write(byte b[], int off, int len) throws IOException;
   }
 }

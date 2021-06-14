@@ -83,7 +83,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   private String localRootPath;
   private BackupRepository repository;
   private URI repositoryLocation;
-  private BlobStoreConnection blobStoreConnection;
+  private BlobRepository blobRepository;
   private MMapParams mMapParams;
 
   @Override
@@ -122,7 +122,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     // There is one buffer per thread.
     int streamBufferSize = params.getInt("streamBufferSize", DEFAULT_STREAM_BUFFER_SIZE);
 
-    blobStoreConnection = new BlobStoreConnection(repository, repositoryLocation, maxThreads, streamBufferSize);
+    blobRepository = new BlobRepository(repository, repositoryLocation, maxThreads, streamBufferSize);
 
     // Filesystem MMapDirectory used as a local file cache.
     mMapParams = new MMapParams(params);
@@ -151,7 +151,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   public void close() throws IOException {
     log.debug("close");
     IOUtils.closeQuietly(repository);
-    IOUtils.closeQuietly(blobStoreConnection);
+    IOUtils.closeQuietly(blobRepository);
     super.close();
   }
 
@@ -186,7 +186,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     // is already a CachingDirectoryFactory, so we don't want another CachingDirectoryFactory.
     MMapDirectory mapDirectory = createMMapDirectory(path, lockFactory);
     String blobDirPath = getLocalRelativePath(path);
-    return new BlobDirectory(mapDirectory, blobDirPath, blobStoreConnection);
+    return new BlobDirectory(mapDirectory, blobDirPath, blobRepository);
   }
 
   private MMapDirectory createMMapDirectory(String path, LockFactory lockFactory) throws IOException {

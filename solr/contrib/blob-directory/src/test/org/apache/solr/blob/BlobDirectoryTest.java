@@ -1,5 +1,7 @@
 package org.apache.solr.blob;
 
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.store.*;
 import org.apache.solr.SolrTestCaseJ4;
@@ -12,9 +14,9 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -172,7 +174,8 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
 
         // When
         // - The local files are wiped (e.g. host crash).
-        deleteRecursively(new File(directoryPath));
+        MoreFiles.deleteRecursively(Path.of(directoryPath), RecursiveDeleteOption.ALLOW_INSECURE);
+        assertFalse(Files.exists(Path.of(directoryPath)));
         // - The directory is released and reopened.
         directoryFactory.doneWithDirectory(directory);
         directoryFactory.release(directory);
@@ -209,25 +212,6 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
         URI blobDirUri = directoryFactory.resolveBlobPath(directoryFactory.getLocalRelativePath(directoryPath));
         try (IndexInput input = directoryFactory.getRepository().openInput(blobDirUri, name, IOContext.READ)) {
             assertEquals(expectedContent, input.readString());
-        }
-    }
-
-    private static void deleteRecursively(File file) throws IOException {
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if (files == null) {
-                throw new IOException("IO error while listing files in directory '" + file + "'");
-            }
-            for (File f : files) {
-                deleteRecursively(f);
-            }
-            if (!file.delete()) {
-                throw new IOException("Directory '" + file + "' cannot be deleted");
-            }
-        } else if (file.exists()) {
-            if (!file.delete()) {
-                throw new IOException("File '" + file + "' cannot be deleted");
-            }
         }
     }
 }
