@@ -212,8 +212,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return s.add(doc).getStatus();
   }
 
-  @SuppressWarnings({"rawtypes"})
-  NamedList query(String query, SolrClient s) throws SolrServerException, IOException {
+  NamedList<Object> query(String query, SolrClient s) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.add("q", query);
@@ -224,10 +223,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   /** will sleep up to 30 seconds, looking for expectedDocCount */
-  @SuppressWarnings({"rawtypes"})
-  private NamedList rQuery(int expectedDocCount, String query, SolrClient client) throws Exception {
+  private NamedList<Object> rQuery(int expectedDocCount, String query, SolrClient client) throws Exception {
     int timeSlept = 0;
-    NamedList res = query(query, client);
+    NamedList<Object> res = query(query, client);
     while (expectedDocCount != numFound(res)
            && timeSlept < 30000) {
       log.info("Waiting for {} docs", expectedDocCount);
@@ -241,7 +239,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return res;
   }
   
-  private long numFound(@SuppressWarnings({"rawtypes"})NamedList res) {
+  private long numFound(NamedList<Object> res) {
     return ((SolrDocumentList) res.get("response")).getNumFound();
   }
 
@@ -573,20 +571,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderClient.commit();
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+    NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(nDocs, numFound(leaderQueryRsp));
 
     //get docs from follower and check if number is equal to leader
-    @SuppressWarnings({"rawtypes"})
-    NamedList followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+    NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(nDocs, numFound(followerQueryRsp));
 
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
     
     assertVersions(leaderClient, followerClient);
 
@@ -652,20 +648,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderClient.commit();
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+    NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(nDocs, numFound(leaderQueryRsp));
 
     //get docs from follower and check if number is equal to leader
-    @SuppressWarnings({"rawtypes"})
-    NamedList followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+    NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(nDocs, numFound(followerQueryRsp));
 
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-    assertEquals(null, cmp);
+    assertNull(cmp);
 
     // start stop polling test
     invokeReplicationCommand(followerJetty.getLocalPort(), "disablepoll");
@@ -716,20 +710,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       leaderClient.commit();
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+      NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
       SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
       assertEquals(nDocs, numFound(leaderQueryRsp));
 
       //get docs from follower and check if number is equal to leader
-      @SuppressWarnings({"rawtypes"})
-      NamedList followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+      NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
       SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
       assertEquals(nDocs, numFound(followerQueryRsp));
 
       //compare results
       String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
-      assertEquals(null, cmp);
+      assertNull(cmp);
 
       String timesReplicatedString = getFollowerDetails("timesIndexReplicated");
       String timesFailed;
@@ -850,8 +842,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderClient.commit();
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+    NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(nDocs, leaderQueryResult.getNumFound());
     
@@ -868,8 +859,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     stream.close();
     
     //get docs from follower and check if number is equal to leader
-    @SuppressWarnings({"rawtypes"})
-    NamedList followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+    NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(nDocs, followerQueryResult.getNumFound());
     //compare results
@@ -1015,8 +1005,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         totalDocs += docs;
         leaderClient.commit();
         
-        @SuppressWarnings({"rawtypes"})
-        NamedList leaderQueryRsp = rQuery(totalDocs, "*:*", leaderClient);
+        NamedList<Object> leaderQueryRsp = rQuery(totalDocs, "*:*", leaderClient);
         SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp
             .get("response");
         assertEquals(totalDocs, leaderQueryResult.getNumFound());
@@ -1029,8 +1018,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         }
 
         // get docs from follower and check if number is equal to leader
-        @SuppressWarnings({"rawtypes"})
-        NamedList followerQueryRsp = rQuery(totalDocs, "*:*", followerClient);
+        NamedList<Object> followerQueryRsp = rQuery(totalDocs, "*:*", followerClient);
         SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp
             .get("response");
         assertEquals(totalDocs, followerQueryResult.getNumFound());
@@ -1284,8 +1272,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderClient.commit();
     
-    @SuppressWarnings({"rawtypes"})
-    NamedList leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+    NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(nDocs, leaderQueryResult.getNumFound());
     
@@ -1299,8 +1286,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerClient = createNewSolrClient(followerJetty.getLocalPort());
 
     //get docs from follower and check if number is equal to leader
-    @SuppressWarnings({"rawtypes"})
-    NamedList followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+    NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(nDocs, followerQueryResult.getNumFound());
 
@@ -1346,8 +1332,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       
       // leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
       
-      @SuppressWarnings({"rawtypes"})
-      NamedList leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+      NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
       SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp
           .get("response");
       assertEquals(nDocs, leaderQueryResult.getNumFound());
@@ -1361,8 +1346,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       followerClient = createNewSolrClient(followerJetty.getLocalPort());
       
       // get docs from follower and check if number is equal to leader
-      @SuppressWarnings({"rawtypes"})
-      NamedList followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+      NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
       SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp
           .get("response");
       assertEquals(nDocs, followerQueryResult.getNumFound());
@@ -1401,8 +1385,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderClient.commit();
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList leaderQueryRsp = rQuery(docs, "*:*", leaderClient);
+    NamedList<Object> leaderQueryRsp = rQuery(docs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(docs, leaderQueryResult.getNumFound());
     
@@ -1415,8 +1398,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerClient = createNewSolrClient(followerJetty.getLocalPort());
     
     //get docs from follower and check if number is equal to leader
-    @SuppressWarnings({"rawtypes"})
-    NamedList followerQueryRsp = rQuery(docs, "*:*", followerClient);
+    NamedList<Object> followerQueryRsp = rQuery(docs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(docs, followerQueryResult.getNumFound());
     
@@ -1435,8 +1417,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderClient.commit();
     
-    @SuppressWarnings({"rawtypes"})
-    NamedList resp =  rQuery(docs + 2, "*:*", leaderClient);
+    NamedList<Object> resp = rQuery(docs + 2, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) resp.get("response");
     assertEquals(docs + 2, leaderQueryResult.getNumFound());
     
@@ -1458,14 +1439,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderClient.commit();
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+    NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(nDocs, leaderQueryResult.getNumFound());
 
     //get docs from follower and check if number is equal to leader
-    @SuppressWarnings({"rawtypes"})
-    NamedList followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+    NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
 
     assertEquals(nDocs, followerQueryResult.getNumFound());
@@ -1521,13 +1500,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // wait for follower to reload core by watching updated startTime
     watchCoreStartAt(followerClient, 30*1000, followerStartTime);
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList leaderQueryRsp2 = rQuery(1, "id:2000", leaderClient);
+    NamedList<Object> leaderQueryRsp2 = rQuery(1, "id:2000", leaderClient);
     SolrDocumentList leaderQueryResult2 = (SolrDocumentList) leaderQueryRsp2.get("response");
     assertEquals(1, leaderQueryResult2.getNumFound());
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList followerQueryRsp2 = rQuery(1, "id:2000", followerClient);
+    NamedList<Object> followerQueryRsp2 = rQuery(1, "id:2000", followerClient);
     SolrDocumentList followerQueryResult2 = (SolrDocumentList) followerQueryRsp2.get("response");
     assertEquals(1, followerQueryResult2.getNumFound());
     
@@ -1596,8 +1573,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     new Thread(new AddExtraDocs(leaderClient, totalDocs)).start();
 
     //Wait and make sure that it actually replicated correctly.
-    @SuppressWarnings({"rawtypes"})
-    NamedList followerQueryRsp = rQuery(totalDocs, "*:*", followerClient);
+    NamedList<Object> followerQueryRsp = rQuery(totalDocs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(totalDocs, followerQueryResult.getNumFound());
 
@@ -1821,6 +1797,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * @param min the startTime value must exceed this value before the method will return, if null this method will return the first startTime value encountered.
    * @return the startTime value of collection
    */
+  @SuppressWarnings("unchecked")
   private Date watchCoreStartAt(SolrClient client, final long timeout,
                                 final Date min) throws InterruptedException, IOException, SolrServerException {
     final long sleepInterval = 200;
@@ -1832,12 +1809,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         QueryRequest req = new QueryRequest(p);
         req.setPath("/admin/cores");
         try {
-          @SuppressWarnings({"rawtypes"})
-          NamedList data = adminClient.request(req);
+          NamedList<Object> data = adminClient.request(req);
           for (String k : new String[]{"status", "collection1"}) {
             Object o = data.get(k);
             assertNotNull("core status rsp missing key: " + k, o);
-            data = (NamedList) o;
+            data = (NamedList<Object>) o;
           }
           Date startTime = (Date) data.get("startTime");
           assertNotNull("core has null startTime", startTime);
@@ -1859,7 +1835,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  private void assertReplicationResponseSucceeded(@SuppressWarnings({"rawtypes"})NamedList response) {
+  private void assertReplicationResponseSucceeded(NamedList<?> response) {
     assertNotNull("null response from server", response);
     assertNotNull("Expected replication response to have 'status' field", response.get("status"));
     assertEquals("OK", response.get("status"));

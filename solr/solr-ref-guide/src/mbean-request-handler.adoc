@@ -35,11 +35,11 @@ The output format. This operates the same as the <<response-writers.adoc#,`wt` p
 == MBeanRequestHandler Examples
 
 // TODO 7.1 - replace with link to tutorial
-The following examples assume you are running Solr's `techproducts` example configuration:
+All of the examples in this section assume you are running the "techproducts" Solr example:
 
 [source,bash]
 ----
-bin/solr start -e techproducts
+bin/solr -e techproducts
 ----
 
 To return information about the CACHE category only:

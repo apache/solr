@@ -55,27 +55,26 @@ public class TikaLanguageIdentifierUpdateProcessorFactory extends
   /**
    * The UpdateRequestProcessor may be initialized in solrconfig.xml similarly
    * to a RequestHandler, with defaults, appends and invariants.
-   * @param args a NamedList with the configuration parameters 
+   * @param args a NamedList with the configuration parameters
    */
   @Override
-  @SuppressWarnings("rawtypes")
-  public void init( NamedList args )
+  public void init(NamedList<?> args )
   {
     if (args != null) {
       Object o;
       o = args.get("defaults");
-      if (o != null && o instanceof NamedList) {
-        defaults = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        defaults = ((NamedList<?>) o).toSolrParams();
       } else {
         defaults = args.toSolrParams();
       }
       o = args.get("appends");
-      if (o != null && o instanceof NamedList) {
-        appends = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        appends = ((NamedList<?>) o).toSolrParams();
       }
       o = args.get("invariants");
-      if (o != null && o instanceof NamedList) {
-        invariants = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        invariants = ((NamedList<?>) o).toSolrParams();
       }
     }
   }

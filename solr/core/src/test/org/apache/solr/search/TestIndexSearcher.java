@@ -37,7 +37,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -439,9 +438,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static AtomicInteger numberOfTimesCalledFirstSearcher;
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
-
-    @Override
     public void postCommit() {}
 
     @Override
@@ -462,9 +458,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static AtomicInteger numberOfTimesCalled;
     static CountDownLatch latch;
     
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
-
     @Override
     public void postCommit() {}
 

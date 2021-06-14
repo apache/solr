@@ -498,8 +498,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       parsedCommands = CommandOperation.parse(new StringReader(cmds));
       Map<String, Object> edited = plugin.edit(conf, parsedCommands);
       if(edited!= null) conf = edited;
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps = captureErrors(parsedCommands);
+      List<Map<String,Object>> maps = captureErrors(parsedCommands);
       if(failOnError){
         assertTrue("unexpected error ,"+maps , maps.isEmpty());
       } else {

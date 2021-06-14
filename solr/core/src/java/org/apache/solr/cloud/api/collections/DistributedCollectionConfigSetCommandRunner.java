@@ -238,7 +238,7 @@ public class DistributedCollectionConfigSetCommandRunner {
     // Following the call below returning true, we must eventually cancel or complete the task. Happens either in the
     // CollectionCommandRunner below or in the catch when the runner would not execute.
     if (!asyncTaskTracker.createNewAsyncJobTracker(asyncId)) {
-      NamedList<String> resp = new NamedList<>();
+      NamedList<Object> resp = new NamedList<>();
       resp.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
       resp.add(CoreAdminParams.REQUESTID, asyncId);
       return new OverseerSolrResponse(resp);
@@ -269,7 +269,7 @@ public class DistributedCollectionConfigSetCommandRunner {
       }
     } else {
       // Async calls do not wait for the command to finish but get instead back the async id (that they just sent...)
-      NamedList<String> resp = new NamedList<>();
+      NamedList<Object> resp = new NamedList<>();
       resp.add(CoreAdminParams.REQUESTID, asyncId);
       return new OverseerSolrResponse(resp);
     }

@@ -19,7 +19,6 @@ package org.apache.solr.jaeger;
 
 import io.jaegertracing.Configuration;
 import io.opentracing.Tracer;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.TracerConfigurator;
 
 public class JaegerTracerConfigurator extends TracerConfigurator {
@@ -29,7 +28,4 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
     // See javadocs on Configuration for how to configure via sys props or env vars
     return Configuration.fromEnv("solr").getTracer();
   }
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {}
 }

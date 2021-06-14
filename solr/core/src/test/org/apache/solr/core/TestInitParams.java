@@ -40,23 +40,20 @@ public class TestInitParams extends SolrTestCaseJ4 {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
       SolrQueryResponse rsp = new SolrQueryResponse();
       handler.handleRequest(req("initArgs", "true"), rsp);
-      @SuppressWarnings({"rawtypes"})
-      NamedList nl = (NamedList) rsp.getValues().get("initArgs");
-      @SuppressWarnings({"rawtypes"})
-      NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+      NamedList<?> nl = (NamedList<?>) rsp.getValues().get("initArgs");
+      NamedList<?> def = (NamedList<?>) nl.get(PluginInfo.DEFAULTS);
       assertEquals("A", def.get("a"));
-      def = (NamedList) nl.get(PluginInfo.INVARIANTS);
+      def = (NamedList<?>) nl.get(PluginInfo.INVARIANTS);
       assertEquals("B", def.get("b"));
-      def = (NamedList) nl.get(PluginInfo.APPENDS);
+      def = (NamedList<?>) nl.get(PluginInfo.APPENDS);
       assertEquals("C", def.get("c"));
     }
 
     InitParams initParams = h.getCore().getSolrConfig().getInitParams().get("a");
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     PluginInfo pluginInfo = new PluginInfo("requestHandler",
         new HashMap<>(),
-        new NamedList<>(singletonMap("defaults", new NamedList(singletonMap("a", "A1")))), null);
+        new NamedList<>(singletonMap("defaults", new NamedList<>(singletonMap("a", "A1")))), null);
     initParams.apply(pluginInfo);
     assertEquals( "A",initParams.defaults.get("a"));
   }
@@ -66,15 +63,13 @@ public class TestInitParams extends SolrTestCaseJ4 {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump6");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
-    @SuppressWarnings({"rawtypes"})
-    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+    NamedList<?> nl = (NamedList<?>) rsp.getValues().get("initArgs");
+    NamedList<?> def = (NamedList<?>) nl.get(PluginInfo.DEFAULTS);
     assertEquals("A", def.get("a"));
     assertEquals("P", def.get("p"));
-    def = (NamedList) nl.get(PluginInfo.INVARIANTS);
+    def = (NamedList<?>) nl.get(PluginInfo.INVARIANTS);
     assertEquals("B", def.get("b"));
-    def = (NamedList) nl.get(PluginInfo.APPENDS);
+    def = (NamedList<?>) nl.get(PluginInfo.APPENDS);
     assertEquals("C", def.get("c"));
 
   }
@@ -85,14 +80,12 @@ public class TestInitParams extends SolrTestCaseJ4 {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump2");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
-    @SuppressWarnings({"rawtypes"})
-    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+    NamedList<?> nl = (NamedList<?>) rsp.getValues().get("initArgs");
+    NamedList<?> def = (NamedList<?>) nl.get(PluginInfo.DEFAULTS);
     assertEquals("A1" ,def.get("a"));
-    def = (NamedList) nl.get(PluginInfo.INVARIANTS);
+    def = (NamedList<?>) nl.get(PluginInfo.INVARIANTS);
     assertEquals("B1" ,def.get("b"));
-    def = (NamedList) nl.get(PluginInfo.APPENDS);
+    def = (NamedList<?>) nl.get(PluginInfo.APPENDS);
     assertEquals(Arrays.asList("C1","C") ,def.getAll("c"));
   }
 
@@ -107,10 +100,8 @@ public class TestInitParams extends SolrTestCaseJ4 {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/elevate");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
-    @SuppressWarnings({"rawtypes"})
-    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+    NamedList<?> nl = (NamedList<?>) rsp.getValues().get("initArgs");
+    NamedList<?> def = (NamedList<?>) nl.get(PluginInfo.DEFAULTS);
     assertEquals("text" ,def.get("df"));
 
   }
@@ -119,8 +110,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump7");
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequest(req("initArgs", "true"), rsp);
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+    NamedList<?> nl = (NamedList<?>) rsp.getValues().get("initArgs");
     assertEquals("server-enabled.txt", nl.get("healthcheckFile"));
   }
 

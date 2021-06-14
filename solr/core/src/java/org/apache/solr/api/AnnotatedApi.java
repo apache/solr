@@ -90,6 +90,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     return endPoint;
   }
 
+  public Map<String, Cmd> getCommands() { return commands; }
+
   public static List<Api> getApis(Object obj) {
     return getApis(obj.getClass(), obj, true);
   }
@@ -145,8 +147,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     }
   }
 
-
-  private AnnotatedApi(SpecProvider specProvider, EndPoint endPoint, Map<String, Cmd> commands, Api fallback) {
+  protected AnnotatedApi(SpecProvider specProvider, EndPoint endPoint, Map<String, Cmd> commands, Api fallback) {
     super(specProvider);
     this.endPoint = endPoint;
     this.fallback = fallback;
@@ -215,8 +216,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 
-    @SuppressWarnings({"rawtypes"})
-    List<Map> errs = CommandOperation.captureErrors(cmds);
+    List<Map<String, Object>> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
       log.error("{}{}", ERR, Utils.toJSONString(errs));
       throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);

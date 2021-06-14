@@ -274,8 +274,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   public void init(PluginInfo info) {
     super.init(info.initArgs);
     if (info.initArgs != null) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList invariants = (NamedList) info.initArgs.get(PluginInfo.INVARIANTS);
+      NamedList<?> invariants = (NamedList<?>) info.initArgs.get(PluginInfo.INVARIANTS);
       if (invariants != null) {
         Object o = invariants.get("maxSize");
         if (o != null) {
