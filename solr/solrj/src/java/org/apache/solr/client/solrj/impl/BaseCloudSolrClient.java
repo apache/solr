@@ -687,8 +687,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return urlMap;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  protected <T extends RouteResponse> T condenseResponse(NamedList<?> response, int timeMillis, Supplier<T> supplier) {
+  protected <T extends RouteResponse<?>> T condenseResponse(NamedList<?> response, int timeMillis, Supplier<T> supplier) {
     T condensed = supplier.get();
     int status = 0;
     Integer rf = null;
@@ -698,11 +697,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     int maxToleratedErrors = Integer.MAX_VALUE;
 
     // For "adds", "deletes", "deleteByQuery" etc.
-    Map<String, NamedList> versions = new HashMap<>();
+    Map<String, NamedList<Object>> versions = new HashMap<>();
 
     for(int i=0; i<response.size(); i++) {
-      NamedList shardResponse = (NamedList)response.getVal(i);
-      NamedList header = (NamedList)shardResponse.get("responseHeader");
+      NamedList<?> shardResponse = (NamedList<?>)response.getVal(i);
+      NamedList<?> header = (NamedList<?>)shardResponse.get("responseHeader");
       Integer shardStatus = (Integer)header.get("status");
       int s = shardStatus.intValue();
       if(s > 0) {
@@ -715,6 +714,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           rf = routeRf;
       }
 
+      @SuppressWarnings("unchecked")
       List<SimpleOrderedMap<String>> shardTolerantErrors =
           (List<SimpleOrderedMap<String>>) header.get("errors");
       if (null != shardTolerantErrors) {
@@ -735,15 +735,16 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       for (String updateType: Arrays.asList("adds", "deletes", "deleteByQuery")) {
         Object obj = shardResponse.get(updateType);
         if (obj instanceof NamedList) {
-          NamedList versionsList = versions.containsKey(updateType) ?
-              versions.get(updateType): new NamedList();
-          versionsList.addAll((NamedList)obj);
+          NamedList<Object> versionsList = versions.containsKey(updateType) ?
+              versions.get(updateType): new NamedList<>();
+          NamedList<?> nl = (NamedList<?>) obj;
+          versionsList.addAll(nl);
           versions.put(updateType, versionsList);
         }
       }
     }
 
-    NamedList cheader = new NamedList();
+    NamedList<Object> cheader = new NamedList<>();
     cheader.add("status", status);
     cheader.add("QTime", timeMillis);
     if (rf != null)
@@ -760,7 +761,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         StringBuilder msgBuf =  new StringBuilder()
             .append(toleratedErrors.size()).append(" Async failures during distributed update: ");
 
-        NamedList metadata = new NamedList<String>();
+        NamedList<String> metadata = new NamedList<>();
         for (SimpleOrderedMap<String> err : toleratedErrors) {
           ToleratedUpdateError te = ToleratedUpdateError.parseMap(err);
           metadata.add(te.getMetadataKey(), te.getMetadataValue());
@@ -773,7 +774,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         throw toThrow;
       }
     }
-    for (Map.Entry<String, NamedList> entry : versions.entrySet()) {
+    for (Map.Entry<String, NamedList<Object>> entry : versions.entrySet()) {
       condensed.add(entry.getKey(), entry.getValue());
     }
     condensed.add("responseHeader", cheader);
@@ -781,12 +782,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   @SuppressWarnings({"rawtypes"})
-  public RouteResponse condenseResponse(NamedList response, int timeMillis) {
+  public RouteResponse condenseResponse(NamedList<?> response, int timeMillis) {
     return condenseResponse(response, timeMillis, RouteResponse::new);
   }
 
   @SuppressWarnings({"rawtypes"})
-  public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList {
+  public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList<Object> {
     private NamedList<NamedList<?>> routeResponses;
     private Map<String, T> routes;
 

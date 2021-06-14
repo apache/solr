@@ -284,8 +284,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public Object getFirstValue(String name) {
       Object v = _fields.get(name);
       if (v == null || !(v instanceof Collection)) return convertCharSeq(v);
-      @SuppressWarnings({"rawtypes"})
-      Collection c = (Collection) v;
+      Collection<?> c = (Collection<?>) v;
       if (c.size() > 0) {
         return convertCharSeq(c.iterator().next());
       }

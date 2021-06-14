@@ -189,9 +189,9 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
 
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Collection convertCharSeq(Collection vals) {
-    if (vals == null) return vals;
+  @SuppressWarnings("rawtypes")
+  public static Collection convertCharSeq(Collection<?> vals) {
+    if (vals == null) return null;
     boolean needsCopy = false;
     for (Object o : vals) {
       if (o instanceof Utf8CharSequence) {
@@ -200,7 +200,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
       }
     }
     if (needsCopy) {
-      Collection copy =  null;
+      Collection<Object> copy = null;
       if (vals instanceof Set){
         copy = new HashSet<>(vals.size());
       } else {
@@ -215,7 +215,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   public static Object convertCharSeq(Object o) {
     if (o == null) return null;
     if (o instanceof Utf8CharSequence) return ((Utf8CharSequence) o).toString();
-    if (o instanceof Collection) return convertCharSeq((Collection) o);
+    if (o instanceof Collection) return convertCharSeq((Collection<?>) o);
     return o;
   }
 
