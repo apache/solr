@@ -116,7 +116,7 @@ class SolrFilter extends Filter implements SolrRel {
       if (left instanceof RexInputRef) {
         String name = fieldNames.get(((RexInputRef) left).getIndex());
         SqlKind kind = node.getKind();
-        this.negativeQuery = kind == SqlKind.IS_NOT_NULL;
+        this.negativeQuery = false;
         return kind == SqlKind.IS_NOT_NULL ? "+" + name + ":*" : "(*:* -" + name + ":*)";
       }
 
@@ -161,12 +161,15 @@ class SolrFilter extends Filter implements SolrRel {
       Pair<String, RexLiteral> pair = getFieldValuePair(like);
       String terms = pair.getValue().toString().trim();
       terms = terms.replace("'", "").replace('%', '*').replace('_', '?');
+      boolean wrappedQuotes = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
         terms = "\"" + terms + "\"";
+        wrappedQuotes = true;
       }
 
       this.negativeQuery = isNegativeQuery;
-      return "{!complexphrase}" + pair.getKey() + ":" + terms;
+      String query = pair.getKey() + ":" + terms;
+      return wrappedQuotes ? "{!complexphrase}" + query : query;
     }
 
     protected String translateComparison(RexNode node) {
@@ -181,12 +184,14 @@ class SolrFilter extends Filter implements SolrRel {
         case EQUALS:
           String terms = binaryTranslated.getValue().toString().trim();
           terms = terms.replace("'", "");
+          boolean wrappedQuotes = false;
           if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
             terms = "\"" + terms + "\"";
+            wrappedQuotes = true;
           }
 
           String clause = binaryTranslated.getKey() + ":" + terms;
-          if (terms.contains("*")) {
+          if (terms.contains("*") && wrappedQuotes) {
             clause = "{!complexphrase}" + clause;
           }
           this.negativeQuery = false;
@@ -205,6 +210,12 @@ class SolrFilter extends Filter implements SolrRel {
         case GREATER_THAN_OR_EQUAL:
           this.negativeQuery = false;
           return "(" + binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue() + " TO * ])";
+        case LIKE:
+          return translateLike(node, false);
+        case IS_NOT_NULL:
+          return translateIsNullOrIsNotNull(node);
+        case IS_NULL:
+          return translateIsNullOrIsNotNull(node);
         default:
           throw new AssertionError("cannot translate " + node);
       }

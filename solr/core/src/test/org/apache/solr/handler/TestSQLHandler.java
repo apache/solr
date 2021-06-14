@@ -1950,17 +1950,23 @@ public class TestSQLHandler extends SolrCloudTestCase {
     return cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
   }
 
+  private List<Tuple> expectResults(String sql, final int expectedCount) throws Exception {
+    String sqlStmt = sql.replace("$ALIAS", COLLECTIONORALIAS);
+    SolrParams params = mapParams(CommonParams.QT, "/sql", "stmt", sqlStmt);
+    List<Tuple> tuples = getTuples(params, sqlUrl());
+    assertEquals(expectedCount, tuples.size());
+    return tuples;
+  }
+
   @Test
   public void testColIsNotNull() throws Exception {
     new UpdateRequest()
         .add("id", "1", "b_s", "foobar")
         .add("id", "2", "b_s", "foobaz")
+        .add("id", "3")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    SolrParams params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s IS NOT NULL");
-    List<Tuple> tuples = getTuples(params, sqlUrl());
-    assertEquals(2, tuples.size());
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s IS NOT NULL", 2);
   }
 
   @Test
@@ -1974,10 +1980,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "6")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    SolrParams params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT id FROM " + COLLECTIONORALIAS + " WHERE b_s IS NULL");
-    List<Tuple> tuples = getTuples(params, sqlUrl());
-    assertEquals(3, tuples.size());
+    expectResults("SELECT id FROM $ALIAS WHERE b_s IS NULL", 3);
   }
 
   @Test
@@ -1991,40 +1994,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "6", "a_s", "world-6", "b_s", "bar")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    SolrParams params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT a_s FROM " + COLLECTIONORALIAS + " WHERE a_s LIKE 'h_llo-%'");
-    List<Tuple> tuples = getTuples(params, sqlUrl());
-    assertEquals(3, tuples.size());
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
 
     // not technically valid SQL but we support it for legacy purposes, see: SOLR-15463
-    params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT a_s FROM " + COLLECTIONORALIAS + " WHERE a_s='world-*'");
-    tuples = getTuples(params, sqlUrl());
-    assertEquals(3, tuples.size());
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s='world-*'", 3);
 
     // no results
-    params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT a_s FROM " + COLLECTIONORALIAS + " WHERE a_s LIKE '%MATCHNONE%'");
-    tuples = getTuples(params, sqlUrl());
-    assertEquals(0, tuples.size());
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE '%MATCHNONE%'", 0);
 
     // like but without wildcard, should still work
-    params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s LIKE 'foo'");
-    tuples = getTuples(params, sqlUrl());
-    assertEquals(5, tuples.size());
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo'", 5);
 
     // NOT LIKE
-    params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s NOT LIKE 'f%'");
-    tuples = getTuples(params, sqlUrl());
-    assertEquals(1, tuples.size());
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s NOT LIKE 'f%'", 1);
 
     // leading wildcard
-    params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT b_s FROM " + COLLECTIONORALIAS + " WHERE b_s LIKE '%oo'");
-    tuples = getTuples(params, sqlUrl());
-    assertEquals(5, tuples.size());
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '%oo'", 5);
+
+    // user supplied parens around arg, no double-quotes ...
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(fo%)'", 5);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(ba*)'", 1);
   }
 
   @Test
@@ -2037,14 +2027,46 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "5", "a_i", "5")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    SolrParams params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT a_i FROM " + COLLECTIONORALIAS + " WHERE a_i BETWEEN 2 AND 4");
-    List<Tuple> tuples = getTuples(params, sqlUrl());
-    assertEquals(3, tuples.size());
+    expectResults("SELECT a_i FROM $ALIAS WHERE a_i BETWEEN 2 AND 4", 3);
+    expectResults("SELECT a_i FROM $ALIAS WHERE a_i NOT BETWEEN 2 AND 4", 2);
+  }
 
-    params = mapParams(CommonParams.QT, "/sql",
-        "stmt", "SELECT a_i FROM " + COLLECTIONORALIAS + " WHERE a_i NOT BETWEEN 2 AND 4");
-    tuples = getTuples(params, sqlUrl());
-    assertEquals(2, tuples.size());
+  @Test
+  public void testMultipleFilters() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo", "a_i", "2", "d_s", "a")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
+        .add("id", "5", "a_s", "hello-5", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "6", "a_s", "world-6", "b_s", "bar", "a_i", "4", "d_s", "c")
+        .add("id", "7", "a_s", "hello-7", "b_s", "foo", "c_s", "baz blah", "d_s", "x")
+        .add("id", "8", "a_s", "world-8", "b_s", "bar", "a_i", "5", "d_s", "c")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples = expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world%' AND b_s IS NOT NULL AND c_s IS NULL AND a_i BETWEEN 2 AND 4 AND d_s IN ('a','b','c') ORDER BY id ASC LIMIT 10", 3);
+    assertEquals("world-2", tuples.get(0).getString("a_s"));
+    assertEquals("world-4", tuples.get(1).getString("a_s"));
+    assertEquals("world-6", tuples.get(2).getString("a_s"));
+
+    tuples = expectResults("SELECT a_s FROM $ALIAS WHERE a_s NOT LIKE 'hello%' AND b_s IS NOT NULL AND c_s IS NULL AND a_i NOT BETWEEN 2 AND 4 AND d_s IN ('a','b','c') ORDER BY id ASC LIMIT 10", 1);
+    assertEquals("world-8", tuples.get(0).getString("a_s"));
+  }
+
+  @Test
+  public void testCountWithFilters() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo", "a_i", "2", "d_s", "a")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
+        .add("id", "5", "a_s", "hello-5", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "6", "a_s", "world-6", "b_s", "bar", "a_i", "4", "d_s", "c")
+        .add("id", "7", "a_s", "hello-7", "b_s", "foo", "c_s", "baz blah", "d_s", "x")
+        .add("id", "8", "a_s", "world-8", "b_s", "bar", "a_i", "5", "d_s", "c")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples = expectResults("SELECT COUNT(1) as `the_count` FROM $ALIAS as `alias` WHERE (`alias`.`b_s`='foo' AND `alias`.`a_s` LIKE 'hell%' AND `alias`.`c_s` IS NOT NULL) HAVING (COUNT(1) > 0)", 1);
+    assertTrue(4L == tuples.get(0).getLong("the_count"));
   }
 }
