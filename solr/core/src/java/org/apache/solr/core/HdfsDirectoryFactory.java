@@ -450,8 +450,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     try {
       return fileSystem.getContentSummary(hdfsDirPath).getLength();
     } catch (IOException e) {
-      log.error("Error checking if hdfs path exists", e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error checking if hdfs path exists", e);
+      log.error("Error calculating size", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error calculating size", e);
     }
   }
 
