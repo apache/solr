@@ -870,7 +870,6 @@ public class QueryComponent extends SearchComponent
       ResponseBuilder.ShardsInfoContainer shardsInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
         shardsInfo = rb.newShardsInfoContainer();
-        rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardsInfo.get());
       }
       
       long numFound = 0;
@@ -1002,6 +1001,10 @@ public class QueryComponent extends SearchComponent
           queue.insertWithOverflow(shardDoc);
         } // end for-each-doc-in-response
       } // end for-each-response
+
+      if (shardsInfo != null) {
+        rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardsInfo.get());
+      }
       
       // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
       // So we want to pop the last documents off the queue to get
