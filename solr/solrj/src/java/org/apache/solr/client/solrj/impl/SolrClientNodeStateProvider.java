@@ -209,9 +209,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         if (tag.startsWith(SYSPROP)) {
           metricsKeyVsTag.computeIfAbsent("solr.jvm:system.properties:" + tag.substring(SYSPROP.length()), k -> new HashSet<>())
               .add(tag);
-        } else if (tag.startsWith(SYSENV)) {
-            metricsKeyVsTag.computeIfAbsent("solr.jvm:system.env:" + tag.substring(SYSENV.length()), k -> new HashSet<>())
-              .add(tag);
         } else if (tag.startsWith(METRICS_PREFIX)) {
           metricsKeyVsTag.computeIfAbsent(tag.substring(METRICS_PREFIX.length()), k -> new HashSet<>())
               .add(tag);
@@ -381,12 +378,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
     public final String tagName, metricsAttribute;
-    @SuppressWarnings("rawtypes")
-    public final Class type;
+    public final Class<?> type;
 
 
-    @SuppressWarnings("rawtypes")
-    Variable(String tagName, String metricsAttribute, Class type) {
+    Variable(String tagName, String metricsAttribute, Class<?> type) {
       this.tagName = tagName;
       this.metricsAttribute = metricsAttribute;
       this.type = type;

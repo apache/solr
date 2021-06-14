@@ -96,10 +96,10 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
 
   public void testSimple() throws IOException {
     List<Map<String, Object>> l = new ArrayList<>();
-    l.add(Utils.makeMap("id", 1, "f", 1.0f, "s", "Some str 1"));
-    l.add(Utils.makeMap("id", 2, "f", 2.0f, "s", "Some str 2"));
-    l.add(Utils.makeMap("id", 3, "f", 1.0f, "s", "Some str 3"));
-    l.add(Utils.makeMap("EOF", true, "RESPONSE_TIME", 206, "sleepMillis", 1000));
+    l.add(Map.of("id", 1, "f", 1.0f, "s", "Some str 1"));
+    l.add(Map.of("id", 2, "f", 2.0f, "s", "Some str 2"));
+    l.add(Map.of("id", 3, "f", 1.0f, "s", "Some str 3"));
+    l.add(Map.of("EOF", true, "RESPONSE_TIME", 206, "sleepMillis", 1000));
     Iterator<Map<String, Object>> iterator = l.iterator();
     TupleStream tupleStream = new TupleStream() {
       @Override

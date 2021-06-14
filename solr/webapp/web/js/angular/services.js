@@ -43,6 +43,11 @@ solrAdminServices.factory('System',
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
     });
   }])
+.factory('ConfigSets',
+ ['$resource', function ($resource) {
+    return $resource('admin/configs', {'wt': 'json', '_': Date.now()}, {"configs": {params: {action: "LIST"}}
+    });
+ }])
 .factory('Cores',
   ['$resource', function($resource) {
     return $resource('admin/cores',
@@ -252,6 +257,17 @@ solrAdminServices.factory('System',
    ['$resource', function($resource) {
      return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
        get: {method: "GET"}
+     })
+}])
+.factory('SchemaDesigner',
+   ['$resource', function($resource) {
+     return $resource('/api/schema-designer/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+       get: {method: "GET"},
+       post: {method: "POST", timeout: 90000},
+       put: {method: "PUT"},
+       postXml: {headers: {'Content-type': 'text/xml'}, method: "POST", timeout: 90000},
+       postCsv: {headers: {'Content-type': 'application/csv'}, method: "POST", timeout: 90000},
+       upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}
      })
 }])
 .factory('AuthenticationService',

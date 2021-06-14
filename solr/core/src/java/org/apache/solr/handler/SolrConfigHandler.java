@@ -89,7 +89,6 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
@@ -152,8 +151,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   }
 
   public static boolean getImmutable(SolrCore core) {
-    @SuppressWarnings({"rawtypes"})
-    NamedList configSetProperties = core.getConfigSetProperties();
+    NamedList<?> configSetProperties = core.getConfigSetProperties();
     if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
     return immutable != null && Boolean.parseBoolean(immutable.toString());
@@ -192,11 +190,10 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           if (parts.size() == 3) {
             RequestParams params = req.getCore().getSolrConfig().getRequestParams();
             RequestParams.ParamSet p = params.getParams(parts.get(2));
-            @SuppressWarnings({"rawtypes"})
-            Map m = new LinkedHashMap<>();
+            Map<String, Object> m = new LinkedHashMap<>();
             m.put(ZNODEVER, params.getZnodeVersion());
             if (p != null) {
-              m.put(RequestParams.NAME, makeMap(parts.get(2), p.toMap(new LinkedHashMap<>())));
+              m.put(RequestParams.NAME, Map.of(parts.get(2), p.toMap(new LinkedHashMap<>())));
             }
             resp.add(SolrQueryResponse.NAME, m);
           } else {
@@ -205,7 +202,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         } else {
           if (ZNODEVER.equals(parts.get(1))) {
-            resp.add(ZNODEVER, Utils.makeMap(
+            resp.add(ZNODEVER, Map.of(
                 ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().getZnodeVersion(),
                 RequestParams.NAME, req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
             boolean isStale = false;
@@ -248,19 +245,19 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
           } else {
             Map<String, Object> m = getConfigDetails(parts.get(1), req);
-            Map<String, Object> val = makeMap(parts.get(1), m.get(parts.get(1)));
+            Map<String, Object> val = new LinkedHashMap<>();
+            val.put(parts.get(1), m.get(parts.get(1)));
             String componentName = req.getParams().get("componentName");
             if (componentName != null) {
               @SuppressWarnings({"rawtypes"})
               Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
               if (pluginNameVsPluginInfo != null) {
-                @SuppressWarnings({"rawtypes"})
                 Object o = pluginNameVsPluginInfo instanceof MapSerializable ?
                        pluginNameVsPluginInfo:
                         pluginNameVsPluginInfo.get(componentName);
                 @SuppressWarnings({"rawtypes"})
                 Map pluginInfo = o instanceof  MapSerializable? ((MapSerializable) o).toMap(new LinkedHashMap<>()): (Map) o;
-                val.put(parts.get(1),pluginNameVsPluginInfo instanceof PluginInfo? pluginInfo :  makeMap(componentName, pluginInfo));
+                val.put(parts.get(1), pluginNameVsPluginInfo instanceof PluginInfo? pluginInfo : Map.of(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
                   // meta=true is asking for the package info of the plugin
                   // We go through all the listeners and see if there is one registered for this plugin
@@ -324,7 +321,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       } else if (plugin instanceof PluginInfo) {
         pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
       }
-      @SuppressWarnings({"rawtypes"})
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);
       if (useParams != null || useParamsInReq != null) {
@@ -346,8 +342,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), req.getOriginalParams());
         r.getContext().put(USEPARAM, useParams);
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
+        NamedList<?> nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
         SolrPluginUtils.setDefaults(r,
             getSolrParamsFromNamedList(nl, DEFAULTS),
             getSolrParamsFromNamedList(nl, APPENDS),
@@ -600,8 +595,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
 
-    @SuppressWarnings({"unchecked"})
-    private boolean verifyClass(CommandOperation op, String clz, @SuppressWarnings({"rawtypes"})Class expected) {
+    private boolean verifyClass(CommandOperation op, String clz, Class<?> expected) {
       if (clz == null) return true;
       PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
       try {
@@ -668,8 +662,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       for (Map.Entry<String, Object> e : m.entrySet()) {
         String name = e.getKey();
         Object val = e.getValue();
-        @SuppressWarnings({"rawtypes"})
-        Class typ = ConfigOverlay.checkEditable(name, false, null);
+        Class<?> typ = ConfigOverlay.checkEditable(name, false, null);
         if (typ == null) {
           op.addError(formatString(NOT_EDITABLE, name));
           continue;

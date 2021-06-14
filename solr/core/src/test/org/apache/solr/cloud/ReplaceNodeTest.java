@@ -193,7 +193,6 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       if (!metrics.containsKey("REPLICATION./replication.fetcher")) {
         continue;
       }
-      @SuppressWarnings("unchecked")
       MetricsMap fetcherGauge = (MetricsMap) ((SolrMetricManager.GaugeWrapper<?>) metrics.get("REPLICATION./replication.fetcher")).getGauge();
       assertNotNull("no IndexFetcher gauge in metrics", fetcherGauge);
       Map<String, Object> value = fetcherGauge.getValue();

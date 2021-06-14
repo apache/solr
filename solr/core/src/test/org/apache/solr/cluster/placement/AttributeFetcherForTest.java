@@ -36,11 +36,6 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeEnvironmentVariable(String name) {
-    throw new UnsupportedOperationException("Not yet implemented...");
-  }
-
-  @Override
   public AttributeFetcher requestNodeMetric(NodeMetric<?> metric) {
     return this;
   }

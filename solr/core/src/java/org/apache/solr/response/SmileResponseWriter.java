@@ -23,7 +23,6 @@ import java.math.BigInteger;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class SmileResponseWriter extends BinaryResponseWriter {
@@ -35,10 +34,6 @@ public class SmileResponseWriter extends BinaryResponseWriter {
     }
   }
 
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-
-  }
   //smile format is an equivalent of JSON format . So we extend JSONWriter and override the relevant methods
 
   public static class SmileWriter extends JSONWriter {

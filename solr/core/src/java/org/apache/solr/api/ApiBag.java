@@ -70,17 +70,15 @@ public class ApiBag {
   /**Register a POJO annotated with {@link EndPoint}
    * @param o the instance to be used for invocations
    */
-  @SuppressWarnings({"unchecked"})
   public synchronized List<Api> registerObject(Object o) {
     List<Api> l = AnnotatedApi.getApis(o);
     for (Api api : l) {
-      register(api, Collections.EMPTY_MAP);
+      register(api, Collections.emptyMap());
     }
     return l;
   }
-  @SuppressWarnings({"unchecked"})
   public synchronized void register(Api api) {
-    register(api, Collections.EMPTY_MAP);
+    register(api, Collections.emptyMap());
   }
   public synchronized void register(Api api, Map<String, String> nameSubstitutes) {
     try {
@@ -169,7 +167,7 @@ public class ApiBag {
       this.isCoreSpecific = isCoreSpecific;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"unchecked"})
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
 
       String cmd = req.getParams().get("command");
@@ -191,7 +189,7 @@ public class ApiBag {
         result = specCopy;
       }
       if (isCoreSpecific) {
-        List<String> pieces = req.getHttpSolrCall() == null ? null : ((V2HttpCall) req.getHttpSolrCall()).pieces;
+        List<String> pieces = req.getHttpSolrCall() == null ? null : ((V2HttpCall) req.getHttpSolrCall()).getPathSegments();
         if (pieces != null) {
           String prefix = "/" + pieces.get(0) + "/" + pieces.get(1);
           List<String> paths = result.getMap("url", NOT_NULL).getList("paths", NOT_NULL);
@@ -201,8 +199,8 @@ public class ApiBag {
                   .collect(Collectors.toList()));
         }
       }
-      List l = (List) rsp.getValues().get("spec");
-      if (l == null) rsp.getValues().add("spec", l = new ArrayList());
+      List<Object> l = (List<Object>) rsp.getValues().get("spec");
+      if (l == null) rsp.getValues().add("spec", l = new ArrayList<>());
       l.add(result);
     }
   }
@@ -210,10 +208,10 @@ public class ApiBag {
   public static Map<String, JsonSchemaValidator> getParsedSchema(ValidatingJsonMap commands) {
     Map<String, JsonSchemaValidator> validators = new HashMap<>();
     for (Object o : commands.entrySet()) {
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry cmd = (Map.Entry) o;
+      @SuppressWarnings("unchecked")
+      Map.Entry<String, Map<?,?>> cmd = (Map.Entry<String, Map<?,?>>) o;
       try {
-        validators.put((String) cmd.getKey(), new JsonSchemaValidator((Map) cmd.getValue()));
+        validators.put(cmd.getKey(), new JsonSchemaValidator(cmd.getValue()));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in api spec", e);
       }
@@ -303,19 +301,19 @@ public class ApiBag {
     Object specObj = info == null ? null : info.attributes.get("spec");
     if (specObj == null) specObj = "emptySpec";
     if (specObj instanceof Map) {
-      @SuppressWarnings({"rawtypes"})
-      Map map = (Map) specObj;
+      // Value from Map<String,String> can be a Map because in PluginInfo(String, Map) we assign a Map<String, Object>
+      // assert false : "got a map when this should only be Strings";
+      Map<?,?> map = (Map<?,?>) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
       return Utils.getSpec((String) specObj);
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   public static List<CommandOperation> getCommandOperations(ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
-      parsedCommands = CommandOperation.readCommands(Collections.singleton(stream), new NamedList());
+      parsedCommands = CommandOperation.readCommands(Collections.singleton(stream), new NamedList<>());
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands",e);
     }
@@ -343,8 +341,7 @@ public class ApiBag {
       }
 
     }
-    @SuppressWarnings({"rawtypes"})
-    List<Map> errs = CommandOperation.captureErrors(commandsCopy);
+    List<Map<String, Object>> errs = CommandOperation.captureErrors(commandsCopy);
     if (!errs.isEmpty()) {
       throw new ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error in command payload", errs);
     }
@@ -352,16 +349,14 @@ public class ApiBag {
   }
 
   public static class ExceptionWithErrObject extends SolrException {
-    @SuppressWarnings({"rawtypes"})
-    private List<Map> errs;
+    private final List<Map<String, Object>> errs;
 
-    public ExceptionWithErrObject(ErrorCode code, String msg, @SuppressWarnings({"rawtypes"})List<Map> errs) {
+    public ExceptionWithErrObject(ErrorCode code, String msg, List<Map<String, Object>> errs) {
       super(code, msg);
       this.errs = errs;
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public List<Map> getErrs() {
+    public List<Map<String, Object>> getErrs() {
       return errs;
     }
 

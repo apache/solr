@@ -18,7 +18,12 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.apache.solr.api.Api;
@@ -32,7 +37,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.pkg.PackageListeningClassLoader;
@@ -63,20 +67,14 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   private boolean isImmutableConfigSet = false;
   private SolrRequestHandler managedResourceRequestHandler;
 
-  private static final Map<String, String> level2;
-
+  // java.util factory collections do not accept null values, so we roll our own
+  private static final Map<String, String> level2 = new HashMap<>();
   static {
-    @SuppressWarnings({"rawtypes"})
-    Map s = Utils.makeMap(
-        FIELD_TYPES.nameLower, null,
-        FIELDS.nameLower, "fl",
-        DYNAMIC_FIELDS.nameLower, "fl",
-        COPY_FIELDS.nameLower, null
-    );
-
-    level2 = Collections.unmodifiableMap(s);
-  }
-
+    level2.put(FIELD_TYPES.nameLower, null);
+    level2.put(FIELDS.nameLower, "fl");
+    level2.put(DYNAMIC_FIELDS.nameLower, "fl");
+    level2.put(COPY_FIELDS.nameLower, null);
+  };
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -167,7 +165,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             String realName = parts.get(1);
             String fieldName = IndexSchema.nameMapping.get(realName);
 
-            String pathParam = level2.get(realName);
+            String pathParam = level2.get(realName); // Might be null
             if (parts.size() > 2) {
               req.setParams(SolrParams.wrapDefaults(new MapSolrParams(singletonMap(pathParam, parts.get(2))), req.getParams()));
             }
@@ -242,7 +240,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   }
 
-  private static Set<String> subPaths = new HashSet<>(Arrays.asList(
+  private static final Set<String> subPaths = new HashSet<>(Set.of(
       "version",
       "uniquekey",
       "name",

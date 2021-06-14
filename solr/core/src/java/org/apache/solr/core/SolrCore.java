@@ -208,8 +208,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
-  @SuppressWarnings({"rawtypes"})
-  private final NamedList configSetProperties;
+  private final NamedList<?> configSetProperties;
   private final String dataDir;
   private final String ulogDir;
   private final UpdateHandler updateHandler;
@@ -366,8 +365,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     this.schema = replacementSchema;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public NamedList getConfigSetProperties() {
+  public NamedList<?> getConfigSetProperties() {
     return configSetProperties;
   }
 
@@ -1918,7 +1916,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Warning: although a lambda is concise, it may be inappropriate to simply return the IndexReader because it might
    * be closed soon after this method returns; it really depends.
    */
-  @SuppressWarnings("unchecked")
   public <R> R withSearcher(IOFunction<SolrIndexSearcher, R> lambda) throws IOException {
     final RefCounted<SolrIndexSearcher> refCounted = getSearcher();
     try {
@@ -2234,6 +2231,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @param waitSearcher         if non-null, will be filled in with a {@link Future} that will return after the new searcher is registered.
    * @param updateHandlerReopens if true, the UpdateHandler will be used when reopening a {@link SolrIndexSearcher}.
    */
+  // TODO waitSearcher should be an AtomicReference or something that is a more clear API
   public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, @SuppressWarnings({"rawtypes"})final Future[] waitSearcher, boolean updateHandlerReopens) {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
@@ -2873,7 +2871,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return def;
   }
 
-  public void initDefaultPlugin(Object plugin, @SuppressWarnings({"rawtypes"})Class type) {
+  public void initDefaultPlugin(Object plugin, Class<?> type) {
     if (plugin instanceof SolrMetricProducer) {
       coreMetricManager.registerMetricProducer(type.getSimpleName() + ".default", (SolrMetricProducer) plugin);
     }
@@ -2910,7 +2908,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * RestManager provides basic storage support for managed resource data, such as to
    * persist stopwords to ZooKeeper if running in SolrCloud mode.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected RestManager initRestManager() throws SolrException {
 
     PluginInfo restManagerPluginInfo =
@@ -2924,7 +2922,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       if (restManagerPluginInfo.initArgs != null) {
-        initArgs = (NamedList<String>) restManagerPluginInfo.initArgs;
+        // TODO this is actually unsafe, the RMPI.initArgs can have objects too.
+        initArgs = (NamedList<String>) (NamedList) restManagerPluginInfo.initArgs;
       }
     }
 
@@ -3231,8 +3230,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       throw new IllegalArgumentException("invalid key format, must end in /N where N is the version number");
     }
     // define the blob
-    @SuppressWarnings({"rawtypes"})
-    BlobRepository.BlobContentRef blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
+    BlobRepository.BlobContentRef<Object> blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
     addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {

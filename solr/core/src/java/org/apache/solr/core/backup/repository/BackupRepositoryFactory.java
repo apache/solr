@@ -65,7 +65,6 @@ public class BackupRepositoryFactory {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public BackupRepository newInstance(SolrResourceLoader loader, String name) {
     Objects.requireNonNull(loader);
     Objects.requireNonNull(name);

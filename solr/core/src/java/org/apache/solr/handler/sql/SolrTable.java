@@ -97,7 +97,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
    * @return Enumerator of results
    */
   private Enumerable<Object> query(final Properties properties,
-                                   @SuppressWarnings("rawtypes") final List<Map.Entry<String, Class>> fields,
+                                   final List<Map.Entry<String, Class<?>>> fields,
                                    final String query,
                                    final List<Pair<String, String>> orders,
                                    final List<String> buckets,
@@ -251,11 +251,10 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   private TupleStream handleSelect(String zk,
                                    String collection,
                                    String query,
-                                   List<Map.Entry<String, Class>> fields,
+                                   List<Map.Entry<String, Class<?>>> fields,
                                    List<Pair<String, String>> orders,
                                    String limit) throws IOException {
 
@@ -263,7 +262,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     params.add(CommonParams.Q, query);
 
     //Validate the fields
-    for(Map.Entry<String, Class> entry : fields) {
+    for(Map.Entry<String, Class<?>> entry : fields) {
       String fname = entry.getKey();
       if(limit == null && "score".equals(fname)) {
         throw new IOException("score is not a valid field for unlimited queries.");
@@ -319,10 +318,9 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     return buf.toString();
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private String getFields(List<Map.Entry<String, Class>> fields) {
+  private String getFields(List<Map.Entry<String, Class<?>>> fields) {
     StringBuilder buf = new StringBuilder();
-    for(Map.Entry<String, Class> field : fields) {
+    for(Map.Entry<String, Class<?>> field : fields) {
 
       if(buf.length() > 0) {
         buf.append(",");
@@ -350,16 +348,15 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   }
 
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private Set<String> getFieldSet(Metric[] metrics, List<Map.Entry<String, Class>> fields) {
-    HashSet set = new HashSet<>();
+  private Set<String> getFieldSet(Metric[] metrics, List<Map.Entry<String, Class<?>>> fields) {
+    HashSet<String> set = new HashSet<>();
     for(Metric metric : metrics) {
       for(String column : metric.getColumns()) {
         set.add(column);
       }
     }
 
-    for(Map.Entry<String, Class> field : fields) {
+    for(Map.Entry<String, Class<?>> field : fields) {
       if(field.getKey().indexOf('(') == -1) {
         set.add(field.getKey());
       }
@@ -426,11 +423,10 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     return true;
   }
 
-  @SuppressWarnings({"rawtypes"})
   private TupleStream handleGroupByMapReduce(String zk,
                                              String collection,
                                              Properties properties,
-                                             final List<Map.Entry<String, Class>> fields,
+                                             final List<Map.Entry<String, Class<?>>> fields,
                                              final String query,
                                              final List<Pair<String, String>> orders,
                                              final List<String> _buckets,
@@ -438,8 +434,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                              final String limit,
                                              final String havingPredicate) throws IOException {
 
-    Map<String, Class> fmap = new HashMap<>();
-    for(Map.Entry<String, Class> entry : fields) {
+    Map<String, Class<?>> fmap = new HashMap<>();
+    for(Map.Entry<String, Class<?>> entry : fields) {
       fmap.put(entry.getKey(), entry.getValue());
     }
 
@@ -452,7 +448,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       return handleSelectDistinctMapReduce(zk, collection, properties, fields, query, orders, buckets, limit);
     } else {
       for(Metric metric : metrics) {
-        Class c = fmap.get(metric.getIdentifier());
+        Class<?> c = fmap.get(metric.getIdentifier());
         if(Long.class.equals(c)) {
           metric.outputLong = true;
         }
@@ -553,12 +549,11 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     return tupleStream;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private Bucket[] buildBuckets(List<String> buckets, List<Map.Entry<String, Class>> fields) {
+  private Bucket[] buildBuckets(List<String> buckets, List<Map.Entry<String, Class<?>>> fields) {
     Bucket[] bucketsArray = new Bucket[buckets.size()];
 
     int i=0;
-    for(Map.Entry<String,Class> field : fields) {
+    for(Map.Entry<String,Class<?>> field : fields) {
       String fieldName = field.getKey();
       if(buckets.contains(fieldName)) {
         bucketsArray[i++] = new Bucket(fieldName);
@@ -568,10 +563,9 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     return bucketsArray;
   }
 
-  @SuppressWarnings({"rawtypes"})
   private TupleStream handleGroupByFacet(String zkHost,
                                          String collection,
-                                         final List<Map.Entry<String, Class>> fields,
+                                         final List<Map.Entry<String, Class<?>>> fields,
                                          final String query,
                                          final List<Pair<String, String>> orders,
                                          final List<String> bucketFields,
@@ -580,8 +574,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                          final String havingPredicate) throws IOException {
 
 
-    Map<String, Class> fmap = new HashMap<>();
-    for(Map.Entry<String, Class> f : fields) {
+    Map<String, Class<?>> fmap = new HashMap<>();
+    for(Map.Entry<String, Class<?>> f : fields) {
       fmap.put(f.getKey(), f.getValue());
     }
 
@@ -595,7 +589,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       metrics[0] = new CountMetric();
     } else {
       for(Metric metric : metrics) {
-        Class c = fmap.get(metric.getIdentifier());
+        Class<?> c = fmap.get(metric.getIdentifier());
         if(Long.class.equals(c)) {
           metric.outputLong = true;
         }
@@ -659,11 +653,10 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     return tupleStream;
   }
 
-  @SuppressWarnings({"rawtypes"})
   private TupleStream handleSelectDistinctMapReduce(final String zkHost,
                                                     final String collection,
                                                     final Properties properties,
-                                                    final List<Map.Entry<String, Class>> fields,
+                                                    final List<Map.Entry<String, Class<?>>> fields,
                                                     final String query,
                                                     final List<Pair<String, String>> orders,
                                                     final Bucket[] buckets,
@@ -802,16 +795,15 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     return adjustedSorts.toArray(new FieldComparator[adjustedSorts.size()]);
   }
 
-  @SuppressWarnings({"rawtypes"})
   private TupleStream handleStats(String zk,
                                   String collection,
                                   String query,
                                   List<Pair<String, String>> metricPairs,
-                                  List<Map.Entry<String, Class>> fields) throws IOException {
+                                  List<Map.Entry<String, Class<?>>> fields) throws IOException {
 
 
-    Map<String, Class> fmap = new HashMap<>();
-    for(Map.Entry<String, Class> entry : fields) {
+    Map<String, Class<?>> fmap = new HashMap<>();
+    for(Map.Entry<String, Class<?>> entry : fields) {
       fmap.put(entry.getKey(), entry.getValue());
     }
 
@@ -820,7 +812,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     Metric[] metrics = buildMetrics(metricPairs, false).toArray(new Metric[0]);
 
     for(Metric metric : metrics) {
-      Class c = fmap.get(metric.getIdentifier());
+      Class<?> c = fmap.get(metric.getIdentifier());
       if(Long.class.equals(c)) {
         metric.outputLong = true;
       }
@@ -862,8 +854,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
      *
      * @see SolrMethod#SOLR_QUERYABLE_QUERY
      */
-    @SuppressWarnings({"rawtypes","UnusedDeclaration"})
-    public Enumerable<Object> query(List<Map.Entry<String, Class>> fields, String query, List<Pair<String, String>> order,
+    @SuppressWarnings({"UnusedDeclaration"})
+    public Enumerable<Object> query(List<Map.Entry<String, Class<?>>> fields, String query, List<Pair<String, String>> order,
                                     List<String> buckets, List<Pair<String, String>> metricPairs, String limit, String negativeQuery, String havingPredicate) {
       return getTable().query(getProperties(), fields, query, order, buckets, metricPairs, limit, negativeQuery, havingPredicate);
     }

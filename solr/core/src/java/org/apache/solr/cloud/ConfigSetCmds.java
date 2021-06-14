@@ -23,7 +23,6 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import com.jayway.jsonpath.internal.Utils;
@@ -72,8 +71,7 @@ public class ConfigSetCmds {
   }
 
 
-  @SuppressWarnings({"rawtypes"})
-  private static NamedList getConfigSetProperties(ConfigSetService configSetService, String configName, String propertyPath) throws IOException {
+  private static NamedList<Object> getConfigSetProperties(ConfigSetService configSetService, String configName, String propertyPath) throws IOException {
     byte[] oldPropsData = configSetService.downloadFileFromConfig(configName, propertyPath);
     if (oldPropsData != null) {
       InputStreamReader reader = new InputStreamReader(new ByteArrayInputStream(oldPropsData), StandardCharsets.UTF_8);
@@ -100,11 +98,8 @@ public class ConfigSetCmds {
     return properties;
   }
 
-  private static void mergeOldProperties(Map<String, Object> newProps, @SuppressWarnings({"rawtypes"})NamedList oldProps) {
-    @SuppressWarnings({"unchecked"})
-    Iterator<Map.Entry<String, Object>> it = oldProps.iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, Object> oldEntry = it.next();
+  private static void mergeOldProperties(Map<String, Object> newProps, NamedList<Object> oldProps) {
+    for (Map.Entry<String, Object> oldEntry : oldProps) {
       if (!newProps.containsKey(oldEntry.getKey())) {
         newProps.put(oldEntry.getKey(), oldEntry.getValue());
       }
@@ -144,8 +139,7 @@ public class ConfigSetCmds {
     Map<String, Object> props = getNewProperties(message);
     if (props != null) {
       // read the old config properties and do a merge, if necessary
-      @SuppressWarnings({"rawtypes"})
-      NamedList oldProps = getConfigSetProperties(coreContainer.getConfigSetService(), baseConfigSetName, propertyPath);
+      NamedList<Object> oldProps = getConfigSetProperties(coreContainer.getConfigSetService(), baseConfigSetName, propertyPath);
       if (oldProps != null) {
         mergeOldProperties(props, oldProps);
       }
@@ -184,10 +178,6 @@ public class ConfigSetCmds {
   }
 
   private static void deleteConfigSet(String configSetName, boolean force, CoreContainer coreContainer) throws IOException {
-    if (!coreContainer.getConfigSetService().checkConfigExists(configSetName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ConfigSet does not exist to delete: " + configSetName);
-    }
-
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
 
     for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
@@ -204,8 +194,7 @@ public class ConfigSetCmds {
     }
 
     String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;
-    @SuppressWarnings({"rawtypes"})
-    NamedList properties = getConfigSetProperties(coreContainer.getConfigSetService(), configSetName, propertyPath);
+    NamedList<Object> properties = getConfigSetProperties(coreContainer.getConfigSetService(), configSetName, propertyPath);
     if (properties != null) {
       Object immutable = properties.get(ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG);
       boolean isImmutableConfigSet = immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;

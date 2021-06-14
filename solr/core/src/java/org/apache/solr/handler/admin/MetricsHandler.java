@@ -109,7 +109,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     handleRequest(req.getParams(), (k, v) -> rsp.add(k, v));
   }
   
-  @SuppressWarnings({"unchecked"})
   public void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) throws Exception {
     if (!enabled) {
       consumer.accept("error", "metrics collection is disabled");
@@ -359,10 +358,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
     public static final String SUPPORTED_TYPES_MSG = EnumSet.allOf(MetricType.class).toString();
 
-    @SuppressWarnings({"rawtypes"})
-    private final Class klass;
+    private final Class<? extends Metric> klass;
 
-    MetricType(@SuppressWarnings({"rawtypes"})Class klass) {
+    MetricType(Class<? extends Metric> klass) {
       this.klass = klass;
     }
 

@@ -33,7 +33,7 @@ To list all the active cancellable tasks currently running, please use the follo
 
 `\http://localhost:8983/solr/tasks/list`
 
-==== Sample Response
+=== Sample Response
 
 `{responseHeader={status=0, QTime=11370}, taskList={0=q=*%3A*&canCancel=true&queryUUID=0&_stateVer_=collection1%3A4&wt=javabin&version=2, 5=q=*%3A*&canCancel=true&queryUUID=5&_stateVer_=collection1%3A4&wt=javabin&version=2, 7=q=*%3A*&canCancel=true&queryUUID=7&_stateVer_=collection1%3A4&wt=javabin&version=2}`
 
@@ -56,11 +56,8 @@ To check the status of a specific task, please use the following syntax:
 
 `\http://localhost:8983/solr/tasks/list?taskUUID=foobar`
 
-==== taskUUID Parameter
+=== taskUUID Parameter
 `taskUUID` parameter can be used to specify a task UUID whose status can be checked.
 
-==== Sample Response
+=== Sample Response
 `{responseHeader={status=0, QTime=6128}, taskStatus=foobar:true}`
-
-
-

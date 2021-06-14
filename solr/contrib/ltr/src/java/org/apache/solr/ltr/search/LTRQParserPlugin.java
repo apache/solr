@@ -86,8 +86,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     threadManager = LTRThreadModule.getInstance(args);
     SolrPluginUtils.invokeSetters(this, args);

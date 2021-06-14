@@ -49,7 +49,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
   protected boolean ignoreOptimizeOnly = false; // default behavior is to ignore commits and optimize
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})final NamedList args) {
+  public void init(final NamedList<?> args) {
     SolrParams params = (args != null) ? args.toSolrParams() : null;
     if (params == null) {
       errorCode = ErrorCode.FORBIDDEN; // default is 403 error
@@ -137,7 +137,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
           if (responseHeader != null) {
             responseHeader.add("msg", responseMsg);
           } else {
-            responseHeader = new SimpleOrderedMap<Object>();
+            responseHeader = new SimpleOrderedMap<>();
             responseHeader.add("msg", responseMsg);
             rsp.addResponseHeader(responseHeader);
           }

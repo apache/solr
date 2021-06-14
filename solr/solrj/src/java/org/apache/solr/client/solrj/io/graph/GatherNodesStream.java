@@ -78,7 +78,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private  SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH);
   private Set<String> windowSet;
   private int window = Integer.MIN_VALUE;
-  private int lag = 1;
+  private int lag = 0;
+  private static final int TEN_SECOND_INTERVAL = 0;
+  private static final int DAY_INTERVAL = 1;
+  private int interval = TEN_SECOND_INTERVAL;
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public GatherNodesStream(String zkHost,
@@ -105,7 +109,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         scatter,
         maxDocFreq,
         Integer.MIN_VALUE,
-    1);
+    1,
+        TEN_SECOND_INTERVAL);
   }
 
   public GatherNodesStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -205,13 +210,21 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     StreamExpressionNamedParameter windowExpression = factory.getNamedOperand(expression, "window");
     int timeWindow = Integer.MIN_VALUE;
+    int intervalParam = -1;
 
     if(windowExpression != null) {
-      timeWindow = Integer.parseInt(((StreamExpressionValue) windowExpression.getParameter()).getValue());
+      String windowValue = ((StreamExpressionValue) windowExpression.getParameter()).getValue();
+      if(windowValue.contains("DAY")) {
+        intervalParam = DAY_INTERVAL;
+        timeWindow = Integer.parseInt(windowValue.split("DAY")[0]);
+      } else {
+        intervalParam = TEN_SECOND_INTERVAL;
+        timeWindow = Integer.parseInt(windowValue);
+      }
     }
 
     StreamExpressionNamedParameter lagExpression = factory.getNamedOperand(expression, "lag");
-    int timeLag = 1;
+    int timeLag = 0;
 
     if(lagExpression != null) {
       timeLag = Integer.parseInt(((StreamExpressionValue) lagExpression.getParameter()).getValue());
@@ -268,7 +281,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
          scatter,
          docFreq,
          timeWindow,
-         timeLag);
+         timeLag,
+         intervalParam);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -284,7 +298,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                     Set<Traversal.Scatter> scatter,
                     int maxDocFreq,
                     int window,
-                    int lag) {
+                    int lag,
+                    int interval) {
     this.zkHost = zkHost;
     this.collection = collection;
     this.tupleStream = tupleStream;
@@ -297,6 +312,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     this.scatter = scatter;
     this.maxDocFreq = maxDocFreq;
     this.window = window;
+    this.interval = interval;
 
     if(window > Integer.MIN_VALUE) {
       windowSet = new HashSet<>();
@@ -419,8 +435,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       localContext.setSolrClientCache(context.getSolrClientCache());
       localContext.setStreamFactory(context.getStreamFactory());
 
-      for(Object key :context.getEntries().keySet()) {
-        localContext.put(key, context.get(key));
+      for(Map.Entry<String, Object> entry : context.getEntries().entrySet()) {
+        localContext.put(entry.getKey(), entry.getValue());
       }
 
       traversal = new Traversal();
@@ -445,7 +461,6 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     tupleStream.open();
   }
 
-  @SuppressWarnings({"unchecked"})
   private class JoinRunner implements Callable<List<Tuple>> {
 
     private List<String> nodes;
@@ -548,9 +563,29 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       Instant instant = date.toInstant();
 
       for (int i = 0; i < size; i++) {
-        Instant windowInstant = instant.minus(10 * (i + lag), ChronoUnit.SECONDS);
+        Instant windowInstant = instant.minus(10 * ((i+1) + lag), ChronoUnit.SECONDS);
         String windowString = windowInstant.toString();
         windowString = windowString.substring(0, 18) + "0Z";
+        window[i] = windowString;
+      }
+
+      return window;
+    } catch(ParseException e) {
+      log.warn("Unparseable date:{}", String.valueOf(start));
+      return new String[0];
+    }
+  }
+
+  private String[] getDayWindow(int size, int lag, String start) {
+    try {
+      String[] window = new String[size];
+      Date date = this.dateFormat.parse(start);
+      Instant instant = date.toInstant();
+
+      for (int i = 0; i < size; i++) {
+        Instant windowInstant = instant.minus(1 * ((i+1) + lag), ChronoUnit.DAYS);
+        String windowString = windowInstant.toString();
+        windowString = windowString.substring(0, 10) + "T00:00:00Z";
         window[i] = windowString;
       }
 
@@ -613,7 +648,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             }
           }
 
-          if(windowSet == null || (lag == 1 && !windowSet.contains(String.valueOf(value)))) {
+          if(windowSet == null || (lag == 0 && !windowSet.contains(String.valueOf(value)))) {
             joinBatch.add(value);
           }
 
@@ -626,7 +661,16 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             * We derive the window and add it to the join values below.
             */
 
-            String[] timeWindow = getTenSecondWindow(window, lag, value);
+            String[] timeWindow = null;
+
+            if(this.interval == DAY_INTERVAL) {
+              //Derive the daily window
+              timeWindow = getDayWindow(window, lag, value);
+            } else {
+              //Dervie the default ten second window
+              timeWindow = getTenSecondWindow(window, lag, value);
+            }
+
             for(String windowString : timeWindow) {
               if(!windowSet.contains(windowString)) {
                 /*

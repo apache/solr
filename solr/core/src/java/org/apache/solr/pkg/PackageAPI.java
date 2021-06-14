@@ -74,6 +74,10 @@ public class PackageAPI {
   public final Read readAPI = new Read();
 
   public PackageAPI(CoreContainer coreContainer, PackageLoader loader) {
+    if (coreContainer.getPackageStoreAPI() == null) {
+      throw new IllegalStateException("Must successfully load PackageStoreAPI first");
+    }
+
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
     pkgs = new Packages();
@@ -260,7 +264,6 @@ public class PackageAPI {
     }
 
     @Command(name = "add")
-    @SuppressWarnings({"unchecked"})
     public void add(PayloadObj<Package.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
       Package.AddVersion add = payload.get();
