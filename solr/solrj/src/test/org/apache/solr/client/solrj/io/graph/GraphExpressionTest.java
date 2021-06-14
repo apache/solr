@@ -379,7 +379,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     //Test the window without lag
 
-    expr = "nodes(collection1, random(collection1, q=\"id:(1 2)\", fl=\"time_ten_seconds_s\"), walk=\"time_ten_seconds_s->time_ten_seconds_s\", gather=\"id\", window=\"3\")";
+    expr = "nodes(collection1, random(collection1, q=\"id:(1 2)\", fl=\"time_ten_seconds_s\"), walk=\"time_ten_seconds_s->time_ten_seconds_s\", gather=\"id\", window=\"-3\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
@@ -389,17 +389,48 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
 
     Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
-    assertTrue(tuples.size() == 5);
+    assertTrue(tuples.size() == 4);
     assertTrue(tuples.get(0).getString("node").equals("1"));
     assertTrue(tuples.get(1).getString("node").equals("2"));
     assertTrue(tuples.get(2).getString("node").equals("3"));
     assertTrue(tuples.get(3).getString("node").equals("4"));
-    assertTrue(tuples.get(4).getString("node").equals("5"));
+
+
+    expr = "nodes(collection1, random(collection1, q=\"id:(6)\", fl=\"time_ten_seconds_s\"), walk=\"time_ten_seconds_s->time_ten_seconds_s\", gather=\"id\", window=\"3\")";
+
+    stream = (GatherNodesStream)factory.constructStream(expr);
+
+    context = new StreamContext();
+    context.setSolrClientCache(cache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    assertTrue(tuples.size() == 3);
+    assertTrue(tuples.get(0).getString("node").equals("4"));
+    assertTrue(tuples.get(1).getString("node").equals("5"));
+    assertTrue(tuples.get(2).getString("node").equals("6"));
+
+
+    expr = "nodes(collection1, random(collection1, q=\"id:(6)\", fl=\"time_ten_seconds_s\"), walk=\"time_ten_seconds_s->time_ten_seconds_s\", gather=\"id\", window=\"3\", lag=\"1\")";
+
+    stream = (GatherNodesStream)factory.constructStream(expr);
+
+    context = new StreamContext();
+    context.setSolrClientCache(cache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    assertTrue(tuples.size() == 3);
+    assertTrue(tuples.get(0).getString("node").equals("3"));
+    assertTrue(tuples.get(1).getString("node").equals("4"));
+    assertTrue(tuples.get(2).getString("node").equals("5"));
 
 
     //Test window with lag
 
-    expr = "nodes(collection1, random(collection1, q=\"id:(1)\", fl=\"time_ten_seconds_s\"), walk=\"time_ten_seconds_s->time_ten_seconds_s\", gather=\"id\", window=\"2\", lag=\"2\")";
+    expr = "nodes(collection1, random(collection1, q=\"id:(1)\", fl=\"time_ten_seconds_s\"), walk=\"time_ten_seconds_s->time_ten_seconds_s\", gather=\"id\", window=\"-2\", lag=\"2\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
@@ -411,14 +442,14 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
 
     assertTrue(tuples.size() == 2);
-    assertTrue(tuples.get(0).getString("node").equals("4"));
-    assertTrue(tuples.get(1).getString("node").equals("5"));
+    assertTrue(tuples.get(0).getString("node").equals("3"));
+    assertTrue(tuples.get(1).getString("node").equals("4"));
 
 
     // Test DAY window without lag
 
 
-    expr = "nodes(collection1, random(collection1, q=\"id:(1 2)\", fl=\"day_s\"), walk=\"day_s->day_s\", gather=\"id\", window=\"3DAYS\")";
+    expr = "nodes(collection1, random(collection1, q=\"id:(1 2)\", fl=\"day_s\"), walk=\"day_s->day_s\", gather=\"id\", window=\"-3DAYS\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
@@ -428,17 +459,16 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
 
     Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
-    assertTrue(tuples.size() == 5);
+    assertTrue(tuples.size() == 4);
     assertTrue(tuples.get(0).getString("node").equals("1"));
     assertTrue(tuples.get(1).getString("node").equals("2"));
     assertTrue(tuples.get(2).getString("node").equals("3"));
     assertTrue(tuples.get(3).getString("node").equals("4"));
-    assertTrue(tuples.get(4).getString("node").equals("5"));
 
 
     // Test Day window with lag.
 
-    expr = "nodes(collection1, random(collection1, q=\"id:(1)\", fl=\"day_s\"), walk=\"day_s->day_s\", gather=\"id\", window=\"2DAYS\", lag=\"2\")";
+    expr = "nodes(collection1, random(collection1, q=\"id:(1)\", fl=\"day_s\"), walk=\"day_s->day_s\", gather=\"id\", window=\"-2DAYS\", lag=\"2\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
@@ -449,9 +479,81 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
     assertTrue(tuples.size() == 2);
-    assertTrue(tuples.get(0).getString("node").equals("4"));
-    assertTrue(tuples.get(1).getString("node").equals("5"));
+    assertTrue(tuples.get(0).getString("node").equals("3"));
+    assertTrue(tuples.get(1).getString("node").equals("4"));
 
+
+    // Test Week Day
+
+    expr = "nodes(collection1, random(collection1, q=\"id:(3)\", fl=\"day_s\"), walk=\"day_s->day_s\", gather=\"id\", window=\"-2WEEKDAYS\")";
+
+    stream = (GatherNodesStream)factory.constructStream(expr);
+
+    context = new StreamContext();
+    context.setSolrClientCache(cache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+
+
+    assertTrue(tuples.size() == 2);
+    assertTrue(tuples.get(0).getString("node").equals("3"));
+    assertTrue(tuples.get(1).getString("node").equals("6"));
+
+
+    // Test Week Day with lag
+
+    expr = "nodes(collection1, random(collection1, q=\"id:(3)\", fl=\"day_s\"), walk=\"day_s->day_s\", gather=\"id\", window=\"-2WEEKDAYS\", lag=\"1\")";
+
+    stream = (GatherNodesStream)factory.constructStream(expr);
+
+    context = new StreamContext();
+    context.setSolrClientCache(cache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+
+    assertTrue(tuples.size() == 2);
+    assertTrue(tuples.get(0).getString("node").equals("6"));
+    assertTrue(tuples.get(1).getString("node").equals("7"));
+
+
+    // Test positive week day
+
+    expr = "nodes(collection1, random(collection1, q=\"id:(6)\", fl=\"day_s\"), walk=\"day_s->day_s\", gather=\"id\", window=\"2WEEKDAYS\")";
+
+    stream = (GatherNodesStream)factory.constructStream(expr);
+
+    context = new StreamContext();
+    context.setSolrClientCache(cache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+
+    assertTrue(tuples.size() == 2);
+    assertTrue(tuples.get(0).getString("node").equals("3"));
+    assertTrue(tuples.get(1).getString("node").equals("6"));
+
+
+    // Test positive Week Day with lag
+
+    expr = "nodes(collection1, random(collection1, q=\"id:(6)\", fl=\"day_s\"), walk=\"day_s->day_s\", gather=\"id\", window=\"2WEEKDAYS\", lag=\"1\")";
+
+    stream = (GatherNodesStream)factory.constructStream(expr);
+
+    context = new StreamContext();
+    context.setSolrClientCache(cache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+
+    assertTrue(tuples.size() == 2);
+    assertTrue(tuples.get(0).getString("node").equals("2"));
+    assertTrue(tuples.get(1).getString("node").equals("3"));
 
     cache.close();
   }

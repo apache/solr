@@ -17,10 +17,9 @@
 
 package org.apache.solr.jaeger;
 
-import java.util.concurrent.TimeUnit;
-
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import io.opentracing.util.GlobalTracer;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -37,8 +36,7 @@ import org.junit.rules.TestRule;
 
 public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
-  @Rule
-  public TestRule solrTestRules = new SystemPropertiesRestoreRule();
+  @Rule public TestRule solrTestRules = new SystemPropertiesRestoreRule();
 
   @Before
   public void doBefore() {
@@ -53,26 +51,23 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
   @Test
   public void testInjected() throws Exception {
-    MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(2, createTempDir())
-        .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
-        .withSolrXml(getFile("solr/solr.xml").toPath())
-        .build();
+    MiniSolrCloudCluster cluster =
+        new SolrCloudTestCase.Builder(2, createTempDir())
+            .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
+            .withSolrXml(getFile("solr/solr.xml").toPath())
+            .build();
     try {
       TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);
       timeOut.waitFor(
           "Waiting for GlobalTracer is registered",
           () -> GlobalTracer.get().toString().contains("JaegerTracer"));
 
-      //TODO add run Jaeger through Docker and verify spans available after run these commands
+      // TODO add run Jaeger through Docker and verify spans available after run these commands
       CollectionAdminRequest.createCollection("test", 2, 1).process(cluster.getSolrClient());
-      new UpdateRequest()
-          .add("id", "1")
-          .add("id", "2")
-          .process(cluster.getSolrClient(), "test");
+      new UpdateRequest().add("id", "1").add("id", "2").process(cluster.getSolrClient(), "test");
       cluster.getSolrClient().query("test", new SolrQuery("*:*"));
     } finally {
       cluster.shutdown();
     }
-
   }
 }

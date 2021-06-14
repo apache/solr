@@ -599,11 +599,11 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
     assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam),
         "//*[@name='facets']/long/text()=6",
         "//*[@name='allBuckets']/long/text()=6",
-        "//*[@name='buckets']/lst[int[@name='count'][.='2']][str[@name='val'][.='Critical']]",
-        "//*[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='Not Available']]",
-        "//*[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='Low']]",
-        "//*[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='Medium']]",
-        "//*[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='High']]");
+        "//*[@name='buckets']/lst[long[@name='count'][.='2']][str[@name='val'][.='Critical']]",
+        "//*[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='Not Available']]",
+        "//*[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='Low']]",
+        "//*[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='Medium']]",
+        "//*[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='High']]");
 
     try (SolrQueryRequest req = req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam, "wt", "json")) {
       SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT),req);
