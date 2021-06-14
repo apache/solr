@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -2020,15 +2022,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
   @Test
   public void testBetween() throws Exception {
     new UpdateRequest()
-        .add("id", "1", "a_i", "1")
-        .add("id", "2", "a_i", "2")
-        .add("id", "3", "a_i", "3")
-        .add("id", "4", "a_i", "4")
-        .add("id", "5", "a_i", "5")
+        .add(withMultiValuedField("b_is", Arrays.asList(1, 5), "id", "1", "a_i", "1"))
+        .add(withMultiValuedField("b_is", Arrays.asList(2, 6), "id", "2", "a_i", "2"))
+        .add(withMultiValuedField("b_is", Arrays.asList(3, 7), "id", "3", "a_i", "3"))
+        .add(withMultiValuedField("b_is", Arrays.asList(4, 8), "id", "4", "a_i", "4"))
+        .add(withMultiValuedField("b_is", Arrays.asList(5, 9), "id", "5", "a_i", "5"))
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT a_i FROM $ALIAS WHERE a_i BETWEEN 2 AND 4", 3);
     expectResults("SELECT a_i FROM $ALIAS WHERE a_i NOT BETWEEN 2 AND 4", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is BETWEEN 2 AND 4", 3);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is BETWEEN 1 AND 9", 5);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is BETWEEN 8 AND 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is >= 2 AND b_is <= 4", 3);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is <= 4 AND b_is >= 2", 3);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is <= 2 OR b_is >= 8", 4);
+  }
+
+  private SolrInputDocument withMultiValuedField(String mvField, List<Object> values, String... fields) {
+    SolrInputDocument doc = new SolrInputDocument(fields);
+    doc.addField(mvField, values);
+    return doc;
   }
 
   @Test

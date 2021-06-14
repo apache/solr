@@ -35,10 +35,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
 
-import static org.apache.calcite.sql.SqlKind.LIKE;
-import static org.apache.calcite.sql.SqlKind.LITERAL;
-import static org.apache.calcite.sql.SqlKind.NOT;
-
 /**
  * Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in Solr.
  */
@@ -90,7 +86,22 @@ class SolrFilter extends Filter implements SolrRel {
       if (kind.belongsTo(SqlKind.COMPARISON) || kind == SqlKind.NOT) {
         return translateComparison(condition);
       } else if (condition.isA(SqlKind.AND)) {
-        return "(" + translateAnd(condition) + ")";
+        // see if this is a translated range query of greater than or equals and less than or equal on same field
+        // if so, then collapse into a single range criteria, e.g. field:[gte TO lte] instead of two ranges AND'd together
+        RexCall call = (RexCall) condition;
+        List<RexNode> operands = call.getOperands();
+        String query = null;
+        if (operands.size() == 2) {
+          RexNode lhs = operands.get(0);
+          RexNode rhs = operands.get(1);
+          if (lhs.getKind() == SqlKind.GREATER_THAN_OR_EQUAL && rhs.getKind() == SqlKind.LESS_THAN_OR_EQUAL) {
+            query = translateBetween(lhs, rhs);
+          } else if (lhs.getKind() == SqlKind.LESS_THAN_OR_EQUAL && rhs.getKind() == SqlKind.GREATER_THAN_OR_EQUAL) {
+            // just swap the nodes
+            query = translateBetween(rhs, lhs);
+          }
+        }
+        return query != null ? query : "(" + translateAnd(condition) + ")";
       } else if (condition.isA(SqlKind.OR)) {
         return "(" + translateOr(condition) + ")";
       } else if (kind == SqlKind.LIKE) {
@@ -100,6 +111,23 @@ class SolrFilter extends Filter implements SolrRel {
       } else {
         return null;
       }
+    }
+
+    protected String translateBetween(RexNode gteNode, RexNode lteNode) {
+      Pair<String, RexLiteral> gte = getFieldValuePair(gteNode);
+      Pair<String, RexLiteral> lte = getFieldValuePair(lteNode);
+      String fieldName = gte.getKey();
+      String query = null;
+      if (fieldName.equals(lte.getKey()) && compareRexLiteral(gte.right, lte.right) < 0) {
+        query = fieldName + ":[" + gte.getValue() + " TO " + lte.getValue() + "]";
+        this.negativeQuery = false; // so we don't get *:* AND range
+      }
+      return query;
+    }
+
+    @SuppressWarnings("unchecked")
+    private int compareRexLiteral(final RexLiteral gte, final RexLiteral lte) {
+      return gte.getValue().compareTo(lte.getValue());
     }
 
     protected String translateIsNullOrIsNotNull(RexNode node) {
@@ -174,9 +202,9 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected String translateComparison(RexNode node) {
       final SqlKind kind = node.getKind();
-      if (kind == NOT) {
+      if (kind == SqlKind.NOT) {
         RexNode negated = ((RexCall) node).getOperands().get(0);
-        return "-" + (negated.getKind() == LIKE ? translateLike(negated, true) : translateComparison(negated));
+        return "-" + (negated.getKind() == SqlKind.LIKE ? translateLike(negated, true) : translateComparison(negated));
       }
 
       Pair<String, RexLiteral> binaryTranslated = getFieldValuePair(node);
@@ -213,7 +241,6 @@ class SolrFilter extends Filter implements SolrRel {
         case LIKE:
           return translateLike(node, false);
         case IS_NOT_NULL:
-          return translateIsNullOrIsNotNull(node);
         case IS_NULL:
           return translateIsNullOrIsNotNull(node);
         default:
@@ -260,7 +287,7 @@ class SolrFilter extends Filter implements SolrRel {
      * Translates a call to a binary operator. Returns whether successful.
      */
     protected Pair<String, RexLiteral> translateBinary2(RexNode left, RexNode right) {
-      if (right.getKind() != LITERAL) {
+      if (right.getKind() != SqlKind.LITERAL) {
         return null;
       }
 

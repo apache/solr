@@ -246,7 +246,7 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 |\<= |Less than or equals |`fielda \<= 10` |`fielda:[* TO 10]`
 |IN |Specify multiple values (shorthand for multiple OR clasues) |`fielda IN (10,20,30)` |`(fielda:10 OR fielda:20 OR fielda:30)`
 |LIKE |Wildcard match on string or text fields |`fielda LIKE 'day%'` |`{!complexphrase}fielda:"day*"`
-|BETWEEN |Range match |`fielda BETWEEN 2 AND 2` |`((fielda: [2 TO *]) AND (fielda: [* TO 4]))`
+|BETWEEN |Range match |`fielda BETWEEN 2 AND 4` |`fielda: [2 TO 4]`
 |IS NULL |Match columns with null value |`fielda IS NULL` |`(*:* -field:*)`
 |IS NOT NULL |Match columns with value |`fielda IS NOT NULL` |`field:*`
 |===
