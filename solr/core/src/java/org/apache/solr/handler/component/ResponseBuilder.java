@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
@@ -175,21 +177,24 @@ public class ResponseBuilder
     }
   }
 
-  /**
-   *  Override this method and the {@link ResponseBuilder#addShardInfo(Object, String, NamedList)}
-   *  method e.g. if you wish to return a list instead of a map container.
-   */
-  protected Object newShardsInfo() {
-    return new SimpleOrderedMap<>();
+  public static abstract class ShardsInfoContainer implements BiConsumer<String,NamedList<Object>>, Supplier<Object> {
   }
 
-  /**
-   *  Override this method if you overrode the {@link ResponseBuilder#newShardsInfo()} method
-   *  or if you wish to remove or redact some <code>shardInfoValue</code> elements.
-   */
-  @SuppressWarnings("unchecked")
-  protected void addShardInfo(Object shardsInfo, String shardInfoName, NamedList<Object> shardInfoValue) {
-    ((NamedList<Object>)shardsInfo).add(shardInfoName, shardInfoValue);
+  protected ShardsInfoContainer newShardsInfoContainer() {
+    return new ShardsInfoContainer() {
+
+      private final NamedList<Object> container = new SimpleOrderedMap<>();
+
+      @Override
+      public void accept(String shardInfoName, NamedList<Object> shardInfoValue) {
+        container.add(shardInfoName, shardInfoValue);
+      }
+
+      @Override
+      public Object get() {
+        return container;
+      }
+    };
   }
 
   public Map<Object, ShardDoc> resultIds;

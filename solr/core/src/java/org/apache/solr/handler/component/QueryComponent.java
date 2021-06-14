@@ -867,10 +867,10 @@ public class QueryComponent extends SearchComponent
       // documents... we only need to order the top (rows+start)
       final ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
 
-      Object shardsInfo = null;
+      ResponseBuilder.ShardsInfoContainer shardsInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
-        shardsInfo = rb.newShardsInfo();
-        rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardsInfo);
+        shardsInfo = rb.newShardsInfoContainer();
+        rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardsInfo.get());
       }
       
       long numFound = 0;
@@ -914,7 +914,7 @@ public class QueryComponent extends SearchComponent
             nl.add("time", srsp.getSolrResponse().getElapsedTime());
           }
 
-          rb.addShardInfo(shardsInfo, srsp.getShard(), nl);
+          shardsInfo.accept(srsp.getShard(), nl);
         }
         // now that we've added the shard info, let's only proceed if we have no error.
         if (srsp.getException() != null) {
