@@ -307,7 +307,7 @@ Other Changes
 
 * SOLR-15439: Upgrade jose4j library used for JWT authentication processing, to v0.7.7 (janhoy)
 
-* SOLR-15385: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley)
+* SOLR-15385: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley, Christine Poerschke)
 
 Bug Fixes
 ---------------------

@@ -73,16 +73,6 @@ public class Tuple implements Cloneable, MapWriter {
     // just an empty tuple
   }
 
-  /**
-   * A copy constructor.
-   * @param fields map containing keys and values to be copied to this tuple
-   */
-  public Tuple(Map<String, ?> fields) {
-    this.fields.putAll(fields);
-    EOF = this.fields.containsKey(StreamParams.EOF);
-    EXCEPTION = this.fields.containsKey(StreamParams.EXCEPTION);
-  }
-
   public Tuple(String k1, Object v1) {
     if (k1 != null) put(k1, v1);
   }
@@ -92,7 +82,18 @@ public class Tuple implements Cloneable, MapWriter {
     if (k2 != null) put(k2, v2);
   }
 
-  public Object get(Object key) {
+  /**
+   * A copy constructor.
+   * @param fields map containing keys and values to be copied to this tuple
+   */
+  public Tuple(Map<String, ?> fields) {
+    // TODO Use bulk putAll operation that will properly size the map
+    for (Map.Entry<String, ?> entry : fields.entrySet()) {
+      put(entry.getKey(), entry.getValue());
+    }
+  }
+
+  public Object get(String key) {
     return this.fields.get(key);
   }
 
@@ -105,17 +106,17 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
-  public void remove(Object key) {
+  public void remove(String key) {
     this.fields.remove(key);
   }
 
-  public String getString(Object key) {
+  public String getString(String key) {
     return String.valueOf(this.fields.get(key));
   }
 
   public String getException() { return (String)this.fields.get(StreamParams.EXCEPTION); }
 
-  public Long getLong(Object key) {
+  public Long getLong(String key) {
     Object o = this.fields.get(key);
 
     if (o == null) {
@@ -133,7 +134,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   // Convenience method since Booleans can be passed around as Strings.
-  public Boolean getBool(Object key) {
+  public Boolean getBool(String key) {
     Object o = this.fields.get(key);
 
     if (o == null) {
@@ -149,12 +150,12 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Boolean> getBools(Object key) {
+  public List<Boolean> getBools(String key) {
     return (List<Boolean>) this.fields.get(key);
   }
 
   // Convenience methods since the dates are actually shipped around as Strings.
-  public Date getDate(Object key) {
+  public Date getDate(String key) {
     Object o = this.fields.get(key);
 
     if (o == null) {
@@ -170,7 +171,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Date> getDates(Object key) {
+  public List<Date> getDates(String key) {
     List<String> vals = (List<String>) this.fields.get(key);
     if (vals == null) return null;
     
@@ -181,7 +182,7 @@ public class Tuple implements Cloneable, MapWriter {
     return ret;
   }
 
-  public Double getDouble(Object key) {
+  public Double getDouble(String key) {
     Object o = this.fields.get(key);
 
     if (o == null) {
@@ -197,17 +198,17 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<String> getStrings(Object key) {
+  public List<String> getStrings(String key) {
     return (List<String>)this.fields.get(key);
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Long> getLongs(Object key) {
+  public List<Long> getLongs(String key) {
     return (List<Long>)this.fields.get(key);
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Double> getDoubles(Object key) {
+  public List<Double> getDoubles(String key) {
     return (List<Double>)this.fields.get(key);
   }
 
@@ -255,7 +256,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Map<?,?>> getMaps(Object key) {
+  public List<Map<?,?>> getMaps(String key) {
     return (List<Map<?,?>>) this.fields.get(key);
   }
 
