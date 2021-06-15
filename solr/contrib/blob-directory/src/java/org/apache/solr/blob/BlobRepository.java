@@ -114,9 +114,10 @@ public class BlobRepository implements Closeable {
 
   /**
    * Pulls selected files from a directory in the repository.
+   * The file selection is done on the current thread. Then the files are pulled by multiple threads.
    * @param blobDirPath The path to the directory where to list the files.
    * @param outputSupplier Supplies the {@link IndexOutput} to write each file.
-   * @param fileFilter Selects the files to pull.
+   * @param fileFilter Selects the files to pull. Does not need to be thread safe.
    */
   public void pull(
       String blobDirPath,
@@ -223,6 +224,12 @@ public class BlobRepository implements Closeable {
                     () -> {
                       try (IndexInput in = repository.openInput(blobDirUri, blobFile.fileName(), IOContext.READ);
                            IndexOutput out = outputSupplier.apply(blobFile)) {
+                        // We don't use IndexOutput.copyBytes(DataInput, int) here for two reasons:
+                        // - copyBytes() has a fixed copy buffer length of 16 KB, which is not efficient enough
+                        //   when reading from remote repository with high latency. The buffer needs to be larger
+                        //   (e.g. 2 MB).
+                        // - copyBytes() uses a buffer for each IndexOutput instance. If this buffer is large, it
+                        //   becomes more efficient to reuse it from the streamBuffers thread local cache.
                         copyStream(in, out::writeBytes);
                       }
                       return null;

@@ -70,18 +70,19 @@ public class BlobDirectory extends FilterDirectory {
   }
 
   private void pullMissingFilesFromRepo() throws IOException {
+    // Currently the file selection is on the current thread, so no need to worry about thread-safety.
     Set<String> localFileNames = new HashSet<>(Arrays.asList(in.listAll()));
-    MutableInt numPulledFiles = log.isInfoEnabled() ? new MutableInt() : null;
+    MutableInt numPulledFiles = new MutableInt();
     blobRepository.pull(blobDirPath, this::openOutput, blobFileName -> {
       // Select the blob files that are not present locally.
       // The repository is dedicated to this replica, so there is no risk of same files with different content.
       boolean selected = !localFileNames.remove(blobFileName);
-      if (selected && numPulledFiles != null) {
+      if (selected) {
         numPulledFiles.increment();
       }
       return selected;
     });
-    if (numPulledFiles != null && numPulledFiles.getValue() > 0) {
+    if (log.isInfoEnabled() && numPulledFiles.getValue() > 0) {
       log.info("{} pulled {} files from the persistent repository {}",
           this, numPulledFiles.getValue(), blobDirPath);
     }

@@ -175,7 +175,6 @@ public class BlobDirectoryTest extends SolrTestCaseJ4 {
         // When
         // - The local files are wiped (e.g. host crash).
         MoreFiles.deleteRecursively(Path.of(directoryPath), RecursiveDeleteOption.ALLOW_INSECURE);
-        assertFalse(Files.exists(Path.of(directoryPath)));
         // - The directory is released and reopened.
         directoryFactory.doneWithDirectory(directory);
         directoryFactory.release(directory);
