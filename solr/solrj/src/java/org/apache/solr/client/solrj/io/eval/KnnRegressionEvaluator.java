@@ -54,7 +54,6 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException {
 
     if(values.length < 3) {
@@ -83,7 +82,9 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     }
 
     if(values[1] instanceof List) {
-      outcomes = (List<Number>) values[1];
+      @SuppressWarnings("unchecked")
+      List<Number> temp = (List<Number>) values[1];
+      outcomes = temp;
     } else {
       throw new IOException("The second parameter for knnRegress should be outcome array. ");
     }

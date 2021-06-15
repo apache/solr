@@ -37,14 +37,14 @@ public class RemoveCacheEvaluator extends RecursiveObjectEvaluator implements Ma
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    ConcurrentMap<String,Object> objectCache = this.streamContext.getObjectCache();
     if(values.length == 2) {
       String space = (String)values[0];
       String key = (String)values[1];
       space = space.replace("\"", "");
       key = key.replace("\"", "");
-      ConcurrentMap<?,?> spaceCache = (ConcurrentMap<?,?>)objectCache.get(space);
 
+      ConcurrentMap<String, ConcurrentMap<String, Object>> objectCache = this.streamContext.getObjectCache();
+      ConcurrentMap<String, Object> spaceCache = objectCache.get(space);
       if(spaceCache != null) {
         return spaceCache.remove(key);
       }

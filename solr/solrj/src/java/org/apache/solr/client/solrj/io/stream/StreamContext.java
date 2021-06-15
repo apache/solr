@@ -41,8 +41,7 @@ public class StreamContext implements Serializable {
   private Map<String, Object> entries = new HashMap<String, Object>();
   private Map<String, String> tupleContext = new HashMap<>();
   private Map<String, Object> lets = new HashMap<>();
-  // TODO: This might be ok as a Map<String, Map<String, Object>>
-  private ConcurrentMap<String, Object> objectCache;
+  private ConcurrentMap<String, ConcurrentMap<String,Object>> objectCache;
   public int workerID;
   public int numWorkers;
   private SolrClientCache clientCache;
@@ -52,11 +51,11 @@ public class StreamContext implements Serializable {
   private SolrParams requestParams;
   private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
 
-  public ConcurrentMap<String, Object> getObjectCache() {
+  public ConcurrentMap<String, ConcurrentMap<String,Object>> getObjectCache() {
     return this.objectCache;
   }
 
-  public void setObjectCache(ConcurrentMap<String, Object> objectCache) {
+  public void setObjectCache(ConcurrentMap<String, ConcurrentMap<String,Object>> objectCache) {
     this.objectCache = objectCache;
   }
 
