@@ -317,6 +317,8 @@ Other Changes
 
 * SOLR-15385: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley)
 
+* SOLR-15470: The binary distribution no longer contains test-framework jars (janhoy)
+
 * SOLR-15471: Rename lang id whitelist parameter to allowlist (Mike Drob)
 
 Bug Fixes

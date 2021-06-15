@@ -72,7 +72,6 @@ dependencies {
   distSolr project(":solr:core")
   distSolr project(":solr:server")
   distSolr project(":solr:solrj")
-  distSolr project(":solr:test-framework")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
