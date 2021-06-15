@@ -224,6 +224,12 @@ public class BlobRepository implements Closeable {
                     () -> {
                       try (IndexInput in = repository.openInput(blobDirUri, blobFile.fileName(), IOContext.READ);
                            IndexOutput out = outputSupplier.apply(blobFile)) {
+                        // We don't use IndexOutput.copyBytes(DataInput, int) here for two reasons:
+                        // - copyBytes() has a fixed copy buffer length of 16 KB, which is not efficient enough
+                        //   when reading from remote repository with high latency. The buffer needs to be larger
+                        //   (e.g. 2 MB).
+                        // - copyBytes() uses a buffer for each IndexOutput instance. If this buffer is large, it
+                        //   becomes more efficient to reuse it from the streamBuffers thread local cache.
                         copyStream(in, out::writeBytes);
                       }
                       return null;
