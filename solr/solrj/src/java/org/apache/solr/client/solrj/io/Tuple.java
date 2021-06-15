@@ -88,6 +88,7 @@ public class Tuple implements Cloneable, MapWriter {
    */
   public Tuple(Map<String, ?> fields) {
     // TODO Use bulk putAll operation that will properly size the map
+    // https://issues.apache.org/jira/browse/SOLR-15480
     for (Map.Entry<String, ?> entry : fields.entrySet()) {
       put(entry.getKey(), entry.getValue());
     }
@@ -276,10 +277,12 @@ public class Tuple implements Cloneable, MapWriter {
   public Tuple clone() {
     Tuple clone = new Tuple();
     clone.fields.putAll(fields);
+    // TODO This doesn't copy EOF/Exception https://issues.apache.org/jira/browse/SOLR-15480
     return clone;
   }
   
   public void merge(Tuple other) {
+    // TODO This doesn't copy EOF/Exception https://issues.apache.org/jira/browse/SOLR-15480
     fields.putAll(other.getFields());
   }
 
