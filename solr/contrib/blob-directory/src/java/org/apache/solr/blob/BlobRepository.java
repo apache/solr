@@ -114,9 +114,10 @@ public class BlobRepository implements Closeable {
 
   /**
    * Pulls selected files from a directory in the repository.
+   * The file selection is done on the current thread. Then the files are pulled by multiple threads.
    * @param blobDirPath The path to the directory where to list the files.
    * @param outputSupplier Supplies the {@link IndexOutput} to write each file.
-   * @param fileFilter Selects the files to pull.
+   * @param fileFilter Selects the files to pull. Does not need to be thread safe.
    */
   public void pull(
       String blobDirPath,
