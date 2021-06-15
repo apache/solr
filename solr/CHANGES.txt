@@ -139,6 +139,10 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   and a templated path.  The collection or core name is now in the db.instance tag.
   (David Smiley)
 
+* SOLR-15453: Update the content security policy in Jetty to allow image requests from local host and prevent security errors on the client side. (MarcusSorealheis via Houston Putman)
+
+* SOLR-15362: Let core and collection dropdowns in Admin UI float wide to see entire core or collection name.  (Matthias Krepp, Eric Pugh)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -278,6 +282,8 @@ Other Changes
   alternative implementations of where ConfigSets come from.
   (Nazerke Seidan, David Smiley)
 
+* SOLR-15280: Fixed misleading error message in HdfsDirectoryFactory (Andras Salamon via janhoy)
+
 * SOLR-15341: Remove indexHeapUsageBytes info from /admin/segments and /admin/luke because it's no
   longer available in Lucene -- LUCENE-9387. (janhoy, David Smiley)
 
@@ -313,6 +319,8 @@ Other Changes
 
 * SOLR-15470: The binary distribution no longer contains test-framework jars (janhoy)
 
+* SOLR-15471: Rename lang id whitelist parameter to allowlist (Mike Drob)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -342,7 +350,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
 
 Bug Fixes
 ---------------------
@@ -410,6 +418,10 @@ Improvements
 
 * SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax escaping.
   It was inconsistent with other Solr options.  It did this escaping since 8.0 but not prior.  (David Smiley)
+
+* SOLR-15044: When indexing nested docs via JSON, it is no longer necessary to provide child doc IDs.
+  This was already working for XML & "javabin"/SolrJ.  Previously, omitting the ID would be confused
+  for a partial/atomic update.  (David Smiley)
 
 Optimizations
 ---------------------

@@ -29,7 +29,9 @@ public interface LangIdParams {
   String OVERWRITE  = LANGUAGE_ID + ".overwrite";            // Overwrite if existing language value in LANG_FIELD
   String THRESHOLD  = LANGUAGE_ID + ".threshold";            // Detection threshold
   String ENFORCE_SCHEMA =  LANGUAGE_ID + ".enforceSchema";   // Enforces that output fields exist in schema
-  String LANG_WHITELIST  = LANGUAGE_ID + ".whitelist";       // Allowed languages
+  @Deprecated(since = "9.0.0")
+  String LANG_WHITELIST = LANGUAGE_ID + ".whitelist";        // Old property name for allowed languages
+  String LANG_ALLOWLIST = LANGUAGE_ID + ".allowlist";        // Allowed languages
   String LCMAP =  LANGUAGE_ID + ".lcmap";                    // Maps detected langcode to other value
   String MAP_ENABLE =  LANGUAGE_ID + ".map";                 // Turns on or off the field mapping
   String MAP_FL =  LANGUAGE_ID + ".map.fl";                  // Field list for mapping

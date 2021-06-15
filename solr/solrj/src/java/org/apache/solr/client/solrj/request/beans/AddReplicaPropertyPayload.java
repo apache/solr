@@ -14,6 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.request.beans;
 
-/** Jaeger Tracer Configurator. */
-package org.apache.solr.jaeger;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
+
+public class AddReplicaPropertyPayload implements ReflectMapWriter {
+  @JsonProperty(required =  true)
+  public String shard;
+
+  @JsonProperty(required = true)
+  public String replica;
+
+  @JsonProperty(required = true)
+  public String name;
+
+  @JsonProperty(required = true)
+  public String value;
+
+  @JsonProperty
+  public Boolean shardUnique = null;
+}

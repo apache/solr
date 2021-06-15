@@ -22,7 +22,7 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -617,21 +617,26 @@ public class JsonLoader extends ContentStreamLoader {
       assert ev == JSONParser.OBJECT_START;
 
       SolrInputDocument extendedSolrDocument = parseDoc(ev);
-      // is this a partial update or a child doc?
+      // Is this a child doc (true) or a partial update (false)
       if (isChildDoc(extendedSolrDocument)) {
         return extendedSolrDocument;
-      } else {
-        //return extendedSolrDocument.toMap(new HashMap<>(extendedSolrDocument.size()));  not quite right
-        Map<String, Object> map = new HashMap<>(extendedSolrDocument.size());
-        for (SolrInputField inputField : extendedSolrDocument) {
-          map.put(inputField.getName(), inputField.getValue());
-        }
-        return map;
+      } else { // partial update
+        assert extendedSolrDocument.size() == 1;
+        final SolrInputField pair = extendedSolrDocument.iterator().next();
+        return Collections.singletonMap(pair.getName(), pair.getValue());
       }
     }
 
+    /** Is this a child doc (true) or a partial update (false)? */
     private boolean isChildDoc(SolrInputDocument extendedFieldValue) {
-      return extendedFieldValue.containsKey(req.getSchema().getUniqueKeyField().getName());
+      if (extendedFieldValue.size() != 1) {
+        return true;
+      }
+      // if the only key is a field in the schema, assume it's a child doc
+      final String fieldName = extendedFieldValue.iterator().next().getName();
+      return req.getSchema().getFieldOrNull(fieldName) != null;
+      // otherwise, assume it's "set" or some other verb for a partial update.
+      // NOTE: it's fundamentally ambiguous with JSON; this is a best effort try.
     }
 
   }

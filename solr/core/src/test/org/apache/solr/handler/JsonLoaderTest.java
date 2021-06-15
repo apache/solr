@@ -791,6 +791,14 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     checkTwoAnonymousChildDocs(DUP_KEYS_ANON_CHILD_DOCS_JSON, false);
   }
 
+  @Test
+  public void testChildDocWithoutId() throws Exception {
+    final String json = DUP_KEYS_ANON_CHILD_DOCS_JSON.replace("\"id\": \"3\",\n", "");
+    assert !json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON);
+    checkTwoAnonymousChildDocs(
+        json, false);
+  }
+
   // rawJsonStr has "_childDocuments_" key.  if anonChildDocs then we want to test with something else.
   private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs) throws Exception {
     if (!anonChildDocs) {
@@ -824,7 +832,11 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       cd = (SolrInputDocument)((List)(d.getField("childLabel")).getValue()).get(1);
     }
     cf = cd.getField( "id" );
-    assertEquals("3", cf.getValue());
+    if (rawJsonStr.contains("\"3\"")) {
+      assertEquals("3", cf.getValue());
+    } else { // ID 3 was removed previously to test we don't need an ID to have a child doc
+      assertNull("child doc should have no ID", cf);
+    }
     cf = cd.getField( "foo_i" );
     assertEquals(2, cf.getValueCount());
 

@@ -15,5 +15,7 @@
  * limitations under the License.
  */
 
-/** Jaeger Tracer Configurator. */
-package org.apache.solr.jaeger;
+/**
+ * V2 utilities useful for all API implementations.
+ */
+package org.apache.solr.handler.api;
