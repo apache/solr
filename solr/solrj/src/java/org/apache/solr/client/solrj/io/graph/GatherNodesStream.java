@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -81,6 +83,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private int lag = 0;
   private static final int TEN_SECOND_INTERVAL = 0;
   private static final int DAY_INTERVAL = 1;
+  private static final int WEEK_DAY_INTERVAL = 2;
   private int interval = TEN_SECOND_INTERVAL;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -214,7 +217,10 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     if(windowExpression != null) {
       String windowValue = ((StreamExpressionValue) windowExpression.getParameter()).getValue();
-      if(windowValue.contains("DAY")) {
+      if(windowValue.contains("WEEKDAY")) {
+        intervalParam = WEEK_DAY_INTERVAL;
+        timeWindow = Integer.parseInt(windowValue.split("WEEKDAY")[0]);
+      } else if (windowValue.contains("DAY")) {
         intervalParam = DAY_INTERVAL;
         timeWindow = Integer.parseInt(windowValue.split("DAY")[0]);
       } else {
@@ -555,21 +561,23 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
-
   private String[] getTenSecondWindow(int size, int lag, String start) {
     try {
-      String[] window = new String[size];
+      List<String> windowList = new ArrayList<>();
       Date date = this.dateFormat.parse(start);
       Instant instant = date.toInstant();
-
-      for (int i = 0; i < size; i++) {
-        Instant windowInstant = instant.minus(10 * ((i+1) + lag), ChronoUnit.SECONDS);
+      int collect = Math.abs(size)+lag;
+      int i = -1;
+      while (windowList.size() < collect) {
+        ++i;
+        Instant windowInstant = size > 0 ? instant.plus(10*i, ChronoUnit.SECONDS) : instant.minus(10*i, ChronoUnit.SECONDS);
         String windowString = windowInstant.toString();
         windowString = windowString.substring(0, 18) + "0Z";
-        window[i] = windowString;
+        windowList.add(windowString);
       }
 
-      return window;
+      List<String> laggedWindow = windowList.subList(lag, windowList.size());
+      return laggedWindow.toArray(new String[laggedWindow.size()]);
     } catch(ParseException e) {
       log.warn("Unparseable date:{}", String.valueOf(start));
       return new String[0];
@@ -578,18 +586,51 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
   private String[] getDayWindow(int size, int lag, String start) {
     try {
-      String[] window = new String[size];
+      List<String> windowList = new ArrayList<>();
       Date date = this.dateFormat.parse(start);
       Instant instant = date.toInstant();
-
-      for (int i = 0; i < size; i++) {
-        Instant windowInstant = instant.minus(1 * ((i+1) + lag), ChronoUnit.DAYS);
+      int collect = Math.abs(size)+lag;
+      int i = -1;
+      while (windowList.size() < collect) {
+        ++i;
+        Instant windowInstant = size > 0 ? instant.plus(i, ChronoUnit.DAYS) : instant.minus(i, ChronoUnit.DAYS);
         String windowString = windowInstant.toString();
         windowString = windowString.substring(0, 10) + "T00:00:00Z";
-        window[i] = windowString;
+        windowList.add(windowString);
       }
 
-      return window;
+      List<String> laggedWindow = windowList.subList(lag, windowList.size());
+      return laggedWindow.toArray(new String[laggedWindow.size()]);
+    } catch(ParseException e) {
+      log.warn("Unparseable date:{}", String.valueOf(start));
+      return new String[0];
+    }
+  }
+
+  private String[] getWeekDayWindow(int size, int lag, String start) {
+    try {
+      List<String> windowList = new ArrayList<>();
+      Date date = this.dateFormat.parse(start);
+      Instant instant = date.toInstant();
+      int collect = Math.abs(size)+lag;
+      int i = -1;
+      while (windowList.size() < collect) {
+        ++i;
+        Instant windowInstant = size > 0 ? instant.plus(i, ChronoUnit.DAYS) : instant.minus(i, ChronoUnit.DAYS);
+        DayOfWeek dayOfWeek = windowInstant.atZone(ZoneId.of("UTC")).getDayOfWeek();
+
+        if(dayOfWeek.getValue() > 5) {
+          //Skip weekend
+          continue;
+        }
+
+        String windowString = windowInstant.toString();
+        windowString = windowString.substring(0, 10) + "T00:00:00Z";
+        windowList.add(windowString);
+      }
+
+      List<String> laggedWindow = windowList.subList(lag, windowList.size());
+      return laggedWindow.toArray(new String[laggedWindow.size()]);
     } catch(ParseException e) {
       log.warn("Unparseable date:{}", String.valueOf(start));
       return new String[0];
@@ -648,12 +689,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             }
           }
 
-          if(windowSet == null || (lag == 0 && !windowSet.contains(String.valueOf(value)))) {
+          if(windowSet == null) {
             joinBatch.add(value);
           }
 
           if(window > Integer.MIN_VALUE && value != null) {
-            windowSet.add(value);
 
             /*
             * A time window has been set.
@@ -663,12 +703,16 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
             String[] timeWindow = null;
 
-            if(this.interval == DAY_INTERVAL) {
-              //Derive the daily window
-              timeWindow = getDayWindow(window, lag, value);
-            } else {
-              //Dervie the default ten second window
-              timeWindow = getTenSecondWindow(window, lag, value);
+            switch(this.interval) {
+              case WEEK_DAY_INTERVAL:
+                timeWindow = getWeekDayWindow(window, lag, value);
+                break;
+              case DAY_INTERVAL:
+                timeWindow = getDayWindow(window, lag, value);
+                break;
+              default:
+                timeWindow = getTenSecondWindow(window, lag, value);
+                break;
             }
 
             for(String windowString : timeWindow) {

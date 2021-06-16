@@ -1,3 +1,4 @@
+
 = Major Changes in Solr 9
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -130,7 +131,7 @@ _(raw; not yet edited)_
 
 * SOLR-14792: VelocityResponseWriter has been removed from Solr.  This encompasses all previous included `/browse` and
   `wt=velocity` examples.  This feature has been migrated to an installable package at
-  https://github.com/erikhatcher/solritas
+  https://github.com/erikhatcher/solr-velocity
 
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the numFound value (exact vs approximation).
   Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
@@ -155,6 +156,10 @@ _(raw; not yet edited)_
 * SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000".
 
 * SOLR-15409: Zookeeper client libraries upgraded to 3.7.0, which may not be compatible with your existing server installations
+
+* SOLR-15470: The binary distribution no longer contains test-framework jars.
+
+* SOLR-15471: The language identification "whitelist" configuration is now an "allowlist" to better convey the meaning of the property
 
 === Upgrade Prerequisites in Solr 9
 
