@@ -44,7 +44,8 @@ For example, if Solr is installed at `\http://localhost:8983/solr/`, and you hav
 http://localhost:8983/solr/gettingstarted/select?q=solr
 ----
 
-This query will be processed by the request handler with the name `/select`. We've only used the "q" parameter here, which includes our query term, a simple keyword of "solr".
+This query will be processed by the request handler with the name `/select`.
+We've only used the "q" parameter here, which includes our query term, a simple keyword of "solr".
 If the request handler has more default parameters defined, those will be used with any query we send to that request handler unless they are overridden by the client (or user) in the query itself.
 
 If you have another request handler defined, you could send your request with that name.
@@ -209,7 +210,8 @@ The following sections are allowed within a Search Handler:
 
 All the blocks are optional, especially since parameters can also be provided with `initParams` and `useParams`.
 
-The defaults/appends/invariants blocks were described <<#defaults-appends-and-invariants,higher>> on the page. All the parameters described in the section  <<query-guide.adoc#,Query Guide>> can be defined as parameters for any of the Search Handlers.
+The defaults/appends/invariants blocks were described <<#defaults-appends-and-invariants,higher>> on the page.
+All the parameters described in the section  <<query-guide.adoc#,Query Guide>> can be defined as parameters for any of the Search Handlers.
 
 The Search Components blocks are described next, and <<solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory,shardHandlerFactory>> is for fine-tuning of the SolrCloud distributed requests.
 
@@ -220,7 +222,8 @@ It is quite rare - and somewhat brittle - to completely override the component s
 
 ==== Default Components
 
-As you can see below, what we see as a search experience is mostly a sequence of components defined below. They are called in the order listed.
+As you can see below, what we see as a search experience is mostly a sequence of components defined below.
+They are called in the order listed.
 
 [cols="20,40,40",options="header"]
 |===
@@ -265,7 +268,8 @@ To define custom component, the syntax is:
 </searchComponent>
 ----
 
-Custom components often have configuration elements not described here. Check specific component's documentation/examples for details.
+Custom components often have configuration elements not described here.
+Check specific component's documentation/examples for details.
 
 Notice: If you register a new search component with one of the default names, the newly defined component will be used instead of the default.
 This allows to override a specific component, while not having to worry so much about upgrading Solr.
@@ -305,7 +309,8 @@ This should be considered as a last-resort option as the default list may change
 
 == Update Request Handlers
 
-The Update Request Handlers are request handlers which process updates to the index. Most of the request handlers are <<implicit-requesthandlers.adoc#update-handlers,implicit>>
+The Update Request Handlers are request handlers which process updates to the index.
+Most of the request handlers are <<implicit-requesthandlers.adoc#update-handlers,implicit>>
 and can be customized by defining properly named Paramsets.
 
 If you need to define additional Update Request Handler, the syntax is:

@@ -18,7 +18,9 @@
 
 The Query Elevation Component lets you configure the top results for a given query regardless of the normal Lucene scoring.
 
-This is sometimes called "sponsored search", "editorial boosting", or "best bets." This component matches the user query text to a configured map of top results. The text can be any string or non-string IDs, as long as it's indexed. Although this component will work with any QueryParser, it makes the most sense to use with <<dismax-query-parser.adoc#,DisMax>> or <<edismax-query-parser.adoc#,eDisMax>>.
+This is sometimes called "sponsored search", "editorial boosting", or "best bets." This component matches the user query text to a configured map of top results.
+The text can be any string or non-string IDs, as long as it's indexed.
+Although this component will work with any QueryParser, it makes the most sense to use with <<dismax-query-parser.adoc#,DisMax>> or <<edismax-query-parser.adoc#,eDisMax>>.
 
 The Query Elevation Component also supports distributed searching.
 
@@ -31,7 +33,8 @@ bin/solr -e techproducts
 
 == Configuring the Query Elevation Component
 
-You can configure the Query Elevation Component in the `solrconfig.xml` file. Search components like `QueryElevationComponent` may be added to any request handler; a dedicated request handler is used here for brevity.
+You can configure the Query Elevation Component in the `solrconfig.xml` file.
+Search components like `QueryElevationComponent` may be added to any request handler; a dedicated request handler is used here for brevity.
 
 [source,xml]
 ----
@@ -61,7 +64,8 @@ Optionally, in the Query Elevation Component configuration you can also specify 
 The Query Elevation Search Component takes the following parameters:
 
 `queryFieldType`::
-Specifies which field type should be used to analyze the incoming text. For example, it may be appropriate to use a field type with a `LowerCaseFilter`.
+Specifies which field type should be used to analyze the incoming text.
+For example, it may be appropriate to use a field type with a `LowerCaseFilter`.
 +
 Another example is if you need to unescape backslash-escaped queries, then you can define the field type to preprocess with a `PatternReplaceCharFilter`.
 Here is the corresponding example of field type (traditionally in `managed-schema` or `schema.xml`):
@@ -88,7 +92,9 @@ However, that doesn't work in SolrCloud, and there has to be an actual index cha
 In all cases, you can reload affected cores/collections to use any new configuration in a configset.
 
 `forceElevation`::
-By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true`, results will first return the boosted docs, then order by date. This defaults to `false`.
+By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date.
+If `forceElevation=true`, results will first return the boosted docs, then order by date.
+This defaults to `false`.
 This is also a request parameter, which will override the config.
 
 `useConfiguredElevatedOrder`::
@@ -103,7 +109,8 @@ If you only want to elevate the docs that are part of the search result, set thi
 
 === The elevate.xml File
 
-Elevated query results can be configured in an external XML file specified in the `config-file` argument. An `elevate.xml` file might look like this:
+Elevated query results can be configured in an external XML file specified in the `config-file` argument.
+An `elevate.xml` file might look like this:
 
 [source,xml]
 ----
@@ -125,9 +132,12 @@ Elevated query results can be configured in an external XML file specified in th
 </elevate>
 ----
 
-In this example, the query "foo bar" would first return documents 1, 2 and 3, then whatever normally appears for the same query. For the query "ipod", it would first return "MA147LL/A", and would make sure that "IW-02" is not in the result set.
+In this example, the query "foo bar" would first return documents 1, 2 and 3, then whatever normally appears for the same query.
+For the query "ipod", it would first return "MA147LL/A", and would make sure that "IW-02" is not in the result set.
 
-Notice the `match` parameter with the value `"subset"` for the third rule. A query "bill bar foo" would trigger this rule because the rule defines a subset of terms to appear in the query, in any order. This query would elevate document 11 on top.
+Notice the `match` parameter with the value `"subset"` for the third rule.
+A query "bill bar foo" would trigger this rule because the rule defines a subset of terms to appear in the query, in any order.
+This query would elevate document 11 on top.
 The `match` parameter accepts either `"exact"` (by default) or `"subset"` values.
 Subset matching is scalable, one can add many rules with the `match="subset"` parameter.
 
@@ -137,7 +147,8 @@ If documents to be elevated are not defined in the `elevate.xml` file, they shou
 
 === The enableElevation Parameter
 
-For debugging it may be useful to see results with and without the elevated docs. To hide results, use `enableElevation=false`:
+For debugging it may be useful to see results with and without the elevated docs.
+To hide results, use `enableElevation=false`:
 
 [source,text]
 http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=true
@@ -170,7 +181,8 @@ The `[elevated]` <<document-transformers.adoc#,Document Transformer>> can be use
 [source,text]
 http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&fl=id,[elevated]
 
-Likewise, it can be helpful when troubleshooting to see all matching documents – including documents that the elevation configuration would normally exclude. This is possible by using the `markExcludes=true` parameter, and then using the `[excluded]` transformer:
+Likewise, it can be helpful when troubleshooting to see all matching documents – including documents that the elevation configuration would normally exclude.
+This is possible by using the `markExcludes=true` parameter, and then using the `[excluded]` transformer:
 
 [source,text]
 http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&markExcludes=true&fl=id,[elevated],[excluded]
@@ -193,4 +205,5 @@ http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&elevateIds=IW-02,
 
 === The fq Parameter with Elevation
 
-Query elevation respects the standard filter query (`fq`) parameter. That is, if the query contains the `fq` parameter, all results will be within that filter even if `elevate.xml` adds other documents to the result set.
+Query elevation respects the standard filter query (`fq`) parameter.
+That is, if the query contains the `fq` parameter, all results will be within that filter even if `elevate.xml` adds other documents to the result set.

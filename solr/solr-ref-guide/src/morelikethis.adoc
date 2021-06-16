@@ -25,7 +25,8 @@ The first, and most common, is to use it as a request handler.
 In this case, you would send text to the MoreLikeThis request handler as needed (as in when a user clicked on a "similar documents" link).
 
 The second is to use it as a search component.
-This is less desirable since it performs the MoreLikeThis analysis on every document that matches a user query. This may slow search results.
+This is less desirable since it performs the MoreLikeThis analysis on every document that matches a user query.
+This may slow search results.
 
 Another approach is to use it as a request handler but with externally supplied text.
 This case, also referred to as the MoreLikeThisHandler, will supply information about similar documents in the index based on the text of the input document.
@@ -586,7 +587,8 @@ Sets the maximum number of tokens to parse in each example document field that i
 |Optional |Default: `false`
 |===
 +
-Specifies if the query will be boosted by the interesting term relevance. It can be either `true` or `false`.
+Specifies if the query will be boosted by the interesting term relevance.
+It can be either `true` or `false`.
 
 === Query Parser Query and Response
 

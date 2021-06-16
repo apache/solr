@@ -1,4 +1,4 @@
-= Solr JDBC - DbVisualizer
+= JDBC with DbVisualizer
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,9 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr's JDBC driver supports DBVisualizer for querying Solr.
+Solr's JDBC driver supports https://www.dbvis.com/[DbVisualizer] for querying Solr.
 
-For https://www.dbvis.com/[DbVisualizer], you will need to create a new driver for Solr using the DbVisualizer Driver Manager. This will add several SolrJ client .jars to the DbVisualizer classpath. The files required are:
+For DbVisualizer, you will need to create a new driver for Solr using the DbVisualizer Driver Manager.
+This will add several SolrJ client .jars to the DbVisualizer classpath.
+The files required are:
 
 * all .jars found in `$SOLR_HOME/dist/solrj-lib`
 * the SolrJ .jar found at `$SOLR_HOME/dist/solr-solrj-<version>.jar`
@@ -41,7 +43,9 @@ image::images/solr-jdbc-dbvisualizer/dbvisualizer_solrjdbc_2.png[image,width=532
 
 === Name the Driver in Driver Manager
 
-Provide a name for the driver, and provide the URL format: `jdbc:solr://<zk_connection_string>/?collection=<collection>`. Do not fill in values for the variables "```zk_connection_string```" and "```collection```", those will be provided later when the connection to Solr is configured. The Driver Class will also be automatically added when the driver .jars are added.
+Provide a name for the driver, and provide the URL format: `jdbc:solr://<zk_connection_string>/?collection=<collection>`.
+Do not fill in values for the variables "```zk_connection_string```" and "```collection```", those will be provided later when the connection to Solr is configured.
+The Driver Class will also be automatically added when the driver .jars are added.
 
 image::images/solr-jdbc-dbvisualizer/dbvisualizer_solrjdbc_3.png[image,width=532,height=400]
 
@@ -96,7 +100,8 @@ image::images/solr-jdbc-dbvisualizer/dbvisualizer_solrjdbc_14.png[image,width=39
 
 === Specify the Solr URL
 
-Provide the Solr URL, using the ZooKeeper host and port and the collection. For example, `jdbc:solr://localhost:9983?collection=test`
+Provide the Solr URL, using the ZooKeeper host and port and the collection.
+For example, `jdbc:solr://localhost:9983?collection=test`
 
 image::images/solr-jdbc-dbvisualizer/dbvisualizer_solrjdbc_15.png[image,width=401,height=400]
 

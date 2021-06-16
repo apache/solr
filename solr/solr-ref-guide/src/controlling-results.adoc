@@ -1,15 +1,15 @@
 = Controlling Results
 :page-children: faceting, \
     json-facet-api, \
-    highlighting, \
-    pagination-of-results, \
-    exporting-result-sets, \
-    document-transformers, \
     collapse-and-expand-results, \
     result-grouping, \
     result-clustering, \
+    highlighting, \
     query-elevation-component, \
-    response-writers
+    document-transformers, \
+    response-writers, \
+    exporting-result-sets, \
+    pagination-of-results
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

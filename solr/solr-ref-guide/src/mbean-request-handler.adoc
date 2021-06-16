@@ -27,10 +27,13 @@ Restricts results by object key.
 Restricts results by category name.
 
 `stats`::
-Specifies whether statistics are returned with results. You can override the `stats` parameter on a per-field basis. The default is `false`.
+Specifies whether statistics are returned with results.
+You can override the `stats` parameter on a per-field basis.
+The default is `false`.
 
 `wt`::
-The output format. This operates the same as the <<response-writers.adoc#,`wt` parameter in a query>>. The default is `json`.
+The output format.
+This operates the same as the <<response-writers.adoc#,`wt` parameter in a query>>. The default is `json`.
 
 == MBeanRequestHandler Examples
 

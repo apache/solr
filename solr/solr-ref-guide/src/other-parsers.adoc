@@ -1,4 +1,4 @@
-= Other Parsers
+= Other Query Parsers
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-In addition to the main query parsers discussed earlier, there are several other query parsers that can be used instead of or in conjunction with the main parsers for specific purposes.
+In addition to the main query parsers, there are several other query parsers that can be used instead of or in conjunction with the main parsers for specific purposes.
 
 This section details the other parsers, and gives examples for how they might be used.
 
@@ -24,11 +24,14 @@ Many of these parsers are expressed the same way as <<local-params.adoc#,Local P
 
 == Block Join Query Parsers
 
-*TODO* link to new page <<block-join-query-parser.adoc#>>.
+The Block Join query parsers are used with nested documents to query for parents and/or children.
+
+These parsers are covered in detail in the section <<block-join-query-parser.adoc#,Block Join Query Parser>>.
 
 == Boolean Query Parser
 
-The `BoolQParser` creates a Lucene `BooleanQuery` which is a boolean combination of other queries. Sub-queries along with their typed occurrences indicate how documents will be matched and scored.
+The `BoolQParser` creates a Lucene `BooleanQuery` which is a boolean combination of other queries.
+Sub-queries along with their typed occurrences indicate how documents will be matched and scored.
 
 *Parameters*
 
@@ -39,13 +42,18 @@ A list of queries that *must* appear in matching documents and contribute to the
 A list of queries that *must not* appear in matching documents.
 
 `should`::
-A list of queries *should* appear in matching documents. For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
+A list of queries *should* appear in matching documents.
+For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
 
 `filter`::
-A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored. Also, these queries are cached in filter cache. To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
+A list of queries that *must* appear in matching documents.
+However, unlike `must`, the score of filter queries is ignored.
+Also, these queries are cached in filter cache.
+To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
 
 `excludeTags`::
-Comma separated list of tags for excluding queries from parameters above. See explanation below.
+Comma separated list of tags for excluding queries from parameters above.
+See explanation below.
 
 *Examples*
 
@@ -59,14 +67,16 @@ Comma separated list of tags for excluding queries from parameters above. See ex
 {!bool filter=foo should=bar}
 ----
 
-Parameters might also be multivalue references. The former example above is equivalent to:
+Parameters might also be multivalue references.
+The former example above is equivalent to:
 
 [source,text]
 ----
 q={!bool must=$ref}&ref=foo&ref=bar
 ----
 
-Referred queries might be excluded via tags. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
+Referred queries might be excluded via tags.
+Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
 
 [source,text]
 ----
@@ -82,7 +92,8 @@ q={!bool must=foo}
 
 == Boost Query Parser
 
-`BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value. The main value is any query to be "wrapped" and "boosted" -- only documents which match that query will match the final query produced by this parser.
+`BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value.
+The main value is any query to be "wrapped" and "boosted" -- only documents which match that query will match the final query produced by this parser.
 Parameter `b` is a <<function-queries.adoc#available-functions,function>> to be evaluated against each document that matches the original query, and the result of the function will be multiplied into into the final score for that document.
 
 === Boost Query Parser Examples
@@ -117,7 +128,8 @@ my_boost=category:electronics
 
 The `CollapsingQParser` is really a _post filter_ that provides more performant field collapsing than Solr's standard approach when the number of distinct groups in the result set is high.
 
-This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components. So all downstream components (faceting, highlighting, etc.) will work with the collapsed result set.
+This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components.
+So all downstream components (faceting, highlighting, etc.) will work with the collapsed result set.
 
 Details about using the `CollapsingQParser` can be found in the section <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>.
 
@@ -130,7 +142,9 @@ Under the covers, this query parser makes use of the Span group of queries, e.g.
 *Parameters*
 
 `inOrder`::
-Set to true to force phrase queries to match terms in the order specified. The default is `true`.
+Set to true to force phrase queries to match terms in the order specified.
+The default is `true`.
+
 `df`::
 The default search field.
 
@@ -155,9 +169,12 @@ A mix of ordered and unordered complex phrase queries:
 
 === Complex Phrase Parser Limitations
 
-Performance is sensitive to the number of unique terms that are associated with a pattern. For instance, searching for "a*" will form a large OR clause (technically a SpanOr with many terms) for all of the terms in your index for the indicated field that start with the single letter 'a'. It may be prudent to restrict wildcards to at least two or preferably three letters as a prefix. Allowing very short prefixes may result in to many low-quality documents being returned.
+Performance is sensitive to the number of unique terms that are associated with a pattern.
+For instance, searching for "a*" will form a large OR clause (technically a SpanOr with many terms) for all of the terms in your index for the indicated field that start with the single letter 'a'. It may be prudent to restrict wildcards to at least two or preferably three letters as a prefix.
+Allowing very short prefixes may result in to many low-quality documents being returned.
 
-Notice that it also supports leading wildcards "*a" as well with consequent performance implications. Applying <<filters.adoc#reversed-wildcard-filter,ReversedWildcardFilterFactory>> in index-time analysis is usually a good idea.
+Notice that it also supports leading wildcards "*a" as well with consequent performance implications.
+Applying <<filters.adoc#reversed-wildcard-filter,ReversedWildcardFilterFactory>> in index-time analysis is usually a good idea.
 
 ==== MaxBooleanClauses with Complex Phrase Parser
 
@@ -183,14 +200,16 @@ While the query below does not use this parser:
  q=features:"Stores up to 15,000"
 ----
 
-the document is returned. The next query that _does_ use the Complex Phrase Query Parser, as in this query:
+the document is returned.
+The next query that _does_ use the Complex Phrase Query Parser, as in this query:
 
 [source,text]
 ----
  q=features:"sto* up to 15*"&defType=complexphrase
 ----
 
-does _not_ return that document because SpanNearQuery has no good way to handle stopwords in a way analogous to PhraseQuery. If you must remove stopwords for your use case, use a custom filter factory or perhaps a customized synonyms filter that reduces given stopwords to some impossible token.
+does _not_ return that document because SpanNearQuery has no good way to handle stopwords in a way analogous to PhraseQuery.
+If you must remove stopwords for your use case, use a custom filter factory or perhaps a customized synonyms filter that reduces given stopwords to some impossible token.
 
 ==== Escaping with Complex Phrase Parser
 
@@ -198,7 +217,8 @@ Special care has to be given when escaping: clauses between double quotes (usual
 
 == Field Query Parser
 
-The `FieldQParser` extends the `QParserPlugin` and creates a field query from the input value, applying text analysis and constructing a phrase query if appropriate. The parameter `f` is the field to be queried.
+The `FieldQParser` extends the `QParserPlugin` and creates a field query from the input value, applying text analysis and constructing a phrase query if appropriate.
+The parameter `f` is the field to be queried.
 
 Example:
 
@@ -207,7 +227,8 @@ Example:
 {!field f=myfield}Foo Bar
 ----
 
-This example creates a phrase query with "foo" followed by "bar" (assuming the analyzer for `myfield` is a text field with an analyzer that splits on whitespace and lowercase terms). This is generally equivalent to the Lucene query parser expression `myfield:"Foo Bar"`.
+This example creates a phrase query with "foo" followed by "bar" (assuming the analyzer for `myfield` is a text field with an analyzer that splits on whitespace and lowercase terms).
+This is generally equivalent to the Lucene query parser expression `myfield:"Foo Bar"`.
 
 == Filters Query Parser
 
@@ -228,7 +249,8 @@ q=+field:text +COLOR:Red +SIZE:XL
 
 == Function Query Parser
 
-The `FunctionQParser` extends the `QParserPlugin` and creates a function query from the input value. This is only one way to use function queries in Solr; for another, more integrated, approach, see the section on <<function-queries.adoc#,Function Queries>>.
+The `FunctionQParser` extends the `QParserPlugin` and creates a function query from the input value.
+This is only one way to use function queries in Solr; for another, more integrated, approach, see the section on <<function-queries.adoc#,Function Queries>>.
 
 Example:
 
@@ -239,21 +261,28 @@ Example:
 
 == Function Range Query Parser
 
-The `FunctionRangeQParser` extends the `QParserPlugin` and creates a range query over a function. This is also referred to as `frange`, as seen in the examples below.
+The `FunctionRangeQParser` extends the `QParserPlugin` and creates a range query over a function.
+This is also referred to as `frange`, as seen in the examples below.
 
 *Parameters*
 
 `l`::
-The lower bound. This parameter is optional.
+The lower bound.
+This parameter is optional.
 
 `u`::
-The upper bound. This parameter is optional.
+The upper bound.
+This parameter is optional.
 
 `incl`::
-Include the lower bound. This parameter is optional. The default is `true`.
+Include the lower bound.
+This parameter is optional.
+The default is `true`.
 
 `incu`::
-Include the upper bound. This parameter is optional. The default is `true`.
+Include the upper bound.
+This parameter is optional.
+The default is `true`.
 
 *Examples*
 
@@ -267,7 +296,8 @@ Include the upper bound. This parameter is optional. The default is `true`.
  fq={!frange l=0 u=2.2} sum(user_ranking,editor_ranking)
 ----
 
-Both of these examples restrict the results by a range of values found in a declared field or a function query. In the second example, we're doing a sum calculation, and then defining only values between 0 and 2.2 should be returned to the user.
+Both of these examples restrict the results by a range of values found in a declared field or a function query.
+In the second example, we're doing a sum calculation, and then defining only values between 0 and 2.2 should be returned to the user.
 
 For more information about range queries over functions, see Yonik Seeley's introductory blog post https://lucidworks.com/2009/07/06/ranges-over-functions-in-solr-14/[Ranges over Functions in Solr 1.4].
 
@@ -285,22 +315,27 @@ for its performance characteristics so `indexed=true` will perform better for mo
 === Graph Query Parameters
 
 `to`::
-The field name of matching documents to inspect to identify outgoing edges for graph traversal. Defaults to `edge_ids`.
+The field name of matching documents to inspect to identify outgoing edges for graph traversal.
+Defaults to `edge_ids`.
 
 `from`::
-The field name to of candidate documents to inspect to identify incoming graph edges. Defaults to `node_id`.
+The field name to of candidate documents to inspect to identify incoming graph edges.
+Defaults to `node_id`.
 
 `traversalFilter`::
 An optional query that can be supplied to limit the scope of documents that are traversed.
 
 `maxDepth`::
-Integer specifying how deep the breadth first search of the graph should go beginning with the initial query. Defaults to `-1` (unlimited).
+Integer specifying how deep the breadth first search of the graph should go beginning with the initial query.
+Defaults to `-1` (unlimited).
 
 `returnRoot`::
-Boolean to indicate if the documents that matched the original query (to define the starting points for graph) should be included in the final results. Defaults to `true`.
+Boolean to indicate if the documents that matched the original query (to define the starting points for graph) should be included in the final results.
+Defaults to `true`.
 
 `returnOnlyLeaf`::
-Boolean that indicates if the results of the query should be filtered so that only documents with no outgoing edges are returned. Defaults to `false`.
+Boolean that indicates if the results of the query should be filtered so that only documents with no outgoing edges are returned.
+Defaults to `false`.
 
 `useAutn`::
 Boolean that indicates if an Automatons should be compiled for each iteration of the breadth first search, which may be faster for some graphs.
@@ -351,7 +386,8 @@ http://localhost:8983/solr/my_graph/query?fl=id&q={!graph+from=in_edge+to=out_ed
 }
 ----
 
-We can also use the `traversalFilter` to limit the graph traversal to only nodes with maximum value of 15 in the `foo` field. In this case that means D, E, and F are excluded – F has a value of `foo=11`, but it is unreachable because the traversal skipped D:
+We can also use the `traversalFilter` to limit the graph traversal to only nodes with maximum value of 15 in the `foo` field.
+In this case that means D, E, and F are excluded – F has a value of `foo=11`, but it is unreachable because the traversal skipped D:
 
 [source,text]
 ----
@@ -368,7 +404,8 @@ http://localhost:8983/solr/my_graph/query?fl=id&q={!graph+from=in_edge+to=out_ed
 }
 ----
 
-The examples shown so far have all used a query for a single document (`"id:A"`) as the root node for the graph traversal, but any query can be used to identify multiple documents to use as root nodes. The next example demonstrates using the `maxDepth` parameter to find all nodes that are at most one edge away from an root node with a value in the `foo` field less then or equal to 10:
+The examples shown so far have all used a query for a single document (`"id:A"`) as the root node for the graph traversal, but any query can be used to identify multiple documents to use as root nodes.
+The next example demonstrates using the `maxDepth` parameter to find all nodes that are at most one edge away from an root node with a value in the `foo` field less then or equal to 10:
 
 [source,text]
 ----
@@ -390,7 +427,8 @@ http://localhost:8983/solr/my_graph/query?fl=id&q={!graph+from=in_edge+to=out_ed
 
 === Simplified Models
 
-The Document & Field modeling used in the above examples enumerated all of the outgoing and income edges for each node explicitly, to help demonstrate exactly how the "from" and "to" parameters work, and to give you an idea of what is possible. With multiple sets of fields like these for identifying incoming and outgoing edges, it's possible to model many independent Directed Graphs that contain some or all of the documents in your collection.
+The Document & Field modeling used in the above examples enumerated all of the outgoing and income edges for each node explicitly, to help demonstrate exactly how the "from" and "to" parameters work, and to give you an idea of what is possible.
+With multiple sets of fields like these for identifying incoming and outgoing edges, it's possible to model many independent Directed Graphs that contain some or all of the documents in your collection.
 
 But in many cases it can also be possible to drastically simplify the model used.
 
@@ -432,22 +470,28 @@ http://localhost:8983/solr/alt_graph/query?fl=id&q={!graph+from=id+to=out_edge+m
 
 == Hash Range Query Parser
 
-The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.  This is used by the join query when using method=crossCollection.  The hash rang query parser has a per segment cache for each field that this query parser will operate on.
+The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.
+This is used by the join query when using method=crossCollection.
+The hash rang query parser has a per segment cache for each field that this query parser will operate on.
 
-When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.  If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.  In the cross collection join case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
+When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.
+If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.
+In the cross collection join case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
 
-This query parser uses the MurmurHash3_x86_32.  This is the same as the default hashing for the default composite ID router in Solr.
+This query parser uses the MurmurHash3_x86_32.
+This is the same as the default hashing for the default composite ID router in Solr.
 
 === Hash Range Parameters
 
 `f`::
-The field name to operate on.  This field should have docValues enabled and should be single-valued
+The field name to operate on.
+This field should have docValues enabled and should be single-valued
 
 `l`::
-The lower bound of the hash range for the query
+The lower bound of the hash range for the query.
 
 `u`::
-The upper bound for the hash range for the query
+The upper bound for the hash range for the query.
 
 === Hash Range Example
 
@@ -458,7 +502,9 @@ The upper bound for the hash range for the query
 
 === Hash Range Cache Config
 
-The hash range query parser uses a special cache to improve the speedup of the queries. The following should be added to the `solrconfig.xml` for the various fields that you want to perform the hash range query on.  Note the name of the cache should be the field name prefixed by "hash_".
+The hash range query parser uses a special cache to improve the speedup of the queries.
+The following should be added to the `solrconfig.xml` for the various fields that you want to perform the hash range query on.
+Note the name of the cache should be the field name prefixed by "hash_".
 
 [source,xml]
 ----
@@ -476,7 +522,9 @@ The hash range query parser uses a special cache to improve the speedup of the q
 
 == Lucene Query Parser
 
-The `LuceneQParser` extends the `QParserPlugin` by parsing Solr's variant on the Lucene QueryParser syntax. This is effectively the same query parser that is used in Lucene. It uses the operators `q.op`, the default operator ("OR" or "AND") and `df`, the default field name.
+The `LuceneQParser` extends the `QParserPlugin` by parsing Solr's variant on the Lucene QueryParser syntax.
+This is effectively the same query parser that is used in Lucene.
+It uses the operators `q.op`, the default operator ("OR" or "AND") and `df`, the default field name.
 
 Example:
 
@@ -502,7 +550,10 @@ Details about using the `LTRQParserPlugin` can be found in the <<learning-to-ran
 
 == Max Score Query Parser
 
-The `MaxScoreQParser` extends the `LuceneQParser` but returns the Max score from the clauses. It does this by wrapping all `SHOULD` clauses in a `DisjunctionMaxQuery` with `tie=1.0`. Any `MUST` or `PROHIBITED` clauses are passed through as-is. Non-boolean queries, e.g., NumericRange falls-through to the `LuceneQParser` parser behavior.
+The `MaxScoreQParser` extends the `LuceneQParser` but returns the Max score from the clauses.
+It does this by wrapping all `SHOULD` clauses in a `DisjunctionMaxQuery` with `tie=1.0`.
+Any `MUST` or `PROHIBITED` clauses are passed through as-is.
+Non-boolean queries, e.g., NumericRange falls-through to the `LuceneQParser` parser behavior.
 
 Example:
 
@@ -519,7 +570,8 @@ Information about how to use this query parser is with the documentation about M
 
 == Nested Query Parser
 
-The `NestedParser` extends the `QParserPlugin` and creates a nested query, with the ability for that query to redefine its type via local params. This is useful in specifying defaults in configuration and letting clients indirectly reference them.
+The `NestedParser` extends the `QParserPlugin` and creates a nested query, with the ability for that query to redefine its type via local params.
+This is useful in specifying defaults in configuration and letting clients indirectly reference them.
 
 Example:
 
@@ -528,7 +580,9 @@ Example:
 {!query defType=func v=$q1}
 ----
 
-If the `q1` parameter is price, then the query would be a function query on the price field. If the `q1` parameter is \{!lucene}inStock:true}} then a term query is created from the Lucene syntax string that matches documents with `inStock=true`. These parameters would be defined in `solrconfig.xml`, in the `defaults` section:
+If the `q1` parameter is price, then the query would be a function query on the price field.
+If the `q1` parameter is \{!lucene}inStock:true}} then a term query is created from the Lucene syntax string that matches documents with `inStock=true`.
+These parameters would be defined in `solrconfig.xml`, in the `defaults` section:
 
 [source,xml]
 ----
@@ -542,27 +596,34 @@ For more information about the possibilities of nested queries, see Yonik Seeley
 
 == Payload Query Parsers
 
-These query parsers utilize payloads encoded on terms during indexing. Payloads can be encoded on terms using either the `DelimitedPayloadTokenFilter` or the `NumericPayloadTokenFilter`.
+These query parsers utilize payloads encoded on terms during indexing.
+Payloads can be encoded on terms using either the `DelimitedPayloadTokenFilter` or the `NumericPayloadTokenFilter`.
 
 === Payload Score Parser
 
-`PayloadScoreQParser` incorporates each matching term's numeric (integer or float) payloads into the scores. The main query is parsed from the field type's query analysis into a `SpanQuery` based on the value of the `operator` parameter below.
+`PayloadScoreQParser` incorporates each matching term's numeric (integer or float) payloads into the scores.
+The main query is parsed from the field type's query analysis into a `SpanQuery` based on the value of the `operator` parameter below.
 
 This parser accepts the following parameters:
 
 `f`::
-The field to use. This parameter is required.
+The field to use.
+This parameter is required.
 
 `func`::
-The payload function. The options are: `min`, `max`, `average`, or `sum`. This parameter is required.
+The payload function.
+The options are: `min`, `max`, `average`, or `sum`.
+This parameter is required.
 
 `operator`::
-A search operator. The options are
+A search operator.
+The options are:
   * `or` will generate either a `SpanTermQuery` or a `SpanOrQuery` depending on the number of tokens emitted.
   * `phrase` will generate either `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted.
 
 `includeSpanScore`::
-If `true`, multiples the computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
+If `true`, multiples the computed payload factor by the score of the original query.
+If `false`, the default, the computed payload factor is the score.
 
 *Examples*
 
@@ -574,9 +635,14 @@ If `true`, multiples the computed payload factor by the score of the original qu
 
 === Payload Check Parser
 
-`PayloadCheckQParser` only matches when the matching terms also have the specified relationship to the payloads.  The default relationship is equals, however, inequality matching can also be performed. The main query, for both of these parsers, is parsed straightforwardly from the field type's query analysis into a `SpanQuery`. The generated `SpanQuery` will be either a `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted. The net effect is that the main query always operates in a manner similar to a phrase query in the standard Lucene parser (thus ignoring any value for `q.op`).
+`PayloadCheckQParser` only matches when the matching terms also have the specified relationship to the payloads.
+The default relationship is equals, however, inequality matching can also be performed.
+The main query, for both of these parsers, is parsed straightforwardly from the field type's query analysis into a `SpanQuery`.
+The generated `SpanQuery` will be either a `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted.
+The net effect is that the main query always operates in a manner similar to a phrase query in the standard Lucene parser (thus ignoring any value for `q.op`).
 
-NOTE: If when the field analysis is applied to the query, it alters the number of tokens, the final number of tokens must match the number of payloads supplied in the `payloads` parameter. If there is a mismatch between the number of query tokens, and the number of payload values supplied with this query, the query will not match.
+NOTE: If when the field analysis is applied to the query, it alters the number of tokens, the final number of tokens must match the number of payloads supplied in the `payloads` parameter.
+If there is a mismatch between the number of query tokens, and the number of payload values supplied with this query, the query will not match.
 
 This parser accepts the following parameters:
 
@@ -584,10 +650,13 @@ This parser accepts the following parameters:
 The field to use (required).
 
 `payloads`::
-A space-separated list of payloads to be compared with payloads in the matching tokens from the document (required). Each specified payload will be encoded using the encoder determined from the field type prior to matching. Integer, float and identity (string) encodings are supported with the same meanings as for DelimitedPayloadTokenFilter.
+A space-separated list of payloads to be compared with payloads in the matching tokens from the document (required).
+Each specified payload will be encoded using the encoder determined from the field type prior to matching.
+Integer, float and identity (string) encodings are supported with the same meanings as for DelimitedPayloadTokenFilter.
 
 `op`::
-The inequality operation to apply to the payload check. All operations require that consecutive tokens derived from the analysis of the query match consecutive tokens in the document, and additionally the payloads on the document tokens must be:
+The inequality operation to apply to the payload check.
+All operations require that consecutive tokens derived from the analysis of the query match consecutive tokens in the document, and additionally the payloads on the document tokens must be:
  * `eq` -  equal to the specified payloads (default)
  * `gt` -  greater than the specified payloads
  * `lt` -  less than the specified payloads
@@ -611,9 +680,11 @@ Find all documents with the phrase "foo bar" where term "foo" has a payload grea
 
 == Prefix Query Parser
 
-`PrefixQParser` extends the `QParserPlugin` by creating a prefix query from the input value. Currently no analysis or value transformation is done to create this prefix query.
+`PrefixQParser` extends the `QParserPlugin` by creating a prefix query from the input value.
+Currently no analysis or value transformation is done to create this prefix query.
 
-The parameter is `f`, the field. The string after the prefix declaration is treated as a wildcard query.
+The parameter is `f`, the field.
+The string after the prefix declaration is treated as a wildcard query.
 
 Example:
 
@@ -626,7 +697,8 @@ This would be generally equivalent to the Lucene query parser expression `myfiel
 
 == Raw Query Parser
 
-`RawQParser` extends the `QParserPlugin` by creating a term query from the input value without any text analysis or transformation. This is useful in debugging, or when raw terms are returned from the terms component (this is not the default).
+`RawQParser` extends the `QParserPlugin` by creating a term query from the input value without any text analysis or transformation.
+This is useful in debugging, or when raw terms are returned from the terms component (this is not the default).
 
 The only parameter is `f`, which defines the field to search.
 
@@ -662,12 +734,15 @@ Details about using the `ReRankQParserPlugin` can be found in the <<query-re-ran
 
 == Simple Query Parser
 
-The Simple query parser in Solr is based on Lucene's SimpleQueryParser. This query parser is designed to allow users to enter queries however they want, and it will do its best to interpret the query and return results.
+The Simple query parser in Solr is based on Lucene's SimpleQueryParser.
+This query parser is designed to allow users to enter queries however they want, and it will do its best to interpret the query and return results.
 
 This parser takes the following parameters:
 
 q.operators::
-Comma-separated list of names of parsing operators to enable. By default, all operations are enabled, and this parameter can be used to effectively disable specific operators as needed, by excluding them from the list. Passing an empty string with this parameter disables all operators.
+Comma-separated list of names of parsing operators to enable.
+By default, all operations are enabled, and this parameter can be used to effectively disable specific operators as needed, by excluding them from the list.
+Passing an empty string with this parameter disables all operators.
 +
 [%autowidth.stretch,options="header"]
 |===
@@ -696,7 +771,9 @@ At the end of terms, specifies a fuzzy query.
 |===
 
 q.op::
-Defines the default operator to use if none is defined by the user. Allowed values are `AND` and `OR`. `OR` is used if none is specified.
+Defines the default operator to use if none is defined by the user.
+Allowed values are `AND` and `OR`.
+`OR` is used if none is specified.
 
 qf::
 A list of query fields and boosts to use when building the query.
@@ -704,17 +781,22 @@ A list of query fields and boosts to use when building the query.
 df::
 Defines the default field if none is defined in the Schema, or overrides the default field if it is already defined.
 
-Any errors in syntax are ignored and the query parser will interpret queries as best it can. However, this can lead to odd results in some cases.
+Any errors in syntax are ignored and the query parser will interpret queries as best it can.
+However, this can lead to odd results in some cases.
 
 == Spatial Query Parsers
 
-There are two spatial QParsers in Solr: `geofilt` and `bbox`. But there are other ways to query spatially: using the `frange` parser with a distance function, using the standard (lucene) query parser with the range syntax to pick the corners of a rectangle, or with RPT and BBoxField you can use the standard query parser but use a special syntax within quotes that allows you to pick the spatial predicate.
+There are two spatial QParsers in Solr: `geofilt` and `bbox`.
+But there are other ways to query spatially: using the `frange` parser with a distance function, using the standard (lucene) query parser with the range syntax to pick the corners of a rectangle, or with RPT and BBoxField you can use the standard query parser but use a special syntax within quotes that allows you to pick the spatial predicate.
 
 All these options are documented further in the section <<spatial-search.adoc#,Spatial Search>>.
 
 == Surround Query Parser
 
-The `SurroundQParser` enables the Surround query syntax, which provides proximity search functionality. There are two positional operators: `w` creates an ordered span query and `n` creates an unordered one. Both operators take a numeric value to indicate distance between two terms. The default is 1, and the maximum is 99.
+The `SurroundQParser` enables the Surround query syntax, which provides proximity search functionality.
+There are two positional operators: `w` creates an ordered span query and `n` creates an unordered one.
+Both operators take a numeric value to indicate distance between two terms.
+The default is `1`, and the maximum is `99`.
 
 Note that the query string is not analyzed in any way.
 
@@ -727,7 +809,8 @@ Example:
 
 This example finds documents where the terms "foo" and "bar" are no more than 3 terms away from each other (i.e., no more than 2 terms between them).
 
-This query parser will also accept boolean operators (`AND`, `OR`, and `NOT`, in either upper- or lowercase), wildcards, quoting for phrase searches, and boosting. The `w` and `n` operators can also be expressed in upper- or lowercase.
+This query parser will also accept boolean operators (`AND`, `OR`, and `NOT`, in either upper- or lowercase), wildcards, quoting for phrase searches, and boosting.
+The `w` and `n` operators can also be expressed in upper- or lowercase.
 
 The non-unary operators (everything but `NOT`) support both infix `(a AND b AND c)` and prefix `AND(a, b, c)` notation.
 
@@ -735,9 +818,12 @@ The non-unary operators (everything but `NOT`) support both infix `(a AND b AND 
 
 `SwitchQParser` is a `QParserPlugin` that acts like a "switch" or "case" statement.
 
-The primary input string is trimmed and then prefixed with `case.` for use as a key to lookup a "switch case" in the parser's local params. If a matching local param is found the resulting parameter value will then be parsed as a subquery, and returned as the parse result.
+The primary input string is trimmed and then prefixed with `case.` for use as a key to lookup a "switch case" in the parser's local params.
+If a matching local param is found the resulting parameter value will then be parsed as a subquery, and returned as the parse result.
 
-The `case` local param can be optionally be specified as a switch case to match missing (or blank) input strings. The `default` local param can optionally be specified as a default case to use if the input string does not match any other switch case local params. If default is not specified, then any input which does not match a switch case local param will result in a syntax error.
+The `case` local param can be optionally be specified as a switch case to match missing (or blank) input strings.
+The `default` local param can optionally be specified as a default case to use if the input string does not match any other switch case local params.
+If default is not specified, then any input which does not match a switch case local param will result in a syntax error.
 
 In the examples below, the result of each query is "XXX":
 
@@ -789,7 +875,9 @@ Using the example configuration below, clients can optionally specify the custom
 
 == Term Query Parser
 
-`TermQParser` extends the `QParserPlugin` by creating a single term query from the input value equivalent to `readableToIndexed()`. This is useful for generating filter queries from the external human readable terms returned by the faceting or terms components. The only parameter is `f`, for the field.
+`TermQParser` extends the `QParserPlugin` by creating a single term query from the input value equivalent to `readableToIndexed()`.
+This is useful for generating filter queries from the external human readable terms returned by the faceting or terms components.
+The only parameter is `f`, for the field.
 
 Example:
 
@@ -798,7 +886,8 @@ Example:
 {!term f=weight}1.5
 ----
 
-For text fields, no analysis is done since raw terms are already returned from the faceting and terms components. To apply analysis to text fields as well, see the <<Field Query Parser>>, above.
+For text fields, no analysis is done since raw terms are already returned from the faceting and terms components.
+To apply analysis to text fields as well, see the <<Field Query Parser>>, above.
 
 If no analysis or transformation is desired for any type of field, see the <<Raw Query Parser>>, above.
 
@@ -811,25 +900,51 @@ This can be useful for generating filter queries from the external human readabl
 This query parser takes the following parameters:
 
 `f`::
-The field on which to search. This parameter is required.
+The field on which to search.
+This parameter is required.
 
 `separator`::
-Separator to use when parsing the input. If set to " " (a single blank space), will trim additional white space from the input terms. Defaults to  a comma (`,`).
+Separator to use when parsing the input.
+If set to " " (a single blank space), will trim additional white space from the input terms.
+Defaults to  a comma (`,`).
 
 `method`::
-An optional parameter used to determine which of several query implementations should be used by Solr.  Options are restricted to: `termsFilter`, `booleanQuery`, `automaton`, `docValuesTermsFilterPerSegment`, `docValuesTermsFilterTopLevel` or `docValuesTermsFilter`.  If unspecified, the default value is `termsFilter`.  Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.  Heuristics are given below.
+An optional parameter used to determine which of several query implementations should be used by Solr.
 +
-`booleanQuery` creates a `BooleanQuery` representing the request.  Scales well with index size, but poorly with the number of terms being searched for.
+Options are restricted to: `termsFilter`, `booleanQuery`, `automaton`, `docValuesTermsFilterPerSegment`, `docValuesTermsFilterTopLevel` or `docValuesTermsFilter`.
+If unspecified, the default value is `termsFilter`.
 +
-`termsFilter` the default `method`.  Uses a `BooleanQuery` or a `TermInSetQuery` depending on the number of terms.  Scales well with index size, but only moderately with the number of query terms.
+Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.
+Heuristics are given below.
 +
-`docValuesTermsFilter` can only be used on fields with docValues data.  The `cache` parameter is false by default.  Chooses between the `docValuesTermsFilterTopLevel` and `docValuesTermsFilterPerSegment` methods using the number of query terms as a rough heuristic.  Users should typically use this method instead of using `docValuesTermsFilterTopLevel` or `docValuesTermsFilterPerSegment` directly, unless they've done performance testing to validate one of the methods on queries of all sizes.  Depending on the implementation picked, this method may rely on expensive data structures which are lazily populated after each commit.  If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
+`booleanQuery` creates a `BooleanQuery` representing the request.
+Scales well with index size, but poorly with the number of terms being searched for.
 +
-`docValuesTermsFilterTopLevel` can only be used on fields with docValues data.  The `cache` parameter is false by default.  Uses top-level docValues data structures to find results.  These data structures are more efficient as the number of query terms grows high (over several hundred). But they are also expensive to build and need to be populated lazily after each commit, causing a sometimes-noticeable slowdown on the first query after each commit.  If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
+`termsFilter` the default `method`.
+Uses a `BooleanQuery` or a `TermInSetQuery` depending on the number of terms.
+Scales well with index size, but only moderately with the number of query terms.
 +
-`docValuesTermsFilterPerSegment` can only be used on fields with docValues data.  The `cache` parameter is false by default.  It is more efficient than the "top-level" alternative with small to medium (~500) numbers of query terms, and doesn't suffer a slowdown on queries immediately following a commit (as `docValuesTermsFilterTopLevel` does - see above).  But it is less performant on very large numbers of query terms.
+`docValuesTermsFilter` can only be used on fields with docValues data.
+The `cache` parameter is false by default.
+Chooses between the `docValuesTermsFilterTopLevel` and `docValuesTermsFilterPerSegment` methods using the number of query terms as a rough heuristic.
+Users should typically use this method instead of using `docValuesTermsFilterTopLevel` or `docValuesTermsFilterPerSegment` directly, unless they've done performance testing to validate one of the methods on queries of all sizes.
+Depending on the implementation picked, this method may rely on expensive data structures which are lazily populated after each commit.
+If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
 +
-`automaton` creates an `AutomatonQuery` representing the request with each term forming a union.  Scales well with index size and moderately with the number of query terms.
+`docValuesTermsFilterTopLevel` can only be used on fields with docValues data.
+The `cache` parameter is false by default.
+Uses top-level docValues data structures to find results.
+These data structures are more efficient as the number of query terms grows high (over several hundred).
+But they are also expensive to build and need to be populated lazily after each commit, causing a sometimes-noticeable slowdown on the first query after each commit.
+If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
++
+`docValuesTermsFilterPerSegment` can only be used on fields with docValues data.
+The `cache` parameter is false by default.
+It is more efficient than the "top-level" alternative with small to medium (~500) numbers of query terms, and doesn't suffer a slowdown on queries immediately following a commit (as `docValuesTermsFilterTopLevel` does - see above).
+But it is less performant on very large numbers of query terms.
++
+`automaton` creates an `AutomatonQuery` representing the request with each term forming a union.
+Scales well with index size and moderately with the number of query terms.
 
 *Examples*
 
@@ -845,7 +960,8 @@ An optional parameter used to determine which of several query implementations s
 
 == XML Query Parser
 
-The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML. Example:
+The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML.
+Example:
 
 [%autowidth.stretch,options="header"]
 |===
@@ -875,7 +991,8 @@ The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParser
 ----
 |===
 
-The XmlQParser implementation uses the {solr-javadocs}/core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class. XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
+The XmlQParser implementation uses the {solr-javadocs}/core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class.
+XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
 
 [%autowidth.stretch,cols="30,70",options="header"]
 |===
@@ -901,7 +1018,9 @@ The XmlQParser implementation uses the {solr-javadocs}/core/org/apache/solr/sear
 
 === Customizing XML Query Parser
 
-You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example `solrconfig.xml` snippet:
+You can configure your own custom query builders for additional XML elements.
+The custom builders need to extend the {solr-javadocs}/core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class.
+Example `solrconfig.xml` snippet:
 
 [source,xml]
 ----

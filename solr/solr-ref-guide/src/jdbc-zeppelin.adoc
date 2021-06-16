@@ -1,4 +1,4 @@
-= Solr JDBC - Apache Zeppelin
+= JDBC with Apache Zeppelin
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,11 +16,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Solr JDBC driver can support Apache Zeppelin.
+The Solr JDBC driver can support http://zeppelin.apache.org/[Apache Zeppelin].
 
-IMPORTANT: This requires Apache Zeppelin 0.6.0 or greater which contains the JDBC interpreter.
+[NOTE]
+====
+A Solr-specific interpreter is available as an alternative to using the JDBC driver.
+See the section <<math-start.adoc#zeppelin-solr-interpreter,Zeppelin-Solr Interpreter>> for details.
 
-To use http://zeppelin.apache.org[Apache Zeppelin] with Solr, you will need to create a JDBC interpreter for Solr. This will add SolrJ to the interpreter classpath. Once the interpreter has been created, you can create a notebook to issue queries. The http://zeppelin.apache.org/docs/latest/interpreter/jdbc.html[Apache Zeppelin JDBC interpreter documentation] provides additional information about JDBC prefixes and other features.
+If you choose to use Zeppelin's JDBC interpreter instead, you must use Zeppelin 0.6.0 or greater to get JDBC support.
+====
+
+To use Apache Zeppelin with Solr, you will need to create a JDBC interpreter for Solr.
+This will add SolrJ to the interpreter classpath.
+Once the interpreter has been created, you can create a notebook to issue queries.
+The http://zeppelin.apache.org/docs/latest/interpreter/jdbc.html[Zeppelin JDBC interpreter documentation] provides additional information about JDBC prefixes and other features.
 
 == Create the Apache Solr JDBC Interpreter
 
@@ -35,7 +44,8 @@ image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_3.png[image,height=400
 
 [NOTE]
 ====
-For most installations, Apache Zeppelin configures PostgreSQL as the JDBC interpreter default driver. The default driver can either be replaced by the Solr driver as outlined above or you can add a separate JDBC interpreter prefix as outlined in the http://zeppelin.apache.org/docs/latest/interpreter/jdbc.html[Apache Zeppelin JDBC interpreter documentation].
+For most installations, Apache Zeppelin configures PostgreSQL as the JDBC interpreter default driver.
+The default driver can either be replaced by the Solr driver as outlined above or you can add a separate JDBC interpreter prefix as outlined in the http://zeppelin.apache.org/docs/latest/interpreter/jdbc.html[Apache Zeppelin JDBC interpreter documentation].
 ====
 
 == Create a Notebook
@@ -64,13 +74,15 @@ dependency : org.apache.solr:solr-solrj:{solr-docs-version}.0
 
 [IMPORTANT]
 ====
-For some notebooks, the JDBC interpreter will not be bound to the notebook by default. Instructions on how to bind the JDBC interpreter to a notebook are available https://zeppelin.apache.org/docs/latest/interpreter/jdbc.html#bind-to-notebook[here].
+For some notebooks, the JDBC interpreter will not be bound to the notebook by default.
+Instructions on how to bind the JDBC interpreter to a notebook are available https://zeppelin.apache.org/docs/latest/interpreter/jdbc.html#bind-to-notebook[here].
 ====
 
 .Results of Solr query
 image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_6.png[image,width=481,height=400]
 
-The below code block assumes that the Apache Solr driver is setup as the default JDBC interpreter driver. If that is not the case, instructions for using a different prefix is available https://zeppelin.apache.org/docs/latest/interpreter/jdbc.html#how-to-use[here].
+The below code block assumes that the Apache Solr driver is setup as the default JDBC interpreter driver.
+If that is not the case, instructions for using a different prefix is available https://zeppelin.apache.org/docs/latest/interpreter/jdbc.html#how-to-use[here].
 
 [source,text]
 ----

@@ -1,4 +1,4 @@
-= Solr JDBC - SQuirreL SQL
+= JDBC with SQuirreL SQL
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-For http://squirrel-sql.sourceforge.net[SQuirreL SQL], you will need to create a new driver for Solr. This will add several SolrJ client .jars to the SQuirreL SQL classpath. The files required are:
+Solr's JDBC driver supports http://squirrel-sql.sourceforge.net[SQuirreL SQL].
+
+To configure this, you will need to create a new driver for Solr.
+This will add several SolrJ client .jars to the SQuirreL SQL classpath.
+The files required are:
 
 * all .jars found in `$SOLR_HOME/dist/solrj-libs`
 * the SolrJ .jar found at `$SOLR_HOME/dist/solr-solrj-<version>.jar`
@@ -37,7 +41,8 @@ image::images/solr-jdbc-squirrel-sql/squirrelsql_solrjdbc_2.png[image,width=892,
 
 === Name the Driver
 
-Provide a name for the driver, and provide the URL format: `jdbc:solr://<zk_connection_string>/?collection=<collection>`. Do not fill in values for the variables "```zk_connection_string```" and "```collection```", those will be defined later when the connection to Solr is configured.
+Provide a name for the driver, and provide the URL format: `jdbc:solr://<zk_connection_string>/?collection=<collection>`.
+Do not fill in values for the variables "```zk_connection_string```" and "```collection```", those will be defined later when the connection to Solr is configured.
 
 image::images/solr-jdbc-squirrel-sql/squirrelsql_solrjdbc_3.png[image,width=467,height=400]
 
