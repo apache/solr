@@ -33,6 +33,7 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 
 /**
@@ -119,7 +120,7 @@ class SolrFilter extends Filter implements SolrRel {
       String fieldName = gte.getKey();
       String query = null;
       if (fieldName.equals(lte.getKey()) && compareRexLiteral(gte.right, lte.right) < 0) {
-        query = fieldName + ":[" + gte.getValue() + " TO " + lte.getValue() + "]";
+        query = fieldName + ":[" + toSolrLiteral(gte.getValue()) + " TO " + toSolrLiteral(lte.getValue()) + "]";
         this.negativeQuery = false; // so we don't get *:* AND range
       }
       return query;
@@ -208,9 +209,10 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       Pair<String, RexLiteral> binaryTranslated = getFieldValuePair(node);
+      RexLiteral value = binaryTranslated.getValue();
       switch (kind) {
         case EQUALS:
-          String terms = binaryTranslated.getValue().toString().trim();
+          String terms = value.toString().trim();
           terms = terms.replace("'", "");
           boolean wrappedQuotes = false;
           if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
@@ -225,19 +227,19 @@ class SolrFilter extends Filter implements SolrRel {
           this.negativeQuery = false;
           return clause;
         case NOT_EQUALS:
-          return "-(" + binaryTranslated.getKey() + ":" + binaryTranslated.getValue() + ")";
+          return "-(" + binaryTranslated.getKey() + ":" + toSolrLiteral(value) + ")";
         case LESS_THAN:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue() + " })";
+          return "(" + binaryTranslated.getKey() + ": [ * TO " + toSolrLiteral(value) + " })";
         case LESS_THAN_OR_EQUAL:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue() + " ])";
+          return "(" + binaryTranslated.getKey() + ": [ * TO " + toSolrLiteral(value) + " ])";
         case GREATER_THAN:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": { " + binaryTranslated.getValue() + " TO * ])";
+          return "(" + binaryTranslated.getKey() + ": { " + toSolrLiteral(value) + " TO * ])";
         case GREATER_THAN_OR_EQUAL:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue() + " TO * ])";
+          return "(" + binaryTranslated.getKey() + ": [ " + toSolrLiteral(value) + " TO * ])";
         case LIKE:
           return translateLike(node, false);
         case IS_NOT_NULL:
@@ -246,6 +248,17 @@ class SolrFilter extends Filter implements SolrRel {
         default:
           throw new AssertionError("cannot translate " + node);
       }
+    }
+
+    protected String toSolrLiteral(RexLiteral literal) {
+      String value = literal.toString();
+      if (literal.getTypeName() == SqlTypeName.TIMESTAMP) {
+        value = value.replace(' ', 'T');
+        if (Character.isDigit(value.charAt(value.length() - 1))) {
+          value += "Z";
+        }
+      }
+      return value;
     }
 
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {

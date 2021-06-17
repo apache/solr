@@ -16,14 +16,18 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.solr.client.solrj.io.SolrClientCache;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Properties;
+import org.apache.solr.client.solrj.response.LukeResponse;
 
 /**
  * JDBC driver for Calcite Solr.
@@ -31,19 +35,25 @@ import java.util.Properties;
  * <p>It accepts connect strings that start with "jdbc:calcitesolr:".</p>
  */
 public class CalciteSolrDriver extends Driver {
-  public final static String CONNECT_STRING_PREFIX = "jdbc:calcitesolr:";
+  public static final String CONNECT_STRING_PREFIX = "jdbc:calcitesolr:";
+  public static final String SCHEMA_CACHE_TTL_SECS = "solr.sql.schemaCacheTTLSecs";
 
-  public static CalciteSolrDriver INSTANCE = new CalciteSolrDriver();
-
-  private SolrClientCache solrClientCache;
-
-
-  private CalciteSolrDriver() {
-    super();
-  }
+  public static final CalciteSolrDriver INSTANCE = new CalciteSolrDriver();
 
   static {
     INSTANCE.register();
+  }
+
+  // cache schema info for a collection for a brief amount of time to avoid going to
+  // luke for queries to the same table that occur near each other
+  private final Cache<String, LukeResponse> schemaInfoCache =
+      CacheBuilder.newBuilder().maximumSize(30)
+          .expireAfterWrite(Integer.parseInt(System.getProperty(SCHEMA_CACHE_TTL_SECS, "10")), TimeUnit.SECONDS).build();
+
+  private SolrClientCache solrClientCache;
+
+  private CalciteSolrDriver() {
+    super();
   }
 
   @Override
@@ -53,7 +63,7 @@ public class CalciteSolrDriver extends Driver {
 
   @Override
   public Connection connect(String url, Properties info) throws SQLException {
-    if(!this.acceptsURL(url)) {
+    if (!this.acceptsURL(url)) {
       return null;
     }
 
@@ -62,10 +72,10 @@ public class CalciteSolrDriver extends Driver {
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
 
     String schemaName = info.getProperty("zk");
-    if(schemaName == null) {
+    if (schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
+    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache, schemaInfoCache);
     rootSchema.add(schemaName, solrSchema);
 
     // Set the default schema
@@ -75,5 +85,9 @@ public class CalciteSolrDriver extends Driver {
 
   public void setSolrClientCache(SolrClientCache solrClientCache) {
     this.solrClientCache = solrClientCache;
+  }
+
+  public void clearSchemaCache() {
+    schemaInfoCache.invalidateAll();
   }
 }
