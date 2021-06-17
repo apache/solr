@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 import java.util.List;
 import java.util.Map;
 
-public class StreamAssert {
+class StreamAssert {
   static boolean assertMaps(List<Map<?, ?>> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
