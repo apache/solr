@@ -39,6 +39,7 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.CryptoKeys;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -259,6 +260,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
   }
 
+  @SuppressWarnings("BusyWait")
   private void configureClusterMockOauth(int numNodes, Path pemFilePath, long timeoutMs) throws Exception {
     configureCluster(numNodes)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -266,10 +268,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
         .configure();
     String securityJson = createMockOAuthSecurityJson(pemFilePath);
     cluster.getZkClient().setData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
-    long timer = System.currentTimeMillis();
+    RTimer timer = new RTimer();
     do { // Wait timeoutMs time for the security.json change to take effect
       Thread.sleep(200);
-      if (System.currentTimeMillis() - timer > timeoutMs) {
+      if (timer.getTime() > timeoutMs) {
         throw new Exception("Custom 'security.json' not applied in " + timeoutMs +"ms");
       }
     } while (cluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin() == null);
