@@ -323,6 +323,8 @@ Other Changes
 
 * SOLR-15471: Rename lang id whitelist parameter to allowlist (Mike Drob)
 
+* SOLR-15451: SolrSchema (for Parallel SQL) should use PKI principal for internal request to /admin/luke to get table metadata (Timothy Potter)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
