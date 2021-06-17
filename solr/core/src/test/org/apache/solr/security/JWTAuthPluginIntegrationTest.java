@@ -39,6 +39,7 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.CryptoKeys;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -136,7 +137,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void mockOAuth2Server() throws Exception {
-    configureClusterMockOauth(2, pemFilePath);
+    configureClusterMockOauth(2, pemFilePath, 10000);
 
     // First attempt without token fails
     Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
@@ -150,7 +151,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   public void mockOAuth2ServerWrongPEMInTruststore() throws Exception {
     // JWTAuthPlugin throws SSLHandshakeException when fetching JWK, so this trips cluster init
-    configureClusterMockOauth(2, wrongPemFilePath);
+    assertThrows(Exception.class, () -> configureClusterMockOauth(2, wrongPemFilePath, 2000));
     // Auth is not setup
     assertNull(cluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin());
   }
@@ -259,18 +260,21 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
   }
 
-  private void configureClusterMockOauth(int numNodes, Path pemFilePath) throws Exception {
+  @SuppressWarnings("BusyWait")
+  private void configureClusterMockOauth(int numNodes, Path pemFilePath, long timeoutMs) throws Exception {
     configureCluster(numNodes)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
     String securityJson = createMockOAuthSecurityJson(pemFilePath);
     cluster.getZkClient().setData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
-    for(int i = 0; i < 5; i++) { // Wait up to 1s for the security.json change to take effect
-      if (cluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin() == null) {
-        Thread.sleep(200);
-      } else break;
-    }
+    RTimer timer = new RTimer();
+    do { // Wait timeoutMs time for the security.json change to take effect
+      Thread.sleep(200);
+      if (timer.getTime() > timeoutMs) {
+        throw new Exception("Custom 'security.json' not applied in " + timeoutMs +"ms");
+      }
+    } while (cluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin() == null);
     baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     cluster.waitForAllNodes(10);
   }
