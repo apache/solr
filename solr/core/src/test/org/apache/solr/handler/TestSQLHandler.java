@@ -2107,6 +2107,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex <= '2021-06-01'", 1);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-06-03' AND '2021-06-05'", 4);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex > '2021-06-04 04:00:00'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = '2021-06-04 04:04:00'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = CAST('2021-06-04 04:04:00' as TIMESTAMP)", 1);
   }
 
   @Test
