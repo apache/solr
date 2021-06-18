@@ -39,6 +39,7 @@ import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.jose4j.jwk.PublicJsonWebKey;
@@ -427,7 +428,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
     String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
-    String pemCert = extractCertificateFromPem(pemFilePath).replaceAll("\n", "\\\\n");
+    String pemCert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath)).replaceAll("\n", "\\\\n");
     return "{\n" +
         "  \"authentication\" : {\n" +
         "    \"class\": \"solr.JWTAuthPlugin\",\n" +
@@ -436,13 +437,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
         "    \"trustedCerts\": \"" + pemCert + "\"\n" +
         "  }\n" +
         "}";
-  }
-
-  static String extractCertificateFromPem(Path pemFilePath) throws IOException {
-    String raw = Files.readString(pemFilePath);
-    int from = raw.indexOf("-----BEGIN CERTIFICATE-----");
-    int end = raw.lastIndexOf("-----END CERTIFICATE-----") + 25;
-    return raw.substring(from, end);
   }
 
   /**
