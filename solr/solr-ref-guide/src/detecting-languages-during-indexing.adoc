@@ -119,7 +119,7 @@ With longer text fields, a high threshold such as `0.8` will give good results. 
 +
 The default is `0.5`.
 
-`langid.whitelist`::
+`langid.allowlist`::
 Specifies a list of allowed language identification codes. Use this in combination with `langid.map` to ensure that you only index documents into fields that are in your schema.
 
 `langid.map`::
@@ -141,7 +141,7 @@ A comma-separated list of fields for use with `langid.map.individual` that is di
 Specifies a language code to use if no language is detected or specified in `langid.fallbackFields`.
 
 `langid.fallbackFields`::
-If no language is detected that meets the `langid.threshold` score, or if the detected language is not on the `langid.whitelist`, this field specifies language codes to be used as fallback values.
+If no language is detected that meets the `langid.threshold` score, or if the detected language is not on the `langid.allowlist`, this field specifies language codes to be used as fallback values.
 +
 If no appropriate fallback languages are found, Solr will use the language code specified in `langid.fallback`.
 

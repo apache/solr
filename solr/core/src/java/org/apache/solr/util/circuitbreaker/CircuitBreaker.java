@@ -61,6 +61,12 @@ public abstract class CircuitBreaker {
   public abstract String getErrorMessage();
 
   public static class CircuitBreakerConfig {
+    private static final int MEM_CB_THRESHOLD_LOWER_BOUND = 50;
+    private static final int MEM_CB_THRESHOLD_UPPER_BOUND = 95;
+
+    // CPU Circuit Breaker threshold is unbounded
+    private static final int CPU_CB_THRESHOLD_LOWER_BOUND = 0;
+
     private final boolean enabled;
     private final boolean memCBEnabled;
     private final int memCBThreshold;
@@ -69,6 +75,8 @@ public abstract class CircuitBreaker {
 
     public CircuitBreakerConfig(final boolean enabled, final boolean memCBEnabled, final int memCBThreshold,
                                   final boolean cpuCBEnabled, final int cpuCBThreshold) {
+      validateCircuitBreakerThresholds(memCBEnabled, memCBThreshold, cpuCBEnabled, cpuCBThreshold);
+
       this.enabled = enabled;
       this.memCBEnabled = memCBEnabled;
       this.memCBThreshold = memCBThreshold;
@@ -94,6 +102,23 @@ public abstract class CircuitBreaker {
 
     public int getCpuCBThreshold() {
       return cpuCBThreshold;
+    }
+
+    private static void validateCircuitBreakerThresholds(final boolean memCBEnabled, final int memCBThreshold,
+                                                         final boolean cpuCBEnabled, final int cpuCBThreshold) {
+
+      if (cpuCBEnabled) {
+        if (cpuCBThreshold < CPU_CB_THRESHOLD_LOWER_BOUND) {
+          throw new IllegalArgumentException("CPU Circuit Breaker threshold cannot be less than " + CPU_CB_THRESHOLD_LOWER_BOUND);
+        }
+      }
+
+      if (memCBEnabled) {
+        if (memCBThreshold < MEM_CB_THRESHOLD_LOWER_BOUND || memCBThreshold > MEM_CB_THRESHOLD_UPPER_BOUND) {
+          throw new IllegalArgumentException("Memory Circuit Breaker threshold needs to be in the range of " + MEM_CB_THRESHOLD_LOWER_BOUND
+                  + "," + MEM_CB_THRESHOLD_UPPER_BOUND);
+        }
+      }
     }
   }
 }
