@@ -113,7 +113,6 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   @Test
   public void testCoreReloadingPlugin() throws Exception {
       String FILE1 = "/mypkg/runtimelibs.jar";
@@ -168,7 +167,6 @@ public class TestPackages extends SolrCloudTestCase {
               "mypkg", "2.0" );
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   @Test
   public void testPluginLoading() throws Exception {
       String FILE1 = "/mypkg/runtimelibs.jar";
@@ -296,8 +294,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       executeReq( "/" + COLLECTION_NAME + "/get?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Map.of("class", "org.apache.solr.core.RuntimeLibSearchComponent",
-              "Version","1"));
+          Map.of("Version","1"));
 
 
       executeReq( "/" + COLLECTION_NAME + "/runtime?wt=json1", cluster.getRandomJetty(random()),
@@ -690,7 +687,6 @@ public class TestPackages extends SolrCloudTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   @Test
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
@@ -752,8 +748,8 @@ public class TestPackages extends SolrCloudTestCase {
               withMethod(SolrRequest.METHOD.GET)
               .build().process(cluster.getSolrClient()),
           Map.of(
-              ":result:packages:schemapkg[0]:version", "2.0",
-              ":result:packages:schemapkg[0]:files[0]", FILE1
+              ":result:packages:schemapkg[1]:version", "2.0",
+              ":result:packages:schemapkg[1]:files[0]", FILE1
           ));
 
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
