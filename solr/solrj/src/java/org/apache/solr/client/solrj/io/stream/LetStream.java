@@ -57,13 +57,13 @@ public class LetStream extends TupleStream implements Expressible {
     Set<String> echo = null;
     boolean echoAll = false;
     String currentName = null;
-    for(StreamExpressionParameter np : namedParams) {
-      String name = ((StreamExpressionNamedParameter)np).getName();
+    for(StreamExpressionNamedParameter np : namedParams) {
+      String name = np.getName();
       currentName = name;
 
       if(name.equals("echo")) {
         echo = new HashSet<>();
-        String echoString = ((StreamExpressionNamedParameter) np).getParameter().toString().trim();
+        String echoString = np.getParameter().toString().trim();
         if(echoString.equalsIgnoreCase("true")) {
           echoAll = true;
         } else {
@@ -76,7 +76,7 @@ public class LetStream extends TupleStream implements Expressible {
         continue;
       }
 
-      StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
+      StreamExpressionParameter param = np.getParameter();
 
       if(param instanceof StreamExpressionValue) {
         String paramValue = ((StreamExpressionValue) param).getValue();

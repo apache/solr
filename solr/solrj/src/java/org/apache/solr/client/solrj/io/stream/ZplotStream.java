@@ -62,9 +62,9 @@ public class ZplotStream extends TupleStream implements Expressible {
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     //Get all the named params
 
-    for(StreamExpressionParameter np : namedParams) {
-      String name = ((StreamExpressionNamedParameter)np).getName();
-      StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
+    for(StreamExpressionNamedParameter np : namedParams) {
+      String name = np.getName();
+      StreamExpressionParameter param = np.getParameter();
       if(param instanceof StreamExpressionValue) {
         String paramValue = ((StreamExpressionValue) param).getValue();
         letParams.put(name, factory.constructPrimitiveObject(paramValue));
