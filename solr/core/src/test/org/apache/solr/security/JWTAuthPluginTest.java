@@ -549,4 +549,11 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
               "-----END CERTIFICATE-----\n", StandardCharsets.UTF_8));
     });
   }
+
+  @Test
+  public void extractCertificate() throws IOException {
+    Path pemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
+    String cert = JWTAuthPluginIntegrationTest.extractCertificateFromPem(pemFilePath);
+    assertEquals(2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());
+  }
 }
