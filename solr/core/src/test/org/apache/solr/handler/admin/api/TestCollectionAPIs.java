@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.admin;
+package org.apache.solr.handler.admin.api;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -40,8 +40,9 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.ClusterAPI;
-import org.apache.solr.handler.CollectionsAPI;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.api.ClusterAPI;
+import org.apache.solr.handler.admin.api.CollectionsAPI;
 import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -204,7 +205,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
   }
 
-  static ZkNodeProps compareOutput(final ApiBag apiBag, final String path, final SolrRequest.METHOD method,
+  public static ZkNodeProps compareOutput(final ApiBag apiBag, final String path, final SolrRequest.METHOD method,
                             final String payload, final CoreContainer cc, String expectedOutputMapJson) throws Exception {
     Pair<SolrQueryRequest, SolrQueryResponse> ctx = makeCall(apiBag, path, method, payload, cc);
     ZkNodeProps output = (ZkNodeProps) ctx.second().getValues().get(ZkNodeProps.class.getName());
@@ -310,7 +311,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         result = operation.execute(req, rsp, this);
       }
       if (result != null) {
-        result.put(QUEUE_OPERATION, operation.action.toLower());
+        result.put(QUEUE_OPERATION, operation.getAction().toLower());
         rsp.add(ZkNodeProps.class.getName(), new ZkNodeProps(result));
       }
     }

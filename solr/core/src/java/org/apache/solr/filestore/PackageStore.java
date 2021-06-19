@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.filestore.PackageStoreAPI.MetaData;
+import org.apache.solr.filestore.api.PackageStoreAPI.MetaData;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
 /**
@@ -91,7 +91,7 @@ public interface PackageStore {
     final MetaData meta;
     final String path;
 
-    FileEntry(ByteBuffer buf, MetaData meta, String path) {
+    public FileEntry(ByteBuffer buf, MetaData meta, String path) {
       this.buf = buf;
       this.meta = meta;
       this.path = path;
@@ -100,7 +100,6 @@ public interface PackageStore {
     public String getPath() {
       return path;
     }
-
 
     public InputStream getInputStream() {
       if (buf != null) return new ByteBufferInputStream(buf);

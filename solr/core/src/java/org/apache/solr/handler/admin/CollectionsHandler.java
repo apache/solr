@@ -1405,6 +1405,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
     }
 
+    public CollectionAction getAction() { return action; }
+
     public static CollectionOperation get(CollectionAction action) {
       for (CollectionOperation op : values()) {
         if (op.action == action) return op;
@@ -1581,7 +1583,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   /**
    * Copy all params to the given map or if the given map is null create a new one
    */
-  static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, Collection<String> paramNames) {
+ public static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, Collection<String> paramNames) {
     if (sink == null) sink = new LinkedHashMap<>();
     for (String param : paramNames) {
       String[] v = source.getParams(param);
@@ -1599,7 +1601,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   /**
    * Copy all params to the given map or if the given map is null create a new one
    */
-  static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, String... paramNames) {
+  public static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, String... paramNames) {
     return copy(source, sink, paramNames == null ? Collections.emptyList() : Arrays.asList(paramNames));
   }
 

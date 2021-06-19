@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.api.PackageAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,10 +89,10 @@ public class PackageLoader implements Closeable {
   }
 
   public void refreshPackageConf() {
-    log.info("{} updated to version {}", ZkStateReader.SOLR_PKGS_PATH, packageAPI.pkgs.znodeVersion);
+    log.info("{} updated to version {}", ZkStateReader.SOLR_PKGS_PATH, packageAPI.getPackages().znodeVersion);
 
     List<Package> updated = new ArrayList<>();
-    Map<String, List<PackageAPI.PkgVersion>> modified = getModified(myCopy, packageAPI.pkgs);
+    Map<String, List<PackageAPI.PkgVersion>> modified = getModified(myCopy, packageAPI.getPackages());
 
     for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : modified.entrySet()) {
       if (e.getValue() != null) {
@@ -114,7 +115,7 @@ public class PackageLoader implements Closeable {
     for (SolrCore core : coreContainer.getCores()) {
       core.getPackageListeners().packagesUpdated(updated);
     }
-    myCopy = packageAPI.pkgs;
+    myCopy = packageAPI.getPackages();
   }
 
   public Map<String, List<PackageAPI.PkgVersion>> getModified(PackageAPI.Packages old, PackageAPI.Packages newPkgs) {

@@ -51,7 +51,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.filestore.PackageStoreAPI.MetaData;
+import org.apache.solr.filestore.api.PackageStoreAPI;
+import org.apache.solr.filestore.api.PackageStoreAPI.MetaData;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -150,7 +151,7 @@ public class DistribPackageStore implements PackageStore {
         MetaData metaData = readMetaData();
         if (metaData == null) return false;
         try (InputStream is = Files.newInputStream(file)) {
-          if (!Objects.equals(DigestUtils.sha512Hex(is), metaData.sha512)) {
+          if (!Objects.equals(DigestUtils.sha512Hex(is), metaData.getSHA())) {
             deleteFile();
           } else {
             return true;
@@ -335,7 +336,7 @@ public class DistribPackageStore implements PackageStore {
     try {
       String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
       coreContainer.getZkController().getZkClient().makePath(ZK_PACKAGESTORE + dirName, false, true);
-      coreContainer.getZkController().getZkClient().create(ZK_PACKAGESTORE + info.path, info.getDetails().getMetaData().sha512.getBytes(UTF_8),
+      coreContainer.getZkController().getZkClient().create(ZK_PACKAGESTORE + info.path, info.getDetails().getMetaData().getSHA().getBytes(UTF_8),
               CreateMode.PERSISTENT, true);
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);

@@ -45,7 +45,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.filestore.PackageStoreAPI;
+import org.apache.solr.filestore.api.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -78,7 +78,7 @@ import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.apache.solr.filestore.TestDistribPackageStore.*;
 
-@LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
+@LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.api.PackageAPI=DEBUG")
 public class TestPackages extends SolrCloudTestCase {
 
   @Before

@@ -28,6 +28,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.pkg.api.PackageAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

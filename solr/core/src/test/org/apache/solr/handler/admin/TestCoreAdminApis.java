@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.handler.admin.api.TestCollectionAPIs;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.mockito.Mockito.*;

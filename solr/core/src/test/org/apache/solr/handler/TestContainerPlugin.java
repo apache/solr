@@ -49,7 +49,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.filestore.PackageStoreAPI;
+import org.apache.solr.filestore.api.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
 import org.apache.solr.pkg.TestPackages;

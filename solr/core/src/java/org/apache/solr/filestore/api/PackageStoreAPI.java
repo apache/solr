@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.filestore;
+package org.apache.solr.filestore.api;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,7 +45,9 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.pkg.PackageAPI;
+import org.apache.solr.filestore.DistribPackageStore;
+import org.apache.solr.filestore.PackageStore;
+import org.apache.solr.pkg.api.PackageAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
@@ -110,7 +112,7 @@ public class PackageStoreAPI {
           if (validateSignatures) {
             try {
               packageStore.refresh(KEYS_DIR);
-              validate(entry.meta.signatures, entry, false);
+              validate(entry.getMetaData().signatures, entry, false);
             } catch (Exception e) {
               log.error("Error validating package artifact", e);
               errs.accept(e.getMessage());
@@ -361,6 +363,8 @@ public class PackageStoreAPI {
       this.signatures = (List<String>) m.remove("sig");
       this.otherAttribs = m;
     }
+
+    public String getSHA() { return sha512; }
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {

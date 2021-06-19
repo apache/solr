@@ -24,6 +24,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.api.PackageAPI;
 
 import java.io.IOException;
 import java.util.*;

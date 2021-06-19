@@ -23,12 +23,12 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.handler.ClusterAPI;
+import org.apache.solr.handler.admin.api.ClusterAPI;
 import org.apache.solr.response.SolrQueryResponse;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.handler.admin.TestCollectionAPIs.compareOutput;
+import static org.apache.solr.handler.admin.api.TestCollectionAPIs.compareOutput;
 
 public class TestConfigsApi extends SolrTestCaseJ4 {
 
