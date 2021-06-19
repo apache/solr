@@ -117,7 +117,7 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
     // field has no docValues and is not stored, notExisting does not exist, storedDoubleField is empty for some docs
     query.set("fl", "*,score,features:[fv]");
     query.remove("rows");
-    query.add("rq", "{!ltr model=partly-invalid-model reRankDocs=4}");
+    query.add("rq", "{!ltr model=partly-invalid-model reRankDocs=6}");
 
     // reRanked match, for invalid fields the default value should be returned
     assertOrderOfTopDocuments(query, 6, List.of(46, 45, 44, 43, 42, 41));
@@ -160,6 +160,7 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
     setUpStoredFieldModelAndFeatures();
     setUpDocValueModelAndFeatures();
     setUpModelAndFeaturesForInvalidFields();
+    reloadCollection(COLLECTION);
   }
 
   private void setUpStoredFieldModelAndFeatures() throws Exception {
@@ -178,7 +179,6 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
         STORED_FEATURE_STORE_NAME,
         STORED_MODEL_WEIGHTS
     );
-    reloadCollection(COLLECTION);
   }
 
   public void setUpDocValueModelAndFeatures() throws Exception {
@@ -195,7 +195,6 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
         DV_FEATURE_NAMES,
         DV_FEATURE_STORE_NAME,
         DV_MODEL_WEIGHTS);
-    reloadCollection(COLLECTION);
   }
 
   public void setUpModelAndFeaturesForInvalidFields() throws Exception {
@@ -212,6 +211,5 @@ public class TestLTROnSolrCloudWithPrefetchingFieldValueFeature extends TestLTRO
         FEATURE_NAMES_PARTLY_INVALID,
         FEATURE_STORE_NAME_PARTLY_INVALID,
         MODEL_WEIGHTS_PARTLY_INVALID);
-    reloadCollection(COLLECTION);
   }
 }

@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -296,7 +298,7 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
    * It is used to assert that the prefetching mechanism works as intended.
    */
   final public static class ObservingPrefetchingFieldValueFeature extends PrefetchingFieldValueFeature {
-    private Set<String> prefetchFields;
+    private SortedSet<String> prefetchFields;
     // this boolean can be used to mimic the behavior of the original FieldValueFeature
     // this is used to compare the behavior of the two Features so that the purpose of the Prefetching on becomes clear
     private static final AtomicBoolean breakPrefetching = new AtomicBoolean(false);
@@ -306,10 +308,10 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
       super(name, params);
     }
 
-    public void setPrefetchFields(Set<String> fields) {
+    public void setPrefetchFields(SortedSet<String> fields) {
       if(breakPrefetching.get()) {
-        prefetchFields = Set.of(getField(), "id"); // only prefetch own field (and id needed for map-building below)
-        super.setPrefetchFields(Set.of(getField(), "id"));
+        prefetchFields = new TreeSet<>(Set.of(getField(), "id")); // only prefetch own field (and id needed for map-building below)
+        super.setPrefetchFields(new TreeSet<>(Set.of(getField(), "id")));
       } else {
         fields.add("id");
         prefetchFields = fields; // also prefetch all fields that all other PrefetchingFieldValueFeatures need

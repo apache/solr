@@ -31,11 +31,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * This feature returns the value of a field in the current document.
- * The field must have stored="true" or docValues="true" properties.
+ * The field must have stored="true" or docValues="true" properties, otherwise this feature returns a default value.
+ * <p>
+ * This feature will not only fetch the field that itself uses, but also all fields that are used by the other
+ * PrefetchingFieldValueFeatures in the feature-store.
+ * This results in a performance benefit compared to the {@link FieldValueFeature} for stored fields that
+ * do not have docValues.
+ * </p>
  * Example configuration:
  * <pre>{
   "name":  "rawHits",
@@ -47,17 +54,22 @@ import java.util.Set;
  */
 public class PrefetchingFieldValueFeature extends FieldValueFeature {
   // used to store all fields from all PrefetchingFieldValueFeatures
-  private Set<String> prefetchFields;
+  private SortedSet<String> prefetchFields;
   // can be used for debugging to only fetch the field this features uses
   public static final String DISABLE_PREFETCHING_FIELD_VALUE_FEATURE = "disablePrefetchingFieldValueFeature";
 
-  public void setPrefetchFields(Set<String> fields) {
+  public void setPrefetchFields(SortedSet<String> fields) {
     prefetchFields = fields;
   }
 
   // needed for loading from storage
   public void setPrefetchFields(Collection<String> fields) {
-    prefetchFields = Set.of(fields.toArray(new String[fields.size()]));
+    prefetchFields = new TreeSet<>(fields);
+  }
+
+  @VisibleForTesting
+  public SortedSet<String> getPrefetchFields(){
+    return prefetchFields;
   }
 
   @Override
@@ -66,11 +78,6 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
     params.put("field", getField());
     params.put("prefetchFields", prefetchFields == null ? Collections.emptySet() : prefetchFields); // prevent NPE
     return params;
-  }
-
-  @VisibleForTesting
-  public Set<String> getPrefetchFields(){
-    return prefetchFields;
   }
 
   public PrefetchingFieldValueFeature(String name, Map<String,Object> params) {

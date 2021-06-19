@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 
 public class TestPrefetchingFieldValueFeature extends TestRerankBase {
   @Before
@@ -129,11 +130,11 @@ public class TestPrefetchingFieldValueFeature extends TestRerankBase {
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
         "/features/[0]/name=='storedIntField'");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
-        "/features/[0]/params/prefetchFields==['storedIntField','storedDoubleField','storedLongField']");
+        "/features/[0]/params/prefetchFields==['storedDoubleField','storedIntField','storedLongField']");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
         "/features/[1]/name=='storedLongField'");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+fstore,
-        "/features/[1]/params/prefetchFields==['storedIntField','storedDoubleField','storedLongField']");
+        "/features/[1]/params/prefetchFields==['storedDoubleField','storedIntField','storedLongField']");
   }
 
   @Test
@@ -173,14 +174,14 @@ public class TestPrefetchingFieldValueFeature extends TestRerankBase {
    * that the logic to store them works as expected.
    */
   final public static class ObservingPrefetchingFieldValueFeature extends PrefetchingFieldValueFeature {
-    public static Set<String> allPrefetchFields;
+    public static SortedSet<String> allPrefetchFields;
     public static int updateCount = 0;
 
     public ObservingPrefetchingFieldValueFeature(String name, Map<String, Object> params) {
       super(name, params);
     }
 
-    public void setPrefetchFields(Set<String> fields) {
+    public void setPrefetchFields(SortedSet<String> fields) {
       super.setPrefetchFields(fields);
       // needed because all feature instances are updated. We just want to track updates with different fields, not all
       // updates of the instances
