@@ -117,7 +117,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
-import static org.apache.solr.search.SolrIndexSearcher.GET_SCORES;
 
 
 /**
@@ -150,14 +149,8 @@ public class QueryComponent extends SearchComponent
       }
     }
 
-    // Set field flags    
     ReturnFields returnFields = new SolrReturnFields( req );
     rsp.setReturnFields( returnFields );
-    int flags = 0;
-    if (returnFields.wantsScore()) {
-      flags |= SolrIndexSearcher.GET_SCORES;
-    }
-    rb.setFieldFlags( flags );
 
     String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
 
@@ -187,8 +180,6 @@ public class QueryComponent extends SearchComponent
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
           rb.setRankQuery(rankQuery);
-          // we always need the score for reRanking
-          rb.setFieldFlags(rb.getFieldFlags() | GET_SCORES);
           MergeStrategy mergeStrategy = rankQuery.getMergeStrategy();
           if(mergeStrategy != null) {
             rb.addMergeStrategy(mergeStrategy);
@@ -225,6 +216,15 @@ public class QueryComponent extends SearchComponent
       }
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+
+    // set field flags
+    {
+      int flags = 0;
+      if (returnFields.wantsScore() || (rb.getRankQuery() instanceof AbstractReRankQuery)) {
+        flags |= SolrIndexSearcher.GET_SCORES;
+      }
+      rb.setFieldFlags( flags );
     }
 
     if (params.getBool(GroupParams.GROUP, false)) {
