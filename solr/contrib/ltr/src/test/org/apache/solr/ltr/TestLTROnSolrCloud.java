@@ -189,6 +189,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       docCounter++;
     }
   }
+
   private float calculateLTRScoreForDoc(SolrDocument d) {
     Matcher matcher = Pattern.compile(",?(\\w+)=(-?[0-9]+\\.[0-9]+)").matcher((String) d.getFieldValue("[fv]"));
     Map<String, Float> weights = Splitter.on(",")

@@ -37,7 +37,7 @@ public class SortedHitQueueManager {
   public SortedHitQueueManager(SortField[] sortFields, SortSpec ss, ResponseBuilder rb) {
     final RankQuery rankQuery = rb.getRankQuery();
 
-    if(rb.getRankQuery() != null && rankQuery instanceof AbstractReRankQuery){
+    if(useFixForReRankOnSolrCloud(sortFields, rb, rankQuery)){
       // reRanking is enabled, create a queue that is only used for reRanked results
       // disable shortcut in the queue to correctly sort documents that were reRanked on the shards back into the full result
       reRankDocsSize = ((AbstractReRankQuery) rankQuery).getReRankDocs();
@@ -54,10 +54,32 @@ public class SortedHitQueueManager {
     }
   }
 
+  private boolean useFixForReRankOnSolrCloud(SortField[] sortFields, ResponseBuilder rb, RankQuery rankQuery) {
+    // we only want to use two queues if we reRank
+    return rb.getRankQuery() != null && rankQuery instanceof AbstractReRankQuery &&
+        // using two queues makes reRanking on Solr Cloud possible (@see https://github.com/apache/solr/pull/151 )
+        // however, the fix does not work if the non-reRanked docs should be sorted by score ( @see https://github.com/apache/solr/pull/151#discussion_r640664451 )
+        // to maintain the existing behavior for these cases, we disable the broken use of two queues and use the (also broken) status quo instead
+        !hasScoreSortField(sortFields);
+  }
+
+  private boolean hasScoreSortField(SortField[] sortFields) {
+    boolean hasScoreSortField = false;
+    for (SortField sortField : sortFields) {
+      // do not check equality with SortField.FIELD_SCORE because that would only cover score desc, not score asc
+      if (sortField.getType().equals(SortField.Type.SCORE) && sortField.getField() == null) {
+        hasScoreSortField = true;
+        break;
+      }
+    }
+    return hasScoreSortField;
+  }
+
   public void addDocument(ShardDoc shardDoc, int i) {
     if(reRankQueue != null && i < reRankDocsSize) {
       ShardDoc droppedShardDoc = reRankQueue.insertWithOverflow(shardDoc);
-      // FIXME: Only works if the original request does not sort by score
+      // Only works if the original request does not sort by score
+      // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15437")
       if(droppedShardDoc != null) {
         queue.insertWithOverflow(droppedShardDoc);
       }
