@@ -73,6 +73,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
+import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -832,6 +833,16 @@ public class QueryComponent extends SearchComponent
     return true;
   }
 
+  private static SortedHitQueueManager newSortedHitQueueManager(SortField[] sortFields, SortSpec ss, ResponseBuilder rb) {
+    final RankQuery rankQuery = rb.getRankQuery();
+    if (rankQuery instanceof AbstractReRankQuery && DualSortedHitQueueManager.supports(sortFields)) {
+      return new DualSortedHitQueueManager(sortFields, ss.getCount(), ss.getOffset(), rb.req.getSearcher(),
+                 ((AbstractReRankQuery)rankQuery).getReRankDocs());
+    } else {
+      return new SingleSortedHitQueueManager(sortFields, ss.getCount(), ss.getOffset(), rb.req.getSearcher());
+    }
+  }
+
   @SuppressWarnings({"unchecked"})
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
       List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
@@ -868,7 +879,7 @@ public class QueryComponent extends SearchComponent
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
-      SortedHitQueueManager queueManager = new SortedHitQueueManager(sortFields, ss, rb);
+      final SortedHitQueueManager queueManager = newSortedHitQueueManager(sortFields, ss, rb);
 
       NamedList<Object> shardInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -1002,18 +1013,19 @@ public class QueryComponent extends SearchComponent
 
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-          queueManager.addDocument(shardDoc, i);
+          queueManager.addDocument(shardDoc);
         } // end for-each-doc-in-response
       } // end for-each-response
       
       // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
       // So we want to pop the last documents off the queue to get
       // the docs offset -> queuesize
-      final int resultSize = Math.max(0, queueManager.getResultSize(ss.getOffset()));  // there may not be any docs in range
+      int resultSize = queueManager.size() - ss.getOffset();
+      resultSize = Math.max(0, resultSize);  // there may not be any docs in range
 
       Map<Object,ShardDoc> resultIds = new HashMap<>();
       for (int i=resultSize-1; i>=0; i--) {
-        final ShardDoc shardDoc = queueManager.nextDocument();
+        ShardDoc shardDoc = queueManager.popDocument();
         shardDoc.positionInResponse = i;
         // Need the toString() for correlation with other lists that must
         // be strings (like keys in highlighting, explain, etc)

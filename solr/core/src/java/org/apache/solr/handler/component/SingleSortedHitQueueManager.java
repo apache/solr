@@ -16,12 +16,30 @@
  */
 package org.apache.solr.handler.component;
 
-public interface SortedHitQueueManager {
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SortField;
 
-  void addDocument(ShardDoc shardDoc);
+public class SingleSortedHitQueueManager implements SortedHitQueueManager {
 
-  ShardDoc popDocument();
+  private final ShardFieldSortedHitQueue queue;
 
-  int size();
+  public SingleSortedHitQueueManager(SortField[] sortFields, int count, int offset, IndexSearcher searcher) {
+    queue = new ShardFieldSortedHitQueue(sortFields, count + offset, searcher);
+  }
+
+  @Override
+  public void addDocument(ShardDoc shardDoc) {
+    queue.insertWithOverflow(shardDoc);
+  }
+
+  @Override
+  public ShardDoc popDocument() {
+    return queue.pop();
+  }
+
+  @Override
+  public int size() {
+    return queue.size();
+  }
 
 }
