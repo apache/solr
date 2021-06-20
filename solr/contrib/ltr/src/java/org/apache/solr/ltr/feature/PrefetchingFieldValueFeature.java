@@ -150,11 +150,13 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
             // this should only happen in rare cases when we fail to read from the index
             // try to avoid the fallback to the default value by fetching only the field for this feature
             // log an error because this breaks the prefetch-functionality and should be noticed
-            log.error("Unable to fetch document with prefetchFields " + StrUtils.join(prefetchFields, ',') +
-                "! Will try to only fetch field " + getField() + " for feature " + name +
-                ". Cause for failure: " + exAllFields.getMessage());
+            log.error("Unable to fetch document with prefetchFields {}! Will try to only fetch field {} for feature {}. " +
+                "Cause for failure: {}",
+                StrUtils.join(prefetchFields, ','), getField(), name, exAllFields);
             final Document document = docFetcher.doc(context.docBase + itr.docID(), getFieldAsSet());
-            log.info("Fallback to fetch single field " + getField() + " for feature " + name + " was successful.");
+            if (log.isInfoEnabled()) {
+              log.info("Fallback to fetch single field {} for feature {} was successful.", getField(), name);
+            }
             return document;
           } catch (final IOException exSingleField) {
             // even the fallback to single field was unsuccessful
