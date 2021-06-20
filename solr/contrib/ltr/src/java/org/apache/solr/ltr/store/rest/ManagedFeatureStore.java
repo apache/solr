@@ -136,10 +136,10 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
   public Object applyUpdatesToManagedData(Object updates) {
     Set<String> updatedFeatureStores = new HashSet<>();
     if (updates instanceof List) {
-      final List<Map<String,Object>> up = (List<Map<String,Object>>) updates;
-      for (final Map<String,Object> u : up) {
-        final String featureStore = (String) u.get(FEATURE_STORE_NAME_KEY);
-        addFeature(u, featureStore);
+      final List<Map<String,Object>> updatesList = (List<Map<String,Object>>) updates;
+      for (final Map<String,Object> update : updatesList) {
+        final String featureStore = (String) update.get(FEATURE_STORE_NAME_KEY);
+        addFeature(update, featureStore);
         updatedFeatureStores.add(featureStore);
       }
     }

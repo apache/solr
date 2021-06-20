@@ -27,11 +27,9 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.PrefetchingFieldValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.SolrDocumentFetcher;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -49,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
-import static org.apache.solr.ltr.feature.PrefetchingFieldValueFeature.DISABLE_PREFETCHING_FIELD_VALUE_FEATURE;
 
 public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTROnSolrCloudBase {
   private final String LAZY_FIELD_LOADING_CONFIG_KEY = "solr.query.enableLazyFieldLoading";
@@ -86,7 +83,12 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     // test the normal behavior of the PrefetchingFieldValueFeature
     // fields of all PrefetchingFieldValueFeatures are collected and read at once from the index
     // we assert, that all field values for these fields are present at the document from the start
-    queryAndMakeAssertions(false, false, false);
+
+    // build query and assert correct result size & order
+    QueryResponse response = queryAndMakeAssertions(false);
+    // get information about loaded fields and assert that all fields were loaded at once
+    final Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
+    assertGroupedFieldLoading(response, loadedFields);
   }
 
   @Test
@@ -98,19 +100,15 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
 
     // NOTE: this test does not test the new logic of the PrefetchingFieldValueFeature but should illustrate
     // the difference to the FieldValueFeature
-    queryAndMakeAssertions(true, false, true);
+
+    // build query and assert correct result size & order
+    QueryResponse response = queryAndMakeAssertions(true);
+    // get information about loaded fields and assert that all fields were loaded separately
+    final Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
+    assertSeparateFieldLoading(response, loadedFields);
   }
 
-  @Test
-  public void testSimpleQueryDisablePrefetching() throws Exception {
-    // test the option to disable the prefetching with a parameter (should be used for debugging)
-    // same behavior as when breakPrefetching is enabled
-    // each PrefetchingFieldValueFeature only reads its field from the index
-    // we assert, that only the currently used field is read for the document
-    queryAndMakeAssertions(false, true, true);
-  }
-
-  public void queryAndMakeAssertions(boolean breakPrefetching, boolean disablePrefetching, boolean separateLoading) throws Exception {
+  public QueryResponse queryAndMakeAssertions(boolean breakPrefetching) throws Exception {
     ObservingPrefetchingFieldValueFeature.setBreakPrefetching(breakPrefetching);
     ObservingPrefetchingFieldValueFeature.loadedFields = new HashMap<>();
 
@@ -121,7 +119,6 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     reloadCollection(COLLECTION);
 
     SolrQuery query = composeSolrQuery();
-    query.setParam(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, String.valueOf(disablePrefetching));
 
     QueryResponse queryResponse =
         solrCluster.getSolrClient().query(COLLECTION,query);
@@ -129,12 +126,8 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     Map<String, List<List<String>>> loadedFields = ObservingPrefetchingFieldValueFeature.loadedFields;
 
     assertEquals(loadedFields.size(), queryResponse.getResults().size());
-    if(separateLoading) {
-      assertSeparateFieldLoading(queryResponse, loadedFields); // assert, that all fields are loaded separately
-    } else {
-      assertGroupedFieldLoading(queryResponse, loadedFields); // assert, that all fields are loaded at once
-    }
     assertTheResponse(queryResponse);
+    return queryResponse;
   }
 
   private void assertSeparateFieldLoading(QueryResponse queryResponse, Map<String, List<List<String>>> loadedFields) {
@@ -298,7 +291,6 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
    * It is used to assert that the prefetching mechanism works as intended.
    */
   final public static class ObservingPrefetchingFieldValueFeature extends PrefetchingFieldValueFeature {
-    private SortedSet<String> prefetchFields;
     // this boolean can be used to mimic the behavior of the original FieldValueFeature
     // this is used to compare the behavior of the two Features so that the purpose of the Prefetching on becomes clear
     private static final AtomicBoolean breakPrefetching = new AtomicBoolean(false);
@@ -310,11 +302,11 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
 
     public void setPrefetchFields(SortedSet<String> fields) {
       if(breakPrefetching.get()) {
-        prefetchFields = new TreeSet<>(Set.of(getField(), "id")); // only prefetch own field (and id needed for map-building below)
+        // only prefetch own field (and id needed for map-building below)
         super.setPrefetchFields(new TreeSet<>(Set.of(getField(), "id")));
       } else {
+        // also prefetch all fields that all other PrefetchingFieldValueFeatures need
         fields.add("id");
-        prefetchFields = fields; // also prefetch all fields that all other PrefetchingFieldValueFeatures need
         super.setPrefetchFields(fields);
       }
     }
@@ -331,14 +323,10 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
     }
 
     public class ObservingPrefetchingFieldValueFeatureWeight extends PrefetchingFieldValueFeatureWeight {
-      private final SolrDocumentFetcher docFetcher;
-      private final Boolean disablePrefetching;
 
       public ObservingPrefetchingFieldValueFeatureWeight(IndexSearcher searcher, SolrQueryRequest request,
                                                          Query originalQuery, Map<String, String[]> efi) {
         super(searcher, request, originalQuery, efi);
-        disablePrefetching = request.getParams().getBool(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, false);
-        this.docFetcher = request.getSearcher().getDocFetcher();
       }
 
       @Override
@@ -351,50 +339,37 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
       }
 
       public class ObservingPrefetchingFieldValueFeatureScorer extends PrefetchingFieldValueFeatureScorer {
-        LeafReaderContext context = null;
         public ObservingPrefetchingFieldValueFeatureScorer(FeatureWeight weight,
                                                   LeafReaderContext context, DocIdSetIterator itr) {
           super(weight, context, itr);
-          this.context = context;
         }
 
         @Override
         public float score() throws IOException {
-          try {
-            final Document document;
-            if(disablePrefetching) {
-              document = docFetcher.doc(context.docBase + itr.docID(), Set.of(getField(), "id"));
-            } else {
-              document = docFetcher.doc(context.docBase + itr.docID(), Set.of(prefetchFields.toArray(new String[]{"id"})));
-            }
-            float fieldValue = super.parseStoredFieldValue(document.getField(getField())); // get from cache or compute
+          // same 2 lines as super.score(), but we need the document for cache inspection
+          final Document document = fetchDocument();
+          float fieldValue = super.parseStoredFieldValue(document.getField(getField()));
 
-            List<String> loadedLazyFields = document.getFields().stream()
-                .filter(field -> field instanceof LazyDocument.LazyField)
-                .map(indexableField -> (LazyDocument.LazyField) indexableField)
-                .filter(LazyDocument.LazyField::hasBeenLoaded)  // collect lazy fields that were loaded (value was read)
-                .map(LazyDocument.LazyField::name)
-                .filter(fieldName -> !fieldName.equals("id")) // ignore id because it is not assigned to a feature
-                .collect(Collectors.toList());
+          List<String> loadedLazyFields = document.getFields().stream()
+              .filter(field -> field instanceof LazyDocument.LazyField)
+              .map(indexableField -> (LazyDocument.LazyField) indexableField)
+              .filter(LazyDocument.LazyField::hasBeenLoaded)  // collect lazy fields that were loaded (value was read)
+              .map(LazyDocument.LazyField::name)
+              .filter(fieldName -> !fieldName.equals("id")) // ignore id because it is not assigned to a feature
+              .collect(Collectors.toList());
 
-            List<String> loadedStoredFields = document.getFields().stream()
-                .filter(field -> field instanceof StoredField)
-                .map(indexableField -> (StoredField) indexableField)
-                .map(Field::name)  // collect stored fields that were loaded
-                .filter(fieldName -> !fieldName.equals("id")) // ignore id because it is not assigned to a feature
-                .collect(Collectors.toList());
+          List<String> loadedStoredFields = document.getFields().stream()
+              .filter(field -> field instanceof StoredField)
+              .map(indexableField -> (StoredField) indexableField)
+              .map(Field::name)  // collect stored fields that were loaded
+              .filter(fieldName -> !fieldName.equals("id")) // ignore id because it is not assigned to a feature
+              .collect(Collectors.toList());
 
-            loadedLazyFields.addAll(loadedStoredFields);
-            String id = document.get("id");
-            handleLoadedFields(id, loadedLazyFields);
-            return fieldValue;
+          loadedLazyFields.addAll(loadedStoredFields);
+          String id = document.get("id");
+          handleLoadedFields(id, loadedLazyFields);
+          return fieldValue;
 
-          } catch (final IOException e) {
-            throw new FeatureException(
-                e.toString() + ": " +
-                    "Unable to extract feature for "
-                    + name, e);
-          }
         }
 
         private synchronized void handleLoadedFields(String id, List<String> loadedLazyFields) {

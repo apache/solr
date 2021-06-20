@@ -25,8 +25,11 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrDocumentFetcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -51,12 +54,13 @@ import java.util.TreeSet;
       "field": "hits"
   }
 }</pre>
+ * NOTE: To best utilize prefetching, use separate feature-stores for different models. This avoids unnecessary
+ * fetching of fields.
  */
 public class PrefetchingFieldValueFeature extends FieldValueFeature {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // used to store all fields from all PrefetchingFieldValueFeatures
   private SortedSet<String> prefetchFields;
-  // can be used for debugging to only fetch the field this features uses
-  public static final String DISABLE_PREFETCHING_FIELD_VALUE_FEATURE = "disablePrefetchingFieldValueFeature";
 
   public void setPrefetchFields(SortedSet<String> fields) {
     prefetchFields = fields;
@@ -93,13 +97,11 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
 
   public class PrefetchingFieldValueFeatureWeight extends FieldValueFeatureWeight {
     private final SolrDocumentFetcher docFetcher;
-    private final Boolean disablePrefetching;
 
     public PrefetchingFieldValueFeatureWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(searcher, request, originalQuery, efi);
 
-      disablePrefetching = request.getParams().getBool(DISABLE_PREFETCHING_FIELD_VALUE_FEATURE, false);
       // get the searcher directly from the request to be sure that we have a SolrIndexSearcher
       this.docFetcher = request.getSearcher().getDocFetcher();
     }
@@ -142,19 +144,23 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
       // not private to enable possible subclasses
       protected Document fetchDocument() throws FeatureException {
         try {
-          if(disablePrefetching) {
-            return docFetcher.doc(context.docBase + itr.docID(), getFieldAsSet());
-          } else {
-            return docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
+          return docFetcher.doc(context.docBase + itr.docID(), prefetchFields);
+        } catch (final IOException exAllFields) {
+          try {
+            // this should only happen in rare cases when we fail to read from the index
+            // try to avoid the fallback to the default value by fetching only the field for this feature
+            // log an error because this breaks the prefetch-functionality and should be noticed
+            log.error("Unable to fetch document with prefetchFields " + StrUtils.join(prefetchFields, ',') +
+                "! Will try to only fetch field " + getField() + " for feature " + name +
+                ". Cause for failure: " + exAllFields.getMessage());
+            final Document document = docFetcher.doc(context.docBase + itr.docID(), getFieldAsSet());
+            log.info("Fallback to fetch single field " + getField() + " for feature " + name + " was successful.");
+            return document;
+          } catch (final IOException exSingleField) {
+            // even the fallback to single field was unsuccessful
+            throw new FeatureException("Unable to extract feature for " + name +
+                    " , after unsuccessful fallback to only fetch field " + getField(), exSingleField);
           }
-        } catch (final IOException e) {
-          final String prefetchedFields = disablePrefetching ? getField() : StrUtils.join(prefetchFields, ',');
-          throw new FeatureException(
-              e.toString() + ": " +
-                  "Unable to extract feature for " + name +
-                  " , tried to fetch fields " + prefetchedFields +
-                  ".\nSet " + DISABLE_PREFETCHING_FIELD_VALUE_FEATURE + " to true to fetch fields individually " +
-                  "(only for debugging purposes).", e);
         }
       }
     }
