@@ -240,7 +240,9 @@ This filter takes the output of the <<tokenizers.adoc#classic-tokenizer,Classic 
 
 == Common Grams Filter
 
-This filter creates word shingles by combining common tokens such as stop words with regular tokens. This is useful for creating phrase queries containing common words, such as "the cat." Solr normally ignores stop words in queried phrases, so searching for "the cat" would return all matches for the word "cat."
+This filter for use in `index` time analysis creates word shingles by combining common tokens such as stop words with regular tokens.  This can result in an index with more unique terms, but is useful for creating phrase queries containing common words, such as "the cat", in a way that will typically be much faster then if the combined tokens are not used, because only the term positions of documents containg both terms in sequence have to be considered.  Correct usage requires being paired with <<#common-grams-query-filter,Common Grams Query Filter>> during `query` analysis.
+
+These filters can also be combined with <<#stop-filter,Stop Filter>> so searching for `"the cat"` would match different documents then `"a cat"`, while pathological searches for either `"the"` or `"a"` would not match any documents.
 
 *Factory class:* `solr.CommonGramsFilterFactory`
 
@@ -261,9 +263,13 @@ This filter creates word shingles by combining common tokens such as stop words 
 [.tab-label]*With name*
 [source,xml]
 ----
-<analyzer>
-  <tokenizer name="standard"/>
+<analyzer type="index">
+  <tokenizer name="whitespace"/>
   <filter name="commonGrams" words="stopwords.txt" ignoreCase="true"/>
+</analyzer>
+<analyzer type="query">
+  <tokenizer name="whitespace"/>
+  <filter name="commonGramsQuery" words="stopwords.txt" ignoreCase="true"/>
 </analyzer>
 ----
 ====
@@ -272,19 +278,29 @@ This filter creates word shingles by combining common tokens such as stop words 
 [.tab-label]*With class name (legacy)*
 [source,xml]
 ----
-<analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
+<analyzer type="index">
+  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
   <filter class="solr.CommonGramsFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+</analyzer>
+<analyzer type="query">
+  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+  <filter class="solr.CommonGramsQueryFilterFactory" words="stopwords.txt" ignoreCase="true"/>
 </analyzer>
 ----
 ====
 --
 
-*In:* "the Cat"
+*In:* "the cat in the hat"
 
-*Tokenizer to Filter:* "the", "Cat"
+*Tokenizer to Filter(s):* "the", "cat", "in", "the", "hat"
 
-*Out:* "the_cat"
+*(Index) Out:* "the"(1), "the_cat"(1), "cat"(2), "cat_in"(2), "in"(3), "in_the"(3), "the"(4), "the_hat"(4), "hat"(5)
+
+*(Query) Out:* "the_cat"(1), "cat_in"(2), "in_the"(3), "the_hat"(4)
+
+== Common Grams Query Filter
+
+This filter is used for the `query` time analysis aspect of <<#common-grams-filter,Common Grams Filter>> -- see that filer for a description of arguments, example configuration, and sample input/output.
 
 == Collation Key Filter
 

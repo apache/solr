@@ -27,6 +27,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
+import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttributeImpl;
@@ -442,6 +444,74 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(5), new TokenInfo("test", null, "word", 14, 18, 5, new int[]{4,5,5}, null, false));
   }
 
+  @SuppressWarnings({"unchecked"})
+  public void testCommonGrams() throws Exception {
+
+    final FieldAnalysisRequest request = new FieldAnalysisRequest();
+    final String fieldType = "commongrams";
+    request.addFieldType(fieldType);
+    request.setFieldValue("the quick and the dead");
+    request.setQuery("and the dead man");
+    request.setShowMatch(true);
+
+    @SuppressWarnings({"rawtypes"})
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    assertTrue("result is null and it shouldn't be", result != null);
+
+    @SuppressWarnings({"rawtypes"})
+    NamedList<NamedList> fieldTypes = result.get("field_types");
+    assertNotNull("field_types should never be null", fieldTypes);
+    @SuppressWarnings({"rawtypes"})
+    NamedList<NamedList> type = fieldTypes.get(fieldType);
+    assertNotNull("expecting result for field type: " + fieldType, type);
+
+    @SuppressWarnings({"rawtypes"})
+    NamedList<List<NamedList>> indexPart = type.get("index");
+    assertNotNull("expecting an index token analysis for field type: " + fieldType, indexPart);
+
+    @SuppressWarnings({"rawtypes"})
+    List<NamedList> tokenList = indexPart.get(WhitespaceTokenizer.class.getName());
+    assertNotNull("Expcting WhitespaceTokenizer analysis breakdown", tokenList);
+    assertEquals(tokenList.size(), 5);
+    assertToken(tokenList.get(0), new TokenInfo("the", null, "word", 0, 3, 1, new int[]{1}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("quick", null, "word", 4, 9, 2, new int[]{2}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("and", null, "word", 10, 13, 3, new int[]{3}, null, false));
+    assertToken(tokenList.get(3), new TokenInfo("the", null, "word", 14, 17, 4, new int[]{4}, null, false));
+    assertToken(tokenList.get(4), new TokenInfo("dead", null, "word", 18, 22, 5, new int[]{5}, null, false));
+    tokenList = indexPart.get(CommonGramsFilter.class.getName());
+    assertNotNull("Expcting CommonGramsFilter analysis breakdown", tokenList);
+    assertEquals(tokenList.size(), 9);
+    assertToken(tokenList.get(0), new TokenInfo("the", null, "word", 0, 3, 1, new int[]{1,1}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("the_quick", null, "gram", 0, 9, 1, new int[]{2,1}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("quick", null, "word", 4, 9, 2, new int[]{2,2}, null, false));
+    assertToken(tokenList.get(3), new TokenInfo("quick_and", null, "gram", 4, 13, 2, new int[]{3,2}, null, false));
+    assertToken(tokenList.get(4), new TokenInfo("and", null, "word", 10, 13, 3, new int[]{3,3}, null, false));
+    assertToken(tokenList.get(5), new TokenInfo("and_the", null, "gram", 10, 17, 3, new int[]{4,3}, null, true));
+    assertToken(tokenList.get(6), new TokenInfo("the", null, "word", 14, 17, 4, new int[]{4,4}, null, false));
+    assertToken(tokenList.get(7), new TokenInfo("the_dead", null, "gram", 14, 22, 4, new int[]{5,4}, null, true));
+    assertToken(tokenList.get(8), new TokenInfo("dead", null, "word", 18, 22, 5, new int[]{5,5}, null, true));
+    
+    @SuppressWarnings({"rawtypes"})
+    NamedList<List<NamedList>> queryPart = type.get("query");
+    assertNotNull("expecting a query token analysis for field type: " + fieldType, queryPart);
+
+    tokenList = queryPart.get(WhitespaceTokenizer.class.getName());
+    assertNotNull("Expecting WhitespaceTokenizer analysis breakdown", tokenList);
+    assertEquals(tokenList.size(), 4);
+    assertToken(tokenList.get(0), new TokenInfo("and", null, "word", 0, 3, 1, new int[]{1}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("the", null, "word", 4, 7, 2, new int[]{2}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("dead", null, "word", 8, 12, 3, new int[]{3}, null, false));
+    assertToken(tokenList.get(3), new TokenInfo("man", null, "word", 13, 16, 4, new int[]{4}, null, false));
+    tokenList = queryPart.get(CommonGramsQueryFilter.class.getName());
+    assertNotNull("Expcting CommonGramsQueryFilter analysis breakdown", tokenList);
+    // Hmmm... Not clear if "dead" should really be here, but it's what the filter currently produces, see: LUCENE-10007 
+    assertEquals(4, tokenList.size()); // LUCENE-10007 
+    assertToken(tokenList.get(0), new TokenInfo("and_the", null, "gram", 0, 7, 1, new int[]{2,1}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("the_dead", null, "gram", 4, 12, 2, new int[]{3,2}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("dead", null, "word", 8, 12, 3, new int[]{3,3}, null, false)); // LUCENE-10007
+    assertToken(tokenList.get(3), new TokenInfo("man", null, "word", 13, 16, 4, new int[]{4,4}, null, false));
+  }
+  
   @Test
   public void testSpatial() throws Exception {
     FieldAnalysisRequest request = new FieldAnalysisRequest();
