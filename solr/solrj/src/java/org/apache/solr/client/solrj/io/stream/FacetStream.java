@@ -589,8 +589,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     }
 
     try {
-      @SuppressWarnings({"rawtypes"})
-      NamedList response = cloudSolrClient.request(request, collection);
+      NamedList<?> response = cloudSolrClient.request(request, collection);
       getTuples(response, buckets, metrics);
 
       if(resortNeeded) {
@@ -803,13 +802,12 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     return "index";
   }
 
-  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response,
+  private void getTuples(NamedList<?> response,
                                 Bucket[] buckets,
                                 Metric[] metrics) {
 
     Tuple tuple = new Tuple();
-    @SuppressWarnings({"rawtypes"})
-    NamedList facets = (NamedList)response.get("facets");
+    NamedList<?> facets = (NamedList<?>)response.get("facets");
     fillTuples(0,
                tuples,
                tuple,
@@ -822,21 +820,18 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private void fillTuples(int level,
                           List<Tuple> tuples,
                           Tuple currentTuple,
-                          @SuppressWarnings({"rawtypes"}) NamedList facets,
+                          NamedList<?> facets,
                           Bucket[] _buckets,
                           Metric[] _metrics) {
 
     String bucketName = _buckets[level].toString();
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList)facets.get(bucketName);
+    NamedList<?> nl = (NamedList<?>)facets.get(bucketName);
     if(nl == null) {
       return;
     }
-    @SuppressWarnings({"rawtypes"})
-    List allBuckets = (List)nl.get("buckets");
+    List<?> allBuckets = (List<?>)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList bucket = (NamedList)allBuckets.get(b);
+      NamedList<?> bucket = (NamedList<?>)allBuckets.get(b);
       Object val = bucket.get("val");
       if (val instanceof Integer) {
         val=((Integer)val).longValue();  // calcite currently expects Long values here

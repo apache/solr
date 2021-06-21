@@ -85,7 +85,7 @@ class PHPSerializedWriter extends JSONWriter {
   }
   
   @Override
-  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  public void writeNamedList(String name, NamedList<?> val) throws IOException {
     writeNamedListAsMapMangled(name, val);
   }
 
@@ -179,7 +179,7 @@ class PHPSerializedWriter extends JSONWriter {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
+  public void writeArray(String name, Iterator<?> val) throws IOException {
     @SuppressWarnings({"rawtypes"})
     ArrayList vals = new ArrayList();
     while( val.hasNext() ) {

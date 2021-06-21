@@ -73,7 +73,6 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   }
   
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   public void testPackageStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
@@ -84,8 +83,6 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
       uploadKey(derFile, PackageStoreAPI.KEYS_DIR+"/pub_key512.der", cluster);
-//      cluster.getZkClient().makePath("/keys/exe", true);
-//      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
 
       try {
         postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
@@ -127,7 +124,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
       Map<String,Object> expected = Map.of(
           ":files:/package/mypkg/v1.0/runtimelibs.jar:name", "runtimelibs.jar",
-          ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
+          ":files:/package/mypkg/v1.0/runtimelibs.jar:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
       );
       checkAllNodesForFile(cluster,"/package/mypkg/v1.0/runtimelibs.jar", expected, true);
       postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs_v2.jar.bin"),
@@ -136,7 +133,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       );
       expected = Map.of(
           ":files:/package/mypkg/v1.0/runtimelibs_v2.jar:name", "runtimelibs_v2.jar",
-          ":files:/package/mypkg/v1.0[0]:sha512",
+          ":files:/package/mypkg/v1.0/runtimelibs_v2.jar:sha512",
           "bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417"
       );
       checkAllNodesForFile(cluster,"/package/mypkg/v1.0/runtimelibs_v2.jar", expected, false);
@@ -263,9 +260,9 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         Object actual = rsp._get(key, null);
         passed = passed && p.test(actual); // Important: check all of the values, not just the first one
         if (!passed && i >= repeats - 1) {
-          String description = rsp.toString();
+          String description = Utils.toJSONString(rsp);
           if (rsp instanceof SimpleSolrResponse) {
-            description = ((SimpleSolrResponse) rsp).getResponse().toString();
+            description = ((SimpleSolrResponse) rsp).getResponse().jsonStr();
           }
           // we know these are unequal but call assert instead of fail() because it gives a better error message
           assertEquals("Failed on path " + key + " of " + description + "after attempt #" + (i+1),

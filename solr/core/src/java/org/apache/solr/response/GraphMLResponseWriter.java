@@ -20,7 +20,6 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -90,9 +89,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
         printWriter.write("<node id=\""+ xmlEscape(id)+"\"");
 
         List<String> outfields = new ArrayList<>();
-        Iterator<Object> keys = tuple.getFields().keySet().iterator();
-        while(keys.hasNext()) {
-          String key = String.valueOf(keys.next());
+        for (String key : tuple.getFields().keySet()) {
           if(key.equals("node") || key.equals("ancestors") || key.equals("collection")) {
             continue;
           } else {

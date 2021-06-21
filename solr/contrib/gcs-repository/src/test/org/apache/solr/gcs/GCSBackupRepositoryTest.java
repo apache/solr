@@ -54,7 +54,6 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     protected BackupRepository getRepository() {
         final NamedList<Object> config = new NamedList<>();
         config.add(CoreAdminParams.BACKUP_LOCATION, "backup1");

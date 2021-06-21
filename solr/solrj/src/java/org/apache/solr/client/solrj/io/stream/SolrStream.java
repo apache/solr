@@ -205,11 +205,9 @@ public class SolrStream extends TupleStream {
   * Reads a Tuple from the stream. The Stream is completed when Tuple.EOF == true.
   **/
 
-  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
     try {
-      @SuppressWarnings({"rawtypes"})
-      Map fields = tupleStreamParser.next();
+      Map<String, Object> fields = tupleStreamParser.next();
 
       if (fields == null) {
         //Return the EOF tuple.
@@ -261,17 +259,16 @@ public class SolrStream extends TupleStream {
     return null;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private Map mapFields(Map fields, Map<String,String> mappings) {
+  private <V> Map<String, V> mapFields(Map<String, V> fields, Map<String,String> mappings) {
 
     Iterator<Map.Entry<String,String>> it = mappings.entrySet().iterator();
     while(it.hasNext()) {
       Map.Entry<String,String> entry = it.next();
       String mapFrom = entry.getKey();
       String mapTo = entry.getValue();
-      Object o = fields.get(mapFrom);
+      V v = fields.get(mapFrom);
       fields.remove(mapFrom);
-      fields.put(mapTo, o);
+      fields.put(mapTo, v);
     }
 
     return fields;
