@@ -32,6 +32,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
@@ -39,6 +40,7 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.CryptoKeys;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -85,18 +87,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @SolrTestCaseJ4.SuppressSSL
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
-  protected static final int NUM_SERVERS = 2;
-  protected static final int NUM_SHARDS = 2;
-  protected static final int REPLICATION_FACTOR = 1;
+  private final String COLLECTION = "jwtColl";
+
   private static String mockOAuthToken;
   private static Path pemFilePath;
   private static Path wrongPemFilePath;
-  private final String COLLECTION = "jwtColl";
   private static String jwtStaticTestToken;
-  private String baseUrl;
   private static JsonWebSignature jws;
   private static String jwtTokenWrongSignature;
-
   private static MockOAuth2Server mockOAuth2Server;
 
   @BeforeClass
@@ -129,14 +127,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  public void extractCertificateFromPem() throws IOException {
-    String cert = extractCertificateFromPem(pemFilePath);
-    assertEquals(2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());
-  }
-
-  @Test
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15484")
   public void mockOAuth2Server() throws Exception {
-    configureClusterMockOauth(2, pemFilePath);
+    MiniSolrCloudCluster myCluster = configureClusterMockOauth(2, pemFilePath, 10000);
+    String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
 
     // First attempt without token fails
     Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
@@ -145,18 +139,18 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     // Second attempt with token from Oauth mock server succeeds
     headers = getHeaders(baseUrl + "/admin/info/system", mockOAuthToken);
     assertEquals("200", headers.get("code"));
+    myCluster.shutdown();
   }
 
   @Test
   public void mockOAuth2ServerWrongPEMInTruststore() throws Exception {
     // JWTAuthPlugin throws SSLHandshakeException when fetching JWK, so this trips cluster init
-    configureClusterMockOauth(2, wrongPemFilePath);
-    // Auth is not setup
-    assertNull(cluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin());
+    assertThrows(Exception.class, () -> configureClusterMockOauth(2, wrongPemFilePath, 2000));
   }
 
   public void testStaticJwtKeys() throws Exception {
-    configureClusterStaticKeys("jwt_plugin_jwk_security.json");
+    MiniSolrCloudCluster myCluster = configureClusterStaticKeys("jwt_plugin_jwk_security.json");
+    String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
 
     // No token fails
     assertThrows(IOException.class, () -> get(baseUrl + "/admin/info/system", null));
@@ -171,12 +165,14 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
         "  \"redirect_uris\":[],\n" +
         "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n" +
         "  \"client_id\":\"solr-cluster\"}", authData);
+    myCluster.shutdown();
   }
 
   @Test
   public void infoRequestValidateXSolrAuthHeadersBlockUnknownFalse() throws Exception {
     // https://issues.apache.org/jira/browse/SOLR-14196
-    configureClusterStaticKeys("jwt_plugin_jwk_security_blockUnknownFalse.json");
+    MiniSolrCloudCluster myCluster = configureClusterStaticKeys("jwt_plugin_jwk_security_blockUnknownFalse.json");
+    String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
 
     Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
     assertEquals("Should have received 401 code", "401", headers.get("code"));
@@ -187,11 +183,13 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
         "  \"redirect_uris\":[],\n" +
         "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n" +
         "  \"client_id\":\"solr-cluster\"}", authData);
+    myCluster.shutdown();
   }
 
   @Test
   public void testMetrics() throws Exception {
-    configureClusterStaticKeys("jwt_plugin_jwk_security.json");
+    // Here we use the "global" class-level cluster variable, but not for the other tests
+    cluster = configureClusterStaticKeys("jwt_plugin_jwk_security.json");
 
     boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";
@@ -201,7 +199,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     CloseableHttpClient cl = HttpClientUtil.createClient(null);
     
-    createCollection(COLLECTION);
+    createCollection(cluster, COLLECTION);
     
     // Missing token
     getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
@@ -224,17 +222,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     // JWT parse error
     getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", "foozzz");
     assertAuthMetricsMinimums(11, 4, 4, 1, 1, 1);
-    
-    HttpClientUtil.close(cl);
-  }
 
-  @Test
-  public void createCollectionUpdateAndQueryDistributed() throws Exception {
-    configureClusterStaticKeys("jwt_plugin_jwk_security.json");
-
-    // Admin request will use PKI inter-node auth from Overseer, and succeed
-    createCollection(COLLECTION);
-    
+    // Merged with createCollectionUpdateAndQueryDistributed()
     // Now update three documents
     assertAuthMetricsMinimums(1, 1, 0, 0, 0, 0);
     assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
@@ -242,7 +231,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals(Integer.valueOf(200), result.second());
     assertAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
     assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
-    
+
     // First a non distributed query
     result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*&distrib=false", jwtStaticTestToken);
     assertEquals(Integer.valueOf(200), result.second());
@@ -252,42 +241,56 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     result = get(baseUrl + "/" + COLLECTION + "/query?q=*:*", jwtStaticTestToken);
     assertEquals(Integer.valueOf(200), result.second());
     assertAuthMetricsMinimums(10, 10, 0, 0, 0, 0);
-    
+
     // Delete
     assertEquals(200, get(baseUrl + "/admin/collections?action=DELETE&name=" + COLLECTION, jwtStaticTestToken).second().intValue());
     assertAuthMetricsMinimums(11, 11, 0, 0, 0, 0);
     assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
+
+    HttpClientUtil.close(cl);
   }
 
-  private void configureClusterMockOauth(int numNodes, Path pemFilePath) throws Exception {
-    configureCluster(numNodes)// nodes
+  /**
+   * Configure solr cluster with a security.json talking to MockOAuth2 server
+   * @param numNodes number of nodes in cluster
+   * @param pemFilePath path to PEM file for SSL cert to trust for OAuth2 server
+   * @param timeoutMs how long to wait until the new security.json is applied to the cluster
+   * @return an instance of the created cluster that the test can talk to
+   */
+  @SuppressWarnings("BusyWait")
+  private MiniSolrCloudCluster configureClusterMockOauth(int numNodes, Path pemFilePath, long timeoutMs) throws Exception {
+    MiniSolrCloudCluster myCluster = configureCluster(numNodes)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
-        .configure();
+        .build();
     String securityJson = createMockOAuthSecurityJson(pemFilePath);
-    cluster.getZkClient().setData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
-    for(int i = 0; i < 5; i++) { // Wait up to 1s for the security.json change to take effect
-      if (cluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin() == null) {
-        Thread.sleep(200);
-      } else break;
-    }
-    baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    cluster.waitForAllNodes(10);
+    myCluster.getZkClient().setData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
+    RTimer timer = new RTimer();
+    do { // Wait timeoutMs time for the security.json change to take effect
+      Thread.sleep(200);
+      if (timer.getTime() > timeoutMs) {
+        myCluster.shutdown();
+        throw new Exception("Custom 'security.json' not applied in " + timeoutMs +"ms");
+      }
+    } while (myCluster.getJettySolrRunner(0).getCoreContainer().getAuthenticationPlugin() == null);
+    myCluster.waitForAllNodes(10);
+    return myCluster;
   }
 
   /**
    * Configure solr cluster with a security.json made for static keys
    * @param securityJsonFilename file name of test json, relative to test-files/solr/security
+   * @return an instance of the created cluster that the test can talk to
    */
-  private void configureClusterStaticKeys(String securityJsonFilename) throws Exception {
-    configureCluster(NUM_SERVERS)// nodes
+  private MiniSolrCloudCluster configureClusterStaticKeys(String securityJsonFilename) throws Exception {
+    MiniSolrCloudCluster myCluster = configureCluster(2)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve(securityJsonFilename))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
-        .configure();
-    baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+        .build();
 
-    cluster.waitForAllNodes(10);
+    myCluster.waitForAllNodes(10);
+    return myCluster;
   }
 
   /**
@@ -379,9 +382,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
-  private void createCollection(String collectionName) throws IOException {
+  private void createCollection(MiniSolrCloudCluster myCluster, String collectionName) throws IOException {
+    String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
     assertEquals(200, get(baseUrl + "/admin/collections?action=CREATE&name=" + collectionName + "&numShards=2", jwtStaticTestToken).second().intValue());
-    cluster.waitForActiveCollection(collectionName, 2, 2);
+    myCluster.waitForActiveCollection(collectionName, 2, 2);
   }
 
   private void executeCommand(String url, HttpClient cl, String payload, JsonWebSignature jws)
@@ -425,7 +429,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
     String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
-    String pemCert = extractCertificateFromPem(pemFilePath).replaceAll("\n", "\\\\n");
+    String pemCert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath)).replaceAll("\n", "\\\\n");
     return "{\n" +
         "  \"authentication\" : {\n" +
         "    \"class\": \"solr.JWTAuthPlugin\",\n" +
@@ -434,13 +438,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
         "    \"trustedCerts\": \"" + pemCert + "\"\n" +
         "  }\n" +
         "}";
-  }
-
-  private static String extractCertificateFromPem(Path pemFilePath) throws IOException {
-    String raw = Files.readString(pemFilePath);
-    int from = raw.indexOf("-----BEGIN CERTIFICATE-----");
-    int end = raw.lastIndexOf("-----END CERTIFICATE-----") + 25;
-    return raw.substring(from, end);
   }
 
   /**

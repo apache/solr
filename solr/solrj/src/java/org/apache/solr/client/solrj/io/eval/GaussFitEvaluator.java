@@ -37,7 +37,6 @@ public class GaussFitEvaluator extends RecursiveNumericEvaluator implements Many
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object doWork(Object... objects) throws IOException{
 
     if(objects.length >= 3) {
@@ -52,7 +51,7 @@ public class GaussFitEvaluator extends RecursiveNumericEvaluator implements Many
     if(objects.length == 1) {
       //Only the y values passed
 
-      y = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      y = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       x = new double[y.length];
       for(int i=0; i<y.length; i++) {
         x[i] = i;
@@ -61,8 +60,8 @@ public class GaussFitEvaluator extends RecursiveNumericEvaluator implements Many
     } else if(objects.length == 2) {
       // x and y passed
       Object second = objects[1];
-      x = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-      y = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      x = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      y = ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
 
 
     }
@@ -81,7 +80,7 @@ public class GaussFitEvaluator extends RecursiveNumericEvaluator implements Many
 
     double[] coef = curveFitter.fit(pointList);
     Gaussian gaussian = new Gaussian(coef[0], coef[1], coef[2]);
-    List list = new ArrayList();
+    List<Double> list = new ArrayList<>();
     for(double xvalue : x) {
       double yvalue= gaussian.value(xvalue);
       list.add(yvalue);

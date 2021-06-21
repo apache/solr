@@ -835,8 +835,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     response = deleteRequest.commit(getRandomClient(), "versions_collection").getResponse();
     Object deletesObject = response.get("deletes");
     assertNotNull("There must be a deletes parameter", deletesObject);
-    @SuppressWarnings({"rawtypes"})
-    NamedList deletes = (NamedList) deletesObject;
+    NamedList<?> deletes = (NamedList<?>) deletesObject;
     assertEquals("There must be 1 version", 1, deletes.size());
   }
   

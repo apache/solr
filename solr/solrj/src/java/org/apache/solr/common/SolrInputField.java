@@ -108,8 +108,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
 
   public Object getFirstValue() {
     if (value instanceof Collection) {
-      @SuppressWarnings({"unchecked"})
-      Collection<Object> c = (Collection<Object>) value;
+      Collection<?> c = (Collection<?>) value;
       if (c.size() > 0) {
         return c.iterator().next();
       }

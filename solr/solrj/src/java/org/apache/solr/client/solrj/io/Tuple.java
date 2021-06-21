@@ -55,7 +55,7 @@ public class Tuple implements Cloneable, MapWriter {
    * @deprecated use {@link #getFields()} instead of this public field.
    */
   @Deprecated
-  public Map<Object, Object> fields = new HashMap<>(2);
+  public Map<String, Object> fields = new HashMap<>(2);
   /**
    * External serializable field names.
    * @deprecated use {@link #getFieldNames()} instead of this public field.
@@ -73,42 +73,32 @@ public class Tuple implements Cloneable, MapWriter {
     // just an empty tuple
   }
 
+  public Tuple(String k1, Object v1) {
+    if (k1 != null) put(k1, v1);
+  }
+
+  public Tuple(String k1, Object v1, String k2, Object v2) {
+    if (k1 != null) put(k1, v1);
+    if (k2 != null) put(k2, v2);
+  }
+
   /**
    * A copy constructor.
    * @param fields map containing keys and values to be copied to this tuple
    */
-  public Tuple(Map<?, ?> fields) {
-    for (Map.Entry<?, ?> entry : fields.entrySet()) {
+  public Tuple(Map<String, ?> fields) {
+    // TODO Use bulk putAll operation that will properly size the map
+    // https://issues.apache.org/jira/browse/SOLR-15480
+    for (Map.Entry<String, ?> entry : fields.entrySet()) {
       put(entry.getKey(), entry.getValue());
     }
   }
 
-  /**
-   * Constructor that accepts an even number of arguments as key / value pairs.
-   * @param fields a list of key / value pairs, with keys at odd and values at
-   *               even positions.
-   */
-  public Tuple(Object... fields) {
-    if (fields == null) {
-      return;
-    }
-    if ((fields.length % 2) != 0) {
-      throw new RuntimeException("must have a matching number of key-value pairs");
-    }
-    for (int i = 0; i < fields.length; i += 2) {
-      // skip empty entries
-      if (fields[i] == null) {
-        continue;
-      }
-      put(fields[i], fields[i + 1]);
-    }
-  }
-
-  public Object get(Object key) {
+  public Object get(String key) {
     return this.fields.get(key);
   }
 
-  public void put(Object key, Object value) {
+  public void put(String key, Object value) {
     this.fields.put(key, value);
     if (key.equals(StreamParams.EOF)) {
       EOF = true;
@@ -117,17 +107,17 @@ public class Tuple implements Cloneable, MapWriter {
     }
   }
 
-  public void remove(Object key) {
+  public void remove(String key) {
     this.fields.remove(key);
   }
 
-  public String getString(Object key) {
+  public String getString(String key) {
     return String.valueOf(this.fields.get(key));
   }
 
   public String getException() { return (String)this.fields.get(StreamParams.EXCEPTION); }
 
-  public Long getLong(Object key) {
+  public Long getLong(String key) {
     Object o = this.fields.get(key);
 
     if (o == null) {
@@ -145,7 +135,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   // Convenience method since Booleans can be passed around as Strings.
-  public Boolean getBool(Object key) {
+  public Boolean getBool(String key) {
     Object o = this.fields.get(key);
 
     if (o == null) {
@@ -161,12 +151,12 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Boolean> getBools(Object key) {
+  public List<Boolean> getBools(String key) {
     return (List<Boolean>) this.fields.get(key);
   }
 
   // Convenience methods since the dates are actually shipped around as Strings.
-  public Date getDate(Object key) {
+  public Date getDate(String key) {
     Object o = this.fields.get(key);
 
     if (o == null) {
@@ -182,7 +172,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Date> getDates(Object key) {
+  public List<Date> getDates(String key) {
     List<String> vals = (List<String>) this.fields.get(key);
     if (vals == null) return null;
     
@@ -193,7 +183,7 @@ public class Tuple implements Cloneable, MapWriter {
     return ret;
   }
 
-  public Double getDouble(Object key) {
+  public Double getDouble(String key) {
     Object o = this.fields.get(key);
 
     if (o == null) {
@@ -209,24 +199,24 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<String> getStrings(Object key) {
+  public List<String> getStrings(String key) {
     return (List<String>)this.fields.get(key);
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Long> getLongs(Object key) {
+  public List<Long> getLongs(String key) {
     return (List<Long>)this.fields.get(key);
   }
 
   @SuppressWarnings({"unchecked"})
-  public List<Double> getDoubles(Object key) {
+  public List<Double> getDoubles(String key) {
     return (List<Double>)this.fields.get(key);
   }
 
   /**
    * Return all tuple fields and their values.
    */
-  public Map<Object, Object> getFields() {
+  public Map<String, Object> getFields() {
     return this.fields;
   }
 
@@ -235,8 +225,7 @@ public class Tuple implements Cloneable, MapWriter {
    * @deprecated use {@link #getFields()} instead.
    */
   @Deprecated(since = "8.6.0")
-  @SuppressWarnings({"rawtypes"})
-  public Map getMap() {
+  public Map<String,Object> getMap() {
     return this.fields;
   }
 
@@ -267,32 +256,33 @@ public class Tuple implements Cloneable, MapWriter {
     this.fieldNames = fieldNames;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public List<Map> getMaps(Object key) {
-    return (List<Map>) this.fields.get(key);
+  @SuppressWarnings({"unchecked"})
+  public List<Map<?,?>> getMaps(String key) {
+    return (List<Map<?,?>>) this.fields.get(key);
   }
 
-  public void setMaps(Object key, @SuppressWarnings({"rawtypes"})List<Map> maps) {
+  public void setMaps(String key, List<Map<?,?>> maps) {
     this.fields.put(key, maps);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map<String, Map> getMetrics() {
-    return (Map<String, Map>) this.fields.get(StreamParams.METRICS);
+  @SuppressWarnings({"unchecked"})
+  public Map<String, Map<?,?>> getMetrics() {
+    return (Map<String, Map<?,?>>) this.fields.get(StreamParams.METRICS);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public void setMetrics(Map<String, Map> metrics) {
+  public void setMetrics(Map<String, Map<?,?>> metrics) {
     this.fields.put(StreamParams.METRICS, metrics);
   }
 
   public Tuple clone() {
     Tuple clone = new Tuple();
     clone.fields.putAll(fields);
+    // TODO This doesn't copy EOF/Exception https://issues.apache.org/jira/browse/SOLR-15480
     return clone;
   }
   
   public void merge(Tuple other) {
+    // TODO This doesn't copy EOF/Exception https://issues.apache.org/jira/browse/SOLR-15480
     fields.putAll(other.getFields());
   }
 
@@ -301,7 +291,7 @@ public class Tuple implements Cloneable, MapWriter {
     if (fieldNames == null) {
       fields.forEach((k, v) -> {
         try {
-          ew.put((String) k, v);
+          ew.put(k, v);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

@@ -212,6 +212,17 @@ public final class CryptoKeys {
     }
   }
 
+  /**
+   * Given a file, will try to
+   * @param pemContents the raw string content of the PEM file
+   * @return the certificate content between BEGIN and END markers
+   */
+  public static String extractCertificateFromPem(String pemContents) {
+    int from = pemContents.indexOf("-----BEGIN CERTIFICATE-----");
+    int end = pemContents.lastIndexOf("-----END CERTIFICATE-----") + 25;
+    return pemContents.substring(from, end);
+  }
+
   public static class RSAKeyPair {
     private final String pubKeyStr;
     private final PublicKey publicKey;

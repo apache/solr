@@ -35,19 +35,17 @@ public class SuggesterResponse {
 
   private final Map<String, List<Suggestion>> suggestionsPerDictionary = new LinkedHashMap<>();
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public SuggesterResponse(NamedList<NamedList<Object>> suggestInfo) {
     for (int i = 0 ; i < suggestInfo.size(); i++) {
       final String outerName = suggestInfo.getName(i);
       final NamedList<Object> outerValue = suggestInfo.getVal(i);
 
-      SimpleOrderedMap suggestionsNode = (SimpleOrderedMap) outerValue.getVal(0);
-      List<SimpleOrderedMap> suggestionListToParse;
+      SimpleOrderedMap<?> suggestionsNode = (SimpleOrderedMap<?>) outerValue.getVal(0);
       List<Suggestion> suggestionList = new LinkedList<>();
       if (suggestionsNode != null) {
-
-        suggestionListToParse = (List<SimpleOrderedMap>) suggestionsNode.get(SUGGESTIONS_NODE_NAME);
-        for (SimpleOrderedMap suggestion : suggestionListToParse) {
+        @SuppressWarnings("unchecked")
+        List<SimpleOrderedMap<?>> suggestionListToParse = (List<SimpleOrderedMap<?>>) suggestionsNode.get(SUGGESTIONS_NODE_NAME);
+        for (SimpleOrderedMap<?> suggestion : suggestionListToParse) {
           String term = (String) suggestion.get(TERM_NODE_NAME);
           long weight = (long) suggestion.get(WEIGHT_NODE_NAME);
           String payload = (String) suggestion.get(PAYLOAD_NODE_NAME);

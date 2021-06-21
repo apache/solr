@@ -123,7 +123,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
+  public Cancellable asyncRequest(SolrRequest<?> request,
                                   String collection, AsyncListener<NamedList<Object>> asyncListener) {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;

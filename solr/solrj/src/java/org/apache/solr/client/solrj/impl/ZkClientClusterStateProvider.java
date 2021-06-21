@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@SuppressWarnings({"unchecked"})
 public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -104,6 +103,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
     return props.get(propertyName);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public <T> T getClusterProperty(String propertyName, T def) {
     Map<String, Object> props = getZkStateReader().getClusterProperties();

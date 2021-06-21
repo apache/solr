@@ -94,7 +94,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                            String traverseFrom,
                            String traverseTo,
                            String gather,
-                           @SuppressWarnings({"rawtypes"})Map queryParams,
+                           Map<String,String> queryParams,
                            List<Metric> metrics,
                            boolean trackTraversal,
                            Set<Traversal.Scatter> scatter,
@@ -291,14 +291,13 @@ public class GatherNodesStream extends TupleStream implements Expressible {
          intervalParam);
   }
 
-  @SuppressWarnings({"unchecked"})
   private void init(String zkHost,
                     String collection,
                     TupleStream tupleStream,
                     String traverseFrom,
                     String traverseTo,
                     String gather,
-                    @SuppressWarnings({"rawtypes"})Map queryParams,
+                    Map<String,String> queryParams,
                     List<Metric> metrics,
                     boolean trackTraversal,
                     Set<Traversal.Scatter> scatter,
@@ -353,7 +352,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     Set<Map.Entry<String,String>> entries =  queryParams.entrySet();
     // parameters
-    for(@SuppressWarnings({"rawtypes"})Map.Entry param : entries){
+    for(Map.Entry<String,String> param : entries){
+      assert param.getKey() instanceof String && param.getValue() instanceof String : "Bad types passed";
       String value = param.getValue().toString();
 
       // SOLR-8409: This is a special case where the params contain a " character
@@ -641,7 +641,6 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     tupleStream.close();
   }
 
-  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
 
     if (out == null) {
@@ -660,8 +659,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           if (tuple.EOF) {
             if (joinBatch.size() > 0) {
               JoinRunner joinRunner = new JoinRunner(joinBatch);
-              @SuppressWarnings({"rawtypes"})
-              Future future = threadPool.submit(joinRunner);
+              Future<List<Tuple>> future = threadPool.submit(joinRunner);
               futures.add(future);
             }
             break;
@@ -729,8 +727,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
           if (joinBatch.size() >= 400) {
             JoinRunner joinRunner = new JoinRunner(joinBatch);
-            @SuppressWarnings({"rawtypes"})
-            Future future = threadPool.submit(joinRunner);
+            Future<List<Tuple>> future = threadPool.submit(joinRunner);
             futures.add(future);
             joinBatch = new ArrayList<>();
           }
