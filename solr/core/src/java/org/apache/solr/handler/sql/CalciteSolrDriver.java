@@ -16,14 +16,14 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Properties;
-
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.solr.client.solrj.io.SolrClientCache;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
 
 /**
  * JDBC driver for Calcite Solr.
@@ -31,18 +31,19 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
  * <p>It accepts connect strings that start with "jdbc:calcitesolr:".</p>
  */
 public class CalciteSolrDriver extends Driver {
-  public static final String CONNECT_STRING_PREFIX = "jdbc:calcitesolr:";
+  public final static String CONNECT_STRING_PREFIX = "jdbc:calcitesolr:";
 
-  public static final CalciteSolrDriver INSTANCE = new CalciteSolrDriver();
-
-  static {
-    INSTANCE.register();
-  }
+  public static CalciteSolrDriver INSTANCE = new CalciteSolrDriver();
 
   private SolrClientCache solrClientCache;
 
+
   private CalciteSolrDriver() {
     super();
+  }
+
+  static {
+    INSTANCE.register();
   }
 
   @Override
@@ -52,7 +53,7 @@ public class CalciteSolrDriver extends Driver {
 
   @Override
   public Connection connect(String url, Properties info) throws SQLException {
-    if (!this.acceptsURL(url)) {
+    if(!this.acceptsURL(url)) {
       return null;
     }
 
@@ -61,7 +62,7 @@ public class CalciteSolrDriver extends Driver {
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
 
     String schemaName = info.getProperty("zk");
-    if (schemaName == null) {
+    if(schemaName == null) {
       throw new SQLException("zk must be set");
     }
     final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
