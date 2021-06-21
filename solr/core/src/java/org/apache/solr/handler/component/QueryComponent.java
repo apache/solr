@@ -117,6 +117,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
+import static org.apache.solr.handler.component.SortedHitQueueManager.newSortedHitQueueManager;
 
 
 /**
@@ -831,16 +832,6 @@ public class QueryComponent extends SearchComponent
     if (additionalAdded) fl.append(",");
     fl.append(field);
     return true;
-  }
-
-  private static SortedHitQueueManager newSortedHitQueueManager(SortField[] sortFields, SortSpec ss, ResponseBuilder rb) {
-    final RankQuery rankQuery = rb.getRankQuery();
-    if (rankQuery instanceof AbstractReRankQuery && DualSortedHitQueueManager.supports(sortFields)) {
-      return new DualSortedHitQueueManager(sortFields, ss.getCount(), ss.getOffset(), rb.req.getSearcher(),
-                 ((AbstractReRankQuery)rankQuery).getReRankDocs());
-    } else {
-      return new SingleSortedHitQueueManager(sortFields, ss.getCount(), ss.getOffset(), rb.req.getSearcher());
-    }
   }
 
   @SuppressWarnings({"unchecked"})

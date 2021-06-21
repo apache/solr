@@ -26,13 +26,13 @@ import org.apache.lucene.search.SortField;
  * The top reRankDocsSize documents are added to the reRankQueue, all other documents are
  * collected in the queue.
  */
-public class DualSortedHitQueueManager implements SortedHitQueueManager {
+public class ReRankSortedHitQueueManager extends SortedHitQueueManager {
 
   private final ShardFieldSortedHitQueue queue;
   private final ShardFieldSortedHitQueue reRankQueue;
   private final int reRankDocsSize;
 
-  public DualSortedHitQueueManager(SortField[] sortFields, int count, int offset, IndexSearcher searcher, int reRankDocsSize) {
+  public ReRankSortedHitQueueManager(SortField[] sortFields, int count, int offset, IndexSearcher searcher, int reRankDocsSize) {
       this.reRankDocsSize = reRankDocsSize;
       int absoluteReRankDocs = Math.min(reRankDocsSize, count);
       reRankQueue = new ShardFieldSortedHitQueue(new SortField[]{SortField.FIELD_SCORE},
@@ -42,8 +42,9 @@ public class DualSortedHitQueueManager implements SortedHitQueueManager {
   }
 
   /**
-   * TODO
-   * @deprecated TODO
+   * Check whether the sortFields contain score.
+   * If that's true, we do not support this query. (see comments below)
+   * @deprecated will be removed as soon as https://github.com/apache/solr/pull/171 is done
    */
   @Deprecated // will be removed when all sort fields become supported
   public static boolean supports(SortField[] sortFields) {

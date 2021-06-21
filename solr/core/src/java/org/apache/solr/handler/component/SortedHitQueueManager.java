@@ -16,12 +16,36 @@
  */
 package org.apache.solr.handler.component;
 
-public interface SortedHitQueueManager {
+import org.apache.lucene.search.SortField;
+import org.apache.solr.search.AbstractReRankQuery;
+import org.apache.solr.search.RankQuery;
+import org.apache.solr.search.SortSpec;
 
-  void addDocument(ShardDoc shardDoc);
+public abstract class SortedHitQueueManager {
 
-  ShardDoc popDocument();
+  abstract void addDocument(ShardDoc shardDoc);
 
-  int size();
+  abstract ShardDoc popDocument();
 
+  abstract int size();
+
+  /**
+   * Return the implementation of SortedHitQueueManager that should be used for the given sort and ranking.
+   * We use multiple queues if reRanking is enabled and we do not sort by score.
+   * In all other cases only one queue is used.
+   *
+   * @param sortFields the fields by which the results should be sorted
+   * @param ss SortSpec of the responseBuilder
+   * @param rb responseBuilder for a query
+   * @return either a SortedHitQueueManager that handles reRanking or the default implementation
+   */
+  public static SortedHitQueueManager newSortedHitQueueManager(SortField[] sortFields, SortSpec ss, ResponseBuilder rb) {
+    final RankQuery rankQuery = rb.getRankQuery();
+    if (rankQuery instanceof AbstractReRankQuery && ReRankSortedHitQueueManager.supports(sortFields)) {
+      return new ReRankSortedHitQueueManager(sortFields, ss.getCount(), ss.getOffset(), rb.req.getSearcher(),
+          ((AbstractReRankQuery)rankQuery).getReRankDocs());
+    } else {
+      return new DefaultSortedHitQueueManager(sortFields, ss.getCount(), ss.getOffset(), rb.req.getSearcher());
+    }
+  }
 }

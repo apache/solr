@@ -19,11 +19,17 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 
-public class SingleSortedHitQueueManager implements SortedHitQueueManager {
+/**
+ * This class is just a wrapper for the ShardFieldSortedHitQueue.
+ * Is is used when we do not use reRanking.
+ *
+ * All documents are added to the queue.
+ */
+public class DefaultSortedHitQueueManager extends SortedHitQueueManager {
 
   private final ShardFieldSortedHitQueue queue;
 
-  public SingleSortedHitQueueManager(SortField[] sortFields, int count, int offset, IndexSearcher searcher) {
+  public DefaultSortedHitQueueManager(SortField[] sortFields, int count, int offset, IndexSearcher searcher) {
     queue = new ShardFieldSortedHitQueue(sortFields, count + offset, searcher);
   }
 
