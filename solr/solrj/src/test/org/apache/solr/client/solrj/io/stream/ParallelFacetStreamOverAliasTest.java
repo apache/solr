@@ -275,7 +275,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
   private SortedMap<Object, Object> toComparableMap(Tuple t) {
     SortedMap<Object, Object> cmap = new TreeMap<>();
-    for (Map.Entry<Object, Object> e : t.getFields().entrySet()) {
+    for (Map.Entry<String, Object> e : t.getFields().entrySet()) {
       Object value = e.getValue();
       if (value instanceof Double) {
         cmap.put(e.getKey(), Precision.round((Double) value, 5));

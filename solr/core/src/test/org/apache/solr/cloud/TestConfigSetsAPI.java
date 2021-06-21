@@ -61,7 +61,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -268,8 +267,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     return create.process(solrClient);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private NamedList getConfigSetPropertiesFromZk(
+  private NamedList<Object> getConfigSetPropertiesFromZk(
       SolrZkClient zkClient, String path) throws Exception {
     byte [] oldPropsData = null;
     try {
@@ -291,8 +289,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private void verifyProperties(String configSetName, Map<String, String> oldProps,
        Map<String, String> newProps, SolrZkClient zkClient) throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    NamedList properties = getConfigSetPropertiesFromZk(zkClient,ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSetName + "/" + DEFAULT_FILENAME);
+    NamedList<?> properties = getConfigSetPropertiesFromZk(zkClient,ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSetName + "/" + DEFAULT_FILENAME);
     // let's check without merging the maps, since that's what the MessageHandler does
     // (since we'd probably repeat any bug in the MessageHandler here)
     if (oldProps == null && newProps == null) {
@@ -315,10 +312,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
 
     // check the value in properties are correct
-    @SuppressWarnings({"unchecked"})
-    Iterator<Map.Entry<String, Object>> it = properties.iterator();
+    Iterator<? extends Map.Entry<String, ?>> it = properties.iterator();
     while (it.hasNext()) {
-      Map.Entry<String, Object> entry = it.next();
+      Map.Entry<String, ?> entry = it.next();
       String newValue = newProps != null ? newProps.get(entry.getKey()) : null;
       String oldValue = oldProps != null ? oldProps.get(entry.getKey()) : null;
       if (newValue != null) {
@@ -1026,8 +1022,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     params.set("name", collectionName);
     params.set("numShards", numShards);
     params.set("replicationFactor", replicationFactor);
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
     CollectionAdminResponse res = new CollectionAdminResponse();
@@ -1129,7 +1124,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private void verifyException(SolrClient solrClient,
-                               @SuppressWarnings({"rawtypes"})ConfigSetAdminRequest request,
+                               ConfigSetAdminRequest<?, ?> request,
       String errorContains) throws Exception {
     ignoreException(errorContains);
     Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
@@ -1229,8 +1224,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   public static class CreateNoErrorChecking extends ConfigSetAdminRequest.Create {
-    @SuppressWarnings({"rawtypes"})
-    public ConfigSetAdminRequest setAction(ConfigSetAction action) {
+    public ConfigSetAdminRequest<Create, ConfigSetAdminResponse> setAction(ConfigSetAction action) {
        return super.setAction(action);
     }
 
@@ -1245,8 +1239,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   public static class DeleteNoErrorChecking extends ConfigSetAdminRequest.Delete {
-    @SuppressWarnings({"rawtypes"})
-    public ConfigSetAdminRequest setAction(ConfigSetAction action) {
+    public ConfigSetAdminRequest<Delete, ConfigSetAdminResponse> setAction(ConfigSetAction action) {
        return super.setAction(action);
     }
 

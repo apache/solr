@@ -63,8 +63,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
 
     OLSMultipleLinearRegression multipleLinearRegression = (OLSMultipleLinearRegression)regress(observationData, outcomeData);
 
-    @SuppressWarnings({"rawtypes"})
-    Map map = new HashMap();
+    Map<String, Object> map = new HashMap<>();
 
     map.put("regressandVariance", multipleLinearRegression.estimateRegressandVariance());
     map.put("regressionParameters", list(multipleLinearRegression.estimateRegressionParameters()));
@@ -82,10 +81,8 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
     return new MultipleRegressionTuple(multipleLinearRegression, map);
   }
 
-  @SuppressWarnings({"unchecked"})
   private List<Number> list(double[] values) {
-    @SuppressWarnings({"rawtypes"})
-    List list = new ArrayList();
+    List<Number> list = new ArrayList<>();
     for(double d : values) {
       list.add(d);
     }
@@ -103,7 +100,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
     private MultipleLinearRegression multipleLinearRegression;
 
 
-    public MultipleRegressionTuple(MultipleLinearRegression multipleLinearRegression, Map<?,?> map) {
+    public MultipleRegressionTuple(MultipleLinearRegression multipleLinearRegression, Map<String,Object> map) {
       super(map);
       this.multipleLinearRegression = multipleLinearRegression;
     }

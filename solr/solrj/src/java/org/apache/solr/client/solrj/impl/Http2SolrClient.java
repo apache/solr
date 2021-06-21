@@ -261,7 +261,7 @@ public class Http2SolrClient extends SolrClient {
     assert ObjectReleaseTracker.release(this);
   }
 
-  public boolean isV2ApiRequest(@SuppressWarnings({"rawtypes"})final SolrRequest request) {
+  public boolean isV2ApiRequest(final SolrRequest<?> request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
@@ -285,7 +285,7 @@ public class Http2SolrClient extends SolrClient {
       this.isXml = isXml;
     }
 
-    boolean belongToThisStream(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection) {
+    boolean belongToThisStream(SolrRequest<?> solrRequest, String collection) {
       ModifiableSolrParams solrParams = new ModifiableSolrParams(solrRequest.getParams());
       if (!origParams.toNamedList().equals(solrParams.toNamedList()) || !StringUtils.equals(origCollection, collection)) {
         return false;
@@ -353,7 +353,7 @@ public class Http2SolrClient extends SolrClient {
     return outStream;
   }
 
-  public void send(OutStream outStream, @SuppressWarnings({"rawtypes"})SolrRequest req, String collection) throws IOException {
+  public void send(OutStream outStream, SolrRequest<?> req, String collection) throws IOException {
     assert outStream.belongToThisStream(req, collection);
     this.requestWriter.write(req, outStream.outProvider.getOutputStream());
     if (outStream.isXml) {
@@ -381,7 +381,7 @@ public class Http2SolrClient extends SolrClient {
   private static final Exception CANCELLED_EXCEPTION = new Exception();
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
-  public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection, AsyncListener<NamedList<Object>> asyncListener) {
+  public Cancellable asyncRequest(SolrRequest<?> solrRequest, String collection, AsyncListener<NamedList<Object>> asyncListener) {
     Request req;
     try {
       req = makeRequest(solrRequest, collection);
@@ -426,7 +426,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection) throws SolrServerException, IOException {
+  public NamedList<Object> request(SolrRequest<?> solrRequest, String collection) throws SolrServerException, IOException {
     Request req = makeRequest(solrRequest, collection);
     final ResponseParser parser = solrRequest.getResponseParser() == null
         ? this.parser: solrRequest.getResponseParser();
@@ -460,7 +460,7 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  private NamedList<Object> processErrorsAndResponse(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest,
+  private NamedList<Object> processErrorsAndResponse(SolrRequest<?> solrRequest,
                                                      ResponseParser parser, Response response, InputStream is) throws SolrServerException {
     ContentType contentType = getContentType(response);
     String mimeType = null;
@@ -477,7 +477,7 @@ public class Http2SolrClient extends SolrClient {
     return StringUtils.isEmpty(contentType)? null : ContentType.parse(contentType);
   }
 
-  private void setBasicAuthHeader(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, Request req) {
+  private void setBasicAuthHeader(SolrRequest<?> solrRequest, Request req) {
     if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
       String encoded = basicAuthCredentialsToAuthorizationString(solrRequest.getBasicAuthUser(), solrRequest.getBasicAuthPassword());
       req.header("Authorization", encoded);
@@ -491,14 +491,14 @@ public class Http2SolrClient extends SolrClient {
     return "Basic " + Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
   }
 
-  private Request makeRequest(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection)
+  private Request makeRequest(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     Request req = createRequest(solrRequest, collection);
     decorateRequest(req, solrRequest);
     return req;
   }
 
-  private void decorateRequest(Request req, @SuppressWarnings({"rawtypes"})SolrRequest solrRequest) {
+  private void decorateRequest(Request req, SolrRequest<?> solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
     req.timeout(idleTimeout, TimeUnit.MILLISECONDS);
     if (solrRequest.getUserPrincipal() != null) {
@@ -513,7 +513,6 @@ public class Http2SolrClient extends SolrClient {
       req.onComplete(listener);
     }
 
-    @SuppressWarnings({"unchecked"})
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
       for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -528,8 +527,7 @@ public class Http2SolrClient extends SolrClient {
     return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
-  @SuppressWarnings({"unchecked"})
-  private Request createRequest(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
+  private Request createRequest(SolrRequest<?> solrRequest, String collection) throws IOException, SolrServerException {
     if (solrRequest.getBasePath() == null && serverBaseUrl == null)
       throw new IllegalArgumentException("Destination node is not provided!");
 

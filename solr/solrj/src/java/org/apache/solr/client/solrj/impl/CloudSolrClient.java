@@ -43,7 +43,6 @@ import org.apache.solr.common.util.NamedList;
  * 'id' - if this is not the case, you must set the right name
  * with {@link #setIdField(String)}.
  */
-@SuppressWarnings("serial")
 public class CloudSolrClient extends BaseCloudSolrClient {
 
   private final ClusterStateProvider stateProvider;
@@ -135,7 +134,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
    * @deprecated since Solr 8.0
    */
   @Deprecated
-  public RouteResponse condenseResponse(@SuppressWarnings({"rawtypes"})NamedList response, int timeMillis) {
+  public RouteResponse condenseResponse(NamedList<?> response, int timeMillis) {
     return condenseResponse(response, timeMillis, RouteResponse::new);
   }
 

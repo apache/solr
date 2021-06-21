@@ -294,17 +294,16 @@ public class UpdateStream extends TupleStream implements Expressible {
     }
   }
   
-  @SuppressWarnings({"unchecked"})
   private SolrInputDocument convertTupleToSolrDocument(Tuple tuple) {
     SolrInputDocument doc = new SolrInputDocument();
-    for (Object field : tuple.getFields().keySet()) {
+    for (String field : tuple.getFields().keySet()) {
 
       if (! (field.equals(CommonParams.VERSION_FIELD) && pruneVersionField)) {
         Object value = tuple.get(field);
         if (value instanceof List) {
-          addMultivaluedField(doc, (String)field, (List<Object>)value);
+          addMultivaluedField(doc, field, (List<?>)value);
         } else {
-          doc.addField((String)field, tuple.get(field));
+          doc.addField(field, value);
         }
       }
     }
@@ -313,7 +312,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     return doc;
   }
   
-  private void addMultivaluedField(SolrInputDocument doc, String fieldName, List<Object> values) {
+  private void addMultivaluedField(SolrInputDocument doc, String fieldName, List<?> values) {
     for (Object value : values) {
       doc.addField(fieldName, value);
     }

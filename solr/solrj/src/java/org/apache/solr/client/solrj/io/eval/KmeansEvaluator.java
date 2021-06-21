@@ -52,7 +52,6 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object value1, Object value2) throws IOException {
 
     Matrix matrix = null;
@@ -71,8 +70,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
     }
 
 
-    @SuppressWarnings({"rawtypes"})
-    KMeansPlusPlusClusterer<ClusterPoint> kmeans = new KMeansPlusPlusClusterer(k, maxIterations);
+    KMeansPlusPlusClusterer<ClusterPoint> kmeans = new KMeansPlusPlusClusterer<>(k, maxIterations);
     List<ClusterPoint> points = new ArrayList<>();
     double[][] data = matrix.getData();
 
@@ -87,8 +85,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
       }
     }
 
-    @SuppressWarnings({"rawtypes"})
-    Map fields = new HashMap();
+    Map<String, Object> fields = new HashMap<>();
 
     fields.put("k", k);
     fields.put("distance", "euclidean");
@@ -122,7 +119,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
     private List<CentroidCluster<ClusterPoint>> clusters;
     private Matrix membershipMatrix;
 
-    public ClusterTuple(@SuppressWarnings({"rawtypes"})Map fields,
+    public ClusterTuple(Map<String, ?> fields,
                         List<CentroidCluster<ClusterPoint>> clusters,
                         List<String> columnLabels) {
       super(fields);
@@ -130,7 +127,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
       this.columnLabels = columnLabels;
     }
 
-    public ClusterTuple(@SuppressWarnings({"rawtypes"})Map fields,
+    public ClusterTuple(Map<String, ?> fields,
                         List<CentroidCluster<ClusterPoint>> clusters,
                         List<String> columnLabels,
                         Matrix membershipMatrix) {

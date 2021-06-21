@@ -61,8 +61,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       QueryResponse response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
       NamedList<Object> namedList = response.getResponse();
       System.out.println(namedList);
-      @SuppressWarnings({"rawtypes"})
-      NamedList metrics = (NamedList) namedList.get("metrics");
+      NamedList<?> metrics = (NamedList<?>) namedList.get("metrics");
       assertEquals(1L, metrics.get(updateRequestCountKey));
 
       TestInjection.failUpdateRequests = "true:100";
@@ -78,7 +77,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
       namedList = response.getResponse();
       System.out.println(namedList);
-      metrics = (NamedList) namedList.get("metrics");
+      metrics = (NamedList<?>) namedList.get("metrics");
       assertEquals(2L, metrics.get(updateRequestCountKey));
     }
   }

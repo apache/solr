@@ -197,13 +197,10 @@ public class NamedListTest extends SolrTestCase {
 
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  @SuppressWarnings({"unchecked"})
   public void testShallowMap() {
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = new NamedList();
+    NamedList<String> nl = new NamedList<>();
     nl.add("key1", "Val1");
-    @SuppressWarnings({"rawtypes"})
-    Map m = nl.asShallowMap();
+    Map<String,String> m = nl.asShallowMap();
     m.put("key1", "Val1_");
     assertEquals("Val1_", nl.get("key1"));
     assertEquals("Val1_", m.get("key1"));

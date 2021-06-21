@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -1850,54 +1849,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("day_i") == 2);
     assert (tuple.getDouble("EXPR$3") == 1); // sum(item_i)
 
-  }
-
-  public boolean assertLong(Tuple tuple, String fieldName, long l) throws Exception {
-    long lv = (long) tuple.get(fieldName);
-    if (lv != l) {
-      throw new Exception("Longs not equal:" + l + " : " + lv);
-    }
-
-    return true;
-  }
-
-  public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
-    String actual = (String) tuple.get(fieldName);
-
-    if ((null == expected && null != actual) ||
-        (null != expected && null == actual) ||
-        (null != expected && !expected.equals(actual))) {
-      throw new Exception("Longs not equal:" + expected + " : " + actual);
-    }
-
-    return true;
-  }
-
-  public boolean assertDouble(Tuple tuple, String fieldName, double d) throws Exception {
-    double dv = tuple.getDouble(fieldName);
-    if (dv != d) {
-      throw new Exception("Doubles not equal:" + d + " : " + dv);
-    }
-
-    return true;
-  }
-
-  protected boolean assertMaps(@SuppressWarnings({"rawtypes"}) List<Map> maps, int... ids) throws Exception {
-    if (maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:" + ids.length + ":" + maps.size());
-    }
-
-    int i = 0;
-    for (int val : ids) {
-      @SuppressWarnings({"rawtypes"})
-      Map t = maps.get(i);
-      String tip = (String) t.get("id");
-      if (!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:" + tip + " expecting:" + val);
-      }
-      ++i;
-    }
-    return true;
   }
 
   protected List<Tuple> getTuples(final SolrParams params, String baseUrl) throws IOException {

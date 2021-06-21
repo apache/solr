@@ -54,7 +54,6 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException {
 
     if(values.length < 3) {
@@ -71,6 +70,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
       observations = (Matrix)values[0];
     } else if(values[0] instanceof List) {
       bivariate = true;
+      @SuppressWarnings({"unchecked"})
       List<Number> vec = (List<Number>)values[0];
       double[][] data = new double[vec.size()][1];
       for(int i=0; i<vec.size(); i++) {
@@ -82,7 +82,9 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     }
 
     if(values[1] instanceof List) {
-      outcomes = (List) values[1];
+      @SuppressWarnings("unchecked")
+      List<Number> temp = (List<Number>) values[1];
+      outcomes = temp;
     } else {
       throw new IOException("The second parameter for knnRegress should be outcome array. ");
     }
@@ -106,8 +108,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
       outcomeData[i] = outcomes.get(i).doubleValue();
     }
 
-    @SuppressWarnings({"rawtypes"})
-    Map map = new HashMap();
+    Map<String, Object> map = new HashMap<>();
     map.put("k", k);
     map.put("observations", observations.getRowCount());
     map.put("features", observations.getColumnCount());
@@ -134,7 +135,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
                               double[] outcomes,
                               int k,
                               DistanceMeasure distanceMeasure,
-                              Map<?,?> map,
+                              Map<String,Object> map,
                               boolean scale,
                               boolean robust,
                               boolean bivariate) {

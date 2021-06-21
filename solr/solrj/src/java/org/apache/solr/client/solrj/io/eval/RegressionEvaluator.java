@@ -82,7 +82,7 @@ public class RegressionEvaluator extends RecursiveNumericEvaluator implements Tw
   public static class RegressionTuple extends Tuple {
     private SimpleRegression simpleRegression;
 
-    public RegressionTuple(SimpleRegression simpleRegression, Map<?,?> map) {
+    public RegressionTuple(SimpleRegression simpleRegression, Map<String,Object> map) {
       super(map);
       this.simpleRegression = simpleRegression;
     }
