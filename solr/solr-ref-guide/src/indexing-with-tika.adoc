@@ -115,7 +115,7 @@ bin/post -c gettingstarted example/exampledocs/solr-word.pdf -params "literal.id
 
 Now you can execute a query and find that document with a request like `\http://localhost:8983/solr/gettingstarted/select?q=pdf`. The document will look something like this:
 
-image:images/solr-cell/sample-pdf-query.png[float="right",width=50%,pdfwidth=60%]
+image::images/indexing-with-tika/sample-pdf-query.png[float="right",width=50%,pdfwidth=60%]
 
 You may notice there are many metadata fields associated with this document.
 Solr's configuration is by default in "schemaless" (data driven) mode, and thus all metadata fields extracted get their own field.

@@ -69,7 +69,7 @@ Choose "SSH" as the type, and again "My IP" for the source and again enter your 
 You need SSH access on all instances to install and configure Solr.
 .. Review the details, your group configuration should look like this:
 +
-image::images/aws-solrcloud-tutorial/aws-security-create.png[image,width=600,height=400]
+image::images/tutorial-aws/aws-security-create.png[image,width=600,height=400]
 .. Click btn:[Create] when finished.
 .. We need to modify the rules so that instances that are part of the group can talk to all other instances that are part of the same group.
 We could not do this while creating the group, so we need to edit the group after creating it to add this.
@@ -80,7 +80,7 @@ Choose `All TCP` from the pulldown list for the type, and enter `0-65535` for th
 Specify the name of the current Security Group as the `solr-sample`.
 .. Review the details, your group configuration should now look like this:
 +
-image::images/aws-solrcloud-tutorial/aws-security-edit.png[image,width=600,height=400]
+image::images/tutorial-aws/aws-security-edit.png[image,width=600,height=400]
 .. Click btn:[Save] when finished.
 
 === Configure Instances and Launch
@@ -110,7 +110,7 @@ You do not have to add any tags for this quick start, but you can add them if yo
 . If everything looks correct, click btn:[Launch].
 . Select an existing “private key file” or create a new one and download to your local machine so you will be able to login into the instances via SSH.
 +
-image::images/aws-solrcloud-tutorial/aws-key.png[image,width=600,height=400]
+image::images/tutorial-aws/aws-key.png[image,width=600,height=400]
 . On the instances list, you can watch the states change. You cannot use the instances until they become *“running”*.
 
 

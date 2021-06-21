@@ -34,13 +34,13 @@ The http://zeppelin.apache.org/docs/latest/interpreter/jdbc.html[Zeppelin JDBC i
 == Create the Apache Solr JDBC Interpreter
 
 .Click "Interpreter" in the top navigation
-image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_1.png[image,height=400]
+image::images/jdbc-zeppelin/zeppelin_solrjdbc_1.png[image,height=400]
 
 .Click "Create"
-image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_2.png[image,height=400]
+image::images/jdbc-zeppelin/zeppelin_solrjdbc_2.png[image,height=400]
 
 .Enter information about your Solr installation
-image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_3.png[image,height=400]
+image::images/jdbc-zeppelin/zeppelin_solrjdbc_3.png[image,height=400]
 
 [NOTE]
 ====
@@ -51,10 +51,10 @@ The default driver can either be replaced by the Solr driver as outlined above o
 == Create a Notebook
 
 .Click Notebook -> Create new note
-image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_4.png[image,width=517,height=400]
+image::images/jdbc-zeppelin/zeppelin_solrjdbc_4.png[image,width=517,height=400]
 
 .Provide a name and click "Create Note"
-image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_5.png[image,width=839,height=400]
+image::images/jdbc-zeppelin/zeppelin_solrjdbc_5.png[image,width=839,height=400]
 
 == JDBC Interpreter Copy Sheet
 
@@ -79,7 +79,7 @@ Instructions on how to bind the JDBC interpreter to a notebook are available htt
 ====
 
 .Results of Solr query
-image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_6.png[image,width=481,height=400]
+image::images/jdbc-zeppelin/zeppelin_solrjdbc_6.png[image,width=481,height=400]
 
 The below code block assumes that the Apache Solr driver is setup as the default JDBC interpreter driver.
 If that is not the case, instructions for using a different prefix is available https://zeppelin.apache.org/docs/latest/interpreter/jdbc.html#how-to-use[here].
