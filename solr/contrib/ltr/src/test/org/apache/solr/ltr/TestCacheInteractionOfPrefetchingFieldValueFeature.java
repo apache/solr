@@ -300,15 +300,22 @@ public class TestCacheInteractionOfPrefetchingFieldValueFeature extends TestLTRO
       super(name, params);
     }
 
-    public void setPrefetchFields(SortedSet<String> fields) {
+    public void setPrefetchFields(SortedSet<String> fields, boolean keepFeaturesFinal) {
       if(breakPrefetching.get()) {
         // only prefetch own field (and id needed for map-building below)
-        super.setPrefetchFields(new TreeSet<>(Set.of(getField(), "id")));
+        super.setPrefetchFields(new TreeSet<>(Set.of(getField(), "id")), keepFeaturesFinal);
       } else {
         // also prefetch all fields that all other PrefetchingFieldValueFeatures need
         fields.add("id");
-        super.setPrefetchFields(fields);
+        super.setPrefetchFields(fields, keepFeaturesFinal);
       }
+    }
+
+    public ObservingPrefetchingFieldValueFeature clone() {
+      ObservingPrefetchingFieldValueFeature foo = new ObservingPrefetchingFieldValueFeature(this.name, this.paramsToMap());
+      foo.setField(this.getField());
+      foo.setIndex(this.getIndex());
+      return foo;
     }
 
     public static void setBreakPrefetching(boolean disable) {

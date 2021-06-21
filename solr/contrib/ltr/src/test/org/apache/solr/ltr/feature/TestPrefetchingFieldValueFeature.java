@@ -181,11 +181,11 @@ public class TestPrefetchingFieldValueFeature extends TestRerankBase {
       super(name, params);
     }
 
-    public void setPrefetchFields(SortedSet<String> fields) {
-      super.setPrefetchFields(fields);
+    public void setPrefetchFields(SortedSet<String> fields, boolean keepFeaturesFinal) {
+      super.setPrefetchFields(fields, keepFeaturesFinal);
       // needed because all feature instances are updated. We just want to track updates with different fields, not all
       // updates of the instances
-      if (fields != allPrefetchFields) {
+      if (allPrefetchFields == null || !CollectionUtils.isEqualCollection(fields, allPrefetchFields)) {
         updateCount++;
       }
       allPrefetchFields = getPrefetchFields();

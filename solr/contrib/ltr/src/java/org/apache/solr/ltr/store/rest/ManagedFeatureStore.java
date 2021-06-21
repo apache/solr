@@ -176,7 +176,8 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
       // sort here because unsorted adding is faster but we do not want to sort in each iteration of the for loop
       final SortedSet<String> sortedPrefetchFields = new TreeSet<>(prefetchFields);
       for (PrefetchingFieldValueFeature feature : prefetchingFieldValueFeatures) {
-        feature.setPrefetchFields(sortedPrefetchFields);
+        // set keepFinal to false because features that are not connected to a model (only in store) may be updated
+        feature.setPrefetchFields(sortedPrefetchFields, false);
       }
     }
   }

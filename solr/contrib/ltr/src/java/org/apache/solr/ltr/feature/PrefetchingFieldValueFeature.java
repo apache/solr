@@ -42,7 +42,13 @@ import java.util.TreeSet;
  * The field must have stored="true" or docValues="true" properties, otherwise this feature returns a default value.
  * <p>
  * This feature will not only fetch the field that itself uses, but also all fields that are used by the other
- * PrefetchingFieldValueFeatures in the feature-store.
+ * PrefetchingFieldValueFeatures in the feature-store if used in context of fl=[features].
+ * </p>
+ * <p>
+ * If the feature is only used by a model (not with [features]) it will only fetch the fields of other
+ * PrefetchingFieldValueFeatures that are also used by that model.
+ * </p>
+ * <p>
  * This results in a performance benefit compared to the {@link FieldValueFeature} for stored fields that
  * do not have docValues.
  * </p>
@@ -61,19 +67,36 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // used to store all fields from all PrefetchingFieldValueFeatures
   private SortedSet<String> prefetchFields;
+  // if keepFeaturesFinalAfterModelCreation is true then prefetchFields may not be changed
+  // this ensures, that all PFVF of a model have a consistent state of prefetchFields and only fetch the fields needed for the model
+  private boolean keepFeaturesFinalAfterModelCreation;
 
-  public void setPrefetchFields(SortedSet<String> fields) {
-    prefetchFields = fields;
+  public void setPrefetchFields(SortedSet<String> fields, boolean keepFeaturesFinal) {
+    if (keepFeaturesFinalAfterModelCreation) {
+      throw new UnsupportedOperationException("Feature " + name + " is in use by a model. Its prefetchingFields may not be changed!");
+    }
+    prefetchFields = new TreeSet<>(fields);
+    keepFeaturesFinalAfterModelCreation = keepFeaturesFinal;
   }
 
   // needed for loading from storage
   public void setPrefetchFields(Collection<String> fields) {
+    if (keepFeaturesFinalAfterModelCreation) {
+      throw new UnsupportedOperationException("Feature " + name + " is in use by a model. Its prefetchingFields may not be changed!");
+    }
     prefetchFields = new TreeSet<>(fields);
   }
 
   @VisibleForTesting
   public SortedSet<String> getPrefetchFields(){
     return prefetchFields;
+  }
+
+  public PrefetchingFieldValueFeature clone() {
+    final PrefetchingFieldValueFeature f = new PrefetchingFieldValueFeature(this.name, this.paramsToMap());
+    f.setField(this.getField());
+    f.setIndex(this.getIndex());
+    return f;
   }
 
   @Override
