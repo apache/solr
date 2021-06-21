@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ import org.apache.calcite.util.Pair;
  */
 class SolrFilter extends Filter implements SolrRel {
 
-  private static final Pattern CALCITE_TIMESTAMP_REGEX = Pattern.compile("^'\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}'$");
+  private static final Pattern CALCITE_TIMESTAMP_REGEX = Pattern.compile("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$");
 
   SolrFilter(
       RelOptCluster cluster,
@@ -127,6 +128,7 @@ class SolrFilter extends Filter implements SolrRel {
         query = fieldName + ":[" + toSolrLiteral(gte.getValue()) + " TO " + toSolrLiteral(lte.getValue()) + "]";
         this.negativeQuery = false; // so we don't get *:* AND range
       }
+
       return query;
     }
 
@@ -217,8 +219,9 @@ class SolrFilter extends Filter implements SolrRel {
       RexLiteral value = binaryTranslated.getValue();
       switch (kind) {
         case EQUALS:
-          String terms = toSolrLiteral(value).trim();
-          terms = terms.replace("'", "");
+          SqlTypeName fieldTypeName = ((RexCall) node).getOperands().get(0).getType().getSqlTypeName();
+          String terms = toSolrLiteralForEquals(value, fieldTypeName).trim();
+
           boolean wrappedQuotes = false;
           if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
             terms = "\"" + terms + "\"";
@@ -255,15 +258,37 @@ class SolrFilter extends Filter implements SolrRel {
       }
     }
 
+    // translate to a literal string value for Solr queries, such as translating a
+    // Calcite timestamp value into an ISO-8601 formatted timestamp that Solr likes
     private String toSolrLiteral(RexLiteral literal) {
-      String value = literal.toString();
-      if (literal.getTypeName() == SqlTypeName.TIMESTAMP || CALCITE_TIMESTAMP_REGEX.matcher(value).matches()) {
-        value = value.replace(' ', 'T').replace("'", "");
-        if (Character.isDigit(value.charAt(value.length() - 1))) {
-          value += "Z";
-        }
+      Object value2 = literal.getValue2();
+      SqlTypeName typeName = literal.getTypeName();
+      final String solrLiteral;
+      if (value2 instanceof Long && (typeName == SqlTypeName.TIMESTAMP || typeName == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)) {
+        // return as an ISO-8601 timestamp
+        solrLiteral = Instant.ofEpochMilli((Long) value2).toString();
+      } else {
+        solrLiteral = value2.toString();
       }
-      return value;
+      return solrLiteral;
+    }
+
+    // special case handling for expressions like: WHERE timestamp = '2021-06-04 04:00:00'
+    // Calcite passes the right hand side as a string instead of as a Long
+    private String toSolrLiteralForEquals(RexLiteral literal, SqlTypeName fieldTypeName) {
+      Object value2 = literal.getValue2();
+      final String solrLiteral;
+      // oddly, for = criteria with a timestamp field, Calcite passes us a String instead of a Long as it does with other operators like >
+      if (value2 instanceof String && fieldTypeName == SqlTypeName.TIMESTAMP && CALCITE_TIMESTAMP_REGEX.matcher((String) value2).matches()) {
+        String timestamp = ((String) value2).replace(' ', 'T').replace("'", "");
+        if (Character.isDigit(timestamp.charAt(timestamp.length() - 1))) {
+          timestamp += "Z";
+        }
+        solrLiteral = timestamp;
+      } else {
+        solrLiteral = toSolrLiteral(literal);
+      }
+      return solrLiteral;
     }
 
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {

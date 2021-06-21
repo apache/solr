@@ -19,15 +19,11 @@ package org.apache.solr.handler.sql;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.response.LukeResponse;
 
 /**
  * JDBC driver for Calcite Solr.
@@ -36,19 +32,12 @@ import org.apache.solr.client.solrj.response.LukeResponse;
  */
 public class CalciteSolrDriver extends Driver {
   public static final String CONNECT_STRING_PREFIX = "jdbc:calcitesolr:";
-  public static final String SCHEMA_CACHE_TTL_SECS = "solr.sql.schemaCacheTTLSecs";
 
   public static final CalciteSolrDriver INSTANCE = new CalciteSolrDriver();
 
   static {
     INSTANCE.register();
   }
-
-  // cache schema info for a collection for a brief amount of time to avoid going to
-  // luke for queries to the same table that occur near each other
-  private final Cache<String, LukeResponse> schemaInfoCache =
-      CacheBuilder.newBuilder().maximumSize(30)
-          .expireAfterWrite(Integer.parseInt(System.getProperty(SCHEMA_CACHE_TTL_SECS, "10")), TimeUnit.SECONDS).build();
 
   private SolrClientCache solrClientCache;
 
@@ -75,7 +64,7 @@ public class CalciteSolrDriver extends Driver {
     if (schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache, schemaInfoCache);
+    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
     rootSchema.add(schemaName, solrSchema);
 
     // Set the default schema
@@ -85,9 +74,5 @@ public class CalciteSolrDriver extends Driver {
 
   public void setSolrClientCache(SolrClientCache solrClientCache) {
     this.solrClientCache = solrClientCache;
-  }
-
-  public void clearSchemaCache() {
-    schemaInfoCache.invalidateAll();
   }
 }

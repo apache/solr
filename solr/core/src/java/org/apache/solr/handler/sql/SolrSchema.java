@@ -23,9 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
-import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -53,14 +51,12 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
   final SolrClientCache solrClientCache;
-  final Cache<String, LukeResponse> schemaInfoCache;
   private volatile boolean isClosed = false;
 
-  SolrSchema(Properties properties, SolrClientCache solrClientCache, Cache<String, LukeResponse> schemaInfoCache) {
+  SolrSchema(Properties properties, SolrClientCache solrClientCache) {
     super();
     this.properties = properties;
     this.solrClientCache = solrClientCache;
-    this.schemaInfoCache = schemaInfoCache;
   }
 
   public SolrClientCache getSolrClientCache() {
@@ -101,39 +97,33 @@ class SolrSchema extends AbstractSchema implements Closeable {
     return builder.build();
   }
 
-  private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) throws ExecutionException {
+  private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {
     final String zk = this.properties.getProperty("zk");
-    final String cacheKey = zk + ":" + collection + ":fields";
-    return schemaInfoCache.get(cacheKey, () -> {
-      PKIAuthenticationPlugin.withServerIdentity(true);
-      try {
-        LukeRequest lukeRequest = new LukeRequest();
-        lukeRequest.setNumTerms(0);
-        return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection);
-      } catch (SolrServerException | IOException e) {
-        throw new RuntimeException(e);
-      } finally {
-        PKIAuthenticationPlugin.withServerIdentity(false);
-      }
-    }).getFieldInfo();
+    PKIAuthenticationPlugin.withServerIdentity(true);
+    try {
+      LukeRequest lukeRequest = new LukeRequest();
+      lukeRequest.setNumTerms(0);
+      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldInfo();
+    } catch (SolrServerException | IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+      PKIAuthenticationPlugin.withServerIdentity(false);
+    }
   }
 
-  private Map<String, LukeResponse.FieldTypeInfo> getFieldTypeInfo(final String collection) throws ExecutionException {
+  private Map<String, LukeResponse.FieldTypeInfo> getFieldTypeInfo(final String collection) {
     final String zk = this.properties.getProperty("zk");
-    final String cacheKey = zk + ":" + collection + ":types";
-    return schemaInfoCache.get(cacheKey, () -> {
-      PKIAuthenticationPlugin.withServerIdentity(true);
-      try {
-        LukeRequest lukeRequest = new LukeRequest();
-        lukeRequest.setShowSchema(true); // for custom type info ...
-        lukeRequest.setNumTerms(0);
-        return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection);
-      } catch (SolrServerException | IOException e) {
-        throw new RuntimeException(e);
-      } finally {
-        PKIAuthenticationPlugin.withServerIdentity(false);
-      }
-    }).getFieldTypeInfo();
+    PKIAuthenticationPlugin.withServerIdentity(true);
+    try {
+      LukeRequest lukeRequest = new LukeRequest();
+      lukeRequest.setShowSchema(true); // for custom type info ...
+      lukeRequest.setNumTerms(0);
+      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldTypeInfo();
+    } catch (SolrServerException | IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+      PKIAuthenticationPlugin.withServerIdentity(false);
+    }
   }
 
   RelProtoDataType getRelDataType(String collection) {
@@ -142,12 +132,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
     // proto-type will be copied into a real type factory.
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-    Map<String, LukeResponse.FieldInfo> luceneFieldInfoMap;
-    try {
-      luceneFieldInfoMap = getFieldInfo(collection);
-    } catch (ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+    Map<String, LukeResponse.FieldInfo> luceneFieldInfoMap = getFieldInfo(collection);
 
     Map<String, LukeResponse.FieldTypeInfo> fieldTypeInfoMap = null; // loaded lazily if needed
     Map<String, Class<?>> javaClassForTypeMap = new HashMap<>(); // local cache for custom field types we've already resolved
@@ -190,11 +175,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
           if (javaClass == null) {
             if (fieldTypeInfoMap == null) {
               // lazily go to luke for the field type info ...
-              try {
-                fieldTypeInfoMap = getFieldTypeInfo(collection);
-              } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-              }
+              fieldTypeInfoMap = getFieldTypeInfo(collection);
             }
             javaClass = guessJavaClassForFieldType(fieldTypeInfoMap.get(luceneFieldType));
             javaClassForTypeMap.put(luceneFieldType, javaClass);
