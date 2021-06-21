@@ -619,7 +619,8 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /** Appends the elements of the given NamedList to this one. */
-  public boolean addAll(NamedList<T> nl) {
+  // TODO this seems scary because it does not type checking
+  public boolean addAll(NamedList<? extends T> nl) {
     nvPairs.addAll(nl.nvPairs);
     return nl.size()>0;
   }

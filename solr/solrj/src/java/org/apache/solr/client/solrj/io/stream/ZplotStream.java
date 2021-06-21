@@ -54,18 +54,17 @@ public class ZplotStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
   private StreamContext streamContext;
   @SuppressWarnings({"rawtypes"})
-  private Map letParams = new LinkedHashMap();
+  private Map<String, Object> letParams = new LinkedHashMap<>();
   private Iterator<Tuple> out;
 
-  @SuppressWarnings({"unchecked"})
   public ZplotStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     //Get all the named params
 
-    for(StreamExpressionParameter np : namedParams) {
-      String name = ((StreamExpressionNamedParameter)np).getName();
-      StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
+    for(StreamExpressionNamedParameter np : namedParams) {
+      String name = np.getName();
+      StreamExpressionParameter param = np.getParameter();
       if(param instanceof StreamExpressionValue) {
         String paramValue = ((StreamExpressionValue) param).getValue();
         letParams.put(name, factory.constructPrimitiveObject(paramValue));
@@ -120,7 +119,6 @@ public class ZplotStream extends TupleStream implements Expressible {
   public void close() throws IOException {
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void open() throws IOException {
     Map<String, Object> lets = streamContext.getLets();
     Set<Map.Entry<String, Object>> entries = letParams.entrySet();
@@ -155,7 +153,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         evaluator.setStreamContext(streamContext);
         Object eo = evaluator.evaluate(eTuple);
         if(eo instanceof List) {
-          List l = (List)eo;
+          List<?> l = (List<?>)eo;
           if(numTuples == -1) {
             numTuples = l.size();
           } else {
@@ -172,7 +170,7 @@ public class ZplotStream extends TupleStream implements Expressible {
       } else {
         Object eval = lets.get(o);
         if(eval instanceof List) {
-          List l = (List)eval;
+          List<?> l = (List<?>)eval;
           if(numTuples == -1) {
             numTuples = l.size();
           } else {
@@ -200,7 +198,7 @@ public class ZplotStream extends TupleStream implements Expressible {
       for (int i = 0; i < numTuples; i++) {
         Tuple tuple = new Tuple();
         for (Map.Entry<String, Object> entry : evaluated.entrySet()) {
-          List l = (List) entry.getValue();
+          List<?> l = (List<?>) entry.getValue();
           tuple.put(entry.getKey(), l.get(i));
         }
 
@@ -289,7 +287,7 @@ public class ZplotStream extends TupleStream implements Expressible {
           frequency.addValue(i);
         }
 
-        Iterator it = frequency.valuesIterator();
+        Iterator<?> it = frequency.valuesIterator();
         List<Long> values = new ArrayList<>();
         while(it.hasNext()) {
           values.add((Long)it.next());
@@ -308,8 +306,9 @@ public class ZplotStream extends TupleStream implements Expressible {
           outTuples.add(tuple);
         }
       } else if(o instanceof List) {
-        List list = (List)o;
+        List<?> list = (List<?>)o;
         if(list.get(0) instanceof Tuple) {
+          @SuppressWarnings({"unchecked"})
           List<Tuple> tlist = (List<Tuple>)o;
           Tuple tuple = tlist.get(0);
           if(tuple.getFields().containsKey("N")) {

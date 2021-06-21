@@ -267,7 +267,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertTrue("echoed params are not a NamedList: " +
                response.getResponseHeader().get("params").getClass(),
                response.getResponseHeader().get("params") instanceof NamedList);
-    NamedList echo = (NamedList) response.getResponseHeader().get("params");
+    NamedList<?> echo = (NamedList<?>) response.getResponseHeader().get("params");
     List values = null;
     assertEquals("foo", echo.get("q"));
     assertTrue("echoed fq is not a List: " + echo.get("fq").getClass(),
@@ -603,8 +603,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertTrue( "should be bigger ["+id1+","+id2+"]", id2 > id1 );
     
     // The score from explain should be the same as the score
-    @SuppressWarnings({"rawtypes"})
-    NamedList explain = (NamedList)out1.getFieldValue( "[explain]" );
+    NamedList<?> explain = (NamedList<?>)out1.getFieldValue( "[explain]" );
     assertEquals( out1.get( "score"), explain.get( "value" ) );
     
     // Augmented _value_ with alias
@@ -789,7 +788,6 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testMultiContentWriterRequest() throws Exception {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");// delete everything!
@@ -797,13 +795,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
-    List<Pair<NamedList, Object>> docs = new ArrayList<>();
-    NamedList params = new NamedList();
-    docs.add(new Pair(params, getFileContent(params, "solrj/docs1.xml")));
+    List<Pair<NamedList<String>, Object>> docs = new ArrayList<>();
+    NamedList<String> params = new NamedList<>();
+    docs.add(new Pair<>(params, getFileContent(params, "solrj/docs1.xml")));
 
-    params = new NamedList();
+    params = new NamedList<>();
     params.add(ASSUME_CONTENT_TYPE, "application/csv");
-    docs.add(new Pair(params, getFileContent(params, "solrj/books.csv")));
+    docs.add(new Pair<>(params, getFileContent(params, "solrj/books.csv")));
 
     MultiContentWriterRequest up = new MultiContentWriterRequest(SolrRequest.METHOD.POST, "/update", docs.iterator());
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -814,7 +812,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   }
 
-  private ByteBuffer getFileContent(@SuppressWarnings({"rawtypes"})NamedList nl, String name) throws IOException {
+  private ByteBuffer getFileContent(NamedList<?> nl, String name) throws IOException {
     try (InputStream is = new FileInputStream(getFile(name))) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }

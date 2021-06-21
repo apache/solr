@@ -45,8 +45,7 @@ public class EnclosingDiskEvaluator extends RecursiveObjectEvaluator implements 
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static EnclosingBall getEnclosingDisk(Matrix matrix) throws IOException {
+  public static EnclosingBall<Euclidean2D, Vector2D> getEnclosingDisk(Matrix matrix) throws IOException {
     double[][] data = matrix.getData();
     List<Vector2D> points = new ArrayList<>(data.length);
     if(data[0].length == 2) {
@@ -54,10 +53,8 @@ public class EnclosingDiskEvaluator extends RecursiveObjectEvaluator implements 
         points.add(new Vector2D(row[0], row[1]));
       }
 
-
-      @SuppressWarnings({"unchecked"})
-      WelzlEncloser<Euclidean2D, Vector2D> welzlEncloser = new WelzlEncloser(.001, new DiskGenerator());
-      EnclosingBall enclosingBall = welzlEncloser.enclose(points);
+      WelzlEncloser<Euclidean2D, Vector2D> welzlEncloser = new WelzlEncloser<>(.001, new DiskGenerator());
+      EnclosingBall<Euclidean2D, Vector2D> enclosingBall = welzlEncloser.enclose(points);
       return enclosingBall;
     } else {
       throw new IOException("The enclosingDisk function operates on a matrix of 2D vectors");

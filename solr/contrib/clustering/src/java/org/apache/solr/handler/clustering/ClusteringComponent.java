@@ -442,7 +442,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
             1.0f,
             TotalHits.Relation.EQUAL_TO);
 
-        NamedList<Object> highlights = highlighter.doHighlighting(docAsList, query, req, fieldsToCluster);
+        NamedList<?> highlights = highlighter.doHighlighting(docAsList, query, req, fieldsToCluster);
         if (highlights != null && highlights.size() == 1) {
           @SuppressWarnings("unchecked")
           NamedList<String[]> tmp = (NamedList<String[]>) highlights.getVal(0);
