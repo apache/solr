@@ -83,6 +83,8 @@ public class PrefetchingFieldValueFeature extends FieldValueFeature {
   // needed for loading from storage
   public void setPrefetchFields(Collection<String> fields) {
     prefetchFields.clear();
+    // throws UnsupportedOperationException if prefetchFields were set to UnmodifiableSortedSet,
+    // but an update may never occur if that is the case
     prefetchFields.addAll(fields);
   }
 
