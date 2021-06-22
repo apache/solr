@@ -35,9 +35,9 @@ import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Hash;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -119,9 +119,9 @@ public class HashQParserPlugin extends QParserPlugin {
               return atDoc ? hashCode(values.lookupOrd(values.ordValue())) : 0;
             }
 
-            private long hashCode(BytesRef bytesRef) {
-              // Use deterministic hashCode (seed is a constant).  BytesRef.hashCode() varies!
-              return StringHelper.murmurhash3_x86_32(bytesRef, 0);
+            private int hashCode(BytesRef bytesRef) {
+              // Use deterministic hashCode.  BytesRef.hashCode() varies!
+              return Hash.murmurhash3_x86_32(bytesRef.bytes, bytesRef.offset, bytesRef.length, 0);
             }
           };
           continue;
