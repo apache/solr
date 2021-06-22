@@ -4,11 +4,6 @@
 
 $( document ).ready(function() {
 
-  /**
-   * AnchorJS
-   */
-  anchors.add('h2,h3,h4,h5');
-
   // "Bootstrap Bootstrap"
   // NOTE: by default, we use "dynamic-tabs" in our wrapper instead of "tab-content"
   // so that if javascript is disabled, bootstrap's CSS doesn't hide all non-active "tab-pane" divs

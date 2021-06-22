@@ -250,15 +250,39 @@ hr {
 }
 /** === END HORIZONTAL RULES === **/
 
-/** === ANCHORJS === **/
-/* This is the permalink icon after section headings */
+/** === SECTION ANCHOR LINKS === **/
 
-.anchorjs-link:hover {
-    color: #216f9b;
+h1 .anchor::before,
+h2 .anchor::before,
+h3 .anchor::before,
+h4 .anchor::before,
+h5 .anchor::before,
+h6 .anchor::before {
+  content: "\00a7";
 }
 
-*:hover > .anchorjs-link {
-    transition: color .25s linear;
-    text-decoration: none;
+h1 .anchor,
+h2 .anchor,
+h3 .anchor,
+h4 .anchor,
+h5 .anchor,
+h6 .anchor {
+  position: absolute;
+  text-decoration: none;
+  width: 1.75ex;
+  margin-left: -1ex;
+  visibility: hidden;
+  font-size: .8em;
+  font-weight: 400;
+  padding-top: .15em;
 }
-/** === END ANCHORJS === **/
+
+h1:hover .anchor,
+h2:hover .anchor,
+h3:hover .anchor,
+h4:hover .anchor,
+h5:hover .anchor,
+h6:hover .anchor {
+  visibility: visible;
+}
+/** === SECTION ANCHOR LINKS === **/

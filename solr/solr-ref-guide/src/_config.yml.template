@@ -95,3 +95,4 @@ asciidoctor:
     source-highlighter: "rouge"
     rouge-theme: "thankful-eyes"
     stem:
+    sectanchors: "true"
