@@ -232,7 +232,8 @@ Indexing nested documents _requires_ an indexed field named `\_root_`:
 <field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
 ----
 
-*If you add this field to to an index that already has data, you will corrupt Solr!*
+*Do not add this field to an index that already has data!
+<<reindexing.adoc#changes-that-require-reindex,You must reindex.>>*
 
 * Solr automatically populates this field in _all_ documents with the `id` value of it's root document
 -- it's highest ancestor, possibly itself.
