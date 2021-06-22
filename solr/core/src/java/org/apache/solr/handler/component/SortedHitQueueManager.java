@@ -35,17 +35,17 @@ public abstract class SortedHitQueueManager {
    * In all other cases only one queue is used.
    *
    * @param sortFields the fields by which the results should be sorted
-   * @param ss SortSpec of the responseBuilder
    * @param rb responseBuilder for a query
    * @return either a SortedHitQueueManager that handles reRanking or the default implementation
    */
-  public static SortedHitQueueManager newSortedHitQueueManager(SortField[] sortFields, SortSpec ss, ResponseBuilder rb) {
+  public static SortedHitQueueManager newSortedHitQueueManager(SortField[] sortFields, ResponseBuilder rb) {
     final RankQuery rankQuery = rb.getRankQuery();
+    final SortSpec sortSpec = rb.getSortSpec();
     if (rankQuery instanceof AbstractReRankQuery && ReRankSortedHitQueueManager.supports(sortFields)) {
-      return new ReRankSortedHitQueueManager(sortFields, ss.getCount(), ss.getOffset(), rb.req.getSearcher(),
+      return new ReRankSortedHitQueueManager(sortFields, sortSpec.getCount(), sortSpec.getOffset(), rb.req.getSearcher(),
           ((AbstractReRankQuery)rankQuery).getReRankDocs());
     } else {
-      return new DefaultSortedHitQueueManager(sortFields, ss.getCount(), ss.getOffset(), rb.req.getSearcher());
+      return new DefaultSortedHitQueueManager(sortFields, sortSpec.getCount(), sortSpec.getOffset(), rb.req.getSearcher());
     }
   }
 }

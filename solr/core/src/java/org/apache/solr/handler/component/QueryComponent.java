@@ -219,14 +219,13 @@ public class QueryComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
-    // set field flags
-    {
-      int flags = 0;
-      if (returnFields.wantsScore() || (rb.getRankQuery() instanceof AbstractReRankQuery)) {
-        flags |= SolrIndexSearcher.GET_SCORES;
-      }
-      rb.setFieldFlags( flags );
+    // Set field flags. We presume to be first to set this flag.
+    // For this reason, we override any flags other components' prepare methods may have already set.
+    int flags = 0;
+    if (returnFields.wantsScore() || (rb.getRankQuery() instanceof AbstractReRankQuery)) {
+      flags |= SolrIndexSearcher.GET_SCORES;
     }
+    rb.setFieldFlags( flags );
 
     if (params.getBool(GroupParams.GROUP, false)) {
       prepareGrouping(rb);
@@ -870,7 +869,7 @@ public class QueryComponent extends SearchComponent
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
-      final SortedHitQueueManager queueManager = newSortedHitQueueManager(sortFields, ss, rb);
+      final SortedHitQueueManager queueManager = newSortedHitQueueManager(sortFields, rb);
 
       NamedList<Object> shardInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {

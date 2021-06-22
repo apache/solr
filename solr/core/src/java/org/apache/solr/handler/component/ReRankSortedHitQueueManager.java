@@ -20,7 +20,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 
 /**
- * This class is used to manage the multiple SortedHitQueues that we need during mergeIds( ).
+ * This class is used to manage the multiple SortedHitQueues that we need during {@link QueryComponent#mergeIds(ResponseBuilder, ShardRequest)}.
  * Multiple queues are needed when reRanking is used.
  *
  * The top reRankDocsSize documents are added to the reRankQueue, all other documents are
@@ -53,7 +53,8 @@ public class ReRankSortedHitQueueManager extends SortedHitQueueManager {
       if (sortField.getType().equals(SortField.Type.SCORE) && sortField.getField() == null) {
         // using two queues makes reRanking on Solr Cloud possible (@see https://github.com/apache/solr/pull/151 )
         // however, the fix does not work if the non-reRanked docs should be sorted by score ( @see https://github.com/apache/solr/pull/151#discussion_r640664451 )
-        // to maintain the existing behavior for these cases, we disable the broken use of two queues and use the (also broken) status quo instead
+        // to maintain the existing behavior for these cases, we do not support the broken use of two queues and
+        // continue to use the (also broken) status quo instead
         return false;
       }
     }
@@ -64,7 +65,7 @@ public class ReRankSortedHitQueueManager extends SortedHitQueueManager {
     if(shardDoc.orderInShard < reRankDocsSize) {
       ShardDoc droppedShardDoc = reRankQueue.insertWithOverflow(shardDoc);
       // Only works if the original request does not sort by score
-      // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15437")
+      // see https://issues.apache.org/jira/browse/SOLR-15437
       if(droppedShardDoc != null) {
         queue.insertWithOverflow(droppedShardDoc);
       }
