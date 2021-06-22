@@ -66,30 +66,29 @@ import java.util.TreeSet;
 public class PrefetchingFieldValueFeature extends FieldValueFeature {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // used to store all fields from all PrefetchingFieldValueFeatures
-  private SortedSet<String> prefetchFields;
-  // if keepFeaturesFinalAfterModelCreation is true then prefetchFields may not be changed
-  // this ensures, that all PFVF of a model have a consistent state of prefetchFields and only fetch the fields needed for the model
-  private boolean keepFeaturesFinalAfterModelCreation;
+  private SortedSet<String> prefetchFields = new TreeSet<>();
 
+  /**
+   * If keepFeaturesFinal is true then the prefetchFields may not be changed again after this method call.
+   * This ensures, that all PrefetchingFieldValueFeature of a model have a consistent state of prefetchFields
+   * and only fetch the fields needed for the model.
+   */
   public void setPrefetchFields(SortedSet<String> fields, boolean keepFeaturesFinal) {
-    if (keepFeaturesFinalAfterModelCreation) {
-      throw new UnsupportedOperationException("Feature " + name + " is in use by a model. Its prefetchingFields may not be changed!");
+    setPrefetchFields(fields);
+    if (keepFeaturesFinal) {
+      prefetchFields = Collections.unmodifiableSortedSet(prefetchFields);
     }
-    prefetchFields = new TreeSet<>(fields);
-    keepFeaturesFinalAfterModelCreation = keepFeaturesFinal;
   }
 
   // needed for loading from storage
   public void setPrefetchFields(Collection<String> fields) {
-    if (keepFeaturesFinalAfterModelCreation) {
-      throw new UnsupportedOperationException("Feature " + name + " is in use by a model. Its prefetchingFields may not be changed!");
-    }
-    prefetchFields = new TreeSet<>(fields);
+    prefetchFields.clear();
+    prefetchFields.addAll(fields);
   }
 
   @VisibleForTesting
   public SortedSet<String> getPrefetchFields(){
-    return prefetchFields;
+    return Collections.unmodifiableSortedSet(prefetchFields);
   }
 
   public PrefetchingFieldValueFeature clone() {
