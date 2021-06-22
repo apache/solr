@@ -89,6 +89,26 @@ allprojects { prj ->
       ]
     }
 
+
+    // Configure defaults for sourceSets.testFixtures (if present).
+    tasks.matching { it.name == "forbiddenApisTestFixtures" }.all {
+      bundledSignatures += [
+          'jdk-unsafe',
+          'jdk-deprecated',
+          'jdk-non-portable',
+          'jdk-reflection',
+      ]
+
+      // test fixtures use the same signature file as the tests
+      signaturesFiles = files(
+          file("${resources}/defaults.tests.txt")
+      )
+
+      suppressAnnotations += [
+          "**.SuppressForbidden"
+      ]
+    }
+
     // Configure defaults for sourceSets.tools (if present).
     tasks.matching { it.name == "forbiddenApisTools" }.all {
       bundledSignatures += [

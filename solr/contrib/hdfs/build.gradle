@@ -34,6 +34,8 @@ dependencies {
   })
 
   testImplementation project(':solr:test-framework')
+  testImplementation(testFixtures(project(":solr:core")))
+
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }

@@ -17,6 +17,7 @@
 
 
 apply plugin: 'java-library'
+apply plugin: 'java-test-fixtures'
 
 description = 'Apache Solr Core'
 
