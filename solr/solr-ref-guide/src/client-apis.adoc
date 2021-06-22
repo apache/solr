@@ -27,7 +27,7 @@ Solr offers documentation on the following client integrations:
 ****
 // This tags the below list so it can be used in the parent page section list
 // tag::client-sections[]
-[cols="1,1",frame=none,grid=none,stripes=none]
+[width=100%,cols="1,1",frame=none,grid=none,stripes=none]
 |===
 | <<solrj.adoc#,SolrJ>>: SolrJ, an API for working with Java applications.
 | <<javascript.adoc#,JavaScript>>: JavaScript clients.

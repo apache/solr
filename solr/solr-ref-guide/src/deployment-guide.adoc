@@ -66,7 +66,7 @@ include::monitoring-solr.adoc[tag=monitoring-sections]
 [discrete]
 === Securing Solr
 
-<<securing-solr.adoc#,*Securing Solr*>>: Authentication and authorization plugins available with Solr. *TODO* format this like the others.
+<<securing-solr.adoc#,*Securing Solr*>>
 
 Authentication Plugins:
 
@@ -80,9 +80,13 @@ include::securing-solr.adoc[tag=list-of-authorization-plugins]
 
 Audit Logging and SSL:
 
-* <<audit-logging.adoc#,Audit Logging>>
-* <<enabling-ssl.adoc#,Enabling SSL>>
-* <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>
+[width=100%,cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<audit-logging.adoc#,Audit Logging>>
+| <<enabling-ssl.adoc#,Enabling SSL>>
+| <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>
+|
+|===
 ****
 
 ****

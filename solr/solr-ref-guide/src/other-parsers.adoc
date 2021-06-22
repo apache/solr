@@ -518,22 +518,9 @@ Note the name of the cache should be the field name prefixed by "hash_".
 
 == Join Query Parser
 
-*TODO* link to <<join-query-parser.adoc#>>.
+The Join Query Parser allows users to run queries that normalize relationships between documents, similar to SQL-style joins.
 
-== Lucene Query Parser
-
-The `LuceneQParser` extends the `QParserPlugin` by parsing Solr's variant on the Lucene QueryParser syntax.
-This is effectively the same query parser that is used in Lucene.
-It uses the operators `q.op`, the default operator ("OR" or "AND") and `df`, the default field name.
-
-Example:
-
-[source,text]
-----
-{!lucene q.op=AND df=text}myfield:foo +bar -baz
-----
-
-For more information about the syntax for the Lucene Query Parser, see the {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html[Classic QueryParser javadocs].
+Details of this query parser are in the section <<join-query-parser.adoc#,Join Query Parser>>.
 
 == Learning To Rank Query Parser
 

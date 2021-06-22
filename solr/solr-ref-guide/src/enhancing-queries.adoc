@@ -8,8 +8,7 @@
     analytics, \
     terms-component, \
     term-vector-component, \
-    stats-component, \
-    realtime-get
+    stats-component
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -47,15 +46,13 @@ Finally, if you want to understand the terms in your index or get statistics fro
 | <<spell-checking.adoc#,Spell Checking>>: Check user spelling of query terms.
 | <<suggester.adoc#,Suggester>>: Suggest query terms while the user types.
 | <<morelikethis.adoc#,MoreLikeThis>>: Get results similar to result documents.
-| <<query-re-ranking.adoc#,Query Re-Ranking>>: Re-rank top documents. *TODO* this is about query parsers, maybe should move?
+| <<query-re-ranking.adoc#,Query Re-Ranking>>: Re-rank top documents.
 | <<learning-to-rank.adoc#,Learning to Rank>>: Use machine learned ranking models.
 | <<tagger-handler.adoc#,Tagger Handler>>: Basic named entity tagging in text.
 | <<analytics.adoc#,Analytics Component>>: Compute complex analytics over a result set.
 | <<terms-component.adoc#,Terms Component>>: Access indexed terms and the documents that include them.
 | <<term-vector-component.adoc#,Term Vector Component>>: Term information about specific documents.
 | <<stats-component.adoc#,Stats Component>>: Get information from numeric fields within a document set.
-| <<realtime-get.adoc#,RealTime Get>>: Get the latest version of a document without opening a searcher. *TODO* possibly move this.
-|
 |===
 // end::queries-sections[]
 ****

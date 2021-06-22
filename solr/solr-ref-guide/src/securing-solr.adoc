@@ -48,11 +48,15 @@ Authentication makes sure you know the identity of your users.
 The authentication plugins that ship with Solr are:
 
 // tag::list-of-authentication-plugins[]
-* <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>>
-* <<kerberos-authentication-plugin.adoc#,Kerberos Authentication Plugin>>
-* <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>
-* <<cert-authentication-plugin.adoc#,Certificate Authentication Plugin>>
-* <<hadoop-authentication-plugin.adoc#,Hadoop Authentication Plugin>>
+[width=100%,cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>>
+| <<kerberos-authentication-plugin.adoc#,Kerberos Authentication Plugin>>
+| <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>
+| <<cert-authentication-plugin.adoc#,Certificate Authentication Plugin>>
+| <<hadoop-authentication-plugin.adoc#,Hadoop Authentication Plugin>>
+|
+|===
 // end::list-of-authentication-plugins[]
 
 === Authorization Plugins
@@ -61,8 +65,11 @@ Authorization makes sure that only users with the necessary roles/permissions ca
 The authorization plugins that ship with Solr are:
 
 // tag::list-of-authorization-plugins[]
-* <<rule-based-authorization-plugin.adoc#,Rule-Based Authorization Plugin>>
-* <<rule-based-authorization-plugin.adoc#,External Role Rule-Based Authorization Plugin>>
+[width=100%,cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<rule-based-authorization-plugin.adoc#,Rule-Based Authorization Plugin>>
+| <<rule-based-authorization-plugin.adoc#,External Role Rule-Based Authorization Plugin>>
+|===
 // end::list-of-authorization-plugins[]
 
 == Audit Logging

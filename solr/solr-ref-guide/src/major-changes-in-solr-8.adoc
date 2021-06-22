@@ -449,7 +449,7 @@ When upgrading to Solr 7.2, users should be aware of the following major changes
 
 *Local Params*
 
-* Starting a query string with <<local-params.adoc#,local params>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local params will be parsed to only contexts in which the default parser is "<<other-parsers.adoc#lucene-query-parser,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
+* Starting a query string with <<local-params.adoc#,local params>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local params will be parsed to only contexts in which the default parser is "<<standard-query-parser.adoc#,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
 +
 So, if `defType=edismax` then `q={!myparser ...}` won't work. In that example, put the desired query parser into the `defType` parameter.
 +

@@ -6,6 +6,7 @@
     caches-warming, \
     requesthandlers-searchcomponents, \
     implicit-requesthandlers, \
+    realtime-get, \
     initparams, \
     requestdispatcher, \
     update-request-processors, \
@@ -62,6 +63,7 @@ See <<libs.adoc#lib-directives-in-solrconfig,lib directives in SolrConfig>>, whi
 | <<caches-warming.adoc#,Caches and Query Warming>>: Caches, query warming, and query listeners.
 | <<requesthandlers-searchcomponents.adoc#,Request Handlers and Search Components>>: Request processors and handlers for search features.
 | <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>: Request end-points automatically provided by Solr.
+| <<realtime-get.adoc#,RealTime Get>>: Get the latest version of a document without opening a searcher.
 | <<initparams.adoc#,InitParams>>: Default parameters for request handlers.
 | <<requestdispatcher.adoc#,RequestDispatcher>>: Advanced request parsing and HTTP cache headers.
 | <<update-request-processors.adoc#,Update Request Processors>>: Plugins for update requests.
