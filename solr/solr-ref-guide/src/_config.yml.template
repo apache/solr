@@ -93,6 +93,7 @@ asciidoctor:
     attribute-missing: "warn"
     icons: "font"
     source-highlighter: "rouge"
-    rouge-theme: "thankful-eyes"
+    rouge-css: "style"
+    rouge-style: "github"
     stem:
     sectanchors: "true"
