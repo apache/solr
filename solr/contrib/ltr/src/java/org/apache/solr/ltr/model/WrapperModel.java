@@ -20,7 +20,6 @@ package org.apache.solr.ltr.model;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
@@ -29,26 +28,26 @@ import org.apache.solr.ltr.norm.Normalizer;
 /**
  * A scoring model that wraps the other model.
  *
- * <p>This model loads a model from an external resource during the initialization.
- * The way of fetching the wrapped model is depended on
- * the implementation of {@link WrapperModel#fetchModelMap()}.
+ * <p>This model loads a model from an external resource during the initialization. The way of
+ * fetching the wrapped model is depended on the implementation of {@link
+ * WrapperModel#fetchModelMap()}.
  *
- * <p>This model doesn't hold the actual parameters of the wrapped model,
- * thus it can manage large models which are difficult to upload to ZooKeeper.
+ * <p>This model doesn't hold the actual parameters of the wrapped model, thus it can manage large
+ * models which are difficult to upload to ZooKeeper.
  *
  * <p>Example configuration:
- * <pre>{
-    "class": "...",
-    "name": "myModelName",
-    "params": {
-        ...
-    }
- }</pre>
  *
- * <p>NOTE: no "features" are configured in the wrapper model
- * because the wrapped model's features will be used instead.
- * Also note that if a "store" is configured for the wrapper
- * model then it must match the "store" of the wrapped model.
+ * <pre>{
+ * "class": "...",
+ * "name": "myModelName",
+ * "params": {
+ * ...
+ * }
+ * }</pre>
+ *
+ * <p>NOTE: no "features" are configured in the wrapper model because the wrapped model's features
+ * will be used instead. Also note that if a "store" is configured for the wrapper model then it
+ * must match the "store" of the wrapped model.
  */
 public abstract class WrapperModel extends AdapterModel {
 
@@ -78,8 +77,13 @@ public abstract class WrapperModel extends AdapterModel {
     return true;
   }
 
-  public WrapperModel(String name, List<Feature> features, List<Normalizer> norms, String featureStoreName,
-                      List<Feature> allFeatures, Map<String, Object> params) {
+  public WrapperModel(
+      String name,
+      List<Feature> features,
+      List<Normalizer> norms,
+      String featureStoreName,
+      List<Feature> allFeatures,
+      Map<String, Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
   }
 
@@ -97,10 +101,16 @@ public abstract class WrapperModel extends AdapterModel {
       model.validate();
       // check feature store names match
       final String wrappedFeatureStoreName = model.getFeatureStoreName();
-      if (wrappedFeatureStoreName == null || !wrappedFeatureStoreName.equals(this.getFeatureStoreName())) {
-        throw new ModelException("wrapper feature store name ("+this.getFeatureStoreName() +")"
-            + " must match the "
-            + "wrapped feature store name ("+wrappedFeatureStoreName+")");
+      if (wrappedFeatureStoreName == null
+          || !wrappedFeatureStoreName.equals(this.getFeatureStoreName())) {
+        throw new ModelException(
+            "wrapper feature store name ("
+                + this.getFeatureStoreName()
+                + ")"
+                + " must match the "
+                + "wrapped feature store name ("
+                + wrappedFeatureStoreName
+                + ")");
       }
     }
   }
@@ -141,8 +151,8 @@ public abstract class WrapperModel extends AdapterModel {
   }
 
   @Override
-  public Explanation explain(LeafReaderContext context, int doc, float finalScore,
-                             List<Explanation> featureExplanations) {
+  public Explanation explain(
+      LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
     return model.explain(context, doc, finalScore, featureExplanations);
   }
 
@@ -164,5 +174,4 @@ public abstract class WrapperModel extends AdapterModel {
 
     return sb.toString();
   }
-
 }

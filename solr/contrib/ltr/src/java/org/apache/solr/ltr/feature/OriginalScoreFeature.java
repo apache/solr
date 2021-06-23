@@ -19,7 +19,6 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -28,48 +27,56 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
+
 /**
- * This feature returns the original score that the document had before performing
- * the reranking.
+ * This feature returns the original score that the document had before performing the reranking.
  * Example configuration:
+ *
  * <pre>{
-  "name":  "originalScore",
-  "class": "org.apache.solr.ltr.feature.OriginalScoreFeature",
-  "params": { }
-}</pre>
- **/
+ * "name":  "originalScore",
+ * "class": "org.apache.solr.ltr.feature.OriginalScoreFeature",
+ * "params": { }
+ * }</pre>
+ */
 public class OriginalScoreFeature extends Feature {
 
-  public OriginalScoreFeature(String name, Map<String,Object> params) {
+  public OriginalScoreFeature(String name, Map<String, Object> params) {
     super(name, params);
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String, Object> paramsToMap() {
     return defaultParamsToMap();
   }
 
   @Override
-  protected void validate() throws FeatureException {
-  }
+  protected void validate() throws FeatureException {}
 
   @Override
-  public OriginalScoreWeight createWeight(IndexSearcher searcher,
-      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
+  public OriginalScoreWeight createWeight(
+      IndexSearcher searcher,
+      boolean needsScores,
+      SolrQueryRequest request,
+      Query originalQuery,
+      Map<String, String[]> efi)
+      throws IOException {
     return new OriginalScoreWeight(searcher, request, originalQuery, efi);
-
   }
 
   public class OriginalScoreWeight extends FeatureWeight {
 
     final Weight w;
 
-    public OriginalScoreWeight(IndexSearcher searcher,
-        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
+    public OriginalScoreWeight(
+        IndexSearcher searcher,
+        SolrQueryRequest request,
+        Query originalQuery,
+        Map<String, String[]> efi)
+        throws IOException {
       super(OriginalScoreFeature.this, searcher, request, originalQuery, efi);
       w = searcher.createWeight(searcher.rewrite(originalQuery), ScoreMode.COMPLETE, 1);
-    };
-
+    }
+    ;
 
     @Override
     public String toString() {
@@ -95,11 +102,10 @@ public class OriginalScoreFeature extends Feature {
         // was already scored in step 1
         // we shouldn't need to calc original score again.
         final DocInfo docInfo = getDocInfo();
-        return (docInfo != null && docInfo.hasOriginalDocScore() ? docInfo.getOriginalDocScore() : in.score());
+        return (docInfo != null && docInfo.hasOriginalDocScore()
+            ? docInfo.getOriginalDocScore()
+            : in.score());
       }
-
     }
-
   }
-
 }

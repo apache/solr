@@ -50,7 +50,6 @@ configure(project(":solr").subprojects) { prj ->
           case ":solr:contrib:extraction":
           case ":solr:contrib:gcs-repository":
           case ":solr:contrib:langid":
-          case ":solr:contrib:ltr":
           case ":solr:contrib:prometheus-exporter":
           case ":solr:contrib:scripting":
           case ":solr:core":
@@ -58,6 +57,9 @@ configure(project(":solr").subprojects) { prj ->
           case ":solr:solr-ref-guide":
           case ":solr:test-framework":
             targetExclude "src/**/*.java"
+            break
+          case ":solr:contrib:ltr":
+            targetExclude "src/test/**/*.java"
             break
         }
       }

@@ -19,14 +19,14 @@ package org.apache.solr.ltr.interleaving;
 
 import java.util.ArrayList;
 import java.util.Set;
-
 import org.apache.lucene.search.ScoreDoc;
 
 public class InterleavingResult {
-  final private ScoreDoc[] interleavedResults;
-  final private ArrayList<Set<Integer>> interleavingPicks;
+  private final ScoreDoc[] interleavedResults;
+  private final ArrayList<Set<Integer>> interleavingPicks;
 
-  public InterleavingResult(ScoreDoc[] interleavedResults, ArrayList<Set<Integer>> interleavingPicks) {
+  public InterleavingResult(
+      ScoreDoc[] interleavedResults, ArrayList<Set<Integer>> interleavingPicks) {
     this.interleavedResults = interleavedResults;
     this.interleavingPicks = interleavingPicks;
   }
@@ -38,5 +38,4 @@ public class InterleavingResult {
   public ArrayList<Set<Integer>> getInterleavingPicks() {
     return interleavingPicks;
   }
-
 }

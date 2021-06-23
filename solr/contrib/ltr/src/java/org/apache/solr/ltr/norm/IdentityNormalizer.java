@@ -19,17 +19,14 @@ package org.apache.solr.ltr.norm;
 import java.util.LinkedHashMap;
 
 /**
- * A Normalizer that normalizes a feature value to itself. This is the
- * default normalizer class, if no normalizer is configured then the
- * IdentityNormalizer will be used.
+ * A Normalizer that normalizes a feature value to itself. This is the default normalizer class, if
+ * no normalizer is configured then the IdentityNormalizer will be used.
  */
 public class IdentityNormalizer extends Normalizer {
 
   public static final IdentityNormalizer INSTANCE = new IdentityNormalizer();
 
-  public IdentityNormalizer() {
-
-  }
+  public IdentityNormalizer() {}
 
   @Override
   public float normalize(float value) {
@@ -37,17 +34,15 @@ public class IdentityNormalizer extends Normalizer {
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String, Object> paramsToMap() {
     return null;
   }
 
   @Override
-  protected void validate() throws NormalizerException {
-  }
+  protected void validate() throws NormalizerException {}
 
   @Override
   public String toString() {
     return getClass().getSimpleName();
   }
-
 }

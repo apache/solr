@@ -29,5 +29,4 @@ public final class OriginalRankingLTRScoringQuery extends LTRInterleavingScoring
   public String getScoringModelName() {
     return this.originalRankingModelName;
   }
-
 }

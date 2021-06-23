@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- *  Contains Various Interleaving Algorithms
- */
+/** Contains Various Interleaving Algorithms */
 package org.apache.solr.ltr.interleaving.algorithms;

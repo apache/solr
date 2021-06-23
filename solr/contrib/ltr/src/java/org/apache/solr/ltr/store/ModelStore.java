@@ -21,16 +21,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
 
-/**
- * Contains the model and features declared.
- */
+/** Contains the model and features declared. */
 public class ModelStore {
 
-  private final Map<String,LTRScoringModel> availableModels;
+  private final Map<String, LTRScoringModel> availableModels;
 
   public ModelStore() {
     availableModels = new HashMap<>();
@@ -59,16 +56,13 @@ public class ModelStore {
     return availableModels.remove(modelName);
   }
 
-  public synchronized void addModel(LTRScoringModel modeldata)
-      throws ModelException {
+  public synchronized void addModel(LTRScoringModel modeldata) throws ModelException {
     final String name = modeldata.getName();
 
     if (availableModels.containsKey(name)) {
-      throw new ModelException("model '" + name
-          + "' already exists. Please use a different name");
+      throw new ModelException("model '" + name + "' already exists. Please use a different name");
     }
 
     availableModels.put(modeldata.getName(), modeldata);
   }
-
 }

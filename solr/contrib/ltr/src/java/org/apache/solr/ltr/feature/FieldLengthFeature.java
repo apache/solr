@@ -19,7 +19,6 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -28,20 +27,23 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.SmallFloat;
 import org.apache.solr.request.SolrQueryRequest;
+
 /**
- * This feature returns the length of a field (in terms) for the current document.
- * Example configuration:
+ * This feature returns the length of a field (in terms) for the current document. Example
+ * configuration:
+ *
  * <pre>{
-  "name":  "titleLength",
-  "class": "org.apache.solr.ltr.feature.FieldLengthFeature",
-  "params": {
-      "field": "title"
-  }
-}</pre>
- * Note: since this feature relies on norms values that are stored in a single byte
- * the value of the feature could have a lightly different value.
- * (see also {@link org.apache.lucene.search.similarities.ClassicSimilarity})
- **/
+ * "name":  "titleLength",
+ * "class": "org.apache.solr.ltr.feature.FieldLengthFeature",
+ * "params": {
+ * "field": "title"
+ * }
+ * }</pre>
+ *
+ * Note: since this feature relies on norms values that are stored in a single byte the value of the
+ * feature could have a lightly different value. (see also {@link
+ * org.apache.lucene.search.similarities.ClassicSimilarity})
+ */
 public class FieldLengthFeature extends Feature {
 
   private String field;
@@ -55,8 +57,8 @@ public class FieldLengthFeature extends Feature {
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = defaultParamsToMap();
+  public LinkedHashMap<String, Object> paramsToMap() {
+    final LinkedHashMap<String, Object> params = defaultParamsToMap();
     params.put("field", field);
     return params;
   }
@@ -64,13 +66,11 @@ public class FieldLengthFeature extends Feature {
   @Override
   protected void validate() throws FeatureException {
     if (field == null || field.isEmpty()) {
-      throw new FeatureException(getClass().getSimpleName()+
-          ": field must be provided");
+      throw new FeatureException(getClass().getSimpleName() + ": field must be provided");
     }
   }
 
   /** Cache of decoded bytes. */
-
   private static final float[] NORM_TABLE = new float[256];
 
   static {
@@ -80,42 +80,44 @@ public class FieldLengthFeature extends Feature {
     }
   }
 
-  /**
-   * Decodes the norm value, assuming it is a single byte.
-   *
-   */
-
+  /** Decodes the norm value, assuming it is a single byte. */
   private final float decodeNorm(long norm) {
     return NORM_TABLE[(int) (norm & 0xFF)]; // & 0xFF maps negative bytes to
     // positive above 127
   }
 
-  public FieldLengthFeature(String name, Map<String,Object> params) {
+  public FieldLengthFeature(String name, Map<String, Object> params) {
     super(name, params);
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
-      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
-          throws IOException {
+  public FeatureWeight createWeight(
+      IndexSearcher searcher,
+      boolean needsScores,
+      SolrQueryRequest request,
+      Query originalQuery,
+      Map<String, String[]> efi)
+      throws IOException {
 
     return new FieldLengthFeatureWeight(searcher, request, originalQuery, efi);
   }
 
-
   public class FieldLengthFeatureWeight extends FeatureWeight {
 
-    public FieldLengthFeatureWeight(IndexSearcher searcher,
-        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
+    public FieldLengthFeatureWeight(
+        IndexSearcher searcher,
+        SolrQueryRequest request,
+        Query originalQuery,
+        Map<String, String[]> efi) {
       super(FieldLengthFeature.this, searcher, request, originalQuery, efi);
     }
 
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       NumericDocValues norms = context.reader().getNormValues(field);
-      if (norms == null){
-        return new ValueFeatureScorer(this, 0f,
-            DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+      if (norms == null) {
+        return new ValueFeatureScorer(
+            this, 0f, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
       }
       return new FieldLengthFeatureScorer(this, norms);
     }
@@ -124,8 +126,8 @@ public class FieldLengthFeature extends Feature {
 
       NumericDocValues norms = null;
 
-      public FieldLengthFeatureScorer(FeatureWeight weight,
-          NumericDocValues norms) throws IOException {
+      public FieldLengthFeatureScorer(FeatureWeight weight, NumericDocValues norms)
+          throws IOException {
         super(weight, norms);
         this.norms = norms;
 
@@ -133,8 +135,7 @@ public class FieldLengthFeature extends Feature {
         final IndexableField idxF = searcher.doc(0).getField(field);
         if (idxF.fieldType().omitNorms()) {
           throw new IOException(
-              "FieldLengthFeatures can't be used if omitNorms is enabled (field="
-                  + field + ")");
+              "FieldLengthFeatures can't be used if omitNorms is enabled (field=" + field + ")");
         }
       }
 
@@ -152,5 +153,4 @@ public class FieldLengthFeature extends Feature {
       }
     }
   }
-
 }

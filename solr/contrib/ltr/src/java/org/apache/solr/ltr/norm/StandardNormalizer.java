@@ -20,20 +20,22 @@ import java.util.LinkedHashMap;
 
 /**
  * A Normalizer to scale a feature value around an average-and-standard-deviation distribution.
- * <p>
- * Example configuration:
-<pre>
-"norm" : {
-    "class" : "org.apache.solr.ltr.norm.StandardNormalizer",
-    "params" : { "avg":"42", "std":"6" }
-}
-</pre>
- * <p>
- * Example normalizations:
+ *
+ * <p>Example configuration:
+ *
+ * <pre>
+ * "norm" : {
+ * "class" : "org.apache.solr.ltr.norm.StandardNormalizer",
+ * "params" : { "avg":"42", "std":"6" }
+ * }
+ * </pre>
+ *
+ * <p>Example normalizations:
+ *
  * <ul>
- * <li>39 will be normalized to -0.5
- * <li>42 will be normalized to  0
- * <li>45 will be normalized to +0.5
+ *   <li>39 will be normalized to -0.5
+ *   <li>42 will be normalized to 0
+ *   <li>45 will be normalized to +0.5
  * </ul>
  */
 public class StandardNormalizer extends Normalizer {
@@ -73,15 +75,18 @@ public class StandardNormalizer extends Normalizer {
   @Override
   protected void validate() throws NormalizerException {
     if (std <= 0f) {
-      throw
-      new NormalizerException("Standard Normalizer standard deviation must "
-          + "be positive | avg = " + avg + ",std = " + std);
+      throw new NormalizerException(
+          "Standard Normalizer standard deviation must "
+              + "be positive | avg = "
+              + avg
+              + ",std = "
+              + std);
     }
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(2, 1.0f);
+  public LinkedHashMap<String, Object> paramsToMap() {
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<>(2, 1.0f);
     params.put("avg", Float.toString(avg));
     params.put("std", Float.toString(std));
     return params;
@@ -95,5 +100,4 @@ public class StandardNormalizer extends Normalizer {
     sb.append(",std=").append(avg).append(')');
     return sb.toString();
   }
-
 }

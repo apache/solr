@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -41,22 +40,23 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
 /**
- * This feature allows you to reuse any Solr query as a feature. The value
- * of the feature will be the score of the given query for the current document.
- * See <a href="https://lucene.apache.org/solr/guide/other-parsers.html">Solr documentation of other parsers</a> you can use as a feature.
- * Example configurations:
+ * This feature allows you to reuse any Solr query as a feature. The value of the feature will be
+ * the score of the given query for the current document. See <a
+ * href="https://lucene.apache.org/solr/guide/other-parsers.html">Solr documentation of other
+ * parsers</a> you can use as a feature. Example configurations:
+ *
  * <pre>[{ "name": "isBook",
-  "class": "org.apache.solr.ltr.feature.SolrFeature",
-  "params":{ "fq": ["{!terms f=category}book"] }
-},
-{
-  "name":  "documentRecency",
-  "class": "org.apache.solr.ltr.feature.SolrFeature",
-  "params": {
-      "q": "{!func}recip( ms(NOW,publish_date), 3.16e-11, 1, 1)"
-  }
-}]</pre>
- **/
+ * "class": "org.apache.solr.ltr.feature.SolrFeature",
+ * "params":{ "fq": ["{!terms f=category}book"] }
+ * },
+ * {
+ * "name":  "documentRecency",
+ * "class": "org.apache.solr.ltr.feature.SolrFeature",
+ * "params": {
+ * "q": "{!func}recip( ms(NOW,publish_date), 3.16e-11, 1, 1)"
+ * }
+ * }]</pre>
+ */
 public class SolrFeature extends Feature {
 
   private String df;
@@ -89,13 +89,13 @@ public class SolrFeature extends Feature {
     this.fq = fq;
   }
 
-  public SolrFeature(String name, Map<String,Object> params) {
+  public SolrFeature(String name, Map<String, Object> params) {
     super(name, params);
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = defaultParamsToMap();
+  public LinkedHashMap<String, Object> paramsToMap() {
+    final LinkedHashMap<String, Object> params = defaultParamsToMap();
     if (df != null) {
       params.put("df", df);
     }
@@ -109,29 +109,33 @@ public class SolrFeature extends Feature {
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
-      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
-          throws IOException {
+  public FeatureWeight createWeight(
+      IndexSearcher searcher,
+      boolean needsScores,
+      SolrQueryRequest request,
+      Query originalQuery,
+      Map<String, String[]> efi)
+      throws IOException {
     return new SolrFeatureWeight((SolrIndexSearcher) searcher, request, originalQuery, efi);
   }
 
   @Override
   protected void validate() throws FeatureException {
-    if ((q == null || q.isEmpty()) &&
-        ((fq == null) || fq.isEmpty())) {
-      throw new FeatureException(getClass().getSimpleName()+
-          ": Q or FQ must be provided");
+    if ((q == null || q.isEmpty()) && ((fq == null) || fq.isEmpty())) {
+      throw new FeatureException(getClass().getSimpleName() + ": Q or FQ must be provided");
     }
   }
 
-  /**
-   * Weight for a SolrFeature
-   **/
+  /** Weight for a SolrFeature */
   public class SolrFeatureWeight extends FeatureWeight {
     private final Weight solrQueryWeight;
 
-    public SolrFeatureWeight(SolrIndexSearcher searcher,
-                             SolrQueryRequest request, Query originalQuery, Map<String, String[]> efi) throws IOException {
+    public SolrFeatureWeight(
+        SolrIndexSearcher searcher,
+        SolrQueryRequest request,
+        Query originalQuery,
+        Map<String, String[]> efi)
+        throws IOException {
       super(SolrFeature.this, searcher, request, originalQuery, efi);
       try {
         final SolrQueryRequest req = makeRequest(request.getCore(), q, fq, df);
@@ -147,10 +151,13 @@ public class SolrFeature extends Feature {
         } else {
           qStr = macroExpander.expand(qStr);
           if (qStr == null) {
-            throw new FeatureException(this.getClass().getSimpleName() + " requires efi parameter that was not passed in request.");
+            throw new FeatureException(
+                this.getClass().getSimpleName()
+                    + " requires efi parameter that was not passed in request.");
           }
           scoreQuery = QParser.getParser(qStr, req).getQuery();
-          // note: QParser can return a null Query sometimes, such as if the query is a stopword or just symbols
+          // note: QParser can return a null Query sometimes, such as if the query is a stopword or
+          // just symbols
           if (scoreQuery == null) {
             scoreQuery = new MatchNoDocsQuery(); // debatable; all or none?
           }
@@ -159,12 +166,15 @@ public class SolrFeature extends Feature {
         // Build the filter queries
         Query filterDocSetQuery = null;
         if (fq != null) {
-          List<Query> filterQueries = new ArrayList<>(); // If there are no fqs we just want an empty list
+          List<Query> filterQueries =
+              new ArrayList<>(); // If there are no fqs we just want an empty list
           for (String fqStr : fq) {
             if (fqStr != null) {
               fqStr = macroExpander.expand(fqStr);
               if (fqStr == null) {
-                throw new FeatureException(this.getClass().getSimpleName() + " requires efi parameter that was not passed in request.");
+                throw new FeatureException(
+                    this.getClass().getSimpleName()
+                        + " requires efi parameter that was not passed in request.");
               }
               final Query filterQuery = QParser.getParser(fqStr, req).getQuery();
               if (filterQuery != null) {
@@ -188,8 +198,8 @@ public class SolrFeature extends Feature {
       }
     }
 
-    private LocalSolrQueryRequest makeRequest(SolrCore core, String solrQuery,
-        List<String> fqs, String df) {
+    private LocalSolrQueryRequest makeRequest(
+        SolrCore core, String solrQuery, List<String> fqs, String df) {
       final NamedList<String> returnList = new NamedList<String>();
       if ((solrQuery != null) && !solrQuery.isEmpty()) {
         returnList.add(CommonParams.Q, solrQuery);
@@ -218,9 +228,7 @@ public class SolrFeature extends Feature {
       return new SolrFeatureScorer(this, solrScorer);
     }
 
-    /**
-     * Scorer for a SolrFeature
-     */
+    /** Scorer for a SolrFeature */
     public class SolrFeatureScorer extends FilterFeatureScorer {
 
       public SolrFeatureScorer(FeatureWeight weight, Scorer solrScorer) {
@@ -233,12 +241,9 @@ public class SolrFeature extends Feature {
           return in.score();
         } catch (UnsupportedOperationException e) {
           throw new FeatureException(
-              e.toString() + ": " +
-                  "Unable to extract feature for "
-                  + name, e);
+              e.toString() + ": " + "Unable to extract feature for " + name, e);
         }
       }
-
     }
   }
 }

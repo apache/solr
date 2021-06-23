@@ -16,30 +16,24 @@
  */
 
 /**
- * <p>
- * This package contains the main logic for performing the reranking using
- * a Learning to Rank model.
- * </p>
- * <p>
- * A model will be applied on each document through a {@link org.apache.solr.ltr.LTRScoringQuery}, a
- * subclass of {@link org.apache.lucene.search.Query}. As a normal query,
- * the learned model will produce a new score
- * for each document reranked.
- * </p>
- * <p>
- * A {@link org.apache.solr.ltr.LTRScoringQuery} is created by providing an instance of
- * {@link org.apache.solr.ltr.model.LTRScoringModel}. An instance of
- * {@link org.apache.solr.ltr.model.LTRScoringModel}
- * defines how to combine the features in order to create a new
- * score for a document. A new Learning to Rank model is plugged
- * into the framework  by extending {@link org.apache.solr.ltr.model.LTRScoringModel},
- * (see for example {@link org.apache.solr.ltr.model.MultipleAdditiveTreesModel} and {@link org.apache.solr.ltr.model.LinearModel}).
- * </p>
- * <p>
- * The {@link org.apache.solr.ltr.LTRScoringQuery} will take care of computing the values of
- * all the features (see {@link org.apache.solr.ltr.feature.Feature}) and then will delegate the final score
- * generation to the {@link org.apache.solr.ltr.model.LTRScoringModel}, by calling the method
- * {@link org.apache.solr.ltr.model.LTRScoringModel#score(float[] modelFeatureValuesNormalized) score(float[] modelFeatureValuesNormalized)}.
- * </p>
+ * This package contains the main logic for performing the reranking using a Learning to Rank model.
+ *
+ * <p>A model will be applied on each document through a {@link
+ * org.apache.solr.ltr.LTRScoringQuery}, a subclass of {@link org.apache.lucene.search.Query}. As a
+ * normal query, the learned model will produce a new score for each document reranked.
+ *
+ * <p>A {@link org.apache.solr.ltr.LTRScoringQuery} is created by providing an instance of {@link
+ * org.apache.solr.ltr.model.LTRScoringModel}. An instance of {@link
+ * org.apache.solr.ltr.model.LTRScoringModel} defines how to combine the features in order to create
+ * a new score for a document. A new Learning to Rank model is plugged into the framework by
+ * extending {@link org.apache.solr.ltr.model.LTRScoringModel}, (see for example {@link
+ * org.apache.solr.ltr.model.MultipleAdditiveTreesModel} and {@link
+ * org.apache.solr.ltr.model.LinearModel}).
+ *
+ * <p>The {@link org.apache.solr.ltr.LTRScoringQuery} will take care of computing the values of all
+ * the features (see {@link org.apache.solr.ltr.feature.Feature}) and then will delegate the final
+ * score generation to the {@link org.apache.solr.ltr.model.LTRScoringModel}, by calling the method
+ * {@link org.apache.solr.ltr.model.LTRScoringModel#score(float[] modelFeatureValuesNormalized)
+ * score(float[] modelFeatureValuesNormalized)}.
  */
 package org.apache.solr.ltr;

@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -37,56 +36,50 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Managed resource for a storing a feature.
- */
-public class ManagedFeatureStore extends ManagedResource implements ManagedResource.ChildResourceSupport {
+/** Managed resource for a storing a feature. */
+public class ManagedFeatureStore extends ManagedResource
+    implements ManagedResource.ChildResourceSupport {
 
-  public static void registerManagedFeatureStore(SolrResourceLoader solrResourceLoader,
-      ManagedResourceObserver managedResourceObserver) {
-    solrResourceLoader.getManagedResourceRegistry().registerManagedResource(
-        REST_END_POINT,
-        ManagedFeatureStore.class,
-        managedResourceObserver);
+  public static void registerManagedFeatureStore(
+      SolrResourceLoader solrResourceLoader, ManagedResourceObserver managedResourceObserver) {
+    solrResourceLoader
+        .getManagedResourceRegistry()
+        .registerManagedResource(
+            REST_END_POINT, ManagedFeatureStore.class, managedResourceObserver);
   }
 
   public static ManagedFeatureStore getManagedFeatureStore(SolrCore core) {
-    return (ManagedFeatureStore) core.getRestManager()
-        .getManagedResource(REST_END_POINT);
+    return (ManagedFeatureStore) core.getRestManager().getManagedResource(REST_END_POINT);
   }
 
-  /** the feature store rest endpoint **/
+  /** the feature store rest endpoint * */
   public static final String REST_END_POINT = "/schema/feature-store";
 
-  /** name of the attribute containing the feature class **/
+  /** name of the attribute containing the feature class * */
   static final String CLASS_KEY = "class";
-  /** name of the attribute containing the feature name **/
+  /** name of the attribute containing the feature name * */
   static final String NAME_KEY = "name";
-  /** name of the attribute containing the feature params **/
+  /** name of the attribute containing the feature params * */
   static final String PARAMS_KEY = "params";
-  /** name of the attribute containing the feature store used **/
+  /** name of the attribute containing the feature store used * */
   static final String FEATURE_STORE_NAME_KEY = "store";
 
-  private final Map<String,FeatureStore> stores = new HashMap<>();
+  private final Map<String, FeatureStore> stores = new HashMap<>();
 
-  /**
-   * Managed feature store: the name of the attribute containing all the feature
-   * stores
-   **/
+  /** Managed feature store: the name of the attribute containing all the feature stores */
   private static final String FEATURE_STORE_JSON_FIELD = "featureStores";
 
   /**
-   * Managed feature store: the name of the attribute containing all the
-   * features of a feature store
-   **/
+   * Managed feature store: the name of the attribute containing all the features of a feature store
+   */
   private static final String FEATURES_JSON_FIELD = "features";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ManagedFeatureStore(String resourceId, SolrResourceLoader loader,
-      ManagedResourceStorage.StorageIO storageIO) throws SolrException {
+  public ManagedFeatureStore(
+      String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
+      throws SolrException {
     super(resourceId, loader, storageIO);
-
   }
 
   public synchronized FeatureStore getFeatureStore(String name) {
@@ -100,22 +93,22 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
   }
 
   @Override
-  protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs,
-      Object managedData) throws SolrException {
+  protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs, Object managedData)
+      throws SolrException {
 
     stores.clear();
     log.info("------ managed feature ~ loading ------");
     if (managedData instanceof List) {
       @SuppressWarnings("unchecked")
-      final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
-      for (final Map<String,Object> u : up) {
+      final List<Map<String, Object>> up = (List<Map<String, Object>>) managedData;
+      for (final Map<String, Object> u : up) {
         final String featureStore = (String) u.get(FEATURE_STORE_NAME_KEY);
         addFeature(u, featureStore);
       }
     }
   }
 
-  public synchronized void addFeature(Map<String,Object> map, String featureStore) {
+  public synchronized void addFeature(Map<String, Object> map, String featureStore) {
     log.info("register feature based on {}", map);
     final FeatureStore fstore = getFeatureStore(featureStore);
     final Feature feature = fromFeatureMap(solrResourceLoader, map);
@@ -126,8 +119,8 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
   @Override
   public Object applyUpdatesToManagedData(Object updates) {
     if (updates instanceof List) {
-      final List<Map<String,Object>> up = (List<Map<String,Object>>) updates;
-      for (final Map<String,Object> u : up) {
+      final List<Map<String, Object>> up = (List<Map<String, Object>>) updates;
+      for (final Map<String, Object> u : up) {
         final String featureStore = (String) u.get(FEATURE_STORE_NAME_KEY);
         addFeature(u, featureStore);
       }
@@ -135,7 +128,7 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
 
     if (updates instanceof Map) {
       // a unique feature
-      Map<String,Object> updatesMap = (Map<String,Object>) updates;
+      Map<String, Object> updatesMap = (Map<String, Object>) updates;
       final String featureStore = (String) updatesMap.get(FEATURE_STORE_NAME_KEY);
       addFeature(updatesMap, featureStore);
     }
@@ -156,9 +149,8 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
   }
 
   /**
-   * Called to retrieve a named part (the given childId) of the resource at the
-   * given endpoint. Note: since we have a unique child feature store we ignore
-   * the childId.
+   * Called to retrieve a named part (the given childId) of the resource at the given endpoint.
+   * Note: since we have a unique child feature store we ignore the childId.
    */
   @Override
   public void doGet(BaseSolrResource endpoint, String childId) {
@@ -170,11 +162,10 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
     } else {
       final FeatureStore store = getFeatureStore(childId);
       if (store == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "missing feature store [" + childId + "]");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "missing feature store [" + childId + "]");
       }
-      response.add(FEATURES_JSON_FIELD,
-          featuresAsManagedResources(store));
+      response.add(FEATURES_JSON_FIELD, featuresAsManagedResources(store));
     }
   }
 
@@ -182,29 +173,30 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
     final List<Feature> storedFeatures = store.getFeatures();
     final List<Object> features = new ArrayList<Object>(storedFeatures.size());
     for (final Feature f : storedFeatures) {
-      final LinkedHashMap<String,Object> m = toFeatureMap(f);
+      final LinkedHashMap<String, Object> m = toFeatureMap(f);
       m.put(FEATURE_STORE_NAME_KEY, store.getName());
       features.add(m);
     }
     return features;
   }
 
-  private static LinkedHashMap<String,Object> toFeatureMap(Feature feat) {
-    final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f); // 1 extra for caller to add store
+  private static LinkedHashMap<String, Object> toFeatureMap(Feature feat) {
+    final LinkedHashMap<String, Object> o =
+        new LinkedHashMap<>(4, 1.0f); // 1 extra for caller to add store
     o.put(NAME_KEY, feat.getName());
     o.put(CLASS_KEY, feat.getClass().getName());
     o.put(PARAMS_KEY, feat.paramsToMap());
     return o;
   }
 
-  private static Feature fromFeatureMap(SolrResourceLoader solrResourceLoader,
-      Map<String,Object> featureMap) {
+  private static Feature fromFeatureMap(
+      SolrResourceLoader solrResourceLoader, Map<String, Object> featureMap) {
     final String className = (String) featureMap.get(CLASS_KEY);
 
     final String name = (String) featureMap.get(NAME_KEY);
 
     @SuppressWarnings("unchecked")
-    final Map<String,Object> params = (Map<String,Object>) featureMap.get(PARAMS_KEY);
+    final Map<String, Object> params = (Map<String, Object>) featureMap.get(PARAMS_KEY);
 
     return Feature.getInstance(solrResourceLoader, className, name, params);
   }

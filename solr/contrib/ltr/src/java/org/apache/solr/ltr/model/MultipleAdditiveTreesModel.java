@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
@@ -29,83 +28,87 @@ import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * A scoring model that computes scores based on the summation of multiple weighted trees.
- * Example models are LambdaMART and Gradient Boosted Regression Trees (GBRT) .
- * <p>
- * Example configuration:
-<pre>{
-   "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
-   "name" : "multipleadditivetreesmodel",
-   "features":[
-       { "name" : "userTextTitleMatch"},
-       { "name" : "originalScore"}
-   ],
-   "params" : {
-       "trees" : [
-           {
-               "weight" : "1",
-               "root": {
-                   "feature" : "userTextTitleMatch",
-                   "threshold" : "0.5",
-                   "left" : {
-                       "value" : "-100"
-                   },
-                   "right" : {
-                       "feature" : "originalScore",
-                       "threshold" : "10.0",
-                       "left" : {
-                           "value" : "50"
-                       },
-                       "right" : {
-                           "value" : "75"
-                       }
-                   }
-               }
-           },
-           {
-               "weight" : "2",
-               "root" : {
-                   "value" : "-10"
-               }
-           }
-       ]
-   }
-}</pre>
- * <p>
- * Training libraries:
+ * A scoring model that computes scores based on the summation of multiple weighted trees. Example
+ * models are LambdaMART and Gradient Boosted Regression Trees (GBRT) .
+ *
+ * <p>Example configuration:
+ *
+ * <pre>{
+ * "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+ * "name" : "multipleadditivetreesmodel",
+ * "features":[
+ * { "name" : "userTextTitleMatch"},
+ * { "name" : "originalScore"}
+ * ],
+ * "params" : {
+ * "trees" : [
+ * {
+ * "weight" : "1",
+ * "root": {
+ * "feature" : "userTextTitleMatch",
+ * "threshold" : "0.5",
+ * "left" : {
+ * "value" : "-100"
+ * },
+ * "right" : {
+ * "feature" : "originalScore",
+ * "threshold" : "10.0",
+ * "left" : {
+ * "value" : "50"
+ * },
+ * "right" : {
+ * "value" : "75"
+ * }
+ * }
+ * }
+ * },
+ * {
+ * "weight" : "2",
+ * "root" : {
+ * "value" : "-10"
+ * }
+ * }
+ * ]
+ * }
+ * }</pre>
+ *
+ * <p>Training libraries:
+ *
  * <ul>
- * <li> <a href="http://sourceforge.net/p/lemur/wiki/RankLib/">RankLib</a>
+ *   <li><a href="http://sourceforge.net/p/lemur/wiki/RankLib/">RankLib</a>
  * </ul>
- * <p>
- * Background reading:
+ *
+ * <p>Background reading:
+ *
  * <ul>
- * <li> <a href="http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf">
- * Christopher J.C. Burges. From RankNet to LambdaRank to LambdaMART: An Overview.
- * Microsoft Research Technical Report MSR-TR-2010-82.</a>
+ *   <li><a href="http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf">Christopher J.C.
+ *       Burges. From RankNet to LambdaRank to LambdaMART: An Overview. Microsoft Research Technical
+ *       Report MSR-TR-2010-82.</a>
  * </ul>
+ *
  * <ul>
- * <li> <a href="https://papers.nips.cc/paper/3305-a-general-boosting-method-and-its-application-to-learning-ranking-functions-for-web-search.pdf">
- * Z. Zheng, H. Zha, T. Zhang, O. Chapelle, K. Chen, and G. Sun. A General Boosting Method and its Application to Learning Ranking Functions for Web Search.
- * Advances in Neural Information Processing Systems (NIPS), 2007.</a>
+ *   <li><a
+ *       href="https://papers.nips.cc/paper/3305-a-general-boosting-method-and-its-application-to-learning-ranking-functions-for-web-search.pdf">
+ *       Z. Zheng, H. Zha, T. Zhang, O. Chapelle, K. Chen, and G. Sun. A General Boosting Method and
+ *       its Application to Learning Ranking Functions for Web Search. Advances in Neural
+ *       Information Processing Systems (NIPS), 2007.</a>
  * </ul>
  */
 public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
   /**
-   * fname2index is filled from constructor arguments
-   * (that are already part of the base class hashCode)
-   * and therefore here it does not individually
-   * influence the class hashCode, equals, etc.
+   * fname2index is filled from constructor arguments (that are already part of the base class
+   * hashCode) and therefore here it does not individually influence the class hashCode, equals,
+   * etc.
    */
-  private final HashMap<String,Integer> fname2index;
+  private final HashMap<String, Integer> fname2index;
   /**
-   * trees is part of the LTRScoringModel params map
-   * and therefore here it does not individually
+   * trees is part of the LTRScoringModel params map and therefore here it does not individually
    * influence the class hashCode, equals, etc.
    */
   private List<RegressionTree> trees;
 
-  private RegressionTree createRegressionTree(Map<String,Object> map) {
+  private RegressionTree createRegressionTree(Map<String, Object> map) {
     final RegressionTree rt = new RegressionTree();
     if (map != null) {
       SolrPluginUtils.invokeSetters(rt, map.entrySet());
@@ -113,7 +116,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     return rt;
   }
 
-  private RegressionTreeNode createRegressionTreeNode(Map<String,Object> map) {
+  private RegressionTreeNode createRegressionTreeNode(Map<String, Object> map) {
     final RegressionTreeNode rtn = new RegressionTreeNode();
     if (map != null) {
       SolrPluginUtils.invokeSetters(rtn, map.entrySet());
@@ -158,12 +161,12 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     @SuppressWarnings({"unchecked"})
     public void setLeft(Object left) {
-      this.left = createRegressionTreeNode((Map<String,Object>) left);
+      this.left = createRegressionTreeNode((Map<String, Object>) left);
     }
 
     @SuppressWarnings({"unchecked"})
     public void setRight(Object right) {
-      this.right = createRegressionTreeNode((Map<String,Object>) right);
+      this.right = createRegressionTreeNode((Map<String, Object>) right);
     }
 
     public boolean isLeaf() {
@@ -177,7 +180,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         sb.append(value);
       } else {
         sb.append("(feature=").append(feature);
-        sb.append(",threshold=").append(threshold.floatValue()-NODE_SPLIT_SLACK);
+        sb.append(",threshold=").append(threshold.floatValue() - NODE_SPLIT_SLACK);
         sb.append(",left=").append(left);
         sb.append(",right=").append(right);
         sb.append(')');
@@ -185,9 +188,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       return sb.toString();
     }
 
-    public RegressionTreeNode() {
-    }
-
+    public RegressionTreeNode() {}
   }
 
   public class RegressionTree {
@@ -205,7 +206,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     @SuppressWarnings({"unchecked"})
     public void setRoot(Object root) {
-      this.root = createRegressionTreeNode((Map<String,Object>)root);
+      this.root = createRegressionTreeNode((Map<String, Object>) root);
     }
 
     public float score(float[] featureVector) {
@@ -225,8 +226,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       return sb.toString();
     }
 
-    public RegressionTree() {
-    }
+    public RegressionTree() {}
 
     public void validate() throws ModelException {
       if (weight == null) {
@@ -244,18 +244,21 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   public void setTrees(Object trees) {
     this.trees = new ArrayList<RegressionTree>();
     for (final Object o : (List<Object>) trees) {
-      final RegressionTree rt = createRegressionTree((Map<String,Object>) o);
+      final RegressionTree rt = createRegressionTree((Map<String, Object>) o);
       this.trees.add(rt);
     }
   }
 
-  public MultipleAdditiveTreesModel(String name, List<Feature> features,
+  public MultipleAdditiveTreesModel(
+      String name,
+      List<Feature> features,
       List<Normalizer> norms,
-      String featureStoreName, List<Feature> allFeatures,
-      Map<String,Object> params) {
+      String featureStoreName,
+      List<Feature> allFeatures,
+      Map<String, Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
 
-    fname2index = new HashMap<String,Integer>();
+    fname2index = new HashMap<String, Integer>();
     for (int i = 0; i < features.size(); ++i) {
       final String key = features.get(i).getName();
       fname2index.put(key, i);
@@ -266,7 +269,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   protected void validate() throws ModelException {
     super.validate();
     if (trees == null) {
-      throw new ModelException("no trees declared for model "+name);
+      throw new ModelException("no trees declared for model " + name);
     }
     for (RegressionTree tree : trees) {
       tree.validate();
@@ -288,7 +291,8 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         return regressionTreeNode.value;
       }
       // unsupported feature (tree is looking for a feature that does not exist)
-      if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
+      if ((regressionTreeNode.featureIndex < 0)
+          || (regressionTreeNode.featureIndex >= featureVector.length)) {
         return 0f;
       }
 
@@ -301,7 +305,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   private static void validateNode(RegressionTreeNode regressionTreeNode) throws ModelException {
-    
+
     // Create an empty stack and push root to it
     Stack<RegressionTreeNode> stack = new Stack<RegressionTreeNode>();
     stack.push(regressionTreeNode);
@@ -311,7 +315,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
       if (topStackNode.isLeaf()) {
         if (topStackNode.left != null || topStackNode.right != null) {
-          throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=" + topStackNode.left + " and right=" + topStackNode.right);
+          throw new ModelException(
+              "MultipleAdditiveTreesModel tree node is leaf with left="
+                  + topStackNode.left
+                  + " and right="
+                  + topStackNode.right);
         }
         continue;
       }
@@ -340,8 +348,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       }
 
       // unsupported feature (tree is looking for a feature that does not exist)
-      if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
-        returnValueBuilder.append("'" + regressionTreeNode.feature + "' does not exist in FV, Return Zero");
+      if ((regressionTreeNode.featureIndex < 0)
+          || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        returnValueBuilder.append(
+            "'" + regressionTreeNode.feature + "' does not exist in FV, Return Zero");
         return returnValueBuilder.toString();
       }
 
@@ -350,18 +360,28 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       // that here
 
       if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
-        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " <= "
-                + regressionTreeNode.threshold + ", Go Left | ");
+        returnValueBuilder.append(
+            "'"
+                + regressionTreeNode.feature
+                + "':"
+                + featureVector[regressionTreeNode.featureIndex]
+                + " <= "
+                + regressionTreeNode.threshold
+                + ", Go Left | ");
         regressionTreeNode = regressionTreeNode.left;
       } else {
-        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " > "
-                + regressionTreeNode.threshold + ", Go Right | ");
+        returnValueBuilder.append(
+            "'"
+                + regressionTreeNode.feature
+                + "':"
+                + featureVector[regressionTreeNode.featureIndex]
+                + " > "
+                + regressionTreeNode.threshold
+                + ", Go Right | ");
         regressionTreeNode = regressionTreeNode.right;
       }
     }
-
   }
-
 
   // /////////////////////////////////////////
   // produces a string that looks like:
@@ -373,8 +393,8 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   // exist in FV, Go Left | val: 50.0
   // -10.0 = tree 1 | val: -10.0
   @Override
-  public Explanation explain(LeafReaderContext context, int doc,
-      float finalScore, List<Explanation> featureExplanations) {
+  public Explanation explain(
+      LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
     final float[] fv = new float[featureExplanations.size()];
     int index = 0;
     for (final Explanation featureExplain : featureExplanations) {
@@ -387,14 +407,13 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     for (final RegressionTree t : trees) {
       final float score = t.score(fv);
-      final Explanation p = Explanation.match(score, "tree " + index + " | "
-          + t.explain(fv));
+      final Explanation p = Explanation.match(score, "tree " + index + " | " + t.explain(fv));
       details.add(p);
       index++;
     }
 
-    return Explanation.match(finalScore, toString()
-        + " model applied to features, sum of:", details);
+    return Explanation.match(
+        finalScore, toString() + " model applied to features, sum of:", details);
   }
 
   @Override
@@ -403,7 +422,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     sb.append("(name=").append(getName());
     sb.append(",trees=[");
     for (int ii = 0; ii < trees.size(); ++ii) {
-      if (ii>0) {
+      if (ii > 0) {
         sb.append(',');
       }
       sb.append(trees.get(ii));
@@ -411,5 +430,4 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     sb.append("])");
     return sb.toString();
   }
-
 }

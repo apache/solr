@@ -27,5 +27,4 @@ public class ModelException extends RuntimeException {
   public ModelException(String message, Exception cause) {
     super(message, cause);
   }
-
 }

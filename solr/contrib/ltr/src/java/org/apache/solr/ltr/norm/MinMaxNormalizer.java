@@ -20,19 +20,22 @@ import java.util.LinkedHashMap;
 
 /**
  * A Normalizer to scale a feature value using a (min,max) range.
- * <p>
- * Example configuration:
-<pre>
-"norm" : {
-    "class" : "org.apache.solr.ltr.norm.MinMaxNormalizer",
-    "params" : { "min":"0", "max":"50" }
-}
-</pre>
+ *
+ * <p>Example configuration:
+ *
+ * <pre>
+ * "norm" : {
+ * "class" : "org.apache.solr.ltr.norm.MinMaxNormalizer",
+ * "params" : { "min":"0", "max":"50" }
+ * }
+ * </pre>
+ *
  * Example normalizations:
+ *
  * <ul>
- * <li>-5 will be normalized to -0.1
- * <li>55 will be normalized to  1.1
- * <li>+5 will be normalized to +0.1
+ *   <li>-5 will be normalized to -0.1
+ *   <li>55 will be normalized to 1.1
+ *   <li>+5 will be normalized to +0.1
  * </ul>
  */
 public class MinMaxNormalizer extends Normalizer {
@@ -76,9 +79,14 @@ public class MinMaxNormalizer extends Normalizer {
   @Override
   protected void validate() throws NormalizerException {
     if (delta == 0f) {
-      throw
-      new NormalizerException("MinMax Normalizer delta must not be zero " +
-          "| min = " + min + ",max = " + max + ",delta = " + delta);
+      throw new NormalizerException(
+          "MinMax Normalizer delta must not be zero "
+              + "| min = "
+              + min
+              + ",max = "
+              + max
+              + ",delta = "
+              + delta);
     }
   }
 
@@ -88,8 +96,8 @@ public class MinMaxNormalizer extends Normalizer {
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(2, 1.0f);
+  public LinkedHashMap<String, Object> paramsToMap() {
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<>(2, 1.0f);
     params.put("min", Float.toString(min));
     params.put("max", Float.toString(max));
     return params;
@@ -103,5 +111,4 @@ public class MinMaxNormalizer extends Normalizer {
     sb.append(",max=").append(max).append(')');
     return sb.toString();
   }
-
 }

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Explanation;
@@ -34,16 +33,14 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
 import org.apache.solr.search.SolrIndexSearcher;
 
-
 /**
- * Implements the rescoring logic. The top documents returned by solr with their
- * original scores, will be processed by a {@link LTRScoringQuery} that will assign a
- * new score to each document. The top documents will be resorted based on the
- * new score.
- * */
+ * Implements the rescoring logic. The top documents returned by solr with their original scores,
+ * will be processed by a {@link LTRScoringQuery} that will assign a new score to each document. The
+ * top documents will be resorted based on the new score.
+ */
 public class LTRRescorer extends Rescorer {
 
-  final private LTRScoringQuery scoringQuery;
+  private final LTRScoringQuery scoringQuery;
 
   public LTRRescorer() {
     this.scoringQuery = null;
@@ -97,16 +94,13 @@ public class LTRRescorer extends Rescorer {
   /**
    * rescores the documents:
    *
-   * @param searcher
-   *          current IndexSearcher
-   * @param firstPassTopDocs
-   *          documents to rerank;
-   * @param topN
-   *          documents to return;
+   * @param searcher current IndexSearcher
+   * @param firstPassTopDocs documents to rerank;
+   * @param topN documents to return;
    */
   @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
-      int topN) throws IOException {
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+      throws IOException {
     if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
@@ -118,52 +112,63 @@ public class LTRRescorer extends Rescorer {
     return new TopDocs(firstPassTopDocs.totalHits, reranked);
   }
 
-  private ScoreDoc[] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults) throws IOException {
+  private ScoreDoc[] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults)
+      throws IOException {
     final ScoreDoc[] reranked = new ScoreDoc[topN];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
-    final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
-        .createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
+    final LTRScoringQuery.ModelWeight modelWeight =
+        (LTRScoringQuery.ModelWeight)
+            searcher.createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
 
-    scoreFeatures(searcher,topN, modelWeight, firstPassResults, leaves, reranked);
+    scoreFeatures(searcher, topN, modelWeight, firstPassResults, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
     sortByScore(reranked);
     return reranked;
   }
 
   protected static void sortByScore(ScoreDoc[] reranked) {
-    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        // Sort by score descending, then docID ascending:
-        if (a.score > b.score) {
-          return -1;
-        } else if (a.score < b.score) {
-          return 1;
-        } else {
-          // This subtraction can't overflow int
-          // because docIDs are >= 0:
-          return a.doc - b.doc;
-        }
-      }
-    });
+    Arrays.sort(
+        reranked,
+        new Comparator<ScoreDoc>() {
+          @Override
+          public int compare(ScoreDoc a, ScoreDoc b) {
+            // Sort by score descending, then docID ascending:
+            if (a.score > b.score) {
+              return -1;
+            } else if (a.score < b.score) {
+              return 1;
+            } else {
+              // This subtraction can't overflow int
+              // because docIDs are >= 0:
+              return a.doc - b.doc;
+            }
+          }
+        });
   }
 
   protected static ScoreDoc[] getFirstPassDocsRanked(TopDocs firstPassTopDocs) {
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
-    Arrays.sort(hits, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        return a.doc - b.doc;
-      }
-    });
+    Arrays.sort(
+        hits,
+        new Comparator<ScoreDoc>() {
+          @Override
+          public int compare(ScoreDoc a, ScoreDoc b) {
+            return a.doc - b.doc;
+          }
+        });
 
     assert firstPassTopDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
     return hits;
   }
 
-  public void scoreFeatures(IndexSearcher indexSearcher,
-                            int topN, LTRScoringQuery.ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
-                            ScoreDoc[] reranked) throws IOException {
+  public void scoreFeatures(
+      IndexSearcher indexSearcher,
+      int topN,
+      LTRScoringQuery.ModelWeight modelWeight,
+      ScoreDoc[] hits,
+      List<LeafReaderContext> leaves,
+      ScoreDoc[] reranked)
+      throws IOException {
 
     int readerUpto = -1;
     int endDoc = 0;
@@ -186,18 +191,40 @@ public class LTRRescorer extends Rescorer {
         docBase = readerContext.docBase;
         scorer = modelWeight.scorer(readerContext);
       }
-      scoreSingleHit(indexSearcher, topN, modelWeight, docBase, hitUpto, hit, docID, scoringQuery, scorer, reranked);
+      scoreSingleHit(
+          indexSearcher,
+          topN,
+          modelWeight,
+          docBase,
+          hitUpto,
+          hit,
+          docID,
+          scoringQuery,
+          scorer,
+          reranked);
       hitUpto++;
     }
   }
 
-  protected static void scoreSingleHit(IndexSearcher indexSearcher, int topN, LTRScoringQuery.ModelWeight modelWeight, int docBase, int hitUpto, ScoreDoc hit, int docID, LTRScoringQuery rerankingQuery, LTRScoringQuery.ModelWeight.ModelScorer scorer, ScoreDoc[] reranked) throws IOException {
+  protected static void scoreSingleHit(
+      IndexSearcher indexSearcher,
+      int topN,
+      LTRScoringQuery.ModelWeight modelWeight,
+      int docBase,
+      int hitUpto,
+      ScoreDoc hit,
+      int docID,
+      LTRScoringQuery rerankingQuery,
+      LTRScoringQuery.ModelWeight.ModelScorer scorer,
+      ScoreDoc[] reranked)
+      throws IOException {
     final FeatureLogger featureLogger = rerankingQuery.getFeatureLogger();
     // Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to
     // call score
     // even if no feature scorers match, since a model might use that info to
     // return a
-    // non-zero score. Same applies for the case of advancing a LTRScoringQuery.ModelWeight.ModelScorer
+    // non-zero score. Same applies for the case of advancing a
+    // LTRScoringQuery.ModelWeight.ModelScorer
     // past the target
     // doc since the model algorithm still needs to compute a potentially
     // non-zero score from blank features.
@@ -213,7 +240,10 @@ public class LTRRescorer extends Rescorer {
       // if the heap is not full, maybe I want to log the features for this
       // document
       if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
-        featureLogger.log(hit.doc, rerankingQuery, (SolrIndexSearcher) indexSearcher,
+        featureLogger.log(
+            hit.doc,
+            rerankingQuery,
+            (SolrIndexSearcher) indexSearcher,
             modelWeight.getFeaturesInfo());
       }
     } else if (hitUpto == topN) {
@@ -230,7 +260,10 @@ public class LTRRescorer extends Rescorer {
         reranked[0] = hit;
         heapAdjust(reranked, topN, 0);
         if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
-          featureLogger.log(hit.doc, rerankingQuery, (SolrIndexSearcher) indexSearcher,
+          featureLogger.log(
+              hit.doc,
+              rerankingQuery,
+              (SolrIndexSearcher) indexSearcher,
               modelWeight.getFeaturesInfo());
         }
       }
@@ -238,37 +271,39 @@ public class LTRRescorer extends Rescorer {
   }
 
   @Override
-  public Explanation explain(IndexSearcher searcher,
-      Explanation firstPassExplanation, int docID) throws IOException {
+  public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID)
+      throws IOException {
     return getExplanation(searcher, docID, scoringQuery);
   }
 
-  protected static Explanation getExplanation(IndexSearcher searcher, int docID, LTRScoringQuery rerankingQuery) throws IOException {
-    final List<LeafReaderContext> leafContexts = searcher.getTopReaderContext()
-        .leaves();
+  protected static Explanation getExplanation(
+      IndexSearcher searcher, int docID, LTRScoringQuery rerankingQuery) throws IOException {
+    final List<LeafReaderContext> leafContexts = searcher.getTopReaderContext().leaves();
     final int n = ReaderUtil.subIndex(docID, leafContexts);
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = docID - context.docBase;
     final Weight rankingWeight;
     if (rerankingQuery instanceof OriginalRankingLTRScoringQuery) {
-      rankingWeight = rerankingQuery.getOriginalQuery().createWeight(searcher, ScoreMode.COMPLETE, 1);
+      rankingWeight =
+          rerankingQuery.getOriginalQuery().createWeight(searcher, ScoreMode.COMPLETE, 1);
     } else {
-      rankingWeight = searcher.createWeight(searcher.rewrite(rerankingQuery),
-          ScoreMode.COMPLETE, 1);
+      rankingWeight =
+          searcher.createWeight(searcher.rewrite(rerankingQuery), ScoreMode.COMPLETE, 1);
     }
     return rankingWeight.explain(context, deBasedDoc);
   }
 
-  public static LTRScoringQuery.FeatureInfo[] extractFeaturesInfo(LTRScoringQuery.ModelWeight modelWeight,
+  public static LTRScoringQuery.FeatureInfo[] extractFeaturesInfo(
+      LTRScoringQuery.ModelWeight modelWeight,
       int docid,
       Float originalDocScore,
       List<LeafReaderContext> leafContexts)
-          throws IOException {
+      throws IOException {
     final int n = ReaderUtil.subIndex(docid, leafContexts);
     final LeafReaderContext atomicContext = leafContexts.get(n);
     final int deBasedDoc = docid - atomicContext.docBase;
     final LTRScoringQuery.ModelWeight.ModelScorer r = modelWeight.scorer(atomicContext);
-    if ( (r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc) ) {
+    if ((r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc)) {
       return new LTRScoringQuery.FeatureInfo[0];
     } else {
       if (originalDocScore != null) {
@@ -280,5 +315,4 @@ public class LTRRescorer extends Rescorer {
       return modelWeight.getFeaturesInfo();
     }
   }
-
 }

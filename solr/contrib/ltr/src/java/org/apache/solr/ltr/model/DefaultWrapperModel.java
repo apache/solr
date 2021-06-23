@@ -25,7 +25,6 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
@@ -35,32 +34,38 @@ import org.noggit.ObjectBuilder;
 /**
  * A scoring model that fetches the wrapped model from {@link SolrResourceLoader}.
  *
- * <p>This model uses {@link SolrResourceLoader#openResource(String)} for fetching the wrapped model.
- * If you give a relative path for {@code params/resource}, this model will try to load the wrapped model from
- * the instance directory (i.e. ${solr.solr.home}). Otherwise, seek through classpaths.
+ * <p>This model uses {@link SolrResourceLoader#openResource(String)} for fetching the wrapped
+ * model. If you give a relative path for {@code params/resource}, this model will try to load the
+ * wrapped model from the instance directory (i.e. ${solr.solr.home}). Otherwise, seek through
+ * classpaths.
  *
  * <p>Example configuration:
+ *
  * <pre>{
-  "class": "org.apache.solr.ltr.model.DefaultWrapperModel",
-  "name": "myWrapperModelName",
-  "params": {
-    "resource": "models/myModel.json"
-  }
-}</pre>
+ * "class": "org.apache.solr.ltr.model.DefaultWrapperModel",
+ * "name": "myWrapperModelName",
+ * "params": {
+ * "resource": "models/myModel.json"
+ * }
+ * }</pre>
  *
  * @see SolrResourceLoader#openResource(String)
  */
 public class DefaultWrapperModel extends WrapperModel {
 
   /**
-   * resource is part of the LTRScoringModel params map
-   * and therefore here it does not individually
+   * resource is part of the LTRScoringModel params map and therefore here it does not individually
    * influence the class hashCode, equals, etc.
    */
   private String resource;
 
-  public DefaultWrapperModel(String name, List<Feature> features, List<Normalizer> norms, String featureStoreName,
-      List<Feature> allFeatures, Map<String, Object> params) {
+  public DefaultWrapperModel(
+      String name,
+      List<Feature> features,
+      List<Normalizer> norms,
+      String featureStoreName,
+      List<Feature> allFeatures,
+      Map<String, Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
   }
 
@@ -72,7 +77,7 @@ public class DefaultWrapperModel extends WrapperModel {
   protected void validate() throws ModelException {
     super.validate();
     if (resource == null) {
-      throw new ModelException("no resource configured for model "+name);
+      throw new ModelException("no resource configured for model " + name);
     }
   }
 
@@ -82,7 +87,8 @@ public class DefaultWrapperModel extends WrapperModel {
     try (InputStream in = openInputStream()) {
       modelMapObj = parseInputStream(in);
     } catch (IOException e) {
-      throw new ModelException("Failed to fetch the wrapper model from given resource (" + resource + ")", e);
+      throw new ModelException(
+          "Failed to fetch the wrapper model from given resource (" + resource + ")", e);
     }
     return modelMapObj;
   }

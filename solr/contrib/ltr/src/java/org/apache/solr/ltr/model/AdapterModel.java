@@ -18,14 +18,13 @@ package org.apache.solr.ltr.model;
 
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 
 /**
- * A scoring model whose initialization is completed via its
- * {@link #init(SolrResourceLoader)} method.
+ * A scoring model whose initialization is completed via its {@link #init(SolrResourceLoader)}
+ * method.
  *
  * @since 7.3
  */
@@ -33,13 +32,17 @@ public abstract class AdapterModel extends LTRScoringModel {
 
   protected SolrResourceLoader solrResourceLoader;
 
-  public AdapterModel(String name, List<Feature> features, List<Normalizer> norms, String featureStoreName,
-      List<Feature> allFeatures, Map<String,Object> params) {
+  public AdapterModel(
+      String name,
+      List<Feature> features,
+      List<Normalizer> norms,
+      String featureStoreName,
+      List<Feature> allFeatures,
+      Map<String, Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
   }
 
   public void init(SolrResourceLoader solrResourceLoader) throws ModelException {
     this.solrResourceLoader = solrResourceLoader;
   }
-
 }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- *  Contains Model related classes
- */
+/** Contains Model related classes */
 package org.apache.solr.ltr.model;
