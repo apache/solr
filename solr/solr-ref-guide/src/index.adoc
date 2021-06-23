@@ -4,8 +4,7 @@
     configuration-guide, \
     schema-indexing-guide, \
     query-guide, \
-    solr-upgrade-notes, \
-    how-to-contribute
+    solr-upgrade-notes
 :page-notitle:
 :page-show-toc: false
 :page-layout: home
