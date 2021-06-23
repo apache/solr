@@ -203,6 +203,16 @@ Applied after sorting by inherent replica attributes, this property defines a fa
 `stable[:hash[:_paramName_]]` the string value associated with the given parameter name is hashed to a dividend that is used to determine replica preference order (analogous to the explicit `dividend` property above); `_paramName_` defaults to `q` if not specified, providing stable routing keyed to the string value of the "main query".
 Note that this may be inappropriate for some use cases (e.g., static main queries that leverage parameter substitution)
 
+`replica.leader`::
+Prefer replicas based on their leader status, set to either `true` or `false`.
++
+Consider a shard with two `TLOG` replicas and four `PULL` replicas (six replicas in total, one of which is the leader).
+With `shards.preference=replica.leader:false`, 5 out of 6 replicas will be preferred.
+Contrast this with `shards.preference=replica.type:PULL` where only 4 of 6 replicas will be preferred.
++
+Note that the non-leader `TLOG` replica behaves like a `PULL` replica from a search perspective; it pulls index updates from the leader just like a `PULL` replica and does not perform soft-commits.
+The difference is that the non-leader `TLOG` replica also captures updates in its TLOG, so that it is a candidate to replace the current leader if it is lost.
+
 `node.sysprop`::
 Query will be routed to nodes with same defined system properties as the current one.
 For example, if you start Solr nodes on different racks, you'll want to identify those nodes by a <<property-substitution.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`).
@@ -244,6 +254,11 @@ shards.preference=replica.type:PULL,replica.type:TLOG,replica.location:local
 +
 [source,text]
 shards.preference=replica.location:local,replica.type:PULL,replica.type:TLOG
+
+* Prefer any replica that is not a leader:
++
+[source,text]
+`shards.preference=replica.leader:false`
 
 Note that if you provide these parameters in a query string, they need to be properly URL-encoded.
 

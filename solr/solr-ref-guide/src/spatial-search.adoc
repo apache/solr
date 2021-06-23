@@ -232,6 +232,13 @@ Using the <<dismax-query-parser.adoc#,DisMax>> or <<edismax-query-parser.adoc#,E
 [source,text]
 &q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc
 
+=== Returning Distance as a Field
+
+To return the distance as a pseudo field you can use the `geodist()` function in the field list.
+
+[source,text]
+&fl=distance:geodist()
+
 == RPT
 
 RPT refers to either `SpatialRecursivePrefixTreeFieldType` (aka simply RPT) and an extended version:
