@@ -134,6 +134,24 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
     assertEquals("node4", getHost(replicas.get(1).getNodeName()));
     assertEquals("node2", getHost(replicas.get(2).getNodeName()));
     assertEquals("node1", getHost(replicas.get(3).getNodeName()));
+
+    // make sure a single leader only still gets selected
+    List<Replica> onlyLeader = new ArrayList<>();
+    onlyLeader.add(
+        new Replica(
+            "node1",
+            Map.of(
+                ZkStateReader.NODE_NAME_PROP, "node1:8983_solr",
+                ZkStateReader.CORE_NAME_PROP, "collection1",
+                ZkStateReader.REPLICA_TYPE, "NRT",
+                ZkStateReader.LEADER_PROP, "true"
+            ),"collection1","shard1"
+        )
+    );
+    rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER + ":false");
+    comparator = new NodePreferenceRulesComparator(rules, null);
+    replicas.sort(comparator);
+    assertEquals("node1:8983_solr", onlyLeader.get(0).getNodeName());
   }
 
   @Test(expected = IllegalArgumentException.class)
