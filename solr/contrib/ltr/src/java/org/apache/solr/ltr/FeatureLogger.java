@@ -57,8 +57,11 @@ public abstract class FeatureLogger {
       return false;
     }
 
-    return searcher.cacheInsert(fvCacheName, fvCacheKey(scoringQuery, docid), featureVector)
-        != null;
+    if (null == searcher.cacheInsert(fvCacheName, fvCacheKey(scoringQuery, docid), featureVector)) {
+      return false;
+    }
+
+    return true;
   }
 
   public abstract String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo);
