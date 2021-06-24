@@ -46,8 +46,7 @@ public class TeamDraftInterleaving implements Interleaving {
 
   static {
     // We try to make things reproducible in the context of our tests by initializing the random
-    // instance
-    // based on the current seed
+    // instance based on the current seed
     String seed = System.getProperty("tests.seed");
     if (seed == null) {
       RANDOM = new Random();

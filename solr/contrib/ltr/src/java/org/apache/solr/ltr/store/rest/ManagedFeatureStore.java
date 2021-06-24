@@ -181,8 +181,8 @@ public class ManagedFeatureStore extends ManagedResource
   }
 
   private static LinkedHashMap<String, Object> toFeatureMap(Feature feat) {
-    final LinkedHashMap<String, Object> o =
-        new LinkedHashMap<>(4, 1.0f); // 1 extra for caller to add store
+    final LinkedHashMap<String, Object> o = new LinkedHashMap<>(4, 1.0f);
+    // 4 = 3 + 1 i.e. 1 extra for caller to add store
     o.put(NAME_KEY, feat.getName());
     o.put(CLASS_KEY, feat.getClass().getName());
     o.put(PARAMS_KEY, feat.paramsToMap());

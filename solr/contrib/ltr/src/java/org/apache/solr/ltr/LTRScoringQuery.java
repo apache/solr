@@ -61,9 +61,10 @@ public class LTRScoringQuery extends Query implements Accountable {
   private final LTRScoringModel ltrScoringModel;
   private final boolean extractAllFeatures;
   private final LTRThreadModule ltrThreadMgr;
-  private final Semaphore
-      querySemaphore; // limits the number of threads per query, so that multiple requests can be
-  // serviced simultaneously
+
+  // limits the number of threads per query, so that multiple requests can be serviced
+  // simultaneously
+  private final Semaphore querySemaphore;
 
   // feature logger to output the features.
   private FeatureLogger fl;
@@ -228,10 +229,9 @@ public class LTRScoringQuery extends Query implements Accountable {
         extractedFeatureWeights[i++] = fw;
       }
       for (final Feature f : modelFeatures) {
-        modelFeaturesWeights[j++] =
-            extractedFeatureWeights[
-                f.getIndex()]; // we can lookup by featureid because all features will be
+        // we can lookup by featureid because all features will be
         // extracted when this.extractAllFeatures is set
+        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getIndex()];
       }
     } else {
       for (final Feature.FeatureWeight fw : featureWeights) {
@@ -303,9 +303,11 @@ public class LTRScoringQuery extends Query implements Accountable {
       for (final Feature f : features) {
         CreateWeightCallable callable = new CreateWeightCallable(f, searcher, needsScores, req);
         RunnableFuture<Feature.FeatureWeight> runnableFuture = new FutureTask<>(callable);
-        querySemaphore
-            .acquire(); // always acquire before the ltrSemaphore is acquired, to guarantee a that
+
+        // always acquire before the ltrSemaphore is acquired, to guarantee a that
         // the current query is within the limit for max. threads
+        querySemaphore.acquire();
+
         ltrThreadMgr.acquireLTRSemaphore(); // may block and/or interrupt
         ltrThreadMgr.execute(runnableFuture); // releases semaphore when done
         futures.add(runnableFuture);
@@ -445,8 +447,8 @@ public class LTRScoringQuery extends Query implements Accountable {
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getIndex();
         FeatureInfo fInfo = featuresInfo[featureId];
-        if (fInfo
-            .isUsed()) { // not checking for finfo == null as that would be a bug we should catch
+        // not checking for finfo == null as that would be a bug we should catch
+        if (fInfo.isUsed()) {
           modelFeatureValuesNormalized[pos] = fInfo.getValue();
         } else {
           modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
@@ -482,9 +484,9 @@ public class LTRScoringQuery extends Query implements Accountable {
       for (int i = 0; i < extractedFeatureWeights.length; ++i) {
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
-        featuresInfo[featId].setValue(
-            value); // need to set default value everytime as the default value is used in 'dense'
+        // need to set default value everytime as the default value is used in 'dense'
         // mode even if used=false
+        featuresInfo[featId].setValue(value);
         featuresInfo[featId].setUsed(false);
       }
     }

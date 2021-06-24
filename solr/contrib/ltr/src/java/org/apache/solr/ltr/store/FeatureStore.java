@@ -28,8 +28,8 @@ public class FeatureStore {
   /** the name of the default feature store */
   public static final String DEFAULT_FEATURE_STORE_NAME = "_DEFAULT_";
 
-  private final LinkedHashMap<String, Feature> store =
-      new LinkedHashMap<>(); // LinkedHashMap because we need predictable iteration order
+  // LinkedHashMap because we need predictable iteration order
+  private final LinkedHashMap<String, Feature> store = new LinkedHashMap<>();
   private final String name;
 
   public FeatureStore(String name) {

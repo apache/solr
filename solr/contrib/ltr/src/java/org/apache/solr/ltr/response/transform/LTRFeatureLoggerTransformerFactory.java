@@ -168,9 +168,13 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
     private List<LeafReaderContext> leafContexts;
     private SolrIndexSearcher searcher;
+
     /**
-     * rerankingQueries, modelWeights have: length=1 - [Classic LTR] When reranking with a single
-     * model length=2 - [Interleaving] When reranking with interleaving (two ranking models are
+     * rerankingQueries, modelWeights have:
+     *
+     * <p>length=1 - [Classic LTR] When reranking with a single model
+     *
+     * <p>length=2 - [Interleaving] When reranking with interleaving (two ranking models are
      * involved)
      */
     private LTRScoringQuery[] rerankingQueriesFromContext;
@@ -244,8 +248,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
 
       final FeatureStore store = fr.getFeatureStore(transformerFeatureStore);
-      transformerFeatureStore =
-          store.getName(); // if transformerFeatureStore was null before this gets actual name
+
+      // if transformerFeatureStore was null before this gets actual name
+      transformerFeatureStore = store.getName();
 
       return new LoggingModel(loggingModelName, transformerFeatureStore, store.getFeatures());
     }
@@ -253,15 +258,22 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     /**
      * When preparing the reranking queries for logging features various scenarios apply:
      *
-     * <p>No Reranking There is the need of a logger model from the default feature store or the
-     * explicit feature store passed to extract the feature vector
+     * <p>No Reranking
      *
-     * <p>Re Ranking 1) If no explicit feature store is passed, the models for each reranking query
-     * can be safely re-used the feature vector can be fetched from the feature vector cache. 2) If
-     * an explicit feature store is passed, and no reranking query uses a model with that feature
-     * store, There is the need of a logger model to extract the feature vector 3) If an explicit
-     * feature store is passed, and there is a reranking query that uses a model with that feature
-     * store, the model can be re-used and there is no need for a logging model
+     * <p>There is the need of a logger model from the default feature store or the explicit feature
+     * store passed to extract the feature vector
+     *
+     * <p>Re Ranking
+     *
+     * <p>1) If no explicit feature store is passed, the models for each reranking query can be
+     * safely re-used the feature vector can be fetched from the feature vector cache.
+     *
+     * <p>2) If an explicit feature store is passed, and no reranking query uses a model with that
+     * feature store, There is the need of a logger model to extract the feature vector
+     *
+     * <p>3) If an explicit feature store is passed, and there is a reranking query that uses a
+     * model with that feature store, the model can be re-used and there is no need for a logging
+     * model
      *
      * @param transformerFeatureStore explicit feature store for the transformer
      * @param transformerExternalFeatureInfo explicit efi for the transformer

@@ -76,7 +76,6 @@ public class OriginalScoreFeature extends Feature {
       super(OriginalScoreFeature.this, searcher, request, originalQuery, efi);
       w = searcher.createWeight(searcher.rewrite(originalQuery), ScoreMode.COMPLETE, 1);
     }
-    ;
 
     @Override
     public String toString() {

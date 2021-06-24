@@ -219,15 +219,13 @@ public class LTRRescorer extends Rescorer {
       ScoreDoc[] reranked)
       throws IOException {
     final FeatureLogger featureLogger = rerankingQuery.getFeatureLogger();
-    // Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to
-    // call score
-    // even if no feature scorers match, since a model might use that info to
-    // return a
-    // non-zero score. Same applies for the case of advancing a
-    // LTRScoringQuery.ModelWeight.ModelScorer
-    // past the target
-    // doc since the model algorithm still needs to compute a potentially
-    // non-zero score from blank features.
+    /**
+     * Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to call
+     * score even if no feature scorers match, since a model might use that info to return a
+     * non-zero score. Same applies for the case of advancing a
+     * LTRScoringQuery.ModelWeight.ModelScorer past the target doc since the model algorithm still
+     * needs to compute a potentially non-zero score from blank features.
+     */
     assert (scorer != null);
     final int targetDoc = docID - docBase;
     scorer.docID();
