@@ -23,7 +23,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public abstract class FeatureLogger {
 
-  /** the name of the cache using for storing the feature value * */
+  /** the name of the cache using for storing the feature value */
   private final String fvCacheName;
 
   public enum FeatureFormat {

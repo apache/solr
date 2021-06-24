@@ -25,7 +25,7 @@ import org.apache.solr.ltr.feature.FeatureException;
 
 public class FeatureStore {
 
-  /** the name of the default feature store * */
+  /** the name of the default feature store */
   public static final String DEFAULT_FEATURE_STORE_NAME = "_DEFAULT_";
 
   private final LinkedHashMap<String, Feature> store =

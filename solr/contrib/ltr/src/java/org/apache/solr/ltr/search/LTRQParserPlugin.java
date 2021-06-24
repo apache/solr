@@ -65,19 +65,19 @@ public class LTRQParserPlugin extends QParserPlugin
 
   private LTRThreadModule threadManager = null;
 
-  /** query parser plugin: the name of the attribute for setting the model * */
+  /** query parser plugin: the name of the attribute for setting the model */
   public static final String MODEL = "model";
 
-  /** query parser plugin: default number of documents to rerank * */
+  /** query parser plugin: default number of documents to rerank */
   public static final int DEFAULT_RERANK_DOCS = 200;
 
   /** query parser plugin:the param that will select how the number of document to rerank */
   public static final String RERANK_DOCS = "reRankDocs";
 
-  /** query parser plugin: default interleaving algorithm * */
+  /** query parser plugin: default interleaving algorithm */
   public static final String DEFAULT_INTERLEAVING_ALGORITHM = Interleaving.TEAM_DRAFT;
 
-  /** query parser plugin:the param that selects the interleaving algorithm to use * */
+  /** query parser plugin:the param that selects the interleaving algorithm to use */
   public static final String INTERLEAVING_ALGORITHM = "interleavingAlgorithm";
 
   @Override

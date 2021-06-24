@@ -52,16 +52,16 @@ public class ManagedFeatureStore extends ManagedResource
     return (ManagedFeatureStore) core.getRestManager().getManagedResource(REST_END_POINT);
   }
 
-  /** the feature store rest endpoint * */
+  /** the feature store rest endpoint */
   public static final String REST_END_POINT = "/schema/feature-store";
 
-  /** name of the attribute containing the feature class * */
+  /** name of the attribute containing the feature class */
   static final String CLASS_KEY = "class";
-  /** name of the attribute containing the feature name * */
+  /** name of the attribute containing the feature name */
   static final String NAME_KEY = "name";
-  /** name of the attribute containing the feature params * */
+  /** name of the attribute containing the feature params */
   static final String PARAMS_KEY = "params";
-  /** name of the attribute containing the feature store used * */
+  /** name of the attribute containing the feature store used */
   static final String FEATURE_STORE_NAME_KEY = "store";
 
   private final Map<String, FeatureStore> stores = new HashMap<>();
