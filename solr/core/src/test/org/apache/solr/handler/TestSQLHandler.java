@@ -2141,7 +2141,15 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals("09", results.get(2).getString("id"));
     assertEquals("08", results.get(3).getString("id"));
     assertEquals("07", results.get(4).getString("id"));
-    
+
+    // no explicit offset, but defaults to 0 if using FETCH!
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("11", results.get(0).getString("id"));
+    assertEquals("10", results.get(1).getString("id"));
+    assertEquals("09", results.get(2).getString("id"));
+    assertEquals("08", results.get(3).getString("id"));
+    assertEquals("07", results.get(4).getString("id"));
+
     results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 5 FETCH NEXT 5 ROWS ONLY", 5);
     assertEquals("06", results.get(0).getString("id"));
     assertEquals("05", results.get(1).getString("id"));
