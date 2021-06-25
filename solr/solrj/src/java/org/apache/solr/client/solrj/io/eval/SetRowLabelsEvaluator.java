@@ -40,8 +40,7 @@ public class SetRowLabelsEvaluator extends RecursiveObjectEvaluator implements T
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an array of labels.",toExpression(constructingFactory), value2.getClass().getSimpleName()));
     } else {
       Matrix matrix = (Matrix)value1;
-      @SuppressWarnings({"rawtypes"})
-      List rowlabels =  (List)value2;
+      List<?> rowlabels =  (List<?>)value2;
 
       //Convert numeric labels to strings.
 

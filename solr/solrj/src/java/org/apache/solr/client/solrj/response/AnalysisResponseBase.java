@@ -75,8 +75,8 @@ public class AnalysisResponseBase extends SolrResponseBase {
         phase.addTokenInfo(tokenInfo);
       } else {
         @SuppressWarnings({"unchecked"})
-        List<NamedList<Object>> tokens = (List<NamedList<Object>>) phaseEntry.getValue();
-        for (NamedList<Object> token : tokens) {
+        List<NamedList<?>> tokens = (List<NamedList<?>>) phaseEntry.getValue();
+        for (NamedList<?> token : tokens) {
           TokenInfo tokenInfo = buildTokenInfo(token);
           phase.addTokenInfo(tokenInfo);
         }
@@ -114,7 +114,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
    *
    * @return The built token info.
    */
-  protected TokenInfo buildTokenInfo(NamedList<Object> tokenNL) {
+  protected TokenInfo buildTokenInfo(NamedList<?> tokenNL) {
     String text = (String) tokenNL.get("text");
     String rawText = (String) tokenNL.get("rawText");
     String type = (String) tokenNL.get("type");

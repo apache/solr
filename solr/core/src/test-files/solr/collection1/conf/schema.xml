@@ -497,6 +497,34 @@
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     </analyzer>
   </fieldType>
+
+  <!-- CommonGrams for phrase queries -->
+  <dynamicField name="*_commongrams" type="commongrams" />
+  <fieldType name="commongrams" class="solr.TextField" indexed="true" stored="true">
+    <analyzer type="index">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.CommonGramsFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.CommonGramsQueryFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <dynamicField name="*_commongrams_stop" type="commongrams_stop" />
+  <fieldType name="commongrams_stop" class="solr.TextField" indexed="true" stored="true">
+    <analyzer type="index">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.CommonGramsFilterFactory"/>
+      <filter class="solr.StopFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.CommonGramsQueryFilterFactory"/>
+      <filter class="solr.StopFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <copyField source="*_commongrams" dest="*_commongrams_stop" />
+  
   <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
   
   <fieldType name="binary" class="solr.BinaryField" />

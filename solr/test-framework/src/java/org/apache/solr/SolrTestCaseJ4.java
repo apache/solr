@@ -170,6 +170,7 @@ import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase.
@@ -224,6 +225,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try (Writer writer =
              new OutputStreamWriter(Files.newOutputStream(coreDirectory.resolve(CORE_PROPERTIES_FILENAME)), Charset.forName("UTF-8"))) {
       properties.store(writer, testname);
+    }
+  }
+
+  protected void assertExceptionThrownWithMessageContaining(Class<? extends Throwable> expectedType,
+                                                            List<String> expectedStrings, ThrowingRunnable runnable) {
+    Throwable thrown = expectThrows(expectedType, runnable);
+
+    if (expectedStrings != null) {
+      for (String expectedString : expectedStrings) {
+        assertThat(thrown.getMessage(), containsString(expectedString));
+      }
     }
   }
 

@@ -147,6 +147,12 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15474: Support Pluggable Circuit Breakers (Atri Sharma, Christine Poerschke)
 
+* SOLR-15044: When indexing nested docs via JSON, it is no longer necessary to provide child doc IDs.
+  This was already working for XML & "javabin"/SolrJ.  Previously, omitting the ID would be confused
+  for a partial/atomic update.  (David Smiley)
+
+* SOLR-15456: Get field type info from luke for custom fields instead of defaulting to String in Parallel SQL (Timothy Potter)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -319,13 +325,17 @@ Other Changes
 
 * SOLR-15439: Upgrade jose4j library used for JWT authentication processing, to v0.7.7 (janhoy)
 
-* SOLR-15385: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley)
+* SOLR-15385: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley, Christine Poerschke)
 
 * SOLR-15470: The binary distribution no longer contains test-framework jars (janhoy)
 
 * SOLR-15471: Rename lang id whitelist parameter to allowlist (Mike Drob)
 
 * SOLR-15451: SolrSchema (for Parallel SQL) should use PKI principal for internal request to /admin/luke to get table metadata (Timothy Potter)
+
+* SOLR-14341: SolrCloud: move the reference a collection has to a configSet in ZooKeeper from the
+  collections/collectionName into its state.json.  For many-collection clusters, this is an
+  optimization when the cluster status is fetched.  (Nazerke Seidan, David Smiley)
 
 Bug Fixes
 ---------------------
@@ -348,7 +358,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+* SOLR-15472: New shards.preference option for preferring replicas based on their leader status, i.e.
+  `shards.preference=replica.leader:false` would prefer non-leader replicas. (wei wang via Timothy Potter)
 
 Improvements
 ---------------------
@@ -425,9 +436,7 @@ Improvements
 * SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax escaping.
   It was inconsistent with other Solr options.  It did this escaping since 8.0 but not prior.  (David Smiley)
 
-* SOLR-15044: When indexing nested docs via JSON, it is no longer necessary to provide child doc IDs.
-  This was already working for XML & "javabin"/SolrJ.  Previously, omitting the ID would be confused
-  for a partial/atomic update.  (David Smiley)
+* SOLR-15337: Avoid XPath in solrconfig.xml parsing (noble)
 
 Optimizations
 ---------------------
@@ -457,6 +466,8 @@ Bug Fixes
 * SOLR-15457: Fix JSON Faceting on EnumFieldType -- returned values should not be internal ordinals.
   (Thomas Wöckinger via David Smiley)
 
+* SOLR-15216: Fix for Invalid Reference to data.followers in Admin UI. (Dean Pearce)
+
 * SOLR-15273: Fix NullPointerException in StoredFieldsShardResponseProcessor that happened when a field name alias is
   used for the unique key field in searches with distributed result grouping. (limingnihao via Christine Poerschke)
 
@@ -485,6 +496,9 @@ Other Changes
   be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
 
 * SOLR-15377: Improve IndexFetcher's exception logging upon replication errors. (Torsten Bøgh Köster, Christine Poerschke)
+
+* SOLR-15416: Metrics history handler and metrics history collection (together with its
+  specialized reporters) have been deprecated and will be removed in 9.0. (ab)
 
 * SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
 

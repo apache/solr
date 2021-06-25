@@ -49,15 +49,15 @@ public class BucketBasedJsonFacet {
   private long afterLastBucketCount = UNSET_FLAG;
   private long betweenAllBucketsCount = UNSET_FLAG;
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public BucketBasedJsonFacet(NamedList<Object> bucketBasedFacet) {
-    for (Map.Entry<String, Object> entry : bucketBasedFacet) {
+  public BucketBasedJsonFacet(NamedList<?> bucketBasedFacet) {
+    for (Map.Entry<String, ?> entry : bucketBasedFacet) {
       final String key = entry.getKey();
       final Object value = entry.getValue();
       if ("buckets".equals(key)) {
-        final List<NamedList> bucketListUnparsed = (List<NamedList>) value;
+        @SuppressWarnings({"unchecked"})
+        final List<NamedList<?>> bucketListUnparsed = (List<NamedList<?>>) value;
         buckets = new ArrayList<>();
-        for (NamedList bucket : bucketListUnparsed) {
+        for (NamedList<?> bucket : bucketListUnparsed) {
           buckets.add(new BucketJsonFacet(bucket));
         }
       } else if ("numBuckets".equals(key)) {

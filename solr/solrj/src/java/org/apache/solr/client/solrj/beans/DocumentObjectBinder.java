@@ -104,8 +104,7 @@ public class DocumentObjectBinder {
     Object val = field.get(obj);
     if (val == null) return;
     if (val instanceof Collection) {
-      @SuppressWarnings({"rawtypes"})
-      Collection collection = (Collection) val;
+      Collection<?> collection = (Collection<?>) val;
       for (Object o : collection) {
         SolrInputDocument child = toSolrInputDocument(o);
         doc.addChildDocument(child);
@@ -327,13 +326,12 @@ public class DocumentObjectBinder {
      * Returns <code>SolrDocument.getFieldValue</code> for regular fields,
      * and <code>Map<String, List<Object>></code> for a dynamic field. The key is all matching fieldName's.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private Object getFieldValue(SolrDocument solrDocument) {
       if (child != null) {
         List<SolrDocument> children = solrDocument.getChildDocuments();
         if (children == null || children.isEmpty()) return null;
         if (isList) {
-          ArrayList list = new ArrayList(children.size());
+          ArrayList<Object> list = new ArrayList<>(children.size());
           for (SolrDocument c : children) {
             list.add(getBean(type, child, c));
           }
@@ -361,11 +359,11 @@ public class DocumentObjectBinder {
 
       //reading dynamic field values
       Map<String, Object> allValuesMap = null;
-      List allValuesList = null;
+      List<Object> allValuesList = null;
       if (isContainedInMap) {
         allValuesMap = new HashMap<>();
       } else {
-        allValuesList = new ArrayList();
+        allValuesList = new ArrayList<>();
       }
 
       for (String field : solrDocument.getFieldNames()) {
@@ -378,7 +376,7 @@ public class DocumentObjectBinder {
           if (isContainedInMap) {
             if (isList) {
               if (!(val instanceof List)) {
-                List al = new ArrayList();
+                List<Object> al = new ArrayList<>();
                 al.add(val);
                 val = al;
               }
@@ -394,7 +392,7 @@ public class DocumentObjectBinder {
             allValuesMap.put(field, val);
           } else {
             if (val instanceof Collection) {
-              allValuesList.addAll((Collection) val);
+              allValuesList.addAll((Collection<?>) val);
             } else {
               allValuesList.add(val);
             }
@@ -408,7 +406,6 @@ public class DocumentObjectBinder {
       }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     <T> void inject(T obj, SolrDocument sdoc) {
       Object val = getFieldValue(sdoc);
       if(val == null) {
@@ -416,20 +413,19 @@ public class DocumentObjectBinder {
       }
 
       if (isArray && !isContainedInMap) {
-        List list;
+        List<?> list;
         if (val.getClass().isArray()) {
           set(obj, val);
           return;
         } else if (val instanceof List) {
-          list = (List) val;
+          list = (List<?>) val;
         } else {
-          list = new ArrayList();
-          list.add(val);
+          list = Collections.singletonList(val);
         }
         set(obj, list.toArray((Object[]) Array.newInstance(type, list.size())));
       } else if (isList && !isContainedInMap) {
         if (!(val instanceof List)) {
-          List list = new ArrayList();
+          List<Object> list = new ArrayList<>();
           list.add(val);
           val =  list;
         }

@@ -57,15 +57,14 @@ public class PrometheusExporterSettings {
   }
 
   public static PrometheusExporterSettings from(Node settings) {
-    @SuppressWarnings({"rawtypes"})
-    NamedList config = DOMUtil.childNodesToNamedList(settings);
+    NamedList<?> config = DOMUtil.childNodesToNamedList(settings);
 
     Builder builder = builder();
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    List<NamedList> httpClientSettings = config.getAll("httpClients");
+    @SuppressWarnings("unchecked")
+    List<NamedList<?>> httpClientSettings = (List<NamedList<?>>) config.getAll("httpClients");
 
-    for (@SuppressWarnings({"rawtypes"})NamedList entry : httpClientSettings) {
+    for (NamedList<?> entry : httpClientSettings) {
       Integer connectionTimeout = (Integer) entry.get("connectionTimeout");
       if (connectionTimeout != null) {
         builder.withConnectionHttpTimeout(connectionTimeout);

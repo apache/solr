@@ -26,8 +26,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.graph.Traversal.Scatter;
 
-@SuppressWarnings({"rawtypes"})
-class TraversalIterator implements Iterator {
+class TraversalIterator implements Iterator<Tuple> {
 
   private List<Map<String,Node>> graph;
   private List<String> collections;

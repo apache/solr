@@ -20,8 +20,7 @@
     client-apis, \
     further-assistance, \
     solr-glossary, \
-    errata, \
-    how-to-contribute
+    errata
 :page-notitle:
 :page-show-toc: false
 :page-layout: home
