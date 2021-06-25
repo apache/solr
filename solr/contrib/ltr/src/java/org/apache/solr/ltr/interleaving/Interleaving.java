@@ -22,11 +22,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.ltr.interleaving.algorithms.TeamDraftInterleaving;
 
 /**
- * Interleaving considers two ranking models: modelA and modelB. For a given query, each model
- * returns its ranked list of documents La = (a1,a2,...) and Lb = (b1, b2, ...). An Interleaving
- * algorithm creates a unique ranked list I = (i1, i2, ...). This list is created by interleaving
- * elements from the two lists la and lb as described by the implementation algorithm. Each element
- * Ij is labelled TeamA if it is selected from La and TeamB if it is selected from Lb.
+ * Interleaving considers two ranking models: modelA and modelB.<br>
+ * For a given query, each model returns its ranked list of documents La = (a1,a2,...) and Lb = (b1,
+ * b2, ...).<br>
+ * An Interleaving algorithm creates a unique ranked list I = (i1, i2, ...).<br>
+ * This list is created by interleaving elements from the two lists la and lb as described by the
+ * implementation algorithm.<br>
+ * Each element Ij is labelled TeamA if it is selected from La and TeamB if it is selected from Lb.
  */
 public interface Interleaving {
 
