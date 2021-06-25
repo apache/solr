@@ -26,7 +26,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
  * Manages all registered circuit breaker instances. Responsible for a holistic view
