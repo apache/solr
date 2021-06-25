@@ -2135,6 +2135,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "11")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
+    final int numDocs = 11;
+
     List<Tuple> results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 0 FETCH NEXT 5 ROWS ONLY", 5);
     assertEquals("11", results.get(0).getString("id"));
     assertEquals("10", results.get(1).getString("id"));
@@ -2160,7 +2162,17 @@ public class TestSQLHandler extends SolrCloudTestCase {
     results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 10 FETCH NEXT 5 ROWS ONLY", 1);
     assertEquals("01", results.get(0).getString("id"));
 
-    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC LIMIT 11", 11);
+    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC LIMIT "+numDocs, numDocs);
+
+    for (int i=0; i < numDocs; i++) {
+      results = expectResults("SELECT id FROM $ALIAS ORDER BY id ASC OFFSET "+i+" FETCH NEXT 1 ROW ONLY", 1);
+      String id = results.get(0).getString("id");
+      if (id.startsWith("0")) id = id.substring(1);
+      assertEquals(i+1, Integer.parseInt(id));
+    }
+
+    // just past the end of the results
+    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET "+numDocs+" FETCH NEXT 5 ROWS ONLY", 0);
 
     // Solr doesn't support OFFSET w/o LIMIT
     expectThrows(IOException.class, () -> expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 5", 5));
