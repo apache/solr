@@ -156,5 +156,8 @@ dependencies {
     exclude group: "ch.qos.logback", module: "logback-classic"
     exclude group: "org.slf4j", module: "slf4j-api"
   })
+
+  testFixturesApi("org.apache.lucene:lucene-test-framework")
+  testFixturesImplementation("org.apache.hadoop:hadoop-common")
 }
 
