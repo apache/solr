@@ -243,7 +243,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       router = DocRouter.DEFAULT;
     }
 
-    String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, ccc.getZkStateReader().readConfigName(collection));
+    String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, coll.getConfigName());
     String targetCollection;
     int seq = tmpCollectionSeq.getAndIncrement();
     if (sameTarget) {
