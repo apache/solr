@@ -42,13 +42,32 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 
-  private boolean enabled;
-  private final long heapMemoryThreshold;
+  private long heapMemoryThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
   private static final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
   private static final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
 
+  public MemoryCircuitBreaker() {
+    super();
+  }
+
+  public void setThreshold(int thresholdValueInPercentage) {
+    long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
+
+    if (currentMaxHeap <= 0) {
+      throw new IllegalArgumentException("Invalid JVM state for the max heap usage");
+    }
+
+    double thresholdInFraction = thresholdValueInPercentage / (double) 100;
+    heapMemoryThreshold = (long) (currentMaxHeap * thresholdInFraction);
+
+    if (heapMemoryThreshold <= 0) {
+      throw new IllegalStateException("Memory limit cannot be less than or equal to zero");
+    }
+  }
+
+  @Deprecated
   public MemoryCircuitBreaker(CircuitBreakerConfig config) {
     super(config);
 
@@ -75,10 +94,6 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   @Override
   public boolean isTripped() {
     if (!isEnabled()) {
-      return false;
-    }
-
-    if (!enabled) {
       return false;
     }
 

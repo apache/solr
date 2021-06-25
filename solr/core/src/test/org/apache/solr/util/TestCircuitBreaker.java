@@ -193,15 +193,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool(
         new SolrNamedThreadFactory("TestCircuitBreaker"));
     try {
-      removeAllExistingCircuitBreakers();
-
-      PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
-
-      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
-      CircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(circuitBreakerConfig);
-
-      h.getCore().getCircuitBreakerManager().register(circuitBreaker);
-
       List<Future<?>> futures = new ArrayList<>();
 
       for (int i = 0; i < 5; i++) {
@@ -330,17 +321,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
         log.info(logMessage);
       }
       return Long.MIN_VALUE; // Random number guaranteed to not trip the circuit breaker
-    }
-  }
-
-  private static class FakeCPUCircuitBreaker extends CPUCircuitBreaker {
-    public FakeCPUCircuitBreaker(CircuitBreakerConfig config) {
-      super(config);
-    }
-
-    @Override
-    protected double calculateLiveCPUUsage() {
-      return 92; // Return a value large enough to trigger the circuit breaker
     }
   }
 }

@@ -52,11 +52,13 @@ This circuit breaker tracks JVM heap memory usage and rejects incoming search re
 exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx). The main configuration for this circuit breaker is
 controlling the threshold percentage at which the breaker will trip.
 
-Configuration for JVM heap usage based circuit breaker:
+To enable and configure the JVM heap usage based circuit breaker, add the following under the circuitbreaker tag:
 
 [source,xml]
 ----
-<str name="memEnabled">true</str>
+<str  name="mem.class">org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker</str>
+<bool name="mem.enabled">true</bool>
+<int  name="mem.threshold">75</int>
 ----
 
 Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
@@ -66,7 +68,7 @@ The triggering threshold is defined as a percentage of the max heap allocated to
 
 [source,xml]
 ----
-<str name="memThreshold">75</str>
+<int name="mem.threshold">75</int>
 ----
 
 It does not logically make sense to have a threshold below 50% and above 95% of the max heap allocated to the JVM. Hence, the range
@@ -84,11 +86,13 @@ exceeds a configurable threshold. Note that the value used in computation is ove
 spike in traffic that goes down might still cause the circuit breaker to trigger for a short while before it resolves
 and updates the value. For more details of the calculation, please see https://en.wikipedia.org/wiki/Load_(computing)
 
-Configuration for CPU utilization based circuit breaker:
+To enable and configure the CPU utilization based circuit breaker:
 
 [source,xml]
 ----
-<str name="cpuEnabled">true</str>
+<str    name="cpu.class">org.apache.solr.util.FakeCPUCircuitBreaker</str>
+<bool   name="cpu.enabled">true</bool>
+<double name="cpu.usageThreshold">75</double>
 ----
 
 Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
@@ -98,7 +102,7 @@ The triggering threshold is defined in units of CPU utilization. The configurati
 
 [source,xml]
 ----
-<str name="cpuThreshold">75</str>
+<double name="cpu.usageThreshold">75</double>
 ----
 
 == Performance Considerations
@@ -106,4 +110,14 @@ It is worth noting that while JVM or CPU circuit breakers do not add any noticea
 circuit breakers checked for a single request can cause a performance overhead.
 
 In addition, it is a good practice to exponentially back off while retrying requests on a busy node.
+
+== Adding New Circuit Breakers
+To add new circuit breakers, add the new circuit breaker's class and required paramters within the circuitbreaker tag:
+
+[source,xml]
+----
+<str name="foobar.class">org.apache.solr.util.foobar</str>
+<bool name="foobar.enabled">true</bool>
+<double name="foobar.usageThreshold">75</double>
+----
 

@@ -33,8 +33,16 @@ package org.apache.solr.util.circuitbreaker;
 public abstract class CircuitBreaker {
   public static final String NAME = "circuitbreaker";
 
+  @Deprecated
   protected final CircuitBreakerConfig config;
 
+  protected boolean enabled = false;
+
+  public CircuitBreaker() {
+    this.config = null;
+  }
+
+  @Deprecated
   public CircuitBreaker(CircuitBreakerConfig config) {
     this.config = config;
   }
@@ -42,7 +50,15 @@ public abstract class CircuitBreaker {
   // Global config for all circuit breakers. For specific circuit breaker configs, define
   // your own config.
   protected boolean isEnabled() {
-    return config.isEnabled();
+    if (config != null) {
+      return config.isEnabled();
+    } else {
+      return enabled;
+    }
+  }
+
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
   }
 
   /**
@@ -60,6 +76,7 @@ public abstract class CircuitBreaker {
    */
   public abstract String getErrorMessage();
 
+  @Deprecated
   public static class CircuitBreakerConfig {
     private static final int MEM_CB_THRESHOLD_LOWER_BOUND = 50;
     private static final int MEM_CB_THRESHOLD_UPPER_BOUND = 95;

@@ -960,7 +960,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
-      this.circuitBreakerManager = initCircuitBreakerManager();
+      this.circuitBreakerManager = initCircuitBreakerManager(solrConfig, resourceLoader);
       solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
@@ -1180,9 +1180,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return coreMetricManager;
   }
 
-  private CircuitBreakerManager initCircuitBreakerManager() {
+  private static CircuitBreakerManager initCircuitBreakerManager(SolrConfig solrConfig, SolrResourceLoader solrResourceLoader) {
     final PluginInfo info = solrConfig.getPluginInfo(CircuitBreakerManager.class.getName());
-    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(info);
+    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(info, solrResourceLoader);
 
     return circuitBreakerManager;
   }

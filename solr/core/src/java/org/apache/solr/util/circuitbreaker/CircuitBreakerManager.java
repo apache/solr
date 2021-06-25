@@ -18,11 +18,14 @@
 package org.apache.solr.util.circuitbreaker;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
@@ -39,7 +42,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * NOTE: The current way of registering new default circuit breakers is minimal and not a long term
  * solution. There will be a follow up with a SIP for a schema API design.
  */
-public class CircuitBreakerManager implements PluginInfoInitialized {
+public class CircuitBreakerManager {
   // Class private to potentially allow "family" of circuit breakers to be enabled or disabled
   private final boolean enableCircuitBreakerManager;
 
@@ -47,18 +50,6 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
 
   public CircuitBreakerManager(final boolean enableCircuitBreakerManager) {
     this.enableCircuitBreakerManager = enableCircuitBreakerManager;
-  }
-
-  @Override
-  public void init(PluginInfo pluginInfo) {
-    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = buildCBConfig(pluginInfo);
-
-    // Install the default circuit breakers
-    CircuitBreaker memoryCircuitBreaker = new MemoryCircuitBreaker(circuitBreakerConfig);
-    CircuitBreaker cpuCircuitBreaker = new CPUCircuitBreaker(circuitBreakerConfig);
-
-    register(memoryCircuitBreaker);
-    register(cpuCircuitBreaker);
   }
 
   public void register(CircuitBreaker circuitBreaker) {
@@ -135,11 +126,50 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
    *
    * Any default circuit breakers should be registered here.
    */
+  @Deprecated
   public static CircuitBreakerManager build(PluginInfo pluginInfo) {
+    return build(pluginInfo, null);
+  }
+
+  /**
+   * TODO
+   */
+  public static CircuitBreakerManager build(PluginInfo pluginInfo, SolrResourceLoader solrResourceLoader) {
     boolean enabled = pluginInfo == null ? false : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
     CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);
 
-    circuitBreakerManager.init(pluginInfo);
+    final HashMap<String, CircuitBreaker> namedCBs = new HashMap<>();
+
+    if (solrResourceLoader != null) {
+      final String dotClass = ".class";
+      for (int idx = 0; idx < pluginInfo.initArgs.size(); ++idx) {
+        final String key = pluginInfo.initArgs.getName(idx);
+        final Object val = pluginInfo.initArgs.getVal(idx);
+        if (key.endsWith(dotClass)) {
+          final String cbName = key.substring(0, key.length() - dotClass.length());
+          final String cbClassName = (String)val;
+          namedCBs.put(cbName, solrResourceLoader.newInstance(cbClassName, CircuitBreaker.class));
+        }
+      }
+
+      for (String name : namedCBs.keySet()) {
+        final CircuitBreaker cb = namedCBs.get(name);
+        final String argPrefix = name + ".";
+
+        final HashMap<String,Object> params = new HashMap<>();
+
+        for (int idx = 0; idx < pluginInfo.initArgs.size(); ++idx) {
+          final String key = pluginInfo.initArgs.getName(idx);
+          final Object val = pluginInfo.initArgs.getVal(idx);
+          if (key.startsWith(argPrefix) && !key.endsWith(dotClass)) {
+            params.put(key.substring(argPrefix.length()), val);
+          }
+        }
+
+        SolrPluginUtils.invokeSetters(cb, params.entrySet());
+        circuitBreakerManager.register(cb);
+      }
+    }
 
     return circuitBreakerManager;
   }
