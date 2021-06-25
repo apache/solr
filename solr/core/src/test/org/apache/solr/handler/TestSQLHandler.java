@@ -2121,4 +2121,50 @@ public class TestSQLHandler extends SolrCloudTestCase {
   private String max(String type) {
     return String.format(Locale.ROOT, "max(%s) as max_%s", type, type);
   }
+
+  @Test
+  public void testCountDistinct() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    final int cardinality = 5;
+    final int maxDocs = 100;
+    final String padFmt = "%03d";
+    for (int i = 0; i < maxDocs; i++) {
+      updateRequest = addDocForDistinctTests(i, updateRequest, cardinality, padFmt);
+    }
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples = expectResults("SELECT COUNT(1) AS total_rows, COUNT(distinct str_s) AS distinct_str, MIN(str_s) AS min_str, MAX(str_s) AS max_str FROM $ALIAS", 1);
+    Tuple firstRow = tuples.get(0);
+    assertEquals(maxDocs, (long) firstRow.getLong("total_rows"));
+    assertEquals(cardinality, (long) firstRow.getLong("distinct_str"));
+
+    String expectedMin = String.format(Locale.ROOT, padFmt, 0);
+    String expectedMax = String.format(Locale.ROOT, padFmt, cardinality - 1); // max is card-1
+    assertEquals(expectedMin, firstRow.getString("min_str"));
+    assertEquals(expectedMax, firstRow.getString("max_str"));
+
+    tuples = expectResults("SELECT DISTINCT str_s FROM $ALIAS ORDER BY str_s ASC", cardinality);
+    for (int t = 0; t < tuples.size(); t++) {
+      assertEquals(String.format(Locale.ROOT, padFmt, t), tuples.get(t).getString("str_s"));
+    }
+
+    tuples = expectResults("SELECT APPROX_COUNT_DISTINCT(distinct str_s) AS approx_distinct FROM $ALIAS", 1);
+    firstRow = tuples.get(0);
+    assertEquals(cardinality, (long) firstRow.getLong("approx_distinct"));
+
+    /*
+    TODO: wait for Calcite upgrade, current version drops the distinct in the count
+    //tuples = expectResults("SELECT country_s, COUNT(distinct str_s) AS distinct_str FROM $ALIAS GROUP BY country_s", 2);
+    //firstRow = tuples.get(0);
+
+    SolrQuery q = new SolrQuery("*:*");
+    q.set("json.facet", "{\"country_s\":{\"type\":\"terms\",\"field\":\"country_s\",\"limit\":1250,\"sort\":{\"index\":\"asc\"},\"facet\":{\"unique_str\":\"unique(str_s)\"}}}");
+    QueryResponse qr = cluster.getSolrClient().query(COLLECTIONORALIAS, q);
+     */
+  }
+
+  private UpdateRequest addDocForDistinctTests(int id, UpdateRequest updateRequest, int cardinality, String padFmt) {
+    String country = id % 2 == 0 ? "US" : "CA";
+    return updateRequest.add("id", String.valueOf(id), "str_s", String.format(Locale.ROOT, padFmt, id % cardinality), "country_s", country);
+  }
 }
