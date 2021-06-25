@@ -43,13 +43,15 @@ import org.apache.solr.search.SolrIndexSearcher;
  * This feature returns the value of a field in the current document. The field must have
  * stored="true" or docValues="true" properties. Example configuration:
  *
- * <pre>{
- * "name":  "rawHits",
- * "class": "org.apache.solr.ltr.feature.FieldValueFeature",
- * "params": {
- * "field": "hits"
+ * <pre>
+ * {
+ *   "name":  "rawHits",
+ *   "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+ *   "params": {
+ *     "field": "hits"
+ *   }
  * }
- * }</pre>
+ * </pre>
  *
  * <p>There are 4 different types of FeatureScorers that a FieldValueFeatureWeight may use. The
  * chosen scorer depends on the field attributes.

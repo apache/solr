@@ -33,44 +33,46 @@ import org.apache.solr.util.SolrPluginUtils;
  *
  * <p>Example configuration:
  *
- * <pre>{
- * "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
- * "name" : "multipleadditivetreesmodel",
- * "features":[
- * { "name" : "userTextTitleMatch"},
- * { "name" : "originalScore"}
- * ],
- * "params" : {
- * "trees" : [
+ * <pre>
  * {
- * "weight" : "1",
- * "root": {
- * "feature" : "userTextTitleMatch",
- * "threshold" : "0.5",
- * "left" : {
- * "value" : "-100"
- * },
- * "right" : {
- * "feature" : "originalScore",
- * "threshold" : "10.0",
- * "left" : {
- * "value" : "50"
- * },
- * "right" : {
- * "value" : "75"
+ *   "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+ *   "name" : "multipleadditivetreesmodel",
+ *   "features":[
+ *     { "name" : "userTextTitleMatch"},
+ *     { "name" : "originalScore"}
+ *   ],
+ *   "params" : {
+ *     "trees" : [
+ *       {
+ *         "weight" : "1",
+ *         "root": {
+ *           "feature" : "userTextTitleMatch",
+ *           "threshold" : "0.5",
+ *           "left" : {
+ *             "value" : "-100"
+ *           },
+ *           "right" : {
+ *             "feature" : "originalScore",
+ *             "threshold" : "10.0",
+ *             "left" : {
+ *               "value" : "50"
+ *             },
+ *             "right" : {
+ *               "value" : "75"
+ *             }
+ *           }
+ *         }
+ *       },
+ *       {
+ *         "weight" : "2",
+ *         "root" : {
+ *           "value" : "-10"
+ *         }
+ *       }
+ *     ]
+ *   }
  * }
- * }
- * }
- * },
- * {
- * "weight" : "2",
- * "root" : {
- * "value" : "-10"
- * }
- * }
- * ]
- * }
- * }</pre>
+ * </pre>
  *
  * <p>Training libraries:
  *

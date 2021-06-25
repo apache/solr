@@ -25,8 +25,8 @@ import java.util.LinkedHashMap;
  *
  * <pre>
  * "norm" : {
- * "class" : "org.apache.solr.ltr.norm.StandardNormalizer",
- * "params" : { "avg":"42", "std":"6" }
+ *   "class" : "org.apache.solr.ltr.norm.StandardNormalizer",
+ *   "params" : { "avg":"42", "std":"6" }
  * }
  * </pre>
  *

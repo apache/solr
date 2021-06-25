@@ -47,13 +47,15 @@ import org.apache.solr.util.SolrPluginUtils;
  *
  * <p>Example configuration (snippet):
  *
- * <pre>{
- * "class" : "...",
- * "name" : "myFeature",
- * "params" : {
- * ...
+ * <pre>
+ * {
+ *   "class" : "...",
+ *   "name" : "myFeature",
+ *   "params" : {
+ *     ...
+ *   }
  * }
- * }</pre>
+ * </pre>
  *
  * <p>{@link Feature} is an abstract class and concrete classes should implement the {@link
  * #validate()} function, and must implement the {@link #paramsToMap()} and createWeight() methods.

@@ -30,11 +30,13 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  * <p>Example configuration:
  *
- * <pre>{
- * "name" : "userFromMobile",
- * "class" : "org.apache.solr.ltr.feature.ValueFeature",
- * "params" : { "value" : "${userFromMobile}", "required":true }
- * }</pre>
+ * <pre>
+ * {
+ *   "name" : "userFromMobile",
+ *   "class" : "org.apache.solr.ltr.feature.ValueFeature",
+ *   "params" : { "value" : "${userFromMobile}", "required":true }
+ * }
+ * </pre>
  *
  * You can place a constant value like "1.3f" in the value params, but many times you would want to
  * pass in external information to use per request. For instance, maybe you want to rank things

@@ -37,13 +37,15 @@ import org.apache.solr.ltr.norm.Normalizer;
  *
  * <p>Example configuration:
  *
- * <pre>{
- * "class": "...",
- * "name": "myModelName",
- * "params": {
- * ...
+ * <pre>
+ * {
+ *   "class": "...",
+ *   "name": "myModelName",
+ *   "params": {
+ *     ...
+ *   }
  * }
- * }</pre>
+ * </pre>
  *
  * <p>NOTE: no "features" are configured in the wrapper model because the wrapped model's features
  * will be used instead. Also note that if a "store" is configured for the wrapper model then it

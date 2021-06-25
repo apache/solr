@@ -41,13 +41,15 @@ import org.noggit.ObjectBuilder;
  *
  * <p>Example configuration:
  *
- * <pre>{
- * "class": "org.apache.solr.ltr.model.DefaultWrapperModel",
- * "name": "myWrapperModelName",
- * "params": {
- * "resource": "models/myModel.json"
+ * <pre>
+ * {
+ *   "class": "org.apache.solr.ltr.model.DefaultWrapperModel",
+ *   "name": "myWrapperModelName",
+ *   "params": {
+ *     "resource": "models/myModel.json"
+ *   }
  * }
- * }</pre>
+ * </pre>
  *
  * @see SolrResourceLoader#openResource(String)
  */

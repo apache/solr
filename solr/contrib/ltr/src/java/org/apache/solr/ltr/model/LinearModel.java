@@ -30,22 +30,24 @@ import org.apache.solr.ltr.norm.Normalizer;
  *
  * <p>Example configuration:
  *
- * <pre>{
- * "class" : "org.apache.solr.ltr.model.LinearModel",
- * "name" : "myModelName",
- * "features" : [
- * { "name" : "userTextTitleMatch" },
- * { "name" : "originalScore" },
- * { "name" : "isBook" }
- * ],
- * "params" : {
- * "weights" : {
- * "userTextTitleMatch" : 1.0,
- * "originalScore" : 0.5,
- * "isBook" : 0.1
+ * <pre>
+ * {
+ *   "class" : "org.apache.solr.ltr.model.LinearModel",
+ *   "name" : "myModelName",
+ *   "features" : [
+ *     { "name" : "userTextTitleMatch" },
+ *     { "name" : "originalScore" },
+ *     { "name" : "isBook" }
+ *   ],
+ *   "params" : {
+ *     "weights" : {
+ *       "userTextTitleMatch" : 1.0,
+ *       "originalScore" : 0.5,
+ *       "isBook" : 0.1
+ *     }
+ *   }
  * }
- * }
- * }</pre>
+ * </pre>
  *
  * <p>Training libraries:
  *

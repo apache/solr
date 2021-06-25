@@ -45,17 +45,22 @@ import org.apache.solr.search.SyntaxError;
  * href="https://lucene.apache.org/solr/guide/other-parsers.html">Solr documentation of other
  * parsers</a> you can use as a feature. Example configurations:
  *
- * <pre>[{ "name": "isBook",
- * "class": "org.apache.solr.ltr.feature.SolrFeature",
- * "params":{ "fq": ["{!terms f=category}book"] }
- * },
- * {
- * "name":  "documentRecency",
- * "class": "org.apache.solr.ltr.feature.SolrFeature",
- * "params": {
- * "q": "{!func}recip( ms(NOW,publish_date), 3.16e-11, 1, 1)"
- * }
- * }]</pre>
+ * <pre>
+ * [
+ *   {
+ *     "name": "isBook",
+ *     "class": "org.apache.solr.ltr.feature.SolrFeature",
+ *     "params":{ "fq": ["{!terms f=category}book"] }
+ *   },
+ *   {
+ *     "name":  "documentRecency",
+ *     "class": "org.apache.solr.ltr.feature.SolrFeature",
+ *     "params": {
+ *       "q": "{!func}recip( ms(NOW,publish_date), 3.16e-11, 1, 1)"
+ *     }
+ *   }
+ * ]
+ * </pre>
  */
 public class SolrFeature extends Feature {
 

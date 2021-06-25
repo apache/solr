@@ -36,13 +36,13 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  *
  * <pre>
  * &lt;queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"&gt;
- * &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
- * &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
+ *   &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
+ *   &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
  * &lt;/queryParser&gt;
  *
  * &lt;transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory"&gt;
- * &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
- * &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
+ *   &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
+ *   &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
  * &lt;/transformer&gt;
  * </pre>
  *

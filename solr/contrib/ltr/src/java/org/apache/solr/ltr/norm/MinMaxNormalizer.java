@@ -25,8 +25,8 @@ import java.util.LinkedHashMap;
  *
  * <pre>
  * "norm" : {
- * "class" : "org.apache.solr.ltr.norm.MinMaxNormalizer",
- * "params" : { "min":"0", "max":"50" }
+ *   "class" : "org.apache.solr.ltr.norm.MinMaxNormalizer",
+ *   "params" : { "min":"0", "max":"50" }
  * }
  * </pre>
  *

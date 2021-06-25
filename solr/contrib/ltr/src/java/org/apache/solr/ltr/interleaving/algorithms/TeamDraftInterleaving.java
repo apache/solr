@@ -27,19 +27,22 @@ import org.apache.solr.ltr.interleaving.Interleaving;
 import org.apache.solr.ltr.interleaving.InterleavingResult;
 
 /**
- * Interleaving was introduced the first time by Joachims in [1, 2]. Team Draft Interleaving is
- * among the most successful and used interleaving approaches[3]. Team Draft Interleaving implements
- * a method similar to the way in which captains select their players in team-matches. Team Draft
- * Interleaving produces a fair distribution of ranking models’ elements in the final interleaved
- * list. "Team draft interleaving" has also proved to overcome an issue of the "Balanced
- * interleaving" approach, in determining the winning model[4].
+ * Interleaving was introduced the first time by Joachims in [1, 2].<br>
+ * Team Draft Interleaving is among the most successful and used interleaving approaches[3].<br>
+ * Team Draft Interleaving implements a method similar to the way in which captains select their
+ * players in team-matches.<br>
+ * Team Draft Interleaving produces a fair distribution of ranking models’ elements in the final
+ * interleaved list.<br>
+ * "Team draft interleaving" has also proved to overcome an issue of the "Balanced interleaving"
+ * approach, in determining the winning model[4].
  *
- * <p>[1] T. Joachims. Optimizing search engines using clickthrough data. KDD (2002) [2]
- * T.Joachims.Evaluatingretrievalperformanceusingclickthroughdata.InJ.Franke, G. Nakhaeizadeh, and
- * I. Renz, editors, Text Mining, pages 79–96. Physica/Springer (2003) [3] F. Radlinski, M. Kurup,
- * and T. Joachims. How does clickthrough data reflect re- trieval quality? In CIKM, pages 43–52.
- * ACM Press (2008) [4] O. Chapelle, T. Joachims, F. Radlinski, and Y. Yue. Large-scale validation
- * and analysis of interleaved search evaluation. ACM TOIS, 30(1):1–41, Feb. (2012)
+ * <p>[1] T. Joachims. Optimizing search engines using clickthrough data. KDD (2002) <br>
+ * [2] T.Joachims.Evaluatingretrievalperformanceusingclickthroughdata.InJ.Franke, G. Nakhaeizadeh,
+ * and I. Renz, editors, Text Mining, pages 79–96. Physica/Springer (2003) <br>
+ * [3] F. Radlinski, M. Kurup, and T. Joachims. How does clickthrough data reflect re- trieval
+ * quality? In CIKM, pages 43–52. ACM Press (2008) <br>
+ * [4] O. Chapelle, T. Joachims, F. Radlinski, and Y. Yue. Large-scale validation and analysis of
+ * interleaved search evaluation. ACM TOIS, 30(1):1–41, Feb. (2012)
  */
 public class TeamDraftInterleaving implements Interleaving {
   public static Random RANDOM;
@@ -65,9 +68,11 @@ public class TeamDraftInterleaving implements Interleaving {
    * <p>[1] O. Chapelle, T. Joachims, F. Radlinski, and Y. Yue. Large-scale validation and analysis
    * of interleaved search evaluation. ACM TOIS, 30(1):1–41, Feb. (2012)
    *
-   * <p>Assumptions: - rerankedA and rerankedB has the same length. They contains the same search
-   * results, ranked differently by two ranking models - each reranked list can not contain the same
-   * search result more than once. - results are all from the same shard
+   * <p>Assumptions:<br>
+   * - rerankedA and rerankedB has the same length. They contains the same search results, ranked
+   * differently by two ranking models<br>
+   * - each reranked list can not contain the same search result more than once.<br>
+   * - results are all from the same shard<br>
    *
    * @param rerankedA a ranked list of search results produced by a ranking model A
    * @param rerankedB a ranked list of search results produced by a ranking model B

@@ -48,32 +48,34 @@ import org.apache.solr.util.SolrPluginUtils;
  *
  * <p>Example configuration (snippet):
  *
- * <pre>{
- * "class" : "...",
- * "name" : "myModelName",
- * "features" : [
+ * <pre>
  * {
- * "name" : "isBook"
- * },
- * {
- * "name" : "originalScore",
- * "norm": {
- * "class" : "org.apache.solr.ltr.norm.StandardNormalizer",
- * "params" : { "avg":"100", "std":"10" }
+ *   "class" : "...",
+ *   "name" : "myModelName",
+ *   "features" : [
+ *     {
+ *       "name" : "isBook"
+ *     },
+ *     {
+ *       "name" : "originalScore",
+ *       "norm": {
+ *         "class" : "org.apache.solr.ltr.norm.StandardNormalizer",
+ *         "params" : { "avg":"100", "std":"10" }
+ *       }
+ *     },
+ *     {
+ *       "name" : "price",
+ *       "norm": {
+ *         "class" : "org.apache.solr.ltr.norm.MinMaxNormalizer",
+ *         "params" : { "min":"0", "max":"1000" }
+ *       }
+ *     }
+ *   ],
+ *   "params" : {
+ *     ...
+ *   }
  * }
- * },
- * {
- * "name" : "price",
- * "norm": {
- * "class" : "org.apache.solr.ltr.norm.MinMaxNormalizer",
- * "params" : { "min":"0", "max":"1000" }
- * }
- * }
- * ],
- * "params" : {
- * ...
- * }
- * }</pre>
+ * </pre>
  *
  * <p>{@link LTRScoringModel} is an abstract class and concrete classes must implement the {@link
  * #score(float[])} and {@link #explain(LeafReaderContext, int, float, List)} methods.
