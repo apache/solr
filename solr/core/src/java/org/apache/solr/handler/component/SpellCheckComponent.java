@@ -131,6 +131,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false) || spellCheckers.isEmpty()) {
@@ -194,8 +195,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
         boolean isCorrectlySpelled = hits > (maxResultsForSuggest==null ? 0 : maxResultsForSuggest);
 
-        NamedList<Object> response = new SimpleOrderedMap<>();
-        NamedList<?> suggestions = toNamedList(shardRequest, spellingResult, q, extendedResults);
+        @SuppressWarnings({"rawtypes"})
+        NamedList response = new SimpleOrderedMap();
+        @SuppressWarnings({"rawtypes"})
+        NamedList suggestions = toNamedList(shardRequest, spellingResult, q, extendedResults);
         response.add("suggestions", suggestions);
 
         if (extendedResults) {
@@ -270,8 +273,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     return maxResultsForSuggest;
   }
   
+  @SuppressWarnings("unchecked")
   protected void addCollationsToResponse(SolrParams params, SpellingResult spellingResult, ResponseBuilder rb, String q,
-      NamedList<Object> response, boolean suggestionsMayOverlap) {
+      @SuppressWarnings({"rawtypes"})NamedList response, boolean suggestionsMayOverlap) {
     int maxCollations = params.getInt(SPELLCHECK_MAX_COLLATIONS, 1);
     int maxCollationTries = params.getInt(SPELLCHECK_MAX_COLLATION_TRIES, 0);
     int maxCollationEvaluations = params.getInt(SPELLCHECK_MAX_COLLATION_EVALUATIONS, 10000);
@@ -295,10 +299,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     //even in cases when the internal rank is the same.
     Collections.sort(collations);
 
-    NamedList<Object> collationList = new NamedList<>();
+    @SuppressWarnings({"rawtypes"})
+    NamedList collationList = new NamedList();
     for (SpellCheckCollation collation : collations) {
       if (collationExtendedResults) {
-        NamedList<Object> extendedResult = new SimpleOrderedMap<>();
+        @SuppressWarnings({"rawtypes"})
+        NamedList extendedResult = new SimpleOrderedMap();
         extendedResult.add("collationQuery", collation.getCollationQuery());
         extendedResult.add("hits", collation.getHits());
         extendedResult.add("misspellingsAndCorrections", collation.getMisspellingsAndCorrections());
@@ -317,7 +323,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     response.add("collations", collationList);
   }
 
-  private void addOriginalTermsToResponse(NamedList<Object> response, Collection<Token> originalTerms) {
+  @SuppressWarnings({"unchecked"})
+  private void addOriginalTermsToResponse(@SuppressWarnings({"rawtypes"})NamedList response, Collection<Token> originalTerms) {
     List<String> originalTermStr = new ArrayList<String>();
     for(Token t : originalTerms) {
       originalTermStr.add(t.toString());
@@ -362,6 +369,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "deprecation"})
   public void finishStage(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false) || rb.stage != ResponseBuilder.STAGE_GET_FIELDS)
@@ -391,9 +399,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (maxResultsForSuggest==null || !isCorrectlySpelled) {
       for (ShardRequest sreq : rb.finished) {
         for (ShardResponse srsp : sreq.responses) {
-          NamedList<?> nl = null;
+          @SuppressWarnings({"rawtypes"})
+          NamedList nl = null;
           try {
-            nl = (NamedList<?>) srsp.getSolrResponse().getResponse().get("spellcheck");
+            nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
           } catch (Exception e) {
             if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
               continue; // looks like a shard did not return anything
@@ -418,9 +427,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     SolrSpellChecker checker = getSpellChecker(rb.req.getParams());
     SpellingResult result = checker.mergeSuggestions(mergeData, numSug, count, extendedResults);
 
-    NamedList<Object> response = new SimpleOrderedMap<>();
+    @SuppressWarnings({"rawtypes"})
+    NamedList response = new SimpleOrderedMap();
 
-    NamedList<?> suggestions = toNamedList(false, result, origQuery, extendedResults);
+    @SuppressWarnings({"rawtypes"})
+    NamedList suggestions = toNamedList(false, result, origQuery, extendedResults);
     response.add("suggestions", suggestions);
 
     if (extendedResults) {
@@ -432,13 +443,15 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           .toArray(new SpellCheckCollation[mergeData.collations.size()]);
       Arrays.sort(sortedCollations);
 
-      NamedList<Object> collations = new NamedList<>();
+      @SuppressWarnings({"rawtypes"})
+      NamedList collations = new NamedList();
       int i = 0;
       while (i < maxCollations && i < sortedCollations.length) {
         SpellCheckCollation collation = sortedCollations[i];
         i++;
         if (collationExtendedResults) {
-          SimpleOrderedMap<Object> extendedResult = new SimpleOrderedMap<>();
+          @SuppressWarnings({"rawtypes"})
+          SimpleOrderedMap extendedResult = new SimpleOrderedMap();
           extendedResult.add("collationQuery", collation.getCollationQuery());
           extendedResult.add("hits", collation.getHits());
           extendedResult.add("misspellingsAndCorrections", collation
@@ -456,7 +469,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   @SuppressWarnings("unchecked")
-  private void collectShardSuggestions(NamedList<?> nl, SpellCheckMergeData mergeData) {
+  private void collectShardSuggestions(@SuppressWarnings({"rawtypes"})NamedList nl, SpellCheckMergeData mergeData) {
     SpellCheckResponse spellCheckResp = new SpellCheckResponse(nl);
     Iterable<Object> originalTermStrings = (Iterable<Object>) nl.get("originalTerms");
     if(originalTermStrings!=null) {
@@ -508,12 +521,14 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  private void collectShardCollations(SpellCheckMergeData mergeData, NamedList<?> spellCheckResponse, int maxCollationTries) {
+  @SuppressWarnings("unchecked")
+  private void collectShardCollations(SpellCheckMergeData mergeData, @SuppressWarnings({"rawtypes"})NamedList spellCheckResponse, int maxCollationTries) {
     Map<String, SpellCheckCollation> collations = mergeData.collations;
-    NamedList<?> collationHolder = (NamedList<?>) spellCheckResponse.get("collations");
+    @SuppressWarnings({"rawtypes"})
+    NamedList collationHolder = (NamedList) spellCheckResponse.get("collations");
     if(collationHolder != null) {
-      List<?> collationList = collationHolder.getAll("collation");
-      List<?> collationRankList = collationHolder.getAll("collationInternalRank");
+      List<Object> collationList = collationHolder.getAll("collation");
+      List<Object> collationRankList = collationHolder.getAll("collationInternalRank");
       int i=0;
       if(collationList != null) {
         for(Object o : collationList)
@@ -533,8 +548,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
               coll.setInternalRank(Math.max(coll.getInternalRank(),priorColl.getInternalRank()));
             }
             collations.put(coll.getCollationQuery(), coll);
-          } else {
-            NamedList<?> expandedCollation = (NamedList<?>) o;
+          } else
+          {
+            @SuppressWarnings({"rawtypes"})
+            NamedList expandedCollation = (NamedList) o;
             SpellCheckCollation coll = new SpellCheckCollation();
             coll.setCollationQuery((String) expandedCollation.get("collationQuery"));
             coll.setHits(((Number) expandedCollation.get("hits")).longValue());
@@ -542,9 +559,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
             {
               coll.setInternalRank((Integer) expandedCollation.get("collationInternalRank"));
             }
-            @SuppressWarnings("unchecked")
-            NamedList<String> misspellings = (NamedList<String>) expandedCollation.get("misspellingsAndCorrections");
-            coll.setMisspellingsAndCorrections(misspellings);
+            coll.setMisspellingsAndCorrections((NamedList) expandedCollation.get("misspellingsAndCorrections"));
             SpellCheckCollation priorColl = collations.get(coll.getCollationQuery());
             if(priorColl != null)
             {
@@ -630,9 +645,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     return spellCheckers.get(name);
   }
 
-  protected NamedList<Object> toNamedList(boolean shardRequest,
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  protected NamedList toNamedList(boolean shardRequest,
       SpellingResult spellingResult, String origQuery, boolean extendedResults) {
-    NamedList<Object> result = new NamedList<>();
+    NamedList result = new NamedList();
     Map<Token,LinkedHashMap<String,Integer>> suggestions = spellingResult
         .getSuggestions();
     boolean hasFreqInfo = spellingResult.hasTokenFrequencyInfo();
@@ -645,12 +661,18 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           .length());
       Map<String,Integer> theSuggestions = new LinkedHashMap<>(
           entry.getValue());
-      theSuggestions.keySet().removeIf(sug -> sug.equals(tokenString));
+      Iterator<String> sugIter = theSuggestions.keySet().iterator();
+      while (sugIter.hasNext()) {
+        String sug = sugIter.next();
+        if (sug.equals(tokenString)) {
+          sugIter.remove();
+        }
+      }
       if (theSuggestions.size() > 0) {
         hasSuggestions = true;
       }
       if (theSuggestions != null && (theSuggestions.size() > 0 || shardRequest)) {
-        SimpleOrderedMap<Object> suggestionList = new SimpleOrderedMap<>();
+        SimpleOrderedMap suggestionList = new SimpleOrderedMap();
         suggestionList.add("numFound", theSuggestions.size());
         suggestionList.add("startOffset", inputToken.startOffset());
         suggestionList.add("endOffset", inputToken.endOffset());
@@ -667,10 +689,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           suggestionList.add("origFreq", spellingResult
               .getTokenFrequency(inputToken));
 
-          ArrayList<SimpleOrderedMap<Object>> sugs = new ArrayList<>();
+          ArrayList<SimpleOrderedMap> sugs = new ArrayList<>();
           suggestionList.add("suggestion", sugs);
           for (Map.Entry<String,Integer> suggEntry : theSuggestions.entrySet()) {
-            SimpleOrderedMap<Object> sugEntry = new SimpleOrderedMap<>();
+            SimpleOrderedMap sugEntry = new SimpleOrderedMap();
             sugEntry.add("word", suggEntry.getKey());
             sugEntry.add("freq", suggEntry.getValue());
             sugs.add(sugEntry);

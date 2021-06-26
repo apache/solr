@@ -72,7 +72,8 @@ public class CSVParser {
   
   // the following objects are shared to reduce garbage 
   /** A record buffer for getLine(). Grows as necessary and is reused. */
-  private final ArrayList<String> record = new ArrayList<>();
+  @SuppressWarnings({"rawtypes"})
+  private final ArrayList record = new ArrayList();
   private final Token reusableToken = new Token();
   private final CharBuffer wsBuf = new CharBuffer();
   private final CharBuffer code = new CharBuffer(4);
@@ -138,8 +139,10 @@ public class CSVParser {
    * @return matrix of records x values ('null' when end of file)
    * @throws IOException on parse error or input read-failure
    */
+  @SuppressWarnings({"unchecked"})
   public String[][] getAllValues() throws IOException {
-    ArrayList<String[]> records = new ArrayList<>();
+    @SuppressWarnings({"rawtypes"})
+    ArrayList records = new ArrayList();
     String[] values;
     String[][] ret = null;
     while ((values = getLine()) != null)  {
@@ -221,7 +224,7 @@ public class CSVParser {
         }
     }
     if (!record.isEmpty()) {
-      ret = record.toArray(new String[record.size()]);
+      ret = (String[]) record.toArray(new String[record.size()]);
     }
     return ret;
   }

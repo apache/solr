@@ -27,8 +27,9 @@ import java.io.IOException;
  */
 public class NoOpRegenerator implements CacheRegenerator {
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   @Override
-  public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache<K,V> newCache, SolrCache<K,V> oldCache, K oldKey, V oldVal) throws IOException {
+  public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
     newCache.put(oldKey, oldVal);
     return true;
   }

@@ -99,22 +99,23 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public Object init(Map<String, String> args, Object persistence, CacheRegenerator regenerator) {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
-    String str = args.get(SIZE_PARAM);
+    String str = (String) args.get(SIZE_PARAM);
     maxSize = (str == null) ? 1024 : Integer.parseInt(str);
-    str = args.get("initialSize");
+    str = (String) args.get("initialSize");
     initialSize = Math.min((str == null) ? 1024 : Integer.parseInt(str), maxSize);
-    str = args.get(MAX_IDLE_TIME_PARAM);
+    str = (String) args.get(MAX_IDLE_TIME_PARAM);
     if (str == null) {
       maxIdleTimeSec = -1;
     } else {
       maxIdleTimeSec = Integer.parseInt(str);
     }
-    str = args.get(MAX_RAM_MB_PARAM);
+    str = (String) args.get(MAX_RAM_MB_PARAM);
     int maxRamMB = str == null ? -1 : Double.valueOf(str).intValue();
     maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
-    str = args.get(CLEANUP_THREAD_PARAM);
+    str = (String) args.get(CLEANUP_THREAD_PARAM);
     cleanupThread = str != null && Boolean.parseBoolean(str);
     if (cleanupThread) {
       executor = ForkJoinPool.commonPool();
@@ -135,8 +136,10 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     return persistence;
   }
 
+  @SuppressWarnings({"unchecked"})
   private Cache<K, V> buildCache(Cache<K, V> prev) {
-    Caffeine<K, V> builder = Caffeine.newBuilder()
+    @SuppressWarnings({"rawtypes"})
+    Caffeine builder = Caffeine.newBuilder()
         .initialCapacity(initialSize)
         .executor(executor)
         .removalListener(this)

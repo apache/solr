@@ -132,7 +132,8 @@ public class RankQueryTestPlugin extends QParserPlugin {
       this.mergeStrategy = mergeStrategy;
     }
 
-    public TopDocsCollector<ScoreDoc> getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) {
+    @SuppressWarnings({"rawtypes"})
+    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) {
       if(collector == 0)
         return new TestCollector(null);
       else
@@ -623,7 +624,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     private NamedList unmarshalSortValues(SortSpec sortSpec,
                                           NamedList sortFieldValues,
                                           IndexSchema schema) {
-      NamedList unmarshalledSortValsPerField = new NamedList<>();
+      NamedList unmarshalledSortValsPerField = new NamedList();
 
       if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;
 
@@ -663,11 +664,13 @@ public class RankQueryTestPlugin extends QParserPlugin {
   }
 
 
-  static class TestCollector extends TopDocsCollector<ScoreDoc> {
+  @SuppressWarnings({"rawtypes"})
+  static class TestCollector extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList<>();
 
-    public TestCollector(PriorityQueue<ScoreDoc> pq) {
+    @SuppressWarnings({"unchecked"})
+    public TestCollector(PriorityQueue pq) {
       super(pq);
     }
 
@@ -696,9 +699,12 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return list.size();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public TopDocs topDocs() {
-      Collections.sort(list, new Comparator<>() {
-        public int compare(ScoreDoc s1, ScoreDoc s2) {
+      Collections.sort(list, new Comparator() {
+        public int compare(Object o1, Object o2) {
+          ScoreDoc s1 = (ScoreDoc) o1;
+          ScoreDoc s2 = (ScoreDoc) o2;
           if (s1.score == s2.score) {
             return 0;
           } else if (s1.score < s2.score) {
@@ -726,11 +732,13 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
   }
 
-  static class TestCollector1 extends TopDocsCollector<ScoreDoc> {
+  @SuppressWarnings({"rawtypes"})
+  static class TestCollector1 extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList<>();
 
-    public TestCollector1(PriorityQueue<ScoreDoc> pq) {
+    @SuppressWarnings({"unchecked"})
+    public TestCollector1(PriorityQueue pq) {
       super(pq);
     }
 
@@ -756,9 +764,12 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return list.size();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public TopDocs topDocs() {
-      Collections.sort(list, new Comparator<>() {
-        public int compare(ScoreDoc s1, ScoreDoc s2) {
+      Collections.sort(list, new Comparator() {
+        public int compare(Object o1, Object o2) {
+          ScoreDoc s1 = (ScoreDoc) o1;
+          ScoreDoc s2 = (ScoreDoc) o2;
           if (s1.score == s2.score) {
             return 0;
           } else if (s1.score > s2.score) {

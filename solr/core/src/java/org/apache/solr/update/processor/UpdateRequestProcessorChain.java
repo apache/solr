@@ -171,6 +171,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<UpdateRequestProcessorFactory> createProcessors(PluginInfo info) {
     List<PluginInfo> processors = info.getChildren("processor");
     return processors.stream().map(it -> {
@@ -179,7 +180,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
             UpdateRequestProcessorFactory.class.getSimpleName(), null);
 
       } else {
-        return new LazyUpdateRequestProcessorFactory(new PackagePluginHolder<>(
+        return new LazyUpdateRequestProcessorFactory(new PackagePluginHolder(
             it,
             solrCore,
             SolrConfig.classVsSolrPluginInfo.get(UpdateRequestProcessorFactory.class.getName())));
@@ -355,7 +356,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   public static class LazyUpdateProcessorFactoryHolder extends PluginBag.PluginHolder<UpdateRequestProcessorFactory> {
     private volatile UpdateRequestProcessorFactory lazyFactory;
 
-    public LazyUpdateProcessorFactoryHolder(final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder) {
+    public LazyUpdateProcessorFactoryHolder(@SuppressWarnings({"rawtypes"})final PluginBag.PluginHolder holder) {
       super(holder.getPluginInfo());
       lazyFactory = new LazyUpdateRequestProcessorFactory(holder);
     }
@@ -369,7 +370,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     public static class LazyUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
       private final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder;
 
-      public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder) {
+      @SuppressWarnings({"unchecked", "rawtypes"})
+      public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder holder) {
         this.holder = holder;
       }
 

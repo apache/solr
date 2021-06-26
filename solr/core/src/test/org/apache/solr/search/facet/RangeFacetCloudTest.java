@@ -17,7 +17,6 @@
 package org.apache.solr.search.facet;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Array;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -79,8 +78,8 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
    * the array indexes represent values in our numeric field, while the array values
    * track the mapping from string field terms to facet counts for docs that have that numeric value
    */
-  @SuppressWarnings({"unchecked"})
-  private static final Map<String,Integer>[] TERM_MODEL = (Map<String, Integer>[]) Array.newInstance(Map.class, NUM_RANGE_VALUES);
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static final Map<String,Integer>[] TERM_MODEL = new Map[NUM_RANGE_VALUES];
   
   @BeforeClass
   public static void setupCluster() throws Exception {

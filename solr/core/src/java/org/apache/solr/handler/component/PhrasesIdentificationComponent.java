@@ -803,8 +803,9 @@ public class PhrasesIdentificationComponent extends SearchComponent {
         + "[" + position_start + ":" + position_end + "]";
     }
 
-    public NamedList<Object> getDetails() {
-      SimpleOrderedMap<Object> out = new SimpleOrderedMap<>();
+    @SuppressWarnings({"rawtypes"})
+    public NamedList getDetails() {
+      SimpleOrderedMap<Object> out = new SimpleOrderedMap<Object>();
       out.add("text", subSequence);
       out.add("offset_start", getOffsetStart());
       out.add("offset_end", getOffsetEnd());

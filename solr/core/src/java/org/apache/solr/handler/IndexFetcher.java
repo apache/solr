@@ -52,7 +52,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -904,11 +903,12 @@ public class IndexFetcher {
     // todo stop keeping solrCore around
     SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
     try {
-      AtomicReference<Future<Void>> waitSearcher = new AtomicReference<>();
+      @SuppressWarnings({"rawtypes"})
+      Future[] waitSearcher = new Future[1];
       searcher = core.getSearcher(true, true, waitSearcher, true);
-      if (waitSearcher.get() != null) {
+      if (waitSearcher[0] != null) {
         try {
-          waitSearcher.get().get();
+          waitSearcher[0].get();
         } catch (InterruptedException | ExecutionException e) {
           SolrException.log(log, e);
         }

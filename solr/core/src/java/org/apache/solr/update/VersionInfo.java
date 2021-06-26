@@ -220,7 +220,8 @@ public class VersionInfo {
       if (lookup < 0) return null; // this means the doc doesn't exist in the index yet
 
       ValueSource vs = versionField.getType().getValueSource(versionField, null);
-      Map<Object, Object> context = ValueSource.newContext(searcher);
+      @SuppressWarnings({"rawtypes"})
+      Map context = ValueSource.newContext(searcher);
       vs.createWeight(context, searcher);
       FunctionValues fv = vs.getValues(context, searcher.getTopReaderContext().leaves().get((int) (lookup >> 32)));
       long ver = fv.longVal((int) lookup);
@@ -256,7 +257,8 @@ public class VersionInfo {
     
     long maxVersionInIndex = 0L;
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
-    Map<Object, Object> funcContext = ValueSource.newContext(searcher);
+    @SuppressWarnings({"rawtypes"})
+    Map funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
     // TODO: multi-thread this
     for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {

@@ -302,7 +302,8 @@ public class PackageLoader implements Closeable {
         return version.copy();
       }
 
-      public Collection<String> getFiles() {
+      @SuppressWarnings({"rawtypes"})
+      public Collection getFiles() {
         return Collections.unmodifiableList(version.files);
       }
 

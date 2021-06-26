@@ -294,7 +294,8 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     String content = (String) p.addCommands.get(0).solrDoc.getFieldValue("_src_");
     assertNotNull(content);
-    Map<?, ?> obj = (Map<?, ?>) Utils.fromJSONString(content);
+    @SuppressWarnings({"rawtypes"})
+    Map obj = (Map) Utils.fromJSONString(content);
     assertEquals(Boolean.TRUE, obj.get("bool"));
     assertEquals("v0", obj.get("f0"));
     assertNotNull(obj.get("f0"));
@@ -303,7 +304,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     content = (String) p.addCommands.get(1).solrDoc.getFieldValue("_src_");
     assertNotNull(content);
-    obj = (Map<?, ?>) Utils.fromJSONString(content);
+    obj = (Map) Utils.fromJSONString(content);
     assertEquals("v1", obj.get("f1"));
     assertEquals("v2", obj.get("f2"));
     assertTrue(obj.containsKey("f3"));

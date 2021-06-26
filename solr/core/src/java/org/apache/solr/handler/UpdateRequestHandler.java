@@ -133,7 +133,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
     }
   }
   private Map<String ,ContentStreamLoader> pathVsLoaders = new HashMap<>();
-  protected Map<String,ContentStreamLoader> createDefaultLoaders(NamedList<?> args) {
+  protected Map<String,ContentStreamLoader> createDefaultLoaders(@SuppressWarnings({"rawtypes"})NamedList args) {
     SolrParams p = null;
     if(args!=null) {
       p = args.toSolrParams();

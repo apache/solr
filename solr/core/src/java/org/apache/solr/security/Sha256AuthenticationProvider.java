@@ -49,7 +49,8 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  static void putUser(String user, String pwd, Map<? super String, ? super String> credentials) {
+  @SuppressWarnings({"unchecked"})
+  static void putUser(String user, String pwd, @SuppressWarnings({"rawtypes"})Map credentials) {
     if (user == null || pwd == null) return;
     String val = getSaltedHashedValue(pwd);
     credentials.put(user, val);
@@ -130,6 +131,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Map<String, Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands) {
     for (CommandOperation cmd : commands) {
       if (!supported_ops.contains(cmd.name)) {
@@ -139,7 +141,8 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
       if (cmd.hasError()) return null;
       if ("delete-user".equals(cmd.name)) {
         List<String> names = cmd.getStrs("");
-        Map<?, ?> map = (Map<?, ?>) latestConf.get("credentials");
+        @SuppressWarnings({"rawtypes"})
+        Map map = (Map) latestConf.get("credentials");
         if (map == null || !map.keySet().containsAll(names)) {
           cmd.addError("No such user(s) " +names );
           return null;
@@ -156,14 +159,18 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
         return latestConf;
       }
       if ("set-user".equals(cmd.name) ) {
-        Map<String, Object> map = getMapValue(latestConf, "credentials");
-        Map<String, Object> kv = cmd.getDataMap();
-        for (Map.Entry<String, Object> e : kv.entrySet()) {
+        @SuppressWarnings({"rawtypes"})
+        Map map = getMapValue(latestConf, "credentials");
+        @SuppressWarnings({"rawtypes"})
+        Map kv = cmd.getDataMap();
+        for (Object o : kv.entrySet()) {
+          @SuppressWarnings({"rawtypes"})
+          Map.Entry e = (Map.Entry) o;
           if(e.getKey() == null || e.getValue() == null){
             cmd.addError("name and password must be non-null");
             return null;
           }
-          putUser(e.getKey(), String.valueOf(e.getValue()), map);
+          putUser(String.valueOf(e.getKey()), String.valueOf(e.getValue()), map);
         }
 
       }

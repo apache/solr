@@ -67,16 +67,16 @@ public class ExecutorUtil {
      * copy the necessary Objects to the ctx. The object that is passed is same
      * across all three methods
      */
-    void store(AtomicReference<Object> ctx);
+    public void store(AtomicReference<?> ctx);
 
     /**This is invoked in the Threadpool thread. set the appropriate values in the threadlocal
      * of this thread.     */
-    void set(AtomicReference<Object> ctx);
+    public void set(AtomicReference<?> ctx);
 
     /**This method is invoked in the threadpool thread after the execution
      * clean all the variables set in the set method
      */
-    void clean(AtomicReference<Object> ctx);
+    public void clean(AtomicReference<?> ctx);
   }
 
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
@@ -198,10 +198,10 @@ public class ExecutorUtil {
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
       final Exception submitterStackTrace = enableSubmitterStackTrace ? new Exception("Submitter stack trace") : null;
       final List<InheritableThreadLocalProvider> providersCopy = providers;
-      final ArrayList<AtomicReference<Object>> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
+      final ArrayList<AtomicReference<?>> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
       if (ctx != null) {
         for (int i = 0; i < providers.size(); i++) {
-          AtomicReference<Object> reference = new AtomicReference<>();
+          AtomicReference<?> reference = new AtomicReference<>();
           ctx.add(reference);
           providersCopy.get(i).store(reference);
         }

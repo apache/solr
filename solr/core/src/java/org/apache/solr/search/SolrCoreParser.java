@@ -55,7 +55,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
   }
 
   @Override
-  public void init(NamedList<?> initArgs) {
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList<?> initArgs) {
     if (initArgs == null || initArgs.size() == 0) {
       return;
     }

@@ -146,7 +146,8 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(log, e);
-      Map<Object,Object> requestContext = req.getContext();
+      @SuppressWarnings({"rawtypes"})
+      Map requestContext = req.getContext();
       requestContext.put("stream", new DummyErrorStream(e));
       return;
     }
@@ -157,7 +158,8 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);
     tupleStream.setStreamContext(context);
-    Map<Object,Object> requestContext = req.getContext();
+    @SuppressWarnings({"rawtypes"})
+    Map requestContext = req.getContext();
     requestContext.put("stream", new TimerStream(new ExceptionStream(tupleStream)));
     requestContext.put("traversal", traversal);
   }

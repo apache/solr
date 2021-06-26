@@ -95,7 +95,8 @@ public class ExportQParserPlugin extends QParserPlugin {
       }
     }
 
-    public TopDocsCollector<ScoreDoc> getTopDocsCollector(int len,
+    @SuppressWarnings({"rawtypes"})
+    public TopDocsCollector getTopDocsCollector(int len,
                                                 QueryCommand cmd,
                                                 IndexSearcher searcher) throws IOException {
       int leafCount = searcher.getTopReaderContext().leaves().size();
@@ -137,10 +138,12 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
   }
   
-  private static class ExportCollector extends TopDocsCollector<ScoreDoc>  {
+  @SuppressWarnings({"rawtypes"})
+  private static class ExportCollector extends TopDocsCollector  {
 
     private FixedBitSet[] sets;
 
+    @SuppressWarnings({"unchecked"})
     public ExportCollector(FixedBitSet[] sets) {
       super(null);
       this.sets = sets;
@@ -172,6 +175,7 @@ public class ExportQParserPlugin extends QParserPlugin {
       return docs;
     }
 
+    @SuppressWarnings({"unchecked"})
     public TopDocs topDocs(int start, int howMany) {
 
       assert(sets != null);
@@ -180,7 +184,8 @@ public class ExportQParserPlugin extends QParserPlugin {
 
       SolrQueryRequest req = null;
       if(info != null && ((req = info.getReq()) != null)) {
-        Map<Object,Object> context = req.getContext();
+        @SuppressWarnings({"rawtypes"})
+        Map context = req.getContext();
         context.put("export", sets);
         context.put("totalHits", totalHits);
       }

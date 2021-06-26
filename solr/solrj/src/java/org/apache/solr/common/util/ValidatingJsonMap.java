@@ -52,9 +52,9 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   @SuppressWarnings({"rawtypes"})
   public static final PredicateWithErrMsg<Pair> ENUM_OF = pair -> {
     if (pair.second() instanceof Set) {
-      Set<?> set = (Set<?>) pair.second();
+      Set set = (Set) pair.second();
       if (pair.first() instanceof Collection) {
-        for (Object o : (Collection<?>) pair.first()) {
+        for (Object o : (Collection) pair.first()) {
           if (!set.contains(o)) {
             return " Must be one of " + pair.second();
           }
@@ -352,7 +352,8 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return Objects.hash(delegate);
   }
 
-  public static final ValidatingJsonMap EMPTY = new ValidatingJsonMap(Collections.emptyMap());
+  @SuppressWarnings({"unchecked"})
+  public static final ValidatingJsonMap EMPTY = new ValidatingJsonMap(Collections.EMPTY_MAP);
 
   public interface PredicateWithErrMsg<T> {
 

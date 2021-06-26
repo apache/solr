@@ -69,7 +69,7 @@ public class FacetBucket {
     return merger;
   }
 
-  public void mergeBucket(SimpleOrderedMap<?> bucket, FacetMerger.Context mcontext) {
+  public void mergeBucket(@SuppressWarnings("rawtypes") SimpleOrderedMap bucket, FacetMerger.Context mcontext) {
     // todo: for refinements, we want to recurse, but not re-do stats for intermediate buckets
 
     mcontext.setShardFlag(bucketNumber);
@@ -96,8 +96,9 @@ public class FacetBucket {
   }
 
 
-  public SimpleOrderedMap<Object> getMergedBucket() {
-    SimpleOrderedMap<Object> out = new SimpleOrderedMap<>( (subs == null ? 0 : subs.size()) + 2 );
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  public SimpleOrderedMap getMergedBucket() {
+    SimpleOrderedMap out = new SimpleOrderedMap( (subs == null ? 0 : subs.size()) + 2 );
     if (bucketValue != null) {
       out.add("val", bucketValue);
     }

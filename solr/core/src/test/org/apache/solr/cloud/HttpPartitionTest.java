@@ -315,7 +315,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     Replica.State replicaState = Replica.State.ACTIVE;
     while (!timeOut.hasTimedOut()) {
       ZkStateReader zkr = cloudClient.getZkStateReader();
-      zkr.forceUpdateCollection(collection); // force the state to be fresh
+      zkr.forceUpdateCollection(collection);; // force the state to be fresh
       ClusterState cs = zkr.getClusterState();
       Collection<Slice> slices = cs.getCollection(collection).getActiveSlices();
       Slice slice = slices.iterator().next();
@@ -552,21 +552,24 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
    * Query the real-time get handler for a specific doc by ID to verify it
    * exists in the provided server, using distrib=false so it doesn't route to another replica.
    */
+  @SuppressWarnings("rawtypes")
   protected void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
-    NamedList<?> rsp = realTimeGetDocId(solr, docId);
+    NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match == null);
   }
 
   protected void assertDocNotExists(HttpSolrClient solr, String coll, String docId) throws Exception {
-    NamedList<?> rsp = realTimeGetDocId(solr, docId);
+    @SuppressWarnings({"rawtypes"})
+    NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), Integer.valueOf(docId));
     assertTrue("Doc with id=" + docId + " is found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match != null);
   }
 
-  private NamedList<Object> realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
+  @SuppressWarnings({"rawtypes"})
+  private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);
   }

@@ -76,7 +76,7 @@ public class CollApiCmds {
    * Interface implemented by all Collection API commands. Collection API commands are defined in classes whose names ends in {@code Cmd}.
    */
   protected interface CollectionApiCommand {
-    void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception;
+    void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception;
   }
 
   /**
@@ -150,7 +150,8 @@ public class CollApiCmds {
 
   static public class MockOperationCmd implements CollectionApiCommand {
     @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
-    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws InterruptedException {
+    @SuppressWarnings({"unchecked"})
+    public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws InterruptedException {
       //only for test purposes
       Thread.sleep(message.getInt("sleep", 1));
       if (log.isInfoEnabled()) {
@@ -167,7 +168,8 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) {
+    @SuppressWarnings({"unchecked"})
+    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
@@ -183,7 +185,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
           CORE_NODE_NAME_PROP, NODE_NAME_PROP, REJOIN_AT_HEAD_PROP);
@@ -219,7 +221,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
       Map<String, Object> propMap = new HashMap<>();
@@ -242,7 +244,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
       Map<String, Object> propMap = new HashMap<>();
@@ -265,7 +267,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
+    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
       if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
@@ -290,7 +292,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
+    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
 
       final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
       //the rest of the processing is based on writing cluster state properties

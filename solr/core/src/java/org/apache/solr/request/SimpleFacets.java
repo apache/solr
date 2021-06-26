@@ -267,7 +267,8 @@ public class SimpleFacets {
       } else {
         return base;
       }
-      AllGroupHeadsCollector<?> allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
+      @SuppressWarnings({"rawtypes"})
+      AllGroupHeadsCollector allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
       searcher.search(base.getTopFilter(), allGroupHeadsCollector);
       return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
     } else {
@@ -333,7 +334,8 @@ public class SimpleFacets {
       );
     }
 
-    AllGroupsCollector<?> collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
+    @SuppressWarnings({"rawtypes"})
+    AllGroupsCollector collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
     searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.getTopFilter()), collector);
     return collector.getGroupCount();
   }
@@ -785,6 +787,7 @@ public class SimpleFacets {
    * @see #getFieldMissingCount
    * @see #getFacetTermEnumCounts
    */
+  @SuppressWarnings("unchecked")
   public NamedList<Object> getFacetFieldCounts()
       throws IOException, SyntaxError {
 
@@ -800,7 +803,8 @@ public class SimpleFacets {
     int maxThreads = req.getParams().getInt(FacetParams.FACET_THREADS, 0);
     Executor executor = maxThreads == 0 ? directExecutor : facetExecutor;
     final Semaphore semaphore = new Semaphore((maxThreads <= 0) ? Integer.MAX_VALUE : maxThreads);
-    List<Future<NamedList<?>>> futures = new ArrayList<>(facetFs.length);
+    @SuppressWarnings({"rawtypes"})
+    List<Future<NamedList>> futures = new ArrayList<>(facetFs.length);
 
     if (fdebugParent != null) {
       fdebugParent.putInfoItem("maxThreads", maxThreads);
@@ -818,7 +822,8 @@ public class SimpleFacets {
         final String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);
         final String key = parsed.key;
         final String facetValue = parsed.facetValue;
-        Callable<NamedList<?>> callable = () -> {
+        @SuppressWarnings({"rawtypes"})
+        Callable<NamedList> callable = () -> {
           try {
             NamedList<Object> result = new SimpleOrderedMap<>();
             if(termList != null) {
@@ -842,14 +847,15 @@ public class SimpleFacets {
           }
         };
 
-        RunnableFuture<NamedList<?>> runnableFuture = new FutureTask<>(callable);
+        @SuppressWarnings({"rawtypes"})
+        RunnableFuture<NamedList> runnableFuture = new FutureTask<>(callable);
         semaphore.acquire();//may block and/or interrupt
         executor.execute(runnableFuture);//releases semaphore when done
         futures.add(runnableFuture);
       }//facetFs loop
 
       //Loop over futures to get the values. The order is the same as facetFs but shouldn't matter.
-      for (Future<NamedList<?>> future : futures) {
+      for (@SuppressWarnings({"rawtypes"})Future<NamedList> future : futures) {
         res.addAll(future.get());
       }
       assert semaphore.availablePermits() >= maxThreads;
@@ -1199,7 +1205,8 @@ public class SimpleFacets {
     return res;
   }
 
-  public NamedList<Object> getHeatmapCounts() throws IOException, SyntaxError {
+  @SuppressWarnings({"rawtypes"})
+  public NamedList getHeatmapCounts() throws IOException, SyntaxError {
     final NamedList<Object> resOuter = new SimpleOrderedMap<>();
     String[] unparsedFields = rb.req.getParams().getParams(FacetParams.FACET_HEATMAP);
     if (unparsedFields == null || unparsedFields.length == 0) {

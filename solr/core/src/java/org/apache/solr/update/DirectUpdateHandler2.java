@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.Meter;
@@ -605,6 +604,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void commit(CommitUpdateCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
     if (cmd.prepareCommit) {
@@ -619,7 +619,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (cmd.expungeDeletes) expungeDeleteCommands.mark();
     }
 
-    AtomicReference<Future<Void>> waitSearcher = cmd.waitSearcher ? new AtomicReference<>() : null;
+    Future[] waitSearcher = null;
+    if (cmd.waitSearcher) {
+      waitSearcher = new Future[1];
+    }
 
     boolean error=true;
     try {
@@ -734,9 +737,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     // if we are supposed to wait for the searcher to be registered, then we should do it
     // outside any synchronized block so that other update operations can proceed.
-    if (waitSearcher != null && waitSearcher.get() != null) {
+    if (waitSearcher!=null && waitSearcher[0] != null) {
        try {
-        waitSearcher.get().get();
+        waitSearcher[0].get();
       } catch (InterruptedException | ExecutionException e) {
         SolrException.log(log,e);
       }

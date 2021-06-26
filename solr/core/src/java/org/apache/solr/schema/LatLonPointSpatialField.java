@@ -58,7 +58,8 @@ import static java.math.RoundingMode.CEILING;
  * coordinates in lat/lon decimal degrees.  The accuracy is about a centimeter (1.042cm).
  */
 // TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
-public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPointSpatialField.LatLonPointSpatialStrategy> implements SchemaAware {
+@SuppressWarnings({"rawtypes"})
+public class LatLonPointSpatialField extends AbstractSpatialFieldType implements SchemaAware {
   private IndexSchema schema;
 
   // TODO handle polygons
@@ -73,7 +74,7 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
   }
 
   @Override
-  protected LatLonPointSpatialStrategy newSpatialStrategy(String fieldName) {
+  protected SpatialStrategy newSpatialStrategy(String fieldName) {
     SchemaField schemaField = schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
     return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
   }

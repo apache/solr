@@ -160,7 +160,8 @@ public class TaggerRequestHandler extends RequestHandlerBase {
 
     final SolrIndexSearcher searcher = req.getSearcher();
     final FixedBitSet matchDocIdsBS = new FixedBitSet(searcher.maxDoc());
-    final List<NamedList<?>> tags = new ArrayList<>(2000);
+    @SuppressWarnings({"rawtypes"})
+    final List tags = new ArrayList(2000);
 
     try {
       Analyzer analyzer = req.getSchema().getField(indexedField).getType().getQueryAnalyzer();
@@ -169,6 +170,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
         if (terms != null) {
           Tagger tagger = new Tagger(terms, computeDocCorpus(req), tokenStream, tagClusterReducer,
               skipAltTokens, ignoreStopWords) {
+            @SuppressWarnings("unchecked")
             @Override
             protected void tagCallback(int startOffset, int endOffset, Object docIdsKey) {
               if (tags.size() >= tagsLimit)
@@ -184,7 +186,8 @@ public class TaggerRequestHandler extends RequestHandlerBase {
                 endOffset = offsetPair[1];
               }
 
-              NamedList<Object> tag = new NamedList<>();
+              @SuppressWarnings({"rawtypes"})
+              NamedList tag = new NamedList();
               tag.add("startOffset", startOffset);
               tag.add("endOffset", endOffset);
               if (addMatchText)
@@ -194,13 +197,15 @@ public class TaggerRequestHandler extends RequestHandlerBase {
               tags.add(tag);
             }
 
-            Map<Object, List<Object>> docIdsListCache = new HashMap<>(2000);
+            @SuppressWarnings({"rawtypes"})
+            Map<Object, List> docIdsListCache = new HashMap<>(2000);
 
             ValueSourceAccessor uniqueKeyCache = new ValueSourceAccessor(searcher,
                 idSchemaField.getType().getValueSource(idSchemaField, null));
 
-            private List<Object> lookupSchemaDocIds(Object docIdsKey) {
-              List<Object> schemaDocIds = docIdsListCache.get(docIdsKey);
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            private List lookupSchemaDocIds(Object docIdsKey) {
+              List schemaDocIds = docIdsListCache.get(docIdsKey);
               if (schemaDocIds != null)
                 return schemaDocIds;
               IntsRef docIds = lookupDocIds(docIdsKey);
@@ -347,7 +352,8 @@ public class TaggerRequestHandler extends RequestHandlerBase {
   static class ValueSourceAccessor {
     private final List<LeafReaderContext> readerContexts;
     private final ValueSource valueSource;
-    private final Map<Object,Object> fContext;
+    @SuppressWarnings({"rawtypes"})
+    private final Map fContext;
     private final FunctionValues[] functionValuesPerSeg;
     private final int[] functionValuesDocIdPerSeg;
 
@@ -359,6 +365,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
       functionValuesDocIdPerSeg = new int[readerContexts.size()];
     }
 
+    @SuppressWarnings({"unchecked"})
     Object objectVal(int topDocId) throws IOException {
       // lookup segment level stuff:
       int segIdx = ReaderUtil.subIndex(topDocId, readerContexts);

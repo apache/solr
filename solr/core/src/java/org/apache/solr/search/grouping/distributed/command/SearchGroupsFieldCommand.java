@@ -85,7 +85,8 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
 
   @SuppressWarnings({"rawtypes"})
   private FirstPassGroupingCollector firstPassGroupingCollector;
-  private AllGroupsCollector<?> allGroupsCollector;
+  @SuppressWarnings({"rawtypes"})
+  private AllGroupsCollector allGroupsCollector;
 
   private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
     this.field = field;
@@ -101,7 +102,6 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     if (topNGroups > 0) {
       if (fieldType.getNumberType() != null) {
         ValueSource vs = fieldType.getValueSource(field, null);
-        // TODO: Maybe create a GroupSelector implementation that takes a value source and a field but produces a BytesRef
         firstPassGroupingCollector
             = new FirstPassGroupingCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()), groupSort, topNGroups);
       } else {

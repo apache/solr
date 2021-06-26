@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -88,7 +89,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
 
       try {
-        List<Map<String,Object>> errs = new SchemaManager(req).performOperations();
+        @SuppressWarnings({"rawtypes"})
+        List errs = new SchemaManager(req).performOperations();
         if (!errs.isEmpty())
           throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
       } catch (IOException e) {
@@ -167,15 +169,18 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             if (parts.size() > 2) {
               req.setParams(SolrParams.wrapDefaults(new MapSolrParams(singletonMap(pathParam, parts.get(2))), req.getParams()));
             }
-            Map<String,Object> propertyValues = req.getSchema().getNamedPropertyValues(realName, req.getParams());
+            @SuppressWarnings({"rawtypes"})
+            Map propertyValues = req.getSchema().getNamedPropertyValues(realName, req.getParams());
             Object o = propertyValues.get(fieldName);
             if(parts.size()> 2) {
               String name = parts.get(2);
               if (o instanceof List) {
-                List<?> list = (List<?>) o;
+                @SuppressWarnings({"rawtypes"})
+                List list = (List) o;
                 for (Object obj : list) {
                   if (obj instanceof SimpleOrderedMap) {
-                    SimpleOrderedMap<?> simpleOrderedMap = (SimpleOrderedMap<?>) obj;
+                    @SuppressWarnings({"rawtypes"})
+                    SimpleOrderedMap simpleOrderedMap = (SimpleOrderedMap) obj;
                     if(name.equals(simpleOrderedMap.get("name"))) {
                       rsp.add(fieldName.substring(0, realName.length() - 1), simpleOrderedMap);
                       insertPackageInfo(rsp.getValues(), req);
@@ -205,18 +210,18 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
    * If a plugin is loaded from a package, the version of the package being used should be added
    * to the response
    */
+  @SuppressWarnings("rawtypes")
   private void insertPackageInfo(Object o, SolrQueryRequest req) {
     if (!req.getParams().getBool("meta", false)) return;
     if (o instanceof List) {
-      List<?> l = (List<?>) o;
+      List l = (List) o;
       for (Object o1 : l) {
         if (o1 instanceof NamedList || o1 instanceof List) insertPackageInfo(o1, req);
       }
 
     } else if (o instanceof NamedList) {
-      @SuppressWarnings("unchecked")
-      NamedList<Object> nl = (NamedList<Object>) o;
-      nl.forEach((n, v) -> {
+      NamedList nl = (NamedList) o;
+      nl.forEach((BiConsumer) (n, v) -> {
         if (v instanceof NamedList || v instanceof List) insertPackageInfo(v, req);
       });
       Object v = nl.get("class");

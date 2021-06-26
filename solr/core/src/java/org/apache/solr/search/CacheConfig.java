@@ -116,10 +116,12 @@ public class CacheConfig implements MapSerializable{
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, String nodeName, Map<String,String> attrs, String xpath) {
     CacheConfig config = new CacheConfig();
     config.nodeName = nodeName;
-    Map<String,String> attrsCopy = new LinkedHashMap<>(attrs.size());
+    @SuppressWarnings({"rawtypes"})
+    Map attrsCopy = new LinkedHashMap<>(attrs.size());
     for (Map.Entry<String, String> e : attrs.entrySet()) {
       attrsCopy.put(e.getKey(), String.valueOf(e.getValue()));
     }
@@ -144,13 +146,13 @@ public class CacheConfig implements MapSerializable{
     if (config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
     config.clazz = new Supplier<>() {
       @SuppressWarnings("rawtypes")
-      Class<? extends SolrCache> loadedClass;
+      Class<SolrCache> loadedClass;
 
       @Override
       @SuppressWarnings("rawtypes")
       public Class<? extends SolrCache> get() {
         if (loadedClass != null) return loadedClass;
-        return loadedClass = loader.findClass(
+        return loadedClass = (Class<SolrCache>) loader.findClass(
                 new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
                 SolrCache.class, true);
       }
@@ -166,7 +168,7 @@ public class CacheConfig implements MapSerializable{
   @SuppressWarnings({"rawtypes"})
   public SolrCache newInstance() {
     try {
-      SolrCache<?,?> cache = clazz.get().getConstructor().newInstance();
+      SolrCache cache = clazz.get().getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {

@@ -55,7 +55,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
  * vice versa.
  */
 @SuppressWarnings({"rawtypes"})
-public class TopGroupsResultTransformer implements ShardResultTransformer<List<Command<?>>, Map<String, ?>> {
+public class TopGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, ?>> {
 
   private final ResponseBuilder rb;
 
@@ -66,16 +66,16 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   }
 
   @Override
-  public NamedList<NamedList<Object>> transform(List<Command<?>> data) throws IOException {
-    NamedList<NamedList<Object>> result = new NamedList<>();
+  public NamedList transform(List<Command> data) throws IOException {
+    NamedList<NamedList> result = new NamedList<>();
     final IndexSchema schema = rb.req.getSearcher().getSchema();
-    for (Command<?> command : data) {
-      NamedList<Object> commandResult;
-      if (command instanceof TopGroupsFieldCommand) {
+    for (Command command : data) {
+      NamedList commandResult;
+      if (TopGroupsFieldCommand.class.isInstance(command)) {
         TopGroupsFieldCommand fieldCommand = (TopGroupsFieldCommand) command;
         SchemaField groupField = schema.getField(fieldCommand.getKey());
         commandResult = serializeTopGroups(fieldCommand.result(), groupField);
-      } else if (command instanceof QueryCommand) {
+      } else if (QueryCommand.class.isInstance(command)) {
         QueryCommand queryCommand = (QueryCommand) command;
         commandResult = serializeTopDocs(queryCommand.result());
       } else {
@@ -88,14 +88,14 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   }
 
   @Override
-  public Map<String, ?> transformToNative(NamedList<NamedList<?>> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
+  public Map<String, ?> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
     Map<String, Object> result = new HashMap<>();
 
     final IndexSchema schema = rb.req.getSearcher().getSchema();
 
-    for (Map.Entry<String, NamedList<?>> entry : shardResponse) {
+    for (Map.Entry<String, NamedList> entry : shardResponse) {
       String key = entry.getKey();
-      NamedList<?> commandResult = entry.getValue();
+      NamedList commandResult = entry.getValue();
       Integer totalGroupedHitCount = (Integer) commandResult.get("totalGroupedHitCount");
       Number totalHits = (Number) commandResult.get("totalHits"); // previously Integer now Long
       if (totalHits != null) {
@@ -183,7 +183,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     return scoreDocs;
   }
 
-  protected NamedList<Object> serializeTopGroups(TopGroups<BytesRef> data, SchemaField groupField) throws IOException {
+  protected NamedList serializeTopGroups(TopGroups<BytesRef> data, SchemaField groupField) throws IOException {
     NamedList<Object> result = new NamedList<>();
     result.add("totalGroupedHitCount", data.totalGroupedHitCount);
     result.add("totalHitCount", data.totalHitCount);
@@ -240,7 +240,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     return result;
   }
 
-  protected NamedList<Object> serializeTopDocs(QueryCommandResult result) throws IOException {
+  protected NamedList serializeTopDocs(QueryCommandResult result) throws IOException {
     NamedList<Object> queryResult = new NamedList<>();
     queryResult.add("matches", result.getMatches());
     TopDocs topDocs = result.getTopDocs();

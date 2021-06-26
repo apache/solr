@@ -316,7 +316,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     return activeReplicaCoreUrls;
   }
 
-  private static class GetZkSchemaVersionCallable extends SolrRequest<SolrResponse> implements Callable<Integer> {
+  @SuppressWarnings({"rawtypes"})
+  private static class GetZkSchemaVersionCallable extends SolrRequest implements Callable<Integer> {
 
     private String coreUrl;
     private int expectedZkVersion;

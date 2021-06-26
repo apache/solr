@@ -682,16 +682,15 @@ public class UnInvertedField extends DocTermOrds {
   }
 
   // Returns null if not already populated
+  @SuppressWarnings({"rawtypes", "unchecked"})
   public static UnInvertedField checkUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();
+    SolrCache cache = searcher.getFieldValueCache();
     if (cache == null) {
       return null;
     }
     Object uif = cache.get(field);  // cache is already synchronized, so no extra sync needed
     // placeholder is an implementation detail, keep it hidden and return null if that is what we got
     return uif==uifPlaceholder || !(uif instanceof UnInvertedField)? null : (UnInvertedField) uif;
-    // TODO: SolrCache is not used safely in other places, but this might be simpligfied to:
-    //  return uif==uifPlaceholder ? null : uif;
   }
 
 }

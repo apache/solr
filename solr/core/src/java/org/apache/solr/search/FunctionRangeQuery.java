@@ -41,18 +41,21 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
 
   @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
-    Map<Object,Object> fcontext = ValueSource.newContext(searcher);
+    @SuppressWarnings({"rawtypes"})
+    Map fcontext = ValueSource.newContext(searcher);
     Weight weight = rangeFilt.createWeight(searcher, ScoreMode.COMPLETE, 1);
     return new FunctionRangeCollector(fcontext, weight);
   }
 
   class FunctionRangeCollector extends DelegatingCollector {
-    final Map<Object,Object> fcontext;
+    @SuppressWarnings({"rawtypes"})
+    final Map fcontext;
     final Weight weight;
     ValueSourceScorer scorer;
     int maxdoc;
 
-    public FunctionRangeCollector(Map<Object,Object> fcontext, Weight weight) {
+    @SuppressWarnings({"rawtypes"})
+    public FunctionRangeCollector(Map fcontext, Weight weight) {
       this.fcontext = fcontext;
       this.weight = weight;
     }
@@ -69,6 +72,7 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       maxdoc = context.reader().maxDoc();
+      @SuppressWarnings({"unchecked"})
       FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
       scorer = dv.getRangeScorer(weight, context, rangeFilt.getLowerVal(), rangeFilt.getUpperVal(), rangeFilt.isIncludeLower(), rangeFilt.isIncludeUpper());
     }

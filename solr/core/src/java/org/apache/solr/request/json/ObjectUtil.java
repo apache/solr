@@ -71,16 +71,18 @@ public class ObjectUtil {
       }
     }
 
-    protected List<Object> makeList(Object current, Object previous) {
-      ArrayList<Object> lst = new ArrayList<>();
+    protected Object makeList(Object current, Object previous) {
+      @SuppressWarnings({"rawtypes"})
+      ArrayList lst = new ArrayList();
       append(lst, previous);   // make the original value(s) come first
       append(lst, current);
       return lst;
     }
 
-    protected void append(List<Object> lst, Object current) {
+    @SuppressWarnings({"unchecked"})
+    protected void append(@SuppressWarnings({"rawtypes"})List lst, Object current) {
       if (current instanceof Collection) {
-        lst.addAll((Collection<?>)current);
+        lst.addAll((Collection)current);
       } else {
         lst.add(current);
       }

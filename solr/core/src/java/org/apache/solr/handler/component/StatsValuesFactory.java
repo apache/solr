@@ -128,7 +128,8 @@ public class StatsValuesFactory {
      * Context to use when retrieving FunctionValues, will be null until/unless
      * {@link #setNextReader} is called at least once
      */
-    private Map<Object,Object> vsContext;
+    @SuppressWarnings({"rawtypes"})
+    private Map vsContext;
     /**
      * Values to collect, will be null until/unless {@link #setNextReader} is
      * called at least once
@@ -200,7 +201,7 @@ public class StatsValuesFactory {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public void accumulate(NamedList<?> stv) {
+    public void accumulate(@SuppressWarnings({"rawtypes"})NamedList stv) {
       if (computeCount) {
         count += (Long) stv.get("count");
       }
@@ -233,14 +234,16 @@ public class StatsValuesFactory {
 
       updateTypeSpecificStats(stv);
 
-      NamedList<?> f = (NamedList<?>) stv.get(FACETS);
+      @SuppressWarnings({"rawtypes"})
+      NamedList f = (NamedList) stv.get(FACETS);
       if (f == null) {
         return;
       }
 
       for (int i = 0; i < f.size(); i++) {
         String field = f.getName(i);
-        NamedList<?> vals = (NamedList<?>) f.getVal(i);
+        @SuppressWarnings({"rawtypes"})
+        NamedList vals = (NamedList) f.getVal(i);
         Map<String, StatsValues> addTo = facets.get(field);
         if (addTo == null) {
           addTo = new HashMap<>();
@@ -253,7 +256,7 @@ public class StatsValuesFactory {
             vvals = createStatsValues(statsField);
             addTo.put(val, vvals);
           }
-          vvals.accumulate((NamedList<?>) vals.getVal(j));
+          vvals.accumulate((NamedList) vals.getVal(j));
         }
       }
     }
@@ -361,6 +364,7 @@ public class StatsValuesFactory {
       return res;
     }
 
+    @SuppressWarnings({"unchecked"})
     public void setNextReader(LeafReaderContext ctx) throws IOException {
       if (valueSource == null) {
         // first time we've collected local values, get the right ValueSource
@@ -411,7 +415,7 @@ public class StatsValuesFactory {
      *          List containing values the current statistics should be updated
      *          against
      */
-    protected abstract void updateTypeSpecificStats(NamedList<?> stv);
+    protected abstract void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv);
 
     /**
      * Add any type specific statistics to the given NamedList
@@ -485,7 +489,7 @@ public class StatsValuesFactory {
     }
 
     @Override
-    public void updateTypeSpecificStats(NamedList<?> stv) {
+    public void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv) {
       if (computeSum) {
         sum += ((Number) stv.get("sum")).doubleValue();
       }
@@ -647,7 +651,7 @@ public class StatsValuesFactory {
     }
 
     @Override
-    protected void updateTypeSpecificStats(NamedList<?> stv) {
+    protected void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv) {
       // No type specific stats
     }
 
@@ -698,7 +702,7 @@ public class StatsValuesFactory {
     }
 
     @Override
-    protected void updateTypeSpecificStats(NamedList<?> stv) {
+    protected void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv) {
       if (computeSum) {
         sum += ((Number) stv.get("sum")).doubleValue();
       }
@@ -798,7 +802,7 @@ public class StatsValuesFactory {
     }
 
     @Override
-    protected void updateTypeSpecificStats(NamedList<?> stv) {
+    protected void updateTypeSpecificStats(@SuppressWarnings({"rawtypes"})NamedList stv) {
       // No type specific stats
     }
 

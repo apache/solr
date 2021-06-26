@@ -134,7 +134,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
         writer.writePendingUpdates();
 
-        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
+        @SuppressWarnings({"rawtypes"})
+        Map map = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
         assertNotNull(map.get("c1"));
       }
     } finally {

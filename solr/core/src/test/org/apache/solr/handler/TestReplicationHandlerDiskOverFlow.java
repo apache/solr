@@ -214,7 +214,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                  "true", response._getStr("details/follower/clearedLocalIndexFirst", null));
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private long indexDocs(SolrClient client, int totalDocs, int start) throws Exception {
     for (int i = 0; i < totalDocs; i++)
       TestReplicationHandler.index(client, "id", i + start, "name", TestUtil.randomSimpleString(random(), 1000, 5000));
@@ -225,7 +225,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
         .add("generation", "-1"));
 
     long totalSize = 0;
-    for (Map<?, ?> map : (List<Map<?, ?>>) response.getResponse().get(CMD_GET_FILE_LIST)) {
+    for (Map map : (List<Map>) response.getResponse().get(CMD_GET_FILE_LIST)) {
       Long sz = (Long) map.get(ReplicationHandler.SIZE);
       totalSize += sz;
     }

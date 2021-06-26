@@ -541,8 +541,10 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testLocalSolrQueryRequestParams() {
-    HashMap<String, Object> args = new HashMap<>();
+    @SuppressWarnings({"rawtypes"})
+    HashMap args = new HashMap();
     args.put("string", "string value");
     args.put("array", new String[] {"array", "value"});
     SolrQueryRequest req = new LocalSolrQueryRequest(null, null, null, 0, 20, args);
@@ -616,8 +618,10 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testSolrParams() throws Exception {
-    NamedList<Object> nl = new NamedList<>();
+    @SuppressWarnings({"rawtypes"})
+    NamedList nl = new NamedList();
     nl.add("i",555);
     nl.add("s","bbb");
     nl.add("bt","true");
@@ -654,7 +658,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.getBool("foo",false), false);
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
 
-    NamedList<String> more = new NamedList<>();
+    @SuppressWarnings({"rawtypes"})
+    NamedList more = new NamedList();
     more.add("s", "aaa");
     more.add("s", "ccc");
     more.add("ss","YYY");

@@ -78,6 +78,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void testReqParams() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLL_NAME);
@@ -111,7 +112,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params", payload);
 
-    Map<?, ?> result = TestSolrConfigHandler.testForResponseElement(null,
+    Map result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
         "/config/params",
         cloudClient,
@@ -279,10 +280,11 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
         asList("params", "fixed"),
         "f",
         5);
-    compareValues(result, new Predicate<>() {
+    compareValues(result, new Predicate() {
       @Override
       public boolean test(Object o) {
-        List<?> l = (List<?>) o;
+        @SuppressWarnings({"rawtypes"})
+        List l = (List) o;
         return l.contains("first") && l.contains("second");
       }
     }, asList("params", "add"));

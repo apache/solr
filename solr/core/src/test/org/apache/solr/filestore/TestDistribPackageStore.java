@@ -17,6 +17,7 @@
 
 package org.apache.solr.filestore;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.solr.client.solrj.SolrClient;
@@ -138,9 +139,11 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       checkAllNodesForFile(cluster,"/package/mypkg/v1.0/runtimelibs_v2.jar", expected, false);
       expected = Map.of(
           ":files:/package/mypkg/v1.0", (Predicate<Object>) o -> {
-            List<?> l = (List<?>) o;
+            @SuppressWarnings({"rawtypes"})
+            List l = (List) o;
             assertEquals(2, l.size());
-            Set<String> expectedKeys = Set.of("runtimelibs_v2.jar", "runtimelibs.jar");
+            @SuppressWarnings({"rawtypes"})
+            Set expectedKeys = ImmutableSet.of("runtimelibs_v2.jar", "runtimelibs.jar");
             for (Object file : l) {
               if(! expectedKeys.contains(Utils.getObjectByPath(file, true, "name"))) return false;
             }
@@ -167,7 +170,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
   }
 
-  public static void checkAllNodesForFile(MiniSolrCloudCluster cluster, String path, Map<String, Object> expected , boolean verifyContent) throws Exception {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static void checkAllNodesForFile(MiniSolrCloudCluster cluster, String path, Map expected , boolean verifyContent) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
@@ -211,7 +215,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   }
 
   public static NavigableObject assertResponseValues(int repeats, SolrClient client,
-                                                     SolrRequest<?> req,
+                                                     @SuppressWarnings({"rawtypes"})SolrRequest req,
                                                      Map<String, Object> vals) throws Exception {
     Callable<NavigableObject> callable = () -> req.process(client);
 

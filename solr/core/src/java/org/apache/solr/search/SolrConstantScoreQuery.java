@@ -75,7 +75,8 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   }
 
   protected class ConstantWeight extends ConstantScoreWeight {
-    private Map<Object,Object> context;
+    @SuppressWarnings({"rawtypes"})
+    private Map context;
     private ScoreMode scoreMode;
 
     public ConstantWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {

@@ -336,7 +336,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     ignoreException("The configuration name should be provided");
     // Checking error when no configuration name is specified in request
-    Map<?, ?> map = postDataAndGetResponse(cluster.getSolrClient(),
+    @SuppressWarnings({"rawtypes"})
+    Map map = postDataAndGetResponse(cluster.getSolrClient(),
         cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
         + "/admin/configs?action=UPLOAD", emptyData, null, false);
     assertNotNull(map);
@@ -908,7 +909,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       uriEnding = "/solr/admin/configs?action=UPLOAD&name="+configSetName+suffix + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : "");
     }
 
-    Map<?, ?> map = postDataAndGetResponse(cluster.getSolrClient(),
+    @SuppressWarnings({"rawtypes"})
+    Map map = postDataAndGetResponse(cluster.getSolrClient(),
             cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "") + uriEnding,
             file, username, usePut);
     assertNotNull(map);
@@ -930,7 +932,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       uriEnding = "/solr/admin/configs?action=UPLOAD&name="+configSetName+suffix+"&filePath="+uploadPath + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : "");
     }
 
-    Map<?, ?> map = postDataAndGetResponse(cluster.getSolrClient(),
+    @SuppressWarnings({"rawtypes"})
+    Map map = postDataAndGetResponse(cluster.getSolrClient(),
             cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "") + uriEnding,
             sampleConfigFile, username, usePut);
     assertNotNull(map);
@@ -1027,12 +1030,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     return res;
   }
   
-  public static Map<?, ?> postDataAndGetResponse(CloudSolrClient cloudClient,
+  @SuppressWarnings({"rawtypes"})
+  public static Map postDataAndGetResponse(CloudSolrClient cloudClient,
       String uri, ByteBuffer bytarr, String username, boolean usePut) throws IOException {
     HttpEntityEnclosingRequestBase httpRequest = null;
     HttpEntity entity;
     String response = null;
-    Map<?, ?> m = null;
+    Map m = null;
     
     try {
       if (usePut) {
@@ -1053,7 +1057,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           .getEntity();
       try {
         response = EntityUtils.toString(entity, UTF_8);
-        m = (Map<?, ?>) Utils.fromJSONString(response);
+        m = (Map) Utils.fromJSONString(response);
       } catch (JSONParser.ParseException e) {
         System.err.println("err response: " + response);
         throw new AssertionError(e);
@@ -1064,14 +1068,15 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     return m;
   }
 
-  private static Object getObjectByPath(Map<?, ?> root,
+  private static Object getObjectByPath(@SuppressWarnings({"rawtypes"})Map root,
                                         boolean onlyPrimitive, java.util.List<String> hierarchy) {
-    Map<?, ?> obj = root;
+    @SuppressWarnings({"rawtypes"})
+    Map obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       String s = hierarchy.get(i);
       if (i < hierarchy.size() - 1) {
         if (!(obj.get(s) instanceof Map)) return null;
-        obj = (Map<?, ?>) obj.get(s);
+        obj = (Map) obj.get(s);
         if (obj == null) return null;
       } else {
         Object val = obj.get(s);

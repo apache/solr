@@ -418,10 +418,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final int totalDocsExpected = numThreads * numBatchesPerThread * numDocsPerBatch;
     ExecutorUtil.shutdownAndAwaitTermination(executor);
 
-    for (Future<?> result : futures) {
+    for (@SuppressWarnings({"rawtypes"})Future result : futures) {
       assertFalse(result.isCancelled());
       assertTrue(result.isDone());
-      // all we care about is propagating any possible execution exception...
+      // all we care about is propogating any possibile execution exception...
       final Object ignored = result.get();
     }
     

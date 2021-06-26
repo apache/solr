@@ -166,16 +166,16 @@ public class HdfsTransactionLog extends TransactionLog {
     return true;
   }
 
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void readHeader(FastInputStream fis) throws IOException {
     // read existing header
     boolean closeFis = false;
     if (fis == null) closeFis = true;
     fis = fis != null ? fis : new FSDataFastInputStream(fs.open(tlogFile), 0);
-    Map<?,?> header = null;
+    Map header = null;
     try {
       try (LogCodec codec = new LogCodec(resolver)) {
-        header = (Map<?,?>) codec.unmarshal(fis);
+        header = (Map) codec.unmarshal(fis);
       }
       
       fis.readInt(); // skip size
@@ -491,7 +491,8 @@ public class HdfsTransactionLog extends TransactionLog {
 
         long lastVersion = Long.MIN_VALUE;
         while ( (o = super.next()) != null) {
-          List<?> entry = (List<?>) o;
+          @SuppressWarnings({"rawtypes"})
+          List entry = (List) o;
           long version = (Long) entry.get(UpdateLog.VERSION_IDX);
           version = Math.abs(version);
           versionToPos.put(version, pos);

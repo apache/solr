@@ -78,7 +78,8 @@ public class FiltersQParser extends QParser {
     if (excludeTags != null) {
       tagsToExclude.addAll(StrUtils.splitSmart(excludeTags, ','));
     }
-    Map<?, ?> tagMap = (Map<?, ?>) req.getContext().get("tags");
+    @SuppressWarnings("rawtypes")
+    Map tagMap = (Map) req.getContext().get("tags");
     final Collection<QParser> excludeSet;
     if (tagMap != null && !tagMap.isEmpty() && !tagsToExclude.isEmpty()) {
       excludeSet = excludeSet(tagMap, tagsToExclude);
@@ -113,7 +114,8 @@ public class FiltersQParser extends QParser {
     return clauses;
   }
 
-  private Collection<QParser> excludeSet(Map<?, ?> tagMap, Set<String> tagsToExclude) {
+  private Collection<QParser> excludeSet(@SuppressWarnings("rawtypes")
+                                     Map tagMap, Set<String> tagsToExclude) {
 
     IdentityHashMap<QParser,Boolean> excludeSet = new IdentityHashMap<>();
     for (String excludeTag : tagsToExclude) {

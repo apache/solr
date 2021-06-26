@@ -55,18 +55,24 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   @Test
   public void test() throws Exception {
-    Map<?, ?> editable_prop_map = (Map<?, ?>) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
-    Map<?, ?> caches = (Map<?, ?>) editable_prop_map.get("query");
+    @SuppressWarnings({"rawtypes"})
+    Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
+    @SuppressWarnings({"rawtypes"})
+    Map caches = (Map) editable_prop_map.get("query");
 
     setupRestTestHarnesses();
     List<Thread> threads = new ArrayList<>(caches.size());
-    final List<List<String>> collectErrors = new ArrayList<>();
+    @SuppressWarnings({"rawtypes"})
+    final List<List> collectErrors = new ArrayList<>();
 
-    for (Map.Entry<?, ?> e : caches.entrySet()) {
+    for (Object o : caches.entrySet()) {
+      @SuppressWarnings({"rawtypes"})
+      final Map.Entry e = (Map.Entry) o;
       if (e.getValue() instanceof Map) {
         List<String> errs = new ArrayList<>();
         collectErrors.add(errs);
-        Map<?, ?> value = (Map<?, ?>) e.getValue();
+        @SuppressWarnings({"rawtypes"})
+        Map value = (Map) e.getValue();
         Thread t = new Thread(() -> {
           try {
             invokeBulkCall((String)e.getKey() , errs, value);
@@ -84,7 +90,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
     boolean success = true;
 
-    for (List<?> e : collectErrors) {
+    for (@SuppressWarnings({"rawtypes"})List e : collectErrors) {
       if(!e.isEmpty()){
         success = false;
         log.error("{}", e);
@@ -99,8 +105,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
 
   private void invokeBulkCall(String  cacheName, List<String> errs,
-                              // TODO this is unused - is that a bug?
-                              Map<?, ?> val) throws Exception {
+                              @SuppressWarnings({"rawtypes"})Map val) throws Exception {
 
     String payload = "{" +
         "'set-property' : {'query.CACHENAME.size':'CACHEVAL1'," +
@@ -129,7 +134,8 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         publisher.close();
       }
       
-      Map<?, ?> map = (Map<?, ?>) Utils.fromJSONString(response);
+      @SuppressWarnings({"rawtypes"})
+      Map map = (Map) Utils.fromJSONString(response);
       Object errors = map.get("errors");
       if(errors!= null){
         errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));

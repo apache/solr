@@ -30,7 +30,6 @@ import static org.apache.solr.common.util.Utils.getDeepCopy;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
-// TODO is this a typo - should be Authorization?
 enum AutorizationEditOperation {
   SET_USER_ROLE("set-user-role") {
     @Override

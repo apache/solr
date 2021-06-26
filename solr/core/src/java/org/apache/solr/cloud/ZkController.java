@@ -2191,7 +2191,8 @@ public class ZkController implements Closeable {
     try {
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if (data == null) return;
-      Map<?,?> roles = (Map<?,?>) Utils.fromJSON(data);
+      @SuppressWarnings({"rawtypes"})
+      Map roles = (Map) Utils.fromJSON(data);
       if (roles == null) return;
       List<?> nodeList = (List<?>) roles.get("overseer");
       if (nodeList == null) return;
@@ -2626,7 +2627,8 @@ public class ZkController implements Closeable {
         }
         registeredSearcher.decref();
       } else  {
-        AtomicReference<Future<Void>> waitSearcher = new AtomicReference<>();
+        @SuppressWarnings({"rawtypes"})
+        Future[] waitSearcher = new Future[1];
         if (log.isInfoEnabled()) {
           log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
         }
@@ -2635,12 +2637,12 @@ public class ZkController implements Closeable {
         try {
           searcher = core.getSearcher(false, true, waitSearcher, true);
           boolean success = true;
-          if (waitSearcher.get() != null)  {
+          if (waitSearcher[0] != null)  {
             if (log.isDebugEnabled()) {
               log.debug("Waiting for first searcher of core {}, id: {} to be registered", core.getName(), core);
             }
             try {
-              waitSearcher.get().get();
+              waitSearcher[0].get();
             } catch (ExecutionException e) {
               log.warn("Wait for a searcher to be registered for core {}, id: {} failed due to: {}", core.getName(), core, e, e);
               success = false;

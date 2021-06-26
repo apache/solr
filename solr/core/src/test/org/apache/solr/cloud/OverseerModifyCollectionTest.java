@@ -68,7 +68,8 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
   
   private String getConfigNameFromZk(String collName) throws KeeperException, InterruptedException {
     byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null, false);
-    Map<?, ?> confData = (Map<?, ?>) Utils.fromJSON(b);
+    @SuppressWarnings({"rawtypes"})
+    Map confData = (Map) Utils.fromJSON(b);
     return (String) confData.get(ZkController.CONFIGNAME_PROP); 
   }
 

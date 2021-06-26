@@ -29,6 +29,7 @@ import org.apache.solr.common.util.Utils;
 
 public class TestSolrJacksonAnnotation extends SolrTestCase {
 
+  @SuppressWarnings({"unchecked"})
   public void testSerDe() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
     mapper.setAnnotationIntrospector(new SolrJacksonAnnotationInspector());
@@ -39,8 +40,8 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     o.ifld = 1234;
     String json = mapper.writeValueAsString(o);
 
-    @SuppressWarnings("unchecked")
-    Map<Object, Object> m = (Map<Object, Object>) Utils.fromJSONString(json);
+    @SuppressWarnings({"rawtypes"})
+    Map m = (Map) Utils.fromJSONString(json);
     assertEquals("v1",  m.get("field"));
     assertEquals("v2",  m.get("friendlyName"));
     assertEquals("1234",  String.valueOf(m.get("friendlyIntFld")));

@@ -63,7 +63,8 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -74,7 +75,8 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     }
     String commitName =  message.getStr(CoreAdminParams.COMMIT_NAME);
     String asyncId = message.getStr(ASYNC);
-    NamedList<Object> shardRequestResults = new NamedList<>();
+    @SuppressWarnings({"rawtypes"})
+    NamedList shardRequestResults = new NamedList();
     ShardHandler shardHandler = ccc.newShardHandler();
     SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
 
@@ -126,12 +128,13 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
-    @SuppressWarnings("unchecked")
-    NamedList<Object> success = (NamedList<Object>) shardRequestResults.get("success");
+    @SuppressWarnings({"rawtypes"})
+    NamedList success = (NamedList) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for ( int i = 0 ; i < success.size() ; i++) {
-        NamedList<?> resp = (NamedList<?>)success.getVal(i);
+        @SuppressWarnings({"rawtypes"})
+        NamedList resp = (NamedList)success.getVal(i);
         // Unfortunately async processing logic doesn't provide the "core" name automatically.
         String coreName = (String)resp.get("core");
         coresWithSnapshot.remove(coreName);

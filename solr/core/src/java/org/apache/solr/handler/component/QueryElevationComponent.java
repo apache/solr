@@ -633,8 +633,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @param context the {@link SolrQueryRequest#getContext()} or null if none.  We'll cache our results here.
    */
   //TODO consider simplifying to remove "boosted" arg which can be looked up in context via BOOSTED key?
+  @SuppressWarnings({"unchecked"})
   public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Set<BytesRef> boosted,
-                                           Map<Object,Object> context) throws IOException {
+                                           @SuppressWarnings({"rawtypes"})Map context) throws IOException {
 
     IntIntHashMap boostDocs = null;
 

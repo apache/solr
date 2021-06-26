@@ -139,13 +139,13 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           "'set-user': {'harry':'HarryIsCool'}\n" +
           "}";
 
-      final SolrRequest<?> genericReq;
+      @SuppressWarnings({"rawtypes"})
+      final SolrRequest genericReq;
       if (isUseV2Api) {
         genericReq = new V2Request.Builder("/cluster/security/authentication").withMethod(SolrRequest.METHOD.POST).build();
       } else {
-        GenericSolrRequest genericSolrRequest = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
-        genericSolrRequest.setContentWriter(new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
-        genericReq = genericSolrRequest;
+        genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
+        ((GenericSolrRequest)genericReq).setContentWriter(new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
       }
 
       // avoid bad connection races due to shutdown
@@ -257,7 +257,8 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       try {
         System.setProperty("basicauth", "harry:HarryIsUberCool");
         tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
-        Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
+        @SuppressWarnings({"rawtypes"})
+        Map obj = (Map) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
         assertTrue(obj.containsKey("version"));
         assertTrue(obj.containsKey("startTime"));
         assertTrue(obj.containsKey("uptime"));
@@ -321,9 +322,10 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private QueryResponse executeQuery(ModifiableSolrParams params, String user, String pass) throws IOException, SolrServerException {
-    QueryRequest req = new QueryRequest(params);
+    @SuppressWarnings({"rawtypes"})
+    SolrRequest req = new QueryRequest(params);
     req.setBasicAuthCredentials(user, pass);
-    QueryResponse resp = req.process(cluster.getSolrClient(), COLLECTION);
+    QueryResponse resp = (QueryResponse) req.process(cluster.getSolrClient(), COLLECTION);
     assertNull(resp.getException());
     assertEquals(0, resp.getStatus());
     return resp;

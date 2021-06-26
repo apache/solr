@@ -65,7 +65,8 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
 
@@ -92,7 +93,8 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     SolrSnapshotManager.createCollectionLevelSnapshot(zkClient, collectionName, new CollectionSnapshotMetaData(commitName));
     log.info("Created a ZK path to store snapshot information for collection={} with commitName={}", collectionName, commitName);
 
-    NamedList<Object> shardRequestResults = new NamedList<>();
+    @SuppressWarnings({"rawtypes"})
+    NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
     ShardHandler shardHandler = ccc.newShardHandler();
 
@@ -131,8 +133,8 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for ( int i = 0 ; i < success.size() ; i++) {
-        @SuppressWarnings("unchecked")
-        NamedList<Object> resp = (NamedList<Object>)success.getVal(i);
+        @SuppressWarnings({"rawtypes"})
+        NamedList resp = (NamedList)success.getVal(i);
 
         // Check if this core is the leader for the shard. The idea here is that during the backup
         // operation we preferably use the snapshot of the "leader" replica since it is most likely

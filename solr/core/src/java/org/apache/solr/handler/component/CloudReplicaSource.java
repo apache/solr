@@ -18,7 +18,6 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +61,7 @@ class CloudReplicaSource implements ReplicaSource {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void withClusterState(Builder builder, SolrParams params) {
     ClusterState clusterState = builder.zkStateReader.getClusterState();
     String shardKeys = params.get(ShardParams._ROUTE_);
@@ -94,17 +94,18 @@ class CloudReplicaSource implements ReplicaSource {
     }
 
     this.slices = sliceMap.keySet().toArray(new String[sliceMap.size()]);
-    this.replicas = newReplicasArray(slices.length);
+    this.replicas = new List[slices.length];
     for (int i = 0; i < slices.length; i++) {
       String sliceName = slices[i];
       replicas[i] = findReplicas(builder, null, clusterState, sliceMap.get(sliceName));
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void withShardsParam(Builder builder, String shardsParam) {
     List<String> sliceOrUrls = StrUtils.splitSmart(shardsParam, ",", true);
     this.slices = new String[sliceOrUrls.size()];
-    this.replicas = newReplicasArray(sliceOrUrls.size());
+    this.replicas = new List[sliceOrUrls.size()];
 
     ClusterState clusterState = builder.zkStateReader.getClusterState();
 
@@ -121,11 +122,6 @@ class CloudReplicaSource implements ReplicaSource {
         checkUrlsAllowList(builder.urlChecker, clusterState, shardsParam, replicas[i]);
       }
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  private static List<String>[] newReplicasArray(int size) {
-    return (List<String>[]) Array.newInstance(List.class, size);
   }
 
   static void checkUrlsAllowList(AllowListUrlChecker urlChecker, ClusterState clusterState, String shardsParam, List<String> urls) {
@@ -169,8 +165,7 @@ class CloudReplicaSource implements ReplicaSource {
 
   @Override
   public List<String> getSliceNames() {
-    // This is maybe a bug?
-    return Collections.unmodifiableList(Arrays.asList(slices)); // Do not use List.of because slices could have null
+    return Collections.unmodifiableList(Arrays.asList(slices));
   }
 
   @Override

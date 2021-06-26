@@ -174,8 +174,8 @@ public class TestUtils extends SolrTestCaseJ4 {
 
   public void testNoggitFlags() throws IOException {
     String s = "a{b:c, d [{k1:v1}{k2:v2}]}";
-    assertNoggitJsonValues((Map<?, ?>) Utils.fromJSON(s.getBytes(UTF_8)));
-    assertNoggitJsonValues((Map<?, ?>) fromJSONString(s));
+    assertNoggitJsonValues((Map) Utils.fromJSON(s.getBytes(UTF_8)));
+    assertNoggitJsonValues((Map) fromJSONString(s));
     List<CommandOperation> commands = CommandOperation.parse(new StringReader(s + s));
     assertEquals(2, commands.size());
     for (CommandOperation command : commands) {
@@ -197,12 +197,13 @@ public class TestUtils extends SolrTestCaseJ4 {
     }
 
     ContentStream stream = new ContentStreamBase.ByteArrayStream(baos.toByteArray(),null, "application/javabin");
-    List<CommandOperation> commands = CommandOperation.readCommands(Collections.singletonList(stream), new NamedList<>(), Collections.singleton("single"));
+    @SuppressWarnings({"rawtypes"})
+    List<CommandOperation> commands = CommandOperation.readCommands(Collections.singletonList(stream), new NamedList(), Collections.singleton("single"));
 
     assertEquals(5, commands.size());
   }
 
-  private void assertNoggitJsonValues(Map<?, ?> m) {
+  private void assertNoggitJsonValues(@SuppressWarnings({"rawtypes"})Map m) {
     assertEquals( "c" ,Utils.getObjectByPath(m, true, "/a/b"));
     assertEquals( "v1" ,Utils.getObjectByPath(m, true, "/a/d[0]/k1"));
     assertEquals( "v2" ,Utils.getObjectByPath(m, true, "/a/d[1]/k2"));
@@ -223,7 +224,8 @@ public class TestUtils extends SolrTestCaseJ4 {
         "        'path':'/update/*',\n" +
         "        'role':'dev'}],\n" +
         "    '':{'v':4}}}";
-    Map<?, ?> m = (Map<?, ?>) fromJSONString(json);
+    @SuppressWarnings({"rawtypes"})
+    Map m = (Map) fromJSONString(json);
     Utils.setObjectByPath(m,"authorization/permissions[1]/role","guest");
     Utils.setObjectByPath(m,"authorization/permissions[0]/role[-1]","dev");
     assertEquals("guest", Utils.getObjectByPath(m,true,"authorization/permissions[1]/role"));
@@ -248,7 +250,8 @@ public class TestUtils extends SolrTestCaseJ4 {
         "        'path':'/update/*',\n" +
         "        'role':'dev'}],\n" +
         "    '':{'v':4}}}";
-    Map<?, ?> m = (Map<?, ?>) fromJSONString(json);
+    @SuppressWarnings({"rawtypes"})
+    Map m = (Map) fromJSONString(json);
     assertEquals("x-update", Utils.getObjectByPath(m,false, "authorization/permissions[1]/name"));
 
   }
@@ -291,7 +294,8 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals("corestatus_test_shard2_replica_n3", Utils.getObjectByPath(m, false,asList("success[3]", "value", "core") ));
     assertEquals(5033L, Utils.getObjectByPath(m, false,asList("success[3]", "value", "responseHeader", "QTime") ));
 
-    Map<?, ?> nodes = (Map<?, ?>) m.get("success");
+    @SuppressWarnings({"rawtypes"})
+    Map nodes = (Map) m.get("success");
     m.put("success", (MapWriter) ew -> nodes.forEach((o, o2) -> ew.putNoEx((String) o,o2)));
     assertEquals("127.0.0.1:56443_solr", Utils.getObjectByPath(m,false, "success[0]/key"));
     assertEquals("corestatus_test_shard2_replica_n5", Utils.getObjectByPath(m, false,asList("success[0]", "value", "core") ));

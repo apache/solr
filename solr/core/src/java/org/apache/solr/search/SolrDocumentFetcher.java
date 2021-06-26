@@ -515,7 +515,7 @@ public class SolrDocumentFetcher {
    *          The fields with docValues to populate the document with.
    *          DocValues fields which do not exist or not decodable will be ignored.
    */
-  public void decorateDocValueFields(SolrDocumentBase<?,?> doc, int docid, Set<String> fields)
+  public void decorateDocValueFields(@SuppressWarnings("rawtypes") SolrDocumentBase doc, int docid, Set<String> fields)
       throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);

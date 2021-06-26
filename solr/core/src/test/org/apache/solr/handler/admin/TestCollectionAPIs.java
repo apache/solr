@@ -208,8 +208,8 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
                             final String payload, final CoreContainer cc, String expectedOutputMapJson) throws Exception {
     Pair<SolrQueryRequest, SolrQueryResponse> ctx = makeCall(apiBag, path, method, payload, cc);
     ZkNodeProps output = (ZkNodeProps) ctx.second().getValues().get(ZkNodeProps.class.getName());
-    @SuppressWarnings("unchecked")
-    Map<String, ?> expected = (Map<String, ?>) fromJSONString(expectedOutputMapJson);
+    @SuppressWarnings({"rawtypes"})
+    Map expected = (Map) fromJSONString(expectedOutputMapJson);
     assertMapEqual(expected, output);
     return output;
   }
@@ -260,10 +260,12 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     return new Pair<>(req, rsp);
   }
 
-  private static void assertMapEqual(Map<String, ?> expected, ZkNodeProps actual) {
+  private static void assertMapEqual(@SuppressWarnings({"rawtypes"})Map expected, ZkNodeProps actual) {
     assertEquals(errorMessage(expected, actual), expected.size(), actual.getProperties().size());
-    for (Map.Entry<String, ?> e : expected.entrySet()) {
-      Object actualVal = actual.get(e.getKey());
+    for (Object o : expected.entrySet()) {
+      @SuppressWarnings({"rawtypes"})
+      Map.Entry e = (Map.Entry) o;
+      Object actualVal = actual.get((String) e.getKey());
       if (actualVal instanceof String[]) {
         actualVal = Arrays.asList((String[]) actualVal);
       }
@@ -271,7 +273,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     }
   }
 
-  private static String errorMessage(Map<?, ?> expected, ZkNodeProps actual) {
+  private static String errorMessage(@SuppressWarnings({"rawtypes"})Map expected, ZkNodeProps actual) {
     return "expected: " + Utils.toJSONString(expected) + "\nactual: " + Utils.toJSONString(actual);
 
   }

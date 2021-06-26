@@ -374,10 +374,11 @@ public class MetricUtils {
       Counter counter = (Counter) metric;
       convertCounter(n, counter, propertyFilter, compact, consumer);
     } else if (metric instanceof Gauge) {
-      Gauge<?> gauge = (Gauge<?>) metric;
+      @SuppressWarnings({"rawtypes"})
+      Gauge gauge = (Gauge) metric;
       // unwrap if needed
       if (gauge instanceof SolrMetricManager.GaugeWrapper) {
-        gauge = ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge();
+        gauge = ((SolrMetricManager.GaugeWrapper) gauge).getGauge();
       }
       try {
         if (gauge instanceof MapWriter) {
@@ -634,7 +635,7 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    */
   static void convertGauge(String name,
-                           Gauge<?> gauge,
+                           @SuppressWarnings({"rawtypes"})Gauge gauge,
                            Predicate<CharSequence> propertyFilter, boolean simple, boolean compact,
                            String separator, BiConsumer<String, Object> consumer) {
     if (compact || simple) {

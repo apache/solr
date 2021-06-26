@@ -119,7 +119,8 @@ public class BlobRepository {
     return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key, decoder));
   }
 
-  <T> BlobContentRef<T> getBlobIncRef(String key, Decoder<T> decoder, String url, String sha512) {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha512) {
     StringBuilder keyBuilder = new StringBuilder(key);
     if (decoder != null) keyBuilder.append(decoder.getName());
     keyBuilder.append("/").append(sha512);

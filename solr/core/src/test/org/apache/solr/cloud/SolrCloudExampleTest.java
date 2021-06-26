@@ -268,7 +268,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     for (Slice slice : coll.getActiveSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String uri = "" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config";
-        Map<?, ?> respMap = getAsMap(cloudClient, uri);
+        @SuppressWarnings({"rawtypes"})
+        Map respMap = getAsMap(cloudClient, uri);
         Long maxTime = (Long) (getObjectByPath(respMap, true, asList("config", "updateHandler", "autoSoftCommit", "maxTime")));
         ret.put(replica.getCoreName(), maxTime);
       }
@@ -276,13 +277,14 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     return ret;
   }
 
-  private Map<?, ?> getAsMap(CloudSolrClient cloudClient, String uri) throws Exception {
+  @SuppressWarnings({"rawtypes"})
+  private Map getAsMap(CloudSolrClient cloudClient, String uri) throws Exception {
     HttpGet get = new HttpGet(uri);
     HttpEntity entity = null;
     try {
       entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (Map<?, ?>) fromJSONString(response);
+      return (Map) fromJSONString(response);
     } finally {
       EntityUtils.consumeQuietly(entity);
     }

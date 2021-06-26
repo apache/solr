@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -495,7 +494,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private static long totalexpectedV2Calls;
 
-  public static <T extends SolrResponse> SolrRequest<T> setV2(SolrRequest<T> req) {
+  @SuppressWarnings({"rawtypes"})
+  public static SolrRequest setV2(SolrRequest req) {
     if (V2Request.v2Calls.get() == null) V2Request.v2Calls.set(new AtomicLong());
     totalexpectedV2Calls = V2Request.v2Calls.get().get();
     if (random().nextBoolean()) {
@@ -704,7 +704,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       missingParamsError(client, params);
       params.set("property.value", "true");
 
-      QueryRequest request = new QueryRequest(params);
+      @SuppressWarnings({"rawtypes"})
+      SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
       client.request(request);
 
@@ -951,7 +952,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
       params.set("name", "invalid@name#with$weird%characters");
-      QueryRequest request = new QueryRequest(params);
+      @SuppressWarnings({"rawtypes"})
+      SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       try {
@@ -974,7 +976,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("router.name", "implicit");
       params.set("numShards", "1");
       params.set("shards", "invalid@name#with$weird%characters");
-      QueryRequest request = new QueryRequest(params);
+      @SuppressWarnings({"rawtypes"})
+      SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       try {
@@ -995,7 +998,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "invalid@name#with$weird%characters");
       params.set("collections", COLLECTION_NAME);
-      QueryRequest request = new QueryRequest(params);
+      @SuppressWarnings({"rawtypes"})
+      SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       try {
@@ -1019,7 +1023,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("name", "valid_collection_name");
       params.set("shards", "a");
       params.set("router.name", "implicit");
-      QueryRequest request = new QueryRequest(params);
+      @SuppressWarnings({"rawtypes"})
+      SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
       client.request(request);
 
@@ -1063,7 +1068,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void missingParamsError(CloudSolrClient client, ModifiableSolrParams origParams)
       throws IOException, SolrServerException {
 
-    QueryRequest request;
+    @SuppressWarnings({"rawtypes"})
+    SolrRequest request;
     try {
       request = new QueryRequest(origParams);
       request.setPath("/admin/collections");
