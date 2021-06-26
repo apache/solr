@@ -19,6 +19,8 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.solr.common.util.NamedList;
 
+import java.util.List;
+
 public class ShardDoc extends FieldDoc {
   public String shard;
   public String shardAddress;  // TODO
@@ -32,8 +34,7 @@ public class ShardDoc extends FieldDoc {
     // this is currently the uniqueKeyField but
     // may be replaced with internal docid in a future release.
 
-  @SuppressWarnings({"rawtypes"})
-  public NamedList sortFieldValues;
+  public NamedList<List<Object>> sortFieldValues;
   // sort field values for *all* docs in a particular shard.
   // this doc's values are in position orderInShard
 

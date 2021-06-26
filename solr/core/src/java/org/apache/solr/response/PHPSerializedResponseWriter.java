@@ -178,10 +178,8 @@ class PHPSerializedWriter extends JSONWriter {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void writeArray(String name, Iterator<?> val) throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    ArrayList vals = new ArrayList();
+    ArrayList<Object> vals = new ArrayList<>();
     while( val.hasNext() ) {
       vals.add(val.next());
     }

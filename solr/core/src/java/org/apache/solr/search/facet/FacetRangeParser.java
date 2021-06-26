@@ -24,8 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 class FacetRangeParser extends FacetParser<FacetRange> {
-  @SuppressWarnings({"rawtypes"})
-  public FacetRangeParser(FacetParser parent, String key) {
+  public FacetRangeParser(FacetParser<?> parent, String key) {
     super(parent, key);
     facet = new FacetRange();
   }

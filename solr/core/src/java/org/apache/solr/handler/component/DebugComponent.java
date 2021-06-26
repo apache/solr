@@ -284,7 +284,7 @@ public class DebugComponent extends SearchComponent
     if (source == null) return dest;
     if (dest == null) {
       if (source instanceof NamedList) {
-        dest = source instanceof SimpleOrderedMap ? new SimpleOrderedMap() : new NamedList();
+        dest = source instanceof SimpleOrderedMap ? new SimpleOrderedMap<>() : new NamedList<>();
       } else {
         return source;
       }

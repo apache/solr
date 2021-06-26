@@ -518,8 +518,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     };
   }
 
+  @SuppressWarnings("rawtypes")
   public Map asMap(int maxDepth) {
-    LinkedHashMap result = new LinkedHashMap();
+    LinkedHashMap result = new LinkedHashMap<>();
     for(int i=0;i<size();i++){
       Object val = getVal(i);
       if (val instanceof NamedList && maxDepth> 0) {
@@ -533,7 +534,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
           list.add(val);
           result.put(getName(i),old);
         } else {
-          ArrayList l = new ArrayList();
+          ArrayList l = new ArrayList<>();
           l.add(old);
           l.add(val);
           result.put(getName(i), l);

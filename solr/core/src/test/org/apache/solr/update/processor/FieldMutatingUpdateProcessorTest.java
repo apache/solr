@@ -17,6 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.Arrays;
 

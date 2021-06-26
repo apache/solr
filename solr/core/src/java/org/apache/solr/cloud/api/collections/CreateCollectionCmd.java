@@ -88,8 +88,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     if (ccc.getZkStateReader().aliasesManager != null) { // not a mock ZkStateReader
       ccc.getZkStateReader().aliasesManager.update();
     }
@@ -335,8 +334,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
-      @SuppressWarnings({"rawtypes"})
-      boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
+      boolean failure = results.get("failure") != null && ((SimpleOrderedMap<?>)results.get("failure")).size() > 0;
       if (isPRS) {
         TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource()); // could be a big cluster
         PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);

@@ -67,8 +67,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -248,13 +247,11 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     //Aggregating result from different shards
-    @SuppressWarnings({"rawtypes"})
-    NamedList aggRsp = aggregateResults(results, collectionName, backupManager, backupProperties, slices);
+    NamedList<Object> aggRsp = aggregateResults(results, collectionName, backupManager, backupProperties, slices);
     results.add("response", aggRsp);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private NamedList aggregateResults(NamedList results, String collectionName,
+  private NamedList<Object> aggregateResults(NamedList<Object> results, String collectionName,
                                      BackupManager backupManager,
                                      BackupProperties backupProps,
                                      Collection<Slice> slices) {
@@ -266,9 +263,9 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     aggRsp.add("startTime", backupProps.getStartTime());
 
     double indexSizeMB = 0;
-    NamedList shards = (NamedList) results.get("success");
+    NamedList<?> shards = (NamedList<?>) results.get("success");
     for (int i = 0; i < shards.size(); i++) {
-      NamedList shardResp = (NamedList)((NamedList)shards.getVal(i)).get("response");
+      NamedList<?> shardResp = (NamedList<?>)((NamedList<?>)shards.getVal(i)).get("response");
       if (shardResp == null)
         continue;
       indexSizeMB += (double) shardResp.get("indexSizeMB");
@@ -288,8 +285,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     return params;
   }
 
-  @SuppressWarnings({"unchecked"})
-  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList<Object> results) throws Exception {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);

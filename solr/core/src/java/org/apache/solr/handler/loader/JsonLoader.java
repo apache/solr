@@ -90,7 +90,7 @@ public class JsonLoader extends ContentStreamLoader {
     for (Map.Entry<String, Object> e : m.entrySet()) {
       if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
         if (e.getValue() instanceof List) {
-          List value = (List) e.getValue();
+          List<?> value = (List<?>) e.getValue();
           for (Object o : value) {
             if (o instanceof Map) {
               // retain the value as a list, even if the list contains a single value.
@@ -112,8 +112,7 @@ public class JsonLoader extends ContentStreamLoader {
 
   private static boolean mapEntryIsChildDoc(Object val) {
     if(val instanceof List) {
-      @SuppressWarnings({"rawtypes"})
-      List listVal = (List) val;
+      List<?> listVal = (List<?>) val;
       if (listVal.size() == 0) return false;
       return  listVal.get(0) instanceof Map;
     }
@@ -430,7 +429,7 @@ public class JsonLoader extends ContentStreamLoader {
     void parseCommitOptions(CommitUpdateCommand cmd) throws IOException {
       assertNextEvent(JSONParser.OBJECT_START);
       @SuppressWarnings({"unchecked"})
-      final Map<String, Object> map = (Map) ObjectBuilder.getVal(parser);
+      final Map<String, Object> map = (Map<String,Object>) ObjectBuilder.getVal(parser);
 
       // SolrParams currently expects string values...
       SolrParams p = new SolrParams() {
@@ -595,12 +594,10 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    @SuppressWarnings({"unchecked"})
     private List<Object> parseArrayFieldValue(int ev, String fieldName) throws IOException {
       assert ev == JSONParser.ARRAY_START;
 
-      @SuppressWarnings({"rawtypes"})
-      ArrayList lst = new ArrayList(2);
+      ArrayList<Object> lst = new ArrayList<>(2);
       for (; ; ) {
         ev = parser.nextEvent();
         if (ev == JSONParser.ARRAY_END) {
@@ -641,15 +638,15 @@ public class JsonLoader extends ContentStreamLoader {
 
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object changeChildDoc(Object o) {
     if (o instanceof List) {
-      return ((List) o)
+      return ((List<?>) o)
           .stream()
           .map(JsonLoader::changeChildDoc)
           .collect(toList());
     }
-    Map m = (Map) o;
+    @SuppressWarnings("unchecked")
+    Map<Object, Object> m = (Map<Object, Object>) o;
     if (m.containsKey(null)) m.put(CHILD_DOC_KEY, changeChildDoc(m.remove(null)));
     return m;
   }

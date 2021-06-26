@@ -154,7 +154,7 @@ public class CoreContainer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  {
+    {
     // Declared up top to ensure this is present before anything else.
     // note: will not be re-added if already there
     ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
@@ -207,8 +207,7 @@ public class CoreContainer {
 
   private final OrderedExecutor replayUpdatesExecutor;
 
-  @SuppressWarnings({"rawtypes"})
-  protected volatile LogWatcher logging = null;
+  protected volatile LogWatcher<?> logging = null;
 
   private volatile CloserThread backgroundCloser = null;
   protected final NodeConfig cfg;
@@ -562,10 +561,9 @@ public class CoreContainer {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   private static int readVersion(Map<String, Object> conf) {
     if (conf == null) return -1;
-    Map meta = (Map) conf.get("");
+    Map<?,?> meta = (Map<?,?>) conf.get("");
     if (meta == null) return -1;
     Number v = (Number) meta.get("v");
     return v == null ? -1 : v.intValue();
@@ -2054,8 +2052,7 @@ public class CoreContainer {
     return cfg.getManagementPath();
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public LogWatcher getLogging() {
+  public LogWatcher<?> getLogging() {
     return logging;
   }
 
