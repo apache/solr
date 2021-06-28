@@ -187,6 +187,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testFakeCPUCircuitBreaker() {
+    h.getCore().getCircuitBreakerManager().init(h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName()),
+            h.getCore().getResourceLoader());
     AtomicInteger failureCount = new AtomicInteger();
 
     ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool(

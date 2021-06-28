@@ -82,7 +82,7 @@
     <str  name="mem.class">org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker</str>
     <bool name="mem.enabled">true</bool>
     <int  name="mem.threshold">75</int>
-    <str    name="cpu.class">org.apache.solr.util.FakeCPUCircuitBreaker</str>
+    <str    name="cpu.class">org.apache.solr.circuitbreaker.FakeCPUCircuitBreaker</str>
     <bool   name="cpu.enabled">true</bool>
     <double name="cpu.usageThreshold">75</double>
   </circuitBreaker>

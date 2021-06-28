@@ -137,6 +137,15 @@ public class CircuitBreakerManager {
     boolean enabled = pluginInfo == null ? false : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
     CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);
 
+    circuitBreakerManager.init(pluginInfo, solrResourceLoader);
+
+    return circuitBreakerManager;
+  }
+
+  /**
+   * Initialize with circuit breakers defined in the configuration
+   */
+  public void init(PluginInfo pluginInfo, SolrResourceLoader solrResourceLoader) {
     final HashMap<String, CircuitBreaker> namedCBs = new HashMap<>();
 
     if (solrResourceLoader != null) {
@@ -166,11 +175,9 @@ public class CircuitBreakerManager {
         }
 
         SolrPluginUtils.invokeSetters(cb, params.entrySet());
-        circuitBreakerManager.register(cb);
+        register(cb);
       }
     }
-
-    return circuitBreakerManager;
   }
 
   @VisibleForTesting
