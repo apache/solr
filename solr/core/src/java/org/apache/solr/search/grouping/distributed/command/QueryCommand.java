@@ -138,8 +138,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
   private final String queryString;
   private final Query mainQuery;
 
-  @SuppressWarnings({"rawtypes"})
-  private TopDocsCollector topDocsCollector;
+  private TopDocsCollector<?> topDocsCollector;
   private FilterCollector filterCollector;
   private MaxScoreCollector maxScoreCollector;
   private TopDocs topDocs;
@@ -175,7 +174,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
       }
     }
     filterCollector = new FilterCollector(docSet, subCollector);
-    return Arrays.asList((Collector) filterCollector);
+    return Arrays.asList(filterCollector);
   }
 
   @Override

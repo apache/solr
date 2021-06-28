@@ -250,11 +250,12 @@ public class DistribPackageStore implements PackageStore {
       return getRealpath(path);
     }
 
+    @SuppressWarnings("unchecked")
     MetaData readMetaData() throws IOException {
       File file = getRealpath(getMetaPath()).toFile();
       if (file.exists()) {
         try (InputStream fis = new FileInputStream(file)) {
-          return new MetaData((Map) Utils.fromJSON(fis));
+          return new MetaData((Map<String,Object>) Utils.fromJSON(fis));
         }
       }
       return null;

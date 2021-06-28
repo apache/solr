@@ -56,6 +56,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
@@ -2036,7 +2037,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
 
-  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, @SuppressWarnings({"rawtypes"})final Future[] waitSearcher) {
+  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final AtomicReference<Future<Void>> waitSearcher) {
     return getSearcher(forceNew, returnSearcher, waitSearcher, false);
   }
 
@@ -2231,8 +2232,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @param waitSearcher         if non-null, will be filled in with a {@link Future} that will return after the new searcher is registered.
    * @param updateHandlerReopens if true, the UpdateHandler will be used when reopening a {@link SolrIndexSearcher}.
    */
-  // TODO waitSearcher should be an AtomicReference or something that is a more clear API
-  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, @SuppressWarnings({"rawtypes"})final Future[] waitSearcher, boolean updateHandlerReopens) {
+  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final AtomicReference<Future<Void>> waitSearcher, boolean updateHandlerReopens) {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
     // if it isn't necessary.
@@ -2339,8 +2339,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       final SolrIndexSearcher currSearcher = currSearcherHolder == null ? null : currSearcherHolder.get();
 
-      @SuppressWarnings({"rawtypes"})
-      Future future = null;
+      Future<Void> future = null;
 
       // if the underlying searcher has not changed, no warming is needed
       if (newSearcher != currSearcher) {
@@ -2425,7 +2424,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       if (waitSearcher != null) {
-        waitSearcher[0] = future;
+        waitSearcher.set(future);
       }
 
       success = true;

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -413,8 +414,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       
       NamedList<Object> termVectorsNL = new NamedList<>();
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
+      @SuppressWarnings("unchecked")
+      Map.Entry<String, Object>[] arr = (NamedList.NamedListEntry<Object>[]) Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
 
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0 || !sreq.params.getBool(COMPONENT_NAME, false)) {

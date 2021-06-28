@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
@@ -249,10 +250,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       addDummyDoc(newCore);
       
       // Open a new searcher, this should call the newSearcherListeners
-      @SuppressWarnings({"rawtypes"})
-      Future<?>[] future = new Future[1];
+      AtomicReference<Future<Void>> future = new AtomicReference<>();
       newCore.getSearcher(true, false, future);
-      future[0].get();
+      future.get().get();
       
       assertEquals(numTimesCalledAfterGetSearcher, MockSearcherListener.numberOfTimesCalled.get());
       assertEquals(numTimesCalledFirstSearcherAfterGetSearcher, MockSearcherListener.numberOfTimesCalledFirstSearcher.get());

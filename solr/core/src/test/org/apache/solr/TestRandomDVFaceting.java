@@ -125,7 +125,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     int percent = rand.nextInt(100);
     if (model == null) return;
     ArrayList<String> ids = new ArrayList<>(model.size());
-    for (@SuppressWarnings({"rawtypes"})Comparable id : model.keySet()) {
+    for (Comparable<?> id : model.keySet()) {
       if (rand.nextInt(100) < percent) {
         ids.add(id.toString());
       }

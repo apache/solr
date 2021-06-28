@@ -159,9 +159,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (o == null) o = pathValues.get(param);
             if (o == null && useRequestParams) o = origParams.getParams(param);
             if (o instanceof List) {
-              @SuppressWarnings({"rawtypes"})
-              List l = (List) o;
-              return l.toArray(new String[l.size()]);
+              return ((List<?>) o).toArray();
             }
 
             return o;

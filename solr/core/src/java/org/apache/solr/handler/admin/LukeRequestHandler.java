@@ -629,7 +629,6 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
   // especially on large indexes!
-  @SuppressWarnings("unchecked")
   private static void getDetailedFieldInfo(SolrQueryRequest req, String field, SimpleOrderedMap<Object> fieldMap)
       throws IOException {
 
@@ -727,8 +726,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * Private internal class that counts up frequent terms
    */
-  @SuppressWarnings("rawtypes")
-  private static class TopTermQueue extends PriorityQueue
+  private static class TopTermQueue extends PriorityQueue<TopTermQueue.TermInfo>
   {
     static class TermInfo {
       TermInfo(Term t, int df) {
@@ -750,10 +748,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
 
     @Override
-    protected final boolean lessThan(Object a, Object b) {
-      TermInfo termInfoA = (TermInfo)a;
-      TermInfo termInfoB = (TermInfo)b;
-      return termInfoA.docFreq < termInfoB.docFreq;
+    protected final boolean lessThan(TermInfo a, TermInfo b) {
+      return a.docFreq < b.docFreq;
     }
 
     /**
@@ -764,7 +760,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       // reverse the list..
       List<TermInfo> aslist = new LinkedList<>();
       while( size() > 0 ) {
-        aslist.add( 0, (TermInfo)pop() );
+        aslist.add( 0, pop());
       }
 
       NamedList<Integer> list = new NamedList<>();
@@ -779,7 +775,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       return list;
     }
     public TermInfo getTopTermInfo() {
-      return (TermInfo)top();
+      return top();
     }
   }
 }

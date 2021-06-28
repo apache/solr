@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -275,8 +274,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "collection1");
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       client.request(request);

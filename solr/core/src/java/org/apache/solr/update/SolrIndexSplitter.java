@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.FilterCodecReader;
@@ -430,11 +431,10 @@ public class SolrIndexSplitter {
   }
 
   private void openNewSearcher(SolrCore core) throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    Future[] waitSearcher = new Future[1];
+    AtomicReference<Future<Void>> waitSearcher = new AtomicReference<>();
     core.getSearcher(true, false, waitSearcher, true);
-    if (waitSearcher[0] != null) {
-      waitSearcher[0].get();
+    if (waitSearcher.get() != null) {
+      waitSearcher.get().get();
     }
   }
 

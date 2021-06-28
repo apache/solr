@@ -105,13 +105,11 @@ public class IndexFingerprint implements MapSerializable {
     }
   }
   
-  @SuppressWarnings({"unchecked"})
   public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion)
       throws IOException {
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
-    @SuppressWarnings({"rawtypes"})
-    Map funcContext = ValueSource.newContext(searcher);
+    Map<Object, Object> funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
     
     IndexFingerprint f = new IndexFingerprint();

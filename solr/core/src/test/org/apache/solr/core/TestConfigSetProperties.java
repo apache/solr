@@ -19,10 +19,10 @@ package org.apache.solr.core;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -62,8 +62,7 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyMap() throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    NamedList list = createConfigSetProps(Utils.toJSONString(ImmutableMap.of()));
+    NamedList<?> list = createConfigSetProps(Utils.toJSONString(Collections.emptyMap()));
     assertEquals(0, list.size());
   }
 
