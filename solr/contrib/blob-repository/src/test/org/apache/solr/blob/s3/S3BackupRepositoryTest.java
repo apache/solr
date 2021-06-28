@@ -14,16 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.backup;
+package org.apache.solr.blob.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.amazonaws.services.s3.AmazonS3;
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.google.common.base.Strings;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.*;
-import org.apache.solr.blob.client.AdobeMockS3StorageClient;
-import org.apache.solr.blob.client.BlobstoreProviderType;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -36,15 +33,12 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.$;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.$$;
-import static org.apache.solr.blob.backup.BlobBackupRepository.BLOB_SCHEME;
+import static org.apache.solr.blob.s3.S3BackupRepository.BLOB_SCHEME;
 
-public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
+public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
-    private static final String BUCKET_NAME = BlobBackupRepositoryTest.class.getSimpleName();
+    private static final String BUCKET_NAME = S3BackupRepositoryTest.class.getSimpleName();
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -56,23 +50,12 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
             .withHttpPort(AdobeMockS3StorageClient.DEFAULT_MOCK_S3_PORT)
             .build();
 
-    @ParametersFactory(argumentFormatting = "%1$s")
-    public static Iterable<Object[]> parameters() {
-        return Arrays.asList($$($(BlobstoreProviderType.LOCAL), $(BlobstoreProviderType.S3MOCK)));
-    }
-
-    private final BlobstoreProviderType type;
-
-    public BlobBackupRepositoryTest(BlobstoreProviderType type) {
-        this.type = type;
-    }
-
     /**
      * Sent by {@link org.apache.solr.handler.ReplicationHandler}, ensure we don't choke on the bare URI.
      */
     @Test
     public void testURI() {
-        try (BlobBackupRepository repo = getRepository()) {
+        try (S3BackupRepository repo = getRepository()) {
             URI uri = repo.createURI("x");
             assertEquals(BLOB_SCHEME, uri.getScheme());
             assertEquals("/x", uri.getPath());
@@ -84,7 +67,7 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Test
     public void testLocalDirectoryFunctions() throws Exception {
 
-        try (BlobBackupRepository repo = getRepository()) {
+        try (S3BackupRepository repo = getRepository()) {
 
             URI path = new URI("/test");
             repo.createDirectory(path);
@@ -112,7 +95,7 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Test
     public void testResolve() throws Exception {
 
-        BlobBackupRepository repo = new BlobBackupRepository();
+        S3BackupRepository repo = new S3BackupRepository();
 
         // Add single element to root
         assertEquals(new URI("blob:/root/path"),
@@ -168,7 +151,7 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
      */
     private void doTestCopyFileFrom(String content) throws Exception {
 
-        try (BlobBackupRepository repo = getRepository()) {
+        try (S3BackupRepository repo = getRepository()) {
 
             // A file on the local disk (another storage than the local blob)
             File tmp = temporaryFolder.newFolder();
@@ -194,7 +177,7 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
      */
     private void doTestCopyFileTo(String content) throws Exception {
 
-        try (BlobBackupRepository repo = getRepository()) {
+        try (S3BackupRepository repo = getRepository()) {
 
             // Local folder for destination
             File tmp = temporaryFolder.newFolder();
@@ -233,14 +216,14 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
     }
 
     /**
-     * Check implementation of {@link BlobBackupRepository#openInput(URI, String, IOContext)}.
+     * Check implementation of {@link S3BackupRepository#openInput(URI, String, IOContext)}.
      * Open an index input and seek to an absolute position.
      *
      * <p>We use specified text. It must has the word "content" at given position.
      */
     private void doRandomAccessTest(String content, int position) throws Exception {
 
-        try (BlobBackupRepository repo = getRepository()) {
+        try (S3BackupRepository repo = getRepository()) {
             File tmp = temporaryFolder.newFolder();
 
             // Open an index input on a file
@@ -268,7 +251,7 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Test
     public void testBackwardRandomAccess() throws Exception {
 
-        try (BlobBackupRepository repo = getRepository()) {
+        try (S3BackupRepository repo = getRepository()) {
 
             // Open an index input on a file
             String blank = Strings.repeat(" ", 5 * BufferedIndexInput.BUFFER_SIZE);
@@ -292,16 +275,11 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
      * Initialize a blog repository based on local or S3 blob storage.
      */
     @Override
-    protected BlobBackupRepository getRepository() {
+    protected S3BackupRepository getRepository() {
 
         NamedList<Object> args = getBaseBackupRepositoryConfiguration();
 
-        if (type == BlobstoreProviderType.LOCAL) {
-            File directory = temporaryFolder.getRoot();
-            args.add(BlobBackupRepositoryConfig.LOCAL_STORAGE_ROOT, directory.getAbsolutePath());
-        }
-
-        BlobBackupRepository repo = new BlobBackupRepository();
+        S3BackupRepository repo = new S3BackupRepository();
         repo.init(args);
 
         return repo;
@@ -315,52 +293,31 @@ public class BlobBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Override
     protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
         NamedList<Object> args = new NamedList<>();
-        args.add(BlobBackupRepositoryConfig.PROVIDER_TYPE, type.name());
-        args.add(BlobBackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
+        args.add(S3BackupRepositoryConfig.S3MOCK, "true");
+        args.add(S3BackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
         return args;
     }
 
     private void pushBlob(String path, String content) throws IOException {
-
-        switch (type) {
-            case LOCAL:
-                FileUtils.write(new File(temporaryFolder.getRoot(), path), content, StandardCharsets.UTF_8);
-                break;
-
-            case S3MOCK:
-                AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
-                try {
-                    s3.putObject(BUCKET_NAME, path, content);
-                } finally {
-                    s3.shutdown();
-                }
-                break;
-
-            default:
-                throw new AssertionError();
+        AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
+        try {
+            s3.putObject(BUCKET_NAME, path, content);
+        } finally {
+            s3.shutdown();
         }
     }
 
     private File pullBlob(String path) throws IOException {
 
-        switch (type) {
-            case LOCAL:
-                return new File(temporaryFolder.getRoot(), path);
-
-            case S3MOCK:
-                AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
-                try {
-                    File file = temporaryFolder.newFile();
-                    InputStream input = s3.getObject(BUCKET_NAME, path).getObjectContent();
-                    FileUtils.copyInputStreamToFile(input, file);
-                    return file;
-                } finally {
-                    s3.shutdown();
-                }
-
-            default:
-                throw new AssertionError();
+        AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
+        try {
+            File file = temporaryFolder.newFile();
+            InputStream input = s3.getObject(BUCKET_NAME, path).getObjectContent();
+            FileUtils.copyInputStreamToFile(input, file);
+            return file;
+        } finally {
+            s3.shutdown();
         }
-
     }
+
 }

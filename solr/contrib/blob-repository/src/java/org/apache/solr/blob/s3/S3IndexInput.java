@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.backup;
+package org.apache.solr.blob.s3;
 
 import org.apache.lucene.store.BufferedIndexInput;
 
@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 
-class BlobIndexInput extends BufferedIndexInput {
+class S3IndexInput extends BufferedIndexInput {
 
     static final int LOCAL_BUFFER_SIZE = 16 * 1024;
 
@@ -33,7 +33,7 @@ class BlobIndexInput extends BufferedIndexInput {
 
     private long position;
 
-    BlobIndexInput(InputStream inputStream, String path, long length) {
+    S3IndexInput(InputStream inputStream, String path, long length) {
         super(path);
 
         this.inputStream = inputStream;
