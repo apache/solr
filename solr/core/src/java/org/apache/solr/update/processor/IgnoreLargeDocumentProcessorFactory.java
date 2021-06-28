@@ -125,17 +125,18 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return size;
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     static long estimate(Object obj) {
       if (obj instanceof SolrInputDocument) {
         return estimate((SolrInputDocument) obj);
       }
 
       if (obj instanceof Map) {
-        return estimate((Map<?, ?>) obj);
+        return estimate((Map) obj);
       }
 
       if (obj instanceof Collection) {
-        return estimate((Collection<?>) obj);
+        return estimate((Collection) obj);
       }
 
       return primitiveEstimate(obj, 0L);
@@ -152,17 +153,17 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return def;
     }
 
-    private static long estimate(Map<?, ?> map) {
+    private static long estimate(Map<Object, Object> map) {
       if (map.isEmpty()) return 0;
       long size = 0;
-      for (Map.Entry<?, ?> entry : map.entrySet()) {
+      for (Map.Entry<Object, Object> entry : map.entrySet()) {
         size += primitiveEstimate(entry.getKey(), 0L);
         size += estimate(entry.getValue());
       }
       return size;
     }
 
-    private static long estimate(Collection<?> collection) {
+    private static long estimate(@SuppressWarnings({"rawtypes"})Collection collection) {
       if (collection.isEmpty()) return 0;
       long size = 0;
       for (Object obj : collection) {

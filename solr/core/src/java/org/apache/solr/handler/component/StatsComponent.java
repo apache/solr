@@ -84,14 +84,14 @@ public class StatsComponent extends SearchComponent {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (!rb.doStats || (sreq.purpose & ShardRequest.PURPOSE_GET_STATS) == 0) return;
 
     Map<String, StatsValues> allStatsValues = rb._statsInfo.getAggregateStatsValues();
 
     for (ShardResponse srsp : sreq.responses) {
-      NamedList<NamedList<NamedList<?>>> stats = null;
+      NamedList stats = null;
       try {
         stats = (NamedList<NamedList<NamedList<?>>>)
             srsp.getSolrResponse().getResponse().get("stats");
@@ -103,12 +103,13 @@ public class StatsComponent extends SearchComponent {
             "Unable to read stats info for shard: " + srsp.getShard(), e);
       }
 
-      NamedList<NamedList<?>> stats_fields = unwrapStats(stats);
+      NamedList stats_fields = unwrapStats(stats);
       if (stats_fields != null) {
         for (int i = 0; i < stats_fields.size(); i++) {
           String key = stats_fields.getName(i);
           StatsValues stv = allStatsValues.get(key);
-          NamedList<?> shardStv = stats_fields.get(key);
+          @SuppressWarnings({"rawtypes"})
+          NamedList shardStv = (NamedList) stats_fields.get(key);
           stv.accumulate(shardStv);
         }
       }
@@ -150,7 +151,8 @@ public class StatsComponent extends SearchComponent {
 
     for (Map.Entry<String, StatsValues> entry : statsValues.entrySet()) {
       String key = entry.getKey();
-      NamedList<?> stv = entry.getValue().getStatsValues();
+      @SuppressWarnings({"rawtypes"})
+      NamedList stv = entry.getValue().getStatsValues();
       stats_fields.add(key, stv);
     }
     return stats;

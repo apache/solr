@@ -480,7 +480,7 @@ public class SolrReporter extends ScheduledReporter {
   }
 
   @Override
-  @SuppressWarnings("rawtypes") // super uses raw Gauge, so we're stuck with it
+  @SuppressWarnings({"rawtypes"})
   public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers) {
     // no-op - we do all the work in report()
   }

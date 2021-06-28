@@ -63,6 +63,7 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     compareStringFormat("LIVE: सबरीमाला मंदिर के पास पहुंची दो महिलाएं, जमकर हो रहा विरोध-प्रदर्शन");
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testJavabinCodecWithCharSeq() throws IOException {
     SolrDocument document = new SolrDocument();
     document.put("id", "1");
@@ -70,13 +71,13 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     document.put("desc", new StoredField("desc", new ByteArrayUtf8CharSequence(text) {
     }, TextField.TYPE_STORED));
 
-    NamedList<Object> nl = new NamedList<>();
+    NamedList nl = new NamedList();
     nl.add("doc1", document);
     SimplePostTool.BAOS baos = new SimplePostTool.BAOS();
     new JavaBinCodec(new BinaryResponseWriter.Resolver(null, null)).marshal(nl, baos);
     ByteBuffer byteBuffer = baos.getByteBuffer();
-    NamedList<?> result = (NamedList<?>) new JavaBinCodec().unmarshal(new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit()));
-    assertEquals(text, result._get("doc1/desc", null));
+    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit()));
+    assertEquals(text, nl._get("doc1/desc", null));
 
 
   }
@@ -104,9 +105,10 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
-    NamedList<?> res;
+    @SuppressWarnings({"rawtypes"})
+    NamedList res;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
-      res = (NamedList<?>) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+      res = (NamedList) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
     } 
     SolrDocumentList docs = (SolrDocumentList) res.get("response");
     for (Object doc : docs) {

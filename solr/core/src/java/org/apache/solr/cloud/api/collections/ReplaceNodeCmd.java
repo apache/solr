@@ -59,7 +59,8 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
@@ -99,6 +100,8 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ccc.getCloseableToLatchOn());
     try {
       for (ZkNodeProps sourceReplica : sourceReplicas) {
+        @SuppressWarnings({"rawtypes"})
+        NamedList nl = new NamedList();
         String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
         if (log.isInfoEnabled()) {
           log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
@@ -124,7 +127,6 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
         }
         ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
         if (async != null) msg.getProperties().put(ASYNC, async);
-        NamedList<Object> nl = new NamedList<>();
         final ZkNodeProps addedReplica = new AddReplicaCmd(ccc).addReplica(clusterState,
             msg, nl, () -> {
               countDownLatch.countDown();
@@ -198,7 +200,8 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
       log.info("Failed to create some replicas. Cleaning up all replicas on target node");
       SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ccc.getCloseableToLatchOn());
       for (ZkNodeProps createdReplica : createdReplicas) {
-        NamedList<Object> deleteResult = new NamedList<>();
+        @SuppressWarnings({"rawtypes"})
+        NamedList deleteResult = new NamedList();
         try {
           new DeleteReplicaCmd(ccc).deleteReplica(zkStateReader.getClusterState(), createdReplica.plus("parallel", "true"), deleteResult, () -> {
             cleanupLatch.countDown();

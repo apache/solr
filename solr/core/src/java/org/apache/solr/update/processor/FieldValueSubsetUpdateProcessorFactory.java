@@ -50,7 +50,7 @@ public abstract class FieldValueSubsetUpdateProcessorFactory extends FieldMutati
    * This method will not be called unless the collection contains more then 
    * one value.
    */
-  protected abstract <T> Collection<T> pickSubset(Collection<T> values);
+  protected abstract Collection<Object> pickSubset(Collection<Object> values);
   
 }
 

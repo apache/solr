@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -253,10 +252,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(makeReq(core1, CommonParams.QT, "/admin/metrics"), resp);
-        NamedList<?> values = resp.getValues();
+        @SuppressWarnings({"rawtypes"})
+        NamedList values = resp.getValues();
         assertNotNull(values.get("metrics"));
-        values = (NamedList<?>) values.get("metrics");
-        NamedList<?> nl = (NamedList<?>) values.get("solr.core.collection2");
+        values = (NamedList) values.get("metrics");
+        @SuppressWarnings({"rawtypes"})
+        NamedList nl = (NamedList) values.get("solr.core.collection2");
         assertNotNull(nl);
         Object o = nl.get("REPLICATION./replication.indexPath");
         assertNotNull(o);
@@ -749,6 +750,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     updater.addDoc(cmd);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private LocalSolrQueryRequest makeReq(SolrCore core, String... q) {
     if (q.length == 1) {
       return new LocalSolrQueryRequest(core,
@@ -757,9 +759,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     if (q.length % 2 != 0) {
       throw new RuntimeException("The length of the string array (query arguments) needs to be even");
     }
-    @SuppressWarnings("unchecked")
-    NamedList.NamedListEntry<String>[] entries = (NamedList.NamedListEntry<String>[])
-            Array.newInstance(NamedList.NamedListEntry.class, q.length / 2);
+    NamedList.NamedListEntry[] entries = new NamedList.NamedListEntry[q.length / 2];
     for (int i = 0; i < q.length; i += 2) {
       entries[i / 2] = new NamedList.NamedListEntry<>(q[i], q[i + 1]);
     }

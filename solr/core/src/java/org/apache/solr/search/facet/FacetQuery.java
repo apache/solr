@@ -27,8 +27,9 @@ public class FacetQuery extends FacetRequest {
   // query string or query?
   Query q;
 
+  @SuppressWarnings("rawtypes")
   @Override
-  public FacetProcessor<FacetQuery> createFacetProcessor(FacetContext fcontext) {
+  public FacetProcessor createFacetProcessor(FacetContext fcontext) {
     return new FacetQueryProcessor(fcontext, this);
   }
 

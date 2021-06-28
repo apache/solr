@@ -294,9 +294,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
                 oldUserVersion.getClass() + " vs " + newUserVersion.getClass());
       }
       try {
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        boolean passes = newUpdateComparePasses((Comparable) newUserVersion, (Comparable) oldUserVersion, versionFieldNames[i]);
-        if (passes) {
+        if (newUpdateComparePasses((Comparable) newUserVersion, (Comparable) oldUserVersion, versionFieldNames[i])) {
           return true;
         }
       } catch (ClassCastException e) {
@@ -327,8 +325,9 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
    * @param userVersionFieldName Field name of the user versions being compared
    * @return True if acceptable, false if not.
    */
-  protected <T extends Comparable<? super T>> boolean newUpdateComparePasses(T newUserVersion,
-                                           T oldUserVersion, String userVersionFieldName) {
+  @SuppressWarnings({"unchecked"})
+  protected boolean newUpdateComparePasses(@SuppressWarnings({"rawtypes"})Comparable newUserVersion,
+                                           @SuppressWarnings({"rawtypes"})Comparable oldUserVersion, String userVersionFieldName) {
     return oldUserVersion.compareTo(newUserVersion) < 0;
   }
 

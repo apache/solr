@@ -972,7 +972,8 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   /**
    * asserts that the actual RangeFacet matches the expected criteria
    */
-  private <B, G> void assertRange(String name, B start, G gap, B end, int numCount, RangeFacet<B, G> actual) {
+  private void assertRange(String name, Object start, Object gap, Object end, int numCount,
+                           @SuppressWarnings({"rawtypes"})RangeFacet actual) {
     assertEquals("NAME: " + actual.toString(), name, actual.getName());
     assertEquals("START: " + actual.toString(), start, actual.getStart());
     assertEquals("GAP: " + actual.toString(), gap, actual.getGap());

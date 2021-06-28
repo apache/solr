@@ -419,7 +419,9 @@ public class RelatednessAgg extends AggValueSource {
         slotVal.incSizes(fgSize, bgSize);
       }
 
-      return slotVal.externalize(fcontext.isShard());
+      @SuppressWarnings({"rawtypes"})
+      SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
+      return res;
     }
 
     @Override
@@ -592,8 +594,9 @@ public class RelatednessAgg extends AggValueSource {
      * @see Merger#getMergedResult
      */
 
-    public SimpleOrderedMap<Object> externalize(final boolean isShardRequest) {
-      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public SimpleOrderedMap externalize(final boolean isShardRequest) {
+      SimpleOrderedMap result = new SimpleOrderedMap<Number>();
 
       // if counts are non-zero, then this bucket must not be implied
       assert 0 == fg_count || ! implied : "Implied bucket has non-zero fg_count";

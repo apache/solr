@@ -34,8 +34,8 @@ import org.apache.solr.search.SyntaxError;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
-abstract class FacetParser<T extends FacetRequest> {
-  protected T facet;
+abstract class FacetParser<FacetRequestT extends FacetRequest> {
+  protected FacetRequestT facet;
   protected FacetParser<?> parent;
   protected String key;
 
@@ -448,7 +448,7 @@ abstract class FacetParser<T extends FacetRequest> {
   }
 
   static class FacetQueryParser extends FacetParser<FacetQuery> {
-    public FacetQueryParser(FacetParser<?> parent, String key) {
+    public FacetQueryParser(@SuppressWarnings("rawtypes") FacetParser parent, String key) {
       super(parent, key);
       facet = new FacetQuery();
     }
@@ -518,7 +518,8 @@ abstract class FacetParser<T extends FacetRequest> {
    ***/
 
   static class FacetFieldParser extends FacetParser<FacetField> {
-    public FacetFieldParser(FacetParser<?> parent, String key) {
+    @SuppressWarnings({"rawtypes"})
+    public FacetFieldParser(FacetParser parent, String key) {
       super(parent, key);
       facet = new FacetField();
     }

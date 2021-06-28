@@ -34,7 +34,7 @@ public class SpellCheckResponse {
   private List<Suggestion> suggestions = new ArrayList<>();
   Map<String, Suggestion> suggestionMap = new LinkedHashMap<>();
 
-  public SpellCheckResponse(NamedList<?> spellInfo) {
+  public SpellCheckResponse(NamedList<Object> spellInfo) {
     @SuppressWarnings("unchecked")
     NamedList<Object> sugg = (NamedList<Object>) spellInfo.get("suggestions");
     if (sugg == null) {

@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -904,8 +903,8 @@ public class IndexFetcher {
     // todo stop keeping solrCore around
     SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
     try {
-      @SuppressWarnings("unchecked")
-      Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
+      @SuppressWarnings({"rawtypes"})
+      Future[] waitSearcher = new Future[1];
       searcher = core.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {

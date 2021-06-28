@@ -104,7 +104,8 @@ public class BlobRepositoryMockingTest {
   public void testCloudOnly() {
     when(mockContainer.isZooKeeperAware()).thenReturn(false);
     try {
-      BlobRepository.BlobContentRef<ByteBuffer> ref = repository.getBlobIncRef("foo!");
+      @SuppressWarnings({"rawtypes"})
+      BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!");
     } catch (SolrException e) {
       verify(mockContainer).isZooKeeperAware();
       throw e;
@@ -114,8 +115,9 @@ public class BlobRepositoryMockingTest {
   @Test
   public void testGetBlobIncrRefString() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
-    BlobRepository.BlobContentRef<ByteBuffer> ref = repository.getBlobIncRef("foo!");
-    assertEquals("foo!", blobKey);
+    @SuppressWarnings({"rawtypes"})
+    BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!");
+    assertTrue("foo!".equals(blobKey));
     assertTrue(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
@@ -129,9 +131,10 @@ public class BlobRepositoryMockingTest {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
     filecontent = TestSolrConfigHandler.getFileContent("runtimecode/runtimelibs_v2.jar.bin");
     url = "http://localhost:8080/myjar/location.jar";
-    BlobRepository.BlobContentRef<?> ref = repository.getBlobIncRef( "filefoo",null,url,
+    @SuppressWarnings({"rawtypes"})
+    BlobRepository.BlobContentRef ref = repository.getBlobIncRef( "filefoo",null,url,
         "bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417");
-    assertEquals("filefoo", blobKey);
+    assertTrue("filefoo".equals(blobKey));
     assertTrue(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(filecontent, ref.blob.get());
@@ -152,7 +155,8 @@ public class BlobRepositoryMockingTest {
   public void testCachedAlready() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
     when(mapMock.get("foo!")).thenReturn(new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
-    BlobRepository.BlobContentRef<ByteBuffer> ref = repository.getBlobIncRef("foo!");
+    @SuppressWarnings({"rawtypes"})
+    BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!");
     assertEquals("",blobKey);
     assertFalse(blobFetched);
     assertNotNull(ref.blob);
@@ -164,9 +168,10 @@ public class BlobRepositoryMockingTest {
   @Test
   public void testGetBlobIncrRefStringDecoder() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
-    BlobRepository.BlobContentRef<Object> ref = repository.getBlobIncRef("foo!", new BlobRepository.Decoder<>() {
+    @SuppressWarnings({"rawtypes"})
+    BlobRepository.BlobContentRef ref = repository.getBlobIncRef("foo!", new BlobRepository.Decoder<Object>() {
       @Override
-      public String[][] decode(InputStream inputStream) {
+      public Object decode(InputStream inputStream) {
         StringWriter writer = new StringWriter();
         try {
           IOUtils.copy(inputStream, writer, UTF8);

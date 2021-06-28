@@ -94,7 +94,8 @@ public class FacetHeatmap extends FacetRequest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static class Parser extends FacetParser<FacetHeatmap> {
-    Parser(FacetParser<?> parent, String key) {
+    @SuppressWarnings({"rawtypes"})
+    Parser(FacetParser parent, String key) {
       super(parent, key);
     }
 
@@ -117,8 +118,9 @@ public class FacetHeatmap extends FacetRequest {
       final DistanceUnits distanceUnits;
       // note: the two instanceof conditions is not ideal, versus one. If we start needing to add more then refactor.
       if ((type instanceof AbstractSpatialPrefixTreeFieldType)) {
-        AbstractSpatialPrefixTreeFieldType<?> rptType = (AbstractSpatialPrefixTreeFieldType<?>) type;
-        strategy = rptType.getStrategy(fieldName);
+        @SuppressWarnings({"rawtypes"})
+        AbstractSpatialPrefixTreeFieldType rptType = (AbstractSpatialPrefixTreeFieldType) type;
+        strategy = (PrefixTreeStrategy) rptType.getStrategy(fieldName);
         distanceUnits = rptType.getDistanceUnits();
       } else if (type instanceof RptWithGeometrySpatialField) {
         RptWithGeometrySpatialField rptSdvType  = (RptWithGeometrySpatialField) type;
@@ -204,17 +206,21 @@ public class FacetHeatmap extends FacetRequest {
   }
 
   @Override
-  public FacetProcessor<FacetHeatmap> createFacetProcessor(FacetContext fcontext) {
+  @SuppressWarnings({"rawtypes"})
+  public FacetProcessor createFacetProcessor(FacetContext fcontext) {
     return new FacetHeatmapProcessor(fcontext);
   }
 
   // don't use an anonymous class since the getSimpleName() isn't friendly in debug output
-  private class FacetHeatmapProcessor extends FacetProcessor<FacetHeatmap> {
+  @SuppressWarnings({"rawtypes"})
+  private class FacetHeatmapProcessor extends FacetProcessor {
+    @SuppressWarnings({"unchecked"})
     public FacetHeatmapProcessor(FacetContext fcontext) {
       super(fcontext, FacetHeatmap.this);
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public void process() throws IOException {
       super.process(); // handles domain changes
 

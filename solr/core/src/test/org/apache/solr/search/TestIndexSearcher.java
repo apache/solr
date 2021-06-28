@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -250,8 +249,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       addDummyDoc(newCore);
       
       // Open a new searcher, this should call the newSearcherListeners
-      @SuppressWarnings("unchecked")
-      Future<Void>[] future = (Future<Void>[]) Array.newInstance(Future.class, 1);
+      @SuppressWarnings({"rawtypes"})
+      Future<?>[] future = new Future[1];
       newCore.getSearcher(true, false, future);
       future[0].get();
       

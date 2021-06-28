@@ -45,6 +45,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -793,7 +794,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     params.set("name", collectionName);
     params.set("collection.configName", configSetName);
-    QueryRequest request = new QueryRequest(params);
+    @SuppressWarnings({"rawtypes"})
+    SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
     CollectionAdminResponse res = new CollectionAdminResponse();
@@ -900,7 +902,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id","1000"));
     for (SolrClient client : clients) {
       val += 10;
-      NamedList<?> rsp = client.request(qr);
+      @SuppressWarnings({"rawtypes"})
+      NamedList rsp = client.request(qr);
       String match = JSONTestUtil.matchObj("/val_i", rsp.get("doc"), expected);
       if (match != null) throw new RuntimeException(match);
     }
@@ -941,8 +944,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       // use generic request to avoid extra processing of queries
       QueryRequest req = new QueryRequest(params);
       NamedList<Object> resp = client.request(req);
-      NamedList<?> metrics = (NamedList<?>) resp.get("metrics");
-      NamedList<?> uhandlerCat = (NamedList<?>) metrics.getVal(0);
+      @SuppressWarnings({"rawtypes"})
+      NamedList metrics = (NamedList) resp.get("metrics");
+      @SuppressWarnings({"rawtypes"})
+      NamedList uhandlerCat = (NamedList) metrics.getVal(0);
       @SuppressWarnings({"unchecked"})
       Map<String,Object> commits = (Map<String,Object>) uhandlerCat.get("UPDATE.updateHandler.commits");
       return (Long) commits.get("count");
@@ -1147,10 +1152,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     createSolrCore(collection, collectionClients, baseUrl, num, null);
   }
   
+  @SuppressWarnings({"unchecked"})
   private void createSolrCore(final String collection,
       List<SolrClient> collectionClients, final String baseUrl, final int num,
       final String shardId) {
-    Callable<Object> call = () -> {
+    @SuppressWarnings({"rawtypes"})
+    Callable call = () -> {
       try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
         // client.setConnectionTimeout(15000);
         Create createCmd = new Create();
@@ -1277,7 +1284,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (final JettySolrRunner runner : jettys) {
       unique++;
       final int frozeUnique = unique;
-      Callable<Object> call = () -> {
+      @SuppressWarnings({"rawtypes"})
+      Callable call = () -> {
 
         try {
           assertTrue(CollectionAdminRequest

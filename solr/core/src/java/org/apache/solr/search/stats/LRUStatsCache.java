@@ -185,8 +185,10 @@ public class LRUStatsCache extends ExactStatsCache {
   protected void addToPerShardTermStats(SolrQueryRequest req, String shard, String termStatsString) {
     Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
+      @SuppressWarnings({"unchecked"})
       SolrCache<String,TermStats> cache = perShardTermStats.computeIfAbsent(shard, s -> {
-        CaffeineCache<String, TermStats> c = new CaffeineCache<>();
+        @SuppressWarnings({"rawtypes"})
+        CaffeineCache c = new CaffeineCache<>();
         Map<String, String> map = new HashMap<>(lruCacheInitArgs);
         map.put(CommonParams.NAME, s);
         c.init(map, null, null);

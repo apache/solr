@@ -271,7 +271,8 @@ public class TransactionLog implements Closeable {
     // read existing header
     fis = fis != null ? fis : new ChannelFastInputStream(channel, 0);
     @SuppressWarnings("resource") final LogCodec codec = new LogCodec(resolver);
-    Map<?, ?> header = (Map<?, ?>) codec.unmarshal(fis);
+    @SuppressWarnings({"rawtypes"})
+    Map header = (Map) codec.unmarshal(fis);
 
     fis.readInt(); // skip size
 
@@ -307,11 +308,13 @@ public class TransactionLog implements Closeable {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   protected void writeLogHeader(LogCodec codec) throws IOException {
     long pos = fos.size();
     assert pos == 0;
 
-    Map<String, Object> header = new LinkedHashMap<>();
+    @SuppressWarnings({"rawtypes"})
+    Map header = new LinkedHashMap<String, Object>();
     header.put("SOLR_TLOG", 1); // a magic string + version number
     header.put("strings", globalStringList);
     codec.marshal(header, fos);
@@ -748,7 +751,8 @@ public class TransactionLog implements Closeable {
 
         long lastVersion = Long.MIN_VALUE;
         while ((o = super.next()) != null) {
-          List<?> entry = (List<?>) o;
+          @SuppressWarnings({"rawtypes"})
+          List entry = (List) o;
           long version = (Long) entry.get(UpdateLog.VERSION_IDX);
           version = Math.abs(version);
           versionToPos.put(version, pos);

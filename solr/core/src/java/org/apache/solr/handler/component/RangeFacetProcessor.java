@@ -98,7 +98,8 @@ public class RangeFacetProcessor extends SimpleFacets {
     }
   }
 
-  private NamedList<Object> getFacetRangeCounts(final RangeFacetRequest rfr)
+  @SuppressWarnings({"rawtypes"})
+  private <T extends Comparable<T>> NamedList getFacetRangeCounts(final RangeFacetRequest rfr)
       throws IOException, SyntaxError {
 
     final NamedList<Object> res = new SimpleOrderedMap<>();
@@ -132,7 +133,7 @@ public class RangeFacetProcessor extends SimpleFacets {
     return res;
   }
 
-  private NamedList<Object> getFacetRangeCountsDocValues(RangeFacetRequest rfr)
+  private <T extends Comparable<T>> NamedList<Object> getFacetRangeCountsDocValues(RangeFacetRequest rfr)
       throws IOException, SyntaxError {
 
     SchemaField sf = rfr.getSchemaField();

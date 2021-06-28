@@ -165,23 +165,32 @@ public class FileFloatSource extends ValueSource {
 
   /** Internal cache. (from lucene FieldCache) */
   abstract static class Cache {
-    private final Map<IndexReader, Map<Object, Object>> readerCache = new WeakHashMap<>();
+    @SuppressWarnings({"rawtypes"})
+    private final Map readerCache = new WeakHashMap();
 
     protected abstract Object createValue(IndexReader reader, Object key);
 
+    @SuppressWarnings({"unchecked"})
     public void refresh(IndexReader reader, Object key) {
       Object refreshedValues = createValue(reader, key);
       synchronized (readerCache) {
-        Map<Object, Object> innerCache = readerCache.computeIfAbsent(reader, k -> new HashMap<>());
+        @SuppressWarnings({"rawtypes"})
+        Map innerCache = (Map) readerCache.get(reader);
+        if (innerCache == null) {
+          innerCache = new HashMap<>();
+          readerCache.put(reader, innerCache);
+        }
         innerCache.put(key, refreshedValues);
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     public Object get(IndexReader reader, Object key) {
-      Map<Object, Object> innerCache;
+      @SuppressWarnings({"rawtypes"})
+      Map innerCache;
       Object value;
       synchronized (readerCache) {
-        innerCache = readerCache.get(reader);
+        innerCache = (Map) readerCache.get(reader);
         if (innerCache == null) {
           innerCache = new HashMap<>();
           readerCache.put(reader, innerCache);

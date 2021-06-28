@@ -19,7 +19,6 @@ package org.apache.solr.common;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -148,7 +147,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
    */
   public int getValueCount() {
     if( value instanceof Collection ) {
-      return ((Collection<?>)value).size();
+      return ((Collection)value).size();
     }
     return (value == null) ? 0 : 1;
   }
@@ -168,9 +167,27 @@ public class SolrInputField implements Iterable<Object>, Serializable
   @SuppressWarnings("unchecked")
   public Iterator<Object> iterator(){
     if( value instanceof Collection ) {
-      return ((Collection<Object>)value).iterator();
+      return ((Collection)value).iterator();
     }
-    return Collections.singleton(value).iterator();
+    return new Iterator<Object>() {
+      boolean nxt = (value!=null);
+      
+      @Override
+      public boolean hasNext() {
+        return nxt;
+      }
+
+      @Override
+      public Object next() {
+        nxt = false;
+        return value;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 
   @Override

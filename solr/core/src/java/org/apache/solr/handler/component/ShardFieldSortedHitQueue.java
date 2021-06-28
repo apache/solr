@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -42,15 +41,11 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   /** The order of these fieldNames should correspond to the order of sort field values retrieved from the shard */
   protected List<String> fieldNames = new ArrayList<>();
 
-  @SuppressWarnings("unchecked")
-  private static Comparator<ShardDoc>[] newArray(int sz) {
-    return (Comparator<ShardDoc>[]) Array.newInstance(Comparator.class, sz);
-  }
-
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public ShardFieldSortedHitQueue(SortField[] fields, int size, IndexSearcher searcher) {
     super(size);
     final int n = fields.length;
-    comparators = newArray(n);
+    comparators = new Comparator[n];
     this.fields = new SortField[n];
     for (int i = 0; i < n; ++i) {
 
@@ -148,7 +143,8 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
     Object sortVal(ShardDoc shardDoc) {
       assert(shardDoc.sortFieldValues.getName(fieldNum).equals(fieldName));
-      List<Object> lst = shardDoc.sortFieldValues.getVal(fieldNum);
+      @SuppressWarnings({"rawtypes"})
+      List lst = (List)shardDoc.sortFieldValues.getVal(fieldNum);
       return lst.get(shardDoc.orderInShard);
     }
   }

@@ -859,13 +859,14 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     while (0 < docsOnThisPage) {
       String json = assertJQ(req(params,
                                  CURSOR_MARK_PARAM, cursorMark));
-      Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
+      @SuppressWarnings({"rawtypes"})
+      Map rsp = (Map) fromJSONString(json);
       assertTrue("response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
                  rsp.containsKey(CURSOR_MARK_NEXT));
       String nextCursorMark = (String)rsp.get(CURSOR_MARK_NEXT);
       assertNotNull(CURSOR_MARK_NEXT + " is null", nextCursorMark);
-      @SuppressWarnings("unchecked")
-      List<Map<Object,Object>> docs = (List<Map<Object, Object>>) (((Map<?, ?>)rsp.get("response")).get("docs"));
+      @SuppressWarnings({"unchecked"})
+      List<Map<Object,Object>> docs = (List) (((Map)rsp.get("response")).get("docs"));
       docsOnThisPage = docs.size();
       if (null != params.getInt(CommonParams.ROWS)) {
         int rows = params.getInt(CommonParams.ROWS);
@@ -930,6 +931,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    *
    * Also checks that facets are the same with each page, and that they are correct.
    */
+  @SuppressWarnings({"unchecked"})
   public SentinelIntSet assertFullWalkNoDupsWithFacets(int maxSize, SolrParams params)
       throws Exception {
 
@@ -941,16 +943,17 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
-    List<?> previousFacets = null;
+    @SuppressWarnings({"rawtypes"})
+    List previousFacets = null;
     while (0 < docsOnThisPage) {
       String json = assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark));
-      Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
+      @SuppressWarnings({"rawtypes"})
+      Map rsp = (Map) fromJSONString(json);
       assertTrue("response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
                  rsp.containsKey(CURSOR_MARK_NEXT));
       String nextCursorMark = (String)rsp.get(CURSOR_MARK_NEXT);
       assertNotNull(CURSOR_MARK_NEXT + " is null", nextCursorMark);
-      @SuppressWarnings({"unchecked"})
-      List<Map<Object,Object>> docs = (List<Map<Object, Object>>)(((Map<?, ?>)rsp.get("response")).get("docs"));
+      List<Map<Object,Object>> docs = (List)(((Map)rsp.get("response")).get("docs"));
       docsOnThisPage = docs.size();
       if (null != params.getInt(CommonParams.ROWS)) {
         int rows = params.getInt(CommonParams.ROWS);
@@ -978,8 +981,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       }
       cursorMark = nextCursorMark;
 
-      Map<?, ?> facetFields = (Map<?, ?>)((Map<?, ?>)rsp.get("facet_counts")).get("facet_fields");
-      List<?> facets = (List<?>)facetFields.get(facetField);
+      @SuppressWarnings({"rawtypes"})
+      Map facetFields = (Map)((Map)rsp.get("facet_counts")).get("facet_fields");
+      @SuppressWarnings({"rawtypes"})
+      List facets = (List)facetFields.get(facetField);
       if (null != previousFacets) {
         assertEquals("Facets not the same as on previous page:\nprevious page facets: "
             + Arrays.toString(facets.toArray(new Object[facets.size()]))
@@ -1013,7 +1018,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    */
   public String assertCursor(SolrQueryRequest req, String... tests) throws Exception {
     String json = assertJQ(req, tests);
-    Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
+    @SuppressWarnings({"rawtypes"})
+    Map rsp = (Map) fromJSONString(json);
     assertTrue("response doesn't contain "+CURSOR_MARK_NEXT + ": " + json,
                rsp.containsKey(CURSOR_MARK_NEXT));
     String next = (String)rsp.get(CURSOR_MARK_NEXT);

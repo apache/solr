@@ -51,7 +51,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
 public final class FirstFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
-  public <T> Collection<T> pickSubset(Collection<T> values) {
+  public Collection<Object> pickSubset(Collection<Object> values) {
     // trust the iterator
     return Collections.singletonList(values.iterator().next());
   }

@@ -86,7 +86,10 @@ public class HLLAgg extends StrAggValueSource {
         return;
       }
 
-      SimpleOrderedMap<?> map = (SimpleOrderedMap<?>)facetResult;
+
+
+      @SuppressWarnings({"rawtypes"})
+      SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       byte[] serialized = ((byte[])map.get("hll"));
       HLL subHLL = HLL.fromBytes(serialized);
       if (aggregate == null) {
@@ -160,10 +163,11 @@ public class HLLAgg extends StrAggValueSource {
       return set == null ? 0 : set.cardinality();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getShardValue(int slot) throws IOException {
       HLL hll = sets[slot];
       if (hll == null) return NO_VALUES;
-      SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
+      SimpleOrderedMap map = new SimpleOrderedMap();
       map.add("hll", hll.toBytes());
       // optionally use explicit values
       return map;

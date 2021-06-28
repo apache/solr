@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
@@ -2192,7 +2191,8 @@ public class ZkController implements Closeable {
     try {
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if (data == null) return;
-      Map<?,?> roles = (Map<?,?>) Utils.fromJSON(data);
+      @SuppressWarnings({"rawtypes"})
+      Map roles = (Map) Utils.fromJSON(data);
       if (roles == null) return;
       List<?> nodeList = (List<?>) roles.get("overseer");
       if (nodeList == null) return;
@@ -2627,9 +2627,8 @@ public class ZkController implements Closeable {
         }
         registeredSearcher.decref();
       } else  {
-        // TODO This could be an AtomicReference<Future<Void>> but we can revisit that design decision later
-        @SuppressWarnings("unchecked")
-        Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
+        @SuppressWarnings({"rawtypes"})
+        Future[] waitSearcher = new Future[1];
         if (log.isInfoEnabled()) {
           log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
         }

@@ -55,19 +55,20 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
 public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
-  public <T> Collection<T> pickSubset(Collection<T> values) {
+  @SuppressWarnings({"unchecked"})
+  public Collection<Object> pickSubset(@SuppressWarnings({"rawtypes"})Collection values) {
+    @SuppressWarnings({"rawtypes"})
+    Collection result = values;
     try {
-        // TODO: Verify this
       // NOTE: the extra cast to Object is needed to prevent compile
       // errors on Eclipse Compiler (ecj) used for javadoc lint
-
-      // Use the signature with null comparator to let the JDK deal with unsafe casts, and catch CCE if needed
-      return Collections.singletonList(Collections.min(values, null));
+      result = Collections.singletonList((Object) Collections.min(values));
     } catch (ClassCastException e) {
       throw new SolrException
         (BAD_REQUEST, 
          "Field values are not mutually comparable: " + e.getMessage(), e);
     }
+    return result;
   }
 
   @Override
