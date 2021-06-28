@@ -151,7 +151,9 @@ public interface CommonParams {
   
   /**
    * Whether or not the search may be terminated early within a segment.
+   * @deprecated Use {@link #MIN_EXACT_COUNT}. See SOLR-15390
    */
+  @Deprecated
   String SEGMENT_TERMINATE_EARLY = "segmentTerminateEarly";
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
