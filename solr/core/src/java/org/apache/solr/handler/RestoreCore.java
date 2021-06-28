@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -28,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
@@ -173,10 +173,11 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   private void openNewSearcher() throws Exception {
-    AtomicReference<Future<Void>> waitSearcher = new AtomicReference<>();
+    @SuppressWarnings("unchecked")
+    Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
     core.getSearcher(true, false, waitSearcher, true);
-    if (waitSearcher.get() != null) {
-      waitSearcher.get().get();
+    if (waitSearcher[0] != null) {
+      waitSearcher[0].get();
     }
   }
 

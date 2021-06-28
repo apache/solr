@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.FilterCodecReader;
@@ -431,10 +431,11 @@ public class SolrIndexSplitter {
   }
 
   private void openNewSearcher(SolrCore core) throws Exception {
-    AtomicReference<Future<Void>> waitSearcher = new AtomicReference<>();
+    @SuppressWarnings("unchecked")
+    Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
     core.getSearcher(true, false, waitSearcher, true);
-    if (waitSearcher.get() != null) {
-      waitSearcher.get().get();
+    if (waitSearcher[0] != null) {
+      waitSearcher[0].get();
     }
   }
 

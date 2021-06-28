@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
@@ -2626,7 +2627,9 @@ public class ZkController implements Closeable {
         }
         registeredSearcher.decref();
       } else  {
-        AtomicReference<Future<Void>> waitSearcher = new AtomicReference<>();
+        // TODO This could be an AtomicReference<Future<Void>> but we can revisit that design decision later
+        @SuppressWarnings("unchecked")
+        Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
         if (log.isInfoEnabled()) {
           log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
         }
@@ -2635,12 +2638,12 @@ public class ZkController implements Closeable {
         try {
           searcher = core.getSearcher(false, true, waitSearcher, true);
           boolean success = true;
-          if (waitSearcher.get() != null)  {
+          if (waitSearcher[0] != null)  {
             if (log.isDebugEnabled()) {
               log.debug("Waiting for first searcher of core {}, id: {} to be registered", core.getName(), core);
             }
             try {
-              waitSearcher.get().get();
+              waitSearcher[0].get();
             } catch (ExecutionException e) {
               log.warn("Wait for a searcher to be registered for core {}, id: {} failed due to: {}", core.getName(), core, e, e);
               success = false;

@@ -153,7 +153,7 @@ public class CoreContainer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    {
+  {
     // Declared up top to ensure this is present before anything else.
     // note: will not be re-added if already there
     ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());

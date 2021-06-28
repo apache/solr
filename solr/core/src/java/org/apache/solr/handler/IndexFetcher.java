@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -52,7 +53,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -904,11 +904,12 @@ public class IndexFetcher {
     // todo stop keeping solrCore around
     SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
     try {
-      AtomicReference<Future<Void>> waitSearcher = new AtomicReference<>();
+      @SuppressWarnings("unchecked")
+      Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
       searcher = core.getSearcher(true, true, waitSearcher, true);
-      if (waitSearcher.get() != null) {
+      if (waitSearcher[0] != null) {
         try {
-          waitSearcher.get().get();
+          waitSearcher[0].get();
         } catch (InterruptedException | ExecutionException e) {
           SolrException.log(log, e);
         }

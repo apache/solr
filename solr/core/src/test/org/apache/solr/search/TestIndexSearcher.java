@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
@@ -250,9 +250,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       addDummyDoc(newCore);
       
       // Open a new searcher, this should call the newSearcherListeners
-      AtomicReference<Future<Void>> future = new AtomicReference<>();
+      @SuppressWarnings("unchecked")
+      Future<Void>[] future = (Future<Void>[]) Array.newInstance(Future.class, 1);
       newCore.getSearcher(true, false, future);
-      future.get().get();
+      future[0].get();
       
       assertEquals(numTimesCalledAfterGetSearcher, MockSearcherListener.numberOfTimesCalled.get());
       assertEquals(numTimesCalledFirstSearcherAfterGetSearcher, MockSearcherListener.numberOfTimesCalledFirstSearcher.get());
