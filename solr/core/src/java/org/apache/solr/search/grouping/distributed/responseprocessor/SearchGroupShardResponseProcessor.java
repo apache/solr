@@ -105,7 +105,8 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
         continue; // continue if there was an error and we're tolerant.
       }
       maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());
-      NamedList<NamedList<?>> firstPhaseResult = (NamedList<NamedList<?>>) srsp.getSolrResponse().getResponse().get("firstPhase");
+      @SuppressWarnings({"rawtypes"})
+      NamedList<NamedList> firstPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("firstPhase");
       final Map<String, SearchGroupsFieldCommandResult> result = serializer.transformToNative(firstPhaseResult, groupSort, withinGroupSort, srsp.getShard());
       for (Map.Entry<String, List<Collection<SearchGroup<BytesRef>>>> entry : commandSearchGroups.entrySet()) {
         String field = entry.getKey();
