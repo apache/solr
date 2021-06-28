@@ -76,8 +76,7 @@ public class IncrementalShardBackup {
         this.commitNameOption = commitNameOption;
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public NamedList backup() throws Exception {
+    public NamedList<Object> backup() throws Exception {
         final IndexCommit indexCommit = getAndSaveIndexCommit();
         try {
             return backup(indexCommit);
@@ -128,8 +127,7 @@ public class IncrementalShardBackup {
     }
 
     // note: remember to reserve the indexCommit first so it won't get deleted concurrently
-    @SuppressWarnings({"rawtypes"})
-    protected NamedList backup(final IndexCommit indexCommit) throws Exception {
+    protected NamedList<Object> backup(final IndexCommit indexCommit) throws Exception {
         assert indexCommit != null;
         URI backupLocation = incBackupFiles.getBackupLocation();
         log.info("Creating backup snapshot at {} shardBackupMetadataFile:{}", backupLocation, shardBackupId);

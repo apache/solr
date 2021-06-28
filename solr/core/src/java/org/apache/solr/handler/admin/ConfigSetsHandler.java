@@ -303,7 +303,6 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     return false;
   }
 
-  @SuppressWarnings({"unchecked"})
   private void handleResponse(String operation, ZkNodeProps m,
                               SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
     long time = System.nanoTime();
@@ -314,8 +313,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     if (event.getBytes() != null) {
       SolrResponse response = OverseerSolrResponseSerializer.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
-      @SuppressWarnings({"rawtypes"})
-      SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
+      SimpleOrderedMap<?> exp = (SimpleOrderedMap<?>) response.getResponse().get("exception");
       if (exp != null) {
         Integer code = (Integer) exp.get("rspCode");
         rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String) exp.get("msg")));

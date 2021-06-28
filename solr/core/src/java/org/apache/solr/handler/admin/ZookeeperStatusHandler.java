@@ -75,9 +75,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    NamedList values = rsp.getValues();
+    NamedList<Object> values = rsp.getValues();
     if (cores.isZooKeeperAware()) {
       String zkHost = cores.getZkController().getZkServerAddress();
       ZkDynamicConfig dynConfig = null;

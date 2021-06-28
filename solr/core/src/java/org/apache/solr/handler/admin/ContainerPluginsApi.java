@@ -180,7 +180,7 @@ public class ContainerPluginsApi {
   private void persistPlugins(Function<Map<String,Object>, Map<String,Object>> modifier) throws IOException {
     try {
       zkClientSupplier.get().atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
-        Map rawJson = bytes == null ? new LinkedHashMap() :
+        Map rawJson = bytes == null ? new LinkedHashMap<>() :
             (Map) Utils.fromJSON(bytes);
         Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
         if (pluginsModified == null) return null;

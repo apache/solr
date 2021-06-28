@@ -294,17 +294,15 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   private Collection<SnapshotMetaData> listSnapshots(SolrClient adminClient, String coreName) throws Exception {
     ListSnapshots req = new ListSnapshots();
     req.setCoreName(coreName);
-    @SuppressWarnings({"rawtypes"})
-    NamedList resp = adminClient.request(req);
+    NamedList<?> resp = adminClient.request(req);
     assertTrue( resp.get("snapshots") instanceof NamedList );
-    @SuppressWarnings({"rawtypes"})
-    NamedList apiResult = (NamedList) resp.get("snapshots");
+    NamedList<?> apiResult = (NamedList<?>) resp.get("snapshots");
 
     List<SnapshotMetaData> result = new ArrayList<>(apiResult.size());
     for(int i = 0 ; i < apiResult.size(); i++) {
       String commitName = apiResult.getName(i);
-      String indexDirPath = (String)((NamedList)apiResult.get(commitName)).get("indexDirPath");
-      long genNumber = Long.parseLong((String)((NamedList)apiResult.get(commitName)).get("generation"));
+      String indexDirPath = (String)((NamedList<?>)apiResult.get(commitName)).get("indexDirPath");
+      long genNumber = Long.parseLong((String)((NamedList<?>)apiResult.get(commitName)).get("generation"));
       result.add(new SnapshotMetaData(commitName, indexDirPath, genNumber));
     }
     return result;

@@ -803,8 +803,7 @@ public class SolrMetricManager {
     AtomicInteger removed = new AtomicInteger();
     registry.removeMatching((name, metric) -> {
       if (metric instanceof GaugeWrapper) {
-        @SuppressWarnings({"rawtypes"})
-        GaugeWrapper wrapper = (GaugeWrapper) metric;
+        GaugeWrapper<?> wrapper = (GaugeWrapper<?>) metric;
         boolean toRemove = wrapper.getTag().contains(tagSegment);
         if (toRemove) {
           removed.incrementAndGet();
@@ -1227,7 +1226,7 @@ public class SolrMetricManager {
     return result;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   private PluginInfo preparePlugin(PluginInfo info, Map<String, String> defaultAttributes,
                                    Map<String, Object> defaultInitArgs) {
     if (info == null) {
@@ -1251,7 +1250,7 @@ public class SolrMetricManager {
         initArgs.put(k, v);
       }
     });
-    return new PluginInfo(info.type, attrs, new NamedList(initArgs), null);
+    return new PluginInfo(info.type, attrs, new NamedList<>(initArgs), null);
   }
 
   public void loadShardReporters(PluginInfo[] pluginInfos, SolrCore core) {
