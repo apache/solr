@@ -37,7 +37,6 @@ import org.apache.solr.common.util.NamedList;
  * @see PivotFacetValue
  * @see PivotFacetFieldValueCollection
  */
-@SuppressWarnings("rawtypes")
 public class PivotFacetField {
   
   public final String field;
@@ -352,6 +351,7 @@ public class PivotFacetField {
     
     incrementShardValueCount(shardNumber);
 
+    @SuppressWarnings("rawtypes")
     Comparable value = PivotFacetHelper.getValue(shardValue);
     int count = PivotFacetHelper.getCount(shardValue);
     

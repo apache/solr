@@ -138,10 +138,8 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings("unchecked")
   protected TestTag[] pullTagsFromResponse(SolrQueryRequest req, SolrQueryResponse rsp ) throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    NamedList rspValues = rsp.getValues();
+    NamedList<?> rspValues = rsp.getValues();
     Map<String, String> matchingNames = new HashMap<>();
     SolrIndexSearcher searcher = req.getSearcher();
     DocList docList = (DocList) rspValues.get("response");
@@ -156,9 +154,11 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
 
     //build TestTag[] aTags from response ('a' is actual)
+    @SuppressWarnings("unchecked")
     List<NamedList<Object>> mTagsList = (List<NamedList<Object>>) rspValues.get("tags");
     List<TestTag> aTags = new ArrayList<>();
     for (NamedList<Object> map : mTagsList) {
+      @SuppressWarnings("unchecked")
       List<String> foundIds = (List<String>) map.get("ids");
       for (String id  : foundIds) {
         aTags.add(new TestTag(

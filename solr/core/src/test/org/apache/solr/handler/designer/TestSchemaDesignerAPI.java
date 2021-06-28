@@ -863,8 +863,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(fieldTypesAdded.get("test_txt"));
   }
 
-  @SuppressWarnings("rawtypes")
-  protected void assertDesignerSettings(Map<String, Object> expected, NamedList actual) {
+  protected void assertDesignerSettings(Map<String, Object> expected, NamedList<?> actual) {
     for (String expKey : expected.keySet()) {
       Object expValue = expected.get(expKey);
       assertEquals("Value for designer setting '" + expKey + "' not match expected!", expValue, actual.get(expKey));

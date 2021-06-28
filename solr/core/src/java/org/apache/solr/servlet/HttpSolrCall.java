@@ -801,8 +801,7 @@ public class HttpSolrCall {
     } finally {
       try {
         if (exp != null) {
-          @SuppressWarnings({"rawtypes"})
-          SimpleOrderedMap info = new SimpleOrderedMap();
+          SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
           int code = ResponseUtils.getErrorInfo(ex, info, log);
           sendError(code, info.toString());
         }
@@ -914,8 +913,7 @@ public class HttpSolrCall {
       if (null != ct) response.setContentType(ct);
 
       if (solrRsp.getException() != null) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList info = new SimpleOrderedMap();
+        NamedList<Object> info = new SimpleOrderedMap<>();
         int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
         solrRsp.add("error", info);
         response.setStatus(code);
