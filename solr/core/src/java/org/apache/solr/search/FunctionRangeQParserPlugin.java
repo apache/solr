@@ -17,12 +17,13 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionRangeQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.function.*;
 
 /**
  * Create a range query over a function.
@@ -61,9 +62,7 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
         boolean includeUpper = localParams.getBool("incu",true);
 
         // TODO: add a score=val option to allow score to be the value
-        ValueSourceRangeFilter rf = new ValueSourceRangeFilter(vs, l, u, includeLower, includeUpper);
-        FunctionRangeQuery frq = new FunctionRangeQuery(rf);
-        return frq;
+        return new ConstantScoreQuery(new FunctionRangeQuery(vs, l, u, includeLower, includeUpper));
       }
     };
   }

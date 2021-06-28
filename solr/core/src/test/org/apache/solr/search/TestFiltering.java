@@ -21,15 +21,18 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -38,11 +41,18 @@ import org.slf4j.LoggerFactory;
 public class TestFiltering extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static EmbeddedSolrServer server;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml","schema_latest.xml");
+    server = new EmbeddedSolrServer(h.getCoreContainer(), h.coreName);
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    server = null;
   }
 
   @Test
@@ -101,90 +111,42 @@ public class TestFiltering extends SolrTestCaseJ4 {
     }
   }
 
-    public void testCaching() throws Exception {
+  public void testCaching() throws Exception {
     clearIndex();
     assertU(adoc("id","4", "val_i","1"));
     assertU(adoc("id","1", "val_i","2"));
     assertU(adoc("id","3", "val_i","3"));
     assertU(adoc("id","2", "val_i","4"));
-    assertU(commit());
+    assertU(commit()); // also refreshes stats
 
-    int prevCount;
+    int fcSize = getCacheStat("filterCache", "size").intValue();
 
-    // default cost uses post filtering (for frange)
-    prevCount = DelegatingCollector.setLastDelegateCount;
+    // run a query
     assertJQ(req("q","*:*", "fq","{!frange l=2 u=3 cache=false}val_i")
         ,"/response/numFound==2"
     );
-    assertEquals(1, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertEquals(fcSize, getCacheStat("filterCache", "size"));
 
     // The exact same query the second time will be cached by the queryCache
-    prevCount = DelegatingCollector.setLastDelegateCount;
     assertJQ(req("q","*:*", "fq","{!frange l=2 u=3 cache=false}val_i")
         ,"/response/numFound==2"
     );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertEquals(1L, getCacheStat("queryResultCache", "hits"));
+    assertEquals(fcSize, getCacheStat("filterCache", "size"));
 
     // cache is true by default, even w/explicit low/high costs
-    prevCount = DelegatingCollector.setLastDelegateCount;
     assertJQ(req("q","*:*", "fq","{!frange l=2 u=4}val_i")
         ,"/response/numFound==3"
     );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertEquals(++fcSize, getCacheStat("filterCache", "size"));
     assertJQ(req("q","*:*", "fq","{!frange l=2 u=4 cost=0}val_i")
         ,"/response/numFound==3"
     );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertEquals(fcSize, getCacheStat("filterCache", "size"));
     assertJQ(req("q","*:*", "fq","{!frange l=2 u=4 cost=999}val_i")
         ,"/response/numFound==3"
     );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
-
-    // no caching and explicitly low cost avoids post filtering
-    prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("q","*:*", "fq","{!frange l=2 u=5 cache=false cost=0}val_i")
-        ,"/response/numFound==3"
-    );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
-
-
-    // now re-do the same tests w/ faceting on to get the full docset
-
-    // default cost uses post filtering (for frange)
-    prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=6 cache=false}val_i")
-        ,"/response/numFound==3"
-    );
-    assertEquals(1, DelegatingCollector.setLastDelegateCount - prevCount);
-
-    // since we need the docset and the filter was not cached, the collector will need to be used again
-    prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=6 cache=false}val_i")
-        ,"/response/numFound==3"
-    );
-    assertEquals(1, DelegatingCollector.setLastDelegateCount - prevCount);
-
-    // cache is true by default, even w/explicit low/high costs
-    prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=7}val_i")
-        ,"/response/numFound==3"
-    );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=7 cost=0}val_i")
-        ,"/response/numFound==3"
-    );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=7 cost=999}val_i")
-        ,"/response/numFound==3"
-    );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
-
-    // no caching and explicitly low cost avoids post filtering
-    prevCount = DelegatingCollector.setLastDelegateCount;
-    assertJQ(req("facet","true", "facet.field","id", "q","*:*", "fq","{!frange l=2 u=8 cache=false cost=0}val_i")
-        ,"/response/numFound==3"
-    );
-    assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
+    assertEquals(fcSize, getCacheStat("filterCache", "size"));
 
     // test that offset works when not caching main query
     assertJQ(req("q","{!cache=false}*:*", "start","2", "rows","1", "sort","val_i asc", "fl","val_i")
@@ -193,6 +155,15 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
   }
 
+  private Number getCacheStat(String cache, String stat) throws Exception {
+    final String key = "solr.core." + h.coreName + ":CACHE.searcher." + cache + ":" + stat;
+    return (Number)
+        server
+            .request(
+                new GenericSolrRequest(
+                    SolrRequest.METHOD.GET, "/admin/metrics", params("key", key)))
+            ._get("metrics/" + key, null);
+  }
 
   static class Model {
     int indexSize;
