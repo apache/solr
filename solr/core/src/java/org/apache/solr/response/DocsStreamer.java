@@ -99,7 +99,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       boolean doScore = rctx.wantsScores();
       try {
         if (doScore) {
-          transformer.transform(sdoc, id, docIterator.score());
+          if(rctx.getDocList().hasOriginalScores()) {
+            transformer.transform(sdoc, id, docIterator.score(), docIterator.originalScore());
+          } else {
+            transformer.transform(sdoc, id, docIterator.score());
+          }
         } else {
           transformer.transform(sdoc, id);
         }

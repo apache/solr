@@ -1514,6 +1514,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     float maxScore;
     int[] ids;
     float[] scores;
+    float[] originalScores = null;
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
@@ -1568,6 +1569,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       nDocsReturned = 0;
       ids = new int[nDocsReturned];
       scores = new float[nDocsReturned];
+      originalScores = new float[nDocsReturned];
       totalHits = numHits[0];
       maxScore = totalHits > 0 ? topscore[0] : 0.0f;
       // no docs on this page, so cursor doesn't change
@@ -1599,16 +1601,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       nDocsReturned = topDocs.scoreDocs.length;
       ids = new int[nDocsReturned];
       scores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
+      originalScores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
       for (int i = 0; i < nDocsReturned; i++) {
         ScoreDoc scoreDoc = topDocs.scoreDocs[i];
         ids[i] = scoreDoc.doc;
         if (scores != null) scores[i] = scoreDoc.score;
+        if(scoreDoc instanceof ScoreDocWithOriginalScore) {
+          if (originalScores != null) originalScores[i] = ((ScoreDocWithOriginalScore) scoreDoc).originalScore;
+        } else {
+          if (originalScores != null) originalScores[i] = scoreDoc.score; //TODO, here is too late
+        }
       }
     }
 
     int sliceLen = Math.min(lastDocRequested, nDocsReturned);
     if (sliceLen < 0) sliceLen = 0;
-    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, hitsRelation));
+    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, originalScores, totalHits, maxScore, hitsRelation));
   }
 
   // any DocSet returned is for the query only, without any filtering... that way it may

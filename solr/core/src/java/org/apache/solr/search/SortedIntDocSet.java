@@ -618,6 +618,11 @@ public class SortedIntDocSet extends DocSet {
       public float score() {
         return 0.0f;
       }
+
+      @Override
+      public float originalScore() {
+        return 0.0f;
+      }
     };
   }
   

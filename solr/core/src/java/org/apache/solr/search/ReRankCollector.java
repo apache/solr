@@ -41,6 +41,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrRequestInfo;
 
+import static org.apache.solr.search.ScoreDocWithOriginalScore.makeListFromScoreDocs;
+
 /* A TopDocsCollector used by reranking queries. */
 @SuppressWarnings({"rawtypes"})
 public class ReRankCollector extends TopDocsCollector {
@@ -138,9 +140,11 @@ public class ReRankCollector extends TopDocsCollector {
         return rescoredDocs; // Just return the rescoredDocs
       } else if(howMany > rescoredDocs.scoreDocs.length) {
         //We need to return more then we've reRanked, so create the combined page.
-        ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
-        System.arraycopy(mainScoreDocs, 0, scoreDocs, 0, scoreDocs.length); //lay down the initial docs
-        System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, rescoredDocs.scoreDocs.length);//overlay the re-ranked docs.
+        ScoreDocWithOriginalScore[] scoreDocs = new ScoreDocWithOriginalScore[howMany];
+        ScoreDocWithOriginalScore[] scoreDocWithOriginalScores = makeListFromScoreDocs(mainScoreDocs);
+        ScoreDocWithOriginalScore[] scoreDocWithOriginalScores2 = makeListFromScoreDocs(rescoredDocs.scoreDocs);
+        System.arraycopy(scoreDocWithOriginalScores, 0, scoreDocs, 0, scoreDocs.length); //lay down the initial docs
+        System.arraycopy(scoreDocWithOriginalScores2, 0, scoreDocs, 0, rescoredDocs.scoreDocs.length);//overlay the re-ranked docs.
         rescoredDocs.scoreDocs = scoreDocs;
         return rescoredDocs;
       } else {

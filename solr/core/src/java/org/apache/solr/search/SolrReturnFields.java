@@ -39,6 +39,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
+import org.apache.solr.response.transform.OriginalScoreAugmenter;
 import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -51,6 +52,7 @@ import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
 public class SolrReturnFields extends ReturnFields {
   // Special Field Keys
   public static final String SCORE = "score";
+  public static final String ORIGINAL_SCORE = "originalScore";
 
   private final List<String> globs = new ArrayList<>(1);
 
@@ -68,6 +70,7 @@ public class SolrReturnFields extends ReturnFields {
   
   protected DocTransformer transformer;
   protected boolean _wantsScore = false;
+  protected boolean _wantsOriginalScore = false;
   protected boolean _wantsAllFields = false;
   protected Map<String,String> renameFields = Collections.emptyMap();
 
@@ -111,8 +114,9 @@ public class SolrReturnFields extends ReturnFields {
         // maybe time to drop support for this?
         // See ConvertedLegacyTest
         _wantsScore = true;
+        _wantsOriginalScore = true;
         _wantsAllFields = true;
-        transformer = new ScoreAugmenter(SCORE);
+        transformer = new DocTransformers(new ScoreAugmenter(SCORE), new OriginalScoreAugmenter(ORIGINAL_SCORE));
       }
       else {
         parseFieldList( new String[]{fl}, req);
@@ -458,6 +462,12 @@ public class SolrReturnFields extends ReturnFields {
       String disp = (key==null) ? field : key;
       augmenters.addTransformer( new ScoreAugmenter( disp ) );
     }
+    if(ORIGINAL_SCORE.equals(field)) {
+      _wantsOriginalScore = true;
+
+      String disp = (key==null) ? field : key;
+      augmenters.addTransformer( new OriginalScoreAugmenter( disp ) );
+    }
   }
 
   @Override
@@ -522,6 +532,10 @@ public class SolrReturnFields extends ReturnFields {
   public boolean wantsScore()
   {
     return _wantsScore;
+  }
+
+  public boolean wantsOriginalScore() {
+    return _wantsOriginalScore;
   }
 
   @Override

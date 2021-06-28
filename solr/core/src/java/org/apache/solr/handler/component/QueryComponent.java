@@ -73,24 +73,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
-import org.apache.solr.search.CursorMark;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.DocSlice;
-import org.apache.solr.search.Grouping;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.QueryCommand;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.QueryResult;
-import org.apache.solr.search.RankQuery;
-import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.SortSpecParsing;
-import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.*;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
@@ -116,6 +99,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
+import static org.apache.solr.search.SolrIndexSearcher.GET_SCORES;
 
 
 /**
@@ -185,6 +169,8 @@ public class QueryComponent extends SearchComponent
         if(rq instanceof RankQuery) {
           RankQuery rankQuery = (RankQuery)rq;
           rb.setRankQuery(rankQuery);
+          // we always need the score for reRanking
+          rb.setFieldFlags(rb.getFieldFlags() | GET_SCORES);
           MergeStrategy mergeStrategy = rankQuery.getMergeStrategy();
           if(mergeStrategy != null) {
             rb.addMergeStrategy(mergeStrategy);
@@ -865,7 +851,7 @@ public class QueryComponent extends SearchComponent
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
-      final ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+      SortedHitQueueManager queueManager = new SortedHitQueueManager(sortFields, ss, rb);
 
       NamedList<Object> shardInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -989,6 +975,7 @@ public class QueryComponent extends SearchComponent
           shardDoc.shard = srsp.getShard();
           shardDoc.orderInShard = i;
           Object scoreObj = doc.getFieldValue("score");
+          Object originalScoreObj = doc.getFieldValue("originalScore");
           if (scoreObj != null) {
             if (scoreObj instanceof String) {
               shardDoc.score = Float.parseFloat((String)scoreObj);
@@ -999,19 +986,18 @@ public class QueryComponent extends SearchComponent
 
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-          queue.insertWithOverflow(shardDoc);
+          queueManager.addDocument(shardDoc, i);
         } // end for-each-doc-in-response
       } // end for-each-response
       
       // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
       // So we want to pop the last documents off the queue to get
       // the docs offset -> queuesize
-      int resultSize = queue.size() - ss.getOffset();
-      resultSize = Math.max(0, resultSize);  // there may not be any docs in range
+      final int resultSize = Math.max(0, queueManager.getResultSize(ss.getOffset()));  // there may not be any docs in range
 
       Map<Object,ShardDoc> resultIds = new HashMap<>();
       for (int i=resultSize-1; i>=0; i--) {
-        ShardDoc shardDoc = queue.pop();
+        final ShardDoc shardDoc = queueManager.nextDocument();
         shardDoc.positionInResponse = i;
         // Need the toString() for correlation with other lists that must
         // be strings (like keys in highlighting, explain, etc)

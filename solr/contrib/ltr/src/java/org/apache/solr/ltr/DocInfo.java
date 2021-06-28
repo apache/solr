@@ -16,27 +16,15 @@
  */
 package org.apache.solr.ltr;
 
-import java.util.HashMap;
-
-public class DocInfo extends HashMap<String,Object> {
+public class DocInfo {
 
   // Name of key used to store the original score of a doc
-  private static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";
+  float[] originalScores = new float[600];  // FIXME optional score list
 
   public DocInfo() {
-    super();
   }
 
-  public void setOriginalDocScore(Float score) {
-    put(ORIGINAL_DOC_SCORE, score);
+  public void setOriginalDocScore(int id, float score) {
+    originalScores[id] = score;
   }
-
-  public Float getOriginalDocScore() {
-    return (Float)get(ORIGINAL_DOC_SCORE);
-  }
-
-  public boolean hasOriginalDocScore() {
-    return containsKey(ORIGINAL_DOC_SCORE);
-  }
-
 }

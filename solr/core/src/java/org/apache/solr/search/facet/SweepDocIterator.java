@@ -77,6 +77,11 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
   }
 
   @Override
+  public float originalScore() {
+    throw new UnsupportedOperationException("Not supported.");
+  }
+
+  @Override
   public Integer next() {
     throw new UnsupportedOperationException("Not supported.");
   }

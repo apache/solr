@@ -37,6 +37,7 @@ public class DocSlice implements DocList, Accountable {
   final int[] docs;    // a slice of documents (docs 0-100 of the query)
 
   final float[] scores;  // optional score list
+  final float[] originalScores;  // optional original score list
   final long matches;
   final TotalHits.Relation matchesRelation;
   final float maxScore;
@@ -53,10 +54,15 @@ public class DocSlice implements DocList, Accountable {
    * @param matchesRelation Indicates if {@code matches} is exact or an approximation
    */
   public DocSlice(int offset, int len, int[] docs, float[] scores, long matches, float maxScore, TotalHits.Relation matchesRelation) {
+    this(offset, len, docs, scores, null, matches, maxScore, matchesRelation);
+  }
+
+  public DocSlice(int offset, int len, int[] docs, float[] scores, float[] originalScores, long matches, float maxScore, TotalHits.Relation matchesRelation) {
     this.offset=offset;
     this.len=len;
     this.docs=docs;
     this.scores=scores;
+    this.originalScores=originalScores;
     this.matches=matches;
     this.maxScore=maxScore;
     this.ramBytesUsed = BASE_RAM_BYTES_USED + (docs == null ? 0 : ((long)docs.length << 2)) + (scores == null ? 0 : ((long)scores.length<<2)+RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
@@ -80,6 +86,11 @@ public class DocSlice implements DocList, Accountable {
   @Override
   public boolean hasScores() {
     return scores!=null;
+  }
+
+  @Override
+  public boolean hasOriginalScores() {
+    return originalScores!=null;
   }
 
   @Override
@@ -129,6 +140,11 @@ public class DocSlice implements DocList, Accountable {
       @Override
       public float score() {
         return scores[pos-1];
+      }
+
+      @Override
+      public float originalScore() {
+        return originalScores[pos-1];
       }
     };
   }

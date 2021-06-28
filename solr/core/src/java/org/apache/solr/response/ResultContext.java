@@ -51,6 +51,9 @@ public abstract class ResultContext {
   public boolean wantsScores() {
     return getReturnFields() != null && getReturnFields().wantsScore() && getDocList() != null && getDocList().hasScores();
   }
+  public boolean wantsOriginalScores() {
+    return getReturnFields() != null && getReturnFields().wantsOriginalScore() && getDocList() != null && getDocList().hasOriginalScores(); // TODO?
+  }
 
   public Iterator<SolrDocument> getProcessedDocuments() {
     return new DocsStreamer(this);

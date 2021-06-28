@@ -18,6 +18,7 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,6 +33,10 @@ import org.apache.solr.response.ResultContext;
 public class DocTransformers extends DocTransformer
 {
   final List<DocTransformer> children = new ArrayList<>();
+
+  public DocTransformers(DocTransformer... transformers) {
+    children.addAll(Arrays.asList(transformers));
+  }
 
   @Override
   public String getName()
@@ -74,6 +79,13 @@ public class DocTransformers extends DocTransformer
   public void transform(SolrDocument doc, int docid, float score) throws IOException {
     for( DocTransformer a : children ) {
       a.transform( doc, docid, score);
+    }
+  }
+
+  @Override
+  public void transform(SolrDocument doc, int docid, float score, float originalScore) throws IOException {
+    for( DocTransformer a : children ) {
+      a.transform( doc, docid, score, originalScore);
     }
   }
 

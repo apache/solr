@@ -85,6 +85,10 @@ public abstract class DocTransformer {
     transform(doc, docid);
   }
 
+  public void transform(SolrDocument doc, int docid, float score, float originalScore) throws IOException {
+    transform(doc, docid);
+  }
+
   /**
    * This is where implementations do the actual work.
    * If implementations require a valid docId and index access, the {@link #needsSolrIndexSearcher} 

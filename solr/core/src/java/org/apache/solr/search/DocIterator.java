@@ -49,4 +49,6 @@ public interface DocIterator extends Iterator<Integer> {
    * in which the DocIterator instance was retrieved.
    */
   public float score();
+
+  public float originalScore();
 }

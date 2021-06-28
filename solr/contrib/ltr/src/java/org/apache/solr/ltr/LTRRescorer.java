@@ -32,6 +32,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
+import org.apache.solr.search.ScoreDocWithOriginalScore;
 import org.apache.solr.search.SolrIndexSearcher;
 
 
@@ -164,7 +165,6 @@ public class LTRRescorer extends Rescorer {
   public void scoreFeatures(IndexSearcher indexSearcher,
                             int topN, LTRScoringQuery.ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
                             ScoreDoc[] reranked) throws IOException {
-
     int readerUpto = -1;
     int endDoc = 0;
     int docBase = 0;
@@ -173,7 +173,7 @@ public class LTRRescorer extends Rescorer {
     int hitUpto = 0;
 
     while (hitUpto < hits.length) {
-      final ScoreDoc hit = hits[hitUpto];
+      final ScoreDocWithOriginalScore hit = new ScoreDocWithOriginalScore(hits[hitUpto]);
       final int docID = hit.doc;
       LeafReaderContext readerContext = null;
       while (docID >= endDoc) {
@@ -206,7 +206,7 @@ public class LTRRescorer extends Rescorer {
     scorer.docID();
     scorer.iterator().advance(targetDoc);
 
-    scorer.getDocInfo().setOriginalDocScore(hit.score);
+    scorer.getDocInfo().setOriginalDocScore(hit.doc, hit.score);
     hit.score = scorer.score();
     if (hitUpto < topN) {
       reranked[hitUpto] = hit;
@@ -274,7 +274,7 @@ public class LTRRescorer extends Rescorer {
       if (originalDocScore != null) {
         // If results have not been reranked, the score passed in is the original query's
         // score, which some features can use instead of recalculating it
-        r.getDocInfo().setOriginalDocScore(originalDocScore);
+        r.getDocInfo().setOriginalDocScore(docid, originalDocScore);
       }
       r.score();
       return modelWeight.getFeaturesInfo();

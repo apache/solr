@@ -325,6 +325,12 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     }
 
     @Override
+    public void transform(SolrDocument doc, int docid, float score, float originalScore)
+        throws IOException {
+      implTransform(doc, docid, score, originalScore);
+    }
+
+    @Override
     public void transform(SolrDocument doc, int docid)
         throws IOException {
       implTransform(doc, docid, null);
@@ -348,6 +354,30 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                   rerankingModelWeight,
                   docid,
                   (docsWereNotReranked ? score : null),
+                  leafContexts));
+        }
+        doc.addField(name, featureVector);
+      }
+    }
+
+    private void implTransform(SolrDocument doc, int docid, Float score, Float originalScore)
+        throws IOException {
+      LTRScoringQuery rerankingQuery = rerankingQueries[0];
+      LTRScoringQuery.ModelWeight rerankingModelWeight = modelWeights[0];
+      for (int i = 1; i < rerankingQueries.length; i++) {
+        if (((LTRInterleavingScoringQuery)rerankingQueriesFromContext[i]).getPickedInterleavingDocIds().contains(docid)) {
+          rerankingQuery = rerankingQueries[i];
+          rerankingModelWeight = modelWeights[i];
+        }
+      }
+      if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
+        Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);
+        if (featureVector == null) { // FV for this document was not in the cache
+          featureVector = featureLogger.makeFeatureVector(
+              LTRRescorer.extractFeaturesInfo(
+                  rerankingModelWeight,
+                  docid,
+                  originalScore,
                   leafContexts));
         }
         doc.addField(name, featureVector);
