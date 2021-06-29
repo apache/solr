@@ -102,6 +102,9 @@ dependencies {
 
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-core') { transitive = false }
+  implementation ('org.checkerframework:checker-qual') { transitive = false }
+  implementation ('com.esri.geometry:esri-geometry-api') { transitive = false }
+  implementation ('org.apiguardian:apiguardian-api')  { transitive = false }
   implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
   implementation ('org.apache.curator:curator-client') { transitive = false }
   implementation ('org.apache.curator:curator-framework') { transitive = false }
