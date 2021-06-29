@@ -211,8 +211,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     SchemaField sf = fp.getReq().getSchema().getField(sfield);
     FieldType type = sf.getType();
     if (type instanceof AbstractSpatialFieldType) {
-      @SuppressWarnings({"rawtypes"})
-      AbstractSpatialFieldType asft = (AbstractSpatialFieldType) type;
+      AbstractSpatialFieldType<?> asft = (AbstractSpatialFieldType<?>) type;
       return new SpatialStrategyMultiValueSource(asft.getStrategy(sfield), asft.getDistanceUnits());
     }
     ValueSource vs = type.getValueSource(sf, fp);

@@ -124,15 +124,14 @@ public abstract class LogWatcher<E> {
    *
    * @return a LogWatcher configured for the container's logging framework
    */
-  @SuppressWarnings({"rawtypes"})
-  public static LogWatcher newRegisteredLogWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
+  public static LogWatcher<?> newRegisteredLogWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
 
     if (!config.isEnabled()) {
       log.debug("A LogWatcher is not enabled");
       return null;
     }
 
-    LogWatcher logWatcher = createWatcher(config, loader);
+    LogWatcher<?> logWatcher = createWatcher(config, loader);
 
     if (logWatcher != null) {
       if (config.getWatcherSize() > 0) {
@@ -146,8 +145,7 @@ public abstract class LogWatcher<E> {
     return logWatcher;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static LogWatcher createWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
+  private static LogWatcher<?> createWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
 
     String fname = config.getLoggingClass();
     String slf4jImpl;

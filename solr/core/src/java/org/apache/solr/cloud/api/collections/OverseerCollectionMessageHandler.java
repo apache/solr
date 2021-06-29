@@ -101,15 +101,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
     MDCLoggingContext.setCollection(message.getStr(COLLECTION));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
     log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList results = new NamedList();
+    NamedList<Object> results = new NamedList<>();
     try {
       CollectionAction action = getCollectionAction(operation);
       CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);

@@ -66,8 +66,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
         BackupFilePaths incBackupFiles = new BackupFilePaths(repository, locationUri);
         IncrementalShardBackup incSnapShooter = new IncrementalShardBackup(repository, core, incBackupFiles,
                 prevShardBackupId, shardBackupId, Optional.ofNullable(commitName));
-        @SuppressWarnings({"rawtypes"})
-        NamedList rsp = incSnapShooter.backup();
+        NamedList<Object> rsp = incSnapShooter.backup();
         it.rsp.addResponse(rsp);
       } else {
         SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);
