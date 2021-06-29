@@ -283,7 +283,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
@@ -397,8 +396,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
           }
         }
         if(rb.isDebug()) {
-          NamedList debug = new NamedList();
-          debug.add("explain", new NamedList());
+          NamedList<Object> debug = new NamedList<>();
+          debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
         rb.rsp.getResponseHeader().asShallowMap()

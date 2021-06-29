@@ -39,6 +39,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
@@ -55,6 +56,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final int znodeVersion;
 
   private final String name;
+  private final String configName;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final Slice[] activeSlicesArr;
@@ -84,11 +86,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional updates).
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
-    super(props==null ? props = new HashMap<>() : props);
+    super(props);
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
-
+    this.configName = (String) props.get(CONFIGNAME_PROP);
     this.slices = slices;
     this.activeSlices = new HashMap<>();
     this.nodeNameLeaderReplicas = new HashMap<>();
@@ -204,6 +206,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public String getName() {
     return name;
+  }
+
+  /**
+   * Return non-null config name
+   */
+  public String getConfigName() {
+    assert configName != null;
+    return configName;
   }
 
   public Slice getSlice(String sliceName) {

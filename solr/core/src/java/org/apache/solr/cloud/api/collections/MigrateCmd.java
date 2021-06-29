@@ -230,7 +230,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     Replica sourceLeader = zkStateReader.getLeaderRetry(sourceCollection.getName(), sourceSlice.getName(), 10000);
 
     // create a temporary collection with just one node on the shard leader
-    String configName = zkStateReader.readConfigName(sourceCollection.getName());
+    String configName = sourceCollection.getConfigName();
     Map<String, Object> props = Utils.makeMap(
         Overseer.QUEUE_OPERATION, CREATE.toLower(),
         NAME, tempSourceCollectionName,

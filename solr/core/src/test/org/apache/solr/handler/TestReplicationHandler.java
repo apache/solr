@@ -354,13 +354,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       if (i > 0) {
         rQuery(i, "*:*", followerClient);
-        @SuppressWarnings({"rawtypes"})
-        List replicatedAtCount = (List) ((NamedList) details.get("follower")).get("indexReplicatedAtList");
+        List<?> replicatedAtCount = (List<?>) ((NamedList<?>) details.get("follower")).get("indexReplicatedAtList");
         int tries = 0;
         while ((replicatedAtCount == null || replicatedAtCount.size() < i) && tries++ < 5) {
           Thread.sleep(1000);
           details = getDetails(followerClient);
-          replicatedAtCount = (List) ((NamedList) details.get("follower")).get("indexReplicatedAtList");
+          replicatedAtCount = (List<?>) ((NamedList<?>) details.get("follower")).get("indexReplicatedAtList");
         }
         
         assertNotNull("Expected to see that the follower has replicated" + i + ": " + details.toString(), replicatedAtCount);

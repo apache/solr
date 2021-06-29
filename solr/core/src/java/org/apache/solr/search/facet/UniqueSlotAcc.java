@@ -74,7 +74,6 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return res;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardHLL(int slot) throws IOException {
     FixedBitSet ords = arr[slot];
     if (ords == null) return HLLAgg.NO_VALUES;
@@ -93,12 +92,11 @@ abstract class UniqueSlotAcc extends SlotAcc {
       hll.addRaw(hashResult.val1);
     }
 
-    SimpleOrderedMap map = new SimpleOrderedMap();
+    SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
     map.add("hll", hll.toBytes());
     return map;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardValue(int slot) throws IOException {
     if (factory != null) return getShardHLL(slot);
     FixedBitSet ords = arr[slot];
@@ -109,7 +107,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
       unique = ords==null ? 0 : ords.cardinality();
     }
 
-    SimpleOrderedMap map = new SimpleOrderedMap();
+    SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
     map.add("unique", unique);
     map.add("nTerms", nTerms);
 
@@ -118,7 +116,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
     // TODO: share values across buckets
     if (unique > 0) {
 
-      List lst = new ArrayList( Math.min(unique, maxExplicit) );
+      List<Object> lst = new ArrayList<>( Math.min(unique, maxExplicit) );
 
       int maxOrd = ords.length();
       if (maxOrd > 0) {
