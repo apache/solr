@@ -1,5 +1,4 @@
 = Collections API
-:page-children: cluster-node-management, collection-management, collection-aliasing, shard-management, replica-management
 :page-show-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -26,7 +25,7 @@ Because this API has a large number of commands and options, we've grouped the c
 
 *<<collection-management.adoc#,Collection Management>>*: Create, list, reload and delete collections; set collection properties; migrate documents to another collection; rebalance leaders; backup and restore collections.
 
-*<<collection-aliasing.adoc#,Collection Aliasing>>*: Create, list or delete collection aliases; set alias properties.
+*<<alias-management.adoc#,Alias Management>>*: Create, list or delete collection aliases; set alias properties.
 
 *<<shard-management.adoc#,Shard Management>>*: Create and delete a shard; split a shard into two or more additional shards; force a shard leader.
 

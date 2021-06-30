@@ -84,7 +84,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 
 [example.tab-pane#v2transform]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl 'http://localhost:8983/api/cores/techproducts/update/json/docs'\
@@ -209,7 +209,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 
 [example.tab-pane#v2simpler]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl 'http://localhost:8983/api/cores/techproducts/update/json/docs'\
@@ -303,7 +303,7 @@ Say we wanted to define parameters to split documents at the `exams` field, and 
 
 [example.tab-pane#v2splitparams]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl http://localhost:8983/api/cores/techproducts/config/params -H 'Content-type:application/json' -d '{
@@ -360,7 +360,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs?useParams=my_para
 
 [example.tab-pane#v2useparams]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl 'http://localhost:8983/api/cores/techproducts/update/json?useParams=my_params' -H 'Content-type:application/json' -d '{
@@ -454,7 +454,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 
 [example.tab-pane#v2wildcards]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl 'http://localhost:8983/api/cores/techproducts/update/json'\
@@ -542,7 +542,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 
 [example.tab-pane#v2wildcardtxt]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl 'http://localhost:8983/api/cores/techproducts/update/json'\
@@ -628,7 +628,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs?split=/exams'\
 
 [example.tab-pane#v2wildcardfqn]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl 'http://localhost:8983/api/cores/techproducts/update/json?split=/exams'\
@@ -718,7 +718,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type
 
 [example.tab-pane#v2multidocs]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
@@ -756,7 +756,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type
 
 [example.tab-pane#v2array]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
 curl 'http://localhost:8983/api/cores/techproducts/update/json' -H 'Content-type:application/json' -d '[
@@ -826,7 +826,7 @@ Alternately, use the Request Parameters feature to set these parameters, as show
 
 [example.tab-pane#v2jsondefault]
 ====
-[.tab-label]*V2 API Standalone Solr*
+[.tab-label]*V2 API User-Managed / Single-Node Solr*
 [source,bash]
 ----
  curl http://localhost:8983/api/cores/techproducts/config/params -H 'Content-type:application/json' -d '{

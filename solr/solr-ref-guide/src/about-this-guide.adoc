@@ -48,7 +48,7 @@ In many cases, this is is in the `server/solr` directory of your installation. H
 
 In several cases of this Guide, our examples are built from the the "techproducts" example (i.e., you have started Solr with the command `bin/solr -e techproducts`). In this case, `solr.home` will be a sub-directory of the `example/` directory created for you automatically.
 
-See also the section <<solr-configuration-files.adoc#solr-home,Solr Home>> for further details on what is contained in this directory.
+See also the section <<configuration-files.adoc#solr-home,Solr Home>> for further details on what is contained in this directory.
 
 == API Examples
 

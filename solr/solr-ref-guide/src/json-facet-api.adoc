@@ -617,7 +617,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-face
 ====
 --
 
-An expanded form allows for <<local-parameters-in-queries.adoc#,Local Parameters>> to be specified.  These may be used explicitly by some specialized aggregations such as `<<json-facet-api.adoc#relatedness-options,relatedness()>>`, but can also be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
+An expanded form allows for <<local-params.adoc#,local params>> to be specified.  These may be used explicitly by some specialized aggregations such as `<<json-facet-api.adoc#relatedness-options,relatedness()>>`, but can also be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
 
 [.dynamic-tabs]
 --
@@ -993,7 +993,7 @@ curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:
 <1> Use the entire collection as our "Background Set"
 <2> Use a query for "age >= 35" to define our (initial) "Foreground Set"
 <3> For both the top level `hobbies` facet & the sub-facet on `state` we will be sorting on the `relatedness(...)` values
-<4> In both calls to the `relatedness(...)` function, we use <<local-parameters-in-queries.adoc#parameter-dereferencing,Parameter Variables>> to refer to the previously defined `fore` and `back` queries.
+<4> In both calls to the `relatedness(...)` function, we use <<local-params.adoc#parameter-dereferencing,parameter variables>> to refer to the previously defined `fore` and `back` queries.
 
 .The Facet Response
 [source,json,subs="verbatim,callouts"]

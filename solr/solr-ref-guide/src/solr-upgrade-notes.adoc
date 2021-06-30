@@ -1,5 +1,8 @@
 = Solr Upgrade Notes
-:page-children: major-changes-in-solr-9, major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
+:page-children: major-changes-in-solr-9, \
+    major-changes-in-solr-8, \
+    major-changes-in-solr-7, \
+    major-changes-in-solr-6
 :toclevels: 3
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -60,7 +63,7 @@ The old format is officially deprecated, and support for it is likely to be remo
 For the time-being the old format can be created by defining a parameter `incremental=false`.
 Again, though, this support is likely to be removed in Solr 9.0.
 
-More documentation on backups is available at <<making-and-restoring-backups.adoc#,Making and Restoring Backups>>.
+More documentation on backups is available at <<backup-restore.adoc#,Backup and Restore>>.
 
 New Collections API commands for backups:
 
@@ -70,7 +73,7 @@ See <<collection-management.adoc#listbackup,List Backups>> for more details.
 
 A new option for backup repository is also available in 8.9, which is to use Google Cloud Storage (GCS).
 This is a contrib (located in `contrib/gcs-repository`).
-See <<making-and-restoring-backups.adoc#gcsbackuprepository,GCSBackupRepository>> for configuration details.
+See <<backup-restore.adoc#gcsbackuprepository,GCSBackupRepository>> for configuration details.
 The Solr community is working to add support for S3 buckets in the near future.
 
 *Nested Docs*
@@ -90,7 +93,7 @@ See <<collapse-and-expand-results.adoc#block-collapsing,Block Collapsing>> for d
 *In-Place Updates*
 
 A new request parameter `update.partial.requireInPlace=true` allows telling Solr to "fail fast" if all of the necessary conditions are not satisfied to allow an in-place update to succeed.
-See also <<updating-parts-of-documents.adoc#in-place-updates,In-Place Updates>>.
+See also <<partial-document-updates.adoc#in-place-updates,In-Place Updates>>.
 
 *Metrics History*
 
@@ -140,7 +143,7 @@ For examples using this feature, see the section <<learning-to-rank.adoc#running
 *Prometheus Exporter*
 
 * The `./bin` scripts included with the Prometheus Exporter contrib now allow use of custom java options with environment variables.
-See the section <<monitoring-solr-with-prometheus-and-grafana.adoc#environment-variable-options,Environment Variable Options>> for more details.
+See the section <<monitoring-with-prometheus-and-grafana.adoc#environment-variable-options,Environment Variable Options>> for more details.
 * The default Grafana dashboards now include panels for query performance monitoring.
 The default Prometheus Exporter configuration includes metrics like queries-per-second (QPS) and 95th percentiles (P95) to populate the new panels.
 * The default Prometheus Exporter configuration also includes the two new metrics mentioned in the Metrics above.
@@ -184,15 +187,14 @@ The Solr community is working on pluggable API to replace this functionality, wi
 * Support for detecting spinning disks has been removed in LUCENE-9576. Corresponding
 `spins` metrics in Solr still exist but now they always return `false` and will be removed in Solr 9.0.
 
-*Legacy Scaling (non-SolrCloud) Terminology Updated*
+*User-Managed Cluster Terminology Updated*
 
 * Solr has replaced the terms "master" and "slave" in the codebase and all documentation with "leader" and "follower".
 +
-This impacts the functionality described in the section <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>.
 This functionality has only changed in terms of parameter names changed, and we do not expect any back-compatibility issues on upgrade to 8.7 or even 9.0 later.
 +
 However, users should update their `solrconfig.xml` files after completing the upgrade on all nodes of a cluster.
-Comparing your configuration to the updated configuration examples in <<index-replication.adoc#,Index Replication>> will show examples of what needs to change, but here are the main changes:
+Comparing your configuration to the updated configuration examples in <<user-managed-index-replication.adoc#,Index Replication>> will show examples of what needs to change, but here are the main changes:
 +
 . On the replication leader, in the definition of the `/replication` request handler:
 .. Replace "master" with "leader".
@@ -301,7 +303,7 @@ When using the `solr.xml` file that ships with 8.6, you can configure the list o
 Please see `bin/solr.in.sh` or `bin\solr.in.cmd` for example usage.
 Using the value `*` will allow any path as in earlier versions.
 +
-For more on this, see the section <<format-of-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>.
+For more on this, see the section <<configuring-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>.
 +
 Windows SMB shares on the UNC format, such as `\\myhost\myshare\mypath` are now always disallowed.
 Please use drive letter mounts instead, i.e., `S:\mypath`.
@@ -407,7 +409,7 @@ In Solr 9.0, this will be the default.
 
 Solr has two new parameters to allow you to restrict access to Solr using IP addresses. Use `SOLR_IP_WHITELIST` to configure a whitelist, and `SOLR_IP_BLACKLIST` to configure a blacklist. These properties are defined in `solr.in.sh` or `solr.in.cmd`.
 
-See also the section <<securing-solr.adoc#enable-ip-access-control,Enable IP Access Control>>.
+See also the section <<securing-solr.adoc#ip-access-control,Enable IP Access Control>>.
 
 *BlockJoin Facet Deprecation*
 
@@ -534,8 +536,8 @@ If you are using these together, you will need to modify your queries.
 * SolrJ now supports the `shards.preference` parameter for single-shard
 scenarios to ensure multi-shard and single-shard request routing works in the same way.
 +
-See <<using-solrj.adoc#cloud-request-routing,Cloud Request Routing>> and
-<<distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details.
+See <<solrj.adoc#cloud-request-routing,Cloud Request Routing>> and
+<<solrcloud-distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details.
 
 * `QueryResponse.getExplainMap()` type has changed from `Map<String, String>` to `Map<String, Object>` in order to support structured explanations.
 +
@@ -593,7 +595,7 @@ Since caching has a direct impact on the performance of your Solr
 
 * A new parameter, `maxIdleTime`, allows automatic eviction of cache items that have not been used in the defined amount of time. This allows the cache to release some memory and should aid those who want or need to fine-tune their caches.
 
-See the section <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>> for more details about these and other cache options and parameters.
+See the section <<caches-warming.adoc#,Caches and Query Warming>> for more details about these and other cache options and parameters.
 
 === Solr 8.2
 
@@ -610,7 +612,7 @@ It is recommended that external ensembles set up to work with Solr also be updat
 This ZooKeeper release includes many new security features.
 In order for Solr's Admin UI to work with 3.5.5, the `zoo.cfg` file must allow access to ZooKeeper's "four-letter commands".
 At a minimum, `ruok`, `conf`, and `mntr` must be enabled, but other commands can optionally be enabled if you choose.
-See the section <<setting-up-an-external-zookeeper-ensemble.adoc#configuration-for-a-zookeeper-ensemble,Configuration for a ZooKeeper Ensemble>> for details.
+See the section <<zookeeper-ensemble.adoc#configuration-for-a-zookeeper-ensemble,Configuration for a ZooKeeper Ensemble>> for details.
 
 [WARNING]
 Until 8.3, https://issues.apache.org/jira/browse/SOLR-13672[SOLR-13672] causes the ZK Status screen in the Admin UI to not be able to report status. This only impacts the UI, ZooKeeper still operates correctly.
@@ -631,7 +633,7 @@ Collections created with older versions will continue to work.
 
 *Distributed Tracing Support*
 
-This release adds support for tracing requests in Solr. Please review the section <<solr-tracing.adoc#,Distributed Solr Tracing>> for details on how to configure this feature.
+This release adds support for tracing requests in Solr. Please review the section <<distributed-tracing.adoc#,Distributed Tracing>> for details on how to configure this feature.
 
 === Solr 8.1
 
@@ -649,7 +651,7 @@ An identical parameter is available in `solrconfig.xml` for limiting the size of
 +
 If your use case demands that you a lot of OR or AND clauses in your queries, upon upgrade to 8.1 you may need to adjust the global `maxBooleanClauses` parameter since between 7.0 and 8.1 the limit was effectively unbounded.
 +
-For more information about the new parameter, see the section <<format-of-solr-xml.adoc#global-maxbooleanclauses,Format of solr.xml: maxBooleanClauses>>.
+For more information about the new parameter, see the section <<configuring-solr-xml.adoc#global-maxbooleanclauses,Format of solr.xml: maxBooleanClauses>>.
 
 *Security*
 
@@ -702,4 +704,4 @@ Users upgrading from versions of Solr prior to 7.x are strongly encouraged to co
 
 The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#,Major Changes in Solr 7>> before starting your upgrade.
 
-A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-from-solr-5-to-solr-6.adoc#,Major Changes from Solr 5 to Solr 6>>.
+A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-in-solr-6.adoc#,Major Changes in Solr 6>>.

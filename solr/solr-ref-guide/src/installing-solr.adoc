@@ -19,7 +19,7 @@
 
 Installation of Solr on Unix-compatible or Windows servers generally requires simply extracting (or, unzipping) the download package.
 
-Please be sure to review the <<solr-system-requirements.adoc#,Solr System Requirements>> before starting Solr.
+Please be sure to review the <<system-requirements.adoc#,System Requirements>> before starting Solr.
 
 == Available Solr Packages
 
@@ -47,7 +47,7 @@ How to size your Solr installation is a complex question that relies on a number
 It's highly recommended that you spend a bit of time thinking about the factors that will impact hardware sizing for your Solr implementation. A very good blog post that discusses the issues to consider is https://lucidworks.com/2012/07/23/sizing-hardware-in-the-abstract-why-we-dont-have-a-definitive-answer/[Sizing Hardware in the Abstract: Why We Don't have a Definitive Answer].
 ====
 
-One thing to note when planning your installation is that a hard limit exists in Lucene for the number of documents in a single index: approximately 2.14 billion documents (2,147,483,647 to be exact). In practice, it is highly unlikely that such a large number of documents would fit and perform well in a single index, and you will likely need to distribute your index across a cluster before you ever approach this number. If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with <<solrcloud.adoc#,SolrCloud>> as part of your design from the start.
+One thing to note when planning your installation is that a hard limit exists in Lucene for the number of documents in a single index: approximately 2.14 billion documents (2,147,483,647 to be exact). In practice, it is highly unlikely that such a large number of documents would fit and perform well in a single index, and you will likely need to distribute your index across a cluster before you ever approach this number. If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with <<cluster-types.adoc#solrcloud-mode,SolrCloud>> as part of your design from the start.
 
 == Package Installation
 
@@ -151,7 +151,7 @@ bin/solr -e techproducts
 Currently, the available examples you can run are: techproducts, schemaless, and cloud. See the section <<solr-control-script-reference.adoc#running-with-example-configurations,Running with Example Configurations>> for details on each example.
 
 .Getting Started with SolrCloud
-NOTE: Running the `cloud` example starts Solr in <<solrcloud.adoc#,SolrCloud>> mode. For more information on starting Solr in SolrCloud mode, see the section <<getting-started-with-solrcloud.adoc#,Getting Started with SolrCloud>>.
+NOTE: Running the `cloud` example starts Solr in <<cluster-types.adoc#solrcloud-mode,SolrCloud>> mode. For more information on starting Solr in SolrCloud mode, see the section <<tutorial-solrcloud.adoc#,Getting Started with SolrCloud>>.
 
 === Check if Solr is Running
 
@@ -169,7 +169,7 @@ That's it! Solr is running. If you need convincing, use a Web browser to see the
 `\http://localhost:8983/solr/`
 
 .The Solr Admin interface.
-image::images/running-solr/SolrAdminDashboard.png[Solr's Admin UI,pdfwidth=75%]
+image::images/installing-solr/SolrAdminDashboard.png[Solr's Admin UI,pdfwidth=75%]
 
 If Solr is not running, your browser will complain that it cannot connect to the server. Check your port number and try again.
 

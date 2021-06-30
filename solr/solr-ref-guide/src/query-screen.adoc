@@ -37,7 +37,7 @@ Request-handler (qt)::
 Specifies the query handler for the request. If a query handler is not specified, Solr processes the response with the standard query handler.
 
 q::
-The query event. See <<searching.adoc#,Searching>> for an explanation of this parameter.
+The query event. See <<query-guide.adoc#,Query Guide>> for an explanation of this parameter.
 
 fq::
 The filter queries. See <<common-query-parameters.adoc#,Common Query Parameters>> for more information on this parameter.
@@ -46,10 +46,10 @@ sort::
 Sorts the response to a query in either ascending or descending order based on the response's score or another specified characteristic.
 
 start, rows::
-`start` is the offset into the query result starting at which documents should be returned. The default value is 0, meaning that the query should return results starting with the first document that matches. This field accepts the same syntax as the start query parameter, which is described in <<searching.adoc#,Searching>>. `rows` is the number of rows to return.
+`start` is the offset into the query result starting at which documents should be returned. The default value is 0, meaning that the query should return results starting with the first document that matches. This field accepts the same syntax as the start query parameter, which is described in <<query-guide.adoc#,Query Guide>>. `rows` is the number of rows to return.
 
 fl::
-Defines the fields to return for each document. You can explicitly list the stored fields, <<function-queries.adoc#,functions>>, and <<transforming-result-documents.adoc#,doc transformers>> you want to have returned by separating them with either a comma or a space.
+Defines the fields to return for each document. You can explicitly list the stored fields, <<function-queries.adoc#,functions>>, and <<document-transformers.adoc#,doc transformers>> you want to have returned by separating them with either a comma or a space.
 
 wt::
 Specifies the Response Writer to be used to format the query response. Defaults to JSON if not specified.
@@ -61,10 +61,10 @@ debugQuery::
 Click this button to augment the query response with debugging information, including "explain info" for each document returned. This debugging information is intended to be intelligible to the administrator or programmer.
 
 dismax::
-Click this button to enable the Dismax query parser. See <<the-dismax-query-parser.adoc#,The DisMax Query Parser>> for further information.
+Click this button to enable the DisMax query parser. See <<dismax-query-parser.adoc#,The DisMax Query Parser>> for further information.
 
 edismax::
-Click this button to enable the Extended query parser. See <<the-extended-dismax-query-parser.adoc#,The Extended DisMax Query Parser>> for further information.
+Click this button to enable the Extended query parser. See <<edismax-query-parser.adoc#,The Extended DisMax Query Parser>> for further information.
 
 hl:: Click this button to enable highlighting in the query response. See <<highlighting.adoc#,Highlighting>> for more information.
 
