@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.s3;
+package org.apache.solr.s3;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.event.ProgressEvent;
