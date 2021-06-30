@@ -556,10 +556,8 @@ public class PeerSync implements SolrMetricProducer {
       if (!(o1 instanceof List)) return 1;
       if (!(o2 instanceof List)) return -1;
 
-      @SuppressWarnings({"rawtypes"})
-      List lst1 = (List) o1;
-      @SuppressWarnings({"rawtypes"})
-      List lst2 = (List) o2;
+      List<?> lst1 = (List<?>) o1;
+      List<?> lst2 = (List<?>) o2;
 
       long l1 = Math.abs((Long) lst1.get(1));
       long l2 = Math.abs((Long) lst2.get(1));

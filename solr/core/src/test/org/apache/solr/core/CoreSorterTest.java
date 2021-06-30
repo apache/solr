@@ -34,7 +34,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
@@ -124,7 +126,8 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         Map<String, Replica> replicaMap = replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
         sliceMap.put(slice, new Slice(slice, replicaMap, Collections.emptyMap(), collection));
       }
-      DocCollection col = new DocCollection(collection, sliceMap, Collections.emptyMap(), DocRouter.DEFAULT);
+      @SuppressWarnings({"unchecked"})
+      DocCollection col = new DocCollection(collection, sliceMap, Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT);
       collToState.put(collection, col);
     }
     // reverse map

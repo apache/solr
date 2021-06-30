@@ -35,7 +35,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,13 +180,7 @@ public class ConfigSetCmds {
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
 
     for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
-      String configName = null;
-      try {
-        configName = zkStateReader.readConfigName(entry.getKey());
-      } catch (KeeperException ex) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");
-      }
+      String configName = entry.getValue().getConfigName();
       if (configSetName.equals(configName))
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");

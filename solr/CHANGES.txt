@@ -143,13 +143,17 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15362: Let core and collection dropdowns in Admin UI float wide to see entire core or collection name.  (Matthias Krepp, Eric Pugh)
 
-* SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)
-
 * SOLR-15044: When indexing nested docs via JSON, it is no longer necessary to provide child doc IDs.
   This was already working for XML & "javabin"/SolrJ.  Previously, omitting the ID would be confused
   for a partial/atomic update.  (David Smiley)
 
+* SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)
+
 * SOLR-15456: Get field type info from luke for custom fields instead of defaulting to String in Parallel SQL (Timothy Potter)
+
+* SOLR-15489: Implement OFFSET & FETCH for LIMIT SQL queries (Timothy Potter)
+
+* SOLR-15475: Implement COUNT and APPROX_COUNT_DISTINCT aggregation functions for Parallel SQL (Timothy Potter)
 
 Other Changes
 ----------------------
@@ -330,6 +334,12 @@ Other Changes
 * SOLR-15471: Rename lang id whitelist parameter to allowlist (Mike Drob)
 
 * SOLR-15451: SolrSchema (for Parallel SQL) should use PKI principal for internal request to /admin/luke to get table metadata (Timothy Potter)
+
+* SOLR-14341: SolrCloud: move the reference a collection has to a configSet in ZooKeeper from the
+  collections/collectionName into its state.json.  For many-collection clusters, this is an
+  optimization when the cluster status is fetched.  (Nazerke Seidan, David Smiley)
+
+* SOLR-15461: SOLR-15461: Upgrade Apache Calcite to 1.27.0. (Mark Miller, Timothy Potter)
 
 Bug Fixes
 ---------------------
