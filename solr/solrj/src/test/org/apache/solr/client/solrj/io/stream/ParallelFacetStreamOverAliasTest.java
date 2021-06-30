@@ -249,6 +249,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     statsStream.setStreamContext(streamContext);
     List<Tuple> tieredTuples = getTuples(statsStream);
     assertEquals(1, tieredTuples.size());
+    assertNotNull(statsStream.parallelizedStream);
 
     solrParams = new ModifiableSolrParams();
     solrParams.add(CommonParams.Q, "*:*");
@@ -257,6 +258,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     statsStream.setStreamContext(streamContext);
     // tiered should match non-tiered results
     assertListOfTuplesEquals(tieredTuples, getTuples(statsStream));
+    assertNull(statsStream.parallelizedStream);
   }
 
   // execute the provided expression with tiered=true and compare to results of tiered=false
