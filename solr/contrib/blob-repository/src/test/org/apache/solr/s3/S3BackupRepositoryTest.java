@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.s3;
+package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.amazonaws.services.s3.AmazonS3;
@@ -34,7 +34,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
-import static org.apache.solr.blob.s3.S3BackupRepository.BLOB_SCHEME;
+import static org.apache.solr.s3.S3BackupRepository.BLOB_SCHEME;
 
 public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 

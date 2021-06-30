@@ -14,8 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.s3;
 
 /**
- * Solr S3 backup repository
+ * Specific exception thrown from {@link S3StorageClient}s when the resource requested is not found (e.g., attempting
+ * to fetch a key in S3 that doesn't exist).
  */
-package org.apache.solr.blob.s3;
+public class S3NotFoundException extends S3Exception {
+
+    public S3NotFoundException(Throwable cause) {
+        super(cause);
+    }
+
+    public S3NotFoundException(String message) {
+        super(message);
+    }
+
+    public S3NotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

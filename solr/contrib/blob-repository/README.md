@@ -10,7 +10,7 @@ Current implementation only supports S3.
 Add this to your `solr.xml`:
 
     <backup>
-        <repository name="blob" class="org.apache.solr.blob.s3.S3BackupRepository" default="false">
+        <repository name="blob" class="org.apache.solr.s3.S3BackupRepository" default="false">
             <str name="blob.store.provider.type">S3</str>
             <str name="blob.store.bucket.name">BUCKET_NAME</str>
             <str name="blob.store.region">us-west-2</str>
@@ -28,7 +28,7 @@ To run / test locally, first spin up S3Mock:
 Add this to your `solr.xml`:
 
     <backup>
-        <repository name="blob" class="org.apache.solr.blob.s3.S3BackupRepository" default="false">
+        <repository name="blob" class="org.apache.solr.s3.S3BackupRepository" default="false">
             <str name="blob.store.provider.type">S3Mock</str>
             <str name="blob.store.bucket.name">TEST_BUCKET</str>
         </repository>
