@@ -48,7 +48,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings({"rawtypes"})
-  private LogWatcher watcher;
+  private final LogWatcher watcher;
   private final CoreContainer cc;
   
   public LoggingHandler(CoreContainer cc) {
@@ -56,15 +56,8 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     this.watcher = cc.getLogging();
   }
   
-  public LoggingHandler() {
-    this.cc = null;
-  }
-  
   @Override
   public void inform(SolrCore core) {
-    if (watcher == null) {
-      watcher = core.getCoreContainer().getLogging();
-    }
   }
 
   @Override
