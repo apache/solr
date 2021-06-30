@@ -47,15 +47,14 @@ import org.slf4j.LoggerFactory;
 public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @SuppressWarnings({"rawtypes"})
-  private final LogWatcher watcher;
+  private final LogWatcher<?> watcher;
   private final CoreContainer cc;
   
   public LoggingHandler(CoreContainer cc) {
     this.cc = cc;
     this.watcher = cc.getLogging();
   }
-  
+
   @Override
   public void inform(SolrCore core) {
   }
@@ -134,8 +133,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     }
     else {
       rsp.add("levels", watcher.getAllLevels());
-  
-      @SuppressWarnings({"unchecked"})
+
       List<LoggerInfo> loggers = new ArrayList<>(watcher.getAllLoggers());
       Collections.sort(loggers);
   

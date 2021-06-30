@@ -151,6 +151,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15456: Get field type info from luke for custom fields instead of defaulting to String in Parallel SQL (Timothy Potter)
 
+* SOLR-15489: Implement OFFSET & FETCH for LIMIT SQL queries (Timothy Potter)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -331,6 +333,12 @@ Other Changes
 
 * SOLR-15451: SolrSchema (for Parallel SQL) should use PKI principal for internal request to /admin/luke to get table metadata (Timothy Potter)
 
+* SOLR-14341: SolrCloud: move the reference a collection has to a configSet in ZooKeeper from the
+  collections/collectionName into its state.json.  For many-collection clusters, this is an
+  optimization when the cluster status is fetched.  (Nazerke Seidan, David Smiley)
+
+* SOLR-15461: SOLR-15461: Upgrade Apache Calcite to 1.27.0. (Mark Miller, Timothy Potter)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -352,7 +360,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+* SOLR-15472: New shards.preference option for preferring replicas based on their leader status, i.e.
+  `shards.preference=replica.leader:false` would prefer non-leader replicas. (wei wang via Timothy Potter)
 
 Improvements
 ---------------------

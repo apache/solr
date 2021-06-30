@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,7 +42,6 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -168,48 +166,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     } finally {
       server.shutdown();
     }
-  }
-
-  @Test
-  public void testReadConfigName() throws Exception {
-    Path zkDir = createTempDir("zkData");
-    CoreContainer cc = null;
-
-    ZkTestServer server = new ZkTestServer(zkDir);
-    try {
-      server.run();
-
-      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
-      String actualConfigName = "firstConfig";
-
-      zkClient.makePath(ZkConfigSetService.CONFIGS_ZKNODE + "/" + actualConfigName, true);
-      
-      Map<String,Object> props = new HashMap<>();
-      props.put("configName", actualConfigName);
-      ZkNodeProps zkProps = new ZkNodeProps(props);
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/"
-              + COLLECTION_NAME, Utils.toJSON(zkProps),
-          CreateMode.PERSISTENT, true);
-
-      zkClient.close();
-      
-      cc = getCoreContainer();
-
-      CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
-      ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
-      try {
-        String configName = zkController.getZkStateReader().readConfigName(COLLECTION_NAME);
-        assertEquals(configName, actualConfigName);
-      } finally {
-        zkController.close();
-      }
-    } finally {
-      if (cc != null) {
-        cc.shutdown();
-      }
-      server.shutdown();
-    }
-
   }
 
   public void testGetHostName() throws Exception {

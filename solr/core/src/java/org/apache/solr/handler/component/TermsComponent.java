@@ -380,8 +380,7 @@ public class TermsComponent extends SearchComponent {
     }
 
     TermsHelper ti = rb._termsHelper;
-    @SuppressWarnings({"rawtypes"})
-    NamedList terms = ti.buildResponse();
+    NamedList<Object> terms = ti.buildResponse();
 
     rb.rsp.add("terms", terms);
     if(ti.stats) {

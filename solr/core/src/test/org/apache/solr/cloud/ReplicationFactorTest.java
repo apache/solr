@@ -249,13 +249,12 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
   }
   
-  @SuppressWarnings("rawtypes")
   protected void sendNonDirectUpdateRequestReplica(Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + collection;
     try (HttpSolrClient solrServer = getHttpSolrClient(url)) {
-      NamedList resp = solrServer.request(up);
-      NamedList hdr = (NamedList) resp.get("responseHeader");
+      NamedList<?> resp = solrServer.request(up);
+      NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
       Integer batchRf = (Integer)hdr.get(UpdateRequest.REPFACT);
       // Note that this also tests if we're wonky and return an achieved rf greater than the number of live replicas.
       assertTrue("Expected rf="+expectedRf+" for batch but got "+

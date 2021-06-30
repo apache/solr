@@ -442,7 +442,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
 
     if (!rb.doExpand) {
@@ -450,15 +449,16 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       SolrQueryRequest req = rb.req;
-      NamedList expanded = (NamedList) req.getContext().get("expanded");
+      @SuppressWarnings("unchecked")
+      NamedList<Object> expanded = (NamedList<Object>) req.getContext().get("expanded");
       if (expanded == null) {
-        expanded = new SimpleOrderedMap();
+        expanded = new SimpleOrderedMap<>();
         req.getContext().put("expanded", expanded);
       }
 
       for (ShardResponse srsp : sreq.responses) {
-        NamedList response = srsp.getSolrResponse().getResponse();
-        NamedList ex = (NamedList) response.get("expanded");
+        NamedList<Object> response = srsp.getSolrResponse().getResponse();
+        NamedList<?> ex = (NamedList<?>) response.get("expanded");
         for (int i=0; i<ex.size(); i++) {
           String name = ex.getName(i);
           SolrDocumentList val = (SolrDocumentList) ex.getVal(i);
@@ -468,7 +468,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public void finishStage(ResponseBuilder rb) {
 
@@ -480,9 +479,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
 
-    NamedList expanded = (NamedList) rb.req.getContext().get("expanded");
+    NamedList<?> expanded = (NamedList<?>) rb.req.getContext().get("expanded");
     if (expanded == null) {
-      expanded = new SimpleOrderedMap();
+      expanded = new SimpleOrderedMap<>();
     }
 
     rb.rsp.add("expanded", expanded);
