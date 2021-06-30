@@ -2183,7 +2183,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
   public void testCountDistinct() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
     final int cardinality = 5;
-    final int maxDocs = 100;
+    final int maxDocs = 100; // keep this an even # b/c we divide by 2 in this test
     final String padFmt = "%03d";
     for (int i = 0; i < maxDocs; i++) {
       updateRequest = addDocForDistinctTests(i, updateRequest, cardinality, padFmt);
@@ -2209,15 +2209,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
     firstRow = tuples.get(0);
     assertEquals(cardinality, (long) firstRow.getLong("approx_distinct"));
 
-    /*
-    TODO: wait for Calcite upgrade, current version drops the distinct in the count
-    //tuples = expectResults("SELECT country_s, COUNT(distinct str_s) AS distinct_str FROM $ALIAS GROUP BY country_s", 2);
-    //firstRow = tuples.get(0);
-
-    SolrQuery q = new SolrQuery("*:*");
-    q.set("json.facet", "{\"country_s\":{\"type\":\"terms\",\"field\":\"country_s\",\"limit\":1250,\"sort\":{\"index\":\"asc\"},\"facet\":{\"unique_str\":\"unique(str_s)\"}}}");
-    QueryResponse qr = cluster.getSolrClient().query(COLLECTIONORALIAS, q);
-     */
+    tuples = expectResults("SELECT country_s, COUNT(*) AS count_per_bucket FROM $ALIAS GROUP BY country_s", 2);
+    assertEquals(maxDocs/2L, (long)tuples.get(0).getLong("count_per_bucket"));
+    assertEquals(maxDocs/2L, (long)tuples.get(1).getLong("count_per_bucket"));
   }
 
   private UpdateRequest addDocForDistinctTests(int id, UpdateRequest updateRequest, int cardinality, String padFmt) {

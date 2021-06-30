@@ -617,7 +617,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     } else {
       for(Metric metric : metrics) {
         Class<?> c = fmap.get(metric.getIdentifier());
-        if(Long.class.equals(c)) {
+        if (!metric.outputLong && Long.class.equals(c)) {
           metric.outputLong = true;
         }
       }
