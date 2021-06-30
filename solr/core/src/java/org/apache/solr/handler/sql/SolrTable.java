@@ -55,6 +55,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.APPROX_COUNT_DISTINCT;
+import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.COUNT_DISTINCT;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
@@ -236,6 +239,10 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
   private Metric getMetric(Pair<String, String> metricPair) {
     switch (metricPair.getKey()) {
+      case COUNT_DISTINCT:
+        return new CountDistinctMetric(metricPair.getValue());
+      case APPROX_COUNT_DISTINCT:
+        return new CountDistinctMetric(metricPair.getValue(), true);
       case "COUNT":
         return new CountMetric(metricPair.getValue());
       case "SUM":
@@ -610,7 +617,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     } else {
       for(Metric metric : metrics) {
         Class<?> c = fmap.get(metric.getIdentifier());
-        if(Long.class.equals(c)) {
+        if (!metric.outputLong && Long.class.equals(c)) {
           metric.outputLong = true;
         }
       }
@@ -833,7 +840,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     for(Metric metric : metrics) {
       Class<?> c = fmap.get(metric.getIdentifier());
-      if(Long.class.equals(c)) {
+      if (!metric.outputLong && Long.class.equals(c)) {
         metric.outputLong = true;
       }
     }
