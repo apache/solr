@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
+package org.apache.solr.blob.s3;
 
 import com.google.common.collect.Sets;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -32,7 +31,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
      * The root must always exist.
      */
     @Test
-    public void testRoot() throws BlobException {
+    public void testRoot() throws S3Exception {
         assertTrue(client.pathExists("/"));
     }
 
@@ -40,7 +39,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
      * Simple tests with files.
      */
     @Test
-    public void testFiles() throws BlobException {
+    public void testFiles() throws S3Exception {
         assertFalse(client.pathExists("/simple-file"));
         assertFalse(client.pathExists("/simple-file/"));
 
@@ -53,7 +52,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
      * Simple tests with a directory.
      */
     @Test
-    public void testDirectory() throws BlobException {
+    public void testDirectory() throws S3Exception {
 
         client.createDirectory("/simple-directory");
         assertTrue(client.pathExists("/simple-directory"));
@@ -65,7 +64,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
      * Happy path of deleting a directory 
      */
     @Test
-    public void testDeleteDirectory() throws BlobException {
+    public void testDeleteDirectory() throws S3Exception {
 
         client.createDirectory("/delete-dir");
 
@@ -83,7 +82,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
      * Ensure directory deletion is recursive.
      */
     @Test
-    public void testDeleteDirectoryMultipleLevels() throws BlobException {
+    public void testDeleteDirectoryMultipleLevels() throws S3Exception {
 
         client.createDirectory("/delete-dir");
         pushContent("/delete-dir/file1", "file1");
@@ -110,7 +109,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
      * the partition logic works and doesn't miss any files.
      */
     @Test
-    public void testDeleteBatching() throws BlobException {
+    public void testDeleteBatching() throws S3Exception {
 
         client.createDirectory("/delete-dir");
 
@@ -121,14 +120,14 @@ public class S3PathsTest extends AbstractS3ClientTest {
             pushContent(path, "foo");
         }
 
-        ((S3StorageClient) client).deleteObjects(pathsToDelete, 10);
+        client.deleteObjects(pathsToDelete, 10);
         for (String path : pathsToDelete) {
             assertFalse("file " + path + " does exist", client.pathExists(path));
         }
     }
 
     @Test
-    public void testDeleteMultipleFiles() throws BlobException {
+    public void testDeleteMultipleFiles() throws S3Exception {
 
         client.createDirectory("/my");
         pushContent("/my/file1", "file1");
@@ -148,7 +147,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
      * Test deleting a directory which is the prefix of another objects (without deleting them).
      */
     @Test
-    public void testDeletePrefix() throws BlobException {
+    public void testDeletePrefix() throws S3Exception {
 
         client.createDirectory("/my");
         pushContent("/my/file", "file");
@@ -171,7 +170,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
      * Check listing objects of a directory.
      */
     @Test
-    public void testListDir() throws BlobException {
+    public void testListDir() throws S3Exception {
 
         client.createDirectory("/list-dir");
         client.createDirectory("/list-dir/sub-dir");

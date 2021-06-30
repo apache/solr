@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
+package org.apache.solr.blob.s3;
 
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
@@ -29,12 +29,12 @@ import com.google.common.base.Strings;
  * The main difference is that S3Mock does not support paths with a leading '/', but S3 does, and our code
  * in {@link S3StorageClient} requires all paths to have a leading '/'.
  */
-public class AdobeMockS3StorageClient extends S3StorageClient {
+class AdobeMockS3StorageClient extends S3StorageClient {
 
-    public static final int DEFAULT_MOCK_S3_PORT = 9090;
+    static final int DEFAULT_MOCK_S3_PORT = 9090;
     private static final String DEFAULT_MOCK_S3_ENDPOINT = "http://localhost:" + DEFAULT_MOCK_S3_PORT;
 
-    public AdobeMockS3StorageClient(String bucketName) {
+    AdobeMockS3StorageClient(String bucketName) {
         super(createInternalClient(), bucketName);
     }
 
@@ -58,7 +58,7 @@ public class AdobeMockS3StorageClient extends S3StorageClient {
      * -If it's a file, throw an error if it ends with a trailing slash
      */
     @Override
-    String sanitizedPath(String path, boolean isFile) throws BlobException {
+    String sanitizedPath(String path, boolean isFile) throws S3Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
 
         // Trim space from start and end
@@ -66,7 +66,7 @@ public class AdobeMockS3StorageClient extends S3StorageClient {
 
         // Throw error if it's a file with a trailing slash
         if (isFile && sanitizedPath.endsWith(BLOB_FILE_PATH_DELIMITER)) {
-            throw new BlobException("Invalid Path. Path for file can't end with '/'");
+            throw new S3Exception("Invalid Path. Path for file can't end with '/'");
         }
 
         // Trim off leading slash

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.backup;
+package org.apache.solr.blob.s3;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -23,8 +23,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.blob.client.BlobNotFoundException;
-import org.apache.solr.blob.client.BlobStorageClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -48,7 +46,7 @@ import java.util.stream.Collectors;
 /**
  * A concrete implementation of {@link BackupRepository} interface supporting backup/restore of Solr indexes to a blob store like S3, GCS.
  */
-public class BlobBackupRepository implements BackupRepository {
+public class S3BackupRepository implements BackupRepository {
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,13 +54,13 @@ public class BlobBackupRepository implements BackupRepository {
     static final String BLOB_SCHEME = "blob";
 
     private NamedList<String> config;
-    private BlobStorageClient client;
+    private S3StorageClient client;
 
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void init(NamedList args) {
         this.config = (NamedList<String>) args;
-        BlobBackupRepositoryConfig backupConfig = new BlobBackupRepositoryConfig(this.config);
+        S3BackupRepositoryConfig backupConfig = new S3BackupRepositoryConfig(this.config);
 
         // If a client was already created, close it to avoid any resource leak
         if (client != null) {
@@ -114,7 +112,7 @@ public class BlobBackupRepository implements BackupRepository {
     public void createDirectory(URI path) throws IOException {
         Objects.requireNonNull(path);
 
-        String blobPath = getBlobPath(path);
+        String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
             log.debug("Create directory '{}'", blobPath);
@@ -127,7 +125,7 @@ public class BlobBackupRepository implements BackupRepository {
     public void deleteDirectory(URI path) throws IOException {
         Objects.requireNonNull(path);
 
-        String blobPath = getBlobPath(path);
+        String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
             log.debug("Delete directory '{}'", blobPath);
@@ -142,16 +140,16 @@ public class BlobBackupRepository implements BackupRepository {
         Objects.requireNonNull(files);
 
         if (log.isDebugEnabled()) {
-            log.debug("Delete files {} from {}", files, getBlobPath(path));
+            log.debug("Delete files {} from {}", files, getS3Path(path));
         }
         Set<String> filesToDelete = files.stream()
             .map(file -> resolve(path, file))
-            .map(BlobBackupRepository::getBlobPath)
+            .map(S3BackupRepository::getS3Path)
             .collect(Collectors.toSet());
 
         try {
             client.delete(filesToDelete);
-        } catch (BlobNotFoundException e) {
+        } catch (S3NotFoundException e) {
             if (!ignoreNoSuchFileException) {
                 throw e;
             }
@@ -162,7 +160,7 @@ public class BlobBackupRepository implements BackupRepository {
     public boolean exists(URI path) throws IOException {
         Objects.requireNonNull(path);
 
-        String blobPath = getBlobPath(path);
+        String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
             log.debug("Path exists '{}'", blobPath);
@@ -177,20 +175,20 @@ public class BlobBackupRepository implements BackupRepository {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(fileName));
 
         URI filePath = resolve(path, fileName);
-        String blobPath = getBlobPath(filePath);
+        String blobPath = getS3Path(filePath);
 
         if (log.isDebugEnabled()) {
             log.debug("Read from blob '{}'", blobPath);
         }
 
-        return new BlobIndexInput(client.pullStream(blobPath), blobPath, client.length(blobPath));
+        return new S3IndexInput(client.pullStream(blobPath), blobPath, client.length(blobPath));
     }
 
     @Override
     public OutputStream createOutput(URI path) throws IOException {
         Objects.requireNonNull(path);
 
-        String blobPath = getBlobPath(path);
+        String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
             log.debug("Write to blob '{}'", blobPath);
@@ -209,7 +207,7 @@ public class BlobBackupRepository implements BackupRepository {
     public String[] listAll(URI path) throws IOException {
         Objects.requireNonNull(path);
 
-        String blobPath = getBlobPath(path);
+        String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
             log.debug("listAll for '{}'", blobPath);
@@ -222,7 +220,7 @@ public class BlobBackupRepository implements BackupRepository {
     public PathType getPathType(URI path) throws IOException {
         Objects.requireNonNull(path);
 
-        String blobPath = getBlobPath(path);
+        String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
             log.debug("getPathType for '{}'", blobPath);
@@ -254,7 +252,7 @@ public class BlobBackupRepository implements BackupRepository {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(destFileName));
 
         URI filePath = resolve(dest, destFileName);
-        String blobPath = getBlobPath(filePath);
+        String blobPath = getS3Path(filePath);
         Instant start = Instant.now();
         if (log.isDebugEnabled()) {
             log.debug("Upload started to blob'{}'", blobPath);
@@ -263,7 +261,7 @@ public class BlobBackupRepository implements BackupRepository {
         IndexInput indexInput = null;
         OutputStream outputStream = null;
         try {
-            client.createDirectory(getBlobPath(dest));
+            client.createDirectory(getS3Path(dest));
             indexInput = sourceDir.openInput(sourceFileName, IOContext.DEFAULT);
             outputStream = client.pushStream(blobPath);
 
@@ -313,7 +311,7 @@ public class BlobBackupRepository implements BackupRepository {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(destFileName));
 
         URI filePath = resolve(sourceDir, sourceFileName);
-        String blobPath = getBlobPath(filePath);
+        String blobPath = getS3Path(filePath);
         Instant start = Instant.now();
         if (log.isDebugEnabled()) {
             log.debug("Download started from blob '{}'", blobPath);
@@ -343,7 +341,7 @@ public class BlobBackupRepository implements BackupRepository {
     /**
      * Return the path to use in underlying blob store.
      */
-    private static String getBlobPath(URI uri) {
+    private static String getS3Path(URI uri) {
         // Depending on the scheme, the first element may be the host. Following ones are the path
         String host = uri.getHost();
         return host == null ? uri.getPath() : Paths.get(host, uri.getPath()).toString();

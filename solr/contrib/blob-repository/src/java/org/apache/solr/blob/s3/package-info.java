@@ -14,27 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
-
-import org.apache.solr.blob.backup.BlobBackupRepository;
-
-import java.io.IOException;
 
 /**
- * Generic exception for blob-related failures. Could originate from the
- * {@link BlobBackupRepository} or from its underlying {@link BlobStorageClient}.
+ * Solr S3 backup repository
  */
-public class BlobException extends IOException {
-
-    public BlobException(Throwable cause) {
-        super(cause);
-    }
-
-    public BlobException(String message) {
-        super(message);
-    }
-
-    public BlobException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
+package org.apache.solr.blob.s3;
