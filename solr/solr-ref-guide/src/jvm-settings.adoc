@@ -47,4 +47,18 @@ If you are using Sun's JVM, add the `-server` command-line option when you start
 
 == Checking JVM Settings
 
-A great way to see what JVM settings your server is using, along with other useful information, is to use the admin RequestHandler, `/solr/admin/info/system`. This request handler will display a wealth of server statistics and settings.
+=== System Request Handler
+
+A great way to see what JVM settings your server is using, along with other useful information, is to use the `admin` request handler, `/solr/admin/info/system`.
+This request handler will display a wealth of server statistics and settings.
+
+=== Java Properties Screen
+
+Many of the system environment variables include Java settings, and these can be seen on the main Dashboard of the Admin UI.
+
+The Java Properties screen, however, provides easy access to all the properties of the JVM running Solr, including the classpaths, file encodings, JVM memory settings, operating system, and more.
+
+In the Admin UI, it is available in the left-hand menu *Java Properties*.
+
+.Java Properties Screen
+image::images/jvm-settings/javaproperties.png[image,width=593,height=250]
