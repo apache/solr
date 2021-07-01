@@ -79,7 +79,8 @@ Users looking to avoid this behavior can add an additional sort criteria on a un
 
 When specified, the `start` parameter specifies an offset into a query's result set and instructs Solr to begin displaying results from this offset.
 
-The default value is `0`. In other words, by default, Solr returns results without an offset, beginning where the results themselves begin.
+The default value is `0`.
+In other words, by default, Solr returns results without an offset, beginning where the results themselves begin.
 
 Setting the `start` parameter to some other number, such as `3`, causes Solr to skip over the preceding records and start at the document identified by the offset.
 
@@ -91,7 +92,8 @@ For example, if the `rows` parameter is set to 10, you could display three succe
 You can use the `rows` parameter to paginate results from a query.
 The parameter specifies the maximum number of documents from the complete result set that Solr should return to the client at one time.
 
-The default value is `10`. That is, by default, Solr returns 10 documents at a time in response to a query.
+The default value is `10`.
+That is, by default, Solr returns 10 documents at a time in response to a query.
 
 == canCancel Parameter
 
@@ -453,7 +455,8 @@ q=quick brown fox&minExactCount=100&rows=10
     "docs": [{"doc1"}]
 }
 ----
-Since `numFoundExact=false`, we know the number of documents matching the query is greater or equal to 153. If we specify a higher value for `minExactCount`:
+Since `numFoundExact=false`, we know the number of documents matching the query is greater or equal to 153.
+If we specify a higher value for `minExactCount`:
 
 [source,text]
 q=quick brown fox&minExactCount=200&rows=10

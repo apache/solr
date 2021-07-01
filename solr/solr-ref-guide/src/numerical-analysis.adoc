@@ -50,7 +50,9 @@ The visualization above first creates two arrays with x and y-axis points.
 Notice that the x-axis ranges from 0 to 9.
 Then the `akima`, `spline` and `lerp` functions are applied to the vectors to create three interpolation functions.
 
-Then 500 hundred random samples are drawn from a uniform distribution between 0 and 3. These are the new zoomed in x-axis points, between 0 and 3. Notice that we are sampling a specific area of the curve.
+Then 500 hundred random samples are drawn from a uniform distribution between 0 and 3.
+These are the new zoomed in x-axis points, between 0 and 3.
+Notice that we are sampling a specific area of the curve.
 
 Then the `predict` function is used to predict y-axis points for the sampled x-axis, for all three interpolation functions.
 Finally all three prediction vectors are plotted with the sampled x-axis points.
@@ -101,7 +103,8 @@ The `derivative` function is then applied to the linear interpolation.
 
 image::images/math-expressions/derivative.png[]
 
-Notice that the *miles_traveled* line has a slope of 10 until the 5th hour where it changes to a slope of 50. The *mph* line, which is the derivative, visualizes the *velocity* of the *miles_traveled* line.
+Notice that the *miles_traveled* line has a slope of 10 until the 5th hour where it changes to a slope of 50.
+The *mph* line, which is the derivative, visualizes the *velocity* of the *miles_traveled* line.
 
 Also notice that the derivative is calculated along straight lines showing immediate change from one point to the next.
 This is because linear interpolation (`lerp`) is used as the interpolation function.
@@ -110,7 +113,8 @@ If the `spline` or `akima` functions had been used it would have produced a deri
 
 === The Second Derivative (Acceleration)
 
-While the first derivative represents velocity, the second derivative represents `acceleration`. The second the derivative is the derivative of the first derivative.
+While the first derivative represents velocity, the second derivative represents `acceleration`.
+The second the derivative is the derivative of the first derivative.
 
 The example below builds on the first example and adds the second derivative.
 Notice that the second derivative `d2` is taken by applying the derivative function to a linear interpolation of the first derivative.
@@ -226,12 +230,14 @@ let(years=array(1998, 2000, 2002, 2004, 2006),
 ----
 
 In this example a bicubic spline is used to interpolate a matrix of real estate data.
-Each row of the matrix represent specific `years`. Each column of the matrix represents `floors` of the building.
+Each row of the matrix represent specific `years`.
+Each column of the matrix represents `floors` of the building.
 The grid of numbers is the average selling price of an apartment for each year and floor.
 For example in 2002 the average selling price for the 9th floor was `415000` (row 3, column 3).
 
 The `bicubicSpline` function is then used to interpolate the grid, and the `predict` function is used to predict a value for year 2003, floor 8.
-Notice that the matrix does not include a data point for year 2003, floor 8. The `bicubicSpline` function creates that data point based on the surrounding data in the matrix:
+Notice that the matrix does not include a data point for year 2003, floor 8.
+The `bicubicSpline` function creates that data point based on the surrounding data in the matrix:
 
 [source,json]
 ----

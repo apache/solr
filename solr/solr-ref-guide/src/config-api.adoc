@@ -893,7 +893,8 @@ If `params.json` is modified, the params object is just updated without a core r
 
 === Empty Command
 
-If an empty command is sent to the `/config` endpoint, the watch is triggered on all cores using this configset. For example:
+If an empty command is sent to the `/config` endpoint, the watch is triggered on all cores using this configset.
+For example:
 
 [.dynamic-tabs]
 --

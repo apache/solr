@@ -26,9 +26,13 @@
 The following sections describe how Solr breaks down and works with textual data.
 There are three main concepts to understand: analyzers, tokenizers, and filters.
 
-* <<analyzers.adoc#,Field analyzers>> are used both during ingestion, when a document is indexed, and at query time. An analyzer examines the text of fields and generates a token stream. Analyzers may be a single class or they may be composed of a series of tokenizer and filter classes.
+* <<analyzers.adoc#,Field analyzers>> are used both during ingestion, when a document is indexed, and at query time.
+An analyzer examines the text of fields and generates a token stream.
+Analyzers may be a single class or they may be composed of a series of tokenizer and filter classes.
 * <<tokenizers.adoc#,Tokenizers>> break field data into lexical units, or _tokens_.
-* <<filters.adoc#,Filters>> examine a stream of tokens and keep them, transform or discard them, or create new ones. Tokenizers and filters may be combined to form pipelines, or _chains_, where the output of one is input to the next. Such a sequence of tokenizers and filters is called an _analyzer_ and the resulting output of an analyzer is used to match query results or build indices.
+* <<filters.adoc#,Filters>> examine a stream of tokens and keep them, transform or discard them, or create new ones.
+Tokenizers and filters may be combined to form pipelines, or _chains_, where the output of one is input to the next.
+Such a sequence of tokenizers and filters is called an _analyzer_ and the resulting output of an analyzer is used to match query results or build indices.
 
 == Using Analyzers, Tokenizers, and Filters
 

@@ -149,7 +149,8 @@ The behavior of the XML Response Writer can be driven by the following query par
 The `version` parameter determines the XML protocol used in the response.
 Clients are strongly encouraged to _always_ specify the protocol version, so as to ensure that the format of the response they receive does not change unexpectedly if the Solr server is upgraded and a new default format is introduced.
 +
-The only currently supported version value is `2.2`. The format of the `responseHeader` changed to use the same `<lst>` structure as the rest of the response.
+The only currently supported version value is `2.2`.
+The format of the `responseHeader` changed to use the same `<lst>` structure as the rest of the response.
 +
 The default value is the latest supported.
 

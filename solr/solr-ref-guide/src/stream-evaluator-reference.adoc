@@ -621,7 +621,8 @@ number | matrix: Either the distance or distance matrix.
 == div
 
 The `div` function will take two numeric values and divide them.
-The function will fail to execute if any of the values are non-numeric or null, or the 2nd value is 0. Returns a numeric value.
+The function will fail to execute if any of the values are non-numeric or null, or the 2nd value is 0.
+Returns a numeric value.
 
 === div Parameters
 
@@ -1253,7 +1254,8 @@ If omitted a sequence will be created for the x values.
 
 === loess Named Parameters
 
-* `bandwidth`: (Optional) The percent of the data points to use when drawing the local regression line, defaults to .25. Decreasing the bandwidth increases the number of curves that loess can fit.
+* `bandwidth`: (Optional) The percent of the data points to use when drawing the local regression line, defaults to .25.
+Decreasing the bandwidth increases the number of curves that loess can fit.
 * `robustIterations`: (Optional) The number of iterations used to smooth outliers, defaults to 2.
 
 === loess Syntax
@@ -1439,7 +1441,8 @@ meanDifference(numericArray, numericArray)
 == minMaxScale
 
 The `minMaxScale` function scales numeric arrays within a minimum and maximum value.
-By default `minMaxScale` scales between 0 and 1. The `minMaxScale` function can operate on both numeric arrays and matrices.
+By default `minMaxScale` scales between 0 and 1.
+The `minMaxScale` function can operate on both numeric arrays and matrices.
 
 When operating on a matrix the `minMaxScale` function operates on each row of the matrix.
 

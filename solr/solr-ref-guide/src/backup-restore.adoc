@@ -201,7 +201,8 @@ If no repository is specified then the local filesystem repository will be used 
 The `restore` command is an asynchronous call.
 Once the restore is complete the data reflected will be of the backed up index which was restored.
 
-Only one `restore` call can can be made against a core at one point in time. While an ongoing restore operation is happening subsequent calls for restoring will throw an exception.
+Only one `restore` call can can be made against a core at one point in time.
+While an ongoing restore operation is happening subsequent calls for restoring will throw an exception.
 
 === Restore Status API
 
@@ -376,7 +377,8 @@ A LocalFileSystemRepository instance is used as a default by any backup and rest
 LocalFileSystemRepository accepts the following configuration options:
 
 `location`::
-A valid file path (accessible to Solr locally) to use for backup storage and retrieval.  Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands
+A valid file path (accessible to Solr locally) to use for backup storage and retrieval.
+Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands
 
 An example configuration using this property can be found below.
 
@@ -411,7 +413,8 @@ A HDFS URI in the format `hdfs://<host>:<port>/<hdfsBaseFilePath>` that points S
 A permission umask used when creating files in HDFS.
 
 `location`::
-A valid directory path on the HDFS cluster to use for backup storage and retrieval.  Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands
+A valid directory path on the HDFS cluster to use for backup storage and retrieval.
+Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands.
 
 An example configuration using these properties can be found below:
 

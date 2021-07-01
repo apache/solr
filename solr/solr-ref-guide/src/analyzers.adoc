@@ -58,7 +58,8 @@ For example:
   </analyzer>
 </fieldType>
 ----
-Tokenizer and filter factory classes are referred by their symbolic names (SPI names). Here, name="standard" refers `org.apache.lucene.analysis.standard.StandardTokenizerFactory`.
+Tokenizer and filter factory classes are referred by their symbolic names (SPI names).
+Here, name="standard" refers `org.apache.lucene.analysis.standard.StandardTokenizerFactory`.
 ====
 [example.tab-pane#byclass]
 ====

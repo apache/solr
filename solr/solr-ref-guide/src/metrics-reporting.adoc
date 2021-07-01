@@ -34,7 +34,8 @@ Some of these meters may be missing or empty for any number of valid reasons.
 In these cases, missing values of any type will be returned as `null` by default so empty values won't impact averages or histograms.
 This is configurable for several types of missing values; see the <<The <metrics> <missingValues> Element>> section below.
 
-Each group of related metrics with unique names is managed in a *metric registry*. Solr maintains several such registries, each corresponding to a high-level group such as: `jvm`, `jetty`, `node`, and `core` (see <<Metric Registries>> below).
+Each group of related metrics with unique names is managed in a *metric registry*.
+Solr maintains several such registries, each corresponding to a high-level group such as: `jvm`, `jetty`, `node`, and `core` (see <<Metric Registries>> below).
 
 For each group (and/or for each registry) there can be several *reporters*, which are components responsible for communication of metrics from selected registries to external systems.
 Currently implemented reporters support emitting metrics via JMX, Ganglia, Graphite and SLF4J.
@@ -171,7 +172,8 @@ The default is `1028`.
 * `alpha`, the decay parameter.
 The default is `0.015`.
 This is only valid for the `ExponentiallyDecayingReservoir`.
-* `window`, the window size, in seconds, and only valid for the `SlidingTimeWindowReservoir`. The default is 300 (5 minutes).
+* `window`, the window size, in seconds, and only valid for the `SlidingTimeWindowReservoir`.
+The default is `300` (5 minutes).
 
 <timer>:: This element defines an implementation of a `Timer` supplier.
 The default implementation supports the `clock` and `reservoir` parameters described above.
@@ -195,7 +197,8 @@ As an example of a section of `solr.xml` that defines some of these custom param
 
 === The <metrics> <missingValues> Element
 Long-lived metrics values are still reported when the underlying value is unavailable (e.g., "INDEX.sizeInBytes" when
-IndexReader is closed). Short-lived transient metrics (such as cache entries) that are properties of complex gauges
+IndexReader is closed).
+Short-lived transient metrics (such as cache entries) that are properties of complex gauges
 (internally represented as `MetricsMap`) are simply skipped when not available, and neither their names nor values
 appear in registries (or in `/admin/metrics` reports).
 
@@ -300,7 +303,8 @@ Default is no filtering, i.e., all metrics from the selected registry will be re
 
 Reporters are instantiated for every group and registry that they were configured for, at the time when the respective components are initialized (e.g., on JVM startup or SolrCore load).
 
-When reporters are created their configuration is validated (and e.g., necessary connections are established). Uncaught errors at this initialization stage cause the reporter to be discarded from the running configuration.
+When reporters are created their configuration is validated (and e.g., necessary connections are established).
+Uncaught errors at this initialization stage cause the reporter to be discarded from the running configuration.
 
 Reporters are closed when the corresponding component is being closed (e.g., on SolrCore close, or JVM shutdown) but metrics that they reported are still maintained in respective registries, as explained in the previous section.
 
@@ -329,7 +333,8 @@ Note either `serviceUrl` or `agentId` can be specified but not both - if both ar
 Object names created by this reporter are hierarchical, dot-separated but also properly structured to form corresponding hierarchies in e.g., JConsole.
 This hierarchy consists of the following elements in the top-down order:
 
-* registry name (e.g., `solr.core.collection1.shard1.replica1`). Dot-separated registry names are also split into ObjectName hierarchy levels, so that metrics for this registry will be shown under `/solr/core/collection1/shard1/replica1` in JConsole, with each domain part being assigned to `dom1, dom2, ... domN` property.
+* registry name (e.g., `solr.core.collection1.shard1.replica1`).
+Dot-separated registry names are also split into ObjectName hierarchy levels, so that metrics for this registry will be shown under `/solr/core/collection1/shard1/replica1` in JConsole, with each domain part being assigned to `dom1, dom2, ... domN` property.
 * reporter name (the value of reporter's `name` attribute)
 * category, scope and name for request handlers
 * or additional `name1, name2, ... nameN` elements for metrics from other components.
@@ -538,11 +543,13 @@ A few query parameters are available to limit your request to only certain metri
 
 `group`:: The metric group to retrieve.
 The default is `all` to retrieve all metrics for all groups.
-Other possible values are: `jvm`, `jetty`, `node`, and `core`. More than one group can be specified in a request; multiple group names should be separated by a comma.
+Other possible values are: `jvm`, `jetty`, `node`, and `core`.
+More than one group can be specified in a request; multiple group names should be separated by a comma.
 
 `type`:: The type of metric to retrieve.
 The default is `all` to retrieve all metric types.
-Other possible values are `counter`, `gauge`, `histogram`, `meter`, and `timer`. More than one type can be specified in a request; multiple types should be separated by a comma.
+Other possible values are `counter`, `gauge`, `histogram`, `meter`, and `timer`.
+More than one type can be specified in a request; multiple types should be separated by a comma.
 
 `prefix`:: The first characters of metric name that will filter the metrics returned to those starting with the provided string.
 It can be combined with `group` and/or `type` parameters.

@@ -202,10 +202,13 @@ The output XML should include search hits and an array of automatically discover
 A few clusters discovered for this query (`\*:*`), separate all search hits into various categories: DDR, iPod, Hard Drive, etc.
 Each cluster has a label and score that indicates the "goodness" of the cluster.
 The score is algorithm-specific and is meaningful only in relation to the scores of other clusters in the same set.
-In other words, if cluster _A_ has a higher score than cluster _B_, cluster _A_ should be of better quality (have a better label and/or more coherent document set). Each cluster has an array of identifiers of documents belonging to it.
+In other words, if cluster _A_ has a higher score than cluster _B_, cluster _A_ should be of better quality (have a better label and/or more coherent document set).
+Each cluster has an array of identifiers of documents belonging to it.
 These identifiers correspond to the `uniqueKey` field declared in the schema.
 
-Sometimes cluster labels may not make much sense (this depends on many factors -- text in clustered fields, number of documents, algorithm paramerters). Also, some documents may be left out and not be clustered at all; these will be assigned to the synthetic _Other Topics_ group, marked with the `other-topics` property set to `true` (see the XML dump above for an example). The score of the other topics group is zero.
+Sometimes cluster labels may not make much sense (this depends on many factors -- text in clustered fields, number of documents, algorithm paramerters).
+Also, some documents may be left out and not be clustered at all; these will be assigned to the synthetic _Other Topics_ group, marked with the `other-topics` property set to `true` (see the XML dump above for an example).
+The score of the other topics group is zero.
 
 == Installation
 
@@ -301,7 +304,8 @@ A commercial clustering algorithm `Lingo3G` plugs into the same extension point 
 
 .How to choose the Clustering Algorithm?
 ****
-The question of which algorithm to choose depends on the amount of traffic, the expected result, and the input data (each algorithm will cluster the input slightly differently). There is no one answer which algorithm is "the best": Lingo3G provides hierarchical clusters, Lingo and STC provide flat clusters.
+The question of which algorithm to choose depends on the amount of traffic, the expected result, and the input data (each algorithm will cluster the input slightly differently).
+There is no one answer which algorithm is "the best": Lingo3G provides hierarchical clusters, Lingo and STC provide flat clusters.
 STC is faster than Lingo, but arguably produces less intuitive clusters, Lingo3G is the fastest algorithm but is not free or open source... Experiment and pick one that suits your needs.
 
 For a comparison of characteristics of these algorithms see the following links:
@@ -316,7 +320,8 @@ in your Solr installation.
 
 `clustering.maxLabels`::
 Maximum number of returned cluster labels (if the algorithm returns more labels, the list will
-be truncated). By default all labels are returned.
+be truncated).
+By default all labels are returned.
 
 `clustering.includeSubclusters`::
 If `true`, sub-clusters are included in the response for algorithms that support hierarchical
@@ -334,15 +339,13 @@ This property is `null` by default and all resources are read from their respect
 If this property is not empty, it resolves relative to Solr core's configuration directory.
 This parameter can be applied during Solr startup _only_, it can't be overriden per-request.
 
-[.text-center]
-🙪
-
 There are more properties applying to engine configuration.
 We describe these in functional sections that follow.
 
 === Full Field and Query-Context (Snippet) Clustering
 
-The clustering algorithm can consume full content of fields or just the left and right context around query-matching regions (so-called _snippets_). Contrary to the intuition, using query contexts can increase the quality of clustering even if it feeds less data to the algorithm.
+The clustering algorithm can consume full content of fields or just the left and right context around query-matching regions (so-called _snippets_).
+Contrary to the intuition, using query contexts can increase the quality of clustering even if it feeds less data to the algorithm.
 This is typically caused by the fact that snippets are more focused around the phrases and terms surrounding the query and the algorithm has a better signal-to-noise ratio of data to work with.
 
 We recommend using query contexts when fields contain a lot of content (this would affect clustering performance).
@@ -374,7 +377,8 @@ The provided language must be available and the clustering algorithm must suppor
 Name of the document field that stores the document's language.
 If the field does not exist for a document or the value is blank, the default language is used.
 
-The list of supported languages can change dynamically (languages are loaded via external service provider extension) and may depend on the selected algorithm (algorithms can support a subset of languages for which resources are available). The clustering component will log all supported algorithm-language pairs at Solr startup, so you can inspect what's supported on your particular Solr instance.
+The list of supported languages can change dynamically (languages are loaded via external service provider extension) and may depend on the selected algorithm (algorithms can support a subset of languages for which resources are available).
+The clustering component will log all supported algorithm-language pairs at Solr startup, so you can inspect what's supported on your particular Solr instance.
 For example:
 
 [source,text]

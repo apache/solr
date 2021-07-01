@@ -78,7 +78,8 @@ By default, all fields on the document will be used.
 
 `signatureField`::
 The name of the field used to hold the fingerprint/signature.
-The field should be defined in `schema.xml`. The default is `signatureField`.
+The field should be defined in your schema.
+The default is `signatureField`.
 
 `enabled`::
 Set to *false* to disable de-duplication processing.

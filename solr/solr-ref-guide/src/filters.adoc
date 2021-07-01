@@ -191,24 +191,31 @@ This filter converts characters from the following Unicode blocks:
 
 == Beider-Morse Filter
 
-Implements the Beider-Morse Phonetic Matching (BMPM) algorithm, which allows identification of similar names, even if they are spelled differently or in different languages. More information about how this works is available in the section on <<phonetic-matching.adoc#beider-morse-phonetic-matching-bmpm,Phonetic Matching>>.
+Implements the Beider-Morse Phonetic Matching (BMPM) algorithm, which allows identification of similar names, even if they are spelled differently or in different languages.
+More information about how this works is available in the section on <<phonetic-matching.adoc#beider-morse-phonetic-matching-bmpm,Phonetic Matching>>.
 
 [IMPORTANT]
 ====
-BeiderMorseFilter changed its behavior in Solr 5.0 due to an update to version 3.04 of the BMPM algorithm. Older version of Solr implemented BMPM version 3.00 (see http://stevemorse.org/phoneticinfo.htm). Any index built using this filter with earlier versions of Solr will need to be rebuilt.
+BeiderMorseFilter changed its behavior in Solr 5.0 due to an update to version 3.04 of the BMPM algorithm.
+Older version of Solr implemented BMPM version 3.00 (see http://stevemorse.org/phoneticinfo.htm).
+Any index built using this filter with earlier versions of Solr will need to be rebuilt.
 ====
 
 *Factory class:* `solr.BeiderMorseFilterFactory`
 
 *Arguments:*
 
-`nameType`:: Types of names. Valid values are GENERIC, ASHKENAZI, or SEPHARDIC. If not processing Ashkenazi or Sephardic names, use GENERIC.
+`nameType`:: Types of names.
+Valid values are GENERIC, ASHKENAZI, or SEPHARDIC.
+If not processing Ashkenazi or Sephardic names, use GENERIC.
 
-`ruleType`:: Types of rules to apply. Valid values are APPROX or EXACT.
+`ruleType`:: Types of rules to apply.
+Valid values are APPROX or EXACT.
 
 `concat`:: Defines if multiple possible matches should be combined with a pipe ("|").
 
-`languageSet`:: The language set to use. The value "auto" will allow the Filter to identify the language, or a comma-separated list can be supplied.
+`languageSet`:: The language set to use.
+The value "auto" will allow the Filter to identify the language, or a comma-separated list can be supplied.
 
 *Example:*
 
@@ -284,7 +291,9 @@ This filter takes the output of the <<tokenizers.adoc#classic-tokenizer,Classic 
 
 == Common Grams Filter
 
-This filter for use in `index` time analysis creates word shingles by combining common tokens such as stop words with regular tokens.  This can result in an index with more unique terms, but is useful for creating phrase queries containing common words, such as "the cat", in a way that will typically be much faster then if the combined tokens are not used, because only the term positions of documents containg both terms in sequence have to be considered.  Correct usage requires being paired with <<#common-grams-query-filter,Common Grams Query Filter>> during `query` analysis.
+This filter for use in `index` time analysis creates word shingles by combining common tokens such as stop words with regular tokens.
+This can result in an index with more unique terms, but is useful for creating phrase queries containing common words, such as "the cat", in a way that will typically be much faster then if the combined tokens are not used, because only the term positions of documents containg both terms in sequence have to be considered.
+Correct usage requires being paired with <<#common-grams-query-filter,Common Grams Query Filter>> during `query` analysis.
 
 These filters can also be combined with <<#stop-filter,Stop Filter>> so searching for `"the cat"` would match different documents then `"a cat"`, while pathological searches for either `"the"` or `"a"` would not match any documents.
 
@@ -296,7 +305,8 @@ These filters can also be combined with <<#stop-filter,Stop Filter>> so searchin
 
 `format`:: (optional) If the stopwords list has been formatted for Snowball, you can specify `format="snowball"` so Solr can read the stopwords file.
 
-`ignoreCase`:: (boolean) If true, the filter ignores the case of words when comparing them to the common word file. The default is false.
+`ignoreCase`:: (boolean) If true, the filter ignores the case of words when comparing them to the common word file.
+The default is false.
 
 *Example:*
 
@@ -348,17 +358,22 @@ This filter is used for the `query` time analysis aspect of <<#common-grams-filt
 
 == Collation Key Filter
 
-Collation allows sorting of text in a language-sensitive way. It is usually used for sorting, but can also be used with advanced searches. We've covered this in much more detail in the section on <<language-analysis.adoc#unicode-collation,Unicode Collation>>.
+Collation allows sorting of text in a language-sensitive way.
+It is usually used for sorting, but can also be used with advanced searches.
+We've covered this in much more detail in the section on <<language-analysis.adoc#unicode-collation,Unicode Collation>>.
 
 == Daitch-Mokotoff Soundex Filter
 
-Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently. More information about how this works is available in the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
+Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently.
+More information about how this works is available in the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
 
 *Factory class:* `solr.DaitchMokotoffSoundexFilterFactory`
 
 *Arguments:*
 
-`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream.
+Otherwise, tokens are replaced with the phonetic equivalent.
+Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
 
 *Example:*
 
@@ -390,13 +405,16 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 == Double Metaphone Filter
 
-This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#,Phonetic Matching>> section.
+This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec.
+For more information, see the <<phonetic-matching.adoc#,Phonetic Matching>> section.
 
 *Factory class:* `solr.DoubleMetaphoneFilterFactory`
 
 *Arguments:*
 
-`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream.
+Otherwise, tokens are replaced with the phonetic equivalent.
+Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
 
 `maxCodeLength`:: (integer) The maximum length of the code to be generated.
 
@@ -436,7 +454,8 @@ Default behavior for inject (true): keep the original token and add phonetic tok
 
 *Out:* "four"(1), "FR"(1), "score"(2), "SKR"(2), "and"(3), "ANT"(3), "Kuczewski"(4), "KSSK"(4), "KXFS"(4)
 
-The phonetic tokens have a position increment of 0, which indicates that they are at the same position as the token they were derived from (immediately preceding). Note that "Kuczewski" has two encodings, which are added at the same position.
+The phonetic tokens have a position increment of 0, which indicates that they are at the same position as the token they were derived from (immediately preceding).
+Note that "Kuczewski" has two encodings, which are added at the same position.
 
 *Example:*
 
@@ -466,7 +485,8 @@ This filter adds a numeric floating point boost value to tokens, splitting on a 
 
 *Arguments:*
 
-`delimiter`:: The character used to separate the token and the boost. Defaults to '|'.
+`delimiter`:: The character used to separate the token and the boost.
+Defaults to '|'.
 
 *Example:*
 
@@ -672,7 +692,8 @@ This filter stems plural English words to their singular form.
 
 == English Possessive Filter
 
-This filter removes singular possessives (trailing *'s*) from words. Note that plural possessives, e.g., the *s'* in "divers' snorkels", are not removed by this filter.
+This filter removes singular possessives (trailing *'s*) from words.
+Note that plural possessives, e.g., the *s'* in "divers' snorkels", are not removed by this filter.
 
 *Factory class:* `solr.EnglishPossessiveFilterFactory`
 
@@ -714,15 +735,19 @@ This filter removes singular possessives (trailing *'s*) from words. Note that p
 
 == Fingerprint Filter
 
-This filter outputs a single token which is a concatenation of the sorted and de-duplicated set of input tokens. This can be useful for clustering/linking use cases.
+This filter outputs a single token which is a concatenation of the sorted and de-duplicated set of input tokens.
+This can be useful for clustering/linking use cases.
 
 *Factory class:* `solr.FingerprintFilterFactory`
 
 *Arguments:*
 
-`separator`:: The character used to separate tokens combined into the single output token. Defaults to " " (a space character).
+`separator`:: The character used to separate tokens combined into the single output token.
+Defaults to " " (a space character).
 
-`maxOutputTokenSize`:: The maximum length of the summarized output token. If exceeded, no output token is emitted. Defaults to 1024.
+`maxOutputTokenSize`:: The maximum length of the summarized output token.
+If exceeded, no output token is emitted.
+Defaults to 1024.
 
 *Example:*
 
@@ -770,9 +795,13 @@ See the examples below for <<Synonym Graph Filter>> and <<Word Delimiter Graph F
 
 == Hunspell Stem Filter
 
-The `Hunspell Stem Filter` provides support for several languages. You must provide the dictionary (`.dic`) and rules (`.aff`) files for each language you wish to use with the Hunspell Stem Filter. You can download those language files http://wiki.services.openoffice.org/wiki/Dictionaries[here].
+The `Hunspell Stem Filter` provides support for several languages.
+You must provide the dictionary (`.dic`) and rules (`.aff`) files for each language you wish to use with the Hunspell Stem Filter.
+You can download those language files http://wiki.services.openoffice.org/wiki/Dictionaries[here].
 
-Be aware that your results will vary widely based on the quality of the provided dictionary and rules files. For example, some languages have only a minimal word list with no morphological information. On the other hand, for languages that have no stemmer but do have an extensive dictionary file, the Hunspell stemmer may be a good choice.
+Be aware that your results will vary widely based on the quality of the provided dictionary and rules files.
+For example, some languages have only a minimal word list with no morphological information.
+On the other hand, for languages that have no stemmer but do have an extensive dictionary file, the Hunspell stemmer may be a good choice.
 
 *Factory class:* `solr.HunspellStemFilterFactory`
 
@@ -782,9 +811,12 @@ Be aware that your results will vary widely based on the quality of the provided
 
 `affix`:: (required) The path of a rules file.
 
-`ignoreCase`:: (boolean) controls whether matching is case sensitive or not. The default is false.
+`ignoreCase`:: (boolean) controls whether matching is case sensitive or not.
+The default is false.
 
-`strictAffixParsing`:: (boolean) controls whether the affix parsing is strict or not. If true, an error while reading an affix rule causes a ParseException, otherwise is ignored. The default is true.
+`strictAffixParsing`:: (boolean) controls whether the affix parsing is strict or not.
+If true, an error while reading an affix rule causes a ParseException, otherwise is ignored.
+The default is true.
 
 *Example:*
 
@@ -830,9 +862,11 @@ Be aware that your results will vary widely based on the quality of the provided
 
 == Hyphenated Words Filter
 
-This filter reconstructs hyphenated words that have been tokenized as two tokens because of a line break or other intervening whitespace in the field test. If a token ends with a hyphen, it is joined with the following token and the hyphen is discarded.
+This filter reconstructs hyphenated words that have been tokenized as two tokens because of a line break or other intervening whitespace in the field test.
+If a token ends with a hyphen, it is joined with the following token and the hyphen is discarded.
 
-Note that for this filter to work properly, the upstream tokenizer must not remove trailing hyphen characters. This filter is generally only useful at index time.
+Note that for this filter to work properly, the upstream tokenizer must not remove trailing hyphen characters.
+This filter is generally only useful at index time.
 
 *Factory class:* `solr.HyphenatedWordsFilterFactory`
 
@@ -876,13 +910,15 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
 
 This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 *Factory class:* `solr.ICUFoldingFilterFactory`
 
 *Arguments:*
 
-`filter`:: (string, optional) A Unicode set filter that can be used to e.g., exclude a set of characters from being processed. See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information.
+`filter`:: (string, optional) A Unicode set filter that can be used to e.g., exclude a set of characters from being processed.
+See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information.
 
 *Example without a filter:*
 
@@ -932,17 +968,24 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 * NFD: (`name="nfc" mode="decompose"`) Normalization Form D, canonical decomposition, followed by canonical composition
 * NFKC: (`name="nfkc" mode="compose"`) Normalization Form KC, compatibility decomposition
 * NFKD: (`name="nfkc" mode="decompose"`) Normalization Form KD, compatibility decomposition, followed by canonical composition
-* NFKC_Casefold: (`name="nfkc_cf" mode="compose"`) Normalization Form KC, with additional Unicode case folding. Using the ICU Normalizer 2 Filter is a better-performing substitution for the <<Lower Case Filter>> and NFKC normalization.
+* NFKC_Casefold: (`name="nfkc_cf" mode="compose"`) Normalization Form KC, with additional Unicode case folding.
+Using the ICU Normalizer 2 Filter is a better-performing substitution for the <<Lower Case Filter>> and NFKC normalization.
 
 *Factory class:* `solr.ICUNormalizer2FilterFactory`
 
 *Arguments:*
 
-`form`:: The name of the normalization form. Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default). Required.
+`form`:: The name of the normalization form.
+Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default).
+Required.
 
-`mode`:: The mode of Unicode character composition and decomposition. Valid options are: `compose` (the default) or `decompose`. Required.
+`mode`:: The mode of Unicode character composition and decomposition.
+Valid options are: `compose` (the default) or `decompose`.
+Required.
 
-`filter`:: A Unicode set filter that can be used to e.g., exclude a set of characters from being processed. See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information. Optional.
+`filter`:: A Unicode set filter that can be used to e.g., exclude a set of characters from being processed.
+See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information.
+Optional.
 
 *Example with NFKC_Casefold:*
 
@@ -984,17 +1027,21 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 
 For detailed information about these normalization forms, see http://unicode.org/reports/tr15/[Unicode Normalization Forms].
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 == ICU Transform Filter
 
-This filter applies http://userguide.icu-project.org/transforms/general[ICU Tranforms] to text. This filter supports only ICU System Transforms. Custom rule sets are not supported.
+This filter applies http://userguide.icu-project.org/transforms/general[ICU Tranforms] to text.
+This filter supports only ICU System Transforms.
+Custom rule sets are not supported.
 
 *Factory class:* `solr.ICUTransformFilterFactory`
 
 *Arguments:*
 
-`id`:: (string) The identifier for the ICU System Transform you wish to apply with this filter. For a full list of ICU System Transforms, see http://demo.icu-project.org/icu-bin/translit?TEMPLATE_FILE=data/translit_rule_main.html.
+`id`:: (string) The identifier for the ICU System Transform you wish to apply with this filter.
+For a full list of ICU System Transforms, see http://demo.icu-project.org/icu-bin/translit?TEMPLATE_FILE=data/translit_rule_main.html.
 
 *Example:*
 
@@ -1026,21 +1073,29 @@ This filter applies http://userguide.icu-project.org/transforms/general[ICU Tran
 
 For detailed information about ICU Transforms, see http://userguide.icu-project.org/transforms/general.
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 == Keep Word Filter
 
-This filter discards all tokens except those that are listed in the given word list. This is the inverse of the Stop Words Filter. This filter can be useful for building specialized indices for a constrained set of terms.
+This filter discards all tokens except those that are listed in the given word list.
+This is the inverse of the Stop Words Filter.
+This filter can be useful for building specialized indices for a constrained set of terms.
 
 *Factory class:* `solr.KeepWordFilterFactory`
 
 *Arguments:*
 
-`words`:: (required) Path of a text file containing the list of keep words, one per line. Blank lines and lines that begin with "#" are ignored. This may be an absolute path, or a simple filename in the Solr `conf` directory.
+`words`:: (required) Path of a text file containing the list of keep words, one per line.
+Blank lines and lines that begin with "#" are ignored.
+This may be an absolute path, or a simple filename in the Solr `conf` directory.
 
-`ignoreCase`:: (true/false) If *true* then comparisons are done case-insensitively. If this argument is true, then the words file is assumed to contain only lowercase words. The default is *false*.
+`ignoreCase`:: (true/false) If *true* then comparisons are done case-insensitively.
+If this argument is true, then the words file is assumed to contain only lowercase words.
+The default is *false*.
 
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
+*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
 *Example:*
 
@@ -1121,7 +1176,9 @@ Using LowerCaseFilterFactory before filtering for keep words, no `ignoreCase` fl
 
 == KStem Filter
 
-KStem is an alternative to the Porter Stem Filter for developers looking for a less aggressive stemmer. KStem was written by Bob Krovetz, ported to Lucene by Sergio Guzman-Lara (UMASS Amherst). This stemmer is only appropriate for English language text.
+KStem is an alternative to the Porter Stem Filter for developers looking for a less aggressive stemmer.
+KStem was written by Bob Krovetz, ported to Lucene by Sergio Guzman-Lara (UMASS Amherst).
+This stemmer is only appropriate for English language text.
 
 *Factory class:* `solr.KStemFilterFactory`
 
@@ -1163,17 +1220,21 @@ KStem is an alternative to the Porter Stem Filter for developers looking for a l
 
 == Length Filter
 
-This filter passes tokens whose length falls within the min/max limit specified. All other tokens are discarded.
+This filter passes tokens whose length falls within the min/max limit specified.
+All other tokens are discarded.
 
 *Factory class:* `solr.LengthFilterFactory`
 
 *Arguments:*
 
-`min`:: (integer, required) Minimum token length. Tokens shorter than this are discarded.
+`min`:: (integer, required) Minimum token length.
+Tokens shorter than this are discarded.
 
-`max`:: (integer, required, must be >= min) Maximum token length. Tokens longer than this are discarded.
+`max`:: (integer, required, must be >= min) Maximum token length.
+Tokens longer than this are discarded.
 
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
+*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
 *Example:*
 
@@ -1213,15 +1274,19 @@ This filter passes tokens whose length falls within the min/max limit specified.
 
 This filter limits the number of accepted tokens, typically useful for index analysis.
 
-By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`. For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream. If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
+By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`.
+For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream.
+If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
 
 *Factory class:* `solr.LimitTokenCountFilterFactory`
 
 *Arguments:*
 
-`maxTokenCount`:: (integer, required) Maximum token count. After this limit has been reached, tokens are discarded.
+`maxTokenCount`:: (integer, required) Maximum token count.
+After this limit has been reached, tokens are discarded.
 
-`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum token count has been reached. See description above.
+`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum token count has been reached.
+See description above.
 
 *Example:*
 
@@ -1261,17 +1326,22 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 == Limit Token Offset Filter
 
-This filter limits tokens to those before a configured maximum start character offset. This can be useful to limit highlighting, for example.
+This filter limits tokens to those before a configured maximum start character offset.
+This can be useful to limit highlighting, for example.
 
-By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`. For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream. If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
+By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`.
+For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream.
+If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
 
 *Factory class:* `solr.LimitTokenOffsetFilterFactory`
 
 *Arguments:*
 
-`maxStartOffset`:: (integer, required) Maximum token start character offset. After this limit has been reached, tokens are discarded.
+`maxStartOffset`:: (integer, required) Maximum token start character offset.
+After this limit has been reached, tokens are discarded.
 
-`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum start offset has been reached. See description above.
+`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum start offset has been reached.
+See description above.
 
 *Example:*
 
@@ -1313,15 +1383,19 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 This filter limits tokens to those before a configured maximum token position.
 
-By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`. For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream. If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
+By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`.
+For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream.
+If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
 
 *Factory class:* `solr.LimitTokenPositionFilterFactory`
 
 *Arguments:*
 
-`maxTokenPosition`:: (integer, required) Maximum token position. After this limit has been reached, tokens are discarded.
+`maxTokenPosition`:: (integer, required) Maximum token position.
+After this limit has been reached, tokens are discarded.
 
-`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum start offset has been reached. See description above.
+`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum start offset has been reached.
+See description above.
 
 *Example:*
 
@@ -1361,7 +1435,8 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 == Lower Case Filter
 
-Converts any uppercase letters in a token to the equivalent lowercase token. All other characters are left unchanged.
+Converts any uppercase letters in a token to the equivalent lowercase token.
+All other characters are left unchanged.
 
 *Factory class:* `solr.LowerCaseFilterFactory`
 
@@ -1459,7 +1534,8 @@ For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
 
-This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
+This filter maps single- or multi-token synonyms, producing a fully correct graph output.
+This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
 
 NOTE: Although this filter produces correct token graphs, it cannot consume an input token graph correctly.
 
@@ -1511,7 +1587,8 @@ See <<Synonym Graph Filter>> below for example input/output.
 
 == N-Gram Filter
 
-Generates n-gram tokens of sizes in the given range. Note that tokens are ordered by position and then by gram size.
+Generates n-gram tokens of sizes in the given range.
+Note that tokens are ordered by position and then by gram size.
 
 *Factory class:* `solr.NGramFilterFactory`
 
@@ -1615,7 +1692,8 @@ Preserve original term.
 
 == Numeric Payload Token Filter
 
-This filter adds a numeric floating point payload value to tokens that match a given type. Refer to the Javadoc for the `org.apache.lucene.analysis.Token` class for more information about token types and payloads.
+This filter adds a numeric floating point payload value to tokens that match a given type.
+Refer to the Javadoc for the `org.apache.lucene.analysis.Token` class for more information about token types and payloads.
 
 *Factory class:* `solr.NumericPayloadTokenFilterFactory`
 
@@ -1623,7 +1701,8 @@ This filter adds a numeric floating point payload value to tokens that match a g
 
 `payload`:: (required) A floating point value that will be added to all matching tokens.
 
-`typeMatch`:: (required) A token type name string. Tokens with a matching type name will have their payload set to the above floating point value.
+`typeMatch`:: (required) A token type name string.
+Tokens with a matching type name will have their payload set to the above floating point value.
 
 *Example:*
 
@@ -1661,7 +1740,8 @@ This filter adds a numeric floating point payload value to tokens that match a g
 
 == Pattern Replace Filter
 
-This filter applies a regular expression to each token and, for those that match, substitutes the given replacement string in place of the matched pattern. Tokens which do not match are passed though unchanged.
+This filter applies a regular expression to each token and, for those that match, substitutes the given replacement string in place of the matched pattern.
+Tokens which do not match are passed though unchanged.
 
 *Factory class:* `solr.PatternReplaceFilterFactory`
 
@@ -1669,7 +1749,9 @@ This filter applies a regular expression to each token and, for those that match
 
 `pattern`:: (required) The regular expression to test against each token, as per `java.util.regex.Pattern`.
 
-`replacement`:: (required) A string to substitute in place of the matched pattern. This string may contain references to capture groups in the regex pattern. See the Javadoc for `java.util.regex.Matcher`.
+`replacement`:: (required) A string to substitute in place of the matched pattern.
+This string may contain references to capture groups in the regex pattern.
+See the Javadoc for `java.util.regex.Matcher`.
 
 `replace`:: ("all" or "first", default "all") Indicates whether all occurrences of the pattern in the token should be replaced, or only the first.
 
@@ -1729,7 +1811,9 @@ String replacement, first occurrence only:
 
 *Example:*
 
-More complex pattern with capture group reference in the replacement. Tokens that start with non-numeric characters and end with digits will have an underscore inserted before the numbers. Otherwise the token is passed through.
+More complex pattern with capture group reference in the replacement.
+Tokens that start with non-numeric characters and end with digits will have an underscore inserted before the numbers.
+Otherwise the token is passed through.
 
 [source,xml]
 ----
@@ -1747,15 +1831,19 @@ More complex pattern with capture group reference in the replacement. Tokens tha
 
 == Phonetic Filter
 
-This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package. For more information, see the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
+This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package.
+For more information, see the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
 
 *Factory class:* `solr.PhoneticFilterFactory`
 
 *Arguments:*
 
-`encoder`:: (required) The name of the encoder to use. The encoder name must be one of the following (case insensitive): `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0), `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`, or `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`.
+`encoder`:: (required) The name of the encoder to use.
+The encoder name must be one of the following (case insensitive): `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0), `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`, or `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`.
 
-`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream.
+Otherwise, tokens are replaced with the phonetic equivalent.
+Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
 
 `maxCodeLength`:: (integer) The maximum length of the code to be generated by the Metaphone or Double Metaphone encoders.
 
@@ -1835,7 +1923,11 @@ Default Soundex encoder.
 
 == Porter Stem Filter
 
-This filter applies the Porter Stemming Algorithm for English. The results are similar to using the Snowball Porter Stemmer with the `language="English"` argument. But this stemmer is coded directly in Java and is not based on Snowball. It does not accept a list of protected words and is only appropriate for English language text. However, it has been benchmarked as http://markmail.org/thread/d2c443z63z37rwf6[four times faster] than the English Snowball stemmer, so can provide a performance enhancement.
+This filter applies the Porter Stemming Algorithm for English.
+The results are similar to using the Snowball Porter Stemmer with the `language="English"` argument.
+But this stemmer is coded directly in Java and is not based on Snowball.
+It does not accept a list of protected words and is only appropriate for English language text.
+However, it has been benchmarked as http://markmail.org/thread/d2c443z63z37rwf6[four times faster] than the English Snowball stemmer, so can provide a performance enhancement.
 
 *Factory class:* `solr.PorterStemFilterFactory`
 
@@ -1885,9 +1977,11 @@ This filter enables a form of conditional filtering: it only applies its wrapped
 
 `protected`:: (required) Comma-separated list of files containing protected terms, one per line.
 
-`wrappedFilters`:: (required) Case-insensitive comma-separated list of `TokenFilterFactory` SPI names (strip trailing `(Token)FilterFactory` from the factory name - see the https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[java.util.ServiceLoader interface]).  Each filter name must be unique, so if you need to specify the same filter more than once, you must add case-insensitive unique `-id` suffixes to each same-SPI-named filter (note that the `-id` suffix is stripped prior to SPI lookup).
+`wrappedFilters`:: (required) Case-insensitive comma-separated list of `TokenFilterFactory` SPI names (strip trailing `(Token)FilterFactory` from the factory name - see the https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[java.util.ServiceLoader interface]).
+Each filter name must be unique, so if you need to specify the same filter more than once, you must add case-insensitive unique `-id` suffixes to each same-SPI-named filter (note that the `-id` suffix is stripped prior to SPI lookup).
 
-`ignoreCase`:: (true/false, default false) Ignore case when testing for protected words. If true, the protected list should contain lowercase words.
+`ignoreCase`:: (true/false, default false) Ignore case when testing for protected words.
+If true, the protected list should contain lowercase words.
 
 *Example:*
 
@@ -1927,7 +2021,8 @@ All terms except those in `protectedTerms.txt` are truncated at 4 characters and
 
 *Example:*
 
-This example includes multiple same-named wrapped filters with unique `-id` suffixes.  Note that both the filter SPI names and `-id` suffixes are treated case-insensitively.
+This example includes multiple same-named wrapped filters with unique `-id` suffixes.
+Note that both the filter SPI names and `-id` suffixes are treated case-insensitively.
 
 For all terms except those in `protectedTerms.txt`, synonyms are added, terms are reversed, and then synonyms are added for the reversed terms:
 
@@ -1945,9 +2040,12 @@ For all terms except those in `protectedTerms.txt`, synonyms are added, terms ar
 
 == Remove Duplicates Token Filter
 
-The filter removes duplicate tokens in the stream. Tokens are considered to be duplicates ONLY if they have the same text and position values.
+The filter removes duplicate tokens in the stream.
+Tokens are considered to be duplicates ONLY if they have the same text and position values.
 
-Because positions must be the same, this filter might not do what a user expects it to do based on its name. It is a very specialized filter that is only useful in very specific circumstances. It has been so named for brevity, even though it is potentially misleading.
+Because positions must be the same, this filter might not do what a user expects it to do based on its name.
+It is a very specialized filter that is only useful in very specific circumstances.
+It has been so named for brevity, even though it is potentially misleading.
 
 *Factory class:* `solr.RemoveDuplicatesTokenFilterFactory`
 
@@ -1955,7 +2053,8 @@ Because positions must be the same, this filter might not do what a user expects
 
 *Example:*
 
-One example of where `RemoveDuplicatesTokenFilterFactory` is useful in situations where a synonym file is being used in conjunction with a stemmer. In these situations, both the stemmer and the synonym filter can cause completely identical terms with the same positions to end up in the stream, increasing index size with no benefit.
+One example of where `RemoveDuplicatesTokenFilterFactory` is useful in situations where a synonym file is being used in conjunction with a stemmer.
+In these situations, both the stemmer and the synonym filter can cause completely identical terms with the same positions to end up in the stream, increasing index size with no benefit.
 
 Consider the following entry from a `synonyms.txt` file:
 
@@ -2008,21 +2107,26 @@ When used in the following configuration:
 
 == Reversed Wildcard Filter
 
-This filter reverses tokens to provide faster leading wildcard and prefix queries. Tokens without wildcards are not reversed.
+This filter reverses tokens to provide faster leading wildcard and prefix queries.
+Tokens without wildcards are not reversed.
 
 *Factory class:* `solr.ReversedWildcardFilterFactory`
 
 *Arguments:*
 
-`withOriginal`:: (boolean) If true, the filter produces both original and reversed tokens at the same positions. If false, produces only reversed tokens.
+`withOriginal`:: (boolean) If true, the filter produces both original and reversed tokens at the same positions.
+If false, produces only reversed tokens.
 
-`maxPosAsterisk`:: (integer, default = 2) The maximum position of the asterisk wildcard ('*') that triggers the reversal of the query term. Terms with asterisks at positions above this value are not reversed.
+`maxPosAsterisk`:: (integer, default = 2) The maximum position of the asterisk wildcard ('*') that triggers the reversal of the query term.
+Terms with asterisks at positions above this value are not reversed.
 
-`maxPosQuestion`:: (integer, default = 1) The maximum position of the question mark wildcard ('?') that triggers the reversal of query term. To reverse only pure suffix queries (queries with a single leading asterisk), set this to 0 and `maxPosAsterisk` to 1.
+`maxPosQuestion`:: (integer, default = 1) The maximum position of the question mark wildcard ('?') that triggers the reversal of query term.
+To reverse only pure suffix queries (queries with a single leading asterisk), set this to 0 and `maxPosAsterisk` to 1.
 
 `maxFractionAsterisk`:: (float, default = 0.0) An additional parameter that triggers the reversal if asterisk ('*') position is less than this fraction of the query token length.
 
-`minTrailing`:: (integer, default = 2) The minimum number of trailing characters in a query token after the last wildcard character. For good performance this should be set to a value larger than 1.
+`minTrailing`:: (integer, default = 2) The minimum number of trailing characters in a query token after the last wildcard character.
+For good performance this should be set to a value larger than 1.
 
 *Example:*
 
@@ -2062,7 +2166,8 @@ This filter reverses tokens to provide faster leading wildcard and prefix querie
 
 == Shingle Filter
 
-This filter constructs shingles, which are token n-grams, from the token stream. It combines runs of tokens into a single token.
+This filter constructs shingles, which are token n-grams, from the token stream.
+It combines runs of tokens into a single token.
 
 *Factory class:* `solr.ShingleFilterFactory`
 
@@ -2134,9 +2239,13 @@ A shingle size of four, do not include original token.
 
 == Snowball Porter Stemmer Filter
 
-This filter factory instantiates a language-specific stemmer generated by Snowball. Snowball is a software package that generates pattern-based word stemmers. This type of stemmer is not as accurate as a table-based stemmer, but is faster and less complex. Table-driven stemmers are labor intensive to create and maintain and so are typically commercial products.
+This filter factory instantiates a language-specific stemmer generated by Snowball.
+Snowball is a software package that generates pattern-based word stemmers.
+This type of stemmer is not as accurate as a table-based stemmer, but is faster and less complex.
+Table-driven stemmers are labor intensive to create and maintain and so are typically commercial products.
 
-Solr contains Snowball stemmers for Armenian, Basque, Catalan, Danish, Dutch, English, Finnish, French, German, Hungarian, Italian, Norwegian, Portuguese, Romanian, Russian, Spanish, Swedish and Turkish. For more information on Snowball, visit http://snowball.tartarus.org/.
+Solr contains Snowball stemmers for Armenian, Basque, Catalan, Danish, Dutch, English, Finnish, French, German, Hungarian, Italian, Norwegian, Portuguese, Romanian, Russian, Spanish, Swedish and Turkish.
+For more information on Snowball, visit http://snowball.tartarus.org/.
 
 `StopFilterFactory`, `CommonGramsFilterFactory`, and `CommonGramsQueryFilterFactory` can optionally read stopwords in Snowball format (specify `format="snowball"` in the configuration of those FilterFactories).
 
@@ -2144,9 +2253,14 @@ Solr contains Snowball stemmers for Armenian, Basque, Catalan, Danish, Dutch, En
 
 *Arguments:*
 
-`language`:: (default "English") The name of a language, used to select the appropriate Porter stemmer to use. Case is significant. This string is used to select a package name in the `org.tartarus.snowball.ext` class hierarchy.
+`language`:: (default "English") The name of a language, used to select the appropriate Porter stemmer to use.
+Case is significant.
+This string is used to select a package name in the `org.tartarus.snowball.ext` class hierarchy.
 
-`protected`:: Path of a text file containing a list of protected words, one per line. Protected words will not be stemmed. Blank lines and lines that begin with "#" are ignored. This may be an absolute path, or a simple file name in the Solr `conf` directory.
+`protected`:: Path of a text file containing a list of protected words, one per line.
+Protected words will not be stemmed.
+Blank lines and lines that begin with "#" are ignored.
+This may be an absolute path, or a simple file name in the Solr `conf` directory.
 
 *Example:*
 
@@ -2222,23 +2336,29 @@ Spanish stemmer, Spanish words:
 
 == Stop Filter
 
-This filter discards, or _stops_ analysis of, tokens that are on the given stop words list. A standard stop words list is included in the Solr `conf` directory, named `stopwords.txt`, which is appropriate for typical English language text.
+This filter discards, or _stops_ analysis of, tokens that are on the given stop words list.
+A standard stop words list is included in the Solr `conf` directory, named `stopwords.txt`, which is appropriate for typical English language text.
 
 *Factory class:* `solr.StopFilterFactory`
 
 *Arguments:*
 
-`words`:: (optional) The path to a file that contains a list of stop words, one per line. Blank lines and lines that begin with "#" are ignored. This may be an absolute path, or path relative to the Solr `conf` directory.
+`words`:: (optional) The path to a file that contains a list of stop words, one per line.
+Blank lines and lines that begin with "#" are ignored.
+This may be an absolute path, or path relative to the Solr `conf` directory.
 
 `format`:: (optional) If the stopwords list has been formatted for Snowball, you can specify `format="snowball"` so Solr can read the stopwords file.
 
-`ignoreCase`:: (true/false, default false) Ignore case when testing for stop words. If true, the stop list should contain lowercase words.
+`ignoreCase`:: (true/false, default false) Ignore case when testing for stop words.
+If true, the stop list should contain lowercase words.
 
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.4` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`enablePositionIncrements`:: if `luceneMatchVersion` is `4.4` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
+*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
 *Example:*
 
-Case-sensitive matching, capitalized words not stopped. Token positions skip stopped words.
+Case-sensitive matching, capitalized words not stopped.
+Token positions skip stopped words.
 
 [.dynamic-tabs]
 --
@@ -2292,9 +2412,11 @@ Case-sensitive matching, capitalized words not stopped. Token positions skip sto
 
 Like <<Stop Filter>>, this filter discards, or _stops_ analysis of, tokens that are on the given stop words list.
 
-Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator. For example, a query `"find the"` would preserve the `'the'` since it was not followed by a space, punctuation, etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
+Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator.
+For example, a query `"find the"` would preserve the `'the'` since it was not followed by a space, punctuation, etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
 
-By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopword, since it's followed by a space. When using one of the analyzing suggesters, you would normally use the ordinary `StopFilterFactory` in your index analyzer and then SuggestStopFilter in your query analyzer.
+By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopword, since it's followed by a space.
+When using one of the analyzing suggesters, you would normally use the ordinary `StopFilterFactory` in your index analyzer and then SuggestStopFilter in your query analyzer.
 
 *Factory class:* `solr.SuggestStopFilterFactory`
 
@@ -2302,11 +2424,15 @@ By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopwo
 
 `words`:: (optional; default: {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`] ) The name of a stopwords file to parse.
 
-`format`:: (optional; default: `wordset`) Defines how the words file will be parsed. If `words` is not specified, then `format` must not be specified. The valid values for the format option are:
+`format`:: (optional; default: `wordset`) Defines how the words file will be parsed.
+If `words` is not specified, then `format` must not be specified.
+The valid values for the format option are:
 
-`wordset`:: This is the default format, which supports one word per line (including any intra-word whitespace) and allows whole line comments beginning with the `#` character. Blank lines are ignored.
+`wordset`:: This is the default format, which supports one word per line (including any intra-word whitespace) and allows whole line comments beginning with the `#` character.
+Blank lines are ignored.
 
-`snowball`:: This format allows for multiple words specified on each line, and trailing comments may be specified using the vertical line (`|`). Blank lines are ignored.
+`snowball`:: This format allows for multiple words specified on each line, and trailing comments may be specified using the vertical line (`|`).
+Blank lines are ignored.
 
 `ignoreCase`:: (optional; default: *false*) If *true*, matching is case-insensitive.
 
@@ -2350,7 +2476,9 @@ By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopwo
 
 == Synonym Filter
 
-This filter does synonym mapping. Each token is looked up in the list of synonyms and if a match is found, then the synonym is emitted in place of the token. The position value of the new tokens are set such they all occur at the same position as the original token.
+This filter does synonym mapping.
+Each token is looked up in the list of synonyms and if a match is found, then the synonym is emitted in place of the token.
+The position value of the new tokens are set such they all occur at the same position as the original token.
 
 .Synonym Filter has been Deprecated
 [WARNING]
@@ -2364,9 +2492,11 @@ For arguments and examples, see the Synonym Graph Filter below.
 
 == Synonym Graph Filter
 
-This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Synonym Filter, which produces incorrect graphs for multi-token synonyms.
+This filter maps single- or multi-token synonyms, producing a fully correct graph output.
+This filter is a replacement for the Synonym Filter, which produces incorrect graphs for multi-token synonyms.
 
-If you use this filter during indexing, you must follow it with a Flatten Graph Filter to squash tokens on top of one another like the Synonym Filter, because the indexer can't directly consume a graph. To get fully correct positional queries when your synonym replacements are multiple tokens, you should instead apply synonyms using this filter at query time.
+If you use this filter during indexing, you must follow it with a Flatten Graph Filter to squash tokens on top of one another like the Synonym Filter, because the indexer can't directly consume a graph.
+To get fully correct positional queries when your synonym replacements are multiple tokens, you should instead apply synonyms using this filter at query time.
 
 NOTE: Although this filter produces correct token graphs, it cannot consume an input token graph correctly.
 
@@ -2374,27 +2504,37 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-loading.adoc#,Resource Loading>> for more information.
+`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line.
+In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored.
+This may be a comma-separated list of paths.
+See <<resource-loading.adoc#,Resource Loading>> for more information.
 +
 There are two ways to specify synonym mappings:
 +
-* A comma-separated list of words. If the token matches any of the words, then all the words in the list are substituted, which will include the original token.
+* A comma-separated list of words.
+If the token matches any of the words, then all the words in the list are substituted, which will include the original token.
 +
-* Two comma-separated lists of words with the symbol "\=>" between them. If the token matches any word on the left, then the list on the right is substituted. The original token will not be included unless it is also in the list on the right.
+* Two comma-separated lists of words with the symbol "\=>" between them.
+If the token matches any word on the left, then the list on the right is substituted.
+The original token will not be included unless it is also in the list on the right.
 
 `ignoreCase`:: (optional; default: `false`) If `true`, synonyms will be matched case-insensitively.
 
-`expand`:: (optional; default: `true`) If `true`, a synonym will be expanded to all equivalent synonyms. If `false`, all equivalent synonyms will be reduced to the first in the list.
+`expand`:: (optional; default: `true`) If `true`, a synonym will be expanded to all equivalent synonyms.
+If `false`, all equivalent synonyms will be reduced to the first in the list.
 
-`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed. The short names `solr` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
+`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed.
+The short names `solr` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
 
-`tokenizerFactory`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the tokenizer factory to use when parsing the synonyms file. Arguments with the name prefix `tokenizerFactory.*` will be supplied as init params to the specified tokenizer factory.
+`tokenizerFactory`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the tokenizer factory to use when parsing the synonyms file.
+Arguments with the name prefix `tokenizerFactory.*` will be supplied as init params to the specified tokenizer factory.
 +
 Any arguments not consumed by the synonym filter factory, including those without the `tokenizerFactory.*` prefix, will also be supplied as init params to the tokenizer factory.
 +
 If `tokenizerFactory` is specified, then `analyzer` may not be, and vice versa.
 
-`analyzer`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the analyzer class to use when parsing the synonyms file. If `analyzer` is specified, then `tokenizerFactory` may not be, and vice versa.
+`analyzer`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the analyzer class to use when parsing the synonyms file.
+If `analyzer` is specified, then `tokenizerFactory` may not be, and vice versa.
 
 For the following examples, assume a synonyms file named `mysynonyms.txt`:
 
@@ -2535,13 +2675,15 @@ This filter adds the numeric character offsets of the token as a payload value f
 
 == Trim Filter
 
-This filter trims leading and/or trailing whitespace from tokens. Most tokenizers break tokens at whitespace, so this filter is most often used for special situations.
+This filter trims leading and/or trailing whitespace from tokens.
+Most tokenizers break tokens at whitespace, so this filter is most often used for special situations.
 
 *Factory class:* `solr.TrimFilterFactory`
 
 *Arguments:*
 
-`updateOffsets`:: if `luceneMatchVersion` is `4.3` or earlier and `updateOffsets="true"`, trimmed tokens' start and end offsets will be updated to those of the first and last characters (plus one) remaining in the token. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`updateOffsets`:: if `luceneMatchVersion` is `4.3` or earlier and `updateOffsets="true"`, trimmed tokens' start and end offsets will be updated to those of the first and last characters (plus one) remaining in the token.
+*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
 *Example:*
 
@@ -2691,7 +2833,9 @@ With the example below, for a token "example.com" with type `<URL>`, the token e
 
 == Type Token Filter
 
-This filter blacklists or whitelists a specified list of token types, assuming the tokens have type metadata associated with them. For example, the <<tokenizers.adoc#uax29-url-email-tokenizer,UAX29 URL Email Tokenizer>> emits "<URL>" and "<EMAIL>" typed tokens, as well as other types. This filter would allow you to pull out only e-mail addresses from text as tokens, if you wish.
+This filter blacklists or whitelists a specified list of token types, assuming the tokens have type metadata associated with them.
+For example, the <<tokenizers.adoc#uax29-url-email-tokenizer,UAX29 URL Email Tokenizer>> emits "<URL>" and "<EMAIL>" typed tokens, as well as other types.
+This filter would allow you to pull out only e-mail addresses from text as tokens, if you wish.
 
 *Factory class:* `solr.TypeTokenFilterFactory`
 
@@ -2699,9 +2843,11 @@ This filter blacklists or whitelists a specified list of token types, assuming t
 
 `types`:: Defines the location of a file of types to filter.
 
-`useWhitelist`:: If *true*, the file defined in `types` should be used as include list. If *false*, or undefined, the file defined in `types` is used as a blacklist.
+`useWhitelist`:: If *true*, the file defined in `types` should be used as include list.
+If *false*, or undefined, the file defined in `types` is used as a blacklist.
 
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
+*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
 *Example:*
 
@@ -2747,7 +2893,8 @@ For a full description, including arguments and examples, see the Word Delimiter
 
 This filter splits tokens at word delimiters.
 
-If you use this filter during indexing, you must follow it with a Flatten Graph Filter to squash tokens on top of one another like the Word Delimiter Filter, because the indexer can't directly consume a graph. To get fully correct positional queries when tokens are split, you should instead use this filter at query time.
+If you use this filter during indexing, you must follow it with a Flatten Graph Filter to squash tokens on top of one another like the Word Delimiter Filter, because the indexer can't directly consume a graph.
+To get fully correct positional queries when tokens are split, you should instead use this filter at query time.
 
 Note: although this filter produces correct token graphs, it cannot consume an input token graph correctly.
 
@@ -2767,7 +2914,8 @@ The rules for determining delimiters are determined as follows:
 
 *Arguments:*
 
-`generateWordParts`:: (integer, default 1) If non-zero, splits words at delimiters. For example:"CamelCase", "hot-spot" -> "Camel", "Case", "hot", "spot"
+`generateWordParts`:: (integer, default 1) If non-zero, splits words at delimiters.
+For example:"CamelCase", "hot-spot" -> "Camel", "Case", "hot", "spot"
 
 `generateNumberParts`:: (integer, default 1) If non-zero, splits numeric strings at delimiters:"1947-32" -> *"1947", "32"
 
@@ -2787,9 +2935,12 @@ The rules for determining delimiters are determined as follows:
 
 `stemEnglishPossessive`:: (integer, default 1) If 1, strips the possessive `'s` from each subword.
 
-`types`:: (optional) The pathname of a file that contains *character \=> type* mappings, which enable customization of this filter's splitting behavior. Recognized character types: `LOWER`, `UPPER`, `ALPHA`, `DIGIT`, `ALPHANUM`, and `SUBWORD_DELIM`.
+`types`:: (optional) The pathname of a file that contains *character \=> type* mappings, which enable customization of this filter's splitting behavior.
+Recognized character types: `LOWER`, `UPPER`, `ALPHA`, `DIGIT`, `ALPHANUM`, and `SUBWORD_DELIM`.
 +
-The default for any character without a customized mapping is computed from Unicode character properties. Blank lines and comment lines starting with '#' are ignored. An example file:
+The default for any character without a customized mapping is computed from Unicode character properties.
+Blank lines and comment lines starting with '#' are ignored.
+An example file:
 +
 [source,text]
 ----
@@ -2804,7 +2955,8 @@ $ => DIGIT
 
 *Example:*
 
-Default behavior. The whitespace tokenizer is used here to preserve non-alphanumeric characters.
+Default behavior.
+The whitespace tokenizer is used here to preserve non-alphanumeric characters.
 
 [.dynamic-tabs]
 --
@@ -2850,7 +3002,8 @@ Default behavior. The whitespace tokenizer is used here to preserve non-alphanum
 
 *Example:*
 
-Do not split on case changes, and do not generate number parts. Note that by not generating number parts, tokens containing only numeric parts are ultimately discarded.
+Do not split on case changes, and do not generate number parts.
+Note that by not generating number parts, tokens containing only numeric parts are ultimately discarded.
 
 [source,xml]
 ----
@@ -2886,7 +3039,8 @@ Concatenate word parts and number parts, but not word and number parts that occu
 
 *Example:*
 
-Concatenate all. Word and/or number parts are joined together.
+Concatenate all.
+Word and/or number parts are joined together.
 
 [source,xml]
 ----

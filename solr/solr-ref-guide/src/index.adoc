@@ -33,7 +33,8 @@
 [.lead-homepage]
 Welcome to Apache Solr(TM), the open source solution for search and analytics.
 
-Solr is the fast open source search platform built on Apache Lucene(TM) that provides scalable indexing and search, as well as faceting, hit highlighting and advanced analysis/tokenization capabilities. Solr and Lucene are managed by the http://www.apache.org/[Apache Software Foundation].
+Solr is the fast open source search platform built on Apache Lucene(TM) that provides scalable indexing and search, as well as faceting, hit highlighting and advanced analysis/tokenization capabilities.
+Solr and Lucene are managed by the http://www.apache.org/[Apache Software Foundation].
 
 This Reference Guide is the official Solr documentation, written and published by Lucene/Solr committers.
 ****

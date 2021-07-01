@@ -18,29 +18,36 @@
 
 Solr's default Query Parser is also known as the "```lucene```" parser.
 
-The key advantage of the standard query parser is that it supports a robust and fairly intuitive syntax allowing you to create a variety of structured queries. The largest disadvantage is that it's very intolerant of syntax errors, as compared with something like the <<dismax-query-parser.adoc#,DisMax>> query parser which is designed to throw as few errors as possible.
+The key advantage of the standard query parser is that it supports a robust and fairly intuitive syntax allowing you to create a variety of structured queries.
+The largest disadvantage is that it's very intolerant of syntax errors, as compared with something like the <<dismax-query-parser.adoc#,DisMax>> query parser which is designed to throw as few errors as possible.
 
 == Standard Query Parser Parameters
 
 In addition to the <<common-query-parameters.adoc#,Common Query Parameters>>, <<faceting.adoc#,Faceting Parameters>>, <<highlighting.adoc#,Highlighting Parameters>>, and <<morelikethis.adoc#,MoreLikeThis Parameters>>, the standard query parser supports the parameters described in the table below.
 
 `q`::
-Defines a query using standard query syntax. This parameter is mandatory.
+Defines a query using standard query syntax.
+This parameter is mandatory.
 
 `q.op`::
-Specifies the default operator for query expressions. Possible values are "AND" or "OR".
+Specifies the default operator for query expressions.
+Possible values are "AND" or "OR".
 
 `df`::
 Specifies a default searchable field.
 
 `sow`::
-Split on whitespace. If set to `true`, text analysis is invoked separately for each individual whitespace-separated term.  The default is `false`; whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g., multi-word synonyms and shingles.
+Split on whitespace.
+If set to `true`, text analysis is invoked separately for each individual whitespace-separated term.
+The default is `false`; whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g., multi-word synonyms and shingles.
 
 Default parameter values are specified in `solrconfig.xml`, or overridden by query-time values in the request.
 
 == Standard Query Parser Response
 
-By default, the response from the standard query parser contains one `<result>` block, which is unnamed. If the <<common-query-parameters.adoc#debug-parameter,`debug` parameter>> is used, then an additional `<lst>` block will be returned, using the name "debug". This will contain useful debugging info, including the original query string, the parsed query string, and explain info for each document in the <result> block. If the <<common-query-parameters.adoc#explainother-parameter,`explainOther` parameter>> is also used, then additional explain info will be provided for all the documents matching that query.
+By default, the response from the standard query parser contains one `<result>` block, which is unnamed.
+If the <<common-query-parameters.adoc#debug-parameter,`debug` parameter>> is used, then an additional `<lst>` block will be returned, using the name "debug". This will contain useful debugging info, including the original query string, the parsed query string, and explain info for each document in the <result> block.
+If the <<common-query-parameters.adoc#explainother-parameter,`explainOther` parameter>> is also used, then additional explain info will be provided for all the documents matching that query.
 
 === Sample Responses
 
@@ -94,7 +101,8 @@ Results:
 
 == Specifying Terms for the Standard Query Parser
 
-A query to the standard query parser is broken up into terms and operators. There are two types of terms: single terms and phrases.
+A query to the standard query parser is broken up into terms and operators.
+There are two types of terms: single terms and phrases.
 
 * A single term is a single word such as "test" or "hello"
 * A phrase is a group of words surrounded by double quotes such as "hello dolly"
@@ -105,28 +113,39 @@ IMPORTANT: It is important that the analyzer used for queries parses terms and p
 
 === Term Modifiers
 
-Solr supports a variety of term modifiers that add flexibility or precision, as needed, to searches. These modifiers include wildcard characters, characters for making a search "fuzzy" or more general, and so on. The sections below describe these modifiers in detail.
+Solr supports a variety of term modifiers that add flexibility or precision, as needed, to searches.
+These modifiers include wildcard characters, characters for making a search "fuzzy" or more general, and so on.
+The sections below describe these modifiers in detail.
 
 === Wildcard Searches
 
-Solr's standard query parser supports single and multiple character wildcard searches within single terms. Wildcard characters can be applied to single terms, but not to search phrases.
+Solr's standard query parser supports single and multiple character wildcard searches within single terms.
+Wildcard characters can be applied to single terms, but not to search phrases.
 
 [%autowidth.stretch,options="header"]
 |===
 |Wildcard Search Type |Special Character |Example
 |Single character (matches a single character) | `?` |The search string `te?t` would match both test and text.
-|Multiple characters (matches zero or more sequential characters) | `*` |The wildcard search: `tes*` would match test, testing, and tester. You can also use wildcard characters in the middle of a term. For example: `te*t` would match test and text. `*est` would match pest and test.
+|Multiple characters (matches zero or more sequential characters) | `*` |The wildcard search: `tes*` would match test, testing, and tester.
+You can also use wildcard characters in the middle of a term.
+For example: `te*t` would match test and text.
+`*est` would match pest and test.
 |===
 
 === Fuzzy Searches
 
-Solr's standard query parser supports fuzzy searches based on the Damerau-Levenshtein Distance or Edit Distance algorithm. Fuzzy searches discover terms that are similar to a specified term without necessarily being an exact match. To perform a fuzzy search, use the tilde ~ symbol at the end of a single-word term. For example, to search for a term similar in spelling to "roam," use the fuzzy search:
+Solr's standard query parser supports fuzzy searches based on the Damerau-Levenshtein Distance or Edit Distance algorithm.
+Fuzzy searches discover terms that are similar to a specified term without necessarily being an exact match.
+To perform a fuzzy search, use the tilde ~ symbol at the end of a single-word term.
+For example, to search for a term similar in spelling to "roam," use the fuzzy search:
 
 `roam~`
 
-This search will match terms like roams, foam, & foams. It will also match the word "roam" itself.
+This search will match terms like roams, foam, & foams.
+It will also match the word "roam" itself.
 
-An optional distance parameter specifies the maximum number of edits allowed, between 0 and 2, defaulting to 2. For example:
+An optional distance parameter specifies the maximum number of edits allowed, between 0 and 2, defaulting to 2.
+For example:
 
 `roam~1`
 
@@ -138,11 +157,13 @@ IMPORTANT: In many cases, stemming (reducing terms to a common stem) can produce
 
 A proximity search looks for terms that are within a specific distance from one another.
 
-To perform a proximity search, add the tilde character ~ and a numeric value to the end of a search phrase. For example, to search for a "apache" and "jakarta" within 10 words of each other in a document, use the search:
+To perform a proximity search, add the tilde character ~ and a numeric value to the end of a search phrase.
+For example, to search for a "apache" and "jakarta" within 10 words of each other in a document, use the search:
 
 `"jakarta apache"~10`
 
-The distance referred to here is the number of term movements needed to match the specified phrase. In the example above, if "apache" and "jakarta" were 10 spaces apart in a field, but "apache" appeared before "jakarta", more than 10 term movements would be required to move the terms together and position "apache" to the right of "jakarta" with a space in between.
+The distance referred to here is the number of term movements needed to match the specified phrase.
+In the example above, if "apache" and "jakarta" were 10 spaces apart in a field, but "apache" appeared before "jakarta", more than 10 term movements would be required to move the terms together and position "apache" to the right of "jakarta" with a space in between.
 
 === Existence Searches
 
@@ -155,11 +176,16 @@ A field will be considered to "exist" if it has any value, even values which are
 
 === Range Searches
 
-A range search specifies a range of values for a field (a range with an upper bound and a lower bound). The query matches documents whose values for the specified field or fields fall within the range. Range queries can be inclusive or exclusive of the upper and lower bounds. Sorting is done lexicographically, except on numeric fields. For example, the range query below matches all documents whose `popularity` field has a value between 52 and 10,000, inclusive.
+A range search specifies a range of values for a field (a range with an upper bound and a lower bound).
+The query matches documents whose values for the specified field or fields fall within the range.
+Range queries can be inclusive or exclusive of the upper and lower bounds.
+Sorting is done lexicographically, except on numeric fields.
+For example, the range query below matches all documents whose `popularity` field has a value between 52 and 10,000, inclusive.
 
 `popularity:[52 TO 10000]`
 
-Range queries are not limited to date fields or even numerical fields. You could also use range queries with non-date fields:
+Range queries are not limited to date fields or even numerical fields.
+You could also use range queries with non-date fields:
 
 `title:{Aida TO Carmen}`
 
@@ -169,7 +195,8 @@ The brackets around a query determine its inclusiveness.
 
 * Square brackets `[` & `]` denote an inclusive range query that matches values including the upper and lower bound.
 * Curly brackets `{` & `}` denote an exclusive range query that matches values between the upper and lower bounds, but excluding the upper and lower bounds themselves.
-* You can mix these types so one end of the range is inclusive and the other is exclusive. Here's an example: `count:{1 TO 10]`
+* You can mix these types so one end of the range is inclusive and the other is exclusive.
+Here's an example: `count:{1 TO 10]`
 
 Wildcards, `*`, can also be used for either or both endpoints to specify an open-ended range query.
 This is a <<#differences-between-lucenes-classic-query-parser-and-solrs-standard-query-parser,divergence from Lucene's Classic Query Parser>>.
@@ -192,24 +219,31 @@ However for float/double types that support `NaN` values, these two queries perf
 
 === Boosting a Term with "^"
 
-Lucene/Solr provides the relevance level of matching documents based on the terms found. To boost a term use the caret symbol `^` with a boost factor (a number) at the end of the term you are searching. The higher the boost factor, the more relevant the term will be.
+Lucene/Solr provides the relevance level of matching documents based on the terms found.
+To boost a term use the caret symbol `^` with a boost factor (a number) at the end of the term you are searching.
+The higher the boost factor, the more relevant the term will be.
 
-Boosting allows you to control the relevance of a document by boosting its term. For example, if you are searching for
+Boosting allows you to control the relevance of a document by boosting its term.
+For example, if you are searching for
 
-"jakarta apache" and you want the term "jakarta" to be more relevant, you can boost it by adding the ^ symbol along with the boost factor immediately after the term. For example, you could type:
+"jakarta apache" and you want the term "jakarta" to be more relevant, you can boost it by adding the ^ symbol along with the boost factor immediately after the term.
+For example, you could type:
 
 `jakarta^4 apache`
 
-This will make documents with the term jakarta appear more relevant. You can also boost Phrase Terms as in the example:
+This will make documents with the term jakarta appear more relevant.
+You can also boost Phrase Terms as in the example:
 
 `"jakarta apache"^4 "Apache Lucene"`
 
-By default, the boost factor is 1. Although the boost factor must be positive, it can be less than 1 (for example, it could be 0.2).
+By default, the boost factor is 1.
+Although the boost factor must be positive, it can be less than 1 (for example, it could be 0.2).
 
 
 === Constant Score with "^="
 
-Constant score queries are created with `<query_clause>^=<score>`, which sets the entire clause to the specified score for any documents matching that clause. This is desirable when you only care about matches for a particular clause and don't want other relevancy factors such as term frequency (the number of times the term appears in the field) or inverse document frequency (a measure across the whole index for how rare a term is in a field).
+Constant score queries are created with `<query_clause>^=<score>`, which sets the entire clause to the specified score for any documents matching that clause.
+This is desirable when you only care about matches for a particular clause and don't want other relevancy factors such as term frequency (the number of times the term appears in the field) or inverse document frequency (a measure across the whole index for how rare a term is in a field).
 
 Example:
 
@@ -228,7 +262,8 @@ Alternatively, you can specify a different field or a combination of fields in a
 
 To specify a field, type the field name followed by a colon ":" and then the term you are searching for within the field.
 
-For example, suppose an index contains two fields, title and text,and that text is the default field. If you want to find a document called "The Right Way" which contains the text "don't go this way," you could include either of the following terms in your search query:
+For example, suppose an index contains two fields, title and text,and that text is the default field.
+If you want to find a document called "The Right Way" which contains the text "don't go this way," you could include either of the following terms in your search query:
 
 `title:"The Right Way" AND text:go`
 
@@ -236,11 +271,13 @@ For example, suppose an index contains two fields, title and text,and that text 
 
 Since text is the default field, the field indicator is not required; hence the second query above omits it.
 
-The field is only valid for the term that it directly precedes, so the query `title:Do it right` will find only "Do" in the title field. It will find "it" and "right" in the default field (in this case the text field).
+The field is only valid for the term that it directly precedes, so the query `title:Do it right` will find only "Do" in the title field.
+It will find "it" and "right" in the default field (in this case the text field).
 
 == Boolean Operators Supported by the Standard Query Parser
 
-Boolean operators allow you to apply Boolean logic to queries, requiring the presence or absence of specific terms or conditions in fields in order to match documents. The table below summarizes the Boolean operators supported by the standard query parser.
+Boolean operators allow you to apply Boolean logic to queries, requiring the presence or absence of specific terms or conditions in fields in order to match documents.
+The table below summarizes the Boolean operators supported by the standard query parser.
 
 [%autowidth.stretch,options="header"]
 |===
@@ -249,16 +286,23 @@ Boolean operators allow you to apply Boolean logic to queries, requiring the pre
 |NOT |`!` |Requires that the following term not be present.
 |OR |`\|\|` |Requires that either term (or both terms) be present for a match.
 | |`+` |Requires that the following term be present.
-| |`-` |Prohibits the following term (that is, matches on fields or documents that do not include that term). The `-` operator is functionally similar to the Boolean operator `!`. Because it's used by popular search engines such as Google, it may be more familiar to some user communities.
+| |`-` |Prohibits the following term (that is, matches on fields or documents that do not include that term).
+The `-` operator is functionally similar to the Boolean operator `!`. Because it's used by popular search engines such as Google, it may be more familiar to some user communities.
 |===
 
-Boolean operators allow terms to be combined through logic operators. Lucene supports AND, "`+`", OR, NOT and "`-`" as Boolean operators.
+Boolean operators allow terms to be combined through logic operators.
+Lucene supports AND, "`+`", OR, NOT and "`-`" as Boolean operators.
 
 IMPORTANT: When specifying Boolean operators with keywords such as AND or NOT, the keywords must appear in all uppercase.
 
-NOTE: The standard query parser supports all the Boolean operators listed in the table above. The DisMax query parser supports only `+` and `-`.
+NOTE: The standard query parser supports all the Boolean operators listed in the table above.
+The DisMax query parser supports only `+` and `-`.
 
-The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used. The OR operator links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets. The symbol || can be used in place of the word OR.
+The OR operator is the default conjunction operator.
+This means that if there is no Boolean operator between two terms, the OR operator is used.
+The OR operator links two terms and finds a matching document if either of the terms exist in a document.
+This is equivalent to a union using sets.
+The symbol || can be used in place of the word OR.
 
 To search for documents that contain either "jakarta apache" or just "jakarta," use the query:
 
@@ -280,7 +324,9 @@ NOTE: This operator is supported by both the standard query parser and the DisMa
 
 === The Boolean Operator AND ("&&")
 
-The AND operator matches documents where both terms exist anywhere in the text of a single document. This is equivalent to an intersection using sets. The symbol `&&` can be used in place of the word AND.
+The AND operator matches documents where both terms exist anywhere in the text of a single document.
+This is equivalent to an intersection using sets.
+The symbol `&&` can be used in place of the word AND.
 
 To search for documents that contain "jakarta apache" and "Apache Lucene," use either of the following queries:
 
@@ -291,7 +337,9 @@ To search for documents that contain "jakarta apache" and "Apache Lucene," use e
 
 === The Boolean Operator NOT ("!")
 
-The NOT operator excludes documents that contain the term after NOT. This is equivalent to a difference using sets. The symbol `!` can be used in place of the word NOT.
+The NOT operator excludes documents that contain the term after NOT.
+This is equivalent to a difference using sets.
+The symbol `!` can be used in place of the word NOT.
 
 The following queries search for documents that contain the phrase "jakarta apache" but do not contain the phrase "Apache Lucene":
 
@@ -313,7 +361,8 @@ Solr gives the following characters special meaning when they appear in a query:
 
 `+` `-` `&&` `||` `!` `(` `)` `{` `}` `[` `]` `^` `"` `~` `*` `?` `:` `/`
 
-To make Solr interpret any of these characters literally, rather as a special character, precede the character with a backslash character `\`. For example, to search for (1+1):2 without having Solr interpret the plus sign and parentheses as special characters for formulating a sub-query with two terms, escape the characters by preceding each one with a backslash:
+To make Solr interpret any of these characters literally, rather as a special character, precede the character with a backslash character `\`.
+For example, to search for (1+1):2 without having Solr interpret the plus sign and parentheses as special characters for formulating a sub-query with two terms, escape the characters by preceding each one with a backslash:
 
 [source,plain]
 ----
@@ -322,7 +371,8 @@ To make Solr interpret any of these characters literally, rather as a special ch
 
 == Grouping Terms to Form Sub-Queries
 
-Lucene/Solr supports using parentheses to group clauses to form sub-queries. This can be very useful if you want to control the Boolean logic for a query.
+Lucene/Solr supports using parentheses to group clauses to form sub-queries.
+This can be very useful if you want to control the Boolean logic for a query.
 
 The query below searches for either "jakarta" or "apache" and "website":
 
@@ -332,7 +382,8 @@ This adds precision to the query, requiring that the term "website" exist, along
 
 === Grouping Clauses within a Field
 
-To apply two or more Boolean operators to a single field in a search, group the Boolean clauses within parentheses. For example, the query below searches for a title field that contains both the word "return" and the phrase "pink panther":
+To apply two or more Boolean operators to a single field in a search, group the Boolean clauses within parentheses.
+For example, the query below searches for a title field that contains both the word "return" and the phrase "pink panther":
 
 `title:(+return +"pink panther")`
 
@@ -348,7 +399,8 @@ Comments may be nested.
 
 == Differences between Lucene's Classic Query Parser and Solr's Standard Query Parser
 
-Solr's standard query parser originated as a variation of Lucene's "classic" QueryParser.  It diverges in the following ways:
+Solr's standard query parser originated as a variation of Lucene's "classic" QueryParser.
+It diverges in the following ways:
 
 * A `*` may be used for either or both endpoints to specify an open-ended range query, or by itself as an existence query.
 ** `field:[* TO 100]` finds all field values less than or equal to 100
@@ -361,21 +413,25 @@ Solr's standard query parser originated as a variation of Lucene's "classic" Que
 * Support for embedded Solr queries (sub-queries) using any type of query parser as a nested clause using the local-params syntax.
 ** `inStock:true OR {!dismax qf='name manu' v='ipod'}`
 +
-Gotcha: Be careful not to start your query with `{!` at the very beginning, which changes the parsing of the entire
-query string, which may not be what you want if there are additional clauses.  So flipping the example above so the
-sub-query comes first would fail to work as expected without a leading space.
+Gotcha: Be careful not to start your query with `{!` at the very beginning, which changes the parsing of the entire query string, which may not be what you want if there are additional clauses.
+So flipping the example above so the sub-query comes first would fail to work as expected without a leading space.
 +
-Sub-queries can also be done with the magic field `\_query_` and for function queries with the magic field `\_val_` but it
-should be considered deprecated since it is less clear.  Example: `\_val_:"recip(rord(myfield),1,2,3)"`
-* Support for a special `filter(...)` syntax to indicate that some query clauses should be cached in the filter cache (as a constant score boolean query). This allows sub-queries to be cached and re-used in other queries. For example `inStock:true` will be cached and re-used in all three of the queries below:
+Sub-queries can also be done with the magic field `\_query_` and for function queries with the magic field `\_val_` but it should be considered deprecated since it is less clear.
+Example: `\_val_:"recip(rord(myfield),1,2,3)"`
+* Support for a special `filter(...)` syntax to indicate that some query clauses should be cached in the filter cache (as a constant score boolean query).
+This allows sub-queries to be cached and re-used in other queries.
+For example `inStock:true` will be cached and re-used in all three of the queries below:
 ** `q=features:songs OR filter(inStock:true)`
 ** `q=+manu:Apple +filter(inStock:true)`
 ** `q=+manu:Apple & fq=inStock:true`
 +
-This can even be used to cache individual clauses of complex filter queries. In the first query below, 3 items will be added to the filter cache (the top level `fq` and both `filter(...)` clauses) and in the second query, there will be 2 cache hits, and one new cache insertion (for the new top level `fq`):
+This can even be used to cache individual clauses of complex filter queries.
+In the first query below, 3 items will be added to the filter cache (the top level `fq` and both `filter(...)` clauses) and in the second query, there will be 2 cache hits, and one new cache insertion (for the new top level `fq`):
 ** `q=features:songs & fq=+filter(inStock:true) +filter(price:[* TO 100])`
 ** `q=manu:Apple & fq=-filter(inStock:true) -filter(price:[* TO 100])`
-* Range queries ("[a TO z]"), prefix queries ("a*"), and wildcard queries ("a*b") are constant-scoring (all matching documents get an equal score). The scoring factors TF, IDF, index boost, and "coord" are not used. There is no limitation on the number of terms that match (as there was in past versions of Lucene).
+* Range queries ("[a TO z]"), prefix queries ("a*"), and wildcard queries ("a*b") are constant-scoring (all matching documents get an equal score).
+The scoring factors TF, IDF, index boost, and "coord" are not used.
+There is no limitation on the number of terms that match (as there was in past versions of Lucene).
 * Constant score queries are created with `<query_clause>^=<score>`, which sets the entire clause to the specified score for any documents matching that clause:
 ** `q=(description:blue color:blue)^=1.0 title:blue^=5.0`
 

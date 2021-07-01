@@ -22,7 +22,8 @@ For each document in the response, the TermVectorCcomponent can return the term 
 
 == Term Vector Component Configuration
 
-The TermVectorComponent is not enabled implicitly in Solr - it must be explicitly configured in your `solrconfig.xml` file. The examples on this page show how it is configured in Solr's "```techproducts```" example:
+The TermVectorComponent is not enabled implicitly in Solr - it must be explicitly configured in your `solrconfig.xml` file.
+The examples on this page show how it is configured in Solr's "```techproducts```" example:
 
 [source,bash]
 ----
@@ -36,7 +37,8 @@ To enable the this component, you need to configure it using a `searchComponent`
 <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
 ----
 
-A request handler must then be configured to use this component name. In the `techproducts` example, the component is associated with a special request handler named `/tvrh`, that enables term vectors by default using the `tv=true` parameter; but you can associate it with any request handler:
+A request handler must then be configured to use this component name.
+In the `techproducts` example, the component is associated with a special request handler named `/tvrh`, that enables term vectors by default using the `tv=true` parameter; but you can associate it with any request handler:
 
 [source,xml]
 ----
@@ -50,7 +52,8 @@ A request handler must then be configured to use this component name. In the `te
 </requestHandler>
 ----
 
-Once your handler is defined, you may use in conjunction with any schema (that has a `uniqueKeyField)` to fetch term vectors for fields configured with the `termVector` attribute, such as in the `techproducts` sample schema.  For example:
+Once your handler is defined, you may use in conjunction with any schema (that has a `uniqueKeyField)` to fetch term vectors for fields configured with the `termVector` attribute, such as in the `techproducts` sample schema.
+For example:
 
 [source,xml]
 ----
@@ -135,13 +138,15 @@ If `true`, the Term Vector Component will run.
 For a given comma-separated list of Lucene document IDs (*not* the Solr Unique Key), term vectors will be returned.
 
 `tv.fl`::
-For a given comma-separated list of fields, term vectors will be returned. If not specified, the `fl` parameter is used.
+For a given comma-separated list of fields, term vectors will be returned.
+If not specified, the `fl` parameter is used.
 
 `tv.all`::
 If `true`, all the boolean parameters listed below (`tv.df`, `tv.offsets`, `tv.positions`, `tv.payloads`, `tv.tf` and `tv.tf_idf`) will be enabled.
 
 `tv.df`::
-If `true`, returns the Document Frequency (DF) of the term in the collection. This can be computationally expensive.
+If `true`, returns the Document Frequency (DF) of the term in the collection.
+This can be computationally expensive.
 
 `tv.offsets`::
 If `true`, returns offset information for each term in the document.
@@ -156,9 +161,11 @@ If `true`, returns payload information.
 If `true`, returns document term frequency info for each term in the document.
 
 `tv.tf_idf`::
-If `true`, calculates TF / DF (i.e.,: TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
+If `true`, calculates TF / DF (i.e.,: TF * IDF) for each term.
+Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
 +
-This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive. (The results are not shown in example output)
+This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive.
+(The results are not shown in example output)
 
 To see an example of TermVector component output, see the Wiki page: https://cwiki.apache.org/confluence/display/solr/TermVectorComponentExampleOptions
 
@@ -166,4 +173,5 @@ For schema requirements, see also the section  <<field-properties-by-use-case.ad
 
 == SolrJ and the Term Vector Component
 
-Neither the `SolrQuery` class nor the `QueryResponse` class offer specific method calls to set Term Vector Component parameters or get the "termVectors" output. However, there is a patch for it: https://issues.apache.org/jira/browse/SOLR-949[SOLR-949].
+Neither the `SolrQuery` class nor the `QueryResponse` class offer specific method calls to set Term Vector Component parameters or get the "termVectors" output.
+However, there is a patch for it: https://issues.apache.org/jira/browse/SOLR-949[SOLR-949].

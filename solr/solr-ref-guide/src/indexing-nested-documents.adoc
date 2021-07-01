@@ -423,17 +423,13 @@ include::{example-source-dir}IndexingNestedDocuments.java[tag=anon-kids]
 --
 
 
-This simplified approach was common in older versions of Solr, and can still be used with "Root-Only" schemas that do not contain any other nested related fields apart from `\_root_`.  (Many schemas in existence are this way simply because default configsets are this way, even if the application isn't using nested documents.)
+This simplified approach was common in older versions of Solr, and can still be used with "Root-Only" schemas that do not contain any other nested related fields apart from `\_root_`.
+Many schemas in existence are this way simply because default configsets are this way, even if the application isn't using nested documents.
 
 This approach should *NOT* be used when schemas include a `\_nest_path_` field, as the existence of that field triggers assumptions and changes in behavior in various query time functionality, such as the <<searching-nested-documents.adoc#child-doc-transformer,[child]>>, that will not work when nested documents do not have any intrinsic "nested path" information.
 
-The results of indexing anonymous nested children with a "Root-Only" schema are similar to what
-happens if you attempt to index "pseudo field" nested documents using a "Root-Only" schema.
-Notably: since there is no nested path information for the
-<<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer to use to reconstruct the structure of a nest
-of documents, it returns all matching children as a flat list, similar in structure to how they were originally indexed:
-
-
+The results of indexing anonymous nested children with a "Root-Only" schema are similar to what happens if you attempt to index "pseudo field" nested documents using a "Root-Only" schema.
+Notably: since there is no nested path information for the <<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer to use to reconstruct the structure of a nest of documents, it returns all matching children as a flat list, similar in structure to how they were originally indexed:
 
 [.dynamic-tabs]
 --

@@ -21,9 +21,11 @@ If the documents you need to index are in a binary format, such as Word, Excel, 
 Solr uses code from the Tika project to provide a framework for incorporating many different file-format parsers such as http://pdfbox.apache.org/[Apache PDFBox] and http://poi.apache.org/index.html[Apache POI] into Solr itself.
 
 Working with this framework, Solr's `ExtractingRequestHandler` uses Tika internally to support uploading binary files
-for data extraction and indexing. Downloading Tika is not required to use Solr Cell.
+for data extraction and indexing.
+Downloading Tika is not required to use Solr Cell.
 
-When this framework was under development, it was called the Solr _Content Extraction Library_, or _CEL_; from that abbreviation came this framework's name: Solr Cell. The names Solr Cell and `ExtractingRequestHandler` are used
+When this framework was under development, it was called the Solr _Content Extraction Library_, or _CEL_; from that abbreviation came this framework's name: Solr Cell.
+The names Solr Cell and `ExtractingRequestHandler` are used
 interchangeably for this feature.
 
 == Key Solr Cell Concepts
@@ -37,7 +39,8 @@ See http://tika.apache.org/{ivy-tika-version}/formats.html for the file types su
 Solr responds to Tika's SAX events to create one or more text fields from the content.
 Tika exposes document metadata as well (apart from the XHTML).
 * Tika produces metadata such as Title, Subject, and Author according to specifications such as the DublinCore.
-The metadata available is highly dependent on the file types and what they in turn contain. Some of the general metadata created is described in the section <<Metadata Created by Tika>> below.
+The metadata available is highly dependent on the file types and what they in turn contain.
+Some of the general metadata created is described in the section <<Metadata Created by Tika>> below.
 Solr Cell supplies some metadata of its own too.
 * Solr Cell concatenates text from the internal XHTML into a `content` field.
 You can configure which elements should be included/ignored, and which should map to another field.
@@ -93,18 +96,22 @@ Once Solr is started, you can use curl to send a sample PDF included with Solr v
 curl 'http://localhost:8983/solr/gettingstarted/update/extract?literal.id=doc1&commit=true' -F "myfile=@example/exampledocs/solr-word.pdf"
 ----
 
-The URL above calls the `ExtractingRequestHandler`, uploads the file `solr-word.pdf`, and assigns it the unique ID `doc1`. Here's a closer look at the components of this command:
+The URL above calls the `ExtractingRequestHandler`, uploads the file `solr-word.pdf`, and assigns it the unique ID `doc1`.
+Here's a closer look at the components of this command:
 
 * The `literal.id=doc1` parameter provides a unique ID for the document being indexed.
 Without this, the ID would be set to the absolute path to the file.
 +
 There are alternatives to this, such as mapping a metadata field to the ID, generating a new UUID, or generating an ID from a signature (hash) of the content.
 
-* The `commit=true parameter` causes Solr to perform a commit after indexing the document, making it immediately searchable. For optimum performance when loading many documents, don't call the commit command until you are done.
+* The `commit=true parameter` causes Solr to perform a commit after indexing the document, making it immediately searchable.
+For optimum performance when loading many documents, don't call the commit command until you are done.
 
-* The `-F` flag instructs curl to POST data using the Content-Type `multipart/form-data` and supports the uploading of binary files. The `@` symbol instructs curl to upload the attached file.
+* The `-F` flag instructs curl to POST data using the Content-Type `multipart/form-data` and supports the uploading of binary files.
+The `@` symbol instructs curl to upload the attached file.
 
-* The argument `myfile=@example/exampledocs/solr-word.pdf` uploads the sample file. Note this includes the path, so if you upload a different file, always be sure to include either the relative or absolute path to the file.
+* The argument `myfile=@example/exampledocs/solr-word.pdf` uploads the sample file.
+Note this includes the path, so if you upload a different file, always be sure to include either the relative or absolute path to the file.
 
 You can also use `bin/post` to do the same thing:
 
@@ -113,7 +120,8 @@ You can also use `bin/post` to do the same thing:
 bin/post -c gettingstarted example/exampledocs/solr-word.pdf -params "literal.id=doc1"
 ----
 
-Now you can execute a query and find that document with a request like `\http://localhost:8983/solr/gettingstarted/select?q=pdf`. The document will look something like this:
+Now you can execute a query and find that document with a request like `\http://localhost:8983/solr/gettingstarted/select?q=pdf`.
+The document will look something like this:
 
 image::images/indexing-with-tika/sample-pdf-query.png[float="right",width=50%,pdfwidth=60%]
 
@@ -153,7 +161,10 @@ These parameters can be set for each indexing request (as request parameters), o
 the request handler generally by defining them in `solrconfig.xml`, as described in <<Configuring the ExtractingRequestHandler in solrconfig.xml>>.
 
 `capture`::
-Captures XHTML elements with the specified name for a supplementary addition to the Solr document. This parameter can be useful for copying chunks of the XHTML into a separate field. For instance, it could be used to grab paragraphs (`<p>`) and index them into a separate field. Note that content is still also captured into the `content` field.
+Captures XHTML elements with the specified name for a supplementary addition to the Solr document.
+This parameter can be useful for copying chunks of the XHTML into a separate field.
+For instance, it could be used to grab paragraphs (`<p>`) and index them into a separate field.
+Note that content is still also captured into the `content` field.
 +
 Example: `capture=p` (in a request) or `<str name="capture">p</str>` (in `solrconfig.xml`)
 +
@@ -162,7 +173,8 @@ Output: `"p": {"This is a paragraph from my document."}`
 This parameter can also be used with the `fmap._source_field_` parameter to map content from attributes to a new field.
 
 `captureAttr`::
-Indexes attributes of the Tika XHTML elements into separate fields, named after the element. If set to `true`, when extracting from HTML, Tika can return the href attributes in `<a>` tags as fields named "`a`".
+Indexes attributes of the Tika XHTML elements into separate fields, named after the element.
+If set to `true`, when extracting from HTML, Tika can return the href attributes in `<a>` tags as fields named "`a`".
 +
 Example: `captureAttr=true`
 +
@@ -179,12 +191,17 @@ A default field to use if the `uprefix` parameter is not specified and a field c
 Example: `defaultField=\_text_`
 
 `extractOnly`::
-Default is `false`. If `true`, returns the extracted content from Tika without indexing the document. This returns the extracted XHTML as a string in the response. When viewing on a screen, it may be useful to set the `extractFormat` parameter for a response format other than XML to aid in viewing the embedded XHTML tags.
+Default is `false`.
+If `true`, returns the extracted content from Tika without indexing the document.
+This returns the extracted XHTML as a string in the response.
+When viewing on a screen, it may be useful to set the `extractFormat` parameter for a response format other than XML to aid in viewing the embedded XHTML tags.
 +
 Example: `extractOnly=true`
 
 `extractFormat`::
-The default is `xml`, but the other option is `text`. Controls the serialization format of the extract content. The `xml` format is actually XHTML, the same format that results from passing the `-x` command to the Tika command line application, while the text format is like that produced by Tika's `-t` command.
+The default is `xml`, but the other option is `text`.
+Controls the serialization format of the extract content.
+The `xml` format is actually XHTML, the same format that results from passing the `-x` command to the Tika command line application, while the text format is like that produced by Tika's `-t` command.
 +
 This parameter is valid only if `extractOnly` is set to true.
 +
@@ -193,17 +210,20 @@ Example: `extractFormat=text`
 Output: For an example output (in XML), see https://cwiki.apache.org/confluence/display/solr/TikaExtractOnlyExampleOutput
 
 `fmap._source_field_`::
-Maps (moves) one field name to another. The `source_field` must be a field in incoming documents, and the value is the Solr field to map to.
+Maps (moves) one field name to another.
+The `source_field` must be a field in incoming documents, and the value is the Solr field to map to.
 +
 Example: `fmap.content=text` causes the data in the `content` field generated by Tika to be moved to the Solr's `text` field.
 
 `ignoreTikaException`::
-If `true`, exceptions found during processing will be skipped. Any metadata available, however, will be indexed.
+If `true`, exceptions found during processing will be skipped.
+Any metadata available, however, will be indexed.
 +
 Example: `ignoreTikaException=true`
 
 `literal._fieldname_`::
-Populates a field with the name supplied with the specified value for each document. The data can be multivalued if the field is multivalued.
+Populates a field with the name supplied with the specified value for each document.
+The data can be multivalued if the field is multivalued.
 +
 Example: `literal.doc_status=published`
 +
@@ -213,7 +233,8 @@ Output: `"doc_status": "published"`
 If `true` (the default), literal field values will override other values with the same field name.
 +
 If `false`, literal values defined with `literal._fieldname_` will be appended to data already in the fields extracted
-from Tika. When setting `literalsOverride` to `false`, the field must be multivalued.
+from Tika.
+When setting `literalsOverride` to `false`, the field must be multivalued.
 +
 Example: `literalsOverride=false`
 
@@ -225,43 +246,51 @@ Example: `lowernames=true`
 Output: Assuming input of "Content-Type", the result in documents would be a field `content_type`
 
 `multipartUploadLimitInKB`::
-Defines the size in kilobytes of documents to allow. The default is `2048` (2Mb).
+Defines the size in kilobytes of documents to allow.
+The default is `2048` (2Mb).
 If you have very large documents, you should increase this or they will be rejected.
 +
 Example: `multipartUploadLimitInKB=2048000`
 
 `parseContext.config`::
 If a Tika parser being used allows parameters, you can pass them to Tika by creating a parser configuration file and
-pointing Solr to it. See the section <<Parser-Specific Properties>> for more information about how to use this parameter.
+pointing Solr to it.
+See the section <<Parser-Specific Properties>> for more information about how to use this parameter.
 +
 Example: `parseContext.config=pdf-config.xml`
 
 `passwordsFile`::
-Defines a file path and name for a file of file name to password mappings. See the section
+Defines a file path and name for a file of file name to password mappings.
+See the section
 <<Indexing Encrypted Documents>> for more information about using a password file.
 +
 Example: `passwordsFile=/path/to/passwords.txt`
 
 `resource.name`::
-Specifies the name of the file to index. This is optional, but Tika can use it as a hint for detecting a file's MIME type.
+Specifies the name of the file to index.
+This is optional, but Tika can use it as a hint for detecting a file's MIME type.
 +
 Example: `resource.name=mydoc.doc`
 
 `resource.password`::
-Defines a password to use for a password-protected PDF or OOXML file. See the section <<Indexing Encrypted Documents>>
+Defines a password to use for a password-protected PDF or OOXML file.
+See the section <<Indexing Encrypted Documents>>
 for more information about using this parameter.
 +
 Example: `resource.password=secret`
 
 `tika.config`::
-Defines a file path and name to a custom Tika configuration file. This is only required if you have customized your Tika implementation.
+Defines a file path and name to a custom Tika configuration file.
+This is only required if you have customized your Tika implementation.
 +
 Example: `tika.config=/path/to/tika.config`
 
 `uprefix`::
-Prefixes all fields _that are undefined in the schema_ with the given prefix. This is very useful when combined with dynamic field definitions.
+Prefixes all fields _that are undefined in the schema_ with the given prefix.
+This is very useful when combined with dynamic field definitions.
 +
-Example: `uprefix=ignored_` would add `ignored_` as a prefix to all unknown fields. In this case, you could additionally define a rule in the Schema to not index these fields:
+Example: `uprefix=ignored_` would add `ignored_` as a prefix to all unknown fields.
+In this case, you could additionally define a rule in the Schema to not index these fields:
 +
 `<dynamicField name="ignored_*" type="ignored" />`
 
@@ -284,7 +313,8 @@ You will need to configure your `solrconfig.xml` to find the `ExtractingRequestH
   <lib dir="${solr.install.dir:../../..}/dist/" regex="solr-cell-\d.*\.jar" />
 ----
 
-You can then configure the `ExtractingRequestHandler` in `solrconfig.xml`. The following is the default
+You can then configure the `ExtractingRequestHandler` in `solrconfig.xml`.
+The following is the default
 configuration found in Solr's `_default` configset, which you can modify as needed:
 
 [source,xml]
@@ -309,7 +339,8 @@ that parse numbers and dates and do other manipulations on the metadata fields g
 In Solr's default configsets, <<schemaless-mode.adoc#,"schemaless">> (aka data driven, or field guessing) mode is enabled, which does a variety of such processing already.
 
 If you instead explicitly define the fields for your schema, you can selectively specify the desired URPs.
-An easy way to specify this is to configure the parameter `processor` (under `defaults`) to `uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date`. For example:
+An easy way to specify this is to configure the parameter `processor` (under `defaults`) to `uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date`.
+For example:
 
 [source,xml]
 ----
@@ -324,7 +355,9 @@ An easy way to specify this is to configure the parameter `processor` (under `de
 </requestHandler>
 ----
 
-The above suggested list was taken from the list of URPs that run as a part of schemaless mode and provide much of its functionality. However, one major part of the schemaless functionality is missing from the suggested list, `add-unknown-fields-to-the-schema`, which is the part that adds fields to the schema. So you can use the other URPs without worrying about unexpected field additions.
+The above suggested list was taken from the list of URPs that run as a part of schemaless mode and provide much of its functionality.
+However, one major part of the schemaless functionality is missing from the suggested list, `add-unknown-fields-to-the-schema`, which is the part that adds fields to the schema.
+So you can use the other URPs without worrying about unexpected field additions.
 ====
 
 === Parser-Specific Properties
@@ -332,7 +365,8 @@ The above suggested list was taken from the list of URPs that run as a part of s
 Parsers used by Tika may have specific properties to govern how data is extracted.
 These can be passed through Solr for special parsing situations.
 
-For instance, when using the Tika library from a Java program, the `PDFParserConfig` class has a method `setSortByPosition(boolean)` that can extract vertically oriented text. To access that method via configuration with the `ExtractingRequestHandler`, one can add the `parseContext.config` property to `solrconfig.xml` and then set properties in Tika's `PDFParserConfig` as in the example below.
+For instance, when using the Tika library from a Java program, the `PDFParserConfig` class has a method `setSortByPosition(boolean)` that can extract vertically oriented text.
+To access that method via configuration with the `ExtractingRequestHandler`, one can add the `parseContext.config` property to `solrconfig.xml` and then set properties in Tika's `PDFParserConfig` as in the example below.
 
 [source,xml]
 ----
@@ -351,7 +385,9 @@ Consult the Tika Java API documentation for configuration parameters that can be
 
 The ExtractingRequestHandler will decrypt encrypted files and index their content if you supply a password in either `resource.password` on the request, or in a `passwordsFile` file.
 
-In the case of `passwordsFile`, the file supplied must be formatted so there is one line per rule. Each rule contains a file name regular expression, followed by "=", then the password in clear-text. Because the passwords are in clear-text, the file should have strict access restrictions.
+In the case of `passwordsFile`, the file supplied must be formatted so there is one line per rule.
+Each rule contains a file name regular expression, followed by "=", then the password in clear-text.
+Because the passwords are in clear-text, the file should have strict access restrictions.
 
 [source,plain]
 ----
@@ -367,20 +403,26 @@ For a multi-core configuration, you can specify `sharedLib='lib'` in the `<solr/
 
 === Extending the ExtractingRequestHandler
 
-If you want to supply your own `ContentHandler` for Solr to use, you can extend the `ExtractingRequestHandler` and override the `createFactory()` method. This factory is responsible for constructing the `SolrContentHandler` that interacts with Tika, and allows literals to override Tika-parsed values. Set the parameter `literalsOverride`, which normally defaults to `true`, to `false` to append Tika-parsed values to literal values.
+If you want to supply your own `ContentHandler` for Solr to use, you can extend the `ExtractingRequestHandler` and override the `createFactory()` method.
+This factory is responsible for constructing the `SolrContentHandler` that interacts with Tika, and allows literals to override Tika-parsed values.
+Set the parameter `literalsOverride`, which normally defaults to `true`, to `false` to append Tika-parsed values to literal values.
 
 ==  Solr Cell Internals
 
 === Metadata Created by Tika
 
-As mentioned before, Tika produces metadata about the document. Metadata describes different aspects of a document, such as the author's name, the number of pages, the file size, and so on. The metadata produced depends on the type of document submitted. For instance, PDFs have different metadata than Word documents do.
+As mentioned before, Tika produces metadata about the document.
+Metadata describes different aspects of a document, such as the author's name, the number of pages, the file size, and so on.
+The metadata produced depends on the type of document submitted.
+For instance, PDFs have different metadata than Word documents do.
 
 === Metadata Added by Solr
 
 In addition to the metadata added by Tika's parsers, Solr adds the following metadata:
 
 `stream_name`::
-The name of the Content Stream as uploaded to Solr. Depending on how the file is uploaded, this may or may not be set.
+The name of the Content Stream as uploaded to Solr.
+Depending on how the file is uploaded, this may or may not be set.
 
 `stream_source_info`::
 Any source info about the stream.
@@ -398,7 +440,8 @@ set for these metadata elements on your content.
 
 Here is the order in which the Solr Cell framework processes its input:
 
-.  Tika generates fields or passes them in as literals specified by `literal.<fieldname>=<value>`. If `literalsOverride=false`, literals will be appended as multi-value to the Tika-generated field.
+.  Tika generates fields or passes them in as literals specified by `literal.<fieldname>=<value>`.
+If `literalsOverride=false`, literals will be appended as multi-value to the Tika-generated field.
 .  If `lowernames=true`, Tika maps fields to lowercase.
 .  Tika applies the mapping rules specified by `fmap.__source__=__target__` parameters.
 .  If `uprefix` is specified, any unknown field names are prefixed with that value, else if `defaultField` is specified, any unknown fields are copied to the default field.
@@ -437,7 +480,8 @@ bin/post -c gettingstarted -params "literal.id=doc5&captureAttr=true&defaultFiel
 
 === Extracting Data without Indexing
 
-Solr allows you to extract data without indexing. You might want to do this if you're using Solr solely as an extraction server or if you're interested in testing Solr extraction.
+Solr allows you to extract data without indexing.
+You might want to do this if you're using Solr solely as an extraction server or if you're interested in testing Solr extraction.
 
 The example below sets the `extractOnly=true` parameter to extract data without indexing it.
 
@@ -486,6 +530,9 @@ public class SolrCellRequestDemo {
 
 This operation streams the file `my-file.pdf` into the Solr index for `my_collection`.
 
-The sample code above calls the extract command, but you can easily substitute other commands that are supported by Solr Cell. The key class to use is the `ContentStreamUpdateRequest`, which makes sure the ContentStreams are set properly. SolrJ takes care of the rest.
+The sample code above calls the extract command, but you can easily substitute other commands that are supported by Solr Cell.
+The key class to use is the `ContentStreamUpdateRequest`, which makes sure the ContentStreams are set properly.
+SolrJ takes care of the rest.
 
-Note that the `ContentStreamUpdateRequest` is not just specific to Solr Cell. You can send CSV to the CSV Update handler and to any other Request Handler that works with Content Streams for updates.
+Note that the `ContentStreamUpdateRequest` is not just specific to Solr Cell.
+You can send CSV to the CSV Update handler and to any other Request Handler that works with Content Streams for updates.

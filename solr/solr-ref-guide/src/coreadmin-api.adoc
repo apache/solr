@@ -85,7 +85,8 @@ curl -X GET http://localhost:8983/api/cores?indexInfo=false
 === STATUS Parameters
 
 `core`::
-The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required in v1, and part of the url in the v2 API.
+The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`.
+This parameter is required in v1, and part of the url in the v2 API.
 
 `indexInfo`::
 If `false`, information about the index will not be returned with a core STATUS request.

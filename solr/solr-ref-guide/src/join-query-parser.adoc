@@ -97,7 +97,8 @@ This method must be used if score information is required, and should also be co
 .dvWithScore and single value numerics
 [WARNING]
 ====
-The `dvWithScore` method doesn't support single value numeric fields. Users migrating from versions prior to 7.0 are encouraged to change field types to string and rebuild indexes during migration.
+The `dvWithScore` method doesn't support single value numeric fields.
+Users migrating from versions prior to 7.0 are encouraged to change field types to string and rebuild indexes during migration.
 ====
 +
 `topLevelDV` can only be used when `to` and `from` fields have docValues data, and does not currently support numeric fields.
@@ -109,9 +110,11 @@ Consider this method when the "from" query matches a large number of documents a
 
 == Joining Across Single Shard Collections
 
-You can also specify a `fromIndex` parameter to join with a field from another core or a single shard collection. If running in SolrCloud mode, then the collection specified in the `fromIndex` parameter must have a single shard and a replica on all Solr nodes where the collection you're joining to has a replica.
+You can also specify a `fromIndex` parameter to join with a field from another core or a single shard collection.
+If running in SolrCloud mode, then the collection specified in the `fromIndex` parameter must have a single shard and a replica on all Solr nodes where the collection you're joining to has a replica.
 
-Let's consider an example where you want to use a Solr join query to filter movies by directors that have won an Oscar. Specifically, imagine we have two collections with the following fields:
+Let's consider an example where you want to use a Solr join query to filter movies by directors that have won an Oscar.
+Specifically, imagine we have two collections with the following fields:
 
 *movies*: id, title, director_id, ...
 
@@ -124,9 +127,12 @@ To filter movies by directors that have won an Oscar using a Solr join on the *m
 fq={!join from=id fromIndex=movie_directors to=director_id}has_oscar:true
 ----
 
-Notice that the query criteria of the filter (`has_oscar:true`) is based on a field in the collection specified using `fromIndex`. Keep in mind that you cannot return fields from the `fromIndex` collection using join queries, you can only use the fields for filtering results in the "to" collection (movies).
+Notice that the query criteria of the filter (`has_oscar:true`) is based on a field in the collection specified using `fromIndex`.
+Keep in mind that you cannot return fields from the `fromIndex` collection using join queries, you can only use the fields for filtering results in the "to" collection (movies).
 
-Next, let's understand how these collections need to be deployed in your cluster. Imagine the *movies* collection is deployed to a four node SolrCloud cluster and has two shards with a replication factor of two. Specifically, the *movies* collection has replicas on the following four nodes:
+Next, let's understand how these collections need to be deployed in your cluster.
+Imagine the *movies* collection is deployed to a four node SolrCloud cluster and has two shards with a replication factor of two.
+Specifically, the *movies* collection has replicas on the following four nodes:
 
 node 1: movies_shard1_replica1
 
@@ -136,7 +142,8 @@ node 3: movies_shard2_replica1
 
 node 4: movies_shard2_replica2
 
-To use the *movie_directors* collection in Solr join queries with the *movies* collection, it needs to have a replica on each of the four nodes. In other words, *movie_directors* must have one shard and replication factor of four:
+To use the *movie_directors* collection in Solr join queries with the *movies* collection, it needs to have a replica on each of the four nodes.
+In other words, *movie_directors* must have one shard and replication factor of four:
 
 node 1: movie_directors_shard1_replica1
 
@@ -146,7 +153,10 @@ node 3: movie_directors_shard1_replica3
 
 node 4: movie_directors_shard1_replica4
 
-At query time, the `JoinQParser` will access the local replica of the *movie_directors* collection to perform the join. If a local replica is not available or active, then the query will fail. At this point, it should be clear that since you're limited to a single shard and the data must be replicated across all nodes where it is needed, this approach works better with smaller data sets where there is a one-to-many relationship between the from collection and the to collection. Moreover, if you add a replica to the to collection, then you also need to add a replica for the from collection.
+At query time, the `JoinQParser` will access the local replica of the *movie_directors* collection to perform the join.
+If a local replica is not available or active, then the query will fail.
+At this point, it should be clear that since you're limited to a single shard and the data must be replicated across all nodes where it is needed, this approach works better with smaller data sets where there is a one-to-many relationship between the from collection and the to collection.
+Moreover, if you add a replica to the to collection, then you also need to add a replica for the from collection.
 
 For more information, Erick Erickson has written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
 
@@ -180,10 +190,13 @@ The remote Solr collection does not have any specific sharding requirements.
 The cross collection join has some configuration options that can be specified in  `solrconfig.xml`.
 
 `routerField`::
-If the documents are routed to shards using the CompositeID router by the join field, then that field name should be specified in the configuration here.  This will allow the parser to optimize the resulting HashRange query.
+If the documents are routed to shards using the CompositeID router by the join field, then that field name should be specified in the configuration here.
+ This will allow the parser to optimize the resulting HashRange query.
 
 `solrUrl`::
-If specified, this array of strings specifies the white listed Solr URLs that you can pass to the solrUrl query parameter. Without this configuration the solrUrl parameter cannot be used. This restriction is necessary to prevent an attacker from using Solr to explore the network.
+If specified, this array of strings specifies the white listed Solr URLs that you can pass to the solrUrl query parameter.
+Without this configuration the solrUrl parameter cannot be used.
+This restriction is necessary to prevent an attacker from using Solr to explore the network.
 
 [source,xml]
 ----
@@ -201,10 +214,15 @@ If specified, this array of strings specifies the white listed Solr URLs that yo
 The name of the external Solr collection to be queried to retrieve the set of join key values (required).
 
 `zkHost`::
-The connection string to be used to connect to ZooKeeper. `zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified. If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used. (optional).
+The connection string to be used to connect to ZooKeeper.
+`zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified.
+If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used.
+(optional).
 
 `solrUrl`::
-The URL of the external Solr node to be queried. Must be a character for character exact match of a whitelisted url. (optional, disabled by default for security).
+The URL of the external Solr node to be queried.
+Must be a character for character exact match of a whitelisted url.
+(optional, disabled by default for security).
 
 `from`::
 The join key field name in the external collection (required).
@@ -213,7 +231,8 @@ The join key field name in the external collection (required).
 The join key field name in the local collection.
 
 `v`::
-The query substituted in as a local param.  This is the query string that will match documents in the remote collection.
+The query substituted in as a local param.
+This is the query string that will match documents in the remote collection.
 
 `routed`::
 If `true`, the cross collection join query will use each shard's hash range to determine the set of join keys to retrieve for that shard.

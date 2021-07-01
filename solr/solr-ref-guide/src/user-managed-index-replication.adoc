@@ -300,9 +300,9 @@ This screen will only appear if you are not running Solr in SolrCloud mode.
 
 If you are using Leader-Follower index replication, you can use this screen to:
 
-. View the replicatable index state. (on a leader node)
+. View the replicatable index state (on a leader node)
 . View the current replication status (on a follower node)
-. Disable replication. (on a leader node)
+. Disable replication (on a leader node)
 
 image::images/user-managed-index-replication/replication.png[image,width=412,height=250]
 
@@ -428,7 +428,8 @@ Create a backup on leader if there are committed index data in the server; other
 [source,bash]
 http://_leader_host:port_/solr/_core_name_/replication?command=backup
 +
-This command is useful for making periodic backups. There are several supported request parameters:
+This command is useful for making periodic backups.
+There are several supported request parameters:
 
 `numberToKeep:`::: This can be used with the backup command unless the `maxNumberOfBackups` initialization parameter has been specified on the handler – in which case `maxNumberOfBackups` is always used and attempts to use the `numberToKeep` request parameter will cause an error.
 
@@ -450,7 +451,8 @@ Restore a backup from a backup repository.
 [source,bash]
 http://_leader_host:port_/solr/_core_name_/replication?command=restore
 +
-This command is used to restore a backup. There are several supported request parameters:
+This command is used to restore a backup.
+There are several supported request parameters:
 
 `name`::: (optional) Backup name.
 The name of the backed up index snapshot to be restored.
@@ -460,7 +462,8 @@ It would choose the latest timestamp backup in that case.
 `repository`::: The name of the backup repository where the backup resides.
 When not specified, it defaults to local file system.
 
-`location`::: Backup location. The value depends on the repository in use.
+`location`::: Backup location.
+The value depends on the repository in use.
 For file system repository, location defaults to core's dataDir (data directory), and if specified, it needs to be within `SOLR_HOME`, `SOLR_DATA_HOME` or the paths specified by `solr.xml` `allowPaths` parameter.
 
 `restorestatus`::
@@ -469,7 +472,8 @@ Check the status of a running restore operation.
 [source,bash]
 http://_leader_host:port_/solr/_core_name_/replication?command=restorestatus
 +
-This command is used to check the status of a restore operation. This command takes no parameters.
+This command is used to check the status of a restore operation.
+This command takes no parameters.
 +
 The status value can be "In Progress", "success", or "failed". If it failed then an "exception" will also be sent in the response.
 

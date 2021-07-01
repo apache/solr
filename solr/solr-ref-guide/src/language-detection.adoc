@@ -33,7 +33,8 @@ For more information about language analysis in Solr, see <<language-analysis.ad
 
 == Configuring Language Detection
 
-You can configure the `langid` UpdateRequestProcessor in `solrconfig.xml`. Both implementations take the same parameters, which are described in the following section.
+You can configure the `langid` UpdateRequestProcessor in `solrconfig.xml`.
+Both implementations take the same parameters, which are described in the following section.
 At a minimum, you must specify the fields for language identification and a field for the resulting language code.
 
 === Configuring Tika Language Detection
@@ -100,7 +101,8 @@ As previously mentioned, both implementations of the `langid` UpdateRequestProce
 When `true`, the default, enables language detection.
 
 `langid.fl`::
-A comma- or space-delimited list of fields to be processed by `langid`. This parameter is required.
+A comma- or space-delimited list of fields to be processed by `langid`.
+This parameter is required.
 
 `langid.langField`::
 Specifies the field for the returned language code.
@@ -136,7 +138,8 @@ Use this in combination with `langid.map` to ensure that you only index document
 
 `langid.map`::
 Enables field name mapping.
-If `true`, Solr will map field names for all fields listed in `langid.fl`. The default is `false`.
+If `true`, Solr will map field names for all fields listed in `langid.fl`.
+The default is `false`.
 
 `langid.map.fl`::
 A comma-separated list of fields for `langid.map` that is different than the fields specified in `langid.fl`.
@@ -171,7 +174,8 @@ A list defined with this parameter will override any configuration set with `lan
 By default, fields are mapped as <field>_<language>. To change this pattern, you can specify a Java regular expression in this parameter.
 
 `langid.map.replace`::
-By default, fields are mapped as `<field>_<language>`. To change this pattern, you can specify a Java replace in this parameter.
+By default, fields are mapped as `<field>_<language>`.
+To change this pattern, you can specify a Java replace in this parameter.
 
 `langid.enforceSchema`::
 If `false`, the `langid` processor does not validate field names against your schema.

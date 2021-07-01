@@ -83,7 +83,9 @@ After installation, we'll first take a look at the basic configuration for ZooKe
 
 === Initial Configuration
 
-To configure your ZooKeeper instance, create a file named `<ZOOKEEPER_HOME>/conf/zoo.cfg`. A sample configuration file is included in your ZooKeeper installation, as `conf/zoo_sample.cfg`. You can edit and rename that file instead of creating it new if you prefer.
+To configure your ZooKeeper instance, create a file named `<ZOOKEEPER_HOME>/conf/zoo.cfg`.
+A sample configuration file is included in your ZooKeeper installation, as `conf/zoo_sample.cfg`.
+You can edit and rename that file instead of creating it new if you prefer.
 
 The file should have the following information to start:
 
@@ -149,7 +151,8 @@ The IDs differentiate each node of the ensemble, and allow each node to know whe
 The ports can be any ports you choose; ZooKeeper's default ports are `2888:3888`.
 +
 Since we've assigned server IDs to specific hosts/ports, we must also define which server in the list this node is.
-We do this with a `myid` file stored in the data directory (defined by the `dataDir` parameter). The contents of the `myid` file is only the server ID.
+We do this with a `myid` file stored in the data directory (defined by the `dataDir` parameter).
+The contents of the `myid` file is only the server ID.
 +
 In the case of the configuration example above, you would create the file `/var/lib/zookeeper/1/myid` with the content "1" (without quotes), as in this example:
 +
@@ -227,7 +230,8 @@ Repeat this for servers 4 and 5 if you are creating a 5-node ensemble (a rare ca
 
 To ease troubleshooting in case of problems with the ensemble later, it's recommended to run ZooKeeper with logging enabled and with proper JVM garbage collection (GC) settings.
 
-. Create a file named `zookeeper-env.sh` and put it in the `<ZOOKEEPER_HOME>/conf` directory (the same place you put `zoo.cfg`). This file will need to exist on each server of the ensemble.
+. Create a file named `zookeeper-env.sh` and put it in the `<ZOOKEEPER_HOME>/conf` directory (the same place you put `zoo.cfg`).
+This file will need to exist on each server of the ensemble.
 
 . Add the following settings to the file:
 +

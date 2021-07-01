@@ -16,9 +16,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Terms Component provides access to the indexed terms in a field and the number of documents that match each term. This can be useful for building an auto-suggest feature or any other feature that operates at the term level instead of the search or document level. Retrieving terms in index order is very fast since the implementation directly uses Lucene's TermEnum to iterate over the term dictionary.
+The Terms Component provides access to the indexed terms in a field and the number of documents that match each term.
+This can be useful for building an auto-suggest feature or any other feature that operates at the term level instead of the search or document level.
+Retrieving terms in index order is very fast since the implementation directly uses Lucene's TermEnum to iterate over the term dictionary.
 
-In a sense, this search component provides fast field-faceting over the whole index, not restricted by the base query or any filters. The document frequencies returned are the number of documents that match the term, including any documents that have been marked for deletion but not yet removed from the index.
+In a sense, this search component provides fast field-faceting over the whole index, not restricted by the base query or any filters.
+The document frequencies returned are the number of documents that match the term, including any documents that have been marked for deletion but not yet removed from the index.
 
 == Configuring the Terms Component
 
@@ -40,32 +43,45 @@ If you want to enable Terms component when using another Request Handler, `terms
 
 === Terms Component Parameters
 
-The parameters below allow you to control what terms are returned. You can also configure any of these with the request handler if you'd like to set them permanently. Or, you can add them to the query request. These parameters are:
+The parameters below allow you to control what terms are returned.
+You can also configure any of these with the request handler if you'd like to set them permanently.
+Or, you can add them to the query request.
+These parameters are:
 
 `terms`::
-If set to `true`, enables the Terms Component. By default, the Terms Component is off (`false`).
+If set to `true`, enables the Terms Component.
+By default, the Terms Component is off (`false`).
 +
 Example: `terms=true`
 
 `terms.fl`::
-Specifies the field from which to retrieve terms. This parameter is required if `terms=true`.
+Specifies the field from which to retrieve terms.
+This parameter is required if `terms=true`.
 +
 Example: `terms.fl=title`
 
 `terms.list`::
-Fetches the document frequency for a comma-delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
+Fetches the document frequency for a comma-delimited list of terms.
+Terms are always returned in index order.
+If `terms.ttf` is set to true, also returns their total term frequency.
+If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
 +
 Example: `terms.list=termA,termB,termC`
 +
-NOTE: When `terms.list` is specified, then terms are always sorted by `index`. Except `terms.ttf`, none of other terms parameters are supported when `terms.list` is specified.
+NOTE: When `terms.list` is specified, then terms are always sorted by `index`.
+Except `terms.ttf`, none of other terms parameters are supported when `terms.list` is specified.
 
 `terms.limit`::
-Specifies the maximum number of terms to return. The default is `10`. If the limit is set to a number less than 0, then no maximum limit is enforced. Although this is not required, either this parameter or `terms.upper` must be defined.
+Specifies the maximum number of terms to return.
+The default is `10`.
+If the limit is set to a number less than 0, then no maximum limit is enforced.
+Although this is not required, either this parameter or `terms.upper` must be defined.
 +
 Example: `terms.limit=20`
 
 `terms.lower`::
-Specifies the term at which to start. If not specified, the empty string is used, causing Solr to start at the beginning of the field.
+Specifies the term at which to start.
+If not specified, the empty string is used, causing Solr to start at the beginning of the field.
 +
 Example: `terms.lower=orange`
 
@@ -75,12 +91,15 @@ If set to true, includes the lower-bound term (specified with `terms.lower` in t
 Example: `terms.lower.incl=false`
 
 `terms.mincount`::
-Specifies the minimum document frequency to return in order for a term to be included in a query response. Results are inclusive of the mincount (that is, >= mincount).
+Specifies the minimum document frequency to return in order for a term to be included in a query response.
+Results are inclusive of the mincount (that is, >= mincount).
 +
 Example: `terms.mincount=5`
 
 `terms.maxcount`::
-Specifies the maximum document frequency a term must have in order to be included in a query response. The default setting is -1, which sets no upper bound. Results are inclusive of the maxcount (that is, \<= maxcount).
+Specifies the maximum document frequency a term must have in order to be included in a query response.
+The default setting is -1, which sets no upper bound.
+Results are inclusive of the maxcount (that is, \<= maxcount).
 +
 Example: `terms.maxcount=25`
 
@@ -90,7 +109,8 @@ Restricts matches to terms that begin with the specified string.
 Example: `terms.prefix=inter`
 
 `terms.raw`::
-If set to true, returns the raw characters of the indexed term, regardless of whether it is human-readable. For instance, the indexed form of numeric numbers is not human-readable.
+If set to true, returns the raw characters of the indexed term, regardless of whether it is human-readable.
+For instance, the indexed form of numeric numbers is not human-readable.
 +
 Example: `terms.raw=true`
 
@@ -100,7 +120,9 @@ Restricts matches to terms that match the regular expression.
 Example: `terms.regex=.*pedist`
 
 `terms.regex.flag`::
-Defines a Java regex flag to use when evaluating the regular expression defined with `terms.regex`. See http://docs.oracle.com/javase/tutorial/essential/regex/pattern.html for details of each flag. Valid options are:
+Defines a Java regex flag to use when evaluating the regular expression defined with `terms.regex`.
+See http://docs.oracle.com/javase/tutorial/essential/regex/pattern.html for details of each flag.
+Valid options are:
 
 * `case_insensitive`
 * `comments`
@@ -114,15 +136,19 @@ Defines a Java regex flag to use when evaluating the regular expression defined 
 Example: `terms.regex.flag=case_insensitive`
 
 `terms.stats`::
-Include index statistics in the results. Currently returns only the *numDocs* for a collection. When combined with `terms.list` it provides enough information to compute inverse document frequency (IDF) for a list of terms.
+Include index statistics in the results.
+Currently returns only the *numDocs* for a collection.
+When combined with `terms.list` it provides enough information to compute inverse document frequency (IDF) for a list of terms.
 
 `terms.sort`::
-Defines how to sort the terms returned. Valid options are `count`, which sorts by the term frequency, with the highest term frequency first, or `index`, which sorts in index order.
+Defines how to sort the terms returned.
+Valid options are `count`, which sorts by the term frequency, with the highest term frequency first, or `index`, which sorts in index order.
 +
 Example: `terms.sort=index`
 
 `terms.ttf`::
-If set to true, returns both `df` (docFreq) and `ttf` (totalTermFreq) statistics for each requested term in `terms.list`. In this case, the response format is:
+If set to true, returns both `df` (docFreq) and `ttf` (totalTermFreq) statistics for each requested term in `terms.list`.
+In this case, the response format is:
 
 XML:
 
@@ -156,12 +182,14 @@ JSON:
 ----
 
 `terms.upper`::
-Specifies the term to stop at. Although this parameter is not required, either this parameter or `terms.limit` must be defined.
+Specifies the term to stop at.
+Although this parameter is not required, either this parameter or `terms.limit` must be defined.
 +
 Example: `terms.upper=plum`
 
 `terms.upper.incl`::
-If set to true, the upper bound term is included in the result set. The default is false.
+If set to true, the upper bound term is included in the result set.
+The default is false.
 +
 Example: `terms.upper.incl=true`
 
@@ -298,7 +326,9 @@ Results (notice that the term counts are not affected by the query):
 
 == Using the Terms Component for an Auto-Suggest Feature
 
-If the <<suggester.adoc#,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
+If the <<suggester.adoc#,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application.
+Simply submit a query specifying whatever characters the user has typed so far as a prefix.
+For example, if the user has typed "at", the search engine's interface would submit the following query:
 
 [source,text]
 http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&wt=xml

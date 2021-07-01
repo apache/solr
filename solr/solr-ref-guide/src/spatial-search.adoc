@@ -50,7 +50,9 @@ Here's how `LatLonPointSpatialField` (LLPSF) should usually be configured in the
 [source,xml]
 <fieldType name="location" class="solr.LatLonPointSpatialField" docValues="true"/>
 
-LLPSF supports toggling `indexed`, `stored`, `docValues`, and `multiValued`. LLPSF internally uses a 2-dimensional Lucene "Points" (BDK tree) index when "indexed" is enabled (the default). When "docValues" is enabled, a latitude and longitudes pair are bit-interleaved into 64 bits and put into Lucene DocValues.
+LLPSF supports toggling `indexed`, `stored`, `docValues`, and `multiValued`.
+LLPSF internally uses a 2-dimensional Lucene "Points" (BDK tree) index when "indexed" is enabled (the default).
+When "docValues" is enabled, a latitude and longitudes pair are bit-interleaved into 64 bits and put into Lucene DocValues.
 The accuracy of the docValues data is about a centimeter.
 
 == Indexing Points
@@ -79,7 +81,8 @@ The format of the file to pass in.
 
 == Searching with Query Parsers
 
-There are two spatial Solr "query parsers" for geospatial search: `geofilt` and `bbox`. They take the following parameters:
+There are two spatial Solr "query parsers" for geospatial search: `geofilt` and `bbox`.
+They take the following parameters:
 
 `d`::
 The radial distance, usually in kilometers.
@@ -96,7 +99,7 @@ A spatial indexed field.
 (Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-params.adoc#,local param>>_ determines what scores will be produced.
 Valid values are:
 
-* `none`: A fixed score of 1.0. (the default)
+* `none`: A fixed score of `1.0` (the default).
 * `kilometers`: distance in kilometers between the field value and the specified center point
 * `miles`: distance in miles between the field value and the specified center point
 * `degrees`: distance in degrees between the field value and the specified center point
@@ -105,7 +108,8 @@ Valid values are:
 +
 [WARNING]
 ====
-Don't use this for indexed non-point shapes (e.g., polygons). The results will be erroneous.
+Don't use this for indexed non-point shapes (e.g., polygons).
+The results will be erroneous.
 And with RPT, it's only recommended for multi-valued point data, as the implementation doesn't scale very well and for single-valued fields, you should instead use a separate non-RPT field purely for distance sorting.
 ====
 +
@@ -116,7 +120,8 @@ When used with `BBoxField`, additional options are supported:
 * `area2D`: cartesian coordinates based area of the overlapping shapes expressed in terms of the `distanceUnits` configured for this field
 
 `filter`::
-(Advanced option; not supported by LatLonType (deprecated) or PointType). If you only want the query to score (with the above `score` local parameter), not filter, then set this local parameter to false.
+(Advanced option; not supported by LatLonType (deprecated) or PointType).
+If you only want the query to score (with the above `score` local parameter), not filter, then set this local parameter to false.
 
 
 === geofilt
@@ -145,7 +150,8 @@ Here's a sample query:
 &q=*:*&fq={!bbox sfield=store}&pt=45.15,-93.85&d=5
 
 The rectangular shape is faster to compute and so it's sometimes used as an alternative to `geofilt` when it's acceptable to return points outside of the radius.
-However, if the ideal goal is a circle but you want it to run faster, then instead consider using the RPT field and try a large `distErrPct` value like `0.1` (10% radius). This will return results outside the radius but it will do so somewhat uniformly around the shape.
+However, if the ideal goal is a circle but you want it to run faster, then instead consider using the RPT field and try a large `distErrPct` value like `0.1` (10% radius).
+This will return results outside the radius but it will do so somewhat uniformly around the shape.
 
 image::images/spatial-search/bbox.png[Bounding box]
 
@@ -175,7 +181,9 @@ It's most common to put a spatial query into an "fq" parameter – a filter quer
 By default, Solr will cache the query in the filter cache.
 
 If you know the filter query (be it spatial or not) is fairly unique and not likely to get a cache hit then specify `cache="false"` as a local-param as seen in the following example.
-The only spatial types which stand to benefit from this technique are LatLonPointSpatialField and LatLonType (deprecated). Enable docValues on the field (if it isn't already). LatLonType (deprecated) additionally requires a `cost="100"` (or more) local-param.
+The only spatial types which stand to benefit from this technique are LatLonPointSpatialField and LatLonType (deprecated).
+Enable docValues on the field (if it isn't already).
+LatLonType (deprecated) additionally requires a `cost="100"` (or more) local-param.
 
 [source,text]
 &q=...mykeywords...&fq=...someotherfilters...&fq={!geofilt cache=false}&sfield=store&pt=45.15,-93.85&d=5
@@ -193,7 +201,8 @@ For more information about these function queries, see the section on <<function
 
 === geodist
 
-`geodist` is a distance function that takes three optional parameters: `(sfield,latitude,longitude)`. You can use the `geodist` function to sort results by distance or score return results.
+`geodist` is a distance function that takes three optional parameters: `(sfield,latitude,longitude)`.
+You can use the `geodist` function to sort results by distance or score return results.
 
 For example, to sort your results by ascending distance, use a request like:
 
@@ -250,7 +259,8 @@ RPT offers several functional improvements over LatLonPointSpatialField:
 * Ability to index non-point shapes (e.g., polygons) as well as points – see RptWithGeometrySpatialField
 * Heatmap grid faceting
 
-RPT _shares_ various features in common with `LatLonPointSpatialField`. Some are listed here:
+RPT _shares_ various features in common with `LatLonPointSpatialField`.
+Some are listed here:
 
 * Latitude/Longitude indexed point data; possibly multi-valued
 * Fast filtering with `geofilt`, `bbox` filters, and range query syntax (dateline crossing is supported)
@@ -267,13 +277,15 @@ Use LLPSF for the distance sorting/boosting; it only needs to have docValues for
 
 === Schema Configuration for RPT
 
-To use RPT, the field type must be registered and configured in `schema.xml`. There are many options for this field type.
+To use RPT, the field type must be registered and configured in `schema.xml`.
+There are many options for this field type.
 
 `name`::
 The name of the field type.
 
 `class`::
-This should be `solr.SpatialRecursivePrefixTreeFieldType`. But be aware that the Lucene spatial module includes some other so-called "spatial strategies" other than RPT, notably TermQueryPT*, BBox, PointVector*, and SerializedDV.
+This should be `solr.SpatialRecursivePrefixTreeFieldType`.
+But be aware that the Lucene spatial module includes some other so-called "spatial strategies" other than RPT, notably TermQueryPT*, BBox, PointVector*, and SerializedDV.
 Solr requires a field type to parallel these in order to use them.
 The asterisked ones have them.
 
@@ -292,14 +304,17 @@ Spatial4j governs this feature and supports https://locationtech.github.io/spati
 
 `distanceUnits`::
 This is used to specify the units for distance measurements used throughout the use of this field.
-This can be `degrees`, `kilometers` or `miles`. It is applied to nearly all distance measurements involving the field: `maxDistErr`, `distErr`, `d`, `geodist` and the `score` when score is `distance`, `area`, or `area2d`. However, it doesn't affect distances embedded in WKT strings, (e.g., `BUFFER(POINT(200 10),0.2)`), which are still in degrees.
+This can be `degrees`, `kilometers` or `miles`.
+It is applied to nearly all distance measurements involving the field: `maxDistErr`, `distErr`, `d`, `geodist` and the `score` when score is `distance`, `area`, or `area2d`.
+However, it doesn't affect distances embedded in WKT strings, (e.g., `BUFFER(POINT(200 10),0.2)`), which are still in degrees.
 +
 `distanceUnits` defaults to either `kilometers` if `geo` is `true`, or `degrees` if `geo` is `false`.
 +
 `distanceUnits` replaces the `units` attribute; which is now deprecated and mutually exclusive with this attribute.
 
 `distErrPct`::
-Defines the default precision of non-point shapes (both index & query), as a fraction between `0.0` (fully precise) to `0.5`. The closer this number is to zero, the more accurate the shape will be.
+Defines the default precision of non-point shapes (both index & query), as a fraction between `0.0` (fully precise) to `0.5`.
+The closer this number is to zero, the more accurate the shape will be.
 However, more precise indexed shapes use more disk space and take longer to index.
 +
 Bigger `distErrPct` values will make queries faster but less accurate.
@@ -314,7 +329,8 @@ If left blank, the default is one meter – just a bit less than 0.000009 degree
 This setting is used internally to compute an appropriate maxLevels (see below).
 
 `worldBounds`::
-Defines the valid numerical ranges for x and y, in the format of `ENVELOPE(minX, maxX, maxY, minY)`. If `geo="true"`, the standard lat-lon world boundaries are assumed.
+Defines the valid numerical ranges for x and y, in the format of `ENVELOPE(minX, maxX, maxY, minY)`.
+If `geo="true"`, the standard lat-lon world boundaries are assumed.
 If `geo=false`, you should define your boundaries.
 
 `distCalculator`::
@@ -326,14 +342,17 @@ Other possible values are `lawOfCosines`, `vincentySphere` and `cartesian^2`.
 `prefixTree`:: Defines the spatial grid implementation.
 Since a PrefixTree (such as RecursivePrefixTree) maps the world as a grid, each grid cell is decomposed to another set of grid cells at the next level.
 +
-If `geo=true` then the default prefix tree is `geohash`, otherwise it's `quad`. Geohash has 32 children at each level, quad has 4. Geohash can only be used for `geo=true` as it's strictly geospatial.
+If `geo=true` then the default prefix tree is `geohash`, otherwise it's `quad`.
+Geohash has 32 children at each level, quad has 4.
+Geohash can only be used for `geo=true` as it's strictly geospatial.
 +
 A third choice is `packedQuad`, which is generally more efficient than `quad`, provided there are many levels -- perhaps 20 or more.
 
 `maxLevels`:: Sets the maximum grid depth for indexed data.
 Instead, it's usually more intuitive to compute an appropriate maxLevels by specifying `maxDistErr`.
 
-*_And there are others:_* `normWrapLongitude`, `datelineRule`, `validationRule`, `autoIndex`, `allowMultiOverlap`, `precisionModel`. For further info, see notes below about `spatialContextFactory` implementations referenced above, especially the link to the JTS based one.
+*_And there are others:_* `normWrapLongitude`, `datelineRule`, `validationRule`, `autoIndex`, `allowMultiOverlap`, `precisionModel`.
+For further info, see notes below about `spatialContextFactory` implementations referenced above, especially the link to the JTS based one.
 
 === Standard Shapes
 
@@ -466,7 +485,8 @@ Defaults to being computed via `distErrPct` (or `distErr`).
 
 `facet.heatmap.distErrPct`::
 A fraction of the size of geom used to compute gridLevel.
-Defaults to 0.15. It's computed the same as a similarly named parameter for RPT.
+Defaults to 0.15.
+It's computed the same as a similarly named parameter for RPT.
 
 `facet.heatmap.distErr`::
 A cell error distance used to pick the grid level indirectly.
@@ -503,10 +523,12 @@ Note: Don't divide an on-screen projected map rectangle evenly to plot these rec
 This could be arranged to be the same as an on-screen map but won't necessarily be.
 
 The `counts_ints2D` key has a 2D array of integers.
-The initial outer level is in row order (top-down), then the inner arrays are the columns (left-right). If any array would be all zeros, a null is returned instead for efficiency reasons.
+The initial outer level is in row order (top-down), then the inner arrays are the columns (left-right).
+If any array would be all zeros, a null is returned instead for efficiency reasons.
 The entire value is null if there is no matching spatial data.
 
-If `format=png` then the output key is `counts_png`. It's a base-64 encoded string of a 4-byte PNG.
+If `format=png` then the output key is `counts_png`.
+It's a base-64 encoded string of a 4-byte PNG.
 The PNG logically holds exactly the same data that the ints2D format does.
 Note that the alpha channel byte is flipped to make it easier to view the PNG for diagnostic purposes, since otherwise counts would have to exceed 2^24 before it becomes non-opague.
 Thus counts greater than this value will become opaque.
@@ -551,7 +573,8 @@ Now to sort the results by one of the relevancy modes, use it like this:
 &q={!field f=bbox score=overlapRatio}Intersects(ENVELOPE(-10, 20, 15, 10))
 
 
-The `score` local parameter can be one of `overlapRatio`, `area`, and `area2D`. `area` scores by the document area using surface-of-a-sphere (assuming `geo=true`) math, while `area2D` uses simple width * height.
+The `score` local parameter can be one of `overlapRatio`, `area`, and `area2D`.
+`area` scores by the document area using surface-of-a-sphere (assuming `geo=true`) math, while `area2D` uses simple width * height.
 `overlapRatio` computes a [0-1] ranged score based on how much overlap exists relative to the document's area and the query area.
 The javadocs of {lucene-javadocs}/spatial-extras/org/apache/lucene/spatial/bbox/BBoxOverlapRatioValueSource.html[BBoxOverlapRatioValueSource] have more info on the formula.
 There is an additional parameter `queryTargetProportion` that allows you to weight the query side of the formula to the index (target) side of the formula.

@@ -149,7 +149,8 @@ See <<implicit-requesthandlers.adoc#,Implicit Request Handlers>> for the paramse
 
 === Viewing Expanded Paramsets and Effective Parameters with RequestHandlers
 
-To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request parameter. As an example, for the `/export` request handler:
+To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request parameter.
+As an example, for the `/export` request handler:
 
 [source,bash]
 ----
