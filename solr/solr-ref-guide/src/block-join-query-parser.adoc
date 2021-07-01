@@ -166,7 +166,8 @@ Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, ex
 === Scoring with the Block Join Parent Query Parser
 
 You can optionally use the `score` local parameter to return scores of the subordinate query.
-The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum), `total (sum)`. Implicit default is `none` which returns `0.0`.
+The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum), `total (sum)`.
+Implicit default is `none` which returns `0.0`.
 
 === All Parents Syntax
 

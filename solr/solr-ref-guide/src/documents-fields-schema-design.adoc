@@ -44,7 +44,8 @@ A recipe document would contain the ingredients, the instructions, the preparati
 A document about a person, for example, might contain the person's name, biography, favorite color, and shoe size.
 A document about a book could contain the title, author, year of publication, number of pages, and so on.
 
-In the Solr universe, documents are composed of _fields_, which are more specific pieces of information. Shoe size could be a field.
+In the Solr universe, documents are composed of _fields_, which are more specific pieces of information.
+Shoe size could be a field.
 First name and last name could be fields.
 
 Fields can contain different kinds of data.
@@ -94,6 +95,6 @@ How will fields from documents be displayed to users?
 
 If you aren't sure yet, plan on some test indexing runs to see how the data in your documents is indexed with default settings.
 Build into your implementation plan some time for iteration and start small.
-The more you're able to define your schema before indexing all of your documents, the higher your chances for a successful search application for your users.  
+The more you're able to define your schema before indexing all of your documents, the higher your chances for a successful search application for your users.
 
 More information about the schema is in the section <<schema-elements.adoc#,Schema Elements>>.

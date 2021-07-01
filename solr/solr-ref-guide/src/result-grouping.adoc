@@ -122,7 +122,8 @@ The default value is `false`.
 `group.facet`::
 Determines whether to compute grouped facets for the field facets specified in facet.field parameters.
 Grouped facets are computed based on the first specified group.
-As with normal field faceting, fields shouldn't be tokenized (otherwise counts are computed for each token). Grouped faceting supports single and multivalued fields.
+As with normal field faceting, fields shouldn't be tokenized (otherwise counts are computed for each token).
+Grouped faceting supports single and multivalued fields.
 Default is `false`.
 +
 WARNING: There can be a heavy performance cost to this option.

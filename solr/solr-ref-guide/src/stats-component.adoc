@@ -116,7 +116,8 @@ The number of documents in the set which do not have a value for this field/func
 This statistic is computed for all field types and is computed by default.
 
 `sumOfSquares`::
-Sum of all values squared (a by product of computing stddev). This statistic is computed for numeric and date field types and is computed by default.
+Sum of all values squared (a by product of computing stddev).
+This statistic is computed for numeric and date field types and is computed by default.
 
 `mean`::
 The average `(v1 + v2 .... + vN)/N`.
@@ -127,7 +128,8 @@ Standard deviation, measuring how widely spread the values in the data set are.
 This statistic is computed for numeric and date field types and is computed by default.
 
 `percentiles`::
-A list of percentile values based on cut-off points specified by the parameter value, such as `1,99,99.9`. These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm]. This statistic is computed for numeric field types and is not computed by default.
+A list of percentile values based on cut-off points specified by the parameter value, such as `1,99,99.9`.
+These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm]. This statistic is computed for numeric field types and is not computed by default.
 
 `distinctValues`::
 The set of all distinct values for the field/function in all of the documents in the set.

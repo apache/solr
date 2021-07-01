@@ -47,7 +47,8 @@ Solr has lots of ways to index data.
 Choose one of the approaches below and try it out with your system:
 
 Local Files with `bin/post`::
-If you have a local directory of files, the Post Tool (`bin/post`) can index a directory of files. We saw this in action in our first exercise.
+If you have a local directory of files, the Post Tool (`bin/post`) can index a directory of files.
+We saw this in action in our first exercise.
 +
 We used only JSON, XML and CSV in our exercises, but the Post Tool can also handle HTML, PDF, Microsoft Office formats (such as MS Word), plain text, and more.
 +
@@ -61,7 +62,8 @@ These might be caused by the field guessing, or the file type may not be support
 Indexing content such as this demonstrates the need to plan Solr for your data, which requires understanding it and perhaps also some trial and error.
 
 SolrJ::
-SolrJ is a Java-based client for interacting with Solr. Use <<solrj.adoc#,SolrJ>> for JVM-based languages or other <<client-apis.adoc#,Solr clients>> to programmatically create documents to send to Solr.
+SolrJ is a Java-based client for interacting with Solr.
+Use <<solrj.adoc#,SolrJ>> for JVM-based languages or other <<client-apis.adoc#,Solr clients>> to programmatically create documents to send to Solr.
 
 Documents Screen::
 Use the Admin UI <<documents-screen.adoc#,Documents tab>> (at http://localhost:8983/solr/#/localDocs/documents) to paste in a document to be indexed, or select `Document Builder` from the `Document Type` dropdown to build a document one field at a time.
@@ -79,7 +81,8 @@ You can see that that has happened by looking at the values for `numDocs` and `m
 The `maxDoc` value may be larger as the `maxDoc` count includes logically deleted documents that have not yet been physically removed from the index.
 You can re-post the sample files over and over again as much as you want and `numDocs` will never increase, because the new documents will constantly be replacing the old.
 
-Go ahead and edit any of the existing example data files, change some of the data, and re-run the PostTool (`bin/post`). You'll see your changes reflected in subsequent searches.
+Go ahead and edit any of the existing example data files, change some of the data, and re-run the PostTool (`bin/post`).
+You'll see your changes reflected in subsequent searches.
 
 === Deleting Data
 

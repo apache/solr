@@ -318,7 +318,8 @@ This is, again, default behavior.
 If you want to restrict the fields in the response, you can use the `fl` parameter, which takes a comma-separated list of field names.
 This is one of the available fields on the query form in the Admin UI.
 
-Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] again. Or, to specify it with curl:
+Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] agai
+Or, to specify it with curl:
 
 `curl "http://localhost:8983/solr/techproducts/select?q=foundation&fl=id"`
 
@@ -371,7 +372,8 @@ This search finds all documents that contain the term "electronics" anywhere in 
 However, we can see from the above there is a `cat` field (for "category").
 If we limit our search for only documents with the category "electronics", the results will be more precise for our users.
 
-Update your query in the `q` field of the Admin UI so it's `cat:electronics`. Now you get 12 results:
+Update your query in the `q` field of the Admin UI so it's `cat:electronics`.
+Now you get 12 results:
 
 [source,json]
 {

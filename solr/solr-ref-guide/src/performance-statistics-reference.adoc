@@ -18,15 +18,19 @@
 
 This page explains some of the statistics that Solr exposes.
 
-There are two approaches to retrieving metrics. First, you can use the <<metrics-reporting.adoc#metrics-api,Metrics API>>, or you can enable JMX and get metrics from the <<mbean-request-handler.adoc#,MBean Request Handler>> or via an external tool such as JConsole. The below descriptions focus on retrieving the metrics using the Metrics API, but the metric names are the same if using the MBean Request Handler or an external tool.
+There are two approaches to retrieving metrics.
+First, you can use the <<metrics-reporting.adoc#metrics-api,Metrics API>>, or you can enable JMX and get metrics from the <<mbean-request-handler.adoc#,MBean Request Handler>> or via an external tool such as JConsole.
+The below descriptions focus on retrieving the metrics using the Metrics API, but the metric names are the same if using the MBean Request Handler or an external tool.
 
-These statistics are per core. When you are running in SolrCloud mode these statistics would co-relate to the performance of an individual replica.
+These statistics are per core.
+When you are running in SolrCloud mode these statistics would co-relate to the performance of an individual replica.
 
 == Request Handler Statistics
 
 === Update Request Handler
 
-The update request handler is an endpoint to send data to Solr. We can see how many update requests are being fired, how fast is it performing, and other valuable information regarding requests.
+The update request handler is an endpoint to send data to Solr.
+We can see how many update requests are being fired, how fast is it performing, and other valuable information regarding requests.
 
 *Registry & Path:* `solr.<core>:UPDATE./update`
 
@@ -34,7 +38,9 @@ You can request update request handler statistics with an API request such as `\
 
 === Search Request Handler
 
-Can be useful to measure and track number of search queries, response times, etc. If you are not using the “select” handler then the path needs to be changed appropriately. Similarly if you are using the “sql” handler or “export” handler, the realtime handler “get”, or any other handler similar statistics can be found for that as well.
+Can be useful to measure and track number of search queries, response times, etc.
+If you are not using the “select” handler then the path needs to be changed appropriately.
+Similarly if you are using the “sql” handler or “export” handler, the realtime handler “get”, or any other handler similar statistics can be found for that as well.
 
 *Registry & Path*: `solr.<core>:QUERY./select`
 
@@ -66,7 +72,9 @@ To get request times, specifically, you can send an API request such as:
 
 *Errors and Other Times*
 
-Other types of data such as errors and timeouts are also provided. These are available under different metric names. For example:
+Other types of data such as errors and timeouts are also provided.
+These are available under different metric names.
+For example:
 
 * `\http://localhost:8983/solr/admin/metrics?group=core&prefix=UPDATE./update.errors`
 *  `\http://localhost:8983/solr/admin/metrics?group=core&prefix=QUERY./select.errors`
@@ -94,17 +102,13 @@ The table below shows the metric names and attributes to request:
 
 *Distributed vs. Local Request Times*
 
-Processing of a single distributed request in SolrCloud usually requires making several requests to
-other nodes and other replicas. The common statistics listed above lump these timings together, even though
-they are very different in nature, thus making it difficult to measure the latency of distributed and
-local requests separately. Solr 8.4 introduced additional statistics that help to do this.
+Processing of a single distributed request in SolrCloud usually requires making several requests to other nodes and other replicas.
+The common statistics listed above lump these timings together, even though they are very different in nature, thus making it difficult to measure the latency of distributed and local requests separately.
+Solr 8.4 introduced additional statistics that help to do this.
 
-These metrics are structured the same as `requestTimes` and `totalTime` metrics above but they use
-different full names, e.g., `QUERY./select.distrib.requestTimes` and `QUERY./select.local.requestTimes`.
-The metrics under the `distrib` path correspond to the time it takes for a (potentially) distributed
-request to complete all remote calls plus any local processing, and return the result to the caller.
-The metrics under the `local` path correspond to the time it takes for a local call (non-distributed,
-i.e., being processed only by the Solr core where the handler operates) to complete.
+These metrics are structured the same as `requestTimes` and `totalTime` metrics above but they use different full names, e.g., `QUERY./select.distrib.requestTimes` and `QUERY./select.local.requestTimes`.
+The metrics under the `distrib` path correspond to the time it takes for a (potentially) distributed request to complete all remote calls plus any local processing, and return the result to the caller.
+The metrics under the `local` path correspond to the time it takes for a local call (non-distributed, i.e., being processed only by the Solr core where the handler operates) to complete.
 
 == Update Handler
 
@@ -161,7 +165,8 @@ In addition to a count of rollbacks, mean, 1 minute, 5 minute, and 15 minute rat
 
 === Document Cache
 
-This cache holds Lucene Document objects (the stored fields for each document). Since Lucene internal document IDs are transient, this cache cannot be auto-warmed.
+This cache holds Lucene Document objects (the stored fields for each document).
+Since Lucene internal document IDs are transient, this cache cannot be auto-warmed.
 
 *Registry and Path:* `solr.<core>:CACHE.searcher.documentCache`
 

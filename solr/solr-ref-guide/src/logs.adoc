@@ -24,8 +24,7 @@ See the <<math-start.adoc#,Getting Started>> chapter to learn how to get started
 
 == Loading
 
-The out-of-the-box Solr log format can be loaded into a Solr index using the `bin/postlogs` command line tool
-located in the `bin/` directory of the Solr distribution.
+The out-of-the-box Solr log format can be loaded into a Solr index using the `bin/postlogs` command line tool located in the `bin/` directory of the Solr distribution.
 
 NOTE: If working from the source distribution the
 distribution must first be built before `postlogs` can be run.
@@ -51,32 +50,25 @@ The example above will index all the log files under `/var/logs/solrlogs` to the
 
 Log exploration is often the first step in log analytics and visualization.
 
-When working with unfamiliar installations exploration can be used to understand which collections are
-covered in the logs, what shards and cores are in those collections and the types of operations being
-performed on those collections.
+When working with unfamiliar installations exploration can be used to understand which collections are covered in the logs, what shards and cores are in those collections and the types of operations being performed on those collections.
 
-Even with familiar Solr installations exploration is still extremely
-important while troubleshooting because it will often turn up surprises such as unknown errors or
-unexpected admin or indexing operations.
+Even with familiar Solr installations exploration is still extremely important while troubleshooting because it will often turn up surprises such as unknown errors or unexpected admin or indexing operations.
 
 === Sampling
 
-The first step in exploration is to take a random sample from the `logs` collection
-with the `random` function.
+The first step in exploration is to take a random sample from the `logs` collection with the `random` function.
 
-In the example below the `random` function is run with one
-parameter which is the name of the collection to sample.
+In the example below the `random` function is run with one parameter which is the name of the collection to sample.
 
 image::images/math-expressions/logs-sample.png[]
 
-The sample contains 500 random records with the their full field list. By looking
-at this sample we can quickly learn about the *fields* available in the `logs` collection.
+The sample contains 500 random records with the their full field list.
+By looking at this sample we can quickly learn about the *fields* available in the `logs` collection.
 
 === Time Period
 
 Each log record contains a time stamp in the `date_dt` field.
-Its often useful to understand what time period the logs cover and how many log records have been
-indexed.
+Its often useful to understand what time period the logs cover and how many log records have been indexed.
 
 The `stats` function can be run to display this information.
 
@@ -85,22 +77,18 @@ image::images/math-expressions/logs-dates.png[]
 
 === Record Types
 
-One of the key fields in the index is the `type_s` field which is the type of log
-record.
+One of the key fields in the index is the `type_s` field which is the type of log record.
 
-The `facet` expression can be used to visualize the different types of log records and how many
-records of each type are in the index.
+The `facet` expression can be used to visualize the different types of log records and how many records of each type are in the index.
 
 image::images/math-expressions/logs-type.png[]
 
 
 === Collections
 
-Another important field is the `collection_s` field which is the collection that the
-log record was generated from.
+Another important field is the `collection_s` field which is the collection that the log record was generated from.
 
-The `facet` expression can be used to visualize the different collections and how many log records
-they generate.
+The `facet` expression can be used to visualize the different collections and how many log records they generate.
 
 image::images/math-expressions/logs-collection.png[]
 
@@ -114,11 +102,9 @@ image::images/math-expressions/logs-type-collection.png[]
 
 === Time Series
 
-The `timeseries` function can be used to visualize a time series for a specific time range
-of the logs.
+The `timeseries` function can be used to visualize a time series for a specific time range of the logs.
 
-In the example below a time series is used to visualize the log record counts
-at 15 second intervals.
+In the example below a time series is used to visualize the log record counts at 15 second intervals.
 
 image::images/math-expressions/logs-time-series.png[]
 
@@ -127,19 +113,16 @@ Then a burst of log activity occurs from minute 27 to minute 52.
 
 This is then followed by a large spike of log activity.
 
-The example below breaks this down further by adding a query on the `type_s` field to only
-visualize *query* activity in the log.
+The example below breaks this down further by adding a query on the `type_s` field to only visualize *query* activity in the log.
 
 
 image::images/math-expressions/logs-time-series2.png[]
 
-Notice the query activity accounts for more then half of the burst of log records between
-21:27 and 21:52. But the query activity does not account for the large spike in
-log activity that follows.
+Notice the query activity accounts for more then half of the burst of log records between 21:27 and 21:52.
+But the query activity does not account for the large spike in log activity that follows.
 
-We can account for that spike by changing the search to include only *update*, *commit*,
-and *deleteByQuery* records in the logs. We can also narrow by collection
-so we know where these activities are taking place.
+We can account for that spike by changing the search to include only *update*, *commit*, and *deleteByQuery* records in the logs.
+We can also narrow by collection so we know where these activities are taking place.
 
 
 image::images/math-expressions/logs-time-series3.png[]
@@ -150,10 +133,9 @@ better understanding of what's contained in the logs.
 
 == Query Counting
 
-Distributed searches produce more than one log record for each query. There will be one *top level* log
-record for
-the top level distributed query and a *shard level* log record on one replica from each shard. There may also
-be a set of *ids* queries to retrieve fields by id from the shards to complete the page of results.
+Distributed searches produce more than one log record for each query.
+There will be one *top level* log record for the top level distributed query and a *shard level* log record on one replica from each shard.
+There may also be a set of *ids* queries to retrieve fields by id from the shards to complete the page of results.
 
 There are fields in the log index that can be used to differentiate between the three types of query records.
 
@@ -170,16 +152,14 @@ image::images/math-expressions/query-top-level.png[]
 
 === Shard Level Queries
 
-To find all the shard level queries that are not IDs queries, adjust the query to limit results to logs with `distrib_s:false AND ids_s:false`
-as follows:
+To find all the shard level queries that are not IDs queries, adjust the query to limit results to logs with `distrib_s:false AND ids_s:false` as follows:
 
 image::images/math-expressions/query-shard-level.png[]
 
 
 === ID Queries
 
-To find all the *ids* queries, adjust the query to limit results to logs with `distrib_s:false AND ids_s:true`
-as follows:
+To find all the *ids* queries, adjust the query to limit results to logs with `distrib_s:false AND ids_s:true` as follows:
 
 image::images/math-expressions/query-ids.png[]
 
@@ -197,8 +177,7 @@ There are number of powerful visualizations and statistical approaches for analy
 
 Scatter plots can be used to visualize random samples of the `qtime_i`
 field.
-The example below demonstrates a scatter plot of 500 random samples
-from the `ptest1` collection of log records.
+The example below demonstrates a scatter plot of 500 random samples from the `ptest1` collection of log records.
 
 In this example, `qtime_i` is plotted on the y-axis and the x-axis is simply a sequence to spread the query times out across the plot.
 
@@ -211,8 +190,7 @@ From this scatter plot we can tell a number of important things about the query 
 
 * The sample query times range from a low of 122 to a high of 643.
 * The mean appears to be just above 400 ms.
-* The query times tend to cluster closer to the mean and become less frequent as they move away
-from the mean.
+* The query times tend to cluster closer to the mean and become less frequent as they move away from the mean.
 
 
 === Highest QTime Scatter Plot
@@ -234,8 +212,7 @@ From this plot we can see that the 500 highest query times start at 510ms and sl
 
 === QTime Distribution
 
-In this example a visualization is created which shows the
-distribution of query times rounded to the nearest second.
+In this example a visualization is created which shows the distribution of query times rounded to the nearest second.
 
 The example below starts by taking a random sample of 10000 log records with a `type_s`* of `query`.
 The results of the `random` function are assigned to the variable `a`.
@@ -250,8 +227,7 @@ The result is set to variable `c`.
 The `round` function then rounds all elements of the query times vector to the nearest second.
 This means all query times less than 500ms will round to 0.
 
-The `freqTable` function is then applied to the vector of query times rounded to
-the nearest second.
+The `freqTable` function is then applied to the vector of query times rounded to the nearest second.
 
 The resulting frequency table is shown in the visualization below.
 The x-axis is the number of seconds.
@@ -274,11 +250,9 @@ Then a random sample of 10000 log records is drawn and set to variable `a`.
 The `col` function is then used to extract the `qtime_i` field from the sample results and this vector is set to variable `b`.
 
 The `percentile` function is then used to calculate the value at each percentile for the vector of query times.
-The array of percentiles set to variable `p` tells the `percentile` function
-which percentiles to calculate.
+The array of percentiles set to variable `p` tells the `percentile` function which percentiles to calculate.
 
-Then the `zplot` function is used to plot the *percentiles* on the x-axis and
-the *query time* at each percentile on the y-axis.
+Then the `zplot` function is used to plot the *percentiles* on the x-axis and the *query time* at each percentile on the y-axis.
 
 image::images/math-expressions/query-qq.png[]
 
@@ -307,8 +281,7 @@ Therefore one slow node can be responsible for slow overall search time.
 The fields `core_s`, `replica_s` and `shard_s` are available in the log records.
 These fields allow average query time to be calculated by *core*, *replica* or *shard*.
 
-The `core_s` field is particularly useful as its the most granular element and
-the naming convention often includes the collection, shard and replica information.
+The `core_s` field is particularly useful as its the most granular element and the naming convention often includes the collection, shard and replica information.
 
 The example below uses the `facet` function to calculate `avg(qtime_i)` by core.
 
@@ -326,14 +299,13 @@ If query analysis shows that most queries are performing well but there are outl
 The `q_s` and `q_t` fields both hold the value of the *q* parameter from Solr requests.
 The `q_s` field is a string field and the `q_t` field has been tokenized.
 
-The `search` function can be used to return the top N slowest queries in the logs by sorting the results by `qtime_i desc`. the example
-below demonstrates this:
+The `search` function can be used to return the top N slowest queries in the logs by sorting the results by `qtime_i desc`.
+The example below demonstrates this:
 
 image::images/math-expressions/slow-queries.png[]
 
 Once the queries have been retrieved they can be inspected and tried individually to determine if the query is consistently slow.
-If the query is shown to be slow a plan to improve the query performance
-can be devised.
+If the query is shown to be slow a plan to improve the query performance can be devised.
 
 === Commits
 
@@ -378,7 +350,8 @@ in max `qtime_i`.
 
 == Errors
 
-The log index will contain any error records found in the logs. Error records will have a `type_s` field value of `error`.
+The log index will contain any error records found in the logs.
+Error records will have a `type_s` field value of `error`.
 
 The example below searches for error records:
 

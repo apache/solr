@@ -31,7 +31,8 @@ The format used is a restricted form of the canonical representation of dateTime
 * `ss` is seconds.
 * `Z` is a literal 'Z' character indicating that this string representation of the date is in UTC
 
-Note that no time zone can be specified; the String representations of dates is always expressed in Coordinated Universal Time (UTC). Here is an example value:
+Note that no time zone can be specified; the String representations of dates is always expressed in Coordinated Universal Time (UTC).
+Here is an example value:
 
 `1972-05-20T17:33:18Z`
 
@@ -42,7 +43,8 @@ Here are example values with sub-seconds:
 * `1972-05-20T17:33:18.77Z`
 * `1972-05-20T17:33:18.7Z`
 
-There must be a leading `'-'` for dates prior to year 0000, and Solr will format dates with a leading `'+'` for years after 9999. Year 0000 is considered year 1 BC; there is no such thing as year 0 AD or BC.
+There must be a leading `'-'` for dates prior to year 0000, and Solr will format dates with a leading `'+'` for years after 9999.
+Year 0000 is considered year 1 BC; there is no such thing as year 0 AD or BC.
 
 .Query escaping may be required
 [WARNING]
@@ -62,7 +64,8 @@ These are valid queries: +
 
 Solr's `DateRangeField` supports the same point in time date syntax described above (with _date math_ described below) and more to express date ranges.
 One class of examples is truncated dates, which represent the entire date span to the precision indicated.
-The other class uses the range syntax (`[ TO ]`). Here are some examples:
+The other class uses the range syntax (`[ TO ]`).
+Here are some examples:
 
 * `2000-11` – The entire month of November, 2000.
 * `1605-11-05` – The Fifth of November.
@@ -185,6 +188,7 @@ fq={!field f=dateRange op=Contains}[2013 TO 2018]
 ----
 
 Unlike most local params, `op` is actually _not_ defined by any query parser (`field`), it is defined by the field type, in this case `DateRangeField`.
-In the above example, it would find documents with indexed ranges that _contain_ (or equals) the range 2013 thru 2018. Multi-valued overlapping indexed ranges in a document are effectively coalesced.
+In the above example, it would find documents with indexed ranges that _contain_ (or equals) the range 2013 thru 2018.
+Multi-valued overlapping indexed ranges in a document are effectively coalesced.
 
 For a DateRangeField example use-case, see https://cwiki.apache.org/confluence/display/solr/DateRangeField[see Solr's community wiki].

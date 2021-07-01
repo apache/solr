@@ -47,7 +47,8 @@ This parameter is required.
 
 `reRankDocs`::
 The number of top N documents from the original query that should be re-ranked.
-This number will be treated as a minimum, and may be increased internally automatically in order to rank enough documents to satisfy the query (i.e., start+rows). The default is `200`.
+This number will be treated as a minimum, and may be increased internally automatically in order to rank enough documents to satisfy the query (i.e., start+rows).
+The default is `200`.
 
 `reRankWeight`::
 A multiplicative factor that will be applied to the score from the reRankQuery for each of the top matching documents, before that score is added to the original score.

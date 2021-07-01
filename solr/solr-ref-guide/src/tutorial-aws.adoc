@@ -41,21 +41,23 @@ In this guide we are going to:
 To use this guide, you must have the following:
 
 * An https://aws.amazon.com[AWS] account.
-* Familiarity with setting up a single-node SolrCloud on local machine. Refer to the <<solr-tutorial.adoc#,Solr Tutorial>> if you have never used Solr before.
+* Familiarity with setting up a single-node SolrCloud on local machine.
+Refer to the <<solr-tutorial.adoc#,Solr Tutorial>> if you have never used Solr before.
 
 == Launch EC2 instances
 
 === Create new Security Group
 
 . Navigate to the https://console.aws.amazon.com/ec2/v2/home[AWS EC2 console] and to the region of your choice.
- . Configure an http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html[AWS security group] which will limit access to the installation and allow our launched EC2 instances to talk to each other without restrictions.
- .. From the EC2 Dashboard, click btn:[Security Groups] from the left-hand menu, under "Network & Security".
- .. Click btn:[Create Security Group] under the _Security Groups_ section.
+. Configure an http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html[AWS security group] which will limit access to the installation and allow our launched EC2 instances to talk to each other without restrictions.
+.. From the EC2 Dashboard, click btn:[Security Groups] from the left-hand menu, under "Network & Security".
+.. Click btn:[Create Security Group] under the _Security Groups_ section.
  Give your security group a descriptive name.
- .. You can select one of the existing https://aws.amazon.com/vpc[VPCs] or create a new one.
- .. We need two ports open for our cloud here:
- ... Solr port. In this example we will use Solr's default port 8983.
- ... ZooKeeper Port: We'll use Solr's embedded ZooKeeper, so we'll use the default port 9983 (see the <<Deploying with External ZooKeeper>> to configure external ZooKeeper).
+.. You can select one of the existing https://aws.amazon.com/vpc[VPCs] or create a new one.
+.. We need two ports open for our cloud here:
+... Solr port.
+In this example we will use Solr's default port 8983.
+... ZooKeeper Port: We'll use Solr's embedded ZooKeeper, so we'll use the default port 9983 (see the <<Deploying with External ZooKeeper>> to configure external ZooKeeper).
 .. Click btn:[Inbound] to set inbound network rules, then select btn:[Add Rule].
 Select "Custom TCP" as the type.
 Enter `8983` for the "Port Range" and choose "My IP for the Source, then enter your public IP.
@@ -111,7 +113,8 @@ You do not have to add any tags for this quick start, but you can add them if yo
 . Select an existing “private key file” or create a new one and download to your local machine so you will be able to login into the instances via SSH.
 +
 image::images/tutorial-aws/aws-key.png[image,width=600,height=400]
-. On the instances list, you can watch the states change. You cannot use the instances until they become *“running”*.
+. On the instances list, you can watch the states change.
+You cannot use the instances until they become *“running”*.
 
 
 == Install, Configure and Start

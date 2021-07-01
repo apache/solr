@@ -216,7 +216,8 @@ One point of confusion is how much data is contained in a transaction log.
 A tlog does not contain all documents, only the ones since the last hard commit.
 Older transaction log files are deleted when no longer needed.
 
-WARNING: Implicit in the above is that transaction logs will grow forever if hard commits are disabled. Therefore it is important that hard commits be enabled when indexing.
+WARNING: Implicit in the above is that transaction logs will grow forever if hard commits are disabled.
+Therefore it is important that hard commits be enabled when indexing.
 
 === Transaction Log Configuration
 
@@ -265,7 +266,7 @@ The number of update records to keep per log.
 |Optional |Default: `10`
 |===
 +
-The maximum number of logs keep. The default is `10`.
+The maximum number of logs keep.
 
 `numVersionBuckets`::
 +

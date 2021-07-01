@@ -63,7 +63,8 @@ For configuration examples, jump to the <<tutorial-with-geonames,tutorial>> belo
 
 == Tagger Parameters
 
-The tagger's execution is completely configurable with request parameters.  Only `field` is required.
+The tagger's execution is completely configurable with request parameters.
+ Only `field` is required.
 
 `field`::
 The tag field that serves as the dictionary.
@@ -126,13 +127,15 @@ Solr's parameters for controlling the response format are also supported, such a
 == Tutorial with Geonames
 
 This is a tutorial that demonstrates how to configure and use the text
-tagger with the popular http://www.geonames.org/[Geonames] data set. It's more than a tutorial;
+tagger with the popular http://www.geonames.org/[Geonames] data set.
+It's more than a tutorial;
 it's a how-to with information that wasn't described above.
 
 === Create and Configure a Solr Collection
 
 Create a Solr collection named "geonames". For the tutorial, we'll
-assume the default "data-driven" configuration. It's good for
+assume the default "data-driven" configuration.
+It's good for
 experimentation and getting going fast but not for production or being
 optimal.
 
@@ -141,15 +144,19 @@ bin/solr create -c geonames
 
 ==== Configuring the Tagger
 
-We need to configure the schema first. The "data driven" mode we're
+We need to configure the schema first.
+The "data driven" mode we're
 using allows us to keep this step fairly minimal -- we just need to
 declare a field type, 2 fields, and a copy-field.
 
 The critical part
-up-front is to define the "tag" field type. There are many many ways to
+up-front is to define the "tag" field type.
+There are many many ways to
 configure text analysis; and we're not going to get into those choices
-here. But an important bit is the `ConcatenateGraphFilterFactory` at the
-end of the index analyzer chain. Another important bit for performance
+here.
+But an important bit is the `ConcatenateGraphFilterFactory` at the
+end of the index analyzer chain.
+Another important bit for performance
 is `postingsFormat=FST50` resulting in a compact FST based in-memory data
 structure that is especially beneficial for the text tagger.
 
@@ -207,8 +214,10 @@ curl -X POST -H 'Content-type:application/json' http://localhost:8983/solr/geona
 [[tagger-load-some-sample-data]]
 === Load Some Sample Data
 
-We'll go with some Geonames.org data in CSV format. Solr is quite
-flexible in loading data in a variety of formats. This
+We'll go with some Geonames.org data in CSV format.
+Solr is quite
+flexible in loading data in a variety of formats.
+This
 http://download.geonames.org/export/dump/cities1000.zip[cities1000.zip]
 should be almost 7MB file expanding to a cities1000.txt file around
 22.2MB containing 145k lines, each a city in the world of at least 1000
@@ -230,17 +239,20 @@ curl -X POST --data-binary @/path/to/cities1000.txt -H 'Content-type:application
   'http://localhost:8983/solr/geonames/update?commit=true&optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate'
 ----
 
-That might take around 35 seconds; it depends. It can be a lot faster if
+That might take around 35 seconds; it depends.
+It can be a lot faster if
 the schema were tuned to only have what we truly need (no text search if
 not needed).
 
 In that command we said `optimize=true&maxSegments=1` to put the index in a state that
-will make tagging faster. The `encapsulator=%00` is a bit of a hack to
+will make tagging faster.
+The `encapsulator=%00` is a bit of a hack to
 disable the default double-quote.
 
 === Tag Time!
 
-This is a trivial example tagging a small piece of text. For more
+This is a trivial example tagging a small piece of text.
+For more
 options, see the earlier documentation.
 
 [source,bash]

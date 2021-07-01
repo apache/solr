@@ -145,7 +145,8 @@ The films data we are going to index has a small number of fields for each movie
 
 If you look at one of the files in `example/films`, you'll see the first film is named _.45_, released in 2006.
 As the first document in the dataset, Solr is going to guess the field type based on the data in the record.
-If we go ahead and index this data, that first film name is going to indicate to Solr that that field type is a "float" numeric field, and will create a "name" field with a type `FloatPointField`. All data after this record will be expected to be a float.
+If we go ahead and index this data, that first film name is going to indicate to Solr that that field type is a "float" numeric field, and will create a "name" field with a type `FloatPointField`.
+All data after this record will be expected to be a float.
 
 Well, that's not going to work.
 We have titles like _A Mighty Wind_ and _Chicken Run_, which are strings - decidedly not numeric and not floats.
@@ -175,7 +176,8 @@ In the first exercise when we queried the documents we had indexed, we didn't ha
 
 The configuration we're using now doesn't have that rule.
 We would need to define a field to search for every query.
-We can, however, set up a "catchall field" by defining a copy field that will take all data from all fields and index it into a field named `\_text_`. Let's do that now.
+We can, however, set up a "catchall field" by defining a copy field that will take all data from all fields and index it into a field named `\_text_`.
+Let's do that now.
 
 You can use either the Admin UI or the Schema API for this.
 
@@ -278,7 +280,8 @@ On the Admin UI Query tab, if you check the `facet` checkbox, you'll see a few f
 image::images/solr-tutorial/tutorial-admin-ui-facet-options.png[Solr Quick Start: Query tab facet options]
 
 To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true`), and specify the field to facet on via the `facet.field` parameter.
-If you only want facets, and no document contents, specify `rows=0`. The `curl` command below will return facet counts for the `genre_str` field:
+If you only want facets, and no document contents, specify `rows=0`.
+The `curl` command below will return facet counts for the `genre_str` field:
 
 `curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"`
 
@@ -449,7 +452,8 @@ We've truncated this output as well - you will see a lot of genres and directors
 
 In this exercise, we learned a little bit more about how Solr organizes data in the indexes, and how to work with the Schema API to manipulate the schema file.
 We also learned a bit about facets in Solr, including range facets and pivot facets.
-In both of these things, we've only scratched the surface of the available options. If you can dream it, it might be possible!
+In both of these things, we've only scratched the surface of the available options.
+If you can dream it, it might be possible!
 
 Like our previous exercise, this data may not be relevant to your needs.
 We can clean up our work by deleting the collection.

@@ -59,10 +59,10 @@ However, before we understand how to configure update processor chains, we must 
 In case no update processor chains are configured in `solrconfig.xml`, Solr will automatically create a default update processor chain which will be used for all update requests.
 This default update processor chain consists of the following processors (in order):
 
-1.  `LogUpdateProcessorFactory` - Tracks the commands processed during this request and logs them
-2.  `DistributedUpdateProcessorFactory` - Responsible for distributing update requests to the right node e.g., routing requests to the leader of the right shard and distributing updates from the leader to each replica.
+.  `LogUpdateProcessorFactory` - Tracks the commands processed during this request and logs them
+.  `DistributedUpdateProcessorFactory` - Responsible for distributing update requests to the right node e.g., routing requests to the leader of the right shard and distributing updates from the leader to each replica.
 This processor is activated only in SolrCloud mode.
-3.  `RunUpdateProcessorFactory` - Executes the update using internal Solr APIs.
+.  `RunUpdateProcessorFactory` - Executes the update using internal Solr APIs.
 
 Each of these perform an essential function and as such any custom chain usually contain all of these processors.
 The `RunUpdateProcessorFactory` is usually the last update processor in any custom chain.
@@ -432,7 +432,8 @@ This keeps track of all commands that have passed through the chain and prints t
 Almost all processor chains should end with an instance of `RunUpdateProcessorFactory` unless the user is explicitly executing the update commands in an alternative custom `UpdateRequestProcessorFactory`.
 
 === Update Processors That Can Be Used at Runtime
-These Update processors do not need any configuration in `solrconfig.xml`. They are automatically initialized when their name is added to the `processor` parameter sent with an update request.
+These Update processors do not need any configuration in `solrconfig.xml`.
+They are automatically initialized when their name is added to the `processor` parameter sent with an update request.
 Multiple processors can be used by appending multiple processor names separated by commas.
 
 ==== AtomicUpdateProcessorFactory
@@ -473,7 +474,8 @@ For example:
 processor=template&template.field=fullName:Mr. {firstName} {lastName}
 ----
 
-The above example would add a new field to the document called `fullName`. The fields `firstName and` `lastName` are supplied from the document fields.
+The above example would add a new field to the document called `fullName`.
+The fields `firstName and` `lastName` are supplied from the document fields.
 If either of them is missing, that part is replaced with an empty string.
 If those fields are multi-valued, only the first value is used.
 

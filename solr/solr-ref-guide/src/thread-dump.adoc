@@ -25,7 +25,8 @@ On the right of the thread name, a down-arrow means you can expand to see the st
 .List of Threads
 image::images/thread-dump/thread_dump_1.png[image,width=484,height=250]
 
-When you move your cursor over a thread name, a box floats over the name with the state for that thread. Thread states can be:
+When you move your cursor over a thread name, a box floats over the name with the state for that thread.
+Thread states can be:
 
 [%autowidth.stretch,options="header"]
 |===

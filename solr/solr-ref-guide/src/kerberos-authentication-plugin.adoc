@@ -101,7 +101,8 @@ We'll walk through each of these steps below.
 [IMPORTANT]
 ====
 To use host names instead of IP addresses, use the `SOLR_HOST` configuration in `bin/solr.in.sh` or pass a `-Dhost=<hostname>` system parameter during Solr startup.
-This guide uses IP addresses. If you specify a hostname, replace all the IP addresses in the guide with the Solr hostname as appropriate.
+This guide uses IP addresses.
+If you specify a hostname, replace all the IP addresses in the guide with the Solr hostname as appropriate.
 ====
 
 === Get Service Principals and Keytabs
@@ -445,8 +446,10 @@ NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeep
 
 === Test the Configuration
 
-. Do a `kinit` with your username. For example, `kinit \user@EXAMPLE.COM`.
-. Try to access Solr using `curl`. You should get a successful response.
+. Do a `kinit` with your username.
+For example, `kinit \user@EXAMPLE.COM`.
+. Try to access Solr using `curl`.
+You should get a successful response.
 +
 [source,bash]
 ----

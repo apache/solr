@@ -30,7 +30,8 @@ A thorough review of the list in <<Major Changes in Earlier 7.x Versions>>, belo
 
 === Upgrade Prerequisites
 
-*If using SolrCloud, you must be on Solr 7.3.0 or higher*. Solr's LeaderInRecovery (LIR) functionality <<Solr 7.3,changed significantly>> in Solr 7.3. While these changes were back-compatible for all subsequent 7.x releases, that compatibility has been removed in 8.0.
+*If using SolrCloud, you must be on Solr 7.3.0 or higher*.
+Solr's LeaderInRecovery (LIR) functionality <<Solr 7.3,changed significantly>> in Solr 7.3. While these changes were back-compatible for all subsequent 7.x releases, that compatibility has been removed in 8.0.
 In order to upgrade to Solr 8.x, all nodes of your cluster must be running Solr 7.3 or higher. If an upgrade is attempted with nodes running versions earlier than 7.3, documents could be lost.
 
 If you are not using Solr in SolrCloud mode (you run a user-managed cluster or a single-node installation), we expect you can upgrade to Solr 8 from any 7.x version without major issues.

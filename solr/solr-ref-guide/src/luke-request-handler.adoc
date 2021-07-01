@@ -17,12 +17,17 @@
 // under the License.
 
 The Luke Request Handler offers programmatic access to the information provided on the <<schema-browser-screen#schema-browser-screen,Schema Browser>> page of the Admin UI.
-It is modeled after the Luke, the Lucene Index Browser by Andrzej Bialecki.  It is an implicit handler, so you don't need to define it.
+It is modeled after the Luke, the Lucene Index Browser by Andrzej Bialecki.
+It is an implicit handler, so you don't need to define it.
 
 The Luke Request Handler accepts the following parameters:
 
 `show`::
-The data about the index to include in the response.  Options are `schema`, `index`, `doc`, `all`.  `index` describes the high level details about the index.  `schema` returns details about the `schema` plus the `index` data.  `doc` works in conjunction with `docId` or `id` parameters and returns details about a specific document plus the `index` data.
+The data about the index to include in the response.
+Options are `schema`, `index`, `doc`, `all`.
+* `index` describes the high level details about the index.
+* `schema` returns details about the `schema` plus the `index` data.
+* `doc` works in conjunction with `docId` or `id` parameters and returns details about a specific document plus the `index` data.
 
 `id`::
 Get a document using the uniqueKeyField specified in schema.xml.
@@ -31,13 +36,16 @@ Get a document using the uniqueKeyField specified in schema.xml.
 Get a document using a Lucene documentID.
 
 `fl`::
-Limit the returned values to a set of fields. This is useful if you want to increase the `numTerms` and don't want a massive response.
+Limit the returned values to a set of fields.
+This is useful if you want to increase the `numTerms` and don't want a massive response.
 
 `numTerms`::
-How many top terms for each field. The default is 10.
+How many top terms for each field.
+The default is `10`.
 
 `includeIndexFieldFlags`::
-Choose whether /luke should return the index-flags for each field. Fetching and returning the index-flags for each field in the index has non-zero cost, and can slow down requests to /luke.
+Choose whether /luke should return the index-flags for each field.
+Fetching and returning the index-flags for each field in the index has non-zero cost, and can slow down requests to /luke.
 
 
 == LukeRequestHandler Examples

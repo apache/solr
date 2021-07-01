@@ -60,7 +60,8 @@ compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-docs-versi
 
 If you are not using one of the above build system, it's still easy to add SolrJ to your build.
 
-At build time, all that is required is the SolrJ jar itself: `solr-solrj-{solr-docs-version}.0.jar`.  To compile code manually that uses SolrJ, use a `javac` command similar to:
+At build time, all that is required is the SolrJ jar itself: `solr-solrj-{solr-docs-version}.0.jar`.
+To compile code manually that uses SolrJ, use a `javac` command similar to:
 
 [source,bash,subs="attributes"]
 ----
@@ -93,7 +94,8 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - geared towards query-centric workloads, though also a good general-purpose client.
 Communicates directly with a single Solr node.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2.
+This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttpSolrClient.html[`LBHttpSolrClient`] - balances request load across a list of Solr nodes.
 Adjusts the list of "in-service" nodes based on node health.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - just like `LBHttpSolrClient` but using `Http2SolrClient` instead.
@@ -115,9 +117,11 @@ For comprehensive information on how to tweak your `SolrClient`, see the Javadoc
 Most `SolrClient` implementations (except for `CloudSolrClient` and `Http2SolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.
 The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
 
-. A URL with a path pointing to a specific core or collection (e.g., `\http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.
+. A URL with a path pointing to a specific core or collection (e.g., `\http://hostname:8983/solr/core1`).
+When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.
 However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
-. A URL pointing to the root Solr path (e.g., `\http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
+. A URL pointing to the root Solr path (e.g., `\http://hostname:8983/solr`).
+When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
 
 Generally speaking, if your `SolrClient` will only be used on a single core/collection, including that entity in the path is the most convenient.
 Where more flexibility is required, the collection/core should be excluded.
@@ -131,7 +135,8 @@ If not an `IllegalArgumentException` will be thrown.
 
 ==== Base URLs of CloudSolrClient
 
-It is also possible to specify base URLs for `CloudSolrClient`, but URLs are expected to point to the root Solr path (e.g., `\http://hostname:8983/solr`). They should not include any collections, cores, or other path components.
+It is also possible to specify base URLs for `CloudSolrClient`, but URLs are expected to point to the root Solr path (e.g., `\http://hostname:8983/solr`).
+They should not include any collections, cores, or other path components.
 
 [source,java,indent=0]
 ----
@@ -245,7 +250,8 @@ include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-query
 == Other APIs
 SolrJ allows more than just querying and indexing.
 It supports all of Solr's APIs.
-Accessing Solr's other APIs is as easy as finding the appropriate request object, providing any necessary parameters, and passing it to the `request()` method of your `SolrClient`.  `request()` will return a `NamedList`: a generic object which mirrors the hierarchical structure of the JSON or XML returned by their request.
+Accessing Solr's other APIs is as easy as finding the appropriate request object, providing any necessary parameters, and passing it to the `request()` method of your `SolrClient`.
+`request()` will return a `NamedList`: a generic object which mirrors the hierarchical structure of the JSON or XML returned by their request.
 
 The example below shows how SolrJ users can call the CLUSTERSTATUS API of SolrCloud deployments, and manipulate the returned `NamedList`:
 

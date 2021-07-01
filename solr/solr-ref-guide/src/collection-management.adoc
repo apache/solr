@@ -149,7 +149,8 @@ If the field specified is null in the document, the document will be rejected.
 Please note that <<realtime-get.adoc#,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
 `perReplicaState`::
-If `true` the states of individual replicas will be maintained as individual child of the `state.json`. The default is `false`.
+If `true` the states of individual replicas will be maintained as individual child of the `state.json`.
+The default is `false`.
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
@@ -663,7 +664,8 @@ This parameter is required.
 
 `split.key` (v1), `splitKey` (v2)::
 The routing key prefix.
-For example, if the uniqueKey of a document is "a!123", then you would use `split.key=a!`. This parameter is required.
+For example, if the uniqueKey of a document is "a!123", then you would use `split.key=a!`.
+This parameter is required.
 
 `forward.timeout` (v1), `forwardTimeout` (v2)::
 The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard.
@@ -851,7 +853,8 @@ Such incompatibilities may result from incompatible schema changes or after migr
 === COLSTATUS Parameters
 
 `collection`::
-Collection name (optional). If missing then it means all collections.
+Collection name (optional).
+If missing then it means all collections.
 
 `coreInfo`::
 Optional boolean.
@@ -1704,7 +1707,8 @@ Values \<=0 are use the default value Integer.MAX_VALUE.
 When this number is reached, the process waits for one or more leaders to be successfully assigned before adding more to the queue.
 
 `maxWaitSeconds`::
-Defaults to `60`. This is the timeout value when waiting for leaders to be reassigned.
+Defaults to `60`.
+This is the timeout value when waiting for leaders to be reassigned.
 If `maxAtOnce` is less than the number of reassignments that will take place, this is the maximum interval that any _single_ wait for at least one reassignment.
 +
 For example, if 10 reassignments are to take place and `maxAtOnce` is `1` and `maxWaitSeconds` is `60`, the upper bound on the time that the command may wait is 10 minutes.

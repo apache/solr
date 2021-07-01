@@ -19,7 +19,8 @@
 
 The Configsets API enables you to upload new configsets to ZooKeeper, create, and delete configsets when Solr is running SolrCloud mode.
 
-Configsets are a collection of configuration files such as `solrconfig.xml`, `synonyms.txt`, the schema, language-specific files, and other collection-level configuration files (everything that normally lives in the `conf` directory). Solr ships with two example configsets (`_default` and `sample_techproducts_configs`) which can be used when creating collections.
+Configsets are a collection of configuration files such as `solrconfig.xml`, `synonyms.txt`, the schema, language-specific files, and other collection-level configuration files (everything that normally lives in the `conf` directory).
+Solr ships with two example configsets (`_default` and `sample_techproducts_configs`) which can be used when creating collections.
 Using the same concept, you can create your own configsets and make them available when creating collections.
 
 This API provides a way to upload configuration files to ZooKeeper and share the same set of configuration files between two or more collections.
