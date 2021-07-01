@@ -44,7 +44,8 @@ You can also explicitly upload a configuration directory when creating a collect
 bin/solr create -c mycollection -d _default
 ----
 
-The create command will upload a copy of the `_default` configuration directory to ZooKeeper under `/configs/mycollection`. Refer to the <<solr-control-script-reference.adoc#,Solr Control Script Reference>> page for more details about the create command for creating collections.
+The create command will upload a copy of the `_default` configuration directory to ZooKeeper under `/configs/mycollection`.
+Refer to the <<solr-control-script-reference.adoc#,Solr Control Script Reference>> page for more details about the create command for creating collections.
 
 Once a configuration directory has been uploaded to ZooKeeper, you can update them using the <<solr-control-script-reference.adoc#,Solr Control Script>>
 
@@ -82,9 +83,12 @@ To update or change your SolrCloud configuration files:
 
 == Preparing ZooKeeper before First Cluster Start
 
-If you will share the same ZooKeeper instance with other applications you should use a _chroot_ in ZooKeeper. Please see <<taking-solr-to-production.adoc#zookeeper-chroot,ZooKeeper chroot>> for instructions.
+If you will share the same ZooKeeper instance with other applications you should use a _chroot_ in ZooKeeper.
+Please see <<taking-solr-to-production.adoc#zookeeper-chroot,ZooKeeper chroot>> for instructions.
 
-There are certain configuration files containing cluster wide configuration. Since some of these are crucial for the cluster to function properly, you may need to upload such files to ZooKeeper before starting your Solr cluster for the first time. Examples of such configuration files (not exhaustive) are `solr.xml`, `security.json` and `clusterprops.json`.
+There are certain configuration files containing cluster wide configuration.
+Since some of these are crucial for the cluster to function properly, you may need to upload such files to ZooKeeper before starting your Solr cluster for the first time.
+Examples of such configuration files (not exhaustive) are `solr.xml`, `security.json` and `clusterprops.json`.
 
 If you for example would like to keep your `solr.xml` in ZooKeeper to avoid having to copy it to every node's `solr_home` directory, you can push it to ZooKeeper with the bin/solr utility (Unix example):
 

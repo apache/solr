@@ -19,8 +19,8 @@
 Solr has the ability to log an audit trail of all HTTP requests entering the system.
 Audit loggers are pluggable to suit any possible format or log destination.
 
-[quote]
-An audit trail (also called audit log) is a security-relevant chronological record, set of records, and/or destination and source of records that provide documentary evidence of the sequence of activities that have affected at any time a specific operation, procedure, event, or device. (https://en.wikipedia.org/wiki/Audit_trail[Wikipedia])
+[quote, Wikipedia, https://en.wikipedia.org/wiki/Audit_trail]
+An audit trail (also called audit log) is a security-relevant chronological record, set of records, and/or destination and source of records that provide documentary evidence of the sequence of activities that have affected at any time a specific operation, procedure, event, or device.
 
 == Configuring Audit Logging
 Audit logging is configured in `security.json` under the `auditlogging` key.
@@ -239,7 +239,7 @@ The individual metrics are:
 * `lost`: (_meter_) Records number and rate of events lost if the queue is full and `blockAsync=false`.
 * `requestTimes`: (_timer_) Records latency and percentiles for audit logging performance.
 * `totalTime`: (_counter_) Records total time spent logging.
-* `queueCapacity`: (_gauge_). Records the maximum size of the async logging queue.
+* `queueCapacity`: (_gauge_) Records the maximum size of the async logging queue.
 * `queueSize`: (_gauge_) Records the number of events currently waiting in the queue.
 * `queuedTime`: (_timer_) Records the amount of time events waited in queue.
 Adding this with the `requestTimes` metric will show the total time from event to logging complete.

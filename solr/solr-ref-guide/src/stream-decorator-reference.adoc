@@ -399,7 +399,8 @@ Each tuple that is classified is assigned two scores:
 * probability_d*: A float between 0 and 1 which describes the probability that the tuple belongs to the class.
 This is useful in the classification use case.
 
-* score_d*: The score of the document that has not be squashed between 0 and 1. The score may be positive or negative.
+* score_d*: The score of the document that has not be squashed between 0 and 1.
+The score may be positive or negative.
 The higher the score the better the document fits the class.
 This un-squashed score will be useful in query re-ranking and recommendation use cases.
 This score is particularly useful when multiple high ranking documents have a probability_d score of 1, which won't provide a meaningful ranking between documents.
@@ -1047,11 +1048,12 @@ Because the null stream adds minimal overhead of its own, it can be used to isol
 If the /export handlers performance is not the bottleneck, then the bottleneck is likely occurring in the workers where the stream decorators are running.
 
 The null expression can be wrapped by the parallel function and sent to worker nodes.
-In this scenario each worker will return one tuple with the count of tuples processed on the worker and the timing information for that worker.\This gives valuable information such as:
+In this scenario each worker will return one tuple with the count of tuples processed on the worker and the timing information for that worker.
+This gives valuable information such as:
 
-1.  As more workers are added does the performance of the /export handler improve or not.
-2.  Are tuples being evenly distributed across the workers, or is the hash partitioning sending more documents to a single worker.
-3.  Are all workers processing data at the same speed, or is one of the workers the source of the bottleneck.
+. As more workers are added does the performance of the /export handler improve or not.
+. Are tuples being evenly distributed across the workers, or is the hash partitioning sending more documents to a single worker.
+. Are all workers processing data at the same speed, or is one of the workers the source of the bottleneck.
 
 === null Parameters
 
@@ -1347,7 +1349,8 @@ One can provide a list of operations and evaluators to perform on any fields, su
 * `fieldName as aliasFieldName`: aliased field name to include in the output tuple (can include multiple of these), such as `outputTuple[aliasFieldName] = incomingTuple[fieldName]`
 * `replace(fieldName, value, withValue=replacementValue)`: if `incomingTuple[fieldName] == value` then `outgoingTuple[fieldName]` will be set to `replacementValue`.
 `value` can be the string "null" to replace a null value with some other value.
-* `replace(fieldName, value, withField=otherFieldName)`: if `incomingTuple[fieldName] == value` then `outgoingTuple[fieldName]` will be set to the value of `incomingTuple[otherFieldName]`. `value` can be the string "null" to replace a null value with some other value.
+* `replace(fieldName, value, withField=otherFieldName)`: if `incomingTuple[fieldName] == value` then `outgoingTuple[fieldName]` will be set to the value of `incomingTuple[otherFieldName]`.
+`value` can be the string "null" to replace a null value with some other value.
 
 === select Syntax
 

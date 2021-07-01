@@ -29,7 +29,8 @@ NOTE: All endpoint paths listed below should be placed after Solr's host and por
 Many of these handlers are used throughout the Admin UI to show information about Solr.
 
 [horizontal]
-File:: Return content of files in `${solr.home}/conf/`. This handler must have a collection name in the path to the endpoint.
+File:: Return content of files in `${solr.home}/conf/`.
+This handler must have a collection name in the path to the endpoint.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -150,7 +151,8 @@ Document Analysis:: Return a breakdown of the analysis process of the given docu
 |`solr/<collection>/analysis/document` |{solr-javadocs}/core/org/apache/solr/handler/DocumentAnalysisRequestHandler.html[DocumentAnalysisRequestHandler] |`_ANALYSIS_DOCUMENT`
 |===
 
-Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s). This handler drives the <<analysis-screen.adoc#,Analysis screen>> in Solr's Admin UI.
+Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s).
+This handler drives the <<analysis-screen.adoc#,Analysis screen>> in Solr's Admin UI.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===

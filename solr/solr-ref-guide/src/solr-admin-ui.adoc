@@ -43,7 +43,8 @@ Under the covers, the Solr Admin UI uses the same HTTP APIs available to all cli
 
 [TIP]
 ====
-The path to the Solr Admin UI given above is `\http://hostname:port/solr`, which redirects to `\http://hostname:port/solr/\#/`. A convenience redirect is also supported, so simply accessing the Admin UI at `\http://hostname:port/` will also redirect to `\http://hostname:port/solr/#/`.
+The path to the Solr Admin UI given above is `\http://hostname:port/solr`, which redirects to `\http://hostname:port/solr/\#/`.
+A convenience redirect is also supported, so simply accessing the Admin UI at `\http://hostname:port/` will also redirect to `\http://hostname:port/solr/#/`.
 ====
 
 === Login Screen

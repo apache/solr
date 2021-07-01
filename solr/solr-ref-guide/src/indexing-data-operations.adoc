@@ -27,7 +27,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section describes how Solr adds data to its index. It covers the following topics:
+This section describes how Solr adds data to its index.
+It covers the following topics:
 
 ****
 // This tags the below list so it can be used in the parent page section list
@@ -52,4 +53,5 @@ This section describes how Solr adds data to its index. It covers the following 
 
 == Indexing Using Client APIs
 
-Using client APIs, such as <<solrj.adoc#,SolrJ>>, from your applications is an important option for updating Solr indexes. See the <<client-apis.adoc#,Client APIs>> section for more information.
+Using client APIs, such as <<solrj.adoc#,SolrJ>>, from your applications is an important option for updating Solr indexes.
+See the <<client-apis.adoc#,Client APIs>> section for more information.

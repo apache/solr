@@ -22,7 +22,8 @@ While Solr's Admin UI includes pages dedicated to the state of your SolrCloud cl
 
 TIP: See the section <<cloud-screens.adoc#,Cloud Screens>> for more information about using the Admin UI screens.
 
-The ZooKeeper CLI script found in `server/scripts/cloud-scripts` let you upload configuration information to ZooKeeper. It also provides a few other commands that let you link collection sets to collections, make ZooKeeper paths or clear them, and download configurations from ZooKeeper to the local filesystem.
+The ZooKeeper CLI script found in `server/scripts/cloud-scripts` let you upload configuration information to ZooKeeper.
+It also provides a few other commands that let you link collection sets to collections, make ZooKeeper paths or clear them, and download configurations from ZooKeeper to the local filesystem.
 
 Many of the functions provided by the zkCli.sh script are also provided by the <<solr-control-script-reference.adoc#,Solr Control Script>>, which may be more familiar as the start script ZooKeeper maintenance commands are very similar to Unix commands.
 
@@ -31,7 +32,8 @@ Many of the functions provided by the zkCli.sh script are also provided by the <
 ====
 The `zkcli.sh` provided by Solr is not the same as the https://zookeeper.apache.org/doc/current/zookeeperStarted.html#sc_ConnectingToZooKeeper[`zkCli.sh` included in ZooKeeper distributions].
 
-ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell for manipulating data in ZooKeeper. Solr's `zkcli.sh` – discussed in this section – is specific to Solr, and has command line arguments specific to dealing with Solr data in ZooKeeper.
+ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell for manipulating data in ZooKeeper.
+Solr's `zkcli.sh` – discussed in this section – is specific to Solr, and has command line arguments specific to dealing with Solr data in ZooKeeper.
 ====
 
 == Using Solr's ZooKeeper CLI
@@ -41,7 +43,9 @@ Use the `help` option to get a list of available commands from the script itself
 Both `zkcli.sh` (for Unix environments) and `zkcli.bat` (for Windows environments) support the following command line options:
 
 `-cmd <arg>`::
-The CLI Command to be executed. This parameter is *mandatory*. The following commands are supported:
+The CLI Command to be executed.
+This parameter is *mandatory*.
+The following commands are supported:
 
 * `bootstrap`
 * `upconfig`
@@ -56,13 +60,15 @@ The CLI Command to be executed. This parameter is *mandatory*. The following com
 * `clusterprop`
 
 `-z` or `-zkhost <locations>`::
-ZooKeeper host address. This parameter is *mandatory* for all CLI commands.
+ZooKeeper host address.
+This parameter is *mandatory* for all CLI commands.
 
 `-c` or `-collection <name>`::
 For `linkconfig`: name of the collection.
 
 `-d` or `-confdir <path>`::
-For `upconfig`: a directory of configuration files. For downconfig: the destination of files pulled from ZooKeeper
+For `upconfig`: a directory of configuration files.
+For downconfig: the destination of files pulled from ZooKeeper
 
 `-h` or `-help`::
 Display help text.
@@ -79,7 +85,8 @@ Run ZooKeeper internally by passing the Solr run port; only for clusters on one 
 For `clusterprop`: the *mandatory* cluster property name.
 
 `-val <value>`::
-For `clusterprop`: the cluster property value. If not specified, *null* will be used as value.
+For `clusterprop`: the cluster property value.
+If not specified, *null* will be used as value.
 
 [TIP]
 ====
@@ -146,7 +153,8 @@ This can be useful to create a chroot path in ZooKeeper before first cluster sta
 
 === Set a Cluster Property
 
-This command will add or modify a single cluster property in `clusterprops.json`. Use this command instead of the usual getfile -> edit -> putfile cycle.
+This command will add or modify a single cluster property in `clusterprops.json`.
+Use this command instead of the usual getfile -> edit -> putfile cycle.
 
 Unlike the CLUSTERPROP command on the <<cluster-node-management.adoc#clusterprop,Collections API>>, this command does *not* require a running Solr cluster.
 

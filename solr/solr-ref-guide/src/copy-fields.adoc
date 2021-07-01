@@ -33,7 +33,8 @@ In the example above, if the `text` destination field has data of its own in the
 Remember to configure your fields as `multivalued="true"` if they will ultimately get multiple values (either from a multivalued source or from multiple `copyField` directives).
 
 A common usage for this functionality is to create a single "search" field that will serve as the default query field when users or clients do not specify a field to query.
-For example, `title`, `author`, `keywords`, and `body` may all be fields that should be searched by default, with copy field rules for each field to copy to a `catchall` field (for example, it could be named anything). Later you can set a rule in `solrconfig.xml` to search the `catchall` field by default.
+For example, `title`, `author`, `keywords`, and `body` may all be fields that should be searched by default, with copy field rules for each field to copy to a `catchall` field (for example, it could be named anything).
+Later you can set a rule in `solrconfig.xml` to search the `catchall` field by default.
 One caveat to this is your index will grow when using copy fields.
 However, whether this becomes problematic for you and the final size will depend on the number of fields being copied, the number of destination fields being copied to, the analysis in use, and the available disk space.
 

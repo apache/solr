@@ -149,8 +149,8 @@ First you create a category routed alias using the <<alias-management.adoc#creat
 Most of the settings are editable at a later time using the <<alias-management.adoc#aliasprop,ALIASPROP>> command.
 
 The alias will be created with a special place-holder collection which will always be named `myAlias\__CRA__NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA\__TEMP`.
-The first document indexed into the CRA will create a second collection named `myAlias__CRA__foo` (for a routed field value of `foo`). The second document
- indexed will cause the temporary place holder collection to be deleted.
+The first document indexed into the CRA will create a second collection named `myAlias__CRA__foo` (for a routed field value of `foo`).
+The second document indexed will cause the temporary place holder collection to be deleted.
 Thereafter collections will be created whenever a new value for the field is encountered.
 
 CAUTION: To guard against runaway collection creation options for limiting the total number of categories, and for rejecting values that don't match, a regular expression parameter is provided (see <<alias-management.adoc#category-routed-alias-parameters,Category Routed Alias Parameters>> for details).

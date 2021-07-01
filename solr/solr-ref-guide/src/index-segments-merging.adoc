@@ -147,7 +147,7 @@ There are two parameters that can can be adjusted when using the default TieredM
 A value of `0.0` will make expungeDeletes behave essentially identically to `optimize`.
 
 `deletesPctAllowed`::
-(default `33.0`). During normal segment merging, a best effort is made to insure that the total percentage of deleted documents in the index is below this threshold.
+(default `33.0`) During normal segment merging, a best effort is made to insure that the total percentage of deleted documents in the index is below this threshold.
 Valid settings are between 20% and 50%.
 33% was chosen as the default because as this setting approaches 20%, considerable load is added to the system.
 
@@ -183,7 +183,8 @@ If a merge is necessary yet we already have this many threads running, the index
 Note that Solr will only run the smallest `maxThreadCount` merges at a time.
 
 `maxThreadCount`::
-The maximum number of simultaneous merge threads that should be running at once. This must be less than `maxMergeCount`.
+The maximum number of simultaneous merge threads that should be running at once.
+This must be less than `maxMergeCount`.
 
 `ioThrottle`::
 A Boolean value (`true` or `false`) to explicitly control I/O throttling.
@@ -293,7 +294,8 @@ The default is `1000`, expressed in milliseconds.
 
 == Other Indexing Settings
 
-There are a few other parameters that may be important to configure for your implementation. These settings affect how or when updates are made to an index.
+There are a few other parameters that may be important to configure for your implementation.
+These settings affect how or when updates are made to an index.
 
 === deletionPolicy
 

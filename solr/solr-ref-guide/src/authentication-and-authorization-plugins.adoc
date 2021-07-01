@@ -188,7 +188,8 @@ include::securing-solr.adoc[tag=list-of-authorization-plugins]
 Whenever an authentication plugin is enabled, authentication is also required for all or some operations in the Admin UI.
 The Admin UI is an AngularJS application running inside your browser, and is treated as any other external client by Solr.
 
-When authentication is required the Admin UI will presented you with a login dialogue. The authentication plugins currently supported by the Admin UI are:
+When authentication is required the Admin UI will presented you with a login dialogue.
+The authentication plugins currently supported by the Admin UI are:
 
 * <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>>
 * <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>

@@ -314,7 +314,8 @@ Support for the "collectionDefaults" key will be removed in Solr 9.
 === Default Shard Preferences
 
 Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness.
-First, make sure to "label" your nodes using a <<property-substitution.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`). Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_PROPERTY_NAME` like this:
+First, make sure to "label" your nodes using a <<property-substitution.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`).
+Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_PROPERTY_NAME` like this:
 
 [source,bash]
 ----
@@ -422,7 +423,8 @@ Examining the clusterstate after issuing this call should show exactly one repli
 [[replacenode]]
 == REPLACENODE: Move All Replicas in a Node to Another
 
-This command recreates replicas in one node (the source) on another node(s) (the target). After each replica is copied, the replicas in the source node are deleted.
+This command recreates replicas in one node (the source) on another node(s) (the target).
+After each replica is copied, the replicas in the source node are deleted.
 
 For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader, either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
 

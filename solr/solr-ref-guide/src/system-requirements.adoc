@@ -39,7 +39,8 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.60-b23, mixed mode)
 ----
 
 The exact output will vary, but you need to make sure you meet the minimum version requirement.
-We also recommend choosing a version that is not end-of-life from its vendor. Oracle/OpenJDK are the most tested JREs and are preferred.
+We also recommend choosing a version that is not end-of-life from its vendor.
+Oracle/OpenJDK are the most tested JREs and are preferred.
 It's also preferred to use the latest available official release.
 
 Some versions of Java VM have bugs that may impact your implementation.
@@ -49,7 +50,8 @@ To be sure, check the page https://cwiki.apache.org/confluence/display/LUCENE/Ja
 
 Java is available from a number of providers.
 Lucene and Solr regularly test with https://jdk.java.net/[OpenJDK] and Oracle versions of Java.
-Some are free, others have a cost, some provide security patches and support, others do not. We recommend you read the article https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free by Java Champions] to help you decide.
+Some are free, others have a cost, some provide security patches and support, others do not.
+We recommend you read the article https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free by Java Champions] to help you decide.
 
 The Lucene project does not endorse any particular provider of Java.
 
@@ -78,7 +80,7 @@ In addition, some organizations also maintain their own test infrastructure and 
 
 Our continuous testing is against the two code lines under active development, Solr 8x and the future Solr 9.0:
 
-* Lucene/Solr 8.x is the current stable release line and will have "point releases", i.e., 8.1, 8.2, etc. until Lucene/Solr 9.0 is released.
+* Lucene/Solr 8.x is the current stable release line and will have "point releases", i.e., 8.1, 8.2, etc., until Lucene/Solr 9.0 is released.
 ** Solr 8.x is currently tested against Java 8, 9, 10, 11, 12 and (pre-release) 13.
 * There is also development and testing with the future Lucene/Solr 9.x release line, which will require Java 11 as a minimum version.
 This line is currently tested against Java 11, 12 and (pre-release) 13.
@@ -89,7 +91,8 @@ The success rate in our automated tests is similar with all the Java versions te
 
 ==== Lucene/Solr Prior to 7.0
 
-* Lucene/Solr 7.0 was the first version that successfully passed our tests using Java 9 and higher. You should avoid Java 9 or later for Lucene/Solr 6.x or earlier.
+* Lucene/Solr 7.0 was the first version that successfully passed our tests using Java 9 and higher.
+You should avoid Java 9 or later for Lucene/Solr 6.x or earlier.
 
 ==== Lucene/Solr 7.x
 

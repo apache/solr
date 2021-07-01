@@ -18,15 +18,21 @@
 
 When using traditional index sharding, you will need to consider how to query your documents.
 
-It is highly recommended that you use <<cluster-types.adoc#solrcloud-mode,SolrCloud>> when needing to scale up or scale out. The setup described below is legacy and was used prior to the existence of SolrCloud. SolrCloud provides for a truly distributed set of features with support for things like automatic routing, leader election, optimistic concurrency and other sanity checks that are expected out of a distributed system.
+It is highly recommended that you use <<cluster-types.adoc#solrcloud-mode,SolrCloud>> when needing to scale up or scale out.
+The setup described below is legacy and was used prior to the existence of SolrCloud.
+SolrCloud provides for a truly distributed set of features with support for things like automatic routing, leader election, optimistic concurrency and other sanity checks that are expected out of a distributed system.
 
-Everything on this page is specific to legacy setup of distributed search. Users trying out SolrCloud should not follow any of the steps or information below.
+Everything on this page is specific to legacy setup of distributed search.
+Users trying out SolrCloud should not follow any of the steps or information below.
 
-Update reorders (i.e., replica A may see update X then Y, and replica B may see update Y then X). *deleteByQuery* also handles reorders the same way, to ensure replicas are consistent. All replicas of a shard are consistent, even if the updates arrive in a different order on different replicas.
+Update reorders (i.e., replica A may see update X then Y, and replica B may see update Y then X).
+*deleteByQuery* also handles reorders the same way, to ensure replicas are consistent.
+All replicas of a shard are consistent, even if the updates arrive in a different order on different replicas.
 
 == Distributing Documents across Shards
 
-When not using SolrCloud, it is up to you to get all your documents indexed on each shard of your server farm. Solr supports distributed indexing (routing) in its true form only in the SolrCloud mode.
+When not using SolrCloud, it is up to you to get all your documents indexed on each shard of your server farm.
+Solr supports distributed indexing (routing) in its true form only in the SolrCloud mode.
 
 In the legacy distributed mode, Solr does not calculate universal term/doc frequencies.
 For most large-scale implementations, it is not likely to matter that Solr calculates TF/IDF at the shard level.
@@ -48,7 +54,8 @@ Rather than require users to include the shards parameter explicitly, it is usua
 
 [IMPORTANT]
 ====
-Do not add the `shards` parameter to the standard request handler; doing so may cause search queries may enter an infinite loop. Instead, define a new request handler that uses the `shards` parameter, and pass distributed search requests to that handler.
+Do not add the `shards` parameter to the standard request handler; doing so may cause search queries may enter an infinite loop.
+Instead, define a new request handler that uses the `shards` parameter, and pass distributed search requests to that handler.
 ====
 
 With Legacy mode, only query requests are distributed.
@@ -98,7 +105,7 @@ It can be avoided by following the instructions in the section  <<solrcloud-dist
 
 == Load Balancing Requests
 
-When managing a user-managed Solr cluster. query requests should be load balanced across each of the shard followers.
+When managing a user-managed Solr cluster, query requests should be load balanced across each of the shard followers.
 This gives you both increased query handling capacity and failover if a server goes down.
 
 Because there is no centralized cluster management in this scenario, none of the leader shards in this configuration know about each other.

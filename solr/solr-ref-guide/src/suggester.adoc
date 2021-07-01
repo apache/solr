@@ -30,13 +30,16 @@ The main features of this Suggester are:
 * Term dictionary pluggability, giving you the flexibility to choose the dictionary implementation
 * Distributed support
 
-The `solrconfig.xml` found in Solr's "```techproducts```" example has a Suggester implementation configured already. For more on search components, see the section <<requesthandlers-searchcomponents.adoc#,Request Handlers and Search Components>>.
+The `solrconfig.xml` found in Solr's "```techproducts```" example has a Suggester implementation configured already.
+For more on search components, see the section <<requesthandlers-searchcomponents.adoc#,Request Handlers and Search Components>>.
 
-The "```techproducts```" example `solrconfig.xml` has a `suggest` search component and a `/suggest` request handler already configured. You can use that as the basis for your configuration, or create it from scratch, as detailed below.
+The "```techproducts```" example `solrconfig.xml` has a `suggest` search component and a `/suggest` request handler already configured.
+You can use that as the basis for your configuration, or create it from scratch, as detailed below.
 
 == Adding the Suggest Search Component
 
-The first step is to add a search component to `solrconfig.xml` and tell it to use the SuggestComponent. Here is some sample code that could be used.
+The first step is to add a search component to `solrconfig.xml` and tell it to use the SuggestComponent.
+Here is some sample code that could be used.
 
 [source,xml]
 ----
@@ -59,26 +62,36 @@ The Suggester search component takes several configuration parameters.
 
 The choice of the lookup implementation (`lookupImpl`, how terms are found in the suggestion dictionary) and the dictionary implementation (`dictionaryImpl`, how terms are stored in the suggestion dictionary) will dictate some of the parameters required.
 
-Below are the main parameters that can be used no matter what lookup or dictionary implementation is used. In the following sections additional parameters are provided for each implementation.
+Below are the main parameters that can be used no matter what lookup or dictionary implementation is used.
+In the following sections additional parameters are provided for each implementation.
 
 `searchComponent name`::
 Arbitrary name for the search component.
 
 `name`::
-A symbolic name for this suggester. You can refer to this name in the URL parameters and in the SearchHandler configuration. It is possible to have multiples of these in one `solrconfig.xml` file.
+A symbolic name for this suggester.
+You can refer to this name in the URL parameters and in the SearchHandler configuration.
+It is possible to have multiples of these in one `solrconfig.xml` file.
 
 `lookupImpl`::
-Lookup implementation. There are several possible implementations, described below in the section <<Lookup Implementations>>. If not set, the default lookup is `JaspellLookupFactory`.
+Lookup implementation.
+There are several possible implementations, described below in the section <<Lookup Implementations>>. If not set, the default lookup is `JaspellLookupFactory`.
 
 `dictionaryImpl`::
-The dictionary implementation to use. There are several possible implementations, described below in the section <<Dictionary Implementations>>.
+The dictionary implementation to use.
+There are several possible implementations, described below in the section <<Dictionary Implementations>>.
 +
-If not set, the default dictionary implementation is `HighFrequencyDictionaryFactory`. However, if a `sourceLocation` is used, the dictionary implementation will be `FileDictionaryFactory`.
+If not set, the default dictionary implementation is `HighFrequencyDictionaryFactory`.
+However, if a `sourceLocation` is used, the dictionary implementation will be `FileDictionaryFactory`.
 
 `field`::
-A field from the index to use as the basis of suggestion terms. If `sourceLocation` is empty (meaning any dictionary implementation other than `FileDictionaryFactory`), then terms from this field in the index will be used.
+A field from the index to use as the basis of suggestion terms.
+If `sourceLocation` is empty (meaning any dictionary implementation other than `FileDictionaryFactory`), then terms from this field in the index will be used.
 +
-To be used as the basis for a suggestion, the field must be stored. You may want to <<copy-fields.adoc#,use copyField rules>> to create a special 'suggest' field comprised of terms from other fields in documents. In any event, you very likely want a minimal amount of analysis on the field, so an additional option is to create a field type in your schema that only uses basic tokenizers or filters. One option for such a field type is shown here:
+To be used as the basis for a suggestion, the field must be stored.
+You may want to <<copy-fields.adoc#,use copyField rules>> to create a special 'suggest' field comprised of terms from other fields in documents.
+In any event, you very likely want a minimal amount of analysis on the field, so an additional option is to create a field type in your schema that only uses basic tokenizers or filters.
+One option for such a field type is shown here:
 +
 [source,xml]
 ----
@@ -90,27 +103,35 @@ To be used as the basis for a suggestion, the field must be stored. You may want
 </fieldType>
 ----
 +
-However, this minimal analysis is not required if you want more analysis to occur on terms. If using the `AnalyzingLookupFactory` as your `lookupImpl`, however, you have the option of defining the field type rules to use for index and query time analysis.
+However, this minimal analysis is not required if you want more analysis to occur on terms.
+If using the `AnalyzingLookupFactory` as your `lookupImpl`, however, you have the option of defining the field type rules to use for index and query time analysis.
 
 `sourceLocation`::
-The path to the dictionary file if using the `FileDictionaryFactory`. If this value is empty then the main index will be used as a source of terms and weights.
+The path to the dictionary file if using the `FileDictionaryFactory`.
+If this value is empty then the main index will be used as a source of terms and weights.
 
 `storeDir`::
 The location to store the dictionary file.
 
 `buildOnCommit` and `buildOnOptimize`::
-If `true`, the lookup data structure will be rebuilt after soft-commit. If `false`, the default, then the lookup data will be built only when requested by URL parameter `suggest.build=true`. Use `buildOnCommit` to rebuild the dictionary with every soft-commit, or `buildOnOptimize` to build the dictionary only when the index is optimized.
+If `true`, the lookup data structure will be rebuilt after soft-commit.
+If `false`, the default, then the lookup data will be built only when requested by URL parameter `suggest.build=true`.
+Use `buildOnCommit` to rebuild the dictionary with every soft-commit, or `buildOnOptimize` to build the dictionary only when the index is optimized.
 +
-Some lookup implementations may take a long time to build, especially with large indexes. In such cases, using `buildOnCommit` or `buildOnOptimize`, particularly with a high frequency of softCommits is not recommended; it's recommended instead to build the suggester at a lower frequency by manually issuing requests with `suggest.build=true`.
+Some lookup implementations may take a long time to build, especially with large indexes.
+In such cases, using `buildOnCommit` or `buildOnOptimize`, particularly with a high frequency of softCommits is not recommended; it's recommended instead to build the suggester at a lower frequency by manually issuing requests with `suggest.build=true`.
 
 `buildOnStartup`::
-If `true,` then the lookup data structure will be built when Solr starts or when the core is reloaded. If this parameter is not specified, the suggester will check if the lookup data structure is present on disk and build it if not found.
+If `true,` then the lookup data structure will be built when Solr starts or when the core is reloaded.
+If this parameter is not specified, the suggester will check if the lookup data structure is present on disk and build it if not found.
 +
-Enabling this to `true` could lead to the core talking longer to load (or reload) as the suggester data structure needs to be built, which can sometimes take a long time. It’s usually preferred to have this setting set to `false`, the default, and build suggesters manually issuing requests with `suggest.build=true`.
+Enabling this to `true` could lead to the core talking longer to load (or reload) as the suggester data structure needs to be built, which can sometimes take a long time.
+It’s usually preferred to have this setting set to `false`, the default, and build suggesters manually issuing requests with `suggest.build=true`.
 
 === Lookup Implementations
 
-The `lookupImpl` parameter defines the algorithms used to look up terms in the suggest index. There are several possible implementations to choose from, and some require additional parameters to be configured.
+The `lookupImpl` parameter defines the algorithms used to look up terms in the suggest index.
+There are several possible implementations to choose from, and some require additional parameters to be configured.
 
 ==== AnalyzingLookupFactory
 
@@ -125,14 +146,18 @@ The field type to use for the query-time and build-time term suggestion analysis
 If `true`, the default, exact suggestions are returned first, even if they are prefixes or other strings in the FST have larger weights.
 
 `preserveSep`::
-If `true`, the default, then a separator between tokens is preserved. This means that suggestions are sensitive to tokenization (e.g., baseball is different from base ball).
+If `true`, the default, then a separator between tokens is preserved.
+This means that suggestions are sensitive to tokenization (e.g., baseball is different from base ball).
 
 `preservePositionIncrements`::
-If `true`, the suggester will preserve position increments. This means that token filters which leave gaps (for example, when StopFilter matches a stopword) the position would be respected when building the suggester. The default is `false`.
+If `true`, the suggester will preserve position increments.
+This means that token filters which leave gaps (for example, when StopFilter matches a stopword) the position would be respected when building the suggester.
+The default is `false`.
 
 ==== FuzzyLookupFactory
 
-This is a suggester which is an extension of the AnalyzingSuggester but is fuzzy in nature. The similarity is measured by the Levenshtein algorithm.
+This is a suggester which is an extension of the AnalyzingSuggester but is fuzzy in nature.
+The similarity is measured by the Levenshtein algorithm.
 
 This implementation uses the following additional properties:
 
@@ -140,95 +165,127 @@ This implementation uses the following additional properties:
 If `true`, the default, exact suggestions are returned first, even if they are prefixes or other strings in the FST have larger weights.
 
 `preserveSep`::
-If `true`, the default, then a separator between tokens is preserved. This means that suggestions are sensitive to tokenization (e.g., baseball is different from base ball).
+If `true`, the default, then a separator between tokens is preserved.
+This means that suggestions are sensitive to tokenization (e.g., baseball is different from base ball).
 
 `maxSurfaceFormsPerAnalyzedForm`::
-The maximum number of surface forms to keep for a single analyzed form. When there are too many surface forms we discard the lowest weighted ones.
+The maximum number of surface forms to keep for a single analyzed form.
+When there are too many surface forms we discard the lowest weighted ones.
 
 `maxGraphExpansions`::
-When building the FST ("index-time"), we add each path through the tokenstream graph as an individual entry. This places an upper-bound on how many expansions will be added for a single suggestion. The default is `-1` which means there is no limit.
+When building the FST ("index-time"), we add each path through the tokenstream graph as an individual entry.
+This places an upper-bound on how many expansions will be added for a single suggestion.
+The default is `-1` which means there is no limit.
 
 `preservePositionIncrements`::
-If `true`, the suggester will preserve position increments. This means that token filters which leave gaps (for example, when StopFilter matches a stopword) the position would be respected when building the suggester. The default is `false`.
+If `true`, the suggester will preserve position increments.
+This means that token filters which leave gaps (for example, when StopFilter matches a stopword) the position would be respected when building the suggester.
+The default is `false`.
 
 `maxEdits`::
-The maximum number of string edits allowed. The system's hard limit is `2`. The default is `1`.
+The maximum number of string edits allowed.
+The system's hard limit is `2`.
+The default is `1`.
 
 `transpositions`::
 If `true`, the default, transpositions should be treated as a primitive edit operation.
 
 `nonFuzzyPrefix`::
-The length of the common non fuzzy prefix match which must match a suggestion. The default is `1`.
+The length of the common non fuzzy prefix match which must match a suggestion.
+The default is `1`.
 
 `minFuzzyLength`::
-The minimum length of query before which any string edits will be allowed. The default is `3`.
+The minimum length of query before which any string edits will be allowed.
+The default is `3`.
 
 `unicodeAware`::
-If `true`, the `maxEdits`, `minFuzzyLength`, `transpositions` and `nonFuzzyPrefix` parameters will be measured in unicode code points (actual letters) instead of bytes. The default is `false`.
+If `true`, the `maxEdits`, `minFuzzyLength`, `transpositions` and `nonFuzzyPrefix` parameters will be measured in unicode code points (actual letters) instead of bytes.
+The default is `false`.
 
 ==== AnalyzingInfixLookupFactory
 
-Analyzes the input text and then suggests matches based on prefix matches to any tokens in the indexed text. This uses a Lucene index for its dictionary.
+Analyzes the input text and then suggests matches based on prefix matches to any tokens in the indexed text.
+This uses a Lucene index for its dictionary.
 
 This implementation uses the following additional properties.
 
 `indexPath`::
-When using `AnalyzingInfixSuggester` you can provide your own path where the index will get built. The default is `analyzingInfixSuggesterIndexDir` and will be created in your collection's `data/` directory.
+When using `AnalyzingInfixSuggester` you can provide your own path where the index will get built.
+The default is `analyzingInfixSuggesterIndexDir` and will be created in your collection's `data/` directory.
 
 `minPrefixChars`::
-Minimum number of leading characters before PrefixQuery is used (default is `4`). Prefixes shorter than this are indexed as character ngrams (increasing index size but making lookups faster).
+Minimum number of leading characters before PrefixQuery is used (default is `4`).
+Prefixes shorter than this are indexed as character ngrams (increasing index size but making lookups faster).
 
 `allTermsRequired`::
-Boolean option for multiple terms. The default is `true`, all terms will be required.
+Boolean option for multiple terms.
+The default is `true`, all terms will be required.
 
 `highlight`::
-Highlight suggest terms. Default is `true`.
+Highlight suggest terms.
+Default is `true`.
 
 This implementation supports <<Context Filtering>>.
 
 ==== BlendedInfixLookupFactory
 
-An extension of the `AnalyzingInfixSuggester` which provides additional functionality to weight prefix matches across the matched documents. It scores higher if a hit is closer to the start of the suggestion.
+An extension of the `AnalyzingInfixSuggester` which provides additional functionality to weight prefix matches across the matched documents.
+It scores higher if a hit is closer to the start of the suggestion.
 
 This implementation uses the following additional properties:
 
 `blenderType`::
-Used to calculate weight coefficient using the position of the first matching word. Available options are:
+Used to calculate weight coefficient using the position of the first matching word.
+Available options are:
 `position_linear`:::
-`weightFieldValue * (1 - 0.10*position)`: Matches to the start will be given a higher score. This is the default.
+`weightFieldValue * (1 - 0.10*position)`: Matches to the start will be given a higher score.
+This is the default.
 `position_reciprocal`:::
-`weightFieldValue / (1 + position)`: Matches to the start will be given a higher score. The score of matches positioned far from the start of the suggestion decays faster than linear.
+`weightFieldValue / (1 + position)`: Matches to the start will be given a higher score.
+The score of matches positioned far from the start of the suggestion decays faster than linear.
 `position_exponential_reciprocal`:::
-`weightFieldValue / pow(1 + position,exponent)`: Matches to the start will be given a higher score. The score of matches positioned far from the start of the suggestion decays faster than reciprocal.
+`weightFieldValue / pow(1 + position,exponent)`: Matches to the start will be given a higher score.
+The score of matches positioned far from the start of the suggestion decays faster than reciprocal.
 `exponent`::::
-An optional configuration variable for `position_exponential_reciprocal` to control how fast the score will decrease. Default `2.0`.
+An optional configuration variable for `position_exponential_reciprocal` to control how fast the score will decrease.
+Default `2.0`.
 
 `numFactor`::
-The factor to multiply the number of searched elements from which results will be pruned. Default is `10`.
+The factor to multiply the number of searched elements from which results will be pruned.
+Default is `10`.
 
 `indexPath`::
-When using `BlendedInfixSuggester` you can provide your own path where the index will get built. The default directory name is `blendedInfixSuggesterIndexDir` and will be created in your collection's data directory.
+When using `BlendedInfixSuggester` you can provide your own path where the index will get built.
+The default directory name is `blendedInfixSuggesterIndexDir` and will be created in your collection's data directory.
 
 `minPrefixChars`::
-Minimum number of leading characters before PrefixQuery is used (the default is `4`). Prefixes shorter than this are indexed as character ngrams, which increases index size but makes lookups faster.
+Minimum number of leading characters before PrefixQuery is used (the default is `4`).
+Prefixes shorter than this are indexed as character ngrams, which increases index size but makes lookups faster.
 
 This implementation supports <<Context Filtering>>.
 
 ==== FreeTextLookupFactory
 
-It looks at the last tokens plus the prefix of whatever final token the user is typing, if present, to predict the most likely next token. The number of previous tokens that need to be considered can also be specified. This suggester would only be used as a fallback, when the primary suggester fails to find any suggestions.
+It looks at the last tokens plus the prefix of whatever final token the user is typing, if present, to predict the most likely next token.
+The number of previous tokens that need to be considered can also be specified.
+This suggester would only be used as a fallback, when the primary suggester fails to find any suggestions.
 
 This implementation uses the following additional properties:
 
 `suggestFreeTextAnalyzerFieldType`::
-The analyzer used at "query-time" and "build-time" to analyze suggestions. This parameter is required.
+The analyzer used at "query-time" and "build-time" to analyze suggestions.
+This parameter is required.
 
 `ngrams`::
-The max number of tokens out of which singles will be made the dictionary. The default value is `2`. Increasing this would mean you want more than the previous 2 tokens to be taken into consideration when making the suggestions.
+The max number of tokens out of which singles will be made the dictionary.
+The default value is `2`.
+Increasing this would mean you want more than the previous 2 tokens to be taken into consideration when making the suggestions.
 
 ==== FSTLookupFactory
 
-An automaton-based lookup. This implementation is slower to build, but provides the lowest memory cost. We recommend using this implementation unless you need more sophisticated matching results, in which case you should use the Jaspell implementation.
+An automaton-based lookup.
+This implementation is slower to build, but provides the lowest memory cost.
+We recommend using this implementation unless you need more sophisticated matching results, in which case you should use the Jaspell implementation.
 
 This implementation uses the following additional properties:
 
@@ -244,17 +301,22 @@ A simple compact ternary trie based lookup.
 
 ==== WFSTLookupFactory
 
-A weighted automaton representation which is an alternative to `FSTLookup` for more fine-grained ranking. `WFSTLookup` does not use buckets, but instead a shortest path algorithm.
+A weighted automaton representation which is an alternative to `FSTLookup` for more fine-grained ranking.
+`WFSTLookup` does not use buckets, but instead a shortest path algorithm.
 
-Note that it expects weights to be whole numbers. If weight is missing it's assumed to be `1.0`. Weights affect the sorting of matching suggestions when `spellcheck.onlyMorePopular=true` is selected: weights are treated as "popularity" score, with higher weights preferred over suggestions with lower weights.
+Note that it expects weights to be whole numbers.
+If weight is missing it's assumed to be `1.0`.
+Weights affect the sorting of matching suggestions when `spellcheck.onlyMorePopular=true` is selected: weights are treated as "popularity" score, with higher weights preferred over suggestions with lower weights.
 
 ==== JaspellLookupFactory
 
-A more complex lookup based on a ternary trie from the http://jaspell.sourceforge.net/[JaSpell] project. Use this implementation if you need more sophisticated matching results.
+A more complex lookup based on a ternary trie from the http://jaspell.sourceforge.net/[JaSpell] project.
+Use this implementation if you need more sophisticated matching results.
 
 === Dictionary Implementations
 
-The dictionary implementations define how terms are stored. There are several options, and multiple dictionaries can be used in a single request if necessary.
+The dictionary implementations define how terms are stored.
+There are several options, and multiple dictionaries can be used in a single request if necessary.
 
 ==== DocumentDictionaryFactory
 
@@ -263,13 +325,16 @@ A dictionary with terms, weights, and an optional payload taken from the index.
 This dictionary implementation takes the following parameters in addition to parameters described for the Suggester generally and for the lookup implementation:
 
 `weightField`::
-A field that is stored or a numeric DocValue field. This parameter is optional.
+A field that is stored or a numeric DocValue field.
+This parameter is optional.
 
 `payloadField`::
-The `payloadField` should be a field that is stored. This parameter is optional.
+The `payloadField` should be a field that is stored.
+This parameter is optional.
 
 `contextField`::
-Field to be used for context filtering. Note that only some lookup implementations support filtering.
+Field to be used for context filtering.
+Note that only some lookup implementations support filtering.
 
 ==== DocumentExpressionDictionaryFactory
 
@@ -278,13 +343,17 @@ This dictionary implementation is the same as the `DocumentDictionaryFactory` bu
 This dictionary implementation takes the following parameters in addition to parameters described for the Suggester generally and for the lookup implementation:
 
 `payloadField`::
-The `payloadField` should be a field that is stored. This parameter is optional.
+The `payloadField` should be a field that is stored.
+This parameter is optional.
 
 `weightExpression`::
-An arbitrary expression used for scoring the suggestions. The fields used must be numeric fields. This parameter is required.
+An arbitrary expression used for scoring the suggestions.
+The fields used must be numeric fields.
+This parameter is required.
 
 `contextField`::
-Field to be used for context filtering. Note that only some lookup implementations support filtering.
+Field to be used for context filtering.
+Note that only some lookup implementations support filtering.
 
 ==== HighFrequencyDictionaryFactory
 
@@ -297,14 +366,19 @@ A value between zero and one representing the minimum fraction of the total docu
 
 ==== FileDictionaryFactory
 
-This dictionary implementation allows using an external file that contains suggest entries. Weights and payloads can also be used.
+This dictionary implementation allows using an external file that contains suggest entries.
+Weights and payloads can also be used.
 
-If using a dictionary file, it should be a plain text file in UTF-8 encoding. You can use both single terms and phrases in the dictionary file. If adding weights or payloads, those should be separated from terms using the delimiter defined with the `fieldDelimiter` property (the default is '\t', the tab representation). If using payloads, the first line in the file *must* specify a payload.
+If using a dictionary file, it should be a plain text file in UTF-8 encoding.
+You can use both single terms and phrases in the dictionary file.
+If adding weights or payloads, those should be separated from terms using the delimiter defined with the `fieldDelimiter` property (the default is '\t', the tab representation).
+If using payloads, the first line in the file *must* specify a payload.
 
 This dictionary implementation takes one parameter in addition to parameters described for the Suggester generally and for the lookup implementation:
 
 `fieldDelimiter`::
-Specifies the delimiter to be used separating the entries, weights and payloads. The default is tab (`\t`).
+Specifies the delimiter to be used separating the entries, weights and payloads.
+The default is tab (`\t`).
 +
 .Example File
 [source,text]
@@ -345,11 +419,15 @@ To do this, simply define separate suggesters, as in this example:
 </searchComponent>
 ----
 
-When using these Suggesters in a query, you would define multiple `suggest.dictionary` parameters in the request, referring to the names given for each Suggester in the search component definition. The response will include the terms in sections for each Suggester. See the <<Example Usages>> section below for an example request and response.
+When using these Suggesters in a query, you would define multiple `suggest.dictionary` parameters in the request, referring to the names given for each Suggester in the search component definition.
+The response will include the terms in sections for each Suggester.
+See the <<Example Usages>> section below for an example request and response.
 
 == Adding the Suggest Request Handler
 
-After adding the search component, a request handler must be added to `solrconfig.xml`. This request handler works the <<requesthandlers-searchcomponents.adoc#,same as any other request handler>>, and allows you to configure default parameters for serving suggestion requests. The request handler definition must incorporate the "suggest" search component defined previously.
+After adding the search component, a request handler must be added to `solrconfig.xml`.
+This request handler works the <<requesthandlers-searchcomponents.adoc#,same as any other request handler>>, and allows you to configure default parameters for serving suggestion requests.
+The request handler definition must incorporate the "suggest" search component defined previously.
 
 [source,xml]
 ----
@@ -372,7 +450,9 @@ The following parameters allow you to set defaults for the Suggest request handl
 This parameter should always be `true`, because we always want to run the Suggester for queries submitted to this handler.
 
 `suggest.dictionary`::
-The name of the dictionary component configured in the search component. This is a mandatory parameter. It can be set in the request handler, or sent as a parameter at query time.
+The name of the dictionary component configured in the search component.
+This is a mandatory parameter.
+It can be set in the request handler, or sent as a parameter at query time.
 
 `suggest.q`::
 The query to use for suggestion lookups.
@@ -384,7 +464,9 @@ Specifies the number of suggestions for Solr to return.
 A Context Filter Query used to filter suggestions based on the context field, if supported by the suggester.
 
 `suggest.build`::
-If `true`, it will build the suggester index. This is likely useful only for initial requests; you would probably not want to build the dictionary on every request, particularly in a production system. If you would like to keep your dictionary up to date, you should use the `buildOnCommit` or `buildOnOptimize` parameter for the search component.
+If `true`, it will build the suggester index.
+This is likely useful only for initial requests; you would probably not want to build the dictionary on every request, particularly in a production system.
+If you would like to keep your dictionary up to date, you should use the `buildOnCommit` or `buildOnOptimize` parameter for the search component.
 
 `suggest.reload`::
 If `true`, it will reload the suggester index.
@@ -400,7 +482,8 @@ These properties can also be overridden at query time, or not set in the request
 .Context Filtering
 [IMPORTANT]
 ====
-Context filtering (`suggest.cfq`) is currently only supported by `AnalyzingInfixLookupFactory` and `BlendedInfixLookupFactory`, and only when backed by a `Document*Dictionary`. All other implementations will return unfiltered matches as if filtering was not requested.
+Context filtering (`suggest.cfq`) is currently only supported by `AnalyzingInfixLookupFactory` and `BlendedInfixLookupFactory`, and only when backed by a `Document*Dictionary`.
+All other implementations will return unfiltered matches as if filtering was not requested.
 ====
 
 == Example Usages
@@ -508,9 +591,11 @@ Example response:
 
 === Context Filtering
 
-Context filtering lets you filter suggestions by a separate context field, such as category, department or any other token. The `AnalyzingInfixLookupFactory` and `BlendedInfixLookupFactory` currently support this feature, when backed by `DocumentDictionaryFactory`.
+Context filtering lets you filter suggestions by a separate context field, such as category, department or any other token.
+The `AnalyzingInfixLookupFactory` and `BlendedInfixLookupFactory` currently support this feature, when backed by `DocumentDictionaryFactory`.
 
-Add `contextField` to your suggester configuration. This example will suggest names and allow to filter by category:
+Add `contextField` to your suggester configuration.
+This example will suggest names and allow to filter by category:
 
 .solrconfig.xml
 [source,xml]

@@ -79,7 +79,8 @@ Pagination using `start` and `rows` not only require Solr to compute (and sort) 
 While a request for `start=0&rows=1000000` may be obviously inefficient because it requires Solr to maintain & sort in memory a set of 1 million documents, likewise a request for `start=999000&rows=1000` is equally inefficient for the same reasons.
 Solr can't compute which matching document is the 999001st result in sorted order, without first determining what the first 999000 matching sorted results are.
 
-If the index is distributed, which is common when running in SolrCloud mode, then 1 million documents are retrieved from *each shard*. For a ten shard index, ten million entries must be retrieved and sorted to figure out the 1000 documents that match those query parameters.
+If the index is distributed, which is common when running in SolrCloud mode, then 1 million documents are retrieved from *each shard*.
+For a ten shard index, ten million entries must be retrieved and sorted to figure out the 1000 documents that match those query parameters.
 
 == Fetching A Large Number of Sorted Results: Cursors
 

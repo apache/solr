@@ -72,7 +72,8 @@ tar xzf solr-{solr-docs-version}.0.tgz solr-{solr-docs-version}.0/bin/install_so
 ----
 
 The previous command extracts the `install_solr_service.sh` script from the archive into the current directory.
-If installing on Red Hat, please make sure *lsof* is installed before running the Solr installation script (`sudo yum install lsof`). The installation script must be run as root:
+If installing on Red Hat, please make sure *lsof* is installed before running the Solr installation script (`sudo yum install lsof`).
+The installation script must be run as root:
 
 [source,bash,subs="attributes"]
 ----
@@ -95,7 +96,8 @@ To see available options, simply do:
 sudo bash ./install_solr_service.sh -help
 ----
 
-Once the script completes, Solr will be installed as a service and running in the background on your server (on port 8983). To verify, you can do:
+Once the script completes, Solr will be installed as a service and running in the background on your server (on port 8983).
+To verify, you can do:
 
 [source,bash]
 ----
@@ -239,9 +241,11 @@ See <<jvm-settings.adoc#choosing-memory-heap-settings,Choosing Memory Heap Setti
 Also, the <<solr-control-script-reference.adoc#,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
 However, these settings may not work well for your specific use of Solr.
 Consequently, you may need to change the GC settings, which should also be done with the `GC_TUNE` variable in the `/etc/default/solr.in.sh` include file.
+
 For more information about garbage collection settings refer to following articles:
-1. https://cwiki.apache.org/confluence/display/solr/ShawnHeisey
-2. https://www.oracle.com/technetwork/articles/java/g1gc-1984535.html
+. https://cwiki.apache.org/confluence/display/solr/ShawnHeisey
+. https://www.oracle.com/technetwork/articles/java/g1gc-1984535.html
+
 You can also refer to <<jvm-settings.adoc#,JVM Settings>> for tuning your memory and garbage collection settings.
 
 ==== Out-of-Memory Shutdown Hook

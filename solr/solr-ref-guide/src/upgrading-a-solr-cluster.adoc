@@ -89,7 +89,8 @@ For instance, if you plan to run Solr as the "solr" user and `SOLR_HOME` is `/va
 
 === Step 4: Start Solr
 
-You are now ready to start the upgraded Solr node by doing: `sudo service solr start`. The upgraded instance will join the existing cluster because you're using the same `SOLR_HOME`, `SOLR_PORT`, and `SOLR_HOST` settings used by the old Solr node; thus, the new server will look like the old node to the running cluster.
+You are now ready to start the upgraded Solr node by doing: `sudo service solr start`.
+The upgraded instance will join the existing cluster because you're using the same `SOLR_HOME`, `SOLR_PORT`, and `SOLR_HOST` settings used by the old Solr node; thus, the new server will look like the old node to the running cluster.
 Be sure to look in `/var/solr/logs/solr.log` for errors during startup.
 
 === Step 5: Run Healthcheck

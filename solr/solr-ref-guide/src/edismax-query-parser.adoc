@@ -79,7 +79,8 @@ Defaults to `false`.
 
 `ps`::
 Phrase Slop.
-The default amount of slop - distance between terms - on phrase queries built with `pf`, `pf2` and/or `pf3` fields (affects boosting). See also the section <<Using 'Slop'>> below.
+The default amount of slop - distance between terms - on phrase queries built with `pf`, `pf2` and/or `pf3` fields (affects boosting).
+See also the section <<Using 'Slop'>> below.
 
 `pf2`::
 
@@ -87,14 +88,16 @@ A multivalued list of fields with optional weights.
 Similar to `pf`, but based on word _pair_ shingles.
 
 `ps2`::
-This is similar to `ps` but overrides the slop factor used for `pf2`. If not specified, `ps` is used.
+This is similar to `ps` but overrides the slop factor used for `pf2.
+If not specified, `ps` is used.
 
 `pf3`::
 A multivalued list of fields with optional weights, based on triplets of word shingles.
 Similar to `pf`, except that instead of building a phrase per field out of all the words in the input, it builds a set of phrases for each field out of word _triplet_ shingles.
 
 `ps3`::
-This is similar to `ps` but overrides the slop factor used for `pf3`. If not specified, `ps` is used.
+This is similar to `ps` but overrides the slop factor used for `pf3`.
+If not specified, `ps` is used.
 
 `stopwords`::
 A Boolean parameter indicating if the `StopFilterFactory` configured in the query analyzer should be respected when parsing the query.

@@ -63,7 +63,8 @@ Must be specified as a single numeric value.
 
 === Field Storage
 
-The core functionality of atomically updating a document requires that all fields in your schema must be configured as stored (`stored="true"`) or docValues (`docValues="true"`) except for fields which are `<copyField/>` destinations, which must be configured as `stored="false"`. Atomic updates are applied to the document represented by the existing stored field values.
+The core functionality of atomically updating a document requires that all fields in your schema must be configured as stored (`stored="true"`) or docValues (`docValues="true"`) except for fields which are `<copyField/>` destinations, which must be configured as `stored="false"`.
+Atomic updates are applied to the document represented by the existing stored field values.
 All data in copyField destinations fields must originate from ONLY copyField sources.
 
 If `<copyField/>` destinations are configured as stored, then Solr will attempt to index both the current value of the field as well as an additional copy from any source fields.
@@ -234,7 +235,8 @@ curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H '
 In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates.
 In regular atomic updates, the entire document is reindexed internally during the application of the update.
 However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally.
-Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences in efficiency, there is no functional difference between atomic updates and in-place updates.
+Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.).
+Apart from these internal differences in efficiency, there is no functional difference between atomic updates and in-place updates.
 
 An atomic update operation is performed using this In-Place approach only when the fields to be updated meet these three conditions:
 
@@ -246,7 +248,8 @@ To use in-place updates, add a modifier to the field that needs to be updated.
 The content can be updated or incrementally increased.
 
 `set`::
-Set or replace the field value(s) with the specified value(s). May be specified as a single value.
+Set or replace the field value(s) with the specified value(s).
+May be specified as a single value.
 
 `inc`::
 Increments a numeric value by a specific amount.
@@ -501,7 +504,8 @@ Users can not re-purpose that field and specify it as the `versionField` for use
 `DocBasedVersionConstraintsProcessorFactory` supports the following additional configuration parameters, which are all optional:
 
 `ignoreOldUpdates`::
-A boolean option which defaults to `false`. If set to `true`, the update will be silently ignored (and return a status 200 to the client) instead of rejecting updates where the `versionField` is too low.
+A boolean option which defaults to `false`.
+If set to `true`, the update will be silently ignored (and return a status 200 to the client) instead of rejecting updates where the `versionField` is too low.
 
 `deleteVersionParam`::
 A String parameter that can be specified to indicate that this processor should also inspect Delete By Id commands.

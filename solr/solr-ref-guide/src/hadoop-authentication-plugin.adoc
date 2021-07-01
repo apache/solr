@@ -149,7 +149,8 @@ The example below uses `ConfigurableInternodeAuthHadoopPlugin`, and hence you mu
 As a result, all internode communication will use the Kerberos mechanism, instead of PKI authentication.
 
 This configuration assumes that your servers are using the `solr` principal, and will be allowed to impersonate any other user with requests coming from any other host.
-For additional security, consider setting the host list to match your cluster nodes. The Hadoop https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Superusers.html[proxy users documentation] contains more detail about available configuration options.
+For additional security, consider setting the host list to match your cluster nodes.
+The Hadoop https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/Superusers.html[proxy users documentation] contains more detail about available configuration options.
 
 [source,json]
 ----

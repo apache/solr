@@ -39,7 +39,8 @@ This section explains how to specify a query parser and describes the syntax and
 
 There are some query parameters common to all Solr parsers; these are discussed in the section <<common-query-parameters.adoc#common-query-parameters,Common Query Parameters>>.
 
-Query parsers are also called `QParserPlugins`. They are all subclasses of {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin]. If you have custom parsing needs, you may want to extend that class to create your own query parser.
+Query parsers are also called `QParserPlugins`.
+They are all subclasses of {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin]. If you have custom parsing needs, you may want to extend that class to create your own query parser.
 
 ****
 // This tags the below list so it can be used in the parent page section list
