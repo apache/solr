@@ -398,7 +398,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
 
   // Map the rollup metric to the original metric name so that we can project out the correct field names in the tuple
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>();
+    Map<String, String> map = new HashMap<>(rollupMetrics.length);
     for (Metric m : rollupMetrics) {
       String[] cols = m.getColumns();
       map.put(m.getIdentifier(), cols != null && cols.length > 0 ? cols[0] : "*");
