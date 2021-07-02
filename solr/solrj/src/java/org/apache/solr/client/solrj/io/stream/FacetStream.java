@@ -932,7 +932,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
    * @return A mapping of fields produced by the rollup stream to their output name.
    */
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>(rollupMetrics.length);
+    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
     for (Bucket b : buckets) {
       String key = b.toString();
       map.put(key, key);
