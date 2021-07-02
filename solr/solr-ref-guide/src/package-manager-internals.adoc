@@ -16,7 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The package manager (CLI) internally uses various Solr APIs to install, deploy and update packages. This document contains an overview of those APIs.
+The package manager (CLI) internally uses various Solr APIs to install, deploy and update packages.
+This document contains an overview of those APIs.
 
 == Salient Features
 
@@ -30,12 +31,16 @@ The package manager (CLI) internally uses various Solr APIs to install, deploy a
 
 == Classloaders
 
-At the heart of the system, we have classloader isolation. To achieve this, the system is simplified into two layered classloaders:
-The root classloader which has all the jars from Solr classpath. This requires Solr node restart to change anything.
-A set of named classloaders that inherit from the root classloader. The life cycles of the named classloaders are tied to the package configuration in ZooKeeper. As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
+At the heart of the system, we have classloader isolation.
+To achieve this, the system is simplified into two layered classloaders: the root classloader which has all the jars from Solr classpath.
+This requires Solr node restart to change anything.
+A set of named classloaders that inherit from the root classloader.
+The life cycles of the named classloaders are tied to the package configuration in ZooKeeper.
+As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
 
 == Package Loading Security
-Packages are disabled by default. Start all your nodes with the system property `-Denable.packages=true` to use this feature.
+Packages are disabled by default.
+Start all your nodes with the system property `-Denable.packages=true` to use this feature.
 
 *Example*
 [source,bash]
@@ -62,16 +67,19 @@ Package store is a distributed file store which can store arbitrary files in the
 
 * This is a fully replicated file system based repository.
 * It lives at <solr.home>/filestore on each Solr node.
-* Every entry  is a file + metadata. The metadata is named .<filename>.json.
+* Every entry  is a file + metadata.
+The metadata is named .<filename>.json.
 * The metadata file contains the sha256, signatures of the file.
 * Users can’t create files starting with period (.).
-* It is agnostic of content type of files. You may store jars as well as other files..
+* It is agnostic of content type of files.
+You may store jars as well as other files..
 
 === How Does the Package Store Work?
 When a file is uploaded to the PackageStore, the following is true:
 
 * It’s saved to the local file system.
-* It’s saved along with the metadata. The metadata file stores the sha512 and signatures of the jar files too.
+* It’s saved along with the metadata.
+The metadata file stores the sha512 and signatures of the jar files too.
 * Every live node in the cluster is asked to download it as well.
 
 === Package Store APIs
@@ -133,11 +141,15 @@ A Package have the following attributes:
 ** `version`: The version string
 ** `files`: An array of files from the package store
 
-For every package/version in the packages definition, there is a unique `SolrResourceLoader` instance. This is a child of the `CoreContainer` resource loader.
+For every package/version in the packages definition, there is a unique `SolrResourceLoader` instance.
+This is a child of the `CoreContainer` resource loader.
 
 === packages.json
 
-The package configurations live in a file called `packages.json` in ZooKeeper. At any given moment we can have multiple versions of a given package in the package configuration. The system will always use the latest version. Versions are sorted by their numeric value and the highest is the latest.
+The package configurations live in a file called `packages.json` in ZooKeeper.
+At any given moment we can have multiple versions of a given package in the package configuration.
+The system will always use the latest version.
+Versions are sorted by their numeric value and the highest is the latest.
 
 For example:
 
@@ -174,7 +186,8 @@ Use the `delete` command to delete the highest version and choose the next highe
 
 === Using Multiple Versions in Parallel
 
-We use `params.json` in the collection config to store a version of a package it uses. By default it is the `$LATEST`.
+We use `params.json` in the collection config to store a version of a package it uses.
+By default it is the `$LATEST`.
 
 [source, json]
 ----
@@ -186,7 +199,9 @@ We use `params.json` in the collection config to store a version of a package it
 ----
 
 <1> For `mypkg`, use the version `0.1` irrespective of whether there is a newer version available or not.
-<2> For `pkg2`, use the latest. This is optional. The default is `$LATEST`.
+<2> For `pkg2`, use the latest.
+This is optional.
+The default is `$LATEST`.
 
 === Workflow
 
@@ -197,7 +212,8 @@ We use `params.json` in the collection config to store a version of a package it
 
 === Using Packages in Plugins
 
-Any class name can be prefixed with the package name, e.g., `mypkg:fully.qualified.ClassName` and Solr would use the latest version of the package to load the classes from. The plugins loaded from packages cannot depend on core level classes.
+Any class name can be prefixed with the package name, e.g., `mypkg:fully.qualified.ClassName` and Solr would use the latest version of the package to load the classes from.
+The plugins loaded from packages cannot depend on core level classes.
 
 .Plugin declaration in `solrconfig.xml`
 [source, xml]
@@ -235,7 +251,10 @@ curl http://localhost:8983/api/cluster/package?omitHeader=true
           "files":["/mypkg/1.0/myplugins.jar"]}]}}}
 ----
 
-. The package should be ready to use at this point. Next, register a plugin in your collection from the package. Note the `mypkg:` prefix applied to the `class` attribute. The same result can be achieved by editing your `solrconfig.xml` as well:
+. The package should be ready to use at this point.
+Next, register a plugin in your collection from the package.
+Note the `mypkg:` prefix applied to the `class` attribute.
+The same result can be achieved by editing your `solrconfig.xml` as well:
 +
 [source,bash]
 ----
@@ -283,7 +302,8 @@ $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
   "loader":"java.net.FactoryURLClassLoader"}
 ----
 
-. Update the version of our component. Get a new version of the jar, sign and upload it:
+. Update the version of our component.
+Get a new version of the jar, sign and upload it:
 +
 [source, bash]
 ----
@@ -373,7 +393,8 @@ Note that the `Version` value is `"2"`, which means the plugin is updated.
 
 === How to Avoid Automatic Upgrade
 
-The default version used in any collection is always the latest. However, setting a per-collection property in `params.json` ensures that the versions are always fixed irrespective of the new versions added.
+The default version used in any collection is always the latest.
+However, setting a per-collection property in `params.json` ensures that the versions are always fixed irrespective of the new versions added.
 
 [source,bash]
 ----

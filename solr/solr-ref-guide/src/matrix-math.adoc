@@ -64,12 +64,14 @@ responds with:
 
 == Row and Column Labels
 
-A matrix can have column and rows and labels. The functions
+A matrix can have column and rows and labels.
+The functions
 `setRowLabels`, `setColumnLabels`, `getRowLabels`, and `getColumnLabels`
 can be used to set and get the labels.
 The label values are set using string arrays.
 
-The example below sets the row and column labels. In other sections of the
+The example below sets the row and column labels.
+In other sections of the
 user guide examples are shown where functions return matrices
 with the labels already set.
 
@@ -172,7 +174,8 @@ responds with:
 == Matrix Attributes
 
 A matrix can also have an arbitrary set of named attributes associated
-with it. Certain functions, such as the `termVectors` function,
+with it.
+Certain functions, such as the `termVectors` function,
 return matrices that contain attributes that describe data in the matrix.
 
 Attributes can be retrieved by name using the `getAttribute` function and
