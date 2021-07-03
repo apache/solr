@@ -205,7 +205,7 @@
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" expand="true"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="1" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.FlattenGraphFilterFactory"/>
@@ -213,7 +213,7 @@
     <analyzer type="query">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" expand="true"/>
-      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
+      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
               catenateNumbers="1" catenateAll="1" splitOnCaseChange="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
