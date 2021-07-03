@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
+ * New WordDelimiterGraphFilter tests... most of the tests are in ConvertedLegacyTest
  */
 // TODO: add a low-level test for this factory
 public class TestWordDelimiterGraphFilterFactory extends SolrTestCaseJ4 {
@@ -122,24 +122,6 @@ public class TestWordDelimiterGraphFilterFactory extends SolrTestCaseJ4 {
     );
     clearIndex();
   }
-
-  /*
-  public void testPerformance() throws IOException {
-    String s = "now is the time-for all good men to come to-the aid of their country.";
-    Token tok = new Token();
-    long start = System.currentTimeMillis();
-    int ret=0;
-    for (int i=0; i<1000000; i++) {
-      StringReader r = new StringReader(s);
-      TokenStream ts = new WhitespaceTokenizer(r);
-      ts = new WordDelimiterFilter(ts, 1,1,1,1,0);
-
-      while (ts.next(tok) != null) ret++;
-    }
-
-    System.out.println("ret="+ret+" time="+(System.currentTimeMillis()-start));
-  }
-  ***/
 
   @Test
   public void testAlphaNumericWords(){

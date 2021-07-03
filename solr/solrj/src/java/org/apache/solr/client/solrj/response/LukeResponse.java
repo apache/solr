@@ -87,7 +87,7 @@ public class LukeResponse extends SolrResponseBase {
       boolean={fields=[inStock],tokenized=false,analyzer=org.apache.solr.schema.BoolField$1@354949},
       textTight={fields=[sku],tokenized=true,analyzer=TokenizerChain(org.apache.solr.analysis.WhitespaceTokenizerFactory@5e88f7,
        org.apache.solr.analysis.SynonymFilterFactory@723646, org.apache.solr.analysis.StopFilterFactory@492ff1,
-       org.apache.solr.analysis.WordDelimiterFilterFactory@eaabad, org.apache.solr.analysis.LowerCaseFilterFactory@ad1355,
+       org.apache.solr.analysis.WordDelimiterGraphFilterFactory@eaabad, org.apache.solr.analysis.LowerCaseFilterFactory@ad1355,
         org.apache.solr.analysis.EnglishPorterFilterFactory@d03a00, org.apache.solr.analysis.RemoveDuplicatesTokenFilterFactory@900079)},
         long={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@f3b83},
         double={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@c2b07},
