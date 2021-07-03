@@ -160,7 +160,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       List<String> collations = collationHolder.getAll("collation");
       assertTrue(collations.size()==1); 
       String collation = collations.iterator().next();      
-      assertTrue("Incorrect collation: " + collation,"lowerfilt:(hyphenated-word)".equals(collation));
+      assertTrue("Incorrect collation: " + collation,"lowerfilt:(hyphenword)".equals(collation));
     }
 
     params.remove(CommonParams.Q);
@@ -180,7 +180,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       List<String> collations = collationHolder.getAll("collation");
       assertTrue(collations.size()==1);
       String collation = collations.iterator().next();
-      assertTrue("Incorrect collation: " + collation,"hyphenated-word".equals(collation));
+      assertTrue("Incorrect collation: " + collation,"hyphenword".equals(collation));
     }
 
   }
