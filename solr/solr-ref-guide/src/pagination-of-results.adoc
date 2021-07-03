@@ -21,7 +21,8 @@ In most search applications, the "top" matching results (sorted by score, or som
 In many applications the UI for these sorted results are displayed to the user in "pages" containing a fixed number of matching results, and users don't typically look at results past the first few pages worth of results.
 
 == Basic Pagination
-In Solr, this basic paginated searching is supported using the `start` and `rows` parameters, and performance of this common behaviour can be tuned by utilizing the <<query-settings-in-solrconfig.adoc#queryresultcache,`queryResultCache`>> and adjusting the <<query-settings-in-solrconfig.adoc#queryresultwindowsize,`queryResultWindowSize`>> configuration options based on your expected page sizes.
+
+In Solr, this basic paginated searching is supported using the `start` and `rows` parameters, and performance of this common behaviour can be tuned by utilizing the <<caches-warming.adoc#query-result-cache,`queryResultCache`>> and adjusting the <<caches-warming.adoc#queryresultwindowsize-element,`queryResultWindowSize`>> configuration options based on your expected page sizes.
 
 === Basic Pagination Examples
 
@@ -72,23 +73,31 @@ In typical situations these impacts from index changes on paginated searching do
 
 In some situations, the results of a Solr search are not destined for a simple paginated user interface.
 
-When you wish to fetch a very large number of sorted results from Solr to feed into an external system, using very large values for the `start` or `rows` parameters can be very inefficient. Pagination using `start` and `rows` not only require Solr to compute (and sort) in memory all of the matching documents that should be fetched for the current page, but also all of the documents that would have appeared on previous pages.
+When you wish to fetch a very large number of sorted results from Solr to feed into an external system, using very large values for the `start` or `rows` parameters can be very inefficient.
+Pagination using `start` and `rows` not only require Solr to compute (and sort) in memory all of the matching documents that should be fetched for the current page, but also all of the documents that would have appeared on previous pages.
 
-While a request for `start=0&rows=1000000` may be obviously inefficient because it requires Solr to maintain & sort in memory a set of 1 million documents, likewise a request for `start=999000&rows=1000` is equally inefficient for the same reasons. Solr can't compute which matching document is the 999001st result in sorted order, without first determining what the first 999000 matching sorted results are.
+While a request for `start=0&rows=1000000` may be obviously inefficient because it requires Solr to maintain & sort in memory a set of 1 million documents, likewise a request for `start=999000&rows=1000` is equally inefficient for the same reasons.
+Solr can't compute which matching document is the 999001st result in sorted order, without first determining what the first 999000 matching sorted results are.
 
-If the index is distributed, which is common when running in SolrCloud mode, then 1 million documents are retrieved from *each shard*. For a ten shard index, ten million entries must be retrieved and sorted to figure out the 1000 documents that match those query parameters.
+If the index is distributed, which is common when running in SolrCloud mode, then 1 million documents are retrieved from *each shard*.
+For a ten shard index, ten million entries must be retrieved and sorted to figure out the 1000 documents that match those query parameters.
 
 == Fetching A Large Number of Sorted Results: Cursors
 
 As an alternative to increasing the "start" parameter to request subsequent pages of sorted results, Solr supports using a "Cursor" to scan through results.
 
-Cursors in Solr are a logical concept that doesn't involve caching any state information on the server. Instead the sort values of the last document returned to the client are used to compute a "mark" representing a logical point in the ordered space of sort values. That "mark" can be specified in the parameters of subsequent requests to tell Solr where to continue.
+Cursors in Solr are a logical concept that doesn't involve caching any state information on the server.
+Instead the sort values of the last document returned to the client are used to compute a "mark" representing a logical point in the ordered space of sort values.
+That "mark" can be specified in the parameters of subsequent requests to tell Solr where to continue.
 
 === Using Cursors
 
-To use a cursor with Solr, specify a `cursorMark` parameter with the value of `*`. You can think of this being analogous to `start=0` as a way to tell Solr "start at the beginning of my sorted results" except that it also informs Solr that you want to use a Cursor.
+To use a cursor with Solr, specify a `cursorMark` parameter with the value of `*`.
+You can think of this being analogous to `start=0` as a way to tell Solr "start at the beginning of my sorted results" except that it also informs Solr that you want to use a Cursor.
 
-In addition to returning the top N sorted results (where you can control N using the `rows` parameter) the Solr response will also include an encoded String named `nextCursorMark`. You then take the `nextCursorMark` String value from the response, and pass it back to Solr as the `cursorMark` parameter for your next request. You can repeat this process until you've fetched as many docs as you want, or until the `nextCursorMark` returned matches the `cursorMark` you've already specified -- indicating that there are no more results.
+In addition to returning the top N sorted results (where you can control N using the `rows` parameter) the Solr response will also include an encoded String named `nextCursorMark`.
+You then take the `nextCursorMark` String value from the response, and pass it back to Solr as the `cursorMark` parameter for your next request.
+You can repeat this process until you've fetched as many docs as you want, or until the `nextCursorMark` returned matches the `cursorMark` you've already specified -- indicating that there are no more results.
 
 === Constraints when using Cursors
 
@@ -105,11 +114,14 @@ When the `responseHeader` no longer includes `"partialResults": true`, and `curs
 . `sort` clauses must include the uniqueKey field (either `asc` or `desc`).
 +
 If `id` is your uniqueKey field, then sort parameters like `id asc` and `name asc, id desc` would both work fine, but `name asc` by itself would not
-. Sorts including <<working-with-dates.adoc#,Date Math>> based functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request. This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
+. Sorts including <<date-formatting-math.adoc#,Date Math>> based functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request.
+This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
 +
-In this situation, choose & re-use a fixed value for the <<working-with-dates.adoc#now,`NOW` request parameter>> in all of your cursor requests.
+In this situation, choose & re-use a fixed value for the <<date-formatting-math.adoc#now,`NOW` request parameter>> in all of your cursor requests.
 
-Cursor mark values are computed based on the sort values of each document in the result, which means multiple documents with identical sort values will produce identical Cursor mark values if one of them is the last document on a page of results. In that situation, the subsequent request using that `cursorMark` would not know which of the documents with the identical mark values should be skipped. Requiring that the uniqueKey field be used as a clause in the sort criteria guarantees that a deterministic ordering will be returned, and that every `cursorMark` value will identify a unique point in the sequence of documents.
+Cursor mark values are computed based on the sort values of each document in the result, which means multiple documents with identical sort values will produce identical Cursor mark values if one of them is the last document on a page of results.
+In that situation, the subsequent request using that `cursorMark` would not know which of the documents with the identical mark values should be skipped.
+Requiring that the uniqueKey field be used as a clause in the sort criteria guarantees that a deterministic ordering will be returned, and that every `cursorMark` value will identify a unique point in the sequence of documents.
 
 === Cursor Examples
 
@@ -209,7 +221,10 @@ while (! done) {
 
 === How Cursors are Affected by Index Updates
 
-Unlike basic pagination, Cursor pagination does not rely on using an absolute "offset" into the completed sorted list of matching documents. Instead, the `cursorMark` specified in a request encapsulates information about the *relative* position of the last document returned, based on the *absolute* sort values of that document. This means that the impact of index modifications is much smaller when using a cursor compared to basic pagination. Consider the same example index described when discussing basic pagination:
+Unlike basic pagination, Cursor pagination does not rely on using an absolute "offset" into the completed sorted list of matching documents.
+Instead, the `cursorMark` specified in a request encapsulates information about the *relative* position of the last document returned, based on the *absolute* sort values of that document.
+This means that the impact of index modifications is much smaller when using a cursor compared to basic pagination.
+Consider the same example index described when discussing basic pagination:
 
 [options="header",%autowidth,width="30%"]
 |===
@@ -246,9 +261,12 @@ In this situation, you will be guaranteed that each document is only returned on
 
 === "Tailing" a Cursor
 
-Because Cursor requests are stateless, and the cursorMark values encapsulate the absolute sort values of the last document returned from a search, it's possible to "continue" fetching additional results from a cursor that has already reached its end. If new documents are added (or existing documents are updated) to the end of the results.
+Because Cursor requests are stateless, and the cursorMark values encapsulate the absolute sort values of the last document returned from a search, it's possible to "continue" fetching additional results from a cursor that has already reached its end.
+If new documents are added (or existing documents are updated) to the end of the results.
 
-You can think of this as similar to using something like "tail -f" in Unix. The most common examples of how this can be useful is when you have a "timestamp" field recording when a document has been added/updated in your index. Client applications can continuously poll a cursor using a `sort=timestamp asc, id asc` for documents matching a query, and always be notified when a document is added or updated matching the request criteria.
+You can think of this as similar to using something like "tail -f" in Unix.
+The most common examples of how this can be useful is when you have a "timestamp" field recording when a document has been added/updated in your index.
+Client applications can continuously poll a cursor using a `sort=timestamp asc, id asc` for documents matching a query, and always be notified when a document is added or updated matching the request criteria.
 
 Another common example is when you have uniqueKey values that always increase as new documents are created, and you can continuously poll a cursor using `sort=id asc` to be notified about new documents.
 

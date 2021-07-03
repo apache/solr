@@ -40,7 +40,7 @@ To provide additional flexibility, two new types of replicas have been added, na
 
 As part of this change, the traditional type of replica is now named NRT. If you do not explicitly define a number of TLOG or PULL replicas, Solr defaults to creating NRT replicas. If this model is working for you, you will not have to change anything.
 
-See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more details on the new replica modes, and how define the replica type in your cluster.
+See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more details on the new replica modes, and how define the replica type in your cluster.
 
 === Autoscaling
 Solr autoscaling is a new suite of features in Solr to make managing a SolrCloud cluster easier and more automated.
@@ -49,9 +49,7 @@ At its core, Solr autoscaling provides users with a rule syntax to define prefer
 
 === Other Features & Enhancements
 
-// TODO 7.1 - update link to docs when complete
-* The Analytics Component has been refactored.
-** The documentation for this component is in progress; until it is available, please refer to https://issues.apache.org/jira/browse/SOLR-11144[SOLR-11144] for more details.
+* The <<analytics.adoc#,Analytics Component>> has been refactored.
 
 * There were several other new features released in earlier 6.x releases, which you may have missed:
 ** <<learning-to-rank.adoc#,Learning to Rank>>
@@ -70,7 +68,7 @@ Several changes have been made to configsets that ship with Solr; not only their
 * The `data_driven_configset` and `basic_configset` have been removed, and replaced by the `_default` configset. The `sample_techproducts_configset` also remains, and is designed for use with the example documents shipped with Solr in the `example/exampledocs` directory.
 * When creating a new collection, if you do not specify a configset, the `_default` will be used.
 ** If you use SolrCloud, the `_default` configset will be automatically uploaded to ZooKeeper.
-** If you use standalone mode, the instanceDir will be created automatically, using the `_default` configset as its basis.
+** If you run a user-managed cluster or a single-node installation, the instanceDir will be created automatically, using the `_default` configset as its basis.
 
 === Schemaless Improvements
 
@@ -108,13 +106,13 @@ curl http://host:8983/api/collections/mycollection/config -d '{"set-user-propert
 
 === Changes to Default Behaviors
 * JSON is now the default response format. If you rely on XML responses, you must now define `wt=xml` in your request. In addition, line indentation is enabled by default (`indent=on`).
-* The `sow` parameter (short for "Split on Whitespace") now defaults to `false`, which allows support for multi-word synonyms out of the box. This parameter is used with the eDismax and standard/"lucene" query parsers. If this parameter is not explicitly specified as `true`, query text will not be split on whitespace before analysis.
+* The `sow` parameter (short for "Split on Whitespace") now defaults to `false`, which allows support for multi-word synonyms out of the box. This parameter is used with the eDisMax and standard/"lucene" query parsers. If this parameter is not explicitly specified as `true`, query text will not be split on whitespace before analysis.
 * The `legacyCloud` parameter now defaults to `false`. If an entry for a replica does not exist in `state.json`, that replica will not get registered.
 +
 This may affect users who bring up replicas and they are automatically registered as a part of a shard. It is possible to fall back to the old behavior by setting the property `legacyCloud=true`, in the cluster properties using the following command:
 +
 `./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:2181  -cmd clusterprop -name legacyCloud -val true`
-* The eDismax query parser parameter `lowercaseOperators` now defaults to `false` if the `luceneMatchVersion` in `solrconfig.xml` is 7.0.0 or above. Behavior for `luceneMatchVersion` lower than 7.0.0 is unchanged (so, `true`). This means that clients must sent boolean operators (such as AND, OR and NOT) in upper case in order to be recognized, or you must explicitly set this parameter to `true`.
+* The eDisMax query parser parameter `lowercaseOperators` now defaults to `false` if the `luceneMatchVersion` in `solrconfig.xml` is 7.0.0 or above. Behavior for `luceneMatchVersion` lower than 7.0.0 is unchanged (so, `true`). This means that clients must sent boolean operators (such as AND, OR and NOT) in upper case in order to be recognized, or you must explicitly set this parameter to `true`.
 * The `handleSelect` parameter in `solrconfig.xml` now defaults to `false` if the `luceneMatchVersion` is 7.0.0 or above. This causes Solr to ignore the `qt` parameter if it is present in a request. If you have request handlers without a leading '/', you can set `handleSelect="true"` or consider migrating your configuration.
 +
 The `qt` parameter is still used as a SolrJ special parameter that specifies the request handler (tail URL path) to use.
@@ -168,9 +166,9 @@ The following changes were made in SolrJ.
 * `HttpSolrClient#setDefaultMaxConnectionsPerHost` and `HttpSolrClient#setMaxTotalConnections` have been removed. These now default very high and can only be changed via parameter when creating an HttpClient instance.
 
 === Other Deprecations and Removals
-* The `defaultOperator` parameter in the schema is no longer supported. Use the `q.op` parameter instead. This option had been deprecated for several releases. See the section <<the-standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
-* The `defaultSearchField` parameter in the schema is no longer supported. Use the `df` parameter instead. This option had been deprecated for several releases. See the section <<the-standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
-* The `mergePolicy`, `mergeFactor` and `maxMergeDocs` parameters have been removed and are no longer supported. You should define a `mergePolicyFactory` instead. See the section <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for more information.
+* The `defaultOperator` parameter in the schema is no longer supported. Use the `q.op` parameter instead. This option had been deprecated for several releases. See the section <<standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
+* The `defaultSearchField` parameter in the schema is no longer supported. Use the `df` parameter instead. This option had been deprecated for several releases. See the section <<standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
+* The `mergePolicy`, `mergeFactor` and `maxMergeDocs` parameters have been removed and are no longer supported. You should define a `mergePolicyFactory` instead. See the section <<index-segments-merging.adoc#mergepolicyfactory,the mergePolicyFactory>> for more information.
 * The PostingsSolrHighlighter has been deprecated. It's recommended that you move to using the UnifiedHighlighter instead. See the section <<highlighting.adoc#the-unified-highlighter,Unified Highlighter>> for more information about this highlighter.
 * Index-time boosts have been removed from Lucene, and are no longer available from Solr. If any boosts are provided, they will be ignored by the indexing chain. As a replacement, index-time scoring factors should be indexed in a separate field and combined with the query score using a function query. See the section <<function-queries.adoc#,Function Queries>> for more information.
 * The `StandardRequestHandler` is deprecated. Use `SearchHandler` instead.
@@ -198,7 +196,7 @@ Note again that this is not a complete list of all changes that may impact your 
 ** The metrics "75thPctlRequestTime", "95thPctlRequestTime", "99thPctlRequestTime" and "999thPctlRequestTime" in Overseer Status API have been renamed to "75thPcRequestTime", "95thPcRequestTime" and so on for consistency with stats output in other parts of Solr.
 ** The metrics "avgRequestsPerMinute", "5minRateRequestsPerMinute" and "15minRateRequestsPerMinute" have been replaced by corresponding per-second rates viz. "avgRequestsPerSecond", "5minRateRequestsPerSecond" and "15minRateRequestsPerSecond" for consistency with stats output in other parts of Solr.
 * A new highlighter named UnifiedHighlighter has been added. You are encouraged to try out the UnifiedHighlighter by setting `hl.method=unified` and report feedback. It's more efficient/faster than the other highlighters, especially compared to the original Highlighter. See `HighlightParams.java` for a listing of highlight parameters annotated with which highlighters use them. `hl.useFastVectorHighlighter` is now considered deprecated in lieu of `hl.method=fastVector`.
-* The <<query-settings-in-solrconfig.adoc#,`maxWarmingSearchers` parameter>> now defaults to 1, and more importantly commits will now block if this limit is exceeded instead of throwing an exception (a good thing). Consequently there is no longer a risk in overlapping commits. Nonetheless users should continue to avoid excessive committing. Users are advised to remove any pre-existing `maxWarmingSearchers` entries from their `solrconfig.xml` files.
+* The <<caches-warming.adoc#,`maxWarmingSearchers` parameter>> now defaults to 1, and more importantly commits will now block if this limit is exceeded instead of throwing an exception (a good thing). Consequently there is no longer a risk in overlapping commits. Nonetheless users should continue to avoid excessive committing. Users are advised to remove any pre-existing `maxWarmingSearchers` entries from their `solrconfig.xml` files.
 * The <<other-parsers.adoc#complex-phrase-query-parser,Complex Phrase query parser>> now supports leading wildcards. Beware of its possible heaviness, users are encouraged to use ReversedWildcardFilter in index time analysis.
 * The JMX metric "avgTimePerRequest" (and the corresponding metric in the metrics API for each handler) used to be a simple non-decaying average based on total cumulative time and the number of requests. The Codahale Metrics implementation applies exponential decay to this value, which heavily biases the average towards the last 5 minutes.
 * Parallel SQL now uses Apache Calcite as its SQL framework. As part of this change the default aggregation mode has been changed to `facet` rather than `map_reduce`. There have also been changes to the SQL aggregate response and some SQL syntax changes. Consult the <<parallel-sql-interface.adoc#,Parallel SQL Interface>> documentation for full details.

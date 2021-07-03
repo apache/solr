@@ -1,7 +1,27 @@
 = Streaming Expressions and Math Expressions
-:page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, probability-distributions, statistics, regression, curve-fitting, time-series, numerical-analysis, dsp, simulations, machine-learning, graph, computational-geometry, logs
+:page-children: visualization, \
+  math-start, \
+  loading, \
+  search-sample, \
+  transform, \
+  scalar-math, \
+  vector-math, \
+  variables, \
+  matrix-math, \
+  term-vectors, \
+  probability-distributions, \
+  statistics, \
+  regression, \
+  curve-fitting, \
+  time-series, \
+  numerical-analysis, \
+  dsp, \
+  simulations, \
+  machine-learning, \
+  graph, \
+  computational-geometry, \
+  logs
 :page-show-toc: false
-
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -59,7 +79,7 @@ image::images/math-expressions/searchiris.png[]
 
 *<<dsp.adoc#,Signal Processing>>*: Convolution, cross-correlation, autocorrelation and fast Fourier transforms.
 
-*<<simulations.adoc#,Simulations>>*: Monte Carlo simulations and random walks
+*<<simulations.adoc#,Simulations>>*: Monte Carlo simulations and random walks.
 
 *<<machine-learning.adoc#,Machine Learning>>*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
 

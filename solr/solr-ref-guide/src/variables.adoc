@@ -17,18 +17,17 @@
 // under the License.
 
 
-This section of the user guide describes how to assign and visualize
-variables with math expressions.
+This section of the user guide describes how to assign and visualize variables with math expressions.
 
 == The Let Expression
 
-The `let` expression sets variables and returns
-the value of the last variable by default. The output of any streaming expression or math expression can be set to a variable.
+The `let` expression sets variables and returns the value of the last variable by default.
+The output of any streaming expression or math expression can be set to a variable.
 
 Below is a simple example setting three variables `a`, `b`,
-and `c`. Variables `a` and `b` are set to arrays. The variable `c` is set
-to the output of the `ebeAdd` function which performs element-by-element
-addition of the two arrays.
+and `c`.
+Variables `a` and `b` are set to arrays.
+The variable `c` is set to the output of the `ebeAdd` function which performs element-by-element addition of the two arrays.
 
 [source,text]
 ----
@@ -72,8 +71,7 @@ let(echo=true,
     c=ebeAdd(a, b))
 ----
 
-When this expression is sent to the `/stream` handler it
-responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -147,11 +145,10 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Visualizing Variables
 
-The `let` expression can also include a `zplot` expression that can be used to visualize the
-variables.
+The `let` expression can also include a `zplot` expression that can be used to visualize the variables.
 
-In the example below the variables `a` and `b` are set to arrays. The `zplot` function
-outputs the variables as `x` and `y` fields in the output.
+In the example below the variables `a` and `b` are set to arrays.
+The `zplot` function outputs the variables as `x` and `y` fields in the output.
 
 [source,text]
 ----
@@ -188,28 +185,26 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Using this approach variables can by visualized using Zeppelin-Solr. In the example below
-the arrays are shown in table format.
+Using this approach variables can by visualized using Zeppelin-Solr.
+In the example below the arrays are shown in table format.
 
 image::images/math-expressions/variables.png[]
 
-Once in table format we can plot the variables using one of the plotting or charting
-visualizations. The example below shows variables plotted on a line chart:
+Once in table format we can plot the variables using one of the plotting or charting visualizations.
+The example below shows variables plotted on a line chart:
 
 image::images/math-expressions/variables1.png[]
 
 
 == Caching Variables
 
-Variables can be cached in-memory on the Solr node where the math expression
-was run. A cached variable can then be used in future expressions. Any object
-that can be set to a variable, including data structures and mathematical models, can
-be cached in-memory for future use.
+Variables can be cached in-memory on the Solr node where the math expression was run.
+A cached variable can then be used in future expressions.
+Any object that can be set to a variable, including data structures and mathematical models, can be cached in-memory for future use.
 
 The `putCache` function adds a variable to the cache.
 
-In the example below an array is cached in the workspace `workspace1`
-and bound to the key `key1`.
+In the example below an array is cached in the workspace `workspace1` and bound to the key `key1`.
 The workspace allows different users to cache objects in their own workspace.
 The `putCache` function returns the variable that was added to the cache.
 
@@ -335,9 +330,8 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-The `removeCache` function can be used to remove a key from a specific
-workspace. The `removeCache` function removes the key from the cache
-and returns the object that was removed.
+The `removeCache` function can be used to remove a key from a specific workspace.
+The `removeCache` function removes the key from the cache and returns the object that was removed.
 
 In the example below the array that was cached above is removed from the cache.
 

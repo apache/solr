@@ -16,18 +16,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section of the user guide covers the core statistical functions
-available in math expressions.
+This section of the user guide covers the core statistical functions available in math expressions.
 
 == Descriptive Statistics
 
-The `describe` function returns descriptive statistics for a
-numeric array. The `describe` function returns a single *tuple* with name/value
-pairs containing the descriptive statistics.
+The `describe` function returns descriptive statistics for a numeric array.
+The `describe` function returns a single *tuple* with name/value pairs containing the descriptive statistics.
 
 Below is a simple example that selects a random sample of documents from the *logs* collection,
-vectorizes the `response_d` field in the result set and uses the `describe` function to
-return descriptive statistics about the vector.
+vectorizes the `response_d` field in the result set and uses the `describe` function to return descriptive statistics about the vector.
 
 [source,text]
 ----
@@ -66,11 +63,8 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Notice that the random sample contains 50,000 records and the response
-time is only 430 milliseconds. Samples of this size can be used to
-reliably estimate the statistics for very large underlying
-data sets with sub-second performance.
-
+Notice that the random sample contains 50,000 records and the response time is only 430 milliseconds.
+Samples of this size can be used to reliably estimate the statistics for very large underlying data sets with sub-second performance.
 
 The `describe` function can also be visualized in a table with Zeppelin-Solr:
 
@@ -79,20 +73,17 @@ image::images/math-expressions/describe.png[]
 
 == Histograms and Frequency Tables
 
-Histograms and frequency tables are tools for visualizing the distribution
-of a random variable.
+Histograms and frequency tables are tools for visualizing the distribution of a random variable.
 
-The `hist` function creates a histogram designed for usage with continuous data. The
-`freqTable` function creates a frequency table for use with discrete data.
+The `hist` function creates a histogram designed for usage with continuous data.
+The `freqTable` function creates a frequency table for use with discrete data.
 
 === histograms
 
-In the example below a histogram is used to visualize a random sample of
-response times from the logs collection. The example retrieves the
-random sample with the `random` function and creates a vector from the `response_d` field
-in the result set. Then the `hist` function is applied to the vector
-to return a histogram with 22 bins. The `hist` function returns a
-list of tuples with summary statistics for each bin.
+In the example below a histogram is used to visualize a random sample of response times from the logs collection.
+The example retrieves the random sample with the `random` function and creates a vector from the `response_d` field in the result set.
+Then the `hist` function is applied to the vector to return a histogram with 22 bins.
+The `hist` function returns a list of tuples with summary statistics for each bin.
 
 [source,text]
 ----
@@ -149,8 +140,7 @@ With Zeppelin-Solr the histogram can be first visualized as a table:
 
 image::images/math-expressions/histtable.png[]
 
-Then the histogram can be visualized with an area chart by plotting the *mean* of
-the bins on the *x-axis* and the *prob* (probability) on the *y-axis*:
+Then the histogram can be visualized with an area chart by plotting the *mean* of the bins on the *x-axis* and the *prob* (probability) on the *y-axis*:
 
 image::images/math-expressions/hist.png[]
 
@@ -160,28 +150,24 @@ image::images/math-expressions/cumProb.png[]
 
 === Custom Histograms
 
-Custom histograms can be defined and visualized by combining the output from multiple
-`stats` functions into a single histogram. Instead of automatically binning a numeric
-field the custom histogram allows for comparison of bins based on queries.
+Custom histograms can be defined and visualized by combining the output from multiple `stats` functions into a single histogram.
+Instead of automatically binning a numeric field the custom histogram allows for comparison of bins based on queries.
 
-NOTE: The `stats` function is first discussed in the *Searching, Sampling and Aggregation* section of the
-user guide.
+NOTE: The `stats` function is first discussed in the *Searching, Sampling and Aggregation* section of the user guide.
 
 A simple example will illustrate how to define and visualize a custom histogram.
 
-In this example, three `stats` functions are wrapped in a `plist` function. The
-`plist` (parallel list) function  executes each of its internal functions in parallel
-and concatenates the results into a single stream. `plist` also maintains the order
-of the outputs from each of the sub-functions. In this example each `stats` function
-computes the count of documents that match a specific query. In this case they count the
-number of documents that contain the terms copper, gold and silver. The list of tuples
-with the counts is then stored in variable *a*.
+In this example, three `stats` functions are wrapped in a `plist` function.
+The `plist` (parallel list) function  executes each of its internal functions in parallel and concatenates the results into a single stream.
+`plist` also maintains the order of the outputs from each of the sub-functions.
+In this example each `stats` function computes the count of documents that match a specific query.
+In this case they count the number of documents that contain the terms copper, gold and silver.
+The list of tuples with the counts is then stored in variable *a*.
 
 Then an `array` of labels is created and set to variable *l*.
 
 Finally the `zplot` function is used to plot the labels vector and the `count(*)` column.
-Notice the `col` function is used inside of the `zplot` function to extract the
-counts from the `stats` results.
+Notice the `col` function is used inside of the `zplot` function to extract the counts from the `stats` results.
 
 image::images/math-expressions/custom-hist.png[]
 
@@ -189,33 +175,25 @@ image::images/math-expressions/custom-hist.png[]
 === Frequency Tables
 
 The `freqTable` function returns a frequency distribution for a discrete data set.
-The `freqTable` function doesn't create bins like the histogram. Instead it counts
-the occurrence of each discrete data value and returns a list of tuples with the
-frequency statistics for each value.
+The `freqTable` function doesn't create bins like the histogram.
+Instead it counts the occurrence of each discrete data value and returns a list of tuples with the frequency statistics for each value.
 
-Below is an example of a frequency table built from a result set
-of rounded *differences* in daily opening stock prices for the stock ticker *amzn*.
+Below is an example of a frequency table built from a result set of rounded *differences* in daily opening stock prices for the stock ticker *amzn*.
 
-This example is interesting because it shows a multi-step process to arrive
-at the result. The first step is to *search* for records in the the *stocks*
-collection with a ticker of *amzn*. Notice that the result set is sorted by
-date ascending and it returns the `open_d` field which is the opening price for
-the day.
+This example is interesting because it shows a multi-step process to arrive at the result.
+The first step is to *search* for records in the the *stocks* collection with a ticker of *amzn*.
+Notice that the result set is sorted by date ascending and it returns the `open_d` field which is the opening price for the day.
 
-The `open_d` field is then vectorized and set to variable *b*, which now contains
-a vector of opening prices ordered by date ascending.
+The `open_d` field is then vectorized and set to variable *b*, which now contains a vector of opening prices ordered by date ascending.
 
-The `diff` function is then used to calculate the *first difference* for the
-vector of opening prices. The first difference simply subtracts the previous value
-from each value in the array. This will provide an array of price differences
-for each day which will show daily change in opening price.
+The `diff` function is then used to calculate the *first difference* for the vector of opening prices.
+The first difference simply subtracts the previous value from each value in the array.
+This will provide an array of price differences for each day which will show daily change in opening price.
 
-Then the `round` function is used to round the price differences to the nearest
-integer to create a vector of discrete values. The `round` function in this
-example is effectively *binning* continuous data at integer boundaries.
+Then the `round` function is used to round the price differences to the nearest integer to create a vector of discrete values.
+The `round` function in this example is effectively *binning* continuous data at integer boundaries.
 
-Finally the `freqTable` function is run on the discrete values to calculate
-the frequency table.
+Finally the `freqTable` function is run on the discrete values to calculate the frequency table.
 
 [source,text]
 ----
@@ -266,22 +244,18 @@ With Zeppelin-Solr the frequency table can be first visualized as a table:
 
 image::images/math-expressions/freqTable.png[]
 
-The frequency table can then be plotted by switching to a scatter chart and selecting
-the *value* column for the *x-axis* and the *count* column for the *y-axis*
+The frequency table can then be plotted by switching to a scatter chart and selecting the *value* column for the *x-axis* and the *count* column for the *y-axis*
 
 image::images/math-expressions/freqTable1.png[]
 
-Notice that the visualization nicely displays the frequency of daily change in stock prices
-rounded to integers. The most frequently occurring value is 0 with 1494 occurrences followed by
- -1 and 1 with around 700 occurrences.
-
+Notice that the visualization nicely displays the frequency of daily change in stock prices rounded to integers.
+The most frequently occurring value is 0 with 1494 occurrences followed by -1 and 1 with around 700 occurrences.
 
 == Percentiles
 
-The `percentile` function returns the estimated value for a specific percentile in
-a sample set. The example below returns a random sample containing the `response_d` field
-from the logs collection. The `response_d` field is vectorized and the 20th percentile
-is calculated for the vector:
+The `percentile` function returns the estimated value for a specific percentile in a sample set.
+The example below returns a random sample containing the `response_d` field from the logs collection.
+The `response_d` field is vectorized and the 20th percentile is calculated for the vector:
 
 [source,text]
 ----
@@ -310,8 +284,7 @@ When this expression is sent to the `/stream` handler it responds with:
 ----
 
 The `percentile` function can also compute an array of percentile values.
-The example below is computing the 20th, 40th, 60th and 80th percentiles for a random sample
-of the `response_d` field:
+The example below is computing the 20th, 40th, 60th and 80th percentiles for a random sample of the `response_d` field:
 
 [source,text]
 ----
@@ -348,43 +321,39 @@ When this expression is sent to the `/stream` handler it responds with:
 
 Quantile plots or QQ Plots are powerful tools for visually comparing two or more distributions.
 
-A quantile plot, plots the percentiles from two or more distributions in the same visualization. This allows
-for visual comparison of the distributions at each percentile. A simple example will help illustrate the power
-of quantile plots.
+A quantile plot, plots the percentiles from two or more distributions in the same visualization.
+This allows for visual comparison of the distributions at each percentile.
+A simple example will help illustrate the power of quantile plots.
 
-In this example the distribution of daily stock price changes for two stock tickers, *goog* and
-*amzn*, are visualized with a quantile plot.
+In this example the distribution of daily stock price changes for two stock tickers, *goog* and *amzn*, are visualized with a quantile plot.
 
-The example first creates an array of values representing the percentiles that will be calculated and sets this array
-to variable *p*. Then random samples of the `change_d` field are drawn for the tickers *amzn* and *goog*. The `change_d` field
-represents the change in stock price for one day. Then the `change_d` field is vectorized for both samples and placed
-in the variables *amzn* and *goog*. The `percentile` function is then used to calculate the percentiles for both vectors. Notice that
-the variable *p* is used to specify the list of percentiles that are calculated.
+The example first creates an array of values representing the percentiles that will be calculated and sets this array to variable *p*.
+Then random samples of the `change_d` field are drawn for the tickers *amzn* and *goog*.
+The `change_d` field represents the change in stock price for one day.
+Then the `change_d` field is vectorized for both samples and placed in the variables *amzn* and *goog*.
+The `percentile` function is then used to calculate the percentiles for both vectors.
+Notice that the variable *p* is used to specify the list of percentiles that are calculated.
 
-Finally `zplot` is used to plot the percentiles sequence on the *x-axis* and the calculated
-percentile values for both distributions on the *y-axis*. And a line plot is used
-to visualize the QQ plot.
+Finally `zplot` is used to plot the percentiles sequence on the *x-axis* and the calculated percentile values for both distributions on the *y-axis*.
+And a line plot is used to visualize the QQ plot.
 
 image::images/math-expressions/quantile-plot.png[]
 
-This quantile plot provides a clear picture of the distributions of daily price changes for *amzn*
-and *googl*. In the plot the *x-axis* is the percentiles and the *y-axis* is the percentile value calculated.
+This quantile plot provides a clear picture of the distributions of daily price changes for *amzn* and *googl*.
+In the plot the *x-axis* is the percentiles and the *y-axis* is the percentile value calculated.
 
-Notice that the *goog* percentile value starts lower and ends higher than the *amzn* plot and that there is a
-steeper slope. This shows the greater variability in the *goog* price change distribution. The plot gives a clear picture
-of the difference
-in the distributions across the full range of percentiles.
-
+Notice that the *goog* percentile value starts lower and ends higher than the *amzn* plot and that there is a steeper slope.
+This shows the greater variability in the *goog* price change distribution.
+The plot gives a clear picture of the difference in the distributions across the full range of percentiles.
 
 == Correlation and Covariance
 
-Correlation and Covariance measure how random variables fluctuate
-together.
+Correlation and Covariance measure how random variables fluctuate together.
 
 === Correlation and Correlation Matrices
 
-Correlation is a measure of the linear correlation between two vectors. Correlation is scaled between
--1 and 1.
+Correlation is a measure of the linear correlation between two vectors.
+Correlation is scaled between -1 and 1.
 
 Three correlation types are supported:
 
@@ -392,56 +361,45 @@ Three correlation types are supported:
 * *kendalls*
 * *spearmans*
 
-The type of correlation is specified by adding the *type* named parameter in the
-function call.
+The type of correlation is specified by adding the *type* named parameter in the function call.
 
-In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from
-the logs collection using the `random` function. The fields are vectorized into the
-variables *x* and *y* and then *Spearman's* correlation for
-the two vectors is calculated using the `corr` function.
+In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from the logs collection using the `random` function.
+The fields are vectorized into the variables *x* and *y* and then *Spearman's* correlation for the two vectors is calculated using the `corr` function.
 
 image::images/math-expressions/correlation.png[]
 
 ==== Correlation Matrices
 
-Correlation matrices are powerful tools for visualizing the correlation between two or more
-vectors.
+Correlation matrices are powerful tools for visualizing the correlation between two or more vectors.
 
-The `corr` function builds a correlation matrix
-if a matrix is passed as the parameter. The correlation matrix is computed by correlating the *columns*
-of the matrix.
+The `corr` function builds a correlation matrix if a matrix is passed as the parameter.
+The correlation matrix is computed by correlating the *columns* of the matrix.
 
 The example below demonstrates the power of correlation matrices combined with 2 dimensional faceting.
 
-In this example the `facet2D` function is used to generate a two dimensional facet aggregation
-over the fields `complaint_type_s` and `zip_s` from the *nyc311* complaints database.
+In this example the `facet2D` function is used to generate a two dimensional facet aggregation over the fields `complaint_type_s` and `zip_s` from the *nyc311* complaints database.
 The *top 20* complaint types and the *top 25* zip codes for each complaint type are aggregated.
-The result is a stream of tuples each containing the fields `complaint_type_s`, `zip_s` and
-the count for the pair.
+The result is a stream of tuples each containing the fields `complaint_type_s`, `zip_s` and the count for the pair.
 
-The `pivot` function is then used to pivot the fields into a *matrix* with the `zip_s`
-field as the *rows* and the `complaint_type_s` field as the *columns*. The `count(*)` field populates
-the values in the cells of the matrix.
+The `pivot` function is then used to pivot the fields into a *matrix* with the `zip_s` field as the *rows* and the `complaint_type_s` field as the *columns*.
+The `count(*)` field populates the values in the cells of the matrix.
 
-The `corr` function is then used correlate the *columns* of the matrix. This produces a correlation matrix
-that shows how complaint types are correlated based on the zip codes they appear in. Another way to look at this
-is it shows how the different complaint types tend to co-occur across zip codes.
+The `corr` function is then used correlate the *columns* of the matrix.
+This produces a correlation matrix that shows how complaint types are correlated based on the zip codes they appear in.
+Another way to look at this is it shows how the different complaint types tend to co-occur across zip codes.
 
 Finally the `zplot` function is used to plot the correlation matrix as a heat map.
 
 image::images/math-expressions/corrmatrix.png[]
 
-Notice in the example the correlation matrix is square with complaint types shown on both
-the *x* and y-axises. The color of the cells in the heat map shows the
-intensity of the correlation between the complaint types.
+Notice in the example the correlation matrix is square with complaint types shown on both the *x* and y-axises.
+The color of the cells in the heat map shows the intensity of the correlation between the complaint types.
 
-The heat map is interactive, so mousing over one of the cells pops up the values
-for the cell.
+The heat map is interactive, so mousing over one of the cells pops up the values for the cell.
 
 image::images/math-expressions/corrmatrix2.png[]
 
-Notice that HEAT/HOT WATER and UNSANITARY CONDITION complaints have a correlation of 8 (rounded to the nearest
-tenth).
+Notice that HEAT/HOT WATER and UNSANITARY CONDITION complaints have a correlation of 8 (rounded to the nearesttenth).
 
 === Covariance and Covariance Matrices
 
@@ -449,19 +407,15 @@ Covariance is an unscaled measure of correlation.
 
 The `cov` function calculates the covariance of two vectors of data.
 
-In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from
-the logs collection using the `random` function. The fields are vectorized into the
-variables *x* and *y* and then the covariance for
-the two vectors is calculated using the `cov` function.
+In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from the logs collection using the `random` function.
+The fields are vectorized into the variables *x* and *y* and then the covariance for the two vectors is calculated using the `cov` function.
 
 image::images/math-expressions/covariance.png[]
 
-If a matrix is passed to the `cov` function it will automatically compute a covariance
-matrix for the *columns* of the matrix.
+If a matrix is passed to the `cov` function it will automatically compute a covariance matrix for the *columns* of the matrix.
 
 Notice in the example below that the *x* and *y* vectors are added to a matrix.
-The matrix is then transposed to turn the rows into columns,
-and the covariance matrix is computed for the columns of the matrix.
+The matrix is then transposed to turn the rows into columns, and the covariance matrix is computed for the columns of the matrix.
 
 [source,text]
 ----
@@ -500,8 +454,7 @@ When this expression is sent to the `/stream` handler it responds with:
  }
 ----
 
-The covariance matrix contains both the variance for the two vectors and the covariance between the vectors
-in the following format:
+The covariance matrix contains both the variance for the two vectors and the covariance between the vectors in the following format:
 
 
 [source,text]
@@ -511,44 +464,32 @@ in the following format:
  y [80243.3948172242,  1948.3216661122592]
 ----
 
-The covariance matrix is always square. So a covariance matrix created from 3 vectors will produce a 3 x 3 matrix.
-
-
+The covariance matrix is always square.
+So a covariance matrix created from 3 vectors will produce a 3 x 3 matrix.
 
 == Statistical Inference Tests
 
-Statistical inference tests test a hypothesis on *random samples* and return p-values which
-can be used to infer the reliability of the test for the entire population.
+Statistical inference tests test a hypothesis on *random samples* and return p-values which can be used to infer the reliability of the test for the entire population.
 
 The following statistical inference tests are available:
 
-* `anova`: One-Way-Anova tests if there is a statistically significant difference in the
-means of two or more random samples.
+* `anova`: One-Way-Anova tests if there is a statistically significant difference in the means of two or more random samples.
 
-* `ttest`: The T-test tests if there is a statistically significant difference in the means of two
-random samples.
+* `ttest`: The T-test tests if there is a statistically significant difference in the means of two random samples.
 
-* `pairedTtest`: The paired t-test tests if there is a statistically significant difference
-in the means of two random samples with paired data.
+* `pairedTtest`: The paired t-test tests if there is a statistically significant difference in the means of two random samples with paired data.
 
-* `gTestDataSet`: The G-test tests if two samples of binned discrete data were drawn
-from the same population.
+* `gTestDataSet`: The G-test tests if two samples of binned discrete data were drawn from the same population.
 
-* `chiSquareDataset`: The Chi-Squared test tests if two samples of binned discrete data were
-drawn from the same population.
+* `chiSquareDataset`: The Chi-Squared test tests if two samples of binned discrete data were drawn from the same population.
 
-* `mannWhitney`: The Mann-Whitney test is a non-parametric test that tests if two
-samples of continuous data were pulled
-from the same population. The Mann-Whitney test is often used instead of the T-test when the
-underlying assumptions of the T-test are not
-met.
+* `mannWhitney`: The Mann-Whitney test is a non-parametric test that tests if two samples of continuous data were pulled from the same population.
+The Mann-Whitney test is often used instead of the T-test when the underlying assumptions of the T-test are not met.
 
-* `ks`: The Kolmogorov-Smirnov test tests if two samples of continuous data were drawn from
-the same distribution.
+* `ks`: The Kolmogorov-Smirnov test tests if two samples of continuous data were drawn from the same distribution.
 
 Below is a simple example of a T-test performed on two random samples.
-The returned p-value of .93 means we can accept the null hypothesis
-that the two samples do not have statistically significantly differences in the means.
+The returned p-value of .93 means we can accept the null hypothesis that the two samples do not have statistically significantly differences in the means.
 
 [source,text]
 ----
@@ -583,12 +524,10 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Transformations
 
-In statistical analysis its often useful to transform data sets before performing
-statistical calculations. The statistical function library includes the following
-commonly used transformations:
+In statistical analysis its often useful to transform data sets before performing statistical calculations.
+The statistical function library includes the following commonly used transformations:
 
-* `rank`: Returns a numeric array with the rank-transformed value of each element of the original
-array.
+* `rank`: Returns a numeric array with the rank-transformed value of each element of the original array.
 
 * `log`: Returns a numeric array with the natural log of each element of the original array.
 
@@ -635,11 +574,9 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Back Transformations
 
-Vectors that have been transformed with the `log`, `log10`, `sqrt` and `cbrt` functions
-can be back transformed using the `pow` function.
+Vectors that have been transformed with the `log`, `log10`, `sqrt` and `cbrt` functions can be back transformed using the `pow` function.
 
-The example below shows how to back transform data that has been transformed by the
-`sqrt` function.
+The example below shows how to back transform data that has been transformed by the `sqrt` function.
 
 
 [source,text]
@@ -678,8 +615,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-The example below shows how to back transform data that has been transformed by the
-`log10` function.
+The example below shows how to back transform data that has been transformed by the `log10` function.
 
 
 [source,text]
@@ -718,8 +654,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Vectors that have been transformed with the `recip` function can be back-transformed by taking the reciprocal
-of the reciprocal.
+Vectors that have been transformed with the `recip` function can be back-transformed by taking the reciprocal of the reciprocal.
 
 The example below shows an example of the back-transformation of the `recip` function.
 
@@ -761,11 +696,10 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Z-scores
 
-The `zscores` function converts a numeric array to an array of z-scores. The z-score
-is the number of standard deviations a number is from the mean.
+The `zscores` function converts a numeric array to an array of z-scores.
+The z-score is the number of standard deviations a number is from the mean.
 
 The example below computes the z-scores for the values in an array.
-
 
 [source,text]
 ----
