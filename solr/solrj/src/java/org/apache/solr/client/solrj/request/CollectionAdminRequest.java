@@ -1791,7 +1791,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private final String interval;
     //Optional:
     private TimeZone tz;
-    private Integer maxFutureMs;
+    private Long maxFutureMs;
     private String preemptiveCreateMath;
     private String autoDeleteAge;
 
@@ -1814,6 +1814,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     /** Sets how long into the future (millis) that we will allow a document to pass. */
     public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
+      this.maxFutureMs = Long.valueOf(maxFutureMs);
+      return this;
+    }
+
+    /** Overloading setMaxFutureMs with Long type for backwards compatibility  */
+    public CreateTimeRoutedAlias setMaxFutureMs(Long maxFutureMs) {
       this.maxFutureMs = maxFutureMs;
       return this;
     }
