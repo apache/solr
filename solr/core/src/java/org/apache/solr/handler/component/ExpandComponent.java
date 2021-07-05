@@ -71,7 +71,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -87,7 +86,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -106,7 +104,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * expand.fq=type:child (optional, overrides the main filter queries)<br>
  * expand.field=field (mandatory, if the not used with the CollapsingQParserPlugin. This is given higher priority when both are present)<br>
  */
-public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
+public class ExpandComponent extends SearchComponent implements PluginInfoInitialized {
   public static final String COMPONENT_NAME = "expand";
   private static final int finishingStage = ResponseBuilder.STAGE_GET_FIELDS;
   private PluginInfo info = PluginInfo.EMPTY_INFO;
@@ -124,11 +122,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
       rb.doExpand = true;
     }
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-
   }
 
   @Override
