@@ -22,7 +22,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.cloud.SyncSliceTest;
+import org.apache.solr.cloud.AbstractSyncSliceTestBase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -37,7 +37,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsSyncSliceTest extends SyncSliceTest {
+public class HdfsSyncSliceTest extends AbstractSyncSliceTestBase {
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
@@ -58,4 +58,5 @@ public class HdfsSyncSliceTest extends SyncSliceTest {
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
+
 }
