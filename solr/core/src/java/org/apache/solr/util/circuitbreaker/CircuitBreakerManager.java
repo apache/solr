@@ -25,6 +25,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.packagemanager.SolrPackage;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
@@ -127,17 +128,25 @@ public class CircuitBreakerManager {
    */
   @Deprecated
   public static CircuitBreakerManager build(PluginInfo pluginInfo) {
-    return build(pluginInfo, null);
+    List<PluginInfo> pluginInfos = new ArrayList<>();
+    pluginInfos.add(pluginInfo);
+
+    return build(pluginInfos, null);
   }
 
   /**
    * TODO
    */
-  public static CircuitBreakerManager build(PluginInfo pluginInfo, SolrResourceLoader solrResourceLoader) {
-    boolean enabled = pluginInfo == null ? false : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
+  public static CircuitBreakerManager build(List<PluginInfo> pluginInfos, SolrResourceLoader solrResourceLoader) {
+    boolean enabled = false;
+
+    if (pluginInfos.size() > 0) {
+      enabled = true;
+    }
+
     CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);
 
-    circuitBreakerManager.init(pluginInfo, solrResourceLoader);
+    circuitBreakerManager.init(pluginInfos, solrResourceLoader);
 
     return circuitBreakerManager;
   }
@@ -145,33 +154,24 @@ public class CircuitBreakerManager {
   /**
    * Initialize with circuit breakers defined in the configuration
    */
-  public void init(PluginInfo pluginInfo, SolrResourceLoader solrResourceLoader) {
-    final HashMap<String, CircuitBreaker> namedCBs = new HashMap<>();
+  public void init(List<PluginInfo> pluginInfos, SolrResourceLoader solrResourceLoader) {
 
-    if (solrResourceLoader != null) {
-      final String dotClass = ".class";
-      for (int idx = 0; idx < pluginInfo.initArgs.size(); ++idx) {
-        final String key = pluginInfo.initArgs.getName(idx);
-        final Object val = pluginInfo.initArgs.getVal(idx);
-        if (key.endsWith(dotClass)) {
-          final String cbName = key.substring(0, key.length() - dotClass.length());
-          final String cbClassName = (String)val;
-          namedCBs.put(cbName, solrResourceLoader.newInstance(cbClassName, CircuitBreaker.class));
-        }
+    for (PluginInfo pluginInfo : pluginInfos) {
+      String cbName = pluginInfo.className;
+
+      if (pluginInfo.type != "circuitBreaker") {
+        throw new IllegalStateException("CircuitBreakerManager invoked for non circuit breaker class");
       }
 
-      for (String name : namedCBs.keySet()) {
-        final CircuitBreaker cb = namedCBs.get(name);
-        final String argPrefix = name + ".";
+      if (solrResourceLoader != null) {
+        final CircuitBreaker cb = solrResourceLoader.newInstance(cbName, CircuitBreaker.class);
 
-        final HashMap<String,Object> params = new HashMap<>();
+        final HashMap<String, Object> params = new HashMap<>();
 
         for (int idx = 0; idx < pluginInfo.initArgs.size(); ++idx) {
           final String key = pluginInfo.initArgs.getName(idx);
           final Object val = pluginInfo.initArgs.getVal(idx);
-          if (key.startsWith(argPrefix) && !key.endsWith(dotClass)) {
-            params.put(key.substring(argPrefix.length()), val);
-          }
+          params.put(key, val);
         }
 
         SolrPluginUtils.invokeSetters(cb, params.entrySet());

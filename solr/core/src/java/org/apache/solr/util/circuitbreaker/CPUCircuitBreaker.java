@@ -58,7 +58,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
     this.enabled = enabled;
   }
 
-  public void setUsageThreshold(double usageThreshold) {
+  public void setThreshold(double usageThreshold) {
     this.cpuUsageThreshold = usageThreshold;
   }
 

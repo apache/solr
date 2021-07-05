@@ -27,23 +27,17 @@ are enabled, requests may be rejected under the condition of high node duress wi
 It is up to the client to handle this error and potentially build a retrial logic as this should ideally be a transient situation.
 
 == Circuit Breaker Configurations
-All circuit breaker configurations are listed in the circuitBreaker tags in solrconfig.xml as shown below:
+All circuit breaker configurations are listed as independent entries in solrconfig.xml as shown below:
 
 [source,xml]
 ----
-<circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
-  <!-- All specific configs in this section -->
-</circuitBreaker>
+  <circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enabled="true">
+    <bool name="enabled">true</bool>
+    <int  name="threshold">75</int>
+  </circuitBreaker>
 ----
 
-The "enabled" attribute controls the global activation/deactivation of circuit breakers. If this flag is disabled, all circuit breakers
-will be disabled globally. Per circuit breaker configurations are specified in their respective sections later.
-
-This attribute acts as the highest authority and global controller of circuit breakers. For using specific circuit breakers, each one
-needs to be individually enabled in addition to this flag being enabled.
-
-CircuitBreakerManager is the default manager for all circuit breakers that should be defined in the tag unless the user wishes to use
-a custom implementation.
+Each circuit breaker can be independently enabled/disabled using the corresponding flag.
 
 == Currently Supported Circuit Breakers
 
@@ -52,13 +46,14 @@ This circuit breaker tracks JVM heap memory usage and rejects incoming search re
 exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx). The main configuration for this circuit breaker is
 controlling the threshold percentage at which the breaker will trip.
 
-To enable and configure the JVM heap usage based circuit breaker, add the following under the circuitbreaker tag:
+To enable and configure the JVM heap usage based circuit breaker, add the following:
 
 [source,xml]
 ----
-<str  name="mem.class">org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker</str>
-<bool name="mem.enabled">true</bool>
-<int  name="mem.threshold">75</int>
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker" enabled="true">
+ <bool name="enabled">true</bool>
+ <int name="threshold">75</int>
+</circuitBreaker>
 ----
 
 Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
@@ -68,7 +63,7 @@ The triggering threshold is defined as a percentage of the max heap allocated to
 
 [source,xml]
 ----
-<int name="mem.threshold">75</int>
+<int name="threshold">75</int>
 ----
 
 It does not logically make sense to have a threshold below 50% and above 95% of the max heap allocated to the JVM. Hence, the range
@@ -90,19 +85,17 @@ To enable and configure the CPU utilization based circuit breaker:
 
 [source,xml]
 ----
-<str    name="cpu.class">org.apache.solr.util.FakeCPUCircuitBreaker</str>
-<bool   name="cpu.enabled">true</bool>
-<double name="cpu.usageThreshold">75</double>
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enabled="true">
+ <bool name="enabled">true</bool>
+ <int  name="threshold">75</int>
+</circuitBreaker>
 ----
-
-Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
-will not help you.
 
 The triggering threshold is defined in units of CPU utilization. The configuration to control this is as below:
 
 [source,xml]
 ----
-<double name="cpu.usageThreshold">75</double>
+<int  name="threshold">75</int>
 ----
 
 == Performance Considerations
@@ -112,12 +105,13 @@ circuit breakers checked for a single request can cause a performance overhead.
 In addition, it is a good practice to exponentially back off while retrying requests on a busy node.
 
 == Adding New Circuit Breakers
-To add new circuit breakers, add the new circuit breaker's class and required paramters within the circuitbreaker tag:
+To add new circuit breakers, add the new circuit breaker's class and required parameters:
 
 [source,xml]
 ----
-<str name="foobar.class">org.apache.solr.util.foobar</str>
-<bool name="foobar.enabled">true</bool>
-<double name="foobar.usageThreshold">75</double>
+<circuitBreaker class="foobar" enabled="true">
+ <bool name="enabled">true</bool>
+ <int  name="threshold">75</int>
+</circuitBreaker>
 ----
 
