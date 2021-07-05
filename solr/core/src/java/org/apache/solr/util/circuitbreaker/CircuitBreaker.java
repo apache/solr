@@ -50,11 +50,7 @@ public abstract class CircuitBreaker {
   // Global config for all circuit breakers. For specific circuit breaker configs, define
   // your own config.
   protected boolean isEnabled() {
-    if (config != null) {
-      return config.isEnabled();
-    } else {
-      return enabled;
-    }
+    return enabled || (config != null && config.isEnabled());
   }
 
   public void setEnabled(boolean enabled) {
