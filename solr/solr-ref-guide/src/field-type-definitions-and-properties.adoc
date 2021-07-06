@@ -82,52 +82,100 @@ The properties that can be specified for a given field type fall into three majo
 These are the general properties for fields:
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the fieldType.
 This value gets used in field definitions, in the "type" attribute.
 It is strongly recommended that names consist of alphanumeric or underscore characters only and not start with a digit.
 This is not currently strictly enforced.
 
 `class`::
-The class name that gets used to store and index the data for this type.
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The class name used to store and index the data for this type.
 Note that you may prefix included class names with "solr." and Solr will automatically figure out which packages to search for the class - so `solr.TextField` will work.
 +
 If you are using a third-party class, you will probably need to have a fully qualified class name.
 The fully qualified equivalent for `solr.TextField` is `org.apache.solr.schema.TextField`.
 
 `positionIncrementGap`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 For multivalued fields, specifies a distance between multiple values, which prevents spurious phrase matches.
 
-`autoGeneratePhraseQueries`:: For text fields.
+`autoGeneratePhraseQueries`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+For text fields.
 If `true`, Solr automatically generates phrase queries for adjacent terms.
 If `false`, terms must be enclosed in double-quotes to be treated as phrases.
 
 `synonymQueryStyle`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `as_same_term`
+|===
++
 Query used to combine scores of overlapping query terms (i.e., synonyms).
 Consider a search for "blue tee" with query-time synonyms `tshirt,tee`.
+
+* `as_same_term`: Blends terms, i.e., `SynonymQuery(tshirt,tee)` where each term will be treated as equally important.
+This option is appropriate when terms are true synonyms (e.g., "television, tv").
+* `pick_best`: Selects the most significant synonym when scoring `Dismax(tee,tshirt)`.
+Use this when synonyms are expanding to hyponyms `(q=jeans w/ jeans=>jeans,pants)` and you want exact to come before parent and sibling concepts.
+* `as_distinct_terms`: Biases scoring towards the most significant synonym `(pants OR slacks)`.
 +
-Use `as_same_term` (default) to blend terms, i.e., `SynonymQuery(tshirt,tee)` where each term will be treated as equally important.
-Use `pick_best` to select the most significant synonym when scoring `Dismax(tee,tshirt)`.
-Use `as_distinct_terms` to bias scoring towards the most significant synonym `(pants OR slacks)`.
-+
-`as_same_term` is appropriate when terms are true synonyms (television, tv).
-Use `pick_best` or `as_distinct_terms` when synonyms are expanding to hyponyms `(q=jeans w/ jeans=>jeans,pants)` and you want exact to come before parent and sibling concepts.
-See this http://opensourceconnections.com/blog/2017/11/21/solr-synonyms-mea-culpa/[blog article].
+This blog post http://opensourceconnections.com/blog/2017/11/21/solr-synonyms-mea-culpa/[Solr Synonyms and Taxonomies: Mea Culpa] discusses Solr's behavior with synonym expansion.
 
 `enableGraphQueries`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 For text fields, applicable when querying with <<standard-query-parser.adoc#standard-query-parser-parameters,`sow=false`>> (which is the default for the `sow` parameter).
-Use `true`, the default, for field types with query analyzers including graph-aware filters, e.g., <<filters.adoc#synonym-graph-filter,Synonym Graph Filter>> and <<filters.adoc#word-delimiter-graph-filter,Word Delimiter Graph Filter>>.
+Use `true` for field types with query analyzers including graph-aware filters, e.g., <<filters.adoc#synonym-graph-filter,Synonym Graph Filter>> and <<filters.adoc#word-delimiter-graph-filter,Word Delimiter Graph Filter>>.
 +
 Use `false` for field types with query analyzers including filters that can match docs when some tokens are missing, e.g., <<filters.adoc#shingle-filter,Shingle Filter>>.
 
 [[docvaluesformat]]
 `docValuesFormat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Defines a custom `DocValuesFormat` to use for fields of this type.
 This requires that a schema-aware codec, such as the `SchemaCodecFactory`, has been configured in `solrconfig.xml`.
 
 `postingsFormat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Defines a custom `PostingsFormat` to use for fields of this type.
 This requires that a schema-aware codec, such as the `SchemaCodecFactory`, has been configured in `solrconfig.xml`.
-
 
 [NOTE]
 ====
@@ -142,27 +190,27 @@ These are properties that can be specified either on the field types, or on indi
 The default values for each property depend on the underlying `FieldType` class, which in turn may depend on the `version` attribute of the `<schema/>`.
 The table below includes the default value for most `FieldType` implementations provided by Solr, assuming a `schema.xml` that declares `version="1.6"`.
 
-// TODO: SOLR-10655 BEGIN: refactor this into a 'field-default-properties.include.adoc' file for reuse
-
+// tags this table for inclusion in another page
+// tag::field-params[]
 [%autowidth.stretch,options="header"]
 |===
-|Property |Description |Values |Implicit Default
-|indexed |If true, the value of the field can be used in queries to retrieve matching documents. |true or false |true
-|stored |If true, the actual value of the field can be retrieved by queries. |true or false |true
-|docValues |If true, the value of the field will be put in a column-oriented <<docvalues.adoc#,DocValues>> structure. |true or false |false
-|sortMissingFirst sortMissingLast |Control the placement of documents when a sort field is not present. |true or false |false
-|multiValued |If true, indicates that a single document might contain multiple values for this field type. |true or false |false
-|uninvertible|If true, indicates that an `indexed="true" docValues="false"` field can be "un-inverted" at query time to build up large in memory data structure to serve in place of <<docvalues.adoc#,DocValues>>.  *Defaults to true for historical reasons, but users are strongly encouraged to set this to `false` for stability and use `docValues="true"` as needed.*|true or false |true
-|omitNorms |If true, omits the norms associated with this field (this disables length normalization for the field, and saves some memory). *Defaults to true for all primitive (non-analyzed) field types, such as int, float, data, bool, and string.* Only full-text fields or fields need norms. |true or false |*
-|omitTermFreqAndPositions |If true, omits term frequency, positions, and payloads from postings for this field. This can be a performance boost for fields that don't require that information. It also reduces the storage space required for the index. Queries that rely on position that are issued on a field with this option will silently fail to find documents. *This property defaults to true for all field types that are not text fields.* |true or false |*
-|omitPositions |Similar to `omitTermFreqAndPositions` but preserves term frequency information. |true or false |*
-|termVectors termPositions termOffsets termPayloads |These options instruct Solr to maintain full term vectors for each document, optionally including position, offset and payload information for each term occurrence in those vectors. These can be used to accelerate highlighting and other ancillary functionality, but impose a substantial cost in terms of index size. They are not necessary for typical uses of Solr. |true or false |false
-|required |Instructs Solr to reject any attempts to add a document which does not have a value for this field. This property defaults to false. |true or false |false
-|useDocValuesAsStored |If the field has <<docvalues.adoc#,docValues>> enabled, setting this to true would allow the field to be returned as if it were a stored field (even if it has `stored=false`) when matching "`*`" in an <<common-query-parameters.adoc#fl-field-list-parameter,fl parameter>>. |true or false |true
-|large |Large fields are always lazy loaded and will only take up space in the document cache if the actual value is < 512KB. This option requires `stored="true"` and `multiValued="false"`. It's intended for fields that might have very large values so that they don't get cached in memory. |true or false |false
+|Property |Description |Implicit Default
+|`indexed` |If `true`, the value of the field can be used in queries to retrieve matching documents. |`true`
+|`stored` |If `true`, the actual value of the field can be retrieved by queries.  |`true`
+|`docValues` |If `true`, the value of the field will be put in a column-oriented <<docvalues.adoc#,DocValues>> structure. |`false`
+|`sortMissingFirst`, `sortMissingLast` |Control the placement of documents when a sort field is not present. |`false`
+|`multiValued` |If `true`, indicates that a single document might contain multiple values for this field type. |`false`
+|`uninvertible` |If `true`, indicates that an `indexed="true" docValues="false"` field can be "un-inverted" at query time to build up large in memory data structure to serve in place of <<docvalues.adoc#,DocValues>>. *Defaults to `true` for historical reasons, but users are strongly encouraged to set this to `false` for stability and use `docValues="true"` as needed.* |`true`
+|`omitNorms` |If `true`, omits the norms associated with this field (this disables length normalization for the field, and saves some memory). *Defaults to true for all primitive (non-analyzed) field types, such as int, float, data, bool, and string.* Only full-text fields or fields need norms. |*
+|`omitTermFreqAndPositions` |If `true`, omits term frequency, positions, and payloads from postings for this field. This can be a performance boost for fields that don't require that information. It also reduces the storage space required for the index. Queries that rely on position that are issued on a field with this option will silently fail to find documents. *This property defaults to true for all field types that are not text fields.* |*
+|`omitPositions` |Similar to `omitTermFreqAndPositions` but preserves term frequency information. |*
+|`termVectors`, `termPositions`, `termOffsets`, `termPayloads` |These options instruct Solr to maintain full term vectors for each document, optionally including position, offset, and payload information for each term occurrence in those vectors. These can be used to accelerate highlighting and other ancillary functionality, but impose a substantial cost in terms of index size. They are not necessary for typical uses of Solr. |`false`
+|`required` |Instructs Solr to reject any attempts to add a document which does not have a value for this field. This property defaults to false. |`false`
+|`useDocValuesAsStored` |If the field has <<docvalues.adoc#,docValues>> enabled, setting this to true would allow the field to be returned as if it were a stored field (even if it has `stored=false`) when matching "`*`" in an <<common-query-parameters.adoc#fl-field-list-parameter,fl parameter>>. |`true`
+|`large` |Large fields are always lazy loaded and will only take up space in the document cache if the actual value is < 512KB. This option requires `stored="true"` and `multiValued="false"`. It's intended for fields that might have very large values so that they don't get cached in memory. |`false`
 |===
 
-// TODO: SOLR-10655 END
+// end::field-params[]
 
 == Choosing Appropriate Numeric Types
 

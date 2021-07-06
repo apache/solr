@@ -85,13 +85,24 @@ curl -X GET http://localhost:8983/api/cores?indexInfo=false
 === STATUS Parameters
 
 `core`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`.
 This parameter is required in v1, and part of the url in the v2 API.
 
 `indexInfo`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 If `false`, information about the index will not be returned with a core STATUS request.
 In Solr implementations with a large number of cores (i.e., more than hundreds), retrieving the index information for each core can take a lot of time and isn't always required.
-The default is `true`.
 
 [[coreadmin-create]]
 == CREATE
@@ -168,33 +179,74 @@ The `core.properties` file must NOT exist before calling the CoreAdmin API with 
 === CREATE Core Parameters
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the new core.
 Same as `name` on the `<core>` element.
-This parameter is required.
 
 `instanceDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
 The directory where files for this core should be stored.
 Same as `instanceDir` on the `<core>` element.
 The default is the value specified for the `name` parameter if not supplied.
 This directory must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
 
 `config`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `solrconfig.xml`
+|===
++
 Name of the config file (i.e., `solrconfig.xml`) relative to `instanceDir`.
 
 `schema`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
 Name of the schema file to use for the core.
 Please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use.
 See <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for details.
 
 `dataDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `data`
+|===
++
 Name of the data directory relative to `instanceDir`.
 If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
 
 `configSet`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Name of the configset to use for this core.
 For more information, see the section <<config-sets.adoc#,Configsets>>.
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
 The name of the collection to which this core belongs.
 The default is the name of the core.
 `collection._param_=_value_` causes a property of `_param_=_value_` to be set if a new collection is being created.
@@ -204,14 +256,32 @@ WARNING: While it's possible to create a core for a non-existent collection, thi
 Always create a collection using the <<collections-api.adoc#,Collections API>> before creating a core directly for it.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The shard ID this core represents.
 This should only be required in special circumstances; normally you want to be auto-assigned a shard ID.
 
 `property._name_=_value_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Sets the core property _name_ to _value_.
 See the section on defining <<core-discovery.adoc#defining-core-properties-files,core.properties file contents>>.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be processed asynchronously.
 
 Use `collection.configName=_configname_` to point to the config for a new collection.
@@ -269,6 +339,12 @@ Some configuration options, such as the `dataDir` location and `IndexWriter`-rel
 === RELOAD Core Parameters
 
 `core`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the core, as listed in the "name" attribute of a `<core>` element in `solr.xml`.
 This parameter is required in v1, and part of the url in the v2 API.
 
@@ -282,15 +358,31 @@ The `RENAME` action changes the name of a Solr core.
 === RENAME Parameters
 
 `core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the Solr core to be renamed.
-This parameter is required.
 
 `other`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The new name for the Solr core.
 If the persistent attribute of `<solr>` is `true`, the new name will be written to `solr.xml` as the `name` attribute of the `<core>` attribute.
-This parameter is required.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be processed asynchronously.
 
 
@@ -313,14 +405,30 @@ It is not supported and can result in the core being unusable.
 === SWAP Parameters
 
 `core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of one of the cores to be swapped.
-This parameter is required.
 
 `other`::
-The name of one of the cores to be swapped.
-This parameter is required.
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the other core to be swapped.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be processed asynchronously.
 
 
@@ -344,22 +452,49 @@ Unloading all cores in a SolrCloud collection causes the removal of that collect
 === UNLOAD Parameters
 
 `core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of a core to be removed.
 This parameter is required.
 
 `deleteIndex`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, will remove the index when unloading the core.
-The default is `false`.
 
 `deleteDataDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, removes the `data` directory and all sub-directories.
-The default is `false`.
 
 `deleteInstanceDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, removes everything related to the core, including the index directory, configuration files and other related files.
-The default is `false`.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be processed asynchronously.
 
 [[coreadmin-mergeindexes]]
@@ -390,16 +525,39 @@ This ID can then be used to check the status of the already submitted task using
 === MERGEINDEXES Parameters
 
 `core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the target core/index.
-This parameter is required.
 
 `indexDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Multi-valued, directories that would be merged.
 
 `srcCore`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Multi-valued, source cores that would be merged.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be processed asynchronously.
 
 
@@ -415,30 +573,65 @@ The `SPLIT` action supports five parameters, which are described in the table be
 === SPLIT Parameters
 
 `core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the core to be split.
-This parameter is required.
 
 `path`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Multi-valued, the directory path in which a piece of the index will be written.
 Either this parameter or `targetCore` must be specified.
 If this is specified, the `targetCore` parameter may not be used.
 
 `targetCore`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Multi-valued, the target Solr core to which a piece of the index will be merged.
 Either this parameter or `path` must be specified.
 If this is specified, the `path` parameter may not be used.
 
 `ranges`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A comma-separated list of hash ranges in hexadecimal format.
 If this parameter is used, `split.key` should not be.
 See the <<SPLIT Examples>> below for an example of how this parameter can be used.
 
 `split.key`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The key to be used for splitting the index.
 If this parameter is used, `ranges` should not be.
 See the <<SPLIT Examples>> below for an example of how this parameter can be used.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be processed asynchronously.
 
 === SPLIT Examples
@@ -495,8 +688,13 @@ Request the status of an already submitted asynchronous CoreAdmin API call.
 The REQUESTSTATUS command has only one parameter.
 
 `requestid`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The user defined request-id for the asynchronous request.
-This parameter is required.
 
 The call below will return the status of an already submitted asynchronous CoreAdmin call.
 
@@ -514,8 +712,13 @@ This should be considered an "expert" level command and should be used in situat
 === REQUESTRECOVERY Parameters
 
 `core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the core to re-sync.
-This parameter is required.
 
 === REQUESTRECOVERY Examples
 

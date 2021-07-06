@@ -75,17 +75,34 @@ NOTE: Only updates are routed and queries are distributed to all collections in 
 === CREATEALIAS Parameters
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The alias name to be created.
-This parameter is required.
 If the alias is to be routed it also functions as a prefix for the names of the dependent collections that will be created.
 It must therefore adhere to normal requirements for collection naming.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 ==== Standard Alias Parameters
 
 `collections`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A comma-separated list of collections to be aliased.
 The collections must already exist in the cluster.
 This parameter signals the creation of a standard alias.
@@ -97,22 +114,39 @@ If routing parameters are present this parameter is prohibited.
 Most routed alias parameters become _alias properties_ that can subsequently be inspected and <<aliasprop,modified>>.
 
 `router.name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The type of routing to use.
 Presently only `time` and `category` and `Dimensional[]` are valid.
++
 In the case of a multi dimensional routed alias (aka "DRA", see <<aliases.adoc#dimensional-routed-aliases,Aliases>>), it is required to express all the dimensions in the same order that they will appear in the dimension
 array.
-The format for a DRA router.name is Dimensional[dim1,dim2] where dim1 and dim2 are valid router.name values for each sub-dimension.
+The format for a DRA `router.name` is `Dimensional[dim1,dim2]` where `dim1` and `dim2` are valid `router.name` values for each sub-dimension.
 Note that DRA's are very new, and only 2D DRA's are presently supported.
 Higher numbers of dimensions will be supported soon.
-See examples below for further clarification on how to configure
-individual dimensions.
-This parameter is required.
+See examples below for further clarification on how to configure individual dimensions.
 
 `router.field`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The field to inspect to determine which underlying collection an incoming document should be routed to.
 This field is required on all incoming documents.
 
 `create-collection.*`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The `*` wildcard can be replaced with any parameter from the <<collection-management.adoc#create,CREATE>> command except `name`.
 All other fields are identical in requirements and naming except that we insist that the configset be explicitly specified.
 The configset must be created beforehand, either uploaded or copied and modified.
@@ -121,54 +155,87 @@ It's probably a bad idea to use "data driven" mode as schema mutations might hap
 ==== Time Routed Alias Parameters
 
 `router.start`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW" optionally with <<date-formatting-math.adoc#date-math,date math>>).
 +
 The first collection created for the alias will be internally named after this value.
-If a document is submitted with an earlier value for router.field then the earliest collection the alias points to then it will yield an error since it can't be routed.
+If a document is submitted with an earlier value for `router.field` then the earliest collection the alias points to then it will yield an error since it can't be routed.
 This date/time MUST NOT have a milliseconds component other than 0.
 Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc., will work just fine.
-This parameter is required.
 
 `TZ`::
-The timezone to be used when evaluating any date math in router.start or router.interval.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `UTC`
+|===
++
+The timezone to be used when evaluating any date math in `router.start` or `router.interval`.
 This is equivalent to the same parameter supplied to search queries, but understand in this case it's persisted with most of the other parameters
 as an alias property.
 +
 If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
-+
-The default timezone is UTC.
+
 
 `router.interval`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 A date math expression that will be appended to a timestamp to determine the next collection in the series.
 Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will work here.
-+
-This parameter is required.
 
 `router.maxFutureMs`::
-The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted without error.
-If there was no limit, than an erroneous value could trigger many collections to be created.
 +
-The default is `600000` or 10 minutes.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `600000` milliseconds
+|===
++
+The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted without error.
+If there was no limit, then an erroneous value could trigger many collections to be created.
 
 `router.preemptiveCreateMath`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A date math expression that results in early creation of new collections.
 +
 If a document arrives with a timestamp that is after the end time of the most recent collection minus this interval, then the next (and only the next) collection will be created asynchronously.
++
 Without this setting, collections are created synchronously when required by the document time stamp and thus block the flow of documents until the collection is created (possibly several seconds).
 Preemptive creation reduces these hiccups.
 If set to enough time (perhaps an hour or more) then if there are problems creating a collection, this window of time might be enough to take
 corrective action.
-However after a successful preemptive creation, the collection is consuming resources without being used, and new documents will tend to be routed through it only to be routed elsewhere.
+However, after a successful preemptive creation the collection is consuming resources without being used, and new documents will tend to be routed through it only to be routed elsewhere.
++
 Also, note that `router.autoDeleteAge` is currently evaluated relative to the date of a newly created collection, so you may want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
 soon.
-Note that it has to be possible to subtract the interval specified from a date, so if prepending a minus sign creates invalid date math, this will cause an error.
++
+It must be possible to subtract the interval specified from a date, so if prepending a minus sign creates invalid date math, this will cause an error.
 Also note that a document that is itself destined for a collection that does not exist will still trigger synchronous creation up to that destination collection but will not trigger additional async preemptive creation.
 Only one type of collection creation can happen per document.
 Example: `90MINUTES`.
 +
-This property is blank by default indicating just-in-time, synchronous creation of new collections.
+This property is empty by default indicating just-in-time, synchronous creation of new collections.
 
 `router.autoDeleteAge`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A date math expression that results in the oldest collections getting deleted automatically.
 +
 The date math is relative to the timestamp of a newly created collection (typically close to the current time), and thus this must produce an earlier time via rounding and/or subtracting.
@@ -181,12 +248,25 @@ The default is not to delete.
 ==== Category Routed Alias Parameters
 
 `router.maxCardinality`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The maximum number of categories allowed for this alias.
 This setting safeguards against the inadvertent creation of an infinite number of collections in the event of bad data.
 
 `router.mustMatch`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A regular expression that the value of the field specified by `router.field` must match before a corresponding collection will be created.
-Note that changing this setting after data has been added will not alter the data already indexed.
+Changing this setting after data has been added will not alter the data already indexed.
++
 Any valid Java regular expression pattern may be specified.
 This expression is pre-compiled at the start of each request so batching of updates is strongly recommended.
 Overly complex patterns will produce CPU or garbage collection overhead during indexing as determined by the JVM's implementation of regular expressions.
@@ -194,8 +274,15 @@ Overly complex patterns will produce CPU or garbage collection overhead during i
 ==== Dimensional Routed Alias Parameters
 
 `router.#.`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 This prefix denotes which position in the dimension array is being referred to for purposes of dimension configuration.
-For example in a Dimensional[time,category] router.0.start would be used to set the start time for the time dimension.
++
+For example in a `Dimensional[time,category]` alias, `router.0.start` would be used to set the start time for the time dimension.
 
 
 === CREATEALIAS Response
@@ -560,16 +647,39 @@ Routed aliases may cease to function, function incorrectly, or cause errors if p
 === ALIASPROP Parameters
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The alias name on which to set properties.
-This parameter is required.
 
 `property._name_=_value_` (v1)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Set property _name_ to _value_.
 
 `"properties":{"name":"value"}` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A dictionary of name/value pairs of properties to be set.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 === ALIASPROP Response
@@ -613,10 +723,21 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 === DELETEALIAS Parameters
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the alias to delete.
-This parameter is required.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 === DELETEALIAS Response
