@@ -232,7 +232,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
           log.info("Running Restore via replication handler");
           // Snapshooter prefixes "snapshot." to the backup name.
           BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_RESTORE, "hdfs", backupName);
-          while (!TestRestoreCore.fetchRestoreStatus(baseUrl, coreName)) {
+          while (!TestRestoreCoreUtil.fetchRestoreStatus(baseUrl, coreName)) {
             Thread.sleep(1000);
           }
         } else {
