@@ -20,6 +20,7 @@ import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -40,7 +41,7 @@ import org.junit.Test;
 })
 @TimeoutSuite(millis = TimeUnits.HOUR)
 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13924")
-public class MoveReplicaHDFSTest extends MoveReplicaTest {
+public class MoveReplicaHDFSTest extends AbstractMoveReplicaTestBase {
   private static MiniDFSCluster dfsCluster;
 
   @BeforeClass
@@ -65,7 +66,7 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
   @Test
   public void testNormalMove() throws Exception {
     inPlaceMove = false;
-    test();
+    super.test();
   }
 
   @Test
@@ -78,13 +79,9 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNormalFailedMove() throws Exception {
     inPlaceMove = false;
-    testFailedMove();
-  }
-
-  @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12080") // added 03-Oct-2018
-  public void testFailedMove() throws Exception {
     super.testFailedMove();
   }
+
+
 }
 
