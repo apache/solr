@@ -155,6 +155,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15475: Implement COUNT and APPROX_COUNT_DISTINCT aggregation functions for Parallel SQL (Timothy Potter)
 
+* SOLR-15499: StatsStream implement ParallelMetricsRollup to allow for tiered computation of SQL metrics
+  over collection aliases backed by many collections, potentially with many shards in each (Timothy Potter)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -340,6 +343,8 @@ Other Changes
   optimization when the cluster status is fetched.  (Nazerke Seidan, David Smiley)
 
 * SOLR-15461: SOLR-15461: Upgrade Apache Calcite to 1.27.0. (Mark Miller, Timothy Potter)
+
+* SOLR-15517: Remove unnecessary no-op implementation of SolrCoreAware in ExpandComponent and TermVectorComponent. (Christine Poerschke)
 
 Bug Fixes
 ---------------------

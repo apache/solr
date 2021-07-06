@@ -41,7 +41,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermVectorParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
@@ -51,7 +50,6 @@ import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Return term vectors for the documents in a query result set.
@@ -75,7 +73,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *
  *
  */
-public class TermVectorComponent extends SearchComponent implements SolrCoreAware {
+public class TermVectorComponent extends SearchComponent {
 
 
   public static final String COMPONENT_NAME = "tv";
@@ -456,11 +454,6 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-
   }
 
   @Override
