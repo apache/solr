@@ -16,17 +16,13 @@
  */
 package org.apache.solr.cloud.hdfs;
 
-import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.cloud.TlogReplayBufferedWhileIndexingTest;
-import org.apache.solr.util.BadHdfsThreadsFilter;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
+import org.apache.solr.cloud.AbstractTlogReplayBufferedWhileIndexingTestBase;
+import org.apache.solr.util.BadHdfsThreadsFilter;
 
 @Slow
 @Nightly
@@ -35,29 +31,10 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsTlogReplayBufferedWhileIndexingTest extends TlogReplayBufferedWhileIndexingTest {
-  private static MiniDFSCluster dfsCluster;
+public class HdfsTlogReplayBufferedWhileIndexingTest extends AbstractTlogReplayBufferedWhileIndexingTestBase {
 
   public HdfsTlogReplayBufferedWhileIndexingTest() throws Exception {
     super();
   }
 
-  @BeforeClass
-  public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-  }
-  
-  @AfterClass
-  public static void teardownClass() throws Exception {
-    try {
-      HdfsTestUtil.teardownClass(dfsCluster);
-    } finally {
-      dfsCluster = null;
-    }
-  }
-  
-  @Override
-  protected String getDataDir(String dataDir) {
-    return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
-  }
 }
