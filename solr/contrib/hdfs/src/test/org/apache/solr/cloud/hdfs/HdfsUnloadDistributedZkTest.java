@@ -20,7 +20,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.cloud.UnloadDistributedZkTest;
+import org.apache.solr.cloud.AbstractUnloadDistributedZkTestBase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -35,7 +35,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsUnloadDistributedZkTest extends UnloadDistributedZkTest {
+public class HdfsUnloadDistributedZkTest extends AbstractUnloadDistributedZkTestBase {
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
@@ -56,4 +56,6 @@ public class HdfsUnloadDistributedZkTest extends UnloadDistributedZkTest {
   protected String getDataDir(String dataDir) {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
+
+
 }
