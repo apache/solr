@@ -22,7 +22,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,7 +36,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsNNFailoverTest extends BasicDistributedZkTest {
+public class HdfsNNFailoverTest extends AbstractBasicDistributedZkTestBase {
   private static final String COLLECTION = "collection";
   private static MiniDFSCluster dfsCluster;
   
@@ -70,6 +70,7 @@ public class HdfsNNFailoverTest extends BasicDistributedZkTest {
   }
 
   @Test
+  @Override
   public void test() throws Exception {
     createCollection(COLLECTION, "conf1", 1, 1);
     

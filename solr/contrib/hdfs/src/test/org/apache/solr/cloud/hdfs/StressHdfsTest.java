@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class StressHdfsTest extends BasicDistributedZkTest {
+public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
   private static MiniDFSCluster dfsCluster;
 
@@ -99,6 +99,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   }
 
   @Test
+  @Override
   public void test() throws Exception {
     randomlyEnableAutoSoftCommit();
     

@@ -38,7 +38,7 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
@@ -61,7 +61,7 @@ import org.junit.Test;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
+public class HdfsWriteToMultipleCollectionsTest extends AbstractBasicDistributedZkTestBase {
   private static final String ACOLLECTION = "acollection";
   private static MiniDFSCluster dfsCluster;
   
@@ -97,6 +97,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   }
 
   @Test
+  @Override
   public void test() throws Exception {
     int docCount = random().nextInt(1313) + 1;
     int cnt = random().nextInt(4) + 1;

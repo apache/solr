@@ -22,13 +22,14 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import org.junit.Test;
 
 @Slow
 @Nightly
@@ -37,7 +38,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsBasicDistributedZkTest extends BasicDistributedZkTest {
+public class HdfsBasicDistributedZkTest extends AbstractBasicDistributedZkTestBase {
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
@@ -63,4 +64,12 @@ public class HdfsBasicDistributedZkTest extends BasicDistributedZkTest {
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
+
+  @Test
+  @Override
+  @ShardsFixed(num = 4)
+  public void test() throws Exception {
+    super.test();
+  }
+  
 }

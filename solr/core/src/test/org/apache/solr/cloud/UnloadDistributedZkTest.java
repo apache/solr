@@ -56,7 +56,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class UnloadDistributedZkTest extends BasicDistributedZkTest {
+public class UnloadDistributedZkTest extends AbstractBasicDistributedZkTestBase {
   public UnloadDistributedZkTest() {
     super();
   }
