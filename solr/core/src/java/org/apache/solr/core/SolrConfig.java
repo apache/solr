@@ -752,7 +752,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
-    private void initLibs(SolrResourceLoader loader, boolean isConfigsetTrusted) {
+  private void initLibs(SolrResourceLoader loader, boolean isConfigsetTrusted) {
     // TODO Want to remove SolrResourceLoader.getInstancePath; it can be on a Standalone subclass.
     //  For Zk subclass, it's needed for the time being as well.  We could remove that one if we remove two things
     //  in SolrCloud: (1) instancePath/lib  and (2) solrconfig lib directives with relative paths.  Can wait till 9.0.
