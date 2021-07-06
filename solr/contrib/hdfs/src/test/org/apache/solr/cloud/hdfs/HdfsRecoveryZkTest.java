@@ -22,7 +22,7 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.cloud.RecoveryZkTest;
+import org.apache.solr.cloud.AbstractRecoveryZkTestBase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,7 +34,7 @@ import org.junit.BeforeClass;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsRecoveryZkTest extends RecoveryZkTest {
+public class HdfsRecoveryZkTest extends AbstractRecoveryZkTestBase {
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
@@ -56,4 +56,5 @@ public class HdfsRecoveryZkTest extends RecoveryZkTest {
       }
     }
   }
+
 }
