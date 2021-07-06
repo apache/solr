@@ -22,13 +22,15 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.cloud.ChaosMonkeySafeLeaderTest;
+import org.apache.solr.cloud.AbstractChaosMonkeySafeLeaderTestBase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import org.junit.Test;
+
 
 @Slow
 @Nightly
@@ -37,7 +39,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
+public class HdfsChaosMonkeySafeLeaderTest extends AbstractChaosMonkeySafeLeaderTestBase {
+  private static final String DIRECTORY_FACTORY = "org.apache.solr.core.HdfsDirectoryFactory";
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
@@ -67,5 +70,9 @@ public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
+  }
+
+  protected String getDirectoryFactory() {
+    return DIRECTORY_FACTORY;
   }
 }
