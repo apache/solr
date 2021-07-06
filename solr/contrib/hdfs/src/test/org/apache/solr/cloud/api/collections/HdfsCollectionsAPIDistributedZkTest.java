@@ -37,7 +37,7 @@ import org.junit.BeforeClass;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @TimeoutSuite(millis = TimeUnits.HOUR)
-public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistributedZkTest {
+public class HdfsCollectionsAPIDistributedZkTest extends AbstractCollectionsAPIDistributedZkTestBase {
   private static MiniDFSCluster dfsCluster;
 
   @BeforeClass
@@ -54,7 +54,6 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
     }
   }
 
-  @Override
   protected String getConfigSet() {
     return "cloud-hdfs";
   }
