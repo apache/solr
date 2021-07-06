@@ -17,8 +17,8 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -474,7 +475,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
 
-    assert (tuples.size() == 8);
+    assertEquals(tuples.toString(), 8, tuples.size());
 
     Tuple tuple;
 
@@ -525,7 +526,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuples = getTuples(sParams, baseUrl);
 
-    assert (tuples.size() == 2);
+
+    assertEquals(tuples.toString(), 2, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("Str_s").equals("c"));
@@ -902,8 +904,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         "stmt", "select distinct str_s, field_i from collection1 where str_s = 'a'");
 
     tuples = getTuples(sParams, baseUrl);
-
-    assert (tuples.size() == 2);
+    Assert.assertEquals (tuples.toString(), 2, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("str_s").equals("a"));
@@ -1174,7 +1175,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // The sort by and order by match and no limit is applied. All the Tuples should be returned in
     // this scenario.
 
-    assert (tuples.size() == 3);
+    assertEquals(tuples.toString(), 3, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("str_s").equals("c"));
@@ -1853,21 +1854,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(final SolrParams params, String baseUrl) throws IOException {
-    //log.info("Tuples from params: {}", params);
-    TupleStream tupleStream = new SolrStream(baseUrl, params);
-
-    tupleStream.open();
-    List<Tuple> tuples = new ArrayList<>();
-    for (; ; ) {
-      Tuple t = tupleStream.read();
-      //log.info(" ... {}", t.fields);
-      if (t.EOF) {
-        break;
-      } else {
-        tuples.add(t);
+    List<Tuple> tuples = new LinkedList<>();
+    try (TupleStream tupleStream = new SolrStream(baseUrl, params)) {
+      tupleStream.open();
+      for (; ; ) {
+        Tuple t = tupleStream.read();
+        if (t.EOF) {
+          break;
+        } else {
+          tuples.add(t);
+        }
       }
     }
-    tupleStream.close();
     return tuples;
   }
 
@@ -2054,10 +2052,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex IS NOT NULL", 8);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex > '2021-06-02'", 6);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex <= '2021-06-01'", 1);
-    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-06-03' AND '2021-06-05'", 4);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex > '2021-06-04 04:00:00'", 1);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = '2021-06-04 04:00:00'", 1);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = CAST('2021-06-04 04:04:00' as TIMESTAMP)", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-06-03' AND '2021-06-05'", 4);
   }
 
   @Test
@@ -2120,5 +2118,104 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   private String max(String type) {
     return String.format(Locale.ROOT, "max(%s) as max_%s", type, type);
+  }
+
+  @Test
+  public void testOffsetAndFetch() throws Exception {
+    new UpdateRequest()
+        .add("id", "01")
+        .add("id", "02")
+        .add("id", "03")
+        .add("id", "04")
+        .add("id", "05")
+        .add("id", "06")
+        .add("id", "07")
+        .add("id", "08")
+        .add("id", "09")
+        .add("id", "10")
+        .add("id", "11")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    final int numDocs = 11;
+
+    List<Tuple> results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 0 FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("11", results.get(0).getString("id"));
+    assertEquals("10", results.get(1).getString("id"));
+    assertEquals("09", results.get(2).getString("id"));
+    assertEquals("08", results.get(3).getString("id"));
+    assertEquals("07", results.get(4).getString("id"));
+
+    // no explicit offset, but defaults to 0 if using FETCH!
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("11", results.get(0).getString("id"));
+    assertEquals("10", results.get(1).getString("id"));
+    assertEquals("09", results.get(2).getString("id"));
+    assertEquals("08", results.get(3).getString("id"));
+    assertEquals("07", results.get(4).getString("id"));
+
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 5 FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("06", results.get(0).getString("id"));
+    assertEquals("05", results.get(1).getString("id"));
+    assertEquals("04", results.get(2).getString("id"));
+    assertEquals("03", results.get(3).getString("id"));
+    assertEquals("02", results.get(4).getString("id"));
+
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 10 FETCH NEXT 5 ROWS ONLY", 1);
+    assertEquals("01", results.get(0).getString("id"));
+
+    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC LIMIT "+numDocs, numDocs);
+
+    for (int i=0; i < numDocs; i++) {
+      results = expectResults("SELECT id FROM $ALIAS ORDER BY id ASC OFFSET "+i+" FETCH NEXT 1 ROW ONLY", 1);
+      String id = results.get(0).getString("id");
+      if (id.startsWith("0")) id = id.substring(1);
+      assertEquals(i+1, Integer.parseInt(id));
+    }
+
+    // just past the end of the results
+    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET "+numDocs+" FETCH NEXT 5 ROWS ONLY", 0);
+
+    // Solr doesn't support OFFSET w/o LIMIT
+    expectThrows(IOException.class, () -> expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 5", 5));
+  }
+
+  @Test
+  public void testCountDistinct() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    final int cardinality = 5;
+    final int maxDocs = 100; // keep this an even # b/c we divide by 2 in this test
+    final String padFmt = "%03d";
+    for (int i = 0; i < maxDocs; i++) {
+      updateRequest = addDocForDistinctTests(i, updateRequest, cardinality, padFmt);
+    }
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples = expectResults("SELECT COUNT(1) AS total_rows, COUNT(distinct str_s) AS distinct_str, MIN(str_s) AS min_str, MAX(str_s) AS max_str FROM $ALIAS", 1);
+    Tuple firstRow = tuples.get(0);
+    assertEquals(maxDocs, (long) firstRow.getLong("total_rows"));
+    assertEquals(cardinality, (long) firstRow.getLong("distinct_str"));
+
+    String expectedMin = String.format(Locale.ROOT, padFmt, 0);
+    String expectedMax = String.format(Locale.ROOT, padFmt, cardinality - 1); // max is card-1
+    assertEquals(expectedMin, firstRow.getString("min_str"));
+    assertEquals(expectedMax, firstRow.getString("max_str"));
+
+    tuples = expectResults("SELECT DISTINCT str_s FROM $ALIAS ORDER BY str_s ASC", cardinality);
+    for (int t = 0; t < tuples.size(); t++) {
+      assertEquals(String.format(Locale.ROOT, padFmt, t), tuples.get(t).getString("str_s"));
+    }
+
+    tuples = expectResults("SELECT APPROX_COUNT_DISTINCT(distinct str_s) AS approx_distinct FROM $ALIAS", 1);
+    firstRow = tuples.get(0);
+    assertEquals(cardinality, (long) firstRow.getLong("approx_distinct"));
+
+    tuples = expectResults("SELECT country_s, COUNT(*) AS count_per_bucket FROM $ALIAS GROUP BY country_s", 2);
+    assertEquals(maxDocs/2L, (long)tuples.get(0).getLong("count_per_bucket"));
+    assertEquals(maxDocs/2L, (long)tuples.get(1).getLong("count_per_bucket"));
+  }
+
+  private UpdateRequest addDocForDistinctTests(int id, UpdateRequest updateRequest, int cardinality, String padFmt) {
+    String country = id % 2 == 0 ? "US" : "CA";
+    return updateRequest.add("id", String.valueOf(id), "str_s", String.format(Locale.ROOT, padFmt, id % cardinality), "country_s", country);
   }
 }

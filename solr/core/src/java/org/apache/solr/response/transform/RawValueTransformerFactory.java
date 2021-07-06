@@ -113,8 +113,7 @@ public class RawValueTransformerFactory extends TransformerFactory
         return;
       }
       if(val instanceof Collection) {
-        @SuppressWarnings({"rawtypes"})
-        Collection current = (Collection)val;
+        Collection<?> current = (Collection<?>)val;
         ArrayList<WriteableStringValue> vals = new ArrayList<RawValueTransformerFactory.WriteableStringValue>();
         for(Object v : current) {
           vals.add(new WriteableStringValue(v));

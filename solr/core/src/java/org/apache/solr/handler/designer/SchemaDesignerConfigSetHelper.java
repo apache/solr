@@ -172,7 +172,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       }
 
       try {
-        if (configSet.equals(zkStateReader().readConfigName(coll)) && e.getValue().get() != null) {
+        if (configSet.equals(e.getValue().get().getConfigName()) && e.getValue().get() != null) {
           collections.add(coll);
         }
       } catch (Exception exc) {

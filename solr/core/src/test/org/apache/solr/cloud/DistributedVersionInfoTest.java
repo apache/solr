@@ -337,10 +337,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    * Query the real-time get handler for a specific doc by ID to verify it
    * exists in the provided server, using distrib=false so it doesn't route to another replica.
    */
-  @SuppressWarnings("rawtypes")
   protected Long assertDocExists(HttpSolrClient solr, String coll, String docId, Long expVers) throws Exception {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
-    NamedList rsp = solr.request(qr);
+    NamedList<?> rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument)rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL() +

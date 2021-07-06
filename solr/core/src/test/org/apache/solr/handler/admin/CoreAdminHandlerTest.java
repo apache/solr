@@ -199,8 +199,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       (Map<String,Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList status = (NamedList)resp.getValues().get("status");
+    NamedList<?> status = (NamedList<?>)resp.getValues().get("status");
     assertNotNull("core status is null", status);
 
     assertEquals("wrong number of core failures", 1, failures.size());
@@ -210,7 +209,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
                0 < fail.getCause().getMessage().indexOf("dir_does_not_exist"));
 
     assertEquals("bogus_dir_core status isn't empty",
-                 0, ((NamedList)status.get("bogus_dir_core")).size());
+                 0, ((NamedList<?>)status.get("bogus_dir_core")).size());
 
 
     //Try renaming the core, we should fail
