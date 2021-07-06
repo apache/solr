@@ -20,13 +20,16 @@ package org.apache.solr.util.circuitbreaker;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.packagemanager.SolrPackage;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
  * Manages all registered circuit breaker instances. Responsible for a holistic view
@@ -42,14 +45,21 @@ import org.apache.solr.util.SolrPluginUtils;
  * NOTE: The current way of registering new default circuit breakers is minimal and not a long term
  * solution. There will be a follow up with a SIP for a schema API design.
  */
-public class CircuitBreakerManager {
+public class CircuitBreakerManager implements ResourceLoaderAware, PluginInfoInitialized {
   // Class private to potentially allow "family" of circuit breakers to be enabled or disabled
   private final boolean enableCircuitBreakerManager;
 
   private final List<CircuitBreaker> circuitBreakerList = new ArrayList<>();
 
+  private final AtomicBoolean initCompleted;
+
+  private ResourceLoader resourceLoader;
+  private PluginInfo pluginInfo;
+
   public CircuitBreakerManager(final boolean enableCircuitBreakerManager) {
     this.enableCircuitBreakerManager = enableCircuitBreakerManager;
+
+    this.initCompleted = new AtomicBoolean();
   }
 
   public void register(CircuitBreaker circuitBreaker) {
@@ -146,7 +156,9 @@ public class CircuitBreakerManager {
 
     CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);
 
-    circuitBreakerManager.init(pluginInfos, solrResourceLoader);
+    circuitBreakerManager.inform(solrResourceLoader);
+
+    circuitBreakerManager.init(pluginInfos);
 
     return circuitBreakerManager;
   }
@@ -154,7 +166,11 @@ public class CircuitBreakerManager {
   /**
    * Initialize with circuit breakers defined in the configuration
    */
-  public void init(List<PluginInfo> pluginInfos, SolrResourceLoader solrResourceLoader) {
+  public void init(List<PluginInfo> pluginInfos) {
+
+    if (initCompleted.get() == true || resourceLoader == null) {
+      return;
+    }
 
     for (PluginInfo pluginInfo : pluginInfos) {
       String cbName = pluginInfo.className;
@@ -163,8 +179,8 @@ public class CircuitBreakerManager {
         throw new IllegalStateException("CircuitBreakerManager invoked for non circuit breaker class");
       }
 
-      if (solrResourceLoader != null) {
-        final CircuitBreaker cb = solrResourceLoader.newInstance(cbName, CircuitBreaker.class);
+      if (resourceLoader != null) {
+        final CircuitBreaker cb = resourceLoader.newInstance(cbName, CircuitBreaker.class);
 
         final HashMap<String, Object> params = new HashMap<>();
 
@@ -212,5 +228,15 @@ public class CircuitBreakerManager {
   @VisibleForTesting
   public List<CircuitBreaker> getRegisteredCircuitBreakers() {
     return circuitBreakerList;
+  }
+
+  @Override
+  public void inform(ResourceLoader loader) {
+    this.resourceLoader = loader;
+  }
+
+  @Override
+  public void init(PluginInfo info) {
+    this.pluginInfo = info;
   }
 }
