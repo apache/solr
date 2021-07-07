@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.HadoopSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
@@ -40,7 +39,7 @@ public class SSLCredentialProviderFactory {
   public static final String DEFAULT_PROVIDER_CHAIN = "env;sysprop";
   public static final String PROVIDER_CHAIN_KEY = "solr.ssl.credential.provider.chain";
 
-  private static final Map<String, Class<? extends AbstractSSLCredentialProvider>> defaultProviders = ImmutableMap.of(
+  private static final Map<String, Class<? extends SSLCredentialProvider>> defaultProviders = ImmutableMap.of(
       "env", EnvSSLCredentialProvider.class,
       "sysprop", SysPropSSLCredentialProvider.class,
       "hadoop", HadoopSSLCredentialProvider.class
@@ -76,7 +75,7 @@ public class SSLCredentialProviderFactory {
 
   private SSLCredentialProvider getProviderByClassName(String clazzName) {
     try {
-      return (SSLCredentialProvider) Class.forName(clazzName).getConstructor().newInstance();
+      return Class.forName(clazzName).asSubclass(SSLCredentialProvider.class).getConstructor().newInstance();
     } catch (InstantiationException | ClassNotFoundException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       String msg = String.format(Locale.ROOT, "Could not instantiate %s credential provider", clazzName);
       log.error(msg);
@@ -84,10 +83,9 @@ public class SSLCredentialProviderFactory {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
-  private SSLCredentialProvider getDefaultProvider(@SuppressWarnings({"rawtypes"})Class aClass) {
+  private SSLCredentialProvider getDefaultProvider(Class<? extends SSLCredentialProvider> aClass) {
     try {
-      return (SSLCredentialProvider) aClass.getConstructor().newInstance();
+      return aClass.getConstructor().newInstance();
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       String msg = String.format(Locale.ROOT, "Could not instantiate %s credential provider", aClass.getName());
       log.error(msg);

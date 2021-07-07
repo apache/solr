@@ -209,28 +209,25 @@ public class ClusterAPI {
       permission = COLL_EDIT_PERM)
   public class Commands {
     @Command(name = "add-role")
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void addRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
-      Map m = info.toMap(new HashMap<>());
+      Map<String,Object> m = info.toMap(new HashMap<>());
       m.put("action", ADDROLE.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
     @Command(name = "remove-role")
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void removeRole(PayloadObj<RoleInfo> obj) throws Exception {
       RoleInfo info = obj.get();
-      Map m = info.toMap(new HashMap<>());
+      Map<String,Object> m = info.toMap(new HashMap<>());
       m.put("action", REMOVEROLE.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
     @Command(name = "set-obj-property")
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void setObjProperty(PayloadObj<ClusterPropPayload> obj) {
       //Not using the object directly here because the API differentiate between {name:null} and {}
-      Map m = obj.getDataMap();
+      Map<String,Object> m = obj.getDataMap();
       ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
       try {
         clusterProperties.setClusterProperties(m);
@@ -252,10 +249,7 @@ public class ClusterAPI {
       ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
 
       try {
-        clusterProperties.update(rateLimiterConfig == null?
-                null:
-                rateLimiterConfig,
-                RL_CONFIG_KEY);
+        clusterProperties.update(rateLimiterConfig, RL_CONFIG_KEY);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }

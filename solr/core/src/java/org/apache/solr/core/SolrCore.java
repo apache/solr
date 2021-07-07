@@ -2036,7 +2036,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
 
-  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, @SuppressWarnings({"rawtypes"})final Future[] waitSearcher) {
+  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future<Void>[] waitSearcher) {
     return getSearcher(forceNew, returnSearcher, waitSearcher, false);
   }
 
@@ -2232,7 +2232,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @param updateHandlerReopens if true, the UpdateHandler will be used when reopening a {@link SolrIndexSearcher}.
    */
   // TODO waitSearcher should be an AtomicReference or something that is a more clear API
-  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, @SuppressWarnings({"rawtypes"})final Future[] waitSearcher, boolean updateHandlerReopens) {
+  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future<Void>[] waitSearcher, boolean updateHandlerReopens) {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
     // if it isn't necessary.
@@ -2339,8 +2339,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       final SolrIndexSearcher currSearcher = currSearcherHolder == null ? null : currSearcherHolder.get();
 
-      @SuppressWarnings({"rawtypes"})
-      Future future = null;
+      Future<Void> future = null;
 
       // if the underlying searcher has not changed, no warming is needed
       if (newSearcher != currSearcher) {
