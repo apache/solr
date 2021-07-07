@@ -743,15 +743,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         "Multiple plugins configured for type: " + type);
   }
 
-  public List<PluginInfo> getAllPluginInfos(String type) {
-    List<PluginInfo> result = pluginStore.get(type);
-    if (result == null || result.isEmpty()) {
-      return null;
-    }
-
-    return result;
-  }
-
   private void initLibs(SolrResourceLoader loader, boolean isConfigsetTrusted) {
     // TODO Want to remove SolrResourceLoader.getInstancePath; it can be on a Standalone subclass.
     //  For Zk subclass, it's needed for the time being as well.  We could remove that one if we remove two things
