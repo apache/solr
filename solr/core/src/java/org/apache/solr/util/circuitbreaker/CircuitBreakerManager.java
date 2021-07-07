@@ -147,31 +147,6 @@ public class CircuitBreakerManager {
     }
   }
 
-  @VisibleForTesting
-  public static CircuitBreaker.CircuitBreakerConfig buildCBConfig(PluginInfo pluginInfo) {
-    boolean enabled = false;
-    boolean cpuCBEnabled = false;
-    boolean memCBEnabled = false;
-    int memCBThreshold = 100;
-    int cpuCBThreshold = 100;
-
-
-    if (pluginInfo != null) {
-      NamedList<?> args = pluginInfo.initArgs;
-
-      enabled = Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
-
-      if (args != null) {
-        cpuCBEnabled = Boolean.parseBoolean(args._getStr("cpuEnabled", "false"));
-        memCBEnabled = Boolean.parseBoolean(args._getStr("memEnabled", "false"));
-        memCBThreshold = Integer.parseInt(args._getStr("memThreshold", "100"));
-        cpuCBThreshold = Integer.parseInt(args._getStr("cpuThreshold", "100"));
-      }
-    }
-
-    return new CircuitBreaker.CircuitBreakerConfig(enabled, memCBEnabled, memCBThreshold, cpuCBEnabled, cpuCBThreshold);
-  }
-
   public boolean isEnabled() {
     return enableCircuitBreakerManager;
   }

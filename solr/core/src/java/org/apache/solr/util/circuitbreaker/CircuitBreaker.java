@@ -33,23 +33,13 @@ package org.apache.solr.util.circuitbreaker;
 public abstract class CircuitBreaker {
   public static final String NAME = "circuitbreaker";
 
-  @Deprecated
-  protected final CircuitBreakerConfig config;
-
   public CircuitBreaker() {
-    this.config = null;
-  }
-
-  // @Deprecated(since = "8.10", forRemoval = true)
-  public CircuitBreaker(CircuitBreakerConfig config) {
-    this.config = config;
   }
 
   @Deprecated
   protected boolean isEnabled() {
-    // if (deprecated) config is present its 'enabled' flag is used
-    // otherwise presence of the (pluggable) circuit breaker implies enablement
-    return config == null || config.isEnabled();
+    // presence of the (pluggable) circuit breaker implies enablement
+    return true;
   }
 
   /**
@@ -67,66 +57,4 @@ public abstract class CircuitBreaker {
    */
   public abstract String getErrorMessage();
 
-  @Deprecated
-  public static class CircuitBreakerConfig {
-    private static final int MEM_CB_THRESHOLD_LOWER_BOUND = 50;
-    private static final int MEM_CB_THRESHOLD_UPPER_BOUND = 95;
-
-    // CPU Circuit Breaker threshold is unbounded
-    private static final int CPU_CB_THRESHOLD_LOWER_BOUND = 0;
-
-    private final boolean enabled;
-    private final boolean memCBEnabled;
-    private final int memCBThreshold;
-    private final boolean cpuCBEnabled;
-    private final int cpuCBThreshold;
-
-    public CircuitBreakerConfig(final boolean enabled, final boolean memCBEnabled, final int memCBThreshold,
-                                  final boolean cpuCBEnabled, final int cpuCBThreshold) {
-      validateCircuitBreakerThresholds(memCBEnabled, memCBThreshold, cpuCBEnabled, cpuCBThreshold);
-
-      this.enabled = enabled;
-      this.memCBEnabled = memCBEnabled;
-      this.memCBThreshold = memCBThreshold;
-      this.cpuCBEnabled = cpuCBEnabled;
-      this.cpuCBThreshold = cpuCBThreshold;
-    }
-
-    public boolean isEnabled() {
-      return enabled;
-    }
-
-    public boolean getMemCBEnabled() {
-      return memCBEnabled;
-    }
-
-    public int getMemCBThreshold() {
-      return memCBThreshold;
-    }
-
-    public boolean getCpuCBEnabled() {
-      return cpuCBEnabled;
-    }
-
-    public int getCpuCBThreshold() {
-      return cpuCBThreshold;
-    }
-
-    private static void validateCircuitBreakerThresholds(final boolean memCBEnabled, final int memCBThreshold,
-                                                         final boolean cpuCBEnabled, final int cpuCBThreshold) {
-
-      if (cpuCBEnabled) {
-        if (cpuCBThreshold < CPU_CB_THRESHOLD_LOWER_BOUND) {
-          throw new IllegalArgumentException("CPU Circuit Breaker threshold cannot be less than " + CPU_CB_THRESHOLD_LOWER_BOUND);
-        }
-      }
-
-      if (memCBEnabled) {
-        if (memCBThreshold < MEM_CB_THRESHOLD_LOWER_BOUND || memCBThreshold > MEM_CB_THRESHOLD_UPPER_BOUND) {
-          throw new IllegalArgumentException("Memory Circuit Breaker threshold needs to be in the range of " + MEM_CB_THRESHOLD_LOWER_BOUND
-                  + "," + MEM_CB_THRESHOLD_UPPER_BOUND);
-        }
-      }
-    }
-  }
 }
