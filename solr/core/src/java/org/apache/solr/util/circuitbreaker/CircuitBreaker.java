@@ -42,7 +42,7 @@ public abstract class CircuitBreaker {
     this.config = null;
   }
 
-  @Deprecated(since = "8.10", forRemoval = true)
+  // @Deprecated(since = "8.10", forRemoval = true)
   public CircuitBreaker(CircuitBreakerConfig config) {
     this.config = config;
   }
