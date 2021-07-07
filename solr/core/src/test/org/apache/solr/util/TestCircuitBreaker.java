@@ -91,7 +91,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     removeAllExistingCircuitBreakers();
 
-    CircuitBreaker circuitBreaker = new MockCircuitBreaker();
+    CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
@@ -238,25 +238,48 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testResponseWithCBTiming() {
+    removeAllExistingCircuitBreakers();
+
     assertQ(req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
-        "//str[@name='rawquerystring']='*:*'",
-        "//str[@name='querystring']='*:*'",
-        "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
-        "//str[@name='parsedquery_toString']='*:*'",
-        "count(//lst[@name='explain']/*)=3",
-        "//lst[@name='explain']/str[@name='1']",
-        "//lst[@name='explain']/str[@name='2']",
-        "//lst[@name='explain']/str[@name='3']",
-        "//str[@name='QParser']",
-        "count(//lst[@name='timing']/*)=4",
-        "//lst[@name='timing']/double[@name='time']",
-        "count(//lst[@name='circuitbreaker']/*)>0",
-        "//lst[@name='circuitbreaker']/double[@name='time']",
-        "count(//lst[@name='prepare']/*)>0",
-        "//lst[@name='prepare']/double[@name='time']",
-        "count(//lst[@name='process']/*)>0",
-        "//lst[@name='process']/double[@name='time']"
-    );
+            "//str[@name='rawquerystring']='*:*'",
+            "//str[@name='querystring']='*:*'",
+            "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
+            "//str[@name='parsedquery_toString']='*:*'",
+            "count(//lst[@name='explain']/*)=3",
+            "//lst[@name='explain']/str[@name='1']",
+            "//lst[@name='explain']/str[@name='2']",
+            "//lst[@name='explain']/str[@name='3']",
+            "//str[@name='QParser']",
+            "count(//lst[@name='timing']/*)=3",
+            "//lst[@name='timing']/double[@name='time']",
+            "count(//lst[@name='prepare']/*)>0",
+            "//lst[@name='prepare']/double[@name='time']",
+            "count(//lst[@name='process']/*)>0",
+            "//lst[@name='process']/double[@name='time']"
+           );
+
+    CircuitBreaker circuitBreaker = new MockCircuitBreaker(false);
+    h.getCore().getCircuitBreakerManager().register(circuitBreaker);
+
+    assertQ(req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
+            "//str[@name='rawquerystring']='*:*'",
+            "//str[@name='querystring']='*:*'",
+            "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
+            "//str[@name='parsedquery_toString']='*:*'",
+            "count(//lst[@name='explain']/*)=3",
+            "//lst[@name='explain']/str[@name='1']",
+            "//lst[@name='explain']/str[@name='2']",
+            "//lst[@name='explain']/str[@name='3']",
+            "//str[@name='QParser']",
+            "count(//lst[@name='timing']/*)=4",
+            "//lst[@name='timing']/double[@name='time']",
+            "count(//lst[@name='circuitbreaker']/*)>0",
+            "//lst[@name='circuitbreaker']/double[@name='time']",
+            "count(//lst[@name='prepare']/*)>0",
+            "//lst[@name='prepare']/double[@name='time']",
+            "count(//lst[@name='process']/*)>0",
+            "//lst[@name='process']/double[@name='time']"
+          );
   }
 
   private void removeAllExistingCircuitBreakers() {
@@ -267,13 +290,15 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
   private static class MockCircuitBreaker extends MemoryCircuitBreaker {
 
-    public MockCircuitBreaker() {
+    private final boolean tripped;
+
+    public MockCircuitBreaker(boolean tripped) {
+      this.tripped = tripped;
     }
 
     @Override
     public boolean isTripped() {
-      // Always return true
-      return true;
+      return this.tripped;
     }
 
     @Override

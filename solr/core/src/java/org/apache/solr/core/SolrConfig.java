@@ -357,7 +357,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       .add(new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS))
       .add(new SolrPluginInfo(RestManager.class, "restManager"))
       .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
-      .add(new SolrPluginInfo(CircuitBreaker.class, "circuitBreaker", MULTI_OK))
+      .add(new SolrPluginInfo(CircuitBreaker.class, "circuitBreaker", REQUIRE_CLASS, MULTI_OK))
       .build();
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 

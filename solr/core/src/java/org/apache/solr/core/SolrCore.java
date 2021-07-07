@@ -232,7 +232,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final ConfigSet configSet;
   //singleton listener for all packages used in schema
 
-  private final CircuitBreakerManager circuitBreakerManager;
+  private final CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager();
 
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
@@ -961,9 +961,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
-      this.circuitBreakerManager = initCircuitBreakerManager(solrConfig, resourceLoader);
       solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
+
+      // init pluggable circuit breakers
+      initPlugins(null, CircuitBreaker.class);
 
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
@@ -1179,12 +1181,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private SolrCoreMetricManager initCoreMetricManager(SolrConfig config) {
     SolrCoreMetricManager coreMetricManager = new SolrCoreMetricManager(this);
     return coreMetricManager;
-  }
-
-  private static CircuitBreakerManager initCircuitBreakerManager(SolrConfig solrConfig, SolrResourceLoader solrResourceLoader) {
-    final List<PluginInfo> info = solrConfig.getPluginInfos(CircuitBreaker.class.getName());
-    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(info, solrResourceLoader);
-    return circuitBreakerManager;
   }
 
   @Override
@@ -2860,9 +2856,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     T def = null;
     for (PluginInfo info : pluginInfos) {
       T o = createInitInstance(info, type, type.getSimpleName(), defClassName);
-      registry.put(info.name, o);
+      if (registry != null) registry.put(info.name, o);
       if (o instanceof SolrMetricProducer) {
         coreMetricManager.registerMetricProducer(type.getSimpleName() + "." + info.name, (SolrMetricProducer) o);
+      }
+      if (o instanceof CircuitBreaker) {
+        circuitBreakerManager.register((CircuitBreaker)o);
       }
       if (info.isDefault()) {
         def = o;

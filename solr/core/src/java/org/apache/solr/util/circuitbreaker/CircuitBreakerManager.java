@@ -21,10 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * Manages all registered circuit breaker instances. Responsible for a holistic view
@@ -41,18 +37,10 @@ import org.apache.solr.util.SolrPluginUtils;
  * solution. There will be a follow up with a SIP for a schema API design.
  */
 public class CircuitBreakerManager {
-  // Class private to potentially allow "family" of circuit breakers to be enabled or disabled
-  private final boolean enableCircuitBreakerManager;
 
   private final List<CircuitBreaker> circuitBreakerList = new ArrayList<>();
 
-  private ResourceLoader resourceLoader;
-
-  public CircuitBreakerManager(List<PluginInfo> pluginInfos, SolrResourceLoader solrResourceLoader) {
-    this.enableCircuitBreakerManager = !pluginInfos.isEmpty();
-    this.resourceLoader = solrResourceLoader;
-
-    init(pluginInfos);
+  public CircuitBreakerManager() {
   }
 
   public void register(CircuitBreaker circuitBreaker) {
@@ -69,15 +57,13 @@ public class CircuitBreakerManager {
   public List<CircuitBreaker> checkTripped() {
     List<CircuitBreaker> triggeredCircuitBreakers = null;
 
-    if (enableCircuitBreakerManager) {
-      for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-        if (circuitBreaker.isTripped()) {
-          if (triggeredCircuitBreakers == null) {
-            triggeredCircuitBreakers = new ArrayList<>();
-          }
-
-          triggeredCircuitBreakers.add(circuitBreaker);
+    for (CircuitBreaker circuitBreaker : circuitBreakerList) {
+      if (circuitBreaker.isTripped()) {
+        if (triggeredCircuitBreakers == null) {
+          triggeredCircuitBreakers = new ArrayList<>();
         }
+
+        triggeredCircuitBreakers.add(circuitBreaker);
       }
     }
 
@@ -93,11 +79,9 @@ public class CircuitBreakerManager {
    * </p>
    */
   public boolean checkAnyTripped() {
-    if (enableCircuitBreakerManager) {
-      for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-        if (circuitBreaker.isTripped()) {
-          return true;
-        }
+    for (CircuitBreaker circuitBreaker : circuitBreakerList) {
+      if (circuitBreaker.isTripped()) {
+        return true;
       }
     }
 
@@ -121,26 +105,8 @@ public class CircuitBreakerManager {
     return sb.toString();
   }
 
-  /**
-   * Initialize with circuit breakers defined in the configuration
-   */
-  private void init(List<PluginInfo> pluginInfos) {
-    for (PluginInfo pluginInfo : pluginInfos) {
-      String cbName = pluginInfo.className;
-
-      if (pluginInfo.type != "circuitBreaker") {
-        throw new IllegalStateException("CircuitBreakerManager invoked for non circuit breaker class");
-      }
-
-      final CircuitBreaker cb = resourceLoader.newInstance(cbName, CircuitBreaker.class);
-
-      SolrPluginUtils.invokeSetters(cb, pluginInfo.initArgs);
-      register(cb);
-    }
-  }
-
   public boolean isEnabled() {
-    return enableCircuitBreakerManager;
+    return !circuitBreakerList.isEmpty();
   }
 
   @VisibleForTesting

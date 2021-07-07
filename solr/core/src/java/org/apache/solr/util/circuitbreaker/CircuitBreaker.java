@@ -17,6 +17,10 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+
 /**
  * Default class to define circuit breakers for Solr.
  * <p>
@@ -30,8 +34,13 @@ package org.apache.solr.util.circuitbreaker;
  * We should make it into a dedicated exception (https://issues.apache.org/jira/browse/SOLR-14755)
  * </p>
  */
-public abstract class CircuitBreaker {
+public abstract class CircuitBreaker implements NamedListInitializedPlugin {
   public static final String NAME = "circuitbreaker";
+
+  @Override
+  public void init(NamedList<?> args) {
+    SolrPluginUtils.invokeSetters(this, args);
+  }
 
   public CircuitBreaker() {
   }
