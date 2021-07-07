@@ -167,6 +167,7 @@ import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -1181,7 +1182,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private static CircuitBreakerManager initCircuitBreakerManager(SolrConfig solrConfig, SolrResourceLoader solrResourceLoader) {
-    final List<PluginInfo> info = solrConfig.getAllPluginInfos(CircuitBreakerManager.class.getName());
+    final List<PluginInfo> info = solrConfig.getAllPluginInfos(CircuitBreaker.class.getName());
     CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(info, solrResourceLoader);
 
     return circuitBreakerManager;
