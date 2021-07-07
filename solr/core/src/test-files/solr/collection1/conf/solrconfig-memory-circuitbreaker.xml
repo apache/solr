@@ -78,11 +78,11 @@
 
   </query>
 
-  <circuitBreaker class="org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker" enabled="true">
+  <circuitBreaker class="org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker" enable="true">
     <int  name="threshold">75</int>
   </circuitBreaker>
 
-  <circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enabled="true">
+  <circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enable="true">
     <int  name="threshold">75</int>
   </circuitBreaker>
 

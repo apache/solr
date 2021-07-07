@@ -31,8 +31,7 @@ All circuit breaker configurations are listed as independent entries in solrconf
 
 [source,xml]
 ----
-  <circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enabled="true">
-    <bool name="enabled">true</bool>
+  <circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enable="true">
     <int  name="threshold">75</int>
   </circuitBreaker>
 ----
@@ -50,8 +49,7 @@ To enable and configure the JVM heap usage based circuit breaker, add the follow
 
 [source,xml]
 ----
-<circuitBreaker class="org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker" enabled="true">
- <bool name="enabled">true</bool>
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker" enable="true">
  <int name="threshold">75</int>
 </circuitBreaker>
 ----
@@ -85,8 +83,7 @@ To enable and configure the CPU utilization based circuit breaker:
 
 [source,xml]
 ----
-<circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enabled="true">
- <bool name="enabled">true</bool>
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enable="true">
  <int  name="threshold">75</int>
 </circuitBreaker>
 ----
@@ -109,8 +106,7 @@ To add new circuit breakers, add the new circuit breaker's class and required pa
 
 [source,xml]
 ----
-<circuitBreaker class="foobar" enabled="true">
- <bool name="enabled">true</bool>
+<circuitBreaker class="foobar" enable="true">
  <int  name="threshold">75</int>
 </circuitBreaker>
 ----

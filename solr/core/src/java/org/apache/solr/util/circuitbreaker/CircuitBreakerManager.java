@@ -142,25 +142,7 @@ public class CircuitBreakerManager {
 
       final CircuitBreaker cb = resourceLoader.newInstance(cbName, CircuitBreaker.class);
 
-      final HashMap<String, Object> params = new HashMap<>();
-
-      final String classPrefix = "class";
-
-      for (Map.Entry<String, String> entry : pluginInfo.attributes.entrySet()) {
-        if (entry.getKey().matches(classPrefix)) {
-          continue;
-        }
-
-        params.put(entry.getKey(), Boolean.parseBoolean(entry.getValue()));
-      }
-
-      for (int idx = 0; idx < pluginInfo.initArgs.size(); ++idx) {
-        final String key = pluginInfo.initArgs.getName(idx);
-        final Object val = pluginInfo.initArgs.getVal(idx);
-        params.put(key, val);
-      }
-
-      SolrPluginUtils.invokeSetters(cb, params.entrySet());
+      SolrPluginUtils.invokeSetters(cb, pluginInfo.initArgs);
       register(cb);
     }
   }
