@@ -24,6 +24,7 @@ import java.util.Set;
 
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.IntIntHashMap;
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -44,6 +45,13 @@ import org.apache.solr.request.SolrRequestInfo;
 /* A TopDocsCollector used by reranking queries. */
 @SuppressWarnings({"rawtypes"})
 public class ReRankCollector extends TopDocsCollector {
+
+  public static class UnReRankedTopDocs extends RuntimeException {
+    public final TopDocs topDocs;
+    public UnReRankedTopDocs(TopDocs topDocs) {
+      this.topDocs = topDocs;
+    }
+  }
 
   final private TopDocsCollector<?> mainCollector;
   final private IndexSearcher searcher;
@@ -97,9 +105,11 @@ public class ReRankCollector extends TopDocsCollector {
   @SuppressWarnings({"unchecked"})
   public TopDocs topDocs(int start, int howMany) {
 
+    TopDocs mainDocs = null;
+
     try {
 
-      TopDocs mainDocs = mainCollector.topDocs(0,  Math.max(reRankDocs, length));
+      mainDocs = mainCollector.topDocs(0,  Math.max(reRankDocs, length));
 
       if(mainDocs.totalHits.value == 0 || mainDocs.scoreDocs.length == 0) {
         return mainDocs;
@@ -149,6 +159,12 @@ public class ReRankCollector extends TopDocsCollector {
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
         rescoredDocs.scoreDocs = scoreDocs;
         return rescoredDocs;
+      }
+    } catch (ExitableDirectoryReader.ExitingReaderException ex) {
+      if (mainDocs != null) {
+        throw new UnReRankedTopDocs(mainDocs);
+      } else {
+        throw ex;
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
