@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.admin;
-;
+
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
