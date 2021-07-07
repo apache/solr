@@ -18,18 +18,12 @@
 package org.apache.solr.util.circuitbreaker;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.collections.map.UnmodifiableEntrySet;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.uninverting.FieldCacheImpl;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
