@@ -67,8 +67,9 @@ dependencies {
     depVer('org.apache.tika:tika-core')
     depVer('org.apache.zookeeper:zookeeper')
 
-    // jekyll dependencies
-    gems 'rubygems:jekyll:4.2.0'
+    // jekyll dependencies: we cannot use jekyll >=4, as this version uses native lib
+    // ("sassc" instead of deprecated "sass") which fails to compile on some platforms
+    gems 'rubygems:jekyll:3.9.1'
     gems 'rubygems:jekyll-asciidoc:3.0.0'
 
     // don't know why we have to explicitly add these deps but it doesn't resolve them
