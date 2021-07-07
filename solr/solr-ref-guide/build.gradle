@@ -68,7 +68,8 @@ dependencies {
     depVer('org.apache.zookeeper:zookeeper')
 
     // jekyll dependencies: we cannot use jekyll >=4, as this version uses native lib
-    // ("sassc" instead of deprecated "sass") which fails to compile on some platforms
+    // ("sassc" instead of deprecated "sass") which fails to compile on some platforms.
+    // See https://issues.apache.org/jira/browse/SOLR-15520 for more details.
     gems 'rubygems:jekyll:3.9.1'
     gems 'rubygems:jekyll-asciidoc:3.0.0'
 
