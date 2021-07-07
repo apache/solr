@@ -67,27 +67,6 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     }
   }
 
-  @Deprecated
-  public MemoryCircuitBreaker(CircuitBreakerConfig config) {
-    super(config);
-
-    this.enabled = config.getMemCBEnabled();
-
-    long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
-
-    if (currentMaxHeap <= 0) {
-      throw new IllegalArgumentException("Invalid JVM state for the max heap usage");
-    }
-
-    int thresholdValueInPercentage = config.getMemCBThreshold();
-    double thresholdInFraction = thresholdValueInPercentage / (double) 100;
-    heapMemoryThreshold = (long) (currentMaxHeap * thresholdInFraction);
-
-    if (heapMemoryThreshold <= 0) {
-      throw new IllegalStateException("Memory limit cannot be less than or equal to zero");
-    }
-  }
-
   // TODO: An optimization can be to trip the circuit breaker for a duration of time
   // after the circuit breaker condition is matched. This will optimize for per call
   // overhead of calculating the condition parameters but can result in false positives.

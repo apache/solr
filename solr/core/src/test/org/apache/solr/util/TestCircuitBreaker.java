@@ -93,8 +93,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     CircuitBreaker circuitBreaker = new MockCircuitBreaker();
 
-    circuitBreaker.setEnabled(true);
-
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
     expectThrows(SolrException.class, () -> {
@@ -113,7 +111,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker();
     MemoryCircuitBreaker memoryCircuitBreaker = (MemoryCircuitBreaker) circuitBreaker;
 
-    memoryCircuitBreaker.setEnabled(true);
     memoryCircuitBreaker.setThreshold(75);
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
@@ -139,7 +136,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker();
       MemoryCircuitBreaker memoryCircuitBreaker = (MemoryCircuitBreaker) circuitBreaker;
 
-      memoryCircuitBreaker.setEnabled(true);
       memoryCircuitBreaker.setThreshold(75);
 
       h.getCore().getCircuitBreakerManager().register(circuitBreaker);
@@ -191,7 +187,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     CircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker();
     CPUCircuitBreaker cpuCircuitBreaker = (CPUCircuitBreaker) circuitBreaker;
 
-    cpuCircuitBreaker.setEnabled(true);
     cpuCircuitBreaker.setThreshold(75);
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);

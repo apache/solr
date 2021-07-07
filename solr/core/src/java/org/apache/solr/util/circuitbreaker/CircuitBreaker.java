@@ -36,8 +36,6 @@ public abstract class CircuitBreaker {
   @Deprecated
   protected final CircuitBreakerConfig config;
 
-  protected boolean enabled = false;
-
   public CircuitBreaker() {
     this.config = null;
   }
@@ -47,14 +45,11 @@ public abstract class CircuitBreaker {
     this.config = config;
   }
 
-  // Global config for all circuit breakers. For specific circuit breaker configs, define
-  // your own config.
+  @Deprecated
   protected boolean isEnabled() {
-    return enabled || (config != null && config.isEnabled());
-  }
-
-  public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
+    // if (deprecated) config is present its 'enabled' flag is used
+    // otherwise presence of the (pluggable) circuit breaker implies enablement
+    return config == null || config.isEnabled();
   }
 
   /**

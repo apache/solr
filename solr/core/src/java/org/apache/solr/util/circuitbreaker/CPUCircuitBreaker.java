@@ -54,20 +54,8 @@ public class CPUCircuitBreaker extends CircuitBreaker {
     super();
   }
 
-  public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
-  }
-
   public void setThreshold(double usageThreshold) {
     this.cpuUsageThreshold = usageThreshold;
-  }
-
-  @Deprecated
-  public CPUCircuitBreaker(CircuitBreakerConfig config) {
-    super(config);
-
-    this.enabled = config.getCpuCBEnabled();
-    this.cpuUsageThreshold = config.getCpuCBThreshold();
   }
 
   @Override
