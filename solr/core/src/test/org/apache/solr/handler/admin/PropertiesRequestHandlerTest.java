@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.admin;
-
-import java.io.StringReader;
+;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RedactionUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,13 +61,9 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked"})
   private NamedList<Object> readProperties() throws Exception {
-    String xml = h.query(req(
-        CommonParams.QT, "/admin/properties",
-        CommonParams.WT, "xml"
-    ));
-
-    XMLResponseParser parser = new XMLResponseParser();
-    return (NamedList<Object>)
-        parser.processResponse(new StringReader(xml)).get("system.properties");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequest req = req();
+    new PropertiesRequestHandler().handleRequestBody(req, rsp);
+    return (NamedList<Object>) rsp.getValues().get("system.properties");
   }
 }
