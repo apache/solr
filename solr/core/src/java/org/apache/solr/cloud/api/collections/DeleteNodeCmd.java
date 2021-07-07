@@ -51,8 +51,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     CollectionHandlingUtils.checkRequired(message, "node");
     String node = message.getStr("node");
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
@@ -92,8 +91,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
     return res;
   }
 
-  @SuppressWarnings({"unchecked"})
-  static void cleanupReplicas(@SuppressWarnings({"rawtypes"})NamedList results,
+  static void cleanupReplicas(NamedList<Object> results,
                               ClusterState clusterState,
                               List<ZkNodeProps> sourceReplicas,
                               CollectionCommandContext ccc,
@@ -105,8 +103,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
       String shard = sourceReplica.getStr(SHARD_ID_PROP);
       String type = sourceReplica.getStr(ZkStateReader.REPLICA_TYPE);
       log.info("Deleting replica type={} for collection={} shard={} on node={}", type, coll, shard, node);
-      @SuppressWarnings({"rawtypes"})
-      NamedList deleteResult = new NamedList();
+      NamedList<Object> deleteResult = new NamedList<>();
       try {
         if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
         new DeleteReplicaCmd(ccc).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {

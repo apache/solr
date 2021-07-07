@@ -524,9 +524,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     SchemaField sf = h.getCore().getLatestSchema().getField(field);
 
     String response = JQ(req("q", "*:*"));
-    @SuppressWarnings({"rawtypes"})
-    Map rsp = (Map) fromJSONString(response);
-    Long numFound  = (Long)(((Map)rsp.get("response")).get("numFound"));
+    Map<?, ?> rsp = (Map<?, ?>) fromJSONString(response);
+    Long numFound  = (Long)(((Map<?, ?>)rsp.get("response")).get("numFound"));
 
     ModifiableSolrParams params = params("q","*:*", "facet.mincount","1","rows","0", "facet","true", "facet.field","{!key=myalias}"+field);
     

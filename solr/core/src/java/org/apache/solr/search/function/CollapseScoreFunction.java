@@ -49,8 +49,7 @@ public class CollapseScoreFunction extends ValueSource {
 
     private CollapseScore cscore;
 
-    @SuppressWarnings({"rawtypes"})
-    public CollapseScoreFunctionValues(Map context) {
+    public CollapseScoreFunctionValues(Map<?,?> context) {
       this.cscore = (CollapseScore) context.get("CSCORE");
       assert null != this.cscore;
     }
