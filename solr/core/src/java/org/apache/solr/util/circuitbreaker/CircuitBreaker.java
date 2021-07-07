@@ -36,12 +36,6 @@ public abstract class CircuitBreaker {
   public CircuitBreaker() {
   }
 
-  @Deprecated
-  protected boolean isEnabled() {
-    // presence of the (pluggable) circuit breaker implies enablement
-    return true;
-  }
-
   /**
    * Check if circuit breaker is tripped.
    */

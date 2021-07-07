@@ -60,9 +60,6 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   @Override
   public boolean isTripped() {
-    if (!isEnabled()) {
-      return false;
-    }
 
     double localAllowedCPUUsage = getCpuUsageThreshold();
     double localSeenCPUUsage = calculateLiveCPUUsage();

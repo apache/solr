@@ -72,9 +72,6 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   // overhead of calculating the condition parameters but can result in false positives.
   @Override
   public boolean isTripped() {
-    if (!isEnabled()) {
-      return false;
-    }
 
     long localAllowedMemory = getCurrentMemoryThreshold();
     long localSeenMemory = calculateLiveMemoryUsage();

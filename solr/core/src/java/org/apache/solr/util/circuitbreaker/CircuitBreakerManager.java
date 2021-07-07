@@ -77,8 +77,7 @@ public class CircuitBreakerManager {
 
     if (enableCircuitBreakerManager) {
       for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-        if (circuitBreaker.isEnabled() &&
-            circuitBreaker.isTripped()) {
+        if (circuitBreaker.isTripped()) {
           if (triggeredCircuitBreakers == null) {
             triggeredCircuitBreakers = new ArrayList<>();
           }
@@ -102,8 +101,7 @@ public class CircuitBreakerManager {
   public boolean checkAnyTripped() {
     if (enableCircuitBreakerManager) {
       for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-        if (circuitBreaker.isEnabled() &&
-            circuitBreaker.isTripped()) {
+        if (circuitBreaker.isTripped()) {
           return true;
         }
       }
