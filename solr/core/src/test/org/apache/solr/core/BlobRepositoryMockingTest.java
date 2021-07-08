@@ -112,7 +112,6 @@ public class BlobRepositoryMockingTest {
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void testGetBlobIncrRefString() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
@@ -127,7 +126,6 @@ public class BlobRepositoryMockingTest {
     verify(mapMock).put(eq("foo!"), any(BlobRepository.BlobContent.class));
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void testGetBlobIncrRefByUrl() throws Exception{
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
@@ -153,7 +151,6 @@ public class BlobRepositoryMockingTest {
     filecontent = null;
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void testCachedAlready() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
@@ -168,7 +165,6 @@ public class BlobRepositoryMockingTest {
     verify(mapMock).get("foo!");
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void testGetBlobIncrRefStringDecoder() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);

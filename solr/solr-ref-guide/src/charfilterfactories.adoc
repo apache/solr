@@ -18,7 +18,8 @@
 
 CharFilter is a component that pre-processes input characters.
 
-CharFilters can be chained like Token Filters and placed in front of a Tokenizer. CharFilters can add, change, or remove characters while preserving the original character offsets to support features like highlighting.
+CharFilters can be chained like Token Filters and placed in front of a Tokenizer.
+CharFilters can add, change, or remove characters while preserving the original character offsets to support features like highlighting.
 
 == solr.MappingCharFilterFactory
 
@@ -65,9 +66,7 @@ Mapping file syntax:
 * The source string must contain at least one character, but the target string may be empty.
 * The following character escape sequences are recognized within source and target strings:
 +
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-+
-[cols="20,30,20,30",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Escape Sequence |Resulting Character (http://www.ecma-international.org/publications/standards/Ecma-048.htm[ECMA-48] alias) |Unicode Character |Example Mapping Line
 |`\\` |`\` |U+005C |`"\\" \=> "/"`
@@ -83,7 +82,8 @@ Mapping file syntax:
 
 == solr.HTMLStripCharFilterFactory
 
-This filter creates `org.apache.solr.analysis.HTMLStripCharFilter`. This CharFilter strips HTML from the input stream and passes the result to another CharFilter or a Tokenizer.
+This filter creates `org.apache.solr.analysis.HTMLStripCharFilter`.
+This CharFilter strips HTML from the input stream and passes the result to another CharFilter or a Tokenizer.
 
 This filter:
 
@@ -103,7 +103,9 @@ This filter:
 * Inline tags, such as `<b>`, `<i>`, or `<span>` will be removed.
 * Uppercase character entities like `quot`, `gt`, `lt` and `amp` are recognized and handled as lowercase.
 
-TIP: The input need not be an HTML document. The filter removes only constructs that look like HTML. If the input doesn't include anything that looks like HTML, the filter won't remove any input.
+TIP: The input need not be an HTML document.
+The filter removes only constructs that look like HTML.
+If the input doesn't include anything that looks like HTML, the filter won't remove any input.
 
 The table below presents examples of HTML stripping.
 
@@ -154,11 +156,36 @@ This filter performs pre-tokenization Unicode normalization using http://site.ic
 
 Arguments:
 
-`form`:: A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, `nfkc_cf`. Default is `nfkc_cf`.
+`form`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `nfkc_cf`
+|===
++
+A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, or `nfkc_cf`.
 
-`mode`:: Either `compose` or `decompose`. Default is `compose`. Use `decompose` with `name="nfc"` or `name="nfkc"` to get NFD or NFKD, respectively.
+`mode`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `compose`
+|===
++
+Either `compose` or `decompose`.
+Default is `compose`.
+Use `decompose` with `name="nfc"` or `name="nfkc"` to get NFD or NFKD, respectively.
 
-`filter`:: A http://www.icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet] pattern. Codepoints outside the set are always left unchanged. Default is `[]` (the null set, no filtering - all codepoints are subject to normalization).
+`filter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `[]`
+|===
++
+A http://www.icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet] pattern.
+Codepoints outside the set are always left unchanged.
+Default is `[]`, as a null set, no filtering (all codepoints are subject to normalization).
 
 Example:
 
@@ -196,9 +223,23 @@ This filter uses http://www.regular-expressions.info/reference.html[regular expr
 
 Arguments:
 
-`pattern`:: the regular expression pattern to apply to the incoming text.
+`pattern`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The regular expression pattern to apply to the incoming text.
 
-`replacement`:: the text to use to replace matching patterns.
+`replacement`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The text to use to replace matching patterns.
 
 You can configure this filter in `schema.xml` like this:
 
@@ -234,9 +275,7 @@ You can configure this filter in `schema.xml` like this:
 
 The table below presents examples of regex-based pattern replacement:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,20,10,20,30",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Input |Pattern |Replacement |Output |Description
 |see-ing looking |`(\w+)(ing)` |`$1` |see-ing look |Removes "ing" from the end of word.

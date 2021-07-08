@@ -1,3 +1,4 @@
+
 = Major Changes in Solr 9
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -130,7 +131,7 @@ _(raw; not yet edited)_
 
 * SOLR-14792: VelocityResponseWriter has been removed from Solr.  This encompasses all previous included `/browse` and
   `wt=velocity` examples.  This feature has been migrated to an installable package at
-  https://github.com/erikhatcher/solritas
+  https://github.com/erikhatcher/solr-velocity
 
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the numFound value (exact vs approximation).
   Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
@@ -154,6 +155,12 @@ _(raw; not yet edited)_
 
 * SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000".
 
+* SOLR-15409: Zookeeper client libraries upgraded to 3.7.0, which may not be compatible with your existing server installations
+
+* SOLR-15470: The binary distribution no longer contains test-framework jars.
+
+* SOLR-15471: The language identification "whitelist" configuration is now an "allowlist" to better convey the meaning of the property
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
@@ -163,7 +170,7 @@ Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a pre
 See for example https://solr.apache.org/guide/8_8/cluster-node-management.html#migratestateforma[Solr 8.8 Ref Guide].
 // Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
-* If you're using Solr in standalone mode with the <<the-query-elevation-component.adoc#,Query Elevation Component>> with it's elevation file in the data directory, you'll have to move it to the <<config-sets.adoc#,Configset>> instead.
+* If you're using Solr in standalone mode with the <<query-elevation-component.adoc#,Query Elevation Component>> with it's elevation file in the data directory, you'll have to move it to the <<config-sets.adoc#,Configset>> instead.
 The only reason QEC supported the data directory was to support loading its changes on a commit instead of a more expensive core reload.
 That feature now works from the configset dir too.
 SolrCloud doesn't support that but may sometime.
@@ -180,7 +187,17 @@ If re-indexing is too onerous, use this mechanism in Solr 8.
 
 == Configuration and Default Parameter Changes in Solr 9
 
-* base_url removed from stored state*
+=== solr.xml maxBooleanClauses now enforced recursively
+
+Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
+
+In previous versios of Solr, this option was a hard limit on the number of clauses in any `BooleanQuery` object - but it was only enforced for the _direct_ clauses.  Starting with Solr 9, this global limit is now also enforced against the total number of clauses in a _nested_ query structure.
+
+Users who upgrade from prior versions of Solr may find that some requests involving complex internal query structures (Example: long query strings using `edismax` with many `qf` and `pf` fields that include query time synonym expansion) which worked in the past now hit this limit and fail.
+
+User's in this situation are advised to consider the complexity f their queries/configuration, and increase the value of `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` if warranted.
+
+=== base_url removed from stored state
 
 If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1)
 to better align the stored state in Zookeeper with future versions of Solr; as of Solr 9.x, the `base_url` will no longer be
@@ -203,4 +220,4 @@ What percentage of them get reported to a tracing server is up to you.
 
 * BasicAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.
 
-* The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see <<format-of-solr-xml.adoc#_allow_urls, Format of solr.allowUrls>> documentation.
+* The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see <<configuring-solr-xml.adoc#allow-urls, Format of solr.allowUrls>> documentation.

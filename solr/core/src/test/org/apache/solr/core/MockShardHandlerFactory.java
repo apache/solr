@@ -27,8 +27,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /** a fake shardhandler factory that does nothing. */
 public class MockShardHandlerFactory extends ShardHandlerFactory implements PluginInfoInitialized {
-  @SuppressWarnings({"rawtypes"})
-  NamedList args;
+  NamedList<?> args;
   
   @Override
   public void init(PluginInfo info) {

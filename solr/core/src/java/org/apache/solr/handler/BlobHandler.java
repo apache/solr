@@ -71,7 +71,6 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized , PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -80,7 +79,6 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   private long maxSize = DEFAULT_MAX_SIZE;
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String httpMethod = req.getHttpMethod();
     String path = (String) req.getContext().get("path");
@@ -121,7 +119,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         if (duplicateCount > 0) {
           rsp.add("error", "duplicate entry");
           forward(req, null,
-              new MapSolrParams((Map) makeMap(
+              new MapSolrParams(Map.of(
                   "q", "md5:" + md5,
                   "fl", "id,size,version,timestamp,blobName")),
               rsp);
@@ -140,7 +138,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         }
         version++;
         String id = blobName + "/" + version;
-        Map<String, Object> doc = makeMap(
+        Map<String, Object> doc = Map.of(
             ID, id,
             CommonParams.TYPE, "blob",
             "md5", md5,
@@ -214,7 +212,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         }
 
         forward(req, null,
-            new MapSolrParams((Map) makeMap(
+            new MapSolrParams(Map.of(
                 "q", StrUtils.formatString(q, blobName, version),
                 "fl", "id,size,version,timestamp,blobName,md5",
                 SORT, "version desc"))
@@ -276,8 +274,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   public void init(PluginInfo info) {
     super.init(info.initArgs);
     if (info.initArgs != null) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList invariants = (NamedList) info.initArgs.get(PluginInfo.INVARIANTS);
+      NamedList<?> invariants = (NamedList<?>) info.initArgs.get(PluginInfo.INVARIANTS);
       if (invariants != null) {
         Object o = invariants.get("maxSize");
         if (o != null) {

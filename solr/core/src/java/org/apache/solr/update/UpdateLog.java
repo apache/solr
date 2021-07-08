@@ -210,9 +210,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
-  protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
+  protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<>(numDeletesToKeep) {
     @Override
-    protected boolean removeEldestEntry(@SuppressWarnings({"rawtypes"})Map.Entry eldest) {
+    protected boolean removeEldestEntry(Map.Entry<BytesRef, LogPtr> eldest) {
       return size() > numDeletesToKeep;
     }
   };
@@ -909,7 +909,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    */
   @SuppressWarnings({"unchecked"})
   synchronized public long applyPartialUpdates(BytesRef id, long prevPointer, long prevVersion,
-      Set<String> onlyTheseFields, @SuppressWarnings({"rawtypes"})SolrDocumentBase latestPartialDoc) {
+      Set<String> onlyTheseFields, SolrDocumentBase<?, ?> latestPartialDoc) {
     
     SolrInputDocument partialUpdateDoc = null;
 
@@ -957,7 +957,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * Add all fields from olderDoc into newerDoc if not already present in newerDoc
    */
-  private void applyOlderUpdates(@SuppressWarnings({"rawtypes"})SolrDocumentBase newerDoc, SolrInputDocument olderDoc, Set<String> mergeFields) {
+  private void applyOlderUpdates(SolrDocumentBase<?,?> newerDoc, SolrInputDocument olderDoc, Set<String> mergeFields) {
     for (String fieldName : olderDoc.getFieldNames()) {
       // if the newerDoc has this field, then this field from olderDoc can be ignored
       if (!newerDoc.containsKey(fieldName) && (mergeFields == null || mergeFields.contains(fieldName))) {

@@ -48,7 +48,6 @@ public class CloudInspectUtil {
    * @param bDeleteFails null or list of the ids of deletes that failed for b
    * @return true if the difference in a and b is legal
    */
-  @SuppressWarnings({"unchecked"})
   public static boolean checkIfDiffIsLegal(SolrDocumentList a,
       SolrDocumentList b, String aName, String bName, Set<String> bAddFails,
       Set<String> bDeleteFails) {

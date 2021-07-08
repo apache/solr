@@ -17,15 +17,23 @@
 // specific language governing permissions and limitations
 // under the License.
 
-A replica is a physical copy of a shard.  Replicas enhance fail over by providing additional copies of the data
+A replica is a physical copy of a shard.
+Replicas enhance fail over by providing additional copies of the data
 and enhance scalability by providing additional capacity for searching.
 
-The examples assume you have started Solr via `bin/solr start -c -e techproducts`.
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr -c -e techproducts
+----
 
 [[addreplica]]
 == ADDREPLICA: Add Replica
 
-Add one or more replicas to a shard in a collection. The node name can be specified if the replica is to be created in a specific node. Otherwise, a set of nodes can be specified and the most suitable ones among them will be chosen to create the replica(s).
+Add one or more replicas to a shard in a collection.
+The node name can be specified if the replica is to be created in a specific node.
+Otherwise, a set of nodes can be specified and the most suitable ones among them will be chosen to create the replica(s).
 
 [.dynamic-tabs]
 --
@@ -65,7 +73,7 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=techpr
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "add-replica":{
       "shard":"shard1",
@@ -96,7 +104,8 @@ curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Conte
 === ADDREPLICA Parameters
 
 `collection`::
-The name of the collection where the replica should be created. This parameter is required.
+The name of the collection where the replica should be created.
+This parameter is required.
 
 `shard`::
 The name of the shard to which replica is to be added.
@@ -125,13 +134,16 @@ The instanceDir for the core that will be created.
 The directory in which the core should be created.
 
 `type`::
-The type of replica to create. These possible values are allowed:
+The type of replica to create.
+These possible values are allowed:
 +
-* `nrt`: The NRT type maintains a transaction log and updates its index locally. This is the default and the most commonly used.
+* `nrt`: The NRT type maintains a transaction log and updates its index locally.
+This is the default and the most commonly used.
 * `tlog`: The TLOG type maintains a transaction log but only updates its index via replication.
-* `pull`: The PULL type does not maintain a transaction log and only updates its index via replication. This type is not eligible to become a leader.
+* `pull`: The PULL type does not maintain a transaction log and only updates its index via replication.
+This type is not eligible to become a leader.
 +
-See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
+See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
 
 `nrtReplicas`::
 The number of `nrt` replicas that should be created (optional, defaults to 1 if `type` is `nrt` otherwise 0).
@@ -143,15 +155,18 @@ The number of `tlog` replicas that should be created (optional, defaults to 1 if
 The number of `pull` replicas that should be created (optional, defaults to 1 if `type` is `pull` otherwise 0).
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See <<defining-core-properties.adoc#,Defining core.properties>> for details about supported properties and values.
+Set core property _name_ to _value_. See <<core-discovery.adoc#,Core Discovery>> for details about supported properties and values.
 
 [WARNING]
 ====
-The entries in each core.properties file are vital for Solr to function correctly. Overriding entries can result in unusable collections. Altering these entries by specifying `property._name_=_value_` is an expert-level option and should only be used if you have a thorough understanding of the consequences.
+The entries in each core.properties file are vital for Solr to function correctly.
+Overriding entries can result in unusable collections.
+Altering these entries by specifying `property._name_=_value_` is an expert-level option and should only be used if you have a thorough understanding of the consequences.
 ====
 
 `waitForFinalState`::
-If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+If `true`, the request will complete only when all affected replicas become active.
+The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
@@ -198,7 +213,10 @@ http://localhost:8983/solr/admin/collections?action=addreplica&collection=gettin
 [[movereplica]]
 == MOVEREPLICA: Move a Replica to a New Node
 
-This command moves a replica from one node to another node by executing ADDREPLICA on the destination and then DELETEREPLICA on the source. If this command is interrupted or times out before the ADDREPLICA operation produces a replica in an active state, the DELETEREPLICA will not occur. Timeouts do not cancel the ADDREPLICA, and will result in extra shards. In case of shared filesystems the `dataDir` will be reused.
+This command moves a replica from one node to another node by executing ADDREPLICA on the destination and then DELETEREPLICA on the source.
+If this command is interrupted or times out before the ADDREPLICA operation produces a replica in an active state, the DELETEREPLICA will not occur.
+Timeouts do not cancel the ADDREPLICA, and will result in extra shards.
+In case of shared filesystems the `dataDir` will be reused.
 
 If this command is used on a collection where more than one replica from the same shard exists on the same node, and the `shard` and `sourceNode` parameters match more than one replica, the replica selected is not deterministic (currently it's random).
 
@@ -237,7 +255,7 @@ http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "move-replica":{
       "replica":"core_node6",
@@ -264,25 +282,36 @@ curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Conte
 === MOVEREPLICA Parameters
 
 `collection`::
-The name of the collection. This parameter is required.
+The name of the collection.
+This parameter is required.
 
 `targetNode`::
-The name of the destination node. This parameter is required.
+The name of the destination node.
+This parameter is required.
 
 `sourceNode`::
-The name of the node that contains the replica to move. This parameter is required unless `replica` is specified. If `replica` is specified this parameter is ignored.
+The name of the node that contains the replica to move.
+This parameter is required unless `replica` is specified.
+If `replica` is specified this parameter is ignored.
 
 `shard`::
-The name of the shard for which a replica should be moved. This parameter is required unless `replica` is specified. If `replica` is specified, this parameter is ignored.
+The name of the shard for which a replica should be moved.
+This parameter is required unless `replica` is specified.
+If `replica` is specified, this parameter is ignored.
 
 `replica`::
-The name of the replica to move. This parameter is required unless `shard` and `sourceNode` are specified, however this parameter has precedence over those two parameters.
+The name of the replica to move.
+This parameter is required unless `shard` and `sourceNode` are specified, however this parameter has precedence over those two parameters.
 
 `timeout`::
-The number of seconds to wait for the replica to be live in the new location before deleting the replica in the old location. Defaults to 600 seconds. Deletion will not occur and creation will not be rolled back in the event of a timeout, potentially leaving an extra replica. Presently, this parameter is ignored if the replica is an hdfs replica.
+The number of seconds to wait for the replica to be live in the new location before deleting the replica in the old location.
+Defaults to 600 seconds.
+Deletion will not occur and creation will not be rolled back in the event of a timeout, potentially leaving an extra replica.
+Presently, this parameter is ignored if the replica is an hdfs replica.
 
 `inPlaceMove`::
-For replicas that use shared filesystems allow 'in-place' move that reuses shared data. Defaults to true, but is ignored if the replica does not have the property `shared_storage` with a value of `true`
+For replicas that use shared filesystems allow 'in-place' move that reuses shared data.
+Defaults to true, but is ignored if the replica does not have the property `shared_storage` with a value of `true`
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -294,7 +323,8 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 
 Deletes a named replica from the specified collection and shard.
 
-If the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) delete the instanceDir and dataDir. If the node/core is down, the entry is taken off the clusterstate and if the core comes up later it is automatically unregistered.
+If the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) delete the instanceDir and dataDir.
+If the node/core is down, the entry is taken off the clusterstate and if the core comes up later it is automatically unregistered.
 
 [.dynamic-tabs]
 --
@@ -330,32 +360,42 @@ curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/
 === DELETEREPLICA Parameters
 
 `collection`::
-The name of the collection. This parameter is required.
+The name of the collection.
+This parameter is required.
 
 `shard`::
-The name of the shard that includes the replica to be removed. This parameter is required.
+The name of the shard that includes the replica to be removed.
+This parameter is required.
 
 `replica`::
 The name of the replica to remove.
 +
-If `count` is used instead, this parameter is not required. Otherwise, this parameter must be supplied.
+If `count` is used instead, this parameter is not required.
+Otherwise, this parameter must be supplied.
 
 `count`::
-The number of replicas to remove. If the requested number exceeds the number of replicas, no replicas will be deleted. If there is only one replica, it will not be removed.
+The number of replicas to remove.
+If the requested number exceeds the number of replicas, no replicas will be deleted.
+If there is only one replica, it will not be removed.
 +
-If `replica` is used instead, this parameter is not required. Otherwise, this parameter must be supplied.
+If `replica` is used instead, this parameter is not required.
+Otherwise, this parameter must be supplied.
 
 `deleteInstanceDir`::
-By default Solr will delete the entire instanceDir of the replica that is deleted. Set this to `false` to prevent the instance directory from being deleted.
+By default Solr will delete the entire instanceDir of the replica that is deleted.
+Set this to `false` to prevent the instance directory from being deleted.
 
 `deleteDataDir`::
-By default Solr will delete the dataDir of the replica that is deleted. Set this to `false` to prevent the data directory from being deleted.
+By default Solr will delete the dataDir of the replica that is deleted.
+Set this to `false` to prevent the data directory from being deleted.
 
 `deleteIndex`::
-By default Solr will delete the index of the replica that is deleted. Set this to `false` to prevent the index directory from being deleted.
+By default Solr will delete the index of the replica that is deleted.
+Set this to `false` to prevent the index directory from being deleted.
 
 `onlyIfDown`::
-When set to `true`, no action will be taken if the replica is active. Default `false`.
+When set to `true`, no action will be taken if the replica is active.
+Default `false`.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -363,7 +403,8 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 [[addreplicaprop]]
 == ADDREPLICAPROP: Add Replica Property
 
-Assign an arbitrary property to a particular replica and give it the value specified. If the property already exists, it will be overwritten with the new value.
+Assign an arbitrary property to a particular replica and give it the value specified.
+If the property already exists, it will be overwritten with the new value.
 
 [.dynamic-tabs]
 --
@@ -388,7 +429,7 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&collection=te
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "add-replica-property":{
       "shard":"shard1",
@@ -405,18 +446,23 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
 === ADDREPLICAPROP Parameters
 
 `collection`::
-The name of the collection the replica belongs to. This parameter is required.
+The name of the collection the replica belongs to.
+This parameter is required.
 
 `shard`::
-The name of the shard the replica belongs to. This parameter is required.
+The name of the shard the replica belongs to.
+This parameter is required.
 
 `replica`::
-The replica, e.g., `core_node1`. This parameter is required.
+The replica, e.g., `core_node1`.
+This parameter is required.
 
 `property`::
-The name of the property to add. This property is required.
+The name of the property to add.
+This property is required.
 +
-This will have the literal `property.` prepended to distinguish it from system-maintained properties. So these two forms are equivalent:
+This will have the literal `property.` prepended to distinguish it from system-maintained properties.
+So these two forms are equivalent:
 +
 `property=special`
 +
@@ -425,18 +471,22 @@ and
 `property=property.special`
 
 `property.value`::
-The value to assign to the property. This parameter is required.
+The value to assign to the property.
+This parameter is required.
 
 `shardUnique`::
-If `true`, then setting this property in one replica will remove the property from all other replicas in that shard. The default is `false`.
+If `true`, then setting this property in one replica will remove the property from all other replicas in that shard.
+The default is `false`.
 +
 There is one pre-defined property `preferredLeader` for which `shardUnique` is forced to `true` and an error returned if `shardUnique` is explicitly set to `false`.
 +
-`preferredLeader` is a boolean property. Any value assigned that is not equal (case insensitive) to `true` will be interpreted as `false` for `preferredLeader`.
+`preferredLeader` is a boolean property.
+Any value assigned that is not equal (case insensitive) to `true` will be interpreted as `false` for `preferredLeader`.
 
 === ADDREPLICAPROP Response
 
-The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
+The response will include the status of the request.
+If the status is anything other than "0", an error message will explain why the request failed.
 
 === Additional Examples using ADDREPLICAPROP
 
@@ -490,7 +540,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&collection
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "delete-replica-property":{
       "shard":"shard1",
@@ -506,16 +556,21 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
 === DELETEREPLICAPROP Parameters
 
 `collection`::
-The name of the collection the replica belongs to. This parameter is required.
+The name of the collection the replica belongs to.
+This parameter is required.
 
 `shard`::
-The name of the shard the replica belongs to. This parameter is required.
+The name of the shard the replica belongs to.
+This parameter is required.
 
 `replica`::
-The replica, e.g., `core_node1`. This parameter is required.
+The replica, e.g., `core_node1`.
+This parameter is required.
 
 `property`::
-The property to add. This will have the literal `property.` prepended to distinguish it from system-maintained properties. So these two forms are equivalent:
+The property to add.
+This will have the literal `property.` prepended to distinguish it from system-maintained properties.
+So these two forms are equivalent:
 +
 `property=special`
 +
@@ -525,4 +580,5 @@ and
 
 === DELETEREPLICAPROP Response
 
-The response will include the status of the request. If the status is anything other than "0", an error message will explain why the request failed.
+The response will include the status of the request.
+If the status is anything other than "0", an error message will explain why the request failed.

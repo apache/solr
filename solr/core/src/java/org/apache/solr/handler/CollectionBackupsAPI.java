@@ -51,7 +51,6 @@ public class CollectionBackupsAPI {
   }
 
   @Command(name = LIST_BACKUP_CMD)
-  @SuppressWarnings("unchecked")
   public void listBackups(PayloadObj<ListBackupPayload> obj) throws Exception {
     final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.LISTBACKUP.toLower());
@@ -60,7 +59,6 @@ public class CollectionBackupsAPI {
   }
 
   @Command(name = DELETE_BACKUP_CMD)
-  @SuppressWarnings("unchecked")
   public void deleteBackups(PayloadObj<DeleteBackupPayload> obj) throws Exception {
     final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.DELETEBACKUP.toLower());

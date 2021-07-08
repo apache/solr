@@ -95,8 +95,6 @@ dependencies {
   implementation 'org.codehaus.janino:commons-compiler'
   implementation 'org.codehaus.janino:janino'
 
-  implementation 'org.rrd4j:rrd4j'
-
   // For faster XML processing than the JDK
   implementation ('org.codehaus.woodstox:woodstox-core-asl', {
     exclude group: "javax.xml.stream", module: "stax-api"
@@ -104,6 +102,9 @@ dependencies {
 
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-core') { transitive = false }
+  implementation ('org.checkerframework:checker-qual') { transitive = false }
+  implementation ('com.esri.geometry:esri-geometry-api') { transitive = false }
+  implementation ('org.apiguardian:apiguardian-api')  { transitive = false }
   implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
   implementation ('org.apache.curator:curator-client') { transitive = false }
   implementation ('org.apache.curator:curator-framework') { transitive = false }
@@ -150,6 +151,13 @@ dependencies {
   testImplementation 'commons-logging:commons-logging'
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testImplementation('no.nav.security:mock-oauth2-server', {
+    exclude group: "ch.qos.logback", module: "logback-core"
+    exclude group: "io.netty", module: "netty-all"
+    exclude group: "junit", module: "junit"
+    exclude group: "ch.qos.logback", module: "logback-classic"
+    exclude group: "org.slf4j", module: "slf4j-api"
   })
 }
 

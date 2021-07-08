@@ -702,7 +702,6 @@ public class SolrCLI implements CLIO {
    * Utility function for sending HTTP GET request to Solr and then doing some
    * validation of the response.
    */
-  @SuppressWarnings({"unchecked"})
   public static Map<String,Object> getJson(HttpClient httpClient, String getUrl) throws Exception {
     try {
       // ensure we're requesting JSON back from Solr
@@ -2391,7 +2390,7 @@ public class SolrCLI implements CLIO {
         throw new IllegalArgumentException("Collection "+collectionName+" not found!");
       }
 
-      String configName = zkStateReader.readConfigName(collectionName);
+      String configName = zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
       boolean deleteConfig = "true".equals(cli.getOptionValue("deleteConfig", "true"));
       if (deleteConfig && configName != null) {
         if (cli.hasOption("forceDeleteConfig")) {
@@ -2410,7 +2409,7 @@ public class SolrCLI implements CLIO {
             if (collectionName.equals(next))
               continue; // don't check the collection we're deleting
 
-            if (configName.equals(zkStateReader.readConfigName(next))) {
+            if (configName.equals(zkStateReader.getClusterState().getCollection(next).getConfigName())) {
               deleteConfig = false;
               log.warn("Configuration directory {} is also being used by {}{}"
                   , configName, next

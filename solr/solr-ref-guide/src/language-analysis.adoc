@@ -19,15 +19,19 @@
 
 This section contains information about tokenizers and filters related to character set conversion or for use with specific languages.
 
-For the European languages, tokenization is fairly straightforward. Tokens are delimited by white space and/or a relatively small set of punctuation characters.
+For the European languages, tokenization is fairly straightforward.
+Tokens are delimited by white space and/or a relatively small set of punctuation characters.
 
-In other languages the tokenization rules are often not so simple. Some European languages may also require special tokenization rules, such as rules for decompounding German words.
+In other languages the tokenization rules are often not so simple.
+Some European languages may also require special tokenization rules, such as rules for decompounding German words.
 
-For information about language detection at index time, see <<detecting-languages-during-indexing.adoc#,Detecting Languages During Indexing>>.
+For information about language detection at index time, see <<language-detection.adoc#,Language Detection>>.
 
 == KeywordMarkerFilterFactory
 
-Protects words from being modified by stemmers. A customized protected word list may be specified with the "protected" attribute in the schema. Any words in the protected word list will not be modified by any stemmer in Solr.
+Protects words from being modified by stemmers.
+A customized protected word list may be specified with the "protected" attribute in the schema.
+Any words in the protected word list will not be modified by any stemmer in Solr.
 
 A sample Solr `protwords.txt` with comments can be found in the `sample_techproducts_configs` <<config-sets.adoc#,configset>> directory:
 
@@ -67,9 +71,12 @@ A sample Solr `protwords.txt` with comments can be found in the `sample_techprod
 
 Emits each token twice, one with the `KEYWORD` attribute and once without.
 
-If placed before a stemmer, the result will be that you will get the unstemmed token preserved on the same position as the stemmed one. Queries matching the original exact term will get a better score while still maintaining the recall benefit of stemming. Another advantage of keeping the original token is that wildcard truncation will work as expected.
+If placed before a stemmer, the result will be that you will get the unstemmed token preserved on the same position as the stemmed one.
+Queries matching the original exact term will get a better score while still maintaining the recall benefit of stemming.
+Another advantage of keeping the original token is that wildcard truncation will work as expected.
 
-To configure, add the `KeywordRepeatFilterFactory` early in the analysis chain. It is recommended to also include `RemoveDuplicatesTokenFilterFactory` to avoid duplicates when tokens are not stemmed.
+To configure, add the `KeywordRepeatFilterFactory` early in the analysis chain.
+It is recommended to also include `RemoveDuplicatesTokenFilterFactory` to avoid duplicates when tokens are not stemmed.
 
 A sample fieldType configuration could look like this:
 
@@ -113,7 +120,8 @@ IMPORTANT: When adding the same token twice, it will also score twice (double), 
 
 Overrides stemming algorithms by applying a custom mapping, then protecting these terms from being modified by stemmers.
 
-A customized mapping of words to stems, in a tab-separated file, can be specified to the `dictionary` attribute in the schema. Words in this mapping will be stemmed to the stems from the file, and will not be further changed by any stemmer.
+A customized mapping of words to stems, in a tab-separated file, can be specified to the `dictionary` attribute in the schema.
+Words in this mapping will be stemmed to the stems from the file, and will not be further changed by any stemmer.
 
 [.dynamic-tabs]
 --
@@ -158,7 +166,9 @@ If you have a checkout of Solr's source code locally, you can also find this exa
 
 == Dictionary Compound Word Token Filter
 
-This filter splits, or _decompounds_, compound words into individual words using a dictionary of the component words. Each input token is passed through unchanged. If it can also be decompounded into subwords, each subword is also added to the stream at the same logical position.
+This filter splits, or _decompounds_, compound words into individual words using a dictionary of the component words.
+Each input token is passed through unchanged.
+If it can also be decompounded into subwords, each subword is also added to the stream at the same logical position.
 
 Compound words are most commonly found in Germanic languages.
 
@@ -166,7 +176,10 @@ Compound words are most commonly found in Germanic languages.
 
 *Arguments:*
 
-`dictionary`:: (required) The path of a file that contains a list of simple words, one per line. Blank lines and lines that begin with "`#`" are ignored.  See <<resource-loading.adoc#,Resource Loading>> for more information.
+`dictionary`:: (required) The path of a file that contains a list of simple words, one per line.
+Blank lines and lines that begin with "`#`" are ignored.
++
+See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 `minWordSize`:: (integer, default 5) Any token shorter than this is not decompounded.
 
@@ -218,9 +231,11 @@ Unicode Collation is a language-sensitive method of sorting text that can also b
 
 Unicode Collation in Solr is fast, because all the work is done at index time.
 
-Rather than specifying an analyzer within `<fieldtype ... class="solr.TextField">`, the `solr.CollationField` and `solr.ICUCollationField` field type classes provide this functionality. `solr.ICUCollationField`, which is backed by http://site.icu-project.org[the ICU4J library], provides more flexible configuration, has more locales, is significantly faster, and requires less memory and less index space, since its keys are smaller than those produced by the JDK implementation that backs `solr.CollationField`.
+Rather than specifying an analyzer within `<fieldtype ... class="solr.TextField">`, the `solr.CollationField` and `solr.ICUCollationField` field type classes provide this functionality.
+`solr.ICUCollationField`, which is backed by http://site.icu-project.org[the ICU4J library], provides more flexible configuration, has more locales, is significantly faster, and requires less memory and less index space, since its keys are smaller than those produced by the JDK implementation that backs `solr.CollationField`.
 
-To use `solr.ICUCollationField`, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).  See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+To use `solr.ICUCollationField`, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 `solr.ICUCollationField` and `solr.CollationField` fields can be created in two ways:
 
@@ -231,37 +246,50 @@ To use `solr.ICUCollationField`, you must add additional .jars to Solr's classpa
 
 Using a System collator:
 
-`locale`:: (required) http://www.rfc-editor.org/rfc/rfc3066.txt[RFC 3066] locale ID. See http://demo.icu-project.org/icu-bin/locexp[the ICU locale explorer] for a list of supported locales.
+`locale`:: (required) http://www.rfc-editor.org/rfc/rfc3066.txt[RFC 3066] locale ID.
+See http://demo.icu-project.org/icu-bin/locexp[the ICU locale explorer] for a list of supported locales.
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary`, `quaternary`, or `identical`. See http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels[Comparison Levels in ICU Collation Concepts] for more information.
+`strength`:: Valid values are `primary`, `secondary`, `tertiary`, `quaternary`, or `identical`.
+See http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels[Comparison Levels in ICU Collation Concepts] for more information.
 
-`decomposition`:: Valid values are `no` or `canonical`. See http://userguide.icu-project.org/collation/concepts#TOC-Normalization[Normalization in ICU Collation Concepts] for more information.
+`decomposition`:: Valid values are `no` or `canonical`.
+See http://userguide.icu-project.org/collation/concepts#TOC-Normalization[Normalization in ICU Collation Concepts] for more information.
 
 Using a Tailored ruleset:
 
 `custom`:: (required) Path to a UTF-8 text file containing rules supported by the ICU http://icu-project.org/apiref/icu4j/com/ibm/icu/text/RuleBasedCollator.html[`RuleBasedCollator`]
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary`, `quaternary`, or `identical`. See http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels[Comparison Levels in ICU Collation Concepts] for more information.
+`strength`:: Valid values are `primary`, `secondary`, `tertiary`, `quaternary`, or `identical`.
+See http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels[Comparison Levels in ICU Collation Concepts] for more information.
 
-`decomposition`:: Valid values are `no` or `canonical`. See http://userguide.icu-project.org/collation/concepts#TOC-Normalization[Normalization in ICU Collation Concepts] for more information.
+`decomposition`:: Valid values are `no` or `canonical`.
+See http://userguide.icu-project.org/collation/concepts#TOC-Normalization[Normalization in ICU Collation Concepts] for more information.
 
 Expert options:
 
-`alternate`:: Valid values are `shifted` or `non-ignorable`. Can be used to ignore punctuation/whitespace.
+`alternate`:: Valid values are `shifted` or `non-ignorable`.
+Can be used to ignore punctuation/whitespace.
 
-`caseLevel`:: (true/false) If true, in combination with `strength="primary"`, accents are ignored but case is taken into account. The default is false. See http://userguide.icu-project.org/collation/concepts#TOC-CaseLevel[CaseLevel in ICU Collation Concepts] for more information.
+`caseLevel`:: (true/false) If true, in combination with `strength="primary"`, accents are ignored but case is taken into account.
+The default is `false`.
+See http://userguide.icu-project.org/collation/concepts#TOC-CaseLevel[CaseLevel in ICU Collation Concepts] for more information.
 
-`caseFirst`:: Valid values are `lower` or `upper`. Useful to control which is sorted first when case is not ignored.
+`caseFirst`:: Valid values are `lower` or `upper`.
+Useful to control which is sorted first when case is not ignored.
 
-`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g., foobar-9 sorts before foobar-10. The default is false.
+`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g., foobar-9 sorts before foobar-10.
+The default is false.
 
-`variableTop`:: Single character or contraction. Controls what is variable for `alternate`.
+`variableTop`:: Single character or contraction.
+Controls what is variable for `alternate`.
 
 === Sorting Text for a Specific Language
 
 In this example, text is sorted according to the default German rules provided by ICU4J.
 
-Locales are typically defined as a combination of language and country, but you can specify just the language if you want. For example, if you specify "de" as the language, you will get sorting that works well for the German language. If you specify "de" as the language and "CH" as the country, you will get German sorting specifically tailored for Switzerland.
+Locales are typically defined as a combination of language and country, but you can specify just the language if you want.
+For example, if you specify "de" as the language, you will get sorting that works well for the German language.
+If you specify "de" as the language and "CH" as the country, you will get German sorting specifically tailored for Switzerland.
 
 [source,xml]
 ----
@@ -278,7 +306,8 @@ Locales are typically defined as a combination of language and country, but you 
 <copyField source="manu" dest="manuGERMAN"/>
 ----
 
-In the example above, we defined the strength as "primary". The strength of the collation determines how strict the sort order will be, but it also depends upon the language. For example, in English, "primary" strength ignores differences in case and accents.
+In the example above, we defined the strength as "primary". The strength of the collation determines how strict the sort order will be, but it also depends upon the language.
+For example, in English, "primary" strength ignores differences in case and accents.
 
 Another example:
 
@@ -295,7 +324,8 @@ Another example:
 <copyField source="city" dest="city_sort"/>
 ----
 
-The type will be used for the fields where the data contains Polish text. The "secondary" strength will ignore case differences, but, unlike "primary" strength, a letter with diacritic(s) will be sorted differently from the same base letter without diacritics.
+The type will be used for the fields where the data contains Polish text.
+The "secondary" strength will ignore case differences, but, unlike "primary" strength, a letter with diacritic(s) will be sorted differently from the same base letter without diacritics.
 
 An example using the "city_sort" field to sort:
 
@@ -306,9 +336,13 @@ q=*:*&fl=city&sort=city_sort+asc
 
 === Sorting Text for Multiple Languages
 
-There are two approaches to supporting multiple languages: if there is a small list of languages you wish to support, consider defining collated fields for each language and using `copyField`. However, adding a large number of sort fields can increase disk and indexing costs. An alternative approach is to use the Unicode `default` collator.
+There are two approaches to supporting multiple languages: if there is a small list of languages you wish to support, consider defining collated fields for each language and using `copyField`.
+However, adding a large number of sort fields can increase disk and indexing costs.
+An alternative approach is to use the Unicode `default` collator.
 
-The Unicode `default` or `ROOT` locale has rules that are designed to work well for most languages. To use the `default` locale, simply define the locale as the empty string. This Unicode default sort is still significantly more advanced than the standard Solr sort.
+The Unicode `default` or `ROOT` locale has rules that are designed to work well for most languages.
+To use the `default` locale, simply define the locale as the empty string.
+This Unicode default sort is still significantly more advanced than the standard Solr sort.
 
 [source,xml]
 ----
@@ -319,9 +353,12 @@ The Unicode `default` or `ROOT` locale has rules that are designed to work well 
 
 === Sorting Text with Custom Rules
 
-You can define your own set of sorting rules. It's easiest to take existing rules that are close to what you want and customize them.
+You can define your own set of sorting rules.
+It's easiest to take existing rules that are close to what you want and customize them.
 
-In the example below, we create a custom rule set for German called DIN 5007-2. This rule set treats umlauts in German differently: it treats ö as equivalent to oe, ä as equivalent to ae, and ü as equivalent to ue. For more information, see the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/RuleBasedCollator.html[ICU RuleBasedCollator javadocs].
+In the example below, we create a custom rule set for German called DIN 5007-2.
+This rule set treats umlauts in German differently: it treats ö as equivalent to oe, ä as equivalent to ae, and ü as equivalent to ue.
+For more information, see the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/RuleBasedCollator.html[ICU RuleBasedCollator javadocs].
 
 This example shows how to create a custom rule set for `solr.ICUCollationField` and dump it to a file:
 
@@ -372,17 +409,21 @@ Using a System collator (see http://www.oracle.com/technetwork/java/javase/java8
 
 `variant`:: Vendor or browser-specific code
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`. See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
+`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`.
+See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
-`decomposition`:: Valid values are `no`, `canonical`, or `full`. See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
+`decomposition`:: Valid values are `no`, `canonical`, or `full`.
+See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
 Using a Tailored ruleset:
 
 `custom`:: (required) Path to a UTF-8 text file containing rules supported by the {java-javadocs}java/text/RuleBasedCollator.html[`JDK RuleBasedCollator`]
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`. See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
+`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`.
+See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
-`decomposition`:: Valid values are `no`, `canonical`, or `full`. See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
+`decomposition`:: Valid values are `no`, `canonical`, or `full`.
+See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
 .A `solr.CollationField` example:
 [source,xml]
@@ -401,9 +442,11 @@ Using a Tailored ruleset:
 
 === ASCII Folding
 
-This filter converts alphabetic, numeric, and symbolic Unicode characters which are not in the first 127 ASCII characters (the "Basic Latin" Unicode block) into their ASCII equivalents, if one exists. Only those characters with reasonable ASCII alternatives are converted.
+This filter converts alphabetic, numeric, and symbolic Unicode characters which are not in the first 127 ASCII characters (the "Basic Latin" Unicode block) into their ASCII equivalents, if one exists.
+Only those characters with reasonable ASCII alternatives are converted.
 
-This can increase recall by causing more matches. On the other hand, it can reduce precision because language-specific character differences may be lost.
+This can increase recall by causing more matches.
+On the other hand, it can reduce precision because language-specific character differences may be lost.
 
 *Factory class:* `solr.ASCIIFoldingFilterFactory`
 
@@ -447,7 +490,8 @@ This can increase recall by causing more matches. On the other hand, it can redu
 
 This filter converts any character in the Unicode "Decimal Number" general category (`Nd`) into their equivalent Basic Latin digits (0-9).
 
-This can increase recall by causing more matches. On the other hand, it can reduce precision because language-specific character differences may be lost.
+This can increase recall by causing more matches.
+On the other hand, it can reduce precision because language-specific character differences may be lost.
 
 *Factory class:* `solr.DecimalDigitFilterFactory`
 
@@ -483,23 +527,29 @@ This can increase recall by causing more matches. On the other hand, it can redu
 
 == OpenNLP Integration
 
-The `lucene/analysis/opennlp` module provides OpenNLP integration via several analysis components: a tokenizer, a part-of-speech tagging filter, a phrase chunking filter, and a lemmatization filter.  In addition to these analysis components, Solr also provides an update request processor to extract named entities - see <<update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins,Update Processor Factories That Can Be Loaded as Plugins>>.
+The `lucene/analysis/opennlp` module provides OpenNLP integration via several analysis components: a tokenizer, a part-of-speech tagging filter, a phrase chunking filter, and a lemmatization filter.
+In addition to these analysis components, Solr also provides an update request processor to extract named entities - see <<update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins,Update Processor Factories That Can Be Loaded as Plugins>>.
 
 NOTE: The <<OpenNLP Tokenizer>> must be used with all other OpenNLP analysis components, for two reasons: first, the OpenNLP Tokenizer detects and marks the sentence boundaries required by all the OpenNLP filters; and second, since the pre-trained OpenNLP models used by these filters were trained using the corresponding language-specific sentence-detection/tokenization models, the same tokenization, using the same models, must be used at runtime for optimal performance.
 
-To use the OpenNLP components, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+To use the OpenNLP components, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 === OpenNLP Tokenizer
 
-The OpenNLP Tokenizer takes two language-specific binary model files as parameters: a sentence detector model and a tokenizer model.  The last token in each sentence is flagged, so that following OpenNLP-based filters can use this information to apply operations to tokens one sentence at a time. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+The OpenNLP Tokenizer takes two language-specific binary model files as parameters: a sentence detector model and a tokenizer model.
+The last token in each sentence is flagged, so that following OpenNLP-based filters can use this information to apply operations to tokens one sentence at a time.
+See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
 
 *Factory class:* `solr.OpenNLPTokenizerFactory`
 
 *Arguments:*
 
-`sentenceModel`:: (required) The path of a language-specific OpenNLP sentence detection model file. See <<resource-loading.adoc#,Resource Loading>> for more information.
+`sentenceModel`:: (required) The path of a language-specific OpenNLP sentence detection model file.
+See <<resource-loading.adoc#,Resource Loading>> for more information.
 
-`tokenizerModel`:: (required) The path of a language-specific OpenNLP tokenization model file. See <<resource-loading.adoc#,Resource Loading>> for more information.
+`tokenizerModel`:: (required) The path of a language-specific OpenNLP tokenization model file.
+See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 *Example:*
 
@@ -533,7 +583,8 @@ The OpenNLP Tokenizer takes two language-specific binary model files as paramete
 
 === OpenNLP Part-Of-Speech Filter
 
-This filter sets each token's type attribute to the part of speech (POS) assigned by the configured model. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+This filter sets each token's type attribute to the part of speech (POS) assigned by the configured model.
+See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
 
 NOTE: Lucene currently does not index token types, so if you want to keep this information, you have to preserve it either in a payload or as a synonym; see the examples below.
 
@@ -541,11 +592,12 @@ NOTE: Lucene currently does not index token types, so if you want to keep this i
 
 *Arguments:*
 
-`posTaggerModel`:: (required) The path of a language-specific OpenNLP POS tagger model file. See <<resource-loading.adoc#,Resource Loading>> for more information.
+`posTaggerModel`:: (required) The path of a language-specific OpenNLP POS tagger model file.
+See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 *Examples:*
 
-The OpenNLP tokenizer will tokenize punctuation, which is useful for following token filters, but ordinarily you don't want to include punctuation in your index, so the `TypeTokenFilter` (<<filter-descriptions.adoc#type-token-filter,described here>>) is included in the examples below, with `stop.pos.txt` containing the following:
+The OpenNLP tokenizer will tokenize punctuation, which is useful for following token filters, but ordinarily you don't want to include punctuation in your index, so the `TypeTokenFilter` (<<filters.adoc#type-token-filter,described here>>) is included in the examples below, with `stop.pos.txt` containing the following:
 
 .stop.pos.txt
 [source,text]
@@ -597,7 +649,7 @@ Index the POS for each token as a payload:
 ====
 --
 
-Index the POS for each token as a synonym, after prefixing the POS with "@" (see the <<filter-descriptions.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+Index the POS for each token as a synonym, after prefixing the POS with "@" (see the <<filters.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
 
 [source,xml]
 ----
@@ -626,7 +678,9 @@ Only index nouns - the `keep.pos.txt` file contains lines `NN`, `NNS`, `NNP` and
 
 === OpenNLP Phrase Chunking Filter
 
-This filter sets each token's type attribute based on the output of an OpenNLP phrase chunking model.  The chunk labels replace the POS tags that previously were in each token's type attribute. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+This filter sets each token's type attribute based on the output of an OpenNLP phrase chunking model.
+The chunk labels replace the POS tags that previously were in each token's type attribute.
+See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
 
 Prerequisite: the <<OpenNLP Tokenizer>> and the <<OpenNLP Part-Of-Speech Filter>> must precede this filter.
 
@@ -636,7 +690,8 @@ NOTE: Lucene currently does not index token types, so if you want to keep this i
 
 *Arguments:*
 
-`chunkerModel`:: (required) The path of a language-specific OpenNLP phrase chunker model file.  See <<resource-loading.adoc#,Resource Loading>> for more information.
+`chunkerModel`:: (required) The path of a language-specific OpenNLP phrase chunker model file.
+See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 *Examples*:
 
@@ -676,7 +731,7 @@ Index the phrase chunk label for each token as a payload:
 ====
 --
 
-Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the <<filter-descriptions.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the <<filters.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
 
 [source,xml]
 ----
@@ -692,7 +747,10 @@ Index the phrase chunk label for each token as a synonym, after prefixing it wit
 
 === OpenNLP Lemmatizer Filter
 
-This filter replaces the text of each token with its lemma. Both a dictionary-based lemmatizer and a model-based lemmatizer are supported. If both are configured, the dictionary-based lemmatizer is tried first, and then the model-based lemmatizer is consulted for out-of-vocabulary tokens. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+This filter replaces the text of each token with its lemma.
+Both a dictionary-based lemmatizer and a model-based lemmatizer are supported.
+If both are configured, the dictionary-based lemmatizer is tried first, and then the model-based lemmatizer is consulted for out-of-vocabulary tokens.
+See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
 
 *Factory class:* `solr.OpenNLPLemmatizerFilter`
 
@@ -700,9 +758,12 @@ This filter replaces the text of each token with its lemma. Both a dictionary-ba
 
 Either `dictionary` or `lemmatizerModel` must be provided, and both may be provided - see the examples below:
 
-`dictionary`:: (optional) The path of a lemmatization dictionary file.  See <<resource-loading.adoc#,Resource Loading>> for more information. The dictionary file must be encoded as UTF-8, with one entry per line, in the form `word[tab]lemma[tab]part-of-speech`, e.g., `wrote[tab]write[tab]VBD`.
+`dictionary`:: (optional) The path of a lemmatization dictionary file.
+See <<resource-loading.adoc#,Resource Loading>> for more information.
+The dictionary file must be encoded as UTF-8, with one entry per line, in the form `word[tab]lemma[tab]part-of-speech`, e.g., `wrote[tab]write[tab]VBD`.
 
-`lemmatizerModel`:: (optional) The path of a language-specific OpenNLP lemmatizer model file.  See <<resource-loading.adoc#,Resource Loading>> for more information.
+`lemmatizerModel`:: (optional) The path of a language-specific OpenNLP lemmatizer model file.
+See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 *Examples:*
 
@@ -778,7 +839,8 @@ Perform model-based lemmatization only, preserving the original token and emitti
 
 == Language-Specific Factories
 
-These factories are each designed to work with specific languages. The languages covered here are:
+These factories are each designed to work with specific languages.
+The languages covered here are:
 
 * <<Arabic>>
 * <<Bengali>>
@@ -860,7 +922,8 @@ This algorithm defines both character normalization and stemming, so these are s
 
 === Bengali
 
-There are two filters written specifically for dealing with Bengali language. They use the Lucene classes `org.apache.lucene.analysis.bn.BengaliNormalizationFilter` and `org.apache.lucene.analysis.bn.BengaliStemFilter`.
+There are two filters written specifically for dealing with Bengali language.
+They use the Lucene classes `org.apache.lucene.analysis.bn.BengaliNormalizationFilter` and `org.apache.lucene.analysis.bn.BengaliStemFilter`.
 
 *Factory classes:* `solr.BengaliStemFilterFactory`, `solr.BengaliNormalizationFilterFactory`
 
@@ -903,7 +966,9 @@ There are two filters written specifically for dealing with Bengali language. Th
 
 === Brazilian Portuguese
 
-This is a Java filter written specifically for stemming the Brazilian dialect of the Portuguese language. It uses the Lucene class `org.apache.lucene.analysis.br.BrazilianStemmer`. Although that stemmer can be configured to use a list of protected words (which should not be stemmed), this factory does not accept any arguments to specify such a list.
+This is a Java filter written specifically for stemming the Brazilian dialect of the Portuguese language.
+It uses the Lucene class `org.apache.lucene.analysis.br.BrazilianStemmer`.
+Although that stemmer can be configured to use a list of protected words (which should not be stemmed), this factory does not accept any arguments to specify such a list.
 
 *Factory class:* `solr.BrazilianStemFilterFactory`
 
@@ -983,7 +1048,8 @@ Solr includes a light stemmer for Bulgarian, following http://members.unine.ch/j
 
 === Catalan
 
-Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `language="Catalan"`. Solr includes a set of contractions for Catalan, which can be stripped using `solr.ElisionFilterFactory`.
+Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `language="Catalan"`.
+Solr includes a set of contractions for Catalan, which can be stripped using `solr.ElisionFilterFactory`.
 
 *Factory class:* `solr.SnowballPorterFilterFactory`
 
@@ -1033,9 +1099,14 @@ Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `lan
 
 === Traditional Chinese
 
-The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>> is suitable for Traditional Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
+The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>> is suitable for Traditional Chinese text.
+It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
-<<tokenizers.adoc#standard-tokenizer,Standard Tokenizer>> can also be used to tokenize Traditional Chinese text.  Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.  When combined with <<CJK Bigram Filter>>, overlapping bigrams of Chinese characters are formed.
+<<tokenizers.adoc#standard-tokenizer,Standard Tokenizer>> can also be used to tokenize Traditional Chinese text.
+Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.
+When combined with <<CJK Bigram Filter>>, overlapping bigrams of Chinese characters are formed.
 
 <<CJK Width Filter>> folds fullwidth ASCII variants into the equivalent Basic Latin forms.
 
@@ -1083,31 +1154,43 @@ The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>>
 
 Forms bigrams (overlapping 2-character sequences) of CJK characters that are generated from <<tokenizers.adoc#standard-tokenizer,Standard Tokenizer>> or <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>>.
 
-By default, all CJK characters produce bigrams, but finer grained control is available by specifying orthographic type arguments `han`, `hiragana`, `katakana`, and `hangul`.  When set to `false`, characters of the corresponding type will be passed through as unigrams, and will not be included in any bigrams.
+By default, all CJK characters produce bigrams, but finer grained control is available by specifying orthographic type arguments `han`, `hiragana`, `katakana`, and `hangul`.
+When set to `false`, characters of the corresponding type will be passed through as unigrams, and will not be included in any bigrams.
 
-When a CJK character has no adjacent characters to form a bigram, it is output in unigram form. If you want to always output both unigrams and bigrams, set the `outputUnigrams` argument to `true`.
+When a CJK character has no adjacent characters to form a bigram, it is output in unigram form.
+If you want to always output both unigrams and bigrams, set the `outputUnigrams` argument to `true`.
 
 In all cases, all non-CJK input is passed through unmodified.
 
 *Arguments:*
 
-`han`:: (true/false) If false, Han (Chinese) characters will not form bigrams. Default is true.
+`han`:: (true/false) If false, Han (Chinese) characters will not form bigrams.
+Default is true.
 
-`hiragana`:: (true/false) If false, Hiragana (Japanese) characters will not form bigrams. Default is true.
+`hiragana`:: (true/false) If false, Hiragana (Japanese) characters will not form bigrams.
+Default is true.
 
-`katakana`:: (true/false) If false, Katakana (Japanese) characters will not form bigrams. Default is true.
+`katakana`:: (true/false) If false, Katakana (Japanese) characters will not form bigrams.
+Default is true.
 
-`hangul`:: (true/false) If false, Hangul (Korean) characters will not form bigrams. Default is true.
+`hangul`:: (true/false) If false, Hangul (Korean) characters will not form bigrams.
+Default is true.
 
-`outputUnigrams`:: (true/false) If true, in addition to forming bigrams, all characters are also passed through as unigrams. Default is false.
+`outputUnigrams`:: (true/false) If true, in addition to forming bigrams, all characters are also passed through as unigrams.
+Default is false.
 
 See the example under <<Traditional Chinese>>.
 
 === Simplified Chinese
 
-For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<HMM Chinese Tokenizer>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<HMM Chinese Tokenizer>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
-The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>> is also suitable for Simplified Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
+The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>> is also suitable for Simplified Chinese text.
+It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
 Also useful for Chinese analysis:
 
@@ -1162,7 +1245,10 @@ Also useful for Chinese analysis:
 
 === HMM Chinese Tokenizer
 
-For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the `solr.HMMChineseTokenizerFactory` in the `analysis-extras` contrib module. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).  See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the `solr.HMMChineseTokenizerFactory` in the `analysis-extras` contrib module.
+This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 *Factory class:* `solr.HMMChineseTokenizerFactory`
 
@@ -1174,7 +1260,8 @@ To use the default setup with fallback to English Porter stemmer for English wor
 
 `<analyzer class="org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer"/>`
 
-Or to configure your own analysis setup, use the `solr.HMMChineseTokenizerFactory` along with your custom filter setup.  See an example of this in the <<Simplified Chinese>> section.
+Or to configure your own analysis setup, use the `solr.HMMChineseTokenizerFactory` along with your custom filter setup.
+See an example of this in the <<Simplified Chinese>> section.
 
 === Czech
 
@@ -1407,15 +1494,20 @@ Solr includes support for stemming Finnish, and Lucene includes an example stopw
 
 ==== Elision Filter
 
-Removes article elisions from a token stream. This filter can be useful for languages such as French, Catalan, Italian, and Irish.
+Removes article elisions from a token stream.
+This filter can be useful for languages such as French, Catalan, Italian, and Irish.
 
 *Factory class:* `solr.ElisionFilterFactory`
 
 *Arguments:*
 
-`articles`:: The pathname of a file that contains a list of articles, one per line, to be stripped. Articles are words such as "le", which are commonly abbreviated, such as in _l'avion_ (the plane). This file should include the abbreviated form, which precedes the apostrophe. In this case, simply "_l_". If no `articles` attribute is specified, a default set of French articles is used.
+`articles`:: The pathname of a file that contains a list of articles, one per line, to be stripped.
+Articles are words such as "le", which are commonly abbreviated, such as in _l'avion_ (the plane).
+This file should include the abbreviated form, which precedes the apostrophe.
+In this case, simply "_l_". If no `articles` attribute is specified, a default set of French articles is used.
 
-`ignoreCase`:: (boolean) If true, the filter ignores the case of words when comparing them to the common word file. Defaults to `false`
+`ignoreCase`:: (boolean) If true, the filter ignores the case of words when comparing them to the common word file.
+Defaults to `false`
 
 *Example:*
 
@@ -1457,7 +1549,8 @@ Removes article elisions from a token stream. This filter can be useful for lang
 
 ==== French Light Stem Filter
 
-Solr includes three stemmers for French: one in the `solr.SnowballPorterFilterFactory`, a lighter stemmer called `solr.FrenchLightStemFilterFactory`, and an even less aggressive stemmer called `solr.FrenchMinimalStemFilterFactory`. Lucene includes an example stopword list.
+Solr includes three stemmers for French: one in the `solr.SnowballPorterFilterFactory`, a lighter stemmer called `solr.FrenchLightStemFilterFactory`, and an even less aggressive stemmer called `solr.FrenchMinimalStemFilterFactory`.
+Lucene includes an example stopword list.
 
 *Factory classes:* `solr.FrenchLightStemFilterFactory`, `solr.FrenchMinimalStemFilterFactory`
 
@@ -1540,7 +1633,8 @@ Solr includes a stemmer for Galician following http://bvg.udc.es/recursos_lingua
 
 === German
 
-Solr includes four stemmers for German: one in the `solr.SnowballPorterFilterFactory language="German"`, a stemmer called `solr.GermanStemFilterFactory`, a lighter stemmer called `solr.GermanLightStemFilterFactory`, and an even less aggressive stemmer called `solr.GermanMinimalStemFilterFactory`. Lucene includes an example stopword list.
+Solr includes four stemmers for German: one in the `solr.SnowballPorterFilterFactory language="German"`, a stemmer called `solr.GermanStemFilterFactory`, a lighter stemmer called `solr.GermanLightStemFilterFactory`, and an even less aggressive stemmer called `solr.GermanMinimalStemFilterFactory`.
+Lucene includes an example stopword list.
 
 *Factory classes:* `solr.GermanStemFilterFactory`, `solr.LightGermanStemFilterFactory`, `solr.MinimalGermanStemFilterFactory`
 
@@ -1606,7 +1700,8 @@ This filter converts uppercase letters in the Greek character set to the equival
 
 [IMPORTANT]
 ====
-Use of custom charsets is no longer supported as of Solr 3.1. If you need to index text in these encodings, please use Java's character set conversion facilities (InputStreamReader, etc.) during I/O, so that Lucene can analyze this text as Unicode instead.
+Use of custom charsets is no longer supported as of Solr 3.1.
+If you need to index text in these encodings, please use Java's character set conversion facilities (InputStreamReader, etc.) during I/O, so that Lucene can analyze this text as Unicode instead.
 ====
 
 *Example:*
@@ -1723,7 +1818,8 @@ Solr includes support for stemming Indonesian (Bahasa Indonesia) following http:
 
 === Italian
 
-Solr includes two stemmers for Italian: one in the `solr.SnowballPorterFilterFactory language="Italian"`, and a lighter stemmer called `solr.ItalianLightStemFilterFactory`. Lucene includes an example stopword list.
+Solr includes two stemmers for Italian: one in the `solr.SnowballPorterFilterFactory language="Italian"`, and a lighter stemmer called `solr.ItalianLightStemFilterFactory`.
+Lucene includes an example stopword list.
 
 *Factory class:* `solr.ItalianStemFilterFactory`
 
@@ -1771,7 +1867,9 @@ Solr includes two stemmers for Italian: one in the `solr.SnowballPorterFilterFac
 
 === Irish
 
-Solr can stem Irish using the Snowball Porter Stemmer with an argument of `language="Irish"`. Solr includes `solr.IrishLowerCaseFilterFactory`, which can handle Irish-specific constructs. Solr also includes a set of contractions for Irish which can be stripped using `solr.ElisionFilterFactory`.
+Solr can stem Irish using the Snowball Porter Stemmer with an argument of `language="Irish"`.
+Solr includes `solr.IrishLowerCaseFilterFactory`, which can handle Irish-specific constructs.
+Solr also includes a set of contractions for Irish which can be stripped using `solr.ElisionFilterFactory`.
 
 *Factory class:* `solr.SnowballPorterFilterFactory`
 
@@ -1835,7 +1933,8 @@ Also useful for Japanese analysis, from lucene-analyzers-common:
 
 ==== Japanese Iteration Mark CharFilter
 
-Normalizes horizontal Japanese iteration marks (odoriji) to their expanded form. Vertical iteration marks are not supported.
+Normalizes horizontal Japanese iteration marks (odoriji) to their expanded form.
+Vertical iteration marks are not supported.
 
 *Factory class:* `JapaneseIterationMarkCharFilterFactory`
 
@@ -1855,7 +1954,9 @@ Tokenizer for Japanese that uses morphological analysis, and annotates each term
 
 *Arguments:*
 
-`mode`:: Use `search` mode to get a noun-decompounding effect useful for search. `search` mode improves segmentation for search at the expense of part-of-speech accuracy. Valid values for `mode` are:
+`mode`:: Use `search` mode to get a noun-decompounding effect useful for search.
+`search` mode improves segmentation for search at the expense of part-of-speech accuracy.
+Valid values for `mode` are:
 +
 * `normal`: default segmentation
 * `search`: segmentation useful for search (extra compound splitting)
@@ -1863,7 +1964,8 @@ Tokenizer for Japanese that uses morphological analysis, and annotates each term
 +
 For some applications it might be good to use `search` mode for indexing and `normal` mode for queries to increase precision and prevent parts of compounds from being matched and highlighted.
 
-`userDictionary`:: filename for a user dictionary, which allows overriding the statistical model with your own entries for segmentation, part-of-speech tags and readings without a need to specify weights. See `lang/userdict_ja.txt` for a sample user dictionary file.
+`userDictionary`:: filename for a user dictionary, which allows overriding the statistical model with your own entries for segmentation, part-of-speech tags and readings without a need to specify weights.
+See `lang/userdict_ja.txt` for a sample user dictionary file.
 
 `userDictionaryEncoding`:: user dictionary encoding (default is UTF-8)
 
@@ -1873,7 +1975,8 @@ For some applications it might be good to use `search` mode for indexing and `no
 
 ==== Japanese Base Form Filter
 
-Replaces original terms' text with the corresponding base form (lemma). (`JapaneseTokenizer` annotates each term with its base form.)
+Replaces original terms' text with the corresponding base form (lemma).
+(`JapaneseTokenizer` annotates each term with its base form.)
 
 *Factory class:* `JapaneseBaseFormFilterFactory`
 
@@ -1881,7 +1984,8 @@ Replaces original terms' text with the corresponding base form (lemma). (`Japane
 
 ==== Japanese Part Of Speech Stop Filter
 
-Removes terms with one of the configured parts-of-speech. `JapaneseTokenizer` annotates terms with parts-of-speech.
+Removes terms with one of the configured parts-of-speech.
+`JapaneseTokenizer` annotates terms with parts-of-speech.
 
 *Factory class* *:* `JapanesePartOfSpeechStopFilterFactory`
 
@@ -1889,7 +1993,8 @@ Removes terms with one of the configured parts-of-speech. `JapaneseTokenizer` an
 
 `tags`:: filename for a list of parts-of-speech for which to remove terms; see `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` <<config-sets.adoc#,configset>> for an example.
 
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
+*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
 ==== Japanese Katakana Stem Filter
 
@@ -1901,7 +2006,8 @@ Normalizes common katakana spelling variations ending in a long sound character 
 
 *Arguments:*
 
-`minimumLength`:: terms below this length will not be stemmed. Default is 4, value must be 2 or more.
+`minimumLength`:: terms below this length will not be stemmed.
+Default is 4, value must be 2 or more.
 
 ==== CJK Width Filter
 
@@ -1960,7 +2066,9 @@ Example:
 [[hebrew-lao-myanmar-khmer]]
 === Hebrew, Lao, Myanmar, Khmer
 
-Lucene provides support, in addition to UAX#29 word break rules, for Hebrew's use of the double and single quote characters, and for segmenting Lao, Myanmar, and Khmer into syllables with the `solr.ICUTokenizerFactory` in the `analysis-extras` contrib module. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).  See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+Lucene provides support, in addition to UAX#29 word break rules, for Hebrew's use of the double and single quote characters, and for segmenting Lao, Myanmar, and Khmer into syllables with the `solr.ICUTokenizerFactory` in the `analysis-extras` contrib module.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 See <<tokenizers.adoc#icu-tokenizer,the ICUTokenizer>> for more information.
 
@@ -2014,17 +2122,20 @@ Solr includes support for stemming Latvian, and Lucene includes an example stopw
 
 === Norwegian
 
-Solr includes two classes for stemming Norwegian, `NorwegianLightStemFilterFactory` and `NorwegianMinimalStemFilterFactory`. Lucene includes an example stopword list.
+Solr includes two classes for stemming Norwegian, `NorwegianLightStemFilterFactory` and `NorwegianMinimalStemFilterFactory`.
+Lucene includes an example stopword list.
 
 Another option is to use the Snowball Porter Stemmer with an argument of language="Norwegian".
 
-Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
+For normalization, there is a `NorwegianNormalizationFilterFactory` which is a variant of the <<Scandinavian,Scandinavian normalization filters>> but with folding rules tuned for Norwegian.
 
 ==== Norwegian Light Stemmer
 
-The `NorwegianLightStemFilterFactory` requires a "two-pass" sort for the -dom and -het endings. This means that in the first pass the word "kristendom" is stemmed to "kristen", and then all the general rules apply so it will be further stemmed to "krist". The effect of this is that "kristen," "kristendom," "kristendommen," and "kristendommens" will all be stemmed to "krist."
+The `NorwegianLightStemFilterFactory` requires a "two-pass" sort for the -dom and -het endings.
+This means that in the first pass the word "kristendom" is stemmed to "kristen", and then all the general rules apply so it will be further stemmed to "krist". The effect of this is that "kristen," "kristendom," "kristendommen," and "kristendommens" will all be stemmed to "krist."
 
-The second pass is to pick up -dom and -het endings. Consider this example:
+The second pass is to pick up -dom and -het endings.
+Consider this example:
 
 [width="100%",options="header",]
 |===
@@ -2043,7 +2154,8 @@ The second pass is to pick up -dom and -het endings. Consider this example:
 
 *Arguments:*
 
-`variant`:: Choose the Norwegian language variant to use. Valid values are:
+`variant`:: Choose the Norwegian language variant to use.
+Valid values are:
 +
 * `nb:` Bokmål (default)
 * `nn:` Nynorsk
@@ -2099,7 +2211,8 @@ The `NorwegianMinimalStemFilterFactory` stems plural forms of Norwegian nouns on
 
 *Arguments:*
 
-`variant`:: Choose the Norwegian language variant to use. Valid values are:
+`variant`:: Choose the Norwegian language variant to use.
+Valid values are:
 +
 * `nb:` Bokmål (default)
 * `nn:` Nynorsk
@@ -2124,6 +2237,50 @@ The `NorwegianMinimalStemFilterFactory` stems plural forms of Norwegian nouns on
 *Tokenizer to Filter:* "bilens"
 
 *Out:* "bil"
+
+==== Norwegian Normalization Filter
+
+This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØåÅ and folded variants (ae, oe and aa) by transforming them to æÆøØåÅ. This is a variant of `ScandinavianNormalizationFilter`, with folding rules customized for Norwegian.
+
+*Factory class:* `solr.NorwegianNormalizationFilterFactory`
+
+*Arguments:* None
+
+*Example:*
+
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-lang-norwegian]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="lowercase"/>
+<filter name="norwegianNormalization"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-lang-norwegian]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<analyzer>
+<tokenizer class="solr.StandardTokenizerFactory"/>
+<filter class="solr.LowerCaseFilterFactory"/>
+<filter class="solr.NorwegianNormalizationFilterFactory"/>
+</analyzer>
+----
+====
+--
+
+*In:* "blåbærsyltetøj blåbärsyltetöj blaabaarsyltetoej blabarsyltetoj"
+
+*Tokenizer to Filter:* "blåbærsyltetøy", "blåbärsyltetöy", "blaabaersyltetoey", "blabarsyltetoy"
+
+*Out:* "blåbærsyltetøy", "blåbærsyltetøy", "blåbærsyltetøy", "blabarsyltetoy"
 
 === Persian
 
@@ -2167,7 +2324,10 @@ Solr includes support for normalizing Persian, and Lucene includes an example st
 
 === Polish
 
-Solr provides support for Polish stemming with the `solr.StempelPolishStemFilterFactory`, and `solr.MorphologikFilterFactory` for lemmatization, in the `contrib/analysis-extras` module. The `solr.StempelPolishStemFilterFactory` component includes an algorithmic stemmer with tables for Polish. To use either of these filters, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+Solr provides support for Polish stemming with the `solr.StempelPolishStemFilterFactory`, and `solr.MorphologikFilterFactory` for lemmatization, in the `contrib/analysis-extras` module.
+The `solr.StempelPolishStemFilterFactory` component includes an algorithmic stemmer with tables for Polish.
+To use either of these filters, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 *Factory class:* `solr.StempelPolishStemFilterFactory` and `solr.MorfologikFilterFactory`
 
@@ -2222,11 +2382,15 @@ More information about the Stempel stemmer is available in {lucene-javadocs}/ana
 
 Note the lower case filter is applied _after_ the Morfologik stemmer; this is because the Polish dictionary contains proper names and then proper term case may be important to resolve disambiguities (or even lookup the correct lemma at all).
 
-The Morfologik dictionary parameter value is a constant specifying which dictionary to choose. The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file. See http://morfologik.blogspot.com/[the Morfologik project] for details. If the dictionary attribute is not provided, the Polish dictionary is loaded and used by default.
+The Morfologik dictionary parameter value is a constant specifying which dictionary to choose.
+The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file.
+See http://morfologik.blogspot.com/[the Morfologik project] for details.
+If the dictionary attribute is not provided, the Polish dictionary is loaded and used by default.
 
 === Portuguese
 
-Solr includes four stemmers for Portuguese: one in the `solr.SnowballPorterFilterFactory`, an alternative stemmer called `solr.PortugueseStemFilterFactory`, a lighter stemmer called `solr.PortugueseLightStemFilterFactory`, and an even less aggressive stemmer called `solr.PortugueseMinimalStemFilterFactory`. Lucene includes an example stopword list.
+Solr includes four stemmers for Portuguese: one in the `solr.SnowballPorterFilterFactory`, an alternative stemmer called `solr.PortugueseStemFilterFactory`, a lighter stemmer called `solr.PortugueseLightStemFilterFactory`, and an even less aggressive stemmer called `solr.PortugueseMinimalStemFilterFactory`.
+Lucene includes an example stopword list.
 
 *Factory classes:* `solr.PortugueseStemFilterFactory`, `solr.PortugueseLightStemFilterFactory`, `solr.PortugueseMinimalStemFilterFactory`
 
@@ -2330,7 +2494,8 @@ Solr can stem Romanian using the Snowball Porter Stemmer with an argument of `la
 
 ==== Russian Stem Filter
 
-Solr includes two stemmers for Russian: one in the `solr.SnowballPorterFilterFactory language="Russian"`, and a lighter stemmer called `solr.RussianLightStemFilterFactory`. Lucene includes an example stopword list.
+Solr includes two stemmers for Russian: one in the `solr.SnowballPorterFilterFactory language="Russian"`, and a lighter stemmer called `solr.RussianLightStemFilterFactory`.
+Lucene includes an example stopword list.
 
 *Factory class:* `solr.RussianLightStemFilterFactory`
 
@@ -2370,7 +2535,8 @@ Solr includes two stemmers for Russian: one in the `solr.SnowballPorterFilterFac
 
 Scandinavian is a language group spanning three languages <<Norwegian>>, <<Swedish>> and <<Danish>> which are very similar.
 
-Swedish å, ä, ö are in fact the same letters as Norwegian and Danish å, æ, ø and thus interchangeable when used between these languages. They are however folded differently when people type them on a keyboard lacking these characters.
+Swedish å, ä, ö are in fact the same letters as Norwegian and Danish å, æ, ø and thus interchangeable when used between these languages.
+They are however folded differently when people type them on a keyboard lacking these characters.
 
 In that situation almost all Swedish people use a, a, o instead of å, ä, ö. Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø. Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
 
@@ -2382,7 +2548,8 @@ See also each language section for other relevant filters.
 
 This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØ and folded variants (aa, ao, ae, oe and oo) by transforming them to åÅæÆøØ.
 
-It's a semantically less destructive solution than `ScandinavianFoldingFilter`, most useful when a person with a Norwegian or Danish keyboard queries a Swedish index and vice versa. This filter does *not* perform the common Swedish folds of å and ä to a nor ö to o.
+It's a semantically less destructive solution than `ScandinavianFoldingFilter`, most useful when a person with a Norwegian or Danish keyboard queries a Swedish index and vice versa.
+This filter does *not* perform the common Swedish folds of å and ä to a nor ö to o.
 
 *Factory class:* `solr.ScandinavianNormalizationFilterFactory`
 
@@ -2426,7 +2593,8 @@ It's a semantically less destructive solution than `ScandinavianFoldingFilter`, 
 
 ==== Scandinavian Folding Filter
 
-This filter folds Scandinavian characters åÅäæÄÆ -> a and öÖøØ -> o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
+This filter folds Scandinavian characters åÅäæÄÆ -> a and öÖøØ -> o.
+It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
 
 It's a semantically more destructive solution than `ScandinavianNormalizationFilter`, but can in addition help with matching raksmorgas as räksmörgås.
 
@@ -2455,7 +2623,8 @@ It's a semantically more destructive solution than `ScandinavianNormalizationFil
 
 ==== Serbian Normalization Filter
 
-Solr includes a filter that normalizes Serbian Cyrillic and Latin characters. Note that this filter only works with lowercased input.
+Solr includes a filter that normalizes Serbian Cyrillic and Latin characters.
+Note that this filter only works with lowercased input.
 
 For user tips & advice on using this filter, see https://cwiki.apache.org/confluence/display/solr/SerbianLanguageSupport[Serbian Language Support] in the Solr Wiki.
 
@@ -2463,7 +2632,8 @@ For user tips & advice on using this filter, see https://cwiki.apache.org/conflu
 
 *Arguments:*
 
-`haircut`:: Select the extend of normalization. Valid values are:
+`haircut`:: Select the extend of normalization.
+Valid values are:
 +
 * `bald`: (Default behavior) Cyrillic characters are first converted to Latin; then, Latin characters have their diacritics removed, with the exception of https://en.wikipedia.org/wiki/D_with_stroke[LATIN SMALL LETTER D WITH STROKE] (U+0111) which is converted to "```dj```"
 * `regular`: Only Cyrillic to Latin normalization will be applied, preserving the Latin diatrics
@@ -2500,7 +2670,8 @@ For user tips & advice on using this filter, see https://cwiki.apache.org/conflu
 
 === Spanish
 
-Solr includes two stemmers for Spanish: one in the `solr.SnowballPorterFilterFactory language="Spanish"`, and a lighter stemmer called `solr.SpanishLightStemFilterFactory`. Lucene includes an example stopword list.
+Solr includes two stemmers for Spanish: one in the `solr.SnowballPorterFilterFactory language="Spanish"`, and a lighter stemmer called `solr.SpanishLightStemFilterFactory`.
+Lucene includes an example stopword list.
 
 *Factory class:* `solr.SpanishStemFilterFactory`
 
@@ -2547,7 +2718,8 @@ Solr includes two stemmers for Spanish: one in the `solr.SnowballPorterFilterFac
 
 ==== Swedish Stem Filter
 
-Solr includes two stemmers for Swedish: one in the `solr.SnowballPorterFilterFactory language="Swedish"`, and a lighter stemmer called `solr.SwedishLightStemFilterFactory`. Lucene includes an example stopword list.
+Solr includes two stemmers for Swedish: one in the `solr.SnowballPorterFilterFactory language="Swedish"`, and a lighter stemmer called `solr.SwedishLightStemFilterFactory`.
+Lucene includes an example stopword list.
 
 Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 
@@ -2593,7 +2765,8 @@ Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 
 === Thai
 
-This filter converts sequences of Thai characters into individual Thai words. Unlike European languages, Thai does not use whitespace to delimit words.
+This filter converts sequences of Thai characters into individual Thai words.
+Unlike European languages, Thai does not use whitespace to delimit words.
 
 *Factory class:* `solr.ThaiTokenizerFactory`
 
@@ -2684,7 +2857,9 @@ Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFa
 
 === Ukrainian
 
-Solr provides support for Ukrainian lemmatization with the `solr.MorphologikFilterFactory`, in the `contrib/analysis-extras` module. To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
+Solr provides support for Ukrainian lemmatization with the `solr.MorphologikFilterFactory`, in the `contrib/analysis-extras` module.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 Lucene also includes an example Ukrainian stopword list, in the `lucene-analyzers-morfologik` jar.
 
@@ -2726,4 +2901,7 @@ Lucene also includes an example Ukrainian stopword list, in the `lucene-analyzer
 ====
 --
 
-The Morfologik `dictionary` parameter value is a constant specifying which dictionary to choose. The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file. See http://morfologik.blogspot.com/[the Morfologik project] for details. If the dictionary attribute is not provided, the Polish dictionary is loaded and used by default.
+The Morfologik `dictionary` parameter value is a constant specifying which dictionary to choose.
+The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file.
+See http://morfologik.blogspot.com/[the Morfologik project] for details.
+If the dictionary attribute is not provided, the Polish dictionary is loaded and used by default.

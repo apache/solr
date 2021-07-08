@@ -41,7 +41,6 @@ import org.junit.Test;
 public class MetricUtilsTest extends SolrTestCaseJ4 {
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testSolrTimerGetSnapshot() {
     // create a timer with up to 100 data points
     final Timer timer = new Timer();
@@ -54,8 +53,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     MetricUtils.convertTimer("", timer, MetricUtils.ALL_PROPERTIES, false, false, ".", (k, v) -> {
       ((MapWriter) v).toMap(map);
     });
-    @SuppressWarnings({"rawtypes"})
-    NamedList lst = new NamedList(map);
+    NamedList<?> lst = new NamedList<>(map);
     // check that expected metrics were obtained
     assertEquals(14, lst.size());
     final Snapshot snapshot = timer.getSnapshot();
@@ -121,7 +119,6 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
 
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
         MetricUtils.ALL_PROPERTIES, false, false, false, false, (k, o) -> {
-      @SuppressWarnings({"rawtypes"})
       Map<String, Object> v = new HashMap<>();
       if (o != null) {
         ((MapWriter) o).toMap(v);
@@ -162,7 +159,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
       } else if (k.startsWith("map") || k.startsWith("wrapped")) {
         assertNotNull(v.toString(), v.get("value"));
         assertTrue(v.toString(), v.get("value") instanceof Map);
-        assertEquals(v.toString(), "bar", ((Map) v.get("value")).get("foo"));
+        assertEquals(v.toString(), "bar", ((Map<?, ?>) v.get("value")).get("foo"));
       }
     });
     // test compact format

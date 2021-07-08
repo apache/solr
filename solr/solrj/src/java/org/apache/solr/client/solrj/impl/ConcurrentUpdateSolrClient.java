@@ -483,7 +483,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection)
+  public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
     if (!(request instanceof UpdateRequest)) {
       return client.request(request, collection);

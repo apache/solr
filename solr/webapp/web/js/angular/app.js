@@ -173,6 +173,10 @@ solrAdminApp.config([
         templateUrl: 'partials/segments.html',
         controller: 'SegmentsController'
       }).
+      when('/~schema-designer', {
+        templateUrl: 'partials/schema-designer.html',
+        controller: 'SchemaDesignerController'
+      }).
       otherwise({
         templateUrl: 'partials/unknown.html',
         controller: 'UnknownController'
@@ -368,7 +372,9 @@ solrAdminApp.config([
     if (sessionStorage.getItem("auth.header")) {
       config.headers['Authorization'] = sessionStorage.getItem("auth.header");
     }
-    config.timeout = 10000;
+    if (!config.timeout) {
+      config.timeout = 10000;
+    }
     return config || $q.when(config);
   };
 
@@ -430,7 +436,11 @@ solrAdminApp.config([
         $location.path('/login');
       }
     } else {
-      $rootScope.exceptions[rejection.config.url] = rejection.data.error;
+      // schema designer prefers to handle errors itselft
+      var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
+      if (!isHandledBySchemaDesigner) {
+        $rootScope.exceptions[rejection.config.url] = rejection.data.error;
+      }
     }
     return $q.reject(rejection);
   };
@@ -480,6 +490,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       delete $scope.currentCore;
       for (key in data.status) {
         var core = data.status[key];
+        if (core.name.startsWith("._designer_")) {
+          continue;
+        }
         $scope.cores.push(core);
         if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
             $scope.currentCore = core;
@@ -511,6 +524,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
             }
             $scope.collections = [];
             for (key in cdata.collections) {
+              if (cdata.collections[key].startsWith("._designer_")) {
+                continue; // ignore temp designer collections
+              }
               var collection = {name: cdata.collections[key], type: 'collection'};
               $scope.collections.push(collection);
               if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {

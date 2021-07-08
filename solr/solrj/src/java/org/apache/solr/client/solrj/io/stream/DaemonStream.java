@@ -168,7 +168,6 @@ public class DaemonStream extends TupleStream implements Expressible {
     init(tupleStream, id, runInterval, queueSize, false);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void init(TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
     this.tupleStream = tupleStream;
     this.id = id;
@@ -177,7 +176,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     this.terminate = terminate;
 
     if(queueSize > 0) {
-      queue = new ArrayBlockingQueue(queueSize);
+      queue = new ArrayBlockingQueue<>(queueSize);
       eatTuples = false;
     } else {
       eatTuples = true;

@@ -240,14 +240,13 @@ public class LazySolrCluster implements SolrCluster {
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
         public String config() {
             if (confName == null) {
                 // do this lazily . It's usually not necessary
                 try {
                     byte[] d = zkStateReader.getZkClient().getData(getCollectionPathRoot(coll.getName()), null, null, true);
                     if (d == null || d.length == 0) return null;
-                    Map m = (Map) Utils.fromJSON(d);
+                    Map<?,?> m = (Map<?,?>) Utils.fromJSON(d);
                     confName = (String) m.get("configName");
                 } catch (KeeperException | InterruptedException e) {
                     SimpleZkMap.throwZkExp(e);

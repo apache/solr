@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.NamedList;
@@ -307,7 +306,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  public void writeNamedList(String name, NamedList<?> val) throws IOException {
     // name is ignored - this method is only used for SimilarityFactory
     int sz = val.size();
     for (int i=0; i<sz; i++) {
@@ -341,8 +340,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
 
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void writeMap(String name, @SuppressWarnings({"rawtypes"})Map map, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  public void writeMap(String name, Map<?, ?> map, boolean excludeOuter, boolean isFirstVal) throws IOException {
     int sz = map.size();
 
     if (!excludeOuter) {
@@ -350,7 +348,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
       incLevel();
     }
 
-    for (Map.Entry entry : (Set<Map.Entry>)map.entrySet()) {
+    for (Map.Entry<?,?> entry : map.entrySet()) {
       Object k = entry.getKey();
       Object v = entry.getValue();
       // if (sz<indentThreshold) indent();
@@ -372,7 +370,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator iter) throws IOException {
+  public void writeArray(String name, Iterator<?> iter) throws IOException {
     if( iter.hasNext() ) {
       startTag("arr", name, false );
       incLevel();

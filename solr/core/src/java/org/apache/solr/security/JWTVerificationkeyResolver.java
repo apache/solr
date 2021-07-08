@@ -42,6 +42,8 @@ import org.jose4j.lang.UnresolvableKeyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLHandshakeException;
+
 /**
  * Resolves jws signature verification keys from a set of {@link JWTIssuerConfig} objects, which
  * may represent any valid configuration in Solr's security.json, i.e. static list of JWKs
@@ -110,7 +112,12 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
       if (issuerConfig.usesHttpsJwk()) {
         keysSource = "[" + String.join(", ", issuerConfig.getJwksUrls()) + "]";
         for (HttpsJwks hjwks : issuerConfig.getHttpsJwks()) {
-          jsonWebKeys.addAll(hjwks.getJsonWebKeys());
+          try {
+            jsonWebKeys.addAll(hjwks.getJsonWebKeys());
+          } catch (SSLHandshakeException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Failed to connect with " + hjwks.getLocation() + ", do you have the correct SSL certificate configured?", e);
+          }
         }
       } else {
         keysSource = "static list of keys in security.json";

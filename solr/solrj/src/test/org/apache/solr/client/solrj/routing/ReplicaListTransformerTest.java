@@ -50,7 +50,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       this.regex = regex;
     }
 
-    public void transform(List<?> choices)
+    public <T> void transform(List<T> choices)
     {
       log.info("regex transform input: {}", choices);
       Iterator<?> it = choices.iterator();
@@ -82,7 +82,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
     {
     }
 
-    public void transform(List<?> choices)
+    public <T> void transform(List<T> choices)
     {
       // no-op
       log.info("No-Op transform ignoring input: {}", choices);

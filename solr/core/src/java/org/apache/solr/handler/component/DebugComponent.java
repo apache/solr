@@ -78,7 +78,6 @@ public class DebugComponent extends SearchComponent
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
@@ -92,12 +91,10 @@ public class DebugComponent extends SearchComponent
         results = rb.getResults().docList;
       }
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
+      NamedList<Object> stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
           rb.getQueryString(), rb.wrap(rb.getQuery()), results, rb.isDebugQuery(), rb.isDebugResults());
       
-      @SuppressWarnings({"rawtypes"})
-      NamedList info = rb.getDebugInfo();
+      NamedList<Object> info = rb.getDebugInfo();
       if( info == null ) {
         rb.setDebugInfo( stdinfo );
         info = stdinfo;
@@ -217,15 +214,13 @@ public class DebugComponent extends SearchComponent
             // this should only happen when using shards.tolerant=true
             continue;
           }
-          @SuppressWarnings({"rawtypes"})
-          NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
+          NamedList<Object> sdebug = (NamedList<Object>)srsp.getSolrResponse().getResponse().get("debug");
 
-          info = (NamedList)merge(sdebug, info, EXCLUDE_SET);
+          info = (NamedList<Object>)merge(sdebug, info, EXCLUDE_SET);
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
             hasGetDebugResponses = true;
             if (rb.isDebugResults()) {
-              @SuppressWarnings({"rawtypes"})
-              NamedList sexplain = (NamedList)sdebug.get("explain");
+              NamedList<Object> sexplain = (NamedList<Object>)sdebug.get("explain");
               SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
             }
           }
@@ -270,8 +265,7 @@ public class DebugComponent extends SearchComponent
       return namedList;
     }
     NamedList<Object> responseNL = shardResponse.getSolrResponse().getResponse();
-    @SuppressWarnings("unchecked")
-    NamedList<Object> responseHeader = (NamedList<Object>)responseNL.get("responseHeader");
+    NamedList<?> responseHeader = (NamedList<?>)responseNL.get("responseHeader");
     if(responseHeader != null) {
       namedList.add("QTime", responseHeader.get("QTime").toString());
     }
@@ -290,7 +284,7 @@ public class DebugComponent extends SearchComponent
     if (source == null) return dest;
     if (dest == null) {
       if (source instanceof NamedList) {
-        dest = source instanceof SimpleOrderedMap ? new SimpleOrderedMap() : new NamedList();
+        dest = source instanceof SimpleOrderedMap ? new SimpleOrderedMap<>() : new NamedList<>();
       } else {
         return source;
       }
@@ -302,7 +296,7 @@ public class DebugComponent extends SearchComponent
           dest = new LinkedHashSet<>((Collection<?>) dest);
         }
         if (source instanceof Collection) {
-          ((Collection)dest).addAll((Collection)source);
+          ((Collection)dest).addAll((Collection<?>)source);
         } else {
           ((Collection)dest).add(source);
         }
@@ -326,8 +320,7 @@ public class DebugComponent extends SearchComponent
 
     if (source instanceof NamedList && dest instanceof NamedList) {
       NamedList<Object> tmp = new NamedList<>();
-      @SuppressWarnings("unchecked")
-      NamedList<Object> sl = (NamedList<Object>)source;
+      NamedList<?> sl = (NamedList<?>)source;
       @SuppressWarnings("unchecked")
       NamedList<Object> dl = (NamedList<Object>)dest;
       for (int i=0; i<sl.size(); i++) {

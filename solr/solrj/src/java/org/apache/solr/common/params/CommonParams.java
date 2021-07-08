@@ -200,7 +200,6 @@ public interface CommonParams {
   String ZK_STATUS_PATH = "/admin/zookeeper/status";
   String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
-  String METRICS_HISTORY_PATH = "/admin/metrics/history";
 
   String STATUS = "status";
 
@@ -217,8 +216,7 @@ public interface CommonParams {
       ZK_STATUS_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,
-      METRICS_PATH,
-      METRICS_HISTORY_PATH);
+      METRICS_PATH);
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 

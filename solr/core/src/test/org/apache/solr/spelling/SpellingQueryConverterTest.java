@@ -35,10 +35,9 @@ import org.junit.Test;
 public class SpellingQueryConverterTest extends SolrTestCase {
 
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void test() throws Exception {
     SpellingQueryConverter converter = new SpellingQueryConverter();
-    converter.init(new NamedList());
+    converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
     Collection<Token> tokens = converter.convert("field:foo");
     assertTrue("tokens is null and it shouldn't be", tokens != null);
@@ -46,10 +45,9 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
   
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testNumeric() throws Exception {
     SpellingQueryConverter converter = new SpellingQueryConverter();
-    converter.init(new NamedList());
+    converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
     String[] queries = {"12345", "foo:12345", "12345 67890", "foo:(12345 67890)", "foo:(life 67890)", "12345 life",
         "+12345 +life", "-12345 life"};
@@ -61,10 +59,9 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
   
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testSpecialChars()  {
     SpellingQueryConverter converter = new SpellingQueryConverter();
-    converter.init(new NamedList());
+    converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
     String original = "field_with_underscore:value_with_underscore";
     Collection<Token> tokens = converter.convert(original);
@@ -118,10 +115,9 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
 
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testUnicode() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
-    converter.init(new NamedList());
+    converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
     
     // chinese text value
@@ -139,10 +135,9 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
 
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testMultipleClauses() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
-    converter.init(new NamedList());
+    converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
 
     // two field:value pairs should give two tokens
@@ -157,10 +152,9 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
   
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testRequiredOrProhibitedFlags() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
-    converter.init(new NamedList());
+    converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
 
     {

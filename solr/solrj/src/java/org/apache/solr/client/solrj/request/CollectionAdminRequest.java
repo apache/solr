@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
 import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
@@ -271,8 +270,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  protected abstract static class ShardSpecificAdminRequest extends CollectionAdminRequest {
+  protected abstract static class ShardSpecificAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
 
     protected String collection;
     protected String shard;
@@ -293,7 +291,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    protected CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
   }
@@ -1561,8 +1559,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class RequestStatusResponse extends CollectionAdminResponse {
 
     public RequestStatusState getRequestStatus() {
-      @SuppressWarnings({"rawtypes"})
-      NamedList innerResponse = (NamedList) getResponse().get("status");
+      NamedList<?> innerResponse = (NamedList<?>) getResponse().get("status");
       return RequestStatusState.fromKey((String) innerResponse.get("state"));
     }
 
@@ -2652,9 +2649,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    */
   public static class RequestApiDistributedProcessingResponse extends CollectionAdminResponse {
     public boolean getIsCollectionApiDistributed() {
-      @SuppressWarnings({"rawtypes"})
-      Boolean isDistributedApi = (Boolean) getResponse().get("isDistributedApi");
-      return isDistributedApi;
+      return (Boolean) getResponse().get("isDistributedApi");
     }
   }
 

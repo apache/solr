@@ -32,6 +32,7 @@ configure(rootProject) {
         ":solr:contrib:blob-repository",
         ":solr:contrib:clustering",
         ":solr:contrib:extraction",
+        ":solr:contrib:gcs-repository",
         ":solr:contrib:langid",
         ":solr:contrib:jaegertracer-configurator",
         ":solr:contrib:prometheus-exporter",

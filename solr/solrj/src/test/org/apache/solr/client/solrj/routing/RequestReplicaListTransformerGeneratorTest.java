@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.routing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
@@ -73,7 +74,6 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     return colonAt != -1 ? nodeName.substring(0,colonAt) : nodeName.substring(0, nodeName.indexOf('_'));
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void replicaTypeAndReplicaBase() {
     RequestReplicaListTransformerGenerator generator = new RequestReplicaListTransformerGenerator();
@@ -84,7 +84,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     replicas.add(
         new Replica(
             "node4",
-            map(
+            Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node4:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
@@ -96,7 +96,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     replicas.add(
         new Replica(
             "node5",
-            map(
+            Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node5:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"
@@ -104,8 +104,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         )
     );
 
-    // replicaType and replicaBase combined rule param
-    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
+    // replica leader status, replicaType and replicaBase combined rule param
+    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER + ":true," +
+        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
         ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
         ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
 
@@ -129,13 +130,12 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     assertEquals("node3", getHost(replicas.get(4).getNodeName()));
   }
 
-  @SuppressWarnings("unchecked")
   private static List<Replica> getBasicReplicaList() {
     List<Replica> replicas = new ArrayList<Replica>();
     replicas.add(
         new Replica(
             "node1",
-            map(
+            Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node1:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "NRT"
@@ -145,7 +145,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     replicas.add(
         new Replica(
             "node2",
-            map(
+            Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node2:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
@@ -155,7 +155,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     replicas.add(
         new Replica(
             "node3",
-            map(
+            Map.of(
                 ZkStateReader.NODE_NAME_PROP, "node3:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"

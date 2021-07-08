@@ -179,6 +179,9 @@ public class PackageAPI {
 
   public static class PkgVersion implements ReflectMapWriter {
 
+    @JsonProperty("package")
+    public String pkg;
+
     @JsonProperty
     public String version;
 
@@ -195,6 +198,7 @@ public class PackageAPI {
     }
 
     public PkgVersion(Package.AddVersion addVersion) {
+      this.pkg = addVersion.pkg;
       this.version = addVersion.version;
       this.files = addVersion.files == null? null : Collections.unmodifiableList(addVersion.files);
       this.manifest = addVersion.manifest;
@@ -228,6 +232,7 @@ public class PackageAPI {
 
     public PkgVersion copy() {
       PkgVersion result = new PkgVersion();
+      result.pkg = this.pkg;
       result.version = this.version;
       result.files =  this.files;
       result.manifest =  this.manifest;
@@ -264,7 +269,6 @@ public class PackageAPI {
     }
 
     @Command(name = "add")
-    @SuppressWarnings({"unchecked"})
     public void add(PayloadObj<Package.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
       Package.AddVersion add = payload.get();

@@ -42,6 +42,7 @@ configurations {
   docs
   docker
   solrTgz
+  solrTgzSignature
   solrZip
 }
 
@@ -58,6 +59,7 @@ dependencies {
    ":solr:contrib:blob-repository",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
+   ":solr:contrib:gcs-repository",
    ":solr:contrib:jaegertracer-configurator",
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
@@ -71,7 +73,6 @@ dependencies {
   distSolr project(":solr:core")
   distSolr project(":solr:server")
   distSolr project(":solr:solrj")
-  distSolr project(":solr:test-framework")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
@@ -193,6 +194,11 @@ task failUnlessGpgKeyProperty {
 task signDistTar(type: Sign) {
   dependsOn failUnlessGpgKeyProperty
   sign configurations.solrTgz
+}
+dependencies {
+  solrTgzSignature files(tasks.signDistTar.signatureFiles.singleFile) {
+    builtBy signDistTar
+  }
 }
 task signDistZip(type: Sign) {
   dependsOn failUnlessGpgKeyProperty

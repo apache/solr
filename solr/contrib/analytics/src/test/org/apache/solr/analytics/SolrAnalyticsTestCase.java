@@ -18,7 +18,6 @@ package org.apache.solr.analytics;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
@@ -313,25 +312,6 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     @Override
     public int compareTo(FVP other) {
       return Integer.compare(order, other.order);
-    }
-  }
-
-  /*
-   * FacetValuePair, contains the expression and the expected result
-   */
-  @SuppressWarnings("rawtypes")
-  protected static class PivotFVP extends FVP {
-    final public String pivot;
-    final public List<FVP> children;
-
-    public PivotFVP(int order, String pivot, String facetValue, Map<String, Comparable> expectedResults) {
-      super(order, facetValue, expectedResults);
-      this.pivot = pivot;
-      children = new ArrayList<>();
-    }
-
-    public void addChild(FVP child) {
-      children.add(child);
     }
   }
 

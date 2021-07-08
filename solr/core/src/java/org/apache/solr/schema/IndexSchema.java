@@ -140,8 +140,7 @@ public class IndexSchema {
   private static final Set<String> FIELDTYPE_KEYS = ImmutableSet.of("fieldtype", "fieldType");
   private static final Set<String> FIELD_KEYS = ImmutableSet.of("dynamicField", "field");
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
+  protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache<>(10000, 8000, 9000,100, false,false, null);
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
@@ -1380,9 +1379,8 @@ public class IndexSchema {
   /**
    * Get a map of property name -&gt; value for the whole schema.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map getNamedPropertyValues() {
-    return getNamedPropertyValues(null, new MapSolrParams(Collections.EMPTY_MAP));
+  public Map<String, Object> getNamedPropertyValues() {
+    return getNamedPropertyValues(null, new MapSolrParams(Collections.emptyMap()));
   }
 
   public static class SchemaProps implements MapSerializable {

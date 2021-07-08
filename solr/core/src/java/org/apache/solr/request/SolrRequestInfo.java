@@ -52,6 +52,7 @@ public class SolrRequestInfo {
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
   protected SolrDispatchFilter.Action action;
+  protected boolean useServerToken = false;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -200,6 +201,18 @@ public class SolrRequestInfo {
     this.action = action;
   }
 
+  /**
+   * Used when making remote requests to other Solr nodes from the thread associated with this request,
+   * true means the server token header should be used instead of the Principal associated with the request.
+   */
+  public boolean useServerToken() {
+    return useServerToken;
+  }
+
+  public void setUseServerToken(boolean use) {
+    this.useServerToken = use;
+  }
+
   public static ExecutorUtil.InheritableThreadLocalProvider getInheritableThreadLocalProvider() {
     return new ExecutorUtil.InheritableThreadLocalProvider() {
       @Override
@@ -210,7 +223,6 @@ public class SolrRequestInfo {
       }
 
       @Override
-      @SuppressWarnings({"unchecked"})
       public void set(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
         SolrRequestInfo me = (SolrRequestInfo) ctx.get();
         if (me != null) {

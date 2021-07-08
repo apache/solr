@@ -538,8 +538,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     final NamedList<Throwable> exceptions = new NamedList<>();
-    @SuppressWarnings({"rawtypes"})
-    final NamedList<NamedList> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
+    final NamedList<NamedList<?>> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
 
     long start = System.nanoTime();
 
@@ -688,8 +687,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return urlMap;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  protected <T extends RouteResponse> T condenseResponse(NamedList response, int timeMillis, Supplier<T> supplier) {
+  protected <T extends RouteResponse<?>> T condenseResponse(NamedList<?> response, int timeMillis, Supplier<T> supplier) {
     T condensed = supplier.get();
     int status = 0;
     Integer rf = null;
@@ -699,11 +697,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     int maxToleratedErrors = Integer.MAX_VALUE;
 
     // For "adds", "deletes", "deleteByQuery" etc.
-    Map<String, NamedList> versions = new HashMap<>();
+    Map<String, NamedList<Object>> versions = new HashMap<>();
 
     for(int i=0; i<response.size(); i++) {
-      NamedList shardResponse = (NamedList)response.getVal(i);
-      NamedList header = (NamedList)shardResponse.get("responseHeader");
+      NamedList<?> shardResponse = (NamedList<?>)response.getVal(i);
+      NamedList<?> header = (NamedList<?>)shardResponse.get("responseHeader");
       Integer shardStatus = (Integer)header.get("status");
       int s = shardStatus.intValue();
       if(s > 0) {
@@ -716,6 +714,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           rf = routeRf;
       }
 
+      @SuppressWarnings("unchecked")
       List<SimpleOrderedMap<String>> shardTolerantErrors =
           (List<SimpleOrderedMap<String>>) header.get("errors");
       if (null != shardTolerantErrors) {
@@ -736,15 +735,16 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       for (String updateType: Arrays.asList("adds", "deletes", "deleteByQuery")) {
         Object obj = shardResponse.get(updateType);
         if (obj instanceof NamedList) {
-          NamedList versionsList = versions.containsKey(updateType) ?
-              versions.get(updateType): new NamedList();
-          versionsList.addAll((NamedList)obj);
+          NamedList<Object> versionsList = versions.containsKey(updateType) ?
+              versions.get(updateType): new NamedList<>();
+          NamedList<?> nl = (NamedList<?>) obj;
+          versionsList.addAll(nl);
           versions.put(updateType, versionsList);
         }
       }
     }
 
-    NamedList cheader = new NamedList();
+    NamedList<Object> cheader = new NamedList<>();
     cheader.add("status", status);
     cheader.add("QTime", timeMillis);
     if (rf != null)
@@ -761,7 +761,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         StringBuilder msgBuf =  new StringBuilder()
             .append(toleratedErrors.size()).append(" Async failures during distributed update: ");
 
-        NamedList metadata = new NamedList<String>();
+        NamedList<String> metadata = new NamedList<>();
         for (SimpleOrderedMap<String> err : toleratedErrors) {
           ToleratedUpdateError te = ToleratedUpdateError.parseMap(err);
           metadata.add(te.getMetadataKey(), te.getMetadataValue());
@@ -774,7 +774,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         throw toThrow;
       }
     }
-    for (Map.Entry<String, NamedList> entry : versions.entrySet()) {
+    for (Map.Entry<String, NamedList<Object>> entry : versions.entrySet()) {
       condensed.add(entry.getKey(), entry.getValue());
     }
     condensed.add("responseHeader", cheader);
@@ -782,22 +782,20 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   @SuppressWarnings({"rawtypes"})
-  public RouteResponse condenseResponse(NamedList response, int timeMillis) {
+  public RouteResponse condenseResponse(NamedList<?> response, int timeMillis) {
     return condenseResponse(response, timeMillis, RouteResponse::new);
   }
 
   @SuppressWarnings({"rawtypes"})
-  public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList {
-    @SuppressWarnings({"rawtypes"})
-    private NamedList routeResponses;
+  public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList<Object> {
+    private NamedList<NamedList<?>> routeResponses;
     private Map<String, T> routes;
 
-    public void setRouteResponses(@SuppressWarnings({"rawtypes"})NamedList routeResponses) {
+    public void setRouteResponses(NamedList<NamedList<?>> routeResponses) {
       this.routeResponses = routeResponses;
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public NamedList getRouteResponses() {
+    public NamedList<NamedList<?>> getRouteResponses() {
       return routeResponses;
     }
 
@@ -848,7 +846,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws SolrServerException, IOException {
+  public NamedList<Object> request(SolrRequest<?> request, String collection) throws SolrServerException, IOException {
     // the collection parameter of the request overrides that of the parameter to this method
     String requestCollection = request.getCollection();
     if (requestCollection != null) {
@@ -866,7 +864,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * there's a chance that the request will fail due to cached stale state,
    * which means the state must be refreshed from ZK and retried.
    */
-  protected NamedList<Object> requestWithRetryOnStaleState(@SuppressWarnings({"rawtypes"})SolrRequest request, int retryCount, List<String> inputCollections)
+  protected NamedList<Object> requestWithRetryOnStaleState(SolrRequest<?> request, int retryCount, List<String> inputCollections)
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
@@ -930,11 +928,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if(o != null && o instanceof Map) {
         //remove this because no one else needs this and tests would fail if they are comparing responses
         resp.remove(resp.size()-1);
-        @SuppressWarnings({"rawtypes"})
-        Map invalidStates = (Map) o;
-        for (Object invalidEntries : invalidStates.entrySet()) {
-          @SuppressWarnings({"rawtypes"})
-          Map.Entry e = (Map.Entry) invalidEntries;
+        Map<?,?> invalidStates = (Map<?,?>) o;
+        for (Map.Entry<?,?> e : invalidStates.entrySet()) {
           getDocCollection((String) e.getKey(), (Integer) e.getValue());
         }
 
@@ -1051,7 +1046,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return resp;
   }
 
-  protected NamedList<Object> sendRequest(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> inputCollections)
+  protected NamedList<Object> sendRequest(SolrRequest<?> request, List<String> inputCollections)
       throws SolrServerException, IOException {
     connect();
 
@@ -1224,8 +1219,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       //it is readily available just return it
       return ref.get();
     }
-    @SuppressWarnings({"rawtypes"})
-    List locks = this.locks;
+    List<Object> locks = this.locks;
     final Object lock = locks.get(Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
     DocCollection fetchedCol = null;
     synchronized (lock) {
@@ -1259,10 +1253,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * all shards involved in processing an update request, typically useful
    * for gauging the replication factor of a batch.
    */
-  @SuppressWarnings("rawtypes")
-  public int getMinAchievedReplicationFactor(String collection, NamedList resp) {
+  public int getMinAchievedReplicationFactor(String collection, NamedList<?> resp) {
     // it's probably already on the top-level header set by condense
-    NamedList header = (NamedList)resp.get("responseHeader");
+    NamedList<?> header = (NamedList<?>)resp.get("responseHeader");
     Integer achRf = (Integer)header.get(UpdateRequest.REPFACT);
     if (achRf != null)
       return achRf.intValue();
@@ -1282,15 +1275,14 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * the replication factor that was achieved in each shard involved in the request.
    * For single doc updates, there will be only one shard in the return value.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map<String,Integer> getShardReplicationFactor(String collection, NamedList resp) {
+  public Map<String,Integer> getShardReplicationFactor(String collection, NamedList<?> resp) {
     connect();
 
-    Map<String,Integer> results = new HashMap<String,Integer>();
+    Map<String,Integer> results = new HashMap<>();
     if (resp instanceof RouteResponse) {
-      NamedList routes = ((RouteResponse)resp).getRouteResponses();
+      NamedList<NamedList<?>> routes = ((RouteResponse<?>)resp).getRouteResponses();
       DocCollection coll = getDocCollection(collection, null);
-      Map<String,String> leaders = new HashMap<String,String>();
+      Map<String,String> leaders = new HashMap<>();
       for (Slice slice : coll.getActiveSlicesArr()) {
         Replica leader = slice.getLeader();
         if (leader != null) {
@@ -1302,13 +1294,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         }
       }
 
-      @SuppressWarnings({"unchecked"})
-      Iterator<Map.Entry<String,Object>> routeIter = routes.iterator();
+      Iterator<Map.Entry<String,NamedList<?>>> routeIter = routes.iterator();
       while (routeIter.hasNext()) {
-        Map.Entry<String,Object> next = routeIter.next();
+        Map.Entry<String,NamedList<?>> next = routeIter.next();
         String host = next.getKey();
-        NamedList hostResp = (NamedList)next.getValue();
-        Integer rf = (Integer)((NamedList)hostResp.get("responseHeader")).get(UpdateRequest.REPFACT);
+        NamedList<?> hostResp = next.getValue();
+        Integer rf = (Integer)((NamedList<?>)hostResp.get("responseHeader")).get(UpdateRequest.REPFACT);
         if (rf != null) {
           String shard = leaders.get(host);
           if (shard == null) {

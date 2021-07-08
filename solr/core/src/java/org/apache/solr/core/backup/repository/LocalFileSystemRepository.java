@@ -49,11 +49,10 @@ import java.util.Objects;
  */
 public class LocalFileSystemRepository implements BackupRepository {
 
-  @SuppressWarnings("rawtypes")
-  private NamedList config = null;
+  private NamedList<?> config = null;
 
   @Override
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList<?> args) {
     this.config = args;
   }
 

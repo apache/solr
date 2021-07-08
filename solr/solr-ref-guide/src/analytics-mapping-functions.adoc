@@ -181,7 +181,8 @@ Checks whether any value(s) exist for the expression.
 == Comparison
 
 === Equality
-Checks whether two expressions' values are equal. The parameters must be the same type, after implicit casting.
+Checks whether two expressions' values are equal.
+The parameters must be the same type, after implicit casting.
 
 `equal(< _Single_ T >, < _Single_ T >)` => `< _Single Bool_ >`::
     * `equal(F, F)` => `T`
@@ -316,7 +317,8 @@ Explicitly converts the values of a `String` or `Long` expression into `Dates`.
 
 [[analytics-date-math]]
 === Date Math
-Compute the given date math strings for the values of a `Date` expression. The date math strings *must* be <<analytics-expression-sources.adoc#strings, constant>>.
+Compute the given date math strings for the values of a `Date` expression.
+The date math strings *must* be <<analytics-expression-sources.adoc#strings, constant>>.
 
 `date_math(< _Date_ >, < _Constant String_ >...)` => `< _Date_ >`::
     * `date_math(1800-04-15, '+1DAY', '-1MONTH')` => `1800-03-16`

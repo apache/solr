@@ -311,8 +311,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
     @Override
-    @SuppressWarnings({"rawtypes"})
-    public Map getZkJson(String path) throws KeeperException, InterruptedException {
+    public Map<?,?> getZkJson(String path) throws KeeperException, InterruptedException {
       return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
 
@@ -378,12 +377,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
 
     public final String tagName, metricsAttribute;
-    @SuppressWarnings("rawtypes")
-    public final Class type;
+    public final Class<?> type;
 
 
-    @SuppressWarnings("rawtypes")
-    Variable(String tagName, String metricsAttribute, Class type) {
+    Variable(String tagName, String metricsAttribute, Class<?> type) {
       this.tagName = tagName;
       this.metricsAttribute = metricsAttribute;
       this.type = type;
