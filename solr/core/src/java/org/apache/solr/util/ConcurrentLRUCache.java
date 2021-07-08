@@ -553,14 +553,14 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           // this loop so far.
           queue.myMaxSize = sz - lowerWaterMark - numRemoved;
           while (queue.size() > queue.myMaxSize && queue.size() > 0) {
-            CacheEntry<K,V> otherEntry = queue.pop();
+            CacheEntry<K, V> otherEntry = queue.pop();
             newOldestEntry = Math.min(otherEntry.lastAccessedCopy, newOldestEntry);
           }
           if (queue.myMaxSize <= 0) break;
 
-          Object o = queue.myInsertWithOverflow(ce);
+          CacheEntry<K, V> o = queue.myInsertWithOverflow(ce);
           if (o != null) {
-            newOldestEntry = Math.min(((CacheEntry<?,?>)o).lastAccessedCopy, newOldestEntry);
+            newOldestEntry = Math.min(o.lastAccessedCopy, newOldestEntry);
           }
         }
       }
