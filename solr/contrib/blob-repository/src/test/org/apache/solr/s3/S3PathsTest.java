@@ -16,11 +16,11 @@
  */
 package org.apache.solr.s3;
 
-import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Test creating and deleting objects at different paths.
@@ -182,6 +182,6 @@ public class S3PathsTest extends AbstractS3ClientTest {
         pushContent("/list-dir-file2", "file2");
 
         String[] items = client.listDir("/list-dir");
-        assertEquals(Sets.newHashSet("file", "sub-dir"), Sets.newHashSet(items));
+        assertEquals(Set.of("file", "sub-dir"), Set.of(items));
     }
 }

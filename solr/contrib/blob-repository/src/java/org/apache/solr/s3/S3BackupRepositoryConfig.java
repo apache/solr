@@ -40,8 +40,7 @@ public class S3BackupRepositoryConfig {
     private final int proxyPort;
     private final boolean s3mock;
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public S3BackupRepositoryConfig(NamedList args) {
+    public S3BackupRepositoryConfig(NamedList<String> args) {
         NamedList<String> config = args.clone();
 
         region = getStringConfig(config, REGION);

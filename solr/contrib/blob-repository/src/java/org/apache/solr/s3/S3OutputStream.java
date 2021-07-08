@@ -20,7 +20,12 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.event.ProgressEvent;
 import com.amazonaws.event.SyncProgressListener;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PartETag;
+import com.amazonaws.services.s3.model.UploadPartRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,9 +90,7 @@ public class S3OutputStream extends OutputStream {
             throw new IOException("Stream closed");
         }
 
-        if (b == null) {
-            throw new NullPointerException();
-        } else if (outOfRange(off, b.length) || len < 0 || outOfRange(off + len, b.length)) {
+        if (outOfRange(off, b.length) || len < 0 || outOfRange(off + len, b.length)) {
             throw new IndexOutOfBoundsException();
         } else if (len == 0) {
             return;

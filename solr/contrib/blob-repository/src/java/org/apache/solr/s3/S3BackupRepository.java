@@ -57,8 +57,8 @@ public class S3BackupRepository implements BackupRepository {
     private S3StorageClient client;
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void init(NamedList args) {
+    @SuppressWarnings("unchecked")
+    public void init(NamedList<?> args) {
         this.config = (NamedList<String>) args;
         S3BackupRepositoryConfig backupConfig = new S3BackupRepositoryConfig(this.config);
 
@@ -242,7 +242,6 @@ public class S3BackupRepository implements BackupRepository {
      *          in case of errors
      * @throws CorruptIndexException
      *          in case checksum of the file does not match with precomputed checksum stored at the end of the file
-     * @since 8.3.0
      */
     @Override
     public void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI dest, String destFileName) throws IOException {
@@ -301,7 +300,6 @@ public class S3BackupRepository implements BackupRepository {
      *          The destination where the file should be copied.
      * @throws IOException
      *           in case of errors.
-     * @since 8.3.0
      */
     @Override
     public void copyIndexFileTo(URI sourceDir, String sourceFileName, Directory dest, String destFileName) throws IOException {
