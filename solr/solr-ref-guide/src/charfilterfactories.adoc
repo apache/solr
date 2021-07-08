@@ -156,16 +156,36 @@ This filter performs pre-tokenization Unicode normalization using http://site.ic
 
 Arguments:
 
-`form`:: A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, `nfkc_cf`.
-Default is `nfkc_cf`.
+`form`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `nfkc_cf`
+|===
++
+A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, or `nfkc_cf`.
 
-`mode`:: Either `compose` or `decompose`.
+`mode`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `compose`
+|===
++
+Either `compose` or `decompose`.
 Default is `compose`.
 Use `decompose` with `name="nfc"` or `name="nfkc"` to get NFD or NFKD, respectively.
 
-`filter`:: A http://www.icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet] pattern.
+`filter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `[]`
+|===
++
+A http://www.icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet] pattern.
 Codepoints outside the set are always left unchanged.
-Default is `[]` (the null set, no filtering - all codepoints are subject to normalization).
+Default is `[]`, as a null set, no filtering (all codepoints are subject to normalization).
 
 Example:
 
@@ -203,9 +223,23 @@ This filter uses http://www.regular-expressions.info/reference.html[regular expr
 
 Arguments:
 
-`pattern`:: the regular expression pattern to apply to the incoming text.
+`pattern`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The regular expression pattern to apply to the incoming text.
 
-`replacement`:: the text to use to replace matching patterns.
+`replacement`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The text to use to replace matching patterns.
 
 You can configure this filter in `schema.xml` like this:
 

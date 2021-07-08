@@ -726,7 +726,7 @@ This query parser is designed to allow users to enter queries however they want,
 
 This parser takes the following parameters:
 
-q.operators::
+`q.operators`::
 Comma-separated list of names of parsing operators to enable.
 By default, all operations are enabled, and this parameter can be used to effectively disable specific operators as needed, by excluding them from the list.
 Passing an empty string with this parameter disables all operators.
@@ -757,15 +757,15 @@ At the end of terms, specifies a fuzzy query.
 |`NEAR` |`~_N_` |At the end of phrases, specifies a NEAR query |`"term1 term2"~5`
 |===
 
-q.op::
+`q.op`::
 Defines the default operator to use if none is defined by the user.
 Allowed values are `AND` and `OR`.
 `OR` is used if none is specified.
 
-qf::
+`qf`::
 A list of query fields and boosts to use when building the query.
 
-df::
+`df`::
 Defines the default field if none is defined in the Schema, or overrides the default field if it is already defined.
 
 Any errors in syntax are ignored and the query parser will interpret queries as best it can.

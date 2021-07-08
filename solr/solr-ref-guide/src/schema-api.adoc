@@ -1313,7 +1313,7 @@ curl -X GET "http://localhost:8983/api/collections/techproducts/schema/name"
 
 *Path Parameters*
 
-collection::
+`collection`::
 The collection (or core) name.
 
 *Query Parameters*

@@ -237,7 +237,7 @@ Administrators can write their own custom permissions that can match requests ba
 
 Each custom permission is a JSON object under the `permissions` parameter, with one or more of the properties below:
 
-name::
+`name`::
 +
 [%autowidth,frame=none]
 |===
@@ -251,7 +251,7 @@ For custom permissions, this is used only as a clue to administrators about what
 Care must be taken when setting this parameter to avoid colliding with one of Solr's <<Permissions,predefined permissions>>, whose names are reserved.
 If this name matches a predefined permission, Solr ignores any other properties set and uses the semantics of the predefined permission instead.
 
-collection::
+`collection`::
 +
 [%autowidth,frame=none]
 |===
@@ -275,7 +275,7 @@ A `collection` parameter given an alias as a value will never match because RBAP
 Instead, set a `collection` parameter that contains all collections in the alias concerned (or the `*` wildcard).
 ====
 
-path::
+`path`::
 +
 [%autowidth,frame=none]
 |===
@@ -290,7 +290,7 @@ For APIs that access collections, path values should start after the collection 
 For collection-agnostic (aka, "admin") APIs, path values should start at the `"/admin` path segment.
 The wildcard `\*` can be used to indicate that this permission applies to all paths.
 
-method::
+`method`::
 +
 [%autowidth,frame=none]
 |===
@@ -301,7 +301,7 @@ Defines the HTTP methods this permission applies to.
 Options include `HEAD`, `POST`, `PUT`, `GET`, `DELETE`, and the wildcard `\*`.
 Multiple values can also be specified using a JSON array.
 
-params::
+`params`::
 +
 [%autowidth,frame=none]
 |===
@@ -335,7 +335,7 @@ If the commands LIST and CLUSTERSTATUS are case insensitive, the example above c
 }
 ----
 
-role::
+`role`::
 +
 [%autowidth,frame=none]
 |===

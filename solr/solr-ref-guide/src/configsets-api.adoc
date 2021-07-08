@@ -106,20 +106,41 @@ If you use any of these parameters or features, you must have enabled security f
 The `upload` command takes the following parameters:
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The configset to be created when the upload is complete.
-This parameter is required.
 
 `overwrite`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: see description
+|===
++
 If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail).
 If `filePath` is provided, then this option specifies whether the specified file within the configset should be overwritten if it already exists.
 Default is `false` when using the v1 API, but `true` when using the v2 API.
 
 `cleanup`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
 When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded.
-Default is `false`.
 This parameter cannot be set to true when `filePath` is used.
 
 `filePath`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 This parameter allows the uploading of a single, non-zipped file to the given path under the configset in ZooKeeper.
 This functionality respects the `overwrite` parameter, so a request will fail if the given file path already exists in the configset and overwrite is set to `false`.
 The `cleanup` parameter cannot be set to true when `filePath` is used.
@@ -220,14 +241,30 @@ If you have not yet uploaded any configsets, see the <<Upload a Configset>> comm
 The following parameters are supported when creating a configset.
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The configset to be created.
-This parameter is required.
 
 `baseConfigSet`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `_default`
+|===
++
 The name of the configset to copy as a base.
-This defaults to `_default`
 
 `configSetProp._property_=_value_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A configset property from the base configset to override in the copied configset.
 
 For example, to create a configset named "myConfigset" based on a previously defined "predefinedTemplate" configset, overriding the immutable property to false.
@@ -297,8 +334,13 @@ The `delete` command removes a configset.
 It does not remove any collections that were created with the configset.
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The configset to be deleted.
-This parameter is required.
 
 To delete a configset named "myConfigSet":
 

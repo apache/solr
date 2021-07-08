@@ -155,7 +155,14 @@ This filter converts characters from the following Unicode blocks:
 
 *Arguments:*
 
-`preserveOriginal`:: (boolean, default false) If true, the original token is preserved: "thé" -> "the", "thé"
+`preserveOriginal`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the original token is preserved: "thé" -> "the", "thé"
 
 *Example:*
 
@@ -205,17 +212,45 @@ Any index built using this filter with earlier versions of Solr will need to be 
 
 *Arguments:*
 
-`nameType`:: Types of names.
-Valid values are GENERIC, ASHKENAZI, or SEPHARDIC.
-If not processing Ashkenazi or Sephardic names, use GENERIC.
+`nameType`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `GENERIC`
+|===
++
+Types of names.
+Valid values are `GENERIC`, `ASHKENAZI`, or `SEPHARDIC`.
+If not processing Ashkenazi or Sephardic names, use `GENERIC`.
 
-`ruleType`:: Types of rules to apply.
-Valid values are APPROX or EXACT.
+`ruleType`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `APPROX`
+|===
++
+Types of rules to apply.
+Valid values are `APPROX` or `EXACT`.
 
-`concat`:: Defines if multiple possible matches should be combined with a pipe ("|").
+`concat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Defines if multiple possible matches should be combined with a pipe (`|`).
 
-`languageSet`:: The language set to use.
-The value "auto" will allow the Filter to identify the language, or a comma-separated list can be supplied.
+`languageSet`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `auto`
+|===
++
+The language set to use.
+The value `auto` will allow the filter to identify the language, or a comma-separated list can be supplied.
 
 *Example:*
 
@@ -301,12 +336,32 @@ These filters can also be combined with <<#stop-filter,Stop Filter>> so searchin
 
 *Arguments:*
 
-`words`:: (a common word file in .txt format) Provide the name of a common word file, such as `stopwords.txt`.
+`words`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of a common word file in .txt format, such as `stopwords.txt`.
 
-`format`:: (optional) If the stopwords list has been formatted for Snowball, you can specify `format="snowball"` so Solr can read the stopwords file.
+`format`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+If the stopwords list has been formatted for Snowball, you can specify `format="snowball"` so Solr can read the stopwords file.
 
-`ignoreCase`:: (boolean) If true, the filter ignores the case of words when comparing them to the common word file.
-The default is false.
+`ignoreCase`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the filter ignores the case of words when comparing them to the common word file.
 
 *Example:*
 
@@ -371,9 +426,16 @@ More information about how this works is available in the section on <<phonetic-
 
 *Arguments:*
 
-`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream.
+`inject`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, then new phonetic tokens are added to the stream.
 Otherwise, tokens are replaced with the phonetic equivalent.
-Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+Setting this to `false` will enable phonetic matching, but the exact spelling of the target word may not match.
 
 *Example:*
 
@@ -412,15 +474,29 @@ For more information, see the <<phonetic-matching.adoc#,Phonetic Matching>> sect
 
 *Arguments:*
 
-`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream.
+`inject`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, then new phonetic tokens are added to the stream.
 Otherwise, tokens are replaced with the phonetic equivalent.
-Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+Setting this to `false` will enable phonetic matching, but the exact spelling of the target word may not match.
 
-`maxCodeLength`:: (integer) The maximum length of the code to be generated.
+`maxCodeLength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The maximum length of the code to be generated.
 
 *Example:*
 
-Default behavior for inject (true): keep the original token and add phonetic token(s) at the same position.
+Default behavior for inject (`true`): keep the original token and add phonetic token(s) at the same position.
 
 [.dynamic-tabs]
 --
@@ -485,8 +561,14 @@ This filter adds a numeric floating point boost value to tokens, splitting on a 
 
 *Arguments:*
 
-`delimiter`:: The character used to separate the token and the boost.
-Defaults to '|'.
+`delimiter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `\|` (_pipe symbol_)
+|===
++
+The character used to separate the token and the boost.
 
 *Example:*
 
@@ -552,11 +634,30 @@ This filter generates edge n-gram tokens of sizes within the given range.
 
 *Arguments:*
 
-`minGramSize`:: (integer, default 1) The minimum gram size.
+`minGramSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
+The minimum gram size.
 
-`maxGramSize`:: (integer, default 1) The maximum gram size.
+`maxGramSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
+The maximum gram size.
 
-`preserveOriginal`:: (boolean, default false) If true keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
+`preserveOriginal`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true` keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
 
 *Example:*
 
@@ -742,12 +843,24 @@ This can be useful for clustering/linking use cases.
 
 *Arguments:*
 
-`separator`:: The character used to separate tokens combined into the single output token.
-Defaults to " " (a space character).
+`separator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _space character_
+|===
++
+The character used to separate tokens combined into the single output token.
 
-`maxOutputTokenSize`:: The maximum length of the summarized output token.
+`maxOutputTokenSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1024`
+|===
++
+The maximum length of the summarized output token.
 If exceeded, no output token is emitted.
-Defaults to 1024.
 
 *Example:*
 
@@ -807,16 +920,42 @@ On the other hand, for languages that have no stemmer but do have an extensive d
 
 *Arguments:*
 
-`dictionary`:: (required) The path of a dictionary file.
+`dictionary`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path to a dictionary file.
 
-`affix`:: (required) The path of a rules file.
+`affix`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path of a rules file.
 
-`ignoreCase`:: (boolean) controls whether matching is case sensitive or not.
-The default is false.
+`ignoreCase`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Controls whether matching is case sensitive or not.
 
-`strictAffixParsing`:: (boolean) controls whether the affix parsing is strict or not.
-If true, an error while reading an affix rule causes a ParseException, otherwise is ignored.
-The default is true.
+`strictAffixParsing`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Controls whether the affix parsing is strict or not.
+If `true`, an error while reading an affix rule causes a ParseException, otherwise is ignored.
 
 *Example:*
 
@@ -917,7 +1056,13 @@ See `solr/contrib/analysis-extras/README.md` for instructions on which jars you 
 
 *Arguments:*
 
-`filter`:: (string, optional) A Unicode set filter that can be used to e.g., exclude a set of characters from being processed.
+`filter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+A Unicode set filter that can be used to e.g., exclude a set of characters from being processed.
 See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information.
 
 *Example without a filter:*
@@ -975,17 +1120,35 @@ Using the ICU Normalizer 2 Filter is a better-performing substitution for the <<
 
 *Arguments:*
 
-`form`:: The name of the normalization form.
-Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default).
-Required.
+`form`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: `nfkc_cf`
+|===
++
+The name of the normalization form.
+Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf`.
 
-`mode`:: The mode of Unicode character composition and decomposition.
-Valid options are: `compose` (the default) or `decompose`.
-Required.
+`mode`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: `compose`
+|===
++
+The mode of Unicode character composition and decomposition.
+Valid options are: `compose` or `decompose`.
 
-`filter`:: A Unicode set filter that can be used to e.g., exclude a set of characters from being processed.
+`filter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A Unicode set filter that can be used to e.g., exclude a set of characters from being processed.
 See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[UnicodeSet javadocs] for more information.
-Optional.
 
 *Example with NFKC_Casefold:*
 
@@ -1040,7 +1203,14 @@ Custom rule sets are not supported.
 
 *Arguments:*
 
-`id`:: (string) The identifier for the ICU System Transform you wish to apply with this filter.
+`id`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The identifier for the ICU System Transform you wish to apply with this filter.
 For a full list of ICU System Transforms, see http://demo.icu-project.org/icu-bin/translit?TEMPLATE_FILE=data/translit_rule_main.html.
 
 *Example:*
@@ -1086,16 +1256,26 @@ This filter can be useful for building specialized indices for a constrained set
 
 *Arguments:*
 
-`words`:: (required) Path of a text file containing the list of keep words, one per line.
-Blank lines and lines that begin with "#" are ignored.
+`words`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Path to a text file containing the list of keep words, one per line.
+Blank lines and lines that begin with `\#` are ignored.
 This may be an absolute path, or a simple filename in the Solr `conf` directory.
 
-`ignoreCase`:: (true/false) If *true* then comparisons are done case-insensitively.
+`ignoreCase`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true` then comparisons are done case-insensitively.
 If this argument is true, then the words file is assumed to contain only lowercase words.
-The default is *false*.
-
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
-*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
 *Example:*
 
@@ -1227,14 +1407,25 @@ All other tokens are discarded.
 
 *Arguments:*
 
-`min`:: (integer, required) Minimum token length.
+`min`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
+Minimum token length.
 Tokens shorter than this are discarded.
 
-`max`:: (integer, required, must be >= min) Maximum token length.
+`max`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Maximum token length.
+Must be larger than `min`.
 Tokens longer than this are discarded.
-
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
-*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
 *Example:*
 
@@ -1281,11 +1472,23 @@ If you are wrapping a `TokenStream` which requires that the full stream of token
 *Factory class:* `solr.LimitTokenCountFilterFactory`
 
 *Arguments:*
-
-`maxTokenCount`:: (integer, required) Maximum token count.
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Maximum token count.
 After this limit has been reached, tokens are discarded.
 
-`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum token count has been reached.
+`consumeAllTokens`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Whether to consume (and discard) previous token filters' tokens after the maximum token count has been reached.
 See description above.
 
 *Example:*
@@ -1340,7 +1543,14 @@ If you are wrapping a `TokenStream` which requires that the full stream of token
 `maxStartOffset`:: (integer, required) Maximum token start character offset.
 After this limit has been reached, tokens are discarded.
 
-`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum start offset has been reached.
+`consumeAllTokens`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Whether to consume (and discard) previous token filters' tokens after the maximum start offset has been reached.
 See description above.
 
 *Example:*
@@ -1391,10 +1601,24 @@ If you are wrapping a `TokenStream` which requires that the full stream of token
 
 *Arguments:*
 
-`maxTokenPosition`:: (integer, required) Maximum token position.
+`maxTokenPosition`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Maximum token position.
 After this limit has been reached, tokens are discarded.
 
-`consumeAllTokens`:: (boolean, defaults to false) Whether to consume (and discard) previous token filters' tokens after the maximum start offset has been reached.
+`consumeAllTokens`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Whether to consume (and discard) previous token filters' tokens after the maximum start offset has been reached.
 See description above.
 
 *Example:*
@@ -1482,7 +1706,14 @@ This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> tha
 
 *Arguments:*
 
-`managed`:: The name that should be used for this set of stop words in the managed REST API.
+`managed`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name that should be used for this set of stop words in the managed REST API.
 
 *Example:*
 //TODO: make this show an actual API call.
@@ -1541,7 +1772,14 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`managed`:: The name that should be used for this mapping on synonyms in the managed REST API.
+`managed`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name that should be used for this mapping on synonyms in the managed REST API.
 
 *Example:*
 //TODO: make this show an actual API call
@@ -1594,11 +1832,31 @@ Note that tokens are ordered by position and then by gram size.
 
 *Arguments:*
 
-`minGramSize`:: (integer, default 1) The minimum gram size.
+`minGramSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
+The minimum gram size.
 
-`maxGramSize`:: (integer, default 2) The maximum gram size.
+`maxGramSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+The maximum gram size.
 
-`preserveOriginal`:: (boolean, default false) If true keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
+`preserveOriginal`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true` keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
 
 *Example:*
 
@@ -1699,9 +1957,23 @@ Refer to the Javadoc for the `org.apache.lucene.analysis.Token` class for more i
 
 *Arguments:*
 
-`payload`:: (required) A floating point value that will be added to all matching tokens.
+`payload`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+A floating point value that will be added to all matching tokens.
 
-`typeMatch`:: (required) A token type name string.
+`typeMatch`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+A token type name string.
 Tokens with a matching type name will have their payload set to the above floating point value.
 
 *Example:*
@@ -1747,13 +2019,34 @@ Tokens which do not match are passed though unchanged.
 
 *Arguments:*
 
-`pattern`:: (required) The regular expression to test against each token, as per `java.util.regex.Pattern`.
+`pattern`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The regular expression to test against each token, as per `java.util.regex.Pattern`.
 
-`replacement`:: (required) A string to substitute in place of the matched pattern.
+`replacement`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+A string to substitute in place of the matched pattern.
 This string may contain references to capture groups in the regex pattern.
 See the Javadoc for `java.util.regex.Matcher`.
 
-`replace`:: ("all" or "first", default "all") Indicates whether all occurrences of the pattern in the token should be replaced, or only the first.
+`replace`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `all`
+|===
++
+Indicates whether all occurrences of the pattern (`all`) in the token should be replaced, or only the first (`first`).
 
 *Example:*
 
@@ -1838,14 +2131,42 @@ For more information, see the section on <<phonetic-matching.adoc#,Phonetic Matc
 
 *Arguments:*
 
-`encoder`:: (required) The name of the encoder to use.
-The encoder name must be one of the following (case insensitive): `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`, `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0), `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`, or `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`.
+`encoder`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the encoder to use.
+The encoder name must be one of the following (case insensitive):
 
-`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream.
+* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`
+* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`
+* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`
+* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`
+* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0)
+* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`
+* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`
+
+`inject`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, new phonetic tokens are added to the stream.
 Otherwise, tokens are replaced with the phonetic equivalent.
-Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+Setting this to `false` will enable phonetic matching, but the exact spelling of the target word may not match.
 
-`maxCodeLength`:: (integer) The maximum length of the code to be generated by the Metaphone or Double Metaphone encoders.
+`maxCodeLength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+The maximum length of the code to be generated by the Metaphone or Double Metaphone encoders.
 
 *Example:*
 
@@ -1975,13 +2296,34 @@ This filter enables a form of conditional filtering: it only applies its wrapped
 
 *Arguments:*
 
-`protected`:: (required) Comma-separated list of files containing protected terms, one per line.
+`protected`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Comma-separated list of files containing protected terms, one per line.
 
-`wrappedFilters`:: (required) Case-insensitive comma-separated list of `TokenFilterFactory` SPI names (strip trailing `(Token)FilterFactory` from the factory name - see the https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[java.util.ServiceLoader interface]).
+`wrappedFilters`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Case-insensitive comma-separated list of `TokenFilterFactory` SPI names (strip trailing `(Token)FilterFactory` from the factory name - see the https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[`java.util.ServiceLoader interface`]).
 Each filter name must be unique, so if you need to specify the same filter more than once, you must add case-insensitive unique `-id` suffixes to each same-SPI-named filter (note that the `-id` suffix is stripped prior to SPI lookup).
 
-`ignoreCase`:: (true/false, default false) Ignore case when testing for protected words.
-If true, the protected list should contain lowercase words.
+`ignoreCase`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Ignore case when testing for protected words.
+If `true`, the protected list should contain lowercase words.
 
 *Example:*
 
@@ -2114,19 +2456,53 @@ Tokens without wildcards are not reversed.
 
 *Arguments:*
 
-`withOriginal`:: (boolean) If true, the filter produces both original and reversed tokens at the same positions.
-If false, produces only reversed tokens.
+`withOriginal`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
+If `true`, the filter produces both original and reversed tokens at the same positions.
+If `false`, produces only reversed tokens.
 
-`maxPosAsterisk`:: (integer, default = 2) The maximum position of the asterisk wildcard ('*') that triggers the reversal of the query term.
+`maxPosAsterisk`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+The maximum position of the asterisk wildcard ('*') that triggers the reversal of the query term.
 Terms with asterisks at positions above this value are not reversed.
 
-`maxPosQuestion`:: (integer, default = 1) The maximum position of the question mark wildcard ('?') that triggers the reversal of query term.
+`maxPosQuestion`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+The maximum position of the question mark wildcard ('?') that triggers the reversal of query term.
 To reverse only pure suffix queries (queries with a single leading asterisk), set this to 0 and `maxPosAsterisk` to 1.
 
-`maxFractionAsterisk`:: (float, default = 0.0) An additional parameter that triggers the reversal if asterisk ('*') position is less than this fraction of the query token length.
+`maxFractionAsterisk`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0.0`
+|===
++
+An additional parameter that triggers the reversal if asterisk ('*') position is less than this fraction of the query token length.
 
-`minTrailing`:: (integer, default = 2) The minimum number of trailing characters in a query token after the last wildcard character.
-For good performance this should be set to a value larger than 1.
+`minTrailing`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+The minimum number of trailing characters in a query token after the last wildcard character.
+For good performance this should be set to a value larger than `1`.
 
 *Example:*
 
@@ -2173,15 +2549,52 @@ It combines runs of tokens into a single token.
 
 *Arguments:*
 
-`minShingleSize`:: (integer, must be >= 2, default 2) The minimum number of tokens per shingle.
+`minShingleSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+The minimum number of tokens per shingle.
+Must be higher than or equal to `2`.
 
-`maxShingleSize`:: (integer, must be >= `minShingleSize`, default 2) The maximum number of tokens per shingle.
+`maxShingleSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+The maximum number of tokens per shingle.
+Must be higher than or equal to `minShingleSize`.
 
-`outputUnigrams`:: (boolean, default true) If true, then each individual token is also included at its original position.
+`outputUnigrams`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, then each individual token is also included at its original position.
 
-`outputUnigramsIfNoShingles`:: (boolean, default false) If true, then individual tokens will be output if no shingles are possible.
+`outputUnigramsIfNoShingles`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, then individual tokens will be output if no shingles are possible.
 
-`tokenSeparator`:: (string, default is " ") The string to use when joining adjacent tokens to form a shingle.
+`tokenSeparator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _space character_
+|===
++
+The string to use when joining adjacent tokens to form a shingle.
 
 *Example:*
 
@@ -2253,13 +2666,27 @@ For more information on Snowball, visit http://snowball.tartarus.org/.
 
 *Arguments:*
 
-`language`:: (default "English") The name of a language, used to select the appropriate Porter stemmer to use.
+`language`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `English`
+|===
++
+The name of a language, used to select the appropriate Porter stemmer to use.
 Case is significant.
 This string is used to select a package name in the `org.tartarus.snowball.ext` class hierarchy.
 
-`protected`:: Path of a text file containing a list of protected words, one per line.
+`protected`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: `protected`
+|===
++
+Path to a text file containing a list of protected words, one per line.
 Protected words will not be stemmed.
-Blank lines and lines that begin with "#" are ignored.
+Blank lines and lines that begin with `\#` are ignored.
 This may be an absolute path, or a simple file name in the Solr `conf` directory.
 
 *Example:*
@@ -2343,17 +2770,35 @@ A standard stop words list is included in the Solr `conf` directory, named `stop
 
 *Arguments:*
 
-`words`:: (optional) The path to a file that contains a list of stop words, one per line.
-Blank lines and lines that begin with "#" are ignored.
+`words`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The path to a file that contains a list of stop words, one per line.
+Blank lines and lines that begin with `\#` are ignored.
 This may be an absolute path, or path relative to the Solr `conf` directory.
 
-`format`:: (optional) If the stopwords list has been formatted for Snowball, you can specify `format="snowball"` so Solr can read the stopwords file.
+`format`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+If the stopwords list has been formatted for Snowball, you can specify `format="snowball"` so Solr can read the stopwords file.
 
-`ignoreCase`:: (true/false, default false) Ignore case when testing for stop words.
-If true, the stop list should contain lowercase words.
-
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.4` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
-*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`ignoreCase`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Ignore case when testing for stop words.
+If `true`, the stop list should contain lowercase words.
 
 *Example:*
 
@@ -2422,19 +2867,39 @@ When using one of the analyzing suggesters, you would normally use the ordinary 
 
 *Arguments:*
 
-`words`:: (optional; default: {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`] ) The name of a stopwords file to parse.
+`words`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`]
+|===
++
+The name of a stopwords file to parse.
 
-`format`:: (optional; default: `wordset`) Defines how the words file will be parsed.
+`format`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `wordset`
+|===
++
+Defines how the words file will be parsed.
 If `words` is not specified, then `format` must not be specified.
-The valid values for the format option are:
+The valid values for the `format` parameter are:
 
-`wordset`:: This is the default format, which supports one word per line (including any intra-word whitespace) and allows whole line comments beginning with the `#` character.
+* `wordset`: Supports one word per line (including any intra-word whitespace) and allows whole line comments beginning with the `\#` character.
+Blank lines are ignored.
+* `snowball`: Allows for multiple words specified on each line, and trailing comments may be specified using the vertical line (`|`).
 Blank lines are ignored.
 
-`snowball`:: This format allows for multiple words specified on each line, and trailing comments may be specified using the vertical line (`|`).
-Blank lines are ignored.
-
-`ignoreCase`:: (optional; default: *false*) If *true*, matching is case-insensitive.
+`ignoreCase`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, matching is case-insensitive.
 
 *Example:*
 
@@ -2504,8 +2969,15 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line.
-In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored.
+`synonyms`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path to a file that contains a list of synonyms, one per line.
+In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with `\#` are ignored.
 This may be a comma-separated list of paths.
 See <<resource-loading.adoc#,Resource Loading>> for more information.
 +
@@ -2518,22 +2990,58 @@ If the token matches any of the words, then all the words in the list are substi
 If the token matches any word on the left, then the list on the right is substituted.
 The original token will not be included unless it is also in the list on the right.
 
-`ignoreCase`:: (optional; default: `false`) If `true`, synonyms will be matched case-insensitively.
+`ignoreCase`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, synonyms will be matched case-insensitively.
 
-`expand`:: (optional; default: `true`) If `true`, a synonym will be expanded to all equivalent synonyms.
+`expand`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, a synonym will be expanded to all equivalent synonyms.
 If `false`, all equivalent synonyms will be reduced to the first in the list.
 
-`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed.
-The short names `solr` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
+`format`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+(optional; default: `solr`) Controls how the synonyms will be parsed.
+The short names `solr` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser`] and `wordnet` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported.
+You may alternatively supply the name of your own {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
 
-`tokenizerFactory`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the tokenizer factory to use when parsing the synonyms file.
+`tokenizerFactory`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `WhitespaceTokenizerFactory`
+|===
++
+The name of the tokenizer factory to use when parsing the synonyms file.
 Arguments with the name prefix `tokenizerFactory.*` will be supplied as init params to the specified tokenizer factory.
 +
 Any arguments not consumed by the synonym filter factory, including those without the `tokenizerFactory.*` prefix, will also be supplied as init params to the tokenizer factory.
 +
 If `tokenizerFactory` is specified, then `analyzer` may not be, and vice versa.
 
-`analyzer`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the analyzer class to use when parsing the synonyms file.
+`analyzer`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `WhitespaceTokenizerFactory`
+|===
++
+The name of the analyzer class to use when parsing the synonyms file.
 If `analyzer` is specified, then `tokenizerFactory` may not be, and vice versa.
 
 For the following examples, assume a synonyms file named `mysynonyms.txt`:
@@ -2680,10 +3188,7 @@ Most tokenizers break tokens at whitespace, so this filter is most often used fo
 
 *Factory class:* `solr.TrimFilterFactory`
 
-*Arguments:*
-
-`updateOffsets`:: if `luceneMatchVersion` is `4.3` or earlier and `updateOffsets="true"`, trimmed tokens' start and end offsets will be updated to those of the first and last characters (plus one) remaining in the token.
-*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+*Arguments:* None
 
 *Example:*
 
@@ -2771,7 +3276,14 @@ This filter adds the token's type, as a token at the same position as the token,
 
 *Arguments:*
 
-`prefix`:: (optional) The prefix to prepend to the token's type.
+`prefix`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The prefix to prepend to the token's type.
 
 *Examples:*
 
@@ -2841,13 +3353,24 @@ This filter would allow you to pull out only e-mail addresses from text as token
 
 *Arguments:*
 
-`types`:: Defines the location of a file of types to filter.
+`types`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Defines the path to a file of types to filter.
 
-`useWhitelist`:: If *true*, the file defined in `types` should be used as include list.
-If *false*, or undefined, the file defined in `types` is used as a blacklist.
-
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
-*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`useWhitelist`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the file defined in `types` should be used as include list.
+If `false`, or undefined, the file defined in `types` is used as a blacklist.
 
 *Example:*
 
@@ -2914,28 +3437,106 @@ The rules for determining delimiters are determined as follows:
 
 *Arguments:*
 
-`generateWordParts`:: (integer, default 1) If non-zero, splits words at delimiters.
+`generateWordParts`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+If non-zero, splits words at delimiters.
 For example:"CamelCase", "hot-spot" -> "Camel", "Case", "hot", "spot"
 
-`generateNumberParts`:: (integer, default 1) If non-zero, splits numeric strings at delimiters:"1947-32" -> *"1947", "32"
+`generateNumberParts`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+If non-zero, splits numeric strings at delimiters:"1947-32" -> *"1947", "32"
 
-`splitOnCaseChange`:: (integer, default 1) If 0, words are not split on camel-case changes:"BugBlaster-XL" -> "BugBlaster", "XL". Example 1 below illustrates the default (non-zero) splitting behavior.
+`splitOnCaseChange`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+If `0`, words are not split on camel-case changes:"BugBlaster-XL" -> "BugBlaster", "XL".
+Example 1 below illustrates the default (non-zero) splitting behavior.
 
-`splitOnNumerics`:: (integer, default 1) If 0, don't split words on transitions from alpha to numeric:"FemBot3000" -> "Fem", "Bot3000"
+`splitOnNumerics`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+If `0`, don't split words on transitions from alpha to numeric:"FemBot3000" -> "Fem", "Bot3000"
 
-`catenateWords`:: (integer, default 0) If non-zero, maximal runs of word parts will be joined: "hot-spot-sensor's" -> "hotspotsensor"
+`catenateWords`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+If non-zero, maximal runs of word parts will be joined: "hot-spot-sensor's" -> "hotspotsensor"
 
-`catenateNumbers`:: (integer, default 0) If non-zero, maximal runs of number parts will be joined: 1947-32" -> "194732"
+`catenateNumbers`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+If non-zero, maximal runs of number parts will be joined: 1947-32" -> "194732"
 
-`catenateAll`:: (0/1, default 0) If non-zero, runs of word and number parts will be joined: "Zap-Master-9000" -> "ZapMaster9000"
+`catenateAll`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+If non-zero, runs of word and number parts will be joined: "Zap-Master-9000" -> "ZapMaster9000"
 
-`preserveOriginal`:: (integer, default 0) If non-zero, the original token is preserved: "Zap-Master-9000" -> "Zap-Master-9000", "Zap", "Master", "9000"
+`preserveOriginal`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+If non-zero, the original token is preserved: "Zap-Master-9000" -> "Zap-Master-9000", "Zap", "Master", "9000"
 
-`protected`:: (optional) The pathname of a file that contains a list of protected words that should be passed through without splitting.
+`protected`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The path to a file that contains a list of protected words that should be passed through without splitting.
 
-`stemEnglishPossessive`:: (integer, default 1) If 1, strips the possessive `'s` from each subword.
+`stemEnglishPossessive`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+If `1`, strips the possessive `'s` from each subword.
 
-`types`:: (optional) The pathname of a file that contains *character \=> type* mappings, which enable customization of this filter's splitting behavior.
+`types`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The path to a file that contains *character \=> type* mappings, which enable customization of this filter's splitting behavior.
 Recognized character types: `LOWER`, `UPPER`, `ALPHA`, `DIGIT`, `ALPHANUM`, and `SUBWORD_DELIM`.
 +
 The default for any character without a customized mapping is computed from Unicode character properties.
