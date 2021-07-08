@@ -19,14 +19,15 @@
 Solr allows users to control their running tasks by monitoring them, specifying tasks as cancellation enabled and allowing
 cancellation of the same.
 
-This is achieved using the task management interface. Currently, this is supported for queries.
+This is achieved using the task management interface.
+Currently, this is supported for queries.
 
 == Types of Operations
 Task management interface supports the following types of operations:
 
-1. List all currently running cancellable tasks.
-2. Cancel a specific task.
-3. Query the status of a specific task.
+. List all currently running cancellable tasks.
+. Cancel a specific task.
+. Query the status of a specific task.
 
 == Listing All Active Cancellable Tasks
 To list all the active cancellable tasks currently running, please use the following syntax:

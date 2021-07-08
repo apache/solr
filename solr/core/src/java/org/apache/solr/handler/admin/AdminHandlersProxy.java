@@ -124,8 +124,7 @@ public class AdminHandlersProxy {
     log.debug("Proxying {} request to node {}", endpoint, nodeName);
     URL baseUrl = new URL(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
+    SolrRequest<?> proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
     HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
     return new Pair<>(proxyResp.future, solr);
   }

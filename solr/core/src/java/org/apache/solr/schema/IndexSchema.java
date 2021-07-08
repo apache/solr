@@ -140,8 +140,7 @@ public class IndexSchema {
   private static final Set<String> FIELDTYPE_KEYS = ImmutableSet.of("fieldtype", "fieldType");
   private static final Set<String> FIELD_KEYS = ImmutableSet.of("dynamicField", "field");
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
+  protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache<>(10000, 8000, 9000,100, false,false, null);
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;

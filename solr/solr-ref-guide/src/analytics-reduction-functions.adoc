@@ -27,7 +27,8 @@ These can be combined using mapping functions to implement more complex function
 == Counting Reductions
 
 === Count
-The number of existing values for an expression. For single-valued expressions, this is equivalent to `docCount`.
+The number of existing values for an expression.
+For single-valued expressions, this is equivalent to `docCount`.
 If no expression is given, the number of matching documents is returned.
 
 `count()` => `< _Single Long_ >`
@@ -35,7 +36,8 @@ If no expression is given, the number of matching documents is returned.
 `count(< T >)` => `< _Single Long_ >`
 
 === Doc Count
-The number of documents for which an expression has existing values. For single-valued expressions, this is equivalent to `count`.
+The number of documents for which an expression has existing values.
+For single-valued expressions, this is equivalent to `count`.
 If no expression is given, the number of matching documents is returned.
 
 `doc_count()` => `< _Single Long_ >`
@@ -49,7 +51,8 @@ The number of documents for which an expression has no existing value.
 
 [[analytics-unique]]
 === Unique
-The number of unique values for an expression. This function accepts `Numeric`, `Date` and `String` expressions.
+The number of unique values for an expression.
+This function accepts `Numeric`, `Date` and `String` expressions.
 
 `unique(< T >)` => `< _Single Long_ >`
 
@@ -85,17 +88,20 @@ NOTE: The expressions must satisfy the rules for `mult` function parameters.
 == Ordering Reductions
 
 === Minimum
-Returns the minimum value for the expression. This function accepts `Numeric`, `Date` and `String` expressions.
+Returns the minimum value for the expression.
+This function accepts `Numeric`, `Date` and `String` expressions.
 
 `min(< T >)` => `< _Single_ T >`
 
 === Maximum
-Returns the maximum value for the expression. This function accepts `Numeric`, `Date` and `String` expressions.
+Returns the maximum value for the expression.
+This function accepts `Numeric`, `Date` and `String` expressions.
 
 `max(< T >)` => `< _Single_ T >`
 
 === Median
-Returns the median of all values for the expression. This function accepts `Numeric` and `Date` expressions.
+Returns the median of all values for the expression.
+This function accepts `Numeric` and `Date` expressions.
 
 `median(< T >)` => `< _Single_ T >`
 

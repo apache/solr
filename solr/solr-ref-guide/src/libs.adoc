@@ -32,7 +32,7 @@ There are several special places you can place Solr plugin `.jar` files:
 This directory is not present by default so create it.
 See <<taking-solr-to-production.adoc#solr-home-directory,Solr home directory>>.
 
-* `<core_instance>/lib/`: In standalone Solr, you may want to add plugins just for a specific Solr core.
+* `<core_instance>/lib/`: In a user-managed cluster or a single-node installation, you may want to add plugins just for a specific Solr core.
 Create this adjacent to the `conf/` directory; it's not present by default.
 
 * `<solr_install>/server/solr-webapp/webapp/WEB-INF/lib/`: The `.jar` files for Solr itself and it's dependencies live here.

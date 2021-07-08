@@ -16,11 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr can support extracting the user principal out of the client's certificate with the use of the CertAuthPlugin.
+Solr can support extracting the user principal out of the client's certificate with the use of the `CertAuthPlugin`.
 
 == Enable Certificate Authentication
 
-For Certificate authentication, the `security.json` file must have an `authentication` part which defines the class being used for authentication.
+For certificate authentication, the `security.json` file must have an `authentication` part which defines the class being used for authentication.
 
 An example `security.json` is shown below:
 
@@ -50,7 +50,8 @@ Authorization plugins will need to accept and handle the full subject name, for 
 CN=Solr User,OU=Engineering,O=Example Inc.,C=US
 ----
 
-A list of possible tags that can be present in the subject name is available in https://tools.ietf.org/html/rfc5280#section-4.1.2.4[RFC-5280, Section 4.1.2.4]. Values may have spaces, punctuation, and other characters.
+A list of possible tags that can be present in the subject name is available in https://tools.ietf.org/html/rfc5280#section-4.1.2.4[RFC-5280, Section 4.1.2.4].
+Values may have spaces, punctuation, and other characters.
 
 It is best practice to verify the actual contents of certificates issued by your trusted certificate authority before configuring authorization based on the contents.
 

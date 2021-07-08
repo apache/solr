@@ -17,13 +17,16 @@
 // under the License.
 
 [[top-v2-api]]
-The v2 API is a modernized self-documenting API interface covering most current Solr APIs. It is anticipated that once the v2 API reaches full coverage, and Solr-internal API usages like SolrJ and the Admin UI have been converted from the old API to the v2 API, the old API will eventually be retired.
+The v2 API is a modernized self-documenting API interface covering most current Solr APIs.
+It is anticipated that once the v2 API reaches full coverage, and Solr-internal API usages like SolrJ and the Admin UI have been converted from the old API to the v2 API, the old API will eventually be retired.
 
-For now the two API styles will coexist, and all the old APIs will continue to work without any change. You can disable all v2 API endpoints by starting your servers with this system property: `-Ddisable.v2.api=true`.
+For now the two API styles will coexist, and all the old APIs will continue to work without any change.
+You can disable all v2 API endpoints by starting your servers with this system property: `-Ddisable.v2.api=true`.
 
 The old API and the v2 API differ in three principle ways:
 
-.  Command format: The old API commands and associated parameters are provided through URL request parameters on HTTP GET requests, while in the v2 API most API commands are provided via a JSON body POST'ed to v2 API endpoints. The v2 API also supports HTTP methods GET and DELETE where appropriate.
+.  Command format: The old API commands and associated parameters are provided through URL request parameters on HTTP GET requests, while in the v2 API most API commands are provided via a JSON body POST'ed to v2 API endpoints.
+The v2 API also supports HTTP methods GET and DELETE where appropriate.
 .  Endpoint structure: The v2 API endpoint structure has been rationalized and regularized.
 .  Documentation: The v2 APIs are self-documenting: append `/_introspect` to any valid v2 API path and the API specification will be returned in JSON format.
 
@@ -59,7 +62,8 @@ To limit the introspect output to include just one particular HTTP method, add t
 
 `\http://localhost:8983/api/c/_introspect?method=POST`
 
-Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add the request parameter `command=_command-name_`.
+Most endpoints support commands provided in a body sent via POST.
+To limit the introspect output to only one command, add the request parameter `command=_command-name_`.
 
 `\http://localhost:8983/api/c/gettingstarted/_introspect?method=POST&command=modify`
 
@@ -130,7 +134,8 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
 }
 ----
 
-The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a JSON object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
+The `"commands"` section in the above example has one entry for each command supported at this endpoint.
+The key is the command name and the value is a JSON object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
 
 == Invocation Examples
 
