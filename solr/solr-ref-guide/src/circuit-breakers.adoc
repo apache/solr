@@ -27,13 +27,13 @@ If circuit breakers are enabled, requests may be rejected under the condition of
 It is up to the client to handle this error and potentially build a retrial logic as this should ideally be a transient situation.
 
 == Circuit Breaker Configurations
-All circuit breaker configurations are listed as independent `<circuitBreaker>` entries in solrconfig.xml as shown below:
+All circuit breaker configurations are listed as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown below:
 
 [source,xml]
 ----
-  <circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enable="true">
-    <int  name="threshold">75</int>
-  </circuitBreaker>
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker" enable="true">
+  <int  name="threshold">75</int>
+</circuitBreaker>
 ----
 
 Each circuit breaker can be independently enabled/disabled using the corresponding flag.
@@ -111,4 +111,3 @@ To add new circuit breakers, add the new circuit breaker's class and required pa
  <int  name="threshold">75</int>
 </circuitBreaker>
 ----
-
