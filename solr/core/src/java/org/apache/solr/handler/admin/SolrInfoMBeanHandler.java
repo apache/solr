@@ -40,7 +40,6 @@ import java.util.HashSet;
  * A request handler that provides info about all 
  * registered SolrInfoMBeans.
  */
-@SuppressWarnings("unchecked")
 public class SolrInfoMBeanHandler extends RequestHandlerBase {
 
   /**
@@ -57,6 +56,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     NamedList<NamedList<NamedList<Object>>> cats = getMBeanInfo(req);
     if(req.getParams().getBool("diff", false)) {
@@ -91,7 +91,8 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     }
     rsp.setHttpCaching(false); // never cache, no matter what init config looks like
   }
-  
+
+  @SuppressWarnings("unchecked")
   static NamedList<NamedList<NamedList<Object>>> fromXML(String content) {
     int idx = content.indexOf("<response>");
     if(idx<0) {
@@ -231,11 +232,11 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     }
     return out;
   }
-  
-  @SuppressWarnings({"rawtypes"})
+
+  @SuppressWarnings("unchecked")
   public Object diffObject(Object ref, Object now) {
     if (now instanceof Map) {
-      now = new NamedList<>((Map)now);
+      now = new NamedList<>((Map<String, ?>)now);
     }
     if(ref instanceof NamedList) {
       return diffNamedList((NamedList<?>)ref, (NamedList<?>)now);

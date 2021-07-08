@@ -3222,14 +3222,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @param decoder a decoder with which to convert the blob into a Java Object representation (first time only)
    * @return a reference to the blob that has already cached the decoded version.
    */
-  @SuppressWarnings({"rawtypes"})
-  public BlobRepository.BlobContentRef loadDecodeAndCacheBlob(String key, BlobRepository.Decoder<Object> decoder) {
+  public <T> BlobRepository.BlobContentRef<T> loadDecodeAndCacheBlob(String key, BlobRepository.Decoder<T> decoder) {
     // make sure component authors don't give us oddball keys with no version...
     if (!BlobRepository.BLOB_KEY_PATTERN_CHECKER.matcher(key).matches()) {
       throw new IllegalArgumentException("invalid key format, must end in /N where N is the version number");
     }
     // define the blob
-    BlobRepository.BlobContentRef<Object> blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
+    BlobRepository.BlobContentRef<T> blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
     addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {

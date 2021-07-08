@@ -1407,9 +1407,8 @@ public class IndexSchema {
           .map(it -> it.getNamedPropertyValues(sp.showDefaults))
           .collect(Collectors.toList())),
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
       FIELDS(IndexSchema.FIELDS, sp -> {
-        List<SimpleOrderedMap> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
+        List<SimpleOrderedMap<Object>> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
             .stream()
             .map(sp.schema::getFieldOrNull)
             .filter(it -> it != null)
@@ -1460,9 +1459,9 @@ public class IndexSchema {
       requestedFields = readMultiVals(CommonParams.FL);
 
     }
-    @SuppressWarnings({"rawtypes"})
-    public Collection applyDynamic(){
-      return (Collection) Handler.DYNAMIC_FIELDS.fun.apply(this);
+    @SuppressWarnings("unchecked")
+    public Collection<SimpleOrderedMap<Object>> applyDynamic() {
+      return (List<SimpleOrderedMap<Object>>) Handler.DYNAMIC_FIELDS.fun.apply(this);
     }
 
     private Set<String> readMultiVals(String name) {
@@ -1480,8 +1479,7 @@ public class IndexSchema {
     }
 
 
-    @SuppressWarnings({"rawtypes"})
-    SimpleOrderedMap getProperties(SchemaField sf) {
+    SimpleOrderedMap<Object> getProperties(SchemaField sf) {
       SimpleOrderedMap<Object> result = sf.getNamedPropertyValues(showDefaults);
       if (schema.isDynamicField(sf.name)) {
         String dynamicBase = schema.getDynamicPattern(sf.getName());

@@ -115,7 +115,7 @@ public class BlobRepository {
    * @param decoder a decoder that knows how to interpret the bytes from the blob
    * @return The reference of a blob
    */
-  BlobContentRef<Object> getBlobIncRef(String key, Decoder<Object> decoder) {
+  <T> BlobContentRef<T> getBlobIncRef(String key, Decoder<T> decoder) {
     return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key, decoder));
   }
 
@@ -162,10 +162,10 @@ public class BlobRepository {
   }
 
   // for use cases sharing java objects
-  private BlobContent<Object> addBlob(String key, Decoder<Object> decoder) {
+  private <T> BlobContent<T> addBlob(String key, Decoder<T> decoder) {
     ByteBuffer b = fetchBlob(key);
     String keyPlusName = key + decoder.getName();
-    BlobContent<Object> aBlob = new BlobContent<>(keyPlusName, b, decoder);
+    BlobContent<T> aBlob = new BlobContent<>(keyPlusName, b, decoder);
     blobs.put(keyPlusName, aBlob);
     return aBlob;
   }
@@ -287,13 +287,13 @@ public class BlobRepository {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static class BlobContent<T> {
     public final String key;
     private final T content; // holds byte buffer or cached object, holding both is a waste of memory
     // ref counting mechanism
-    private final Set<BlobContentRef> references = new HashSet<>();
+    private final Set<BlobContentRef<T>> references = new HashSet<>();
 
+    @SuppressWarnings("unchecked")
     public BlobContent(String key, ByteBuffer buffer, Decoder<T> decoder) {
       this.key = key;
       this.content = decoder == null ? (T) buffer : decoder.decode(new ByteBufferInputStream(buffer));

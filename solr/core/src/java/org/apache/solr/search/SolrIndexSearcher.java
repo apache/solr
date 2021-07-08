@@ -98,10 +98,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  @SuppressWarnings({"rawtypes"})
-  private static final Map<String,SolrCache> NO_GENERIC_CACHES = Collections.emptyMap();
-  @SuppressWarnings({"rawtypes"})
-  private static final SolrCache[] NO_CACHES = new SolrCache[0];
+  private static final Map<String,SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
+  private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -125,8 +123,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
-  @SuppressWarnings({"rawtypes"})
-  private final Map<String,SolrCache> cacheMap;
+  private final Map<String,SolrCache<?, ?>> cacheMap;
 
   // list of all caches associated with this searcher.
   @SuppressWarnings({"rawtypes"})
@@ -307,7 +304,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String,CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          SolrCache cache = e.getValue().newInstance();
+          SolrCache<?, ?> cache = e.getValue().newInstance();
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);

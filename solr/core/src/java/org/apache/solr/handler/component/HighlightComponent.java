@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -280,9 +281,9 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     return hl;
   }
 
-  @SuppressWarnings({"rawtypes"})
   protected Object[] newHighlightsArray(int size) {
-    return new NamedList.NamedListEntry[size];
+    // Curious why this doesn't trigger an unchecked cast, but maybe the compiler is smart enough to know
+    return (Object[]) Array.newInstance(NamedList.NamedListEntry.class, size);
   }
 
   protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {

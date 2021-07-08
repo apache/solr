@@ -176,13 +176,14 @@ public class ContainerPluginsApi {
     }
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
   private void persistPlugins(Function<Map<String,Object>, Map<String,Object>> modifier) throws IOException {
     try {
       zkClientSupplier.get().atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
-        Map rawJson = bytes == null ? new LinkedHashMap<>() :
-            (Map) Utils.fromJSON(bytes);
-        Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> rawJson = bytes == null ? new LinkedHashMap<>() :
+            (Map<String, Object>) Utils.fromJSON(bytes);
+        @SuppressWarnings("unchecked")
+        Map<?, ?> pluginsModified = modifier.apply((Map<String, Object>) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
         if (pluginsModified == null) return null;
         rawJson.put(PLUGIN, pluginsModified);
         return Utils.toJSON(rawJson);

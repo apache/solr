@@ -84,7 +84,7 @@ public class JsonLoader extends ContentStreamLoader {
     new SingleThreadedJsonLoader(req, rsp, processor).load(req, rsp, stream, processor);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   public static SolrInputDocument buildDoc(Map<String, Object> m) {
     SolrInputDocument result = new SolrInputDocument();
     for (Map.Entry<String, Object> e : m.entrySet()) {
@@ -97,11 +97,11 @@ public class JsonLoader extends ContentStreamLoader {
               if(!result.containsKey(e.getKey())) {
                 result.setField(e.getKey(), new ArrayList<>(1));
               }
-              result.addField(e.getKey(), buildDoc((Map) o));
+              result.addField(e.getKey(), buildDoc((Map<String, Object>) o));
             }
           }
         } else if (e.getValue() instanceof Map) {
-          result.addField(e.getKey(), buildDoc((Map) e.getValue()));
+          result.addField(e.getKey(), buildDoc((Map<String, Object>) e.getValue()));
         }
       } else {
         result.setField(e.getKey(), e.getValue());
@@ -281,12 +281,11 @@ public class JsonLoader extends ContentStreamLoader {
       });
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private Map<String, Object> getDocMap(Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
-      Map result = record;
+      Map<String, Object> result = record;
       if (srcField != null && parser instanceof RecordingJSONParser) {
         //if srcFIeld specified extract it out first
-        result = new LinkedHashMap(record);
+        result = new LinkedHashMap<>(record);
         RecordingJSONParser rjp = (RecordingJSONParser) parser;
         result.put(srcField, rjp.getBuf());
         rjp.resetBuf();
@@ -297,7 +296,7 @@ public class JsonLoader extends ContentStreamLoader {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No uniqueKey specified in schema");
         String df = req.getParams().get(CommonParams.DF);
         if (df == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No 'df' specified in request");
-        Map copy = new LinkedHashMap();
+        Map<String, Object> copy = new LinkedHashMap<>();
         String uniqueField = (String) record.get(sf.getName());
         if (uniqueField == null) uniqueField = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
         copy.put(sf.getName(), uniqueField);
