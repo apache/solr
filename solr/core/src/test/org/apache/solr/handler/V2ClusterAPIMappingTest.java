@@ -50,7 +50,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for the v2->v1 API mappings found in {@link ClusterAPI}
+ * Unit tests for the v2 to v1 API mappings found in {@link ClusterAPI}
  */
 public class V2ClusterAPIMappingTest {
   private ApiBag apiBag;
