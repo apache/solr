@@ -19,20 +19,14 @@ package org.apache.solr.search;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
@@ -56,6 +50,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -76,6 +71,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.UnInvertedField;
+import org.apache.solr.search.join.GraphQuery;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
@@ -1509,7 +1505,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int last = len;
     if (last < 0 || last > maxDoc()) last = maxDoc();
     final int lastDocRequested = last;
-    int nDocsReturned;
+    int nDocsReturned = 0;
     int totalHits;
     float maxScore;
     int[] ids;
@@ -1565,7 +1561,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
-      nDocsReturned = 0;
       ids = new int[nDocsReturned];
       scores = new float[nDocsReturned];
       totalHits = numHits[0];
@@ -1574,29 +1569,67 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
       hitsRelation = Relation.EQUAL_TO;
     } else {
+      log.info("calling from 2, query: "+query.getClass()); // nocommit
+      MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();
+      query.visit(allowMT);
+      TopDocs topDocs;
+      if (pf.postFilter != null || cmd.getSegmentTerminateEarly() || cmd.getTimeAllowed() > 0
+              || !allowMT.allowed()) {
+        log.debug("skipping collector manager");
       final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
       MaxScoreCollector maxScoreCollector = null;
       Collector collector = topCollector;
-      if ((cmd.getFlags() & GET_SCORES) != 0) {
+      if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         collector = MultiCollector.wrap(topCollector, maxScoreCollector);
       }
       ScoreMode scoreModeUsed = buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
 
       totalHits = topCollector.getTotalHits();
-      TopDocs topDocs = topCollector.topDocs(0, len);
+      topDocs = topCollector.topDocs(0, len);
       if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
         hitsRelation = TotalHits.Relation.EQUAL_TO;
       } else {
         hitsRelation = topDocs.totalHits.relation;
       }
-      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+      if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && needScores) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
       maxScore = totalHits > 0 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore()) : 0.0f;
       nDocsReturned = topDocs.scoreDocs.length;
+
+      } else {
+        log.info("using CollectorManager");
+        SearchResult searchResult = searchCollectorManagers(len, cmd, query, true, needScores, false);
+        Object[] res = searchResult.result;
+        TopDocsResult result = (TopDocsResult) res[0];
+
+        totalHits = result.totalHits;
+        topDocs = result.topDocs;
+
+        if (res.length > 1) {
+          MaxScoreResult result2 = (MaxScoreResult) res[1];
+          maxScore = totalHits > 0 ? result2.maxScore : 0.0f;
+        } else {
+          maxScore = Float.NaN;
+        }
+
+        populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
+        if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && needScores) {
+          TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+        }
+        nDocsReturned = topDocs.scoreDocs.length;
+        ScoreMode scoreModeUsed = searchResult.scoreMode;
+        if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
+          hitsRelation = TotalHits.Relation.EQUAL_TO;
+        } else {
+          hitsRelation = topDocs.totalHits.relation;
+        }
+
+      }
+
       ids = new int[nDocsReturned];
       scores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
       for (int i = 0; i < nDocsReturned; i++) {
@@ -1611,6 +1644,161 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, hitsRelation));
   }
 
+  SearchResult searchCollectorManagers(int len, QueryCommand cmd, Query query,
+                                   boolean needTopDocs, boolean needMaxScore, boolean needDocSet) throws IOException {
+    Collection<CollectorManager<Collector, Object>> collectors = new ArrayList<>();
+    final ScoreMode[] scoreMode = {null};
+    if (needTopDocs) collectors.add(new CollectorManager<>() {
+      @Override
+      public Collector newCollector() throws IOException {
+        @SuppressWarnings("rawtypes")
+        TopDocsCollector collector = buildTopDocsCollector(len, cmd);
+        if (scoreMode[0] == null) {
+          scoreMode[0] = collector.scoreMode();
+        } else if (scoreMode[0] != collector.scoreMode()) {
+          scoreMode[0] = ScoreMode.COMPLETE;;
+        }
+        return collector;
+      }
+
+      @Override
+      @SuppressWarnings("rawtypes")
+      public Object reduce(Collection collectors) throws IOException {
+
+        TopDocs[] topDocs = new TopDocs[collectors.size()];
+
+        int totalHits = -1;
+        int i = 0;
+
+        Collector collector;
+        for (Object o : collectors) {
+          collector = (Collector) o;
+          if (collector instanceof TopDocsCollector) {
+            TopDocs td = ((TopDocsCollector) collector).topDocs(0, len);
+            assert td != null : Arrays.asList(topDocs);
+            topDocs[i++] = td;
+          }
+        }
+
+        TopDocs mergedTopDocs = null;
+
+        if (topDocs.length > 0 && topDocs[0] != null) {
+          if (topDocs[0] instanceof TopFieldDocs) {
+            TopFieldDocs[] topFieldDocs = Arrays.copyOf(topDocs, topDocs.length, TopFieldDocs[].class);
+            mergedTopDocs = TopFieldDocs.merge(weightSort(cmd.getSort()), len, topFieldDocs);
+          } else {
+            mergedTopDocs = TopDocs.merge(0, len, topDocs);
+          }
+          totalHits = (int) mergedTopDocs.totalHits.value;
+        }
+        return new TopDocsResult(mergedTopDocs, totalHits);
+      }
+    });
+    if (needMaxScore) collectors.add(new CollectorManager<>() {
+      @Override
+      public Collector newCollector() throws IOException {
+        MaxScoreCollector collector = new MaxScoreCollector();
+        if (scoreMode[0] == null) {
+          scoreMode[0] = collector.scoreMode();
+        } else if (scoreMode[0] != collector.scoreMode()) {
+          scoreMode[0] = ScoreMode.COMPLETE;;
+        }
+        return collector;
+      }
+
+      @Override
+      @SuppressWarnings("rawtypes")
+      public Object reduce(Collection collectors) throws IOException {
+
+        MaxScoreCollector collector;
+        float maxScore = 0.0f;
+        for (Iterator var4 = collectors.iterator(); var4.hasNext(); maxScore = Math.max(maxScore, collector.getMaxScore())) {
+          collector = (MaxScoreCollector) var4.next();
+        }
+
+        return new MaxScoreResult(maxScore);
+      }
+    });
+    if (needDocSet) collectors.add(new CollectorManager<>() {
+      @Override
+      public Collector newCollector() throws IOException {
+        DocSetCollector collector = new DocSetCollector(maxDoc());
+        if (scoreMode[0] == null) {
+          scoreMode[0] = collector.scoreMode();
+        } else if (scoreMode[0] != collector.scoreMode()) {
+          scoreMode[0] = ScoreMode.COMPLETE;;
+        }
+        return collector;
+      }
+
+      @Override
+      @SuppressWarnings({"rawtypes"})
+      public Object reduce(Collection collectors) throws IOException {
+        DocSet docSet = new BitDocSet(new FixedBitSet(maxDoc()));
+        for (Object o : collectors) {
+          DocSetCollector collector = (DocSetCollector) o;
+          docSet = docSet.union(collector.getDocSet());
+        }
+
+        return new DocSetResult(docSet);
+      }
+    });
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
+    SolrMultiCollectorManager manager = new SolrMultiCollectorManager(colls);
+    Object[] ret;
+    try {
+      ret = super.search(query, manager);
+    } catch (Exception ex) {
+      if (ex instanceof RuntimeException &&
+              ex.getCause() != null & ex.getCause() instanceof ExecutionException
+              && ex.getCause().getCause() != null && ex.getCause().getCause() instanceof RuntimeException) {
+        throw (RuntimeException) ex.getCause().getCause();
+      } else {
+        throw ex;
+      }
+    }
+   
+    
+    return new SearchResult(scoreMode, ret);
+  }
+
+  static class TopDocsResult {
+    final TopDocs topDocs;
+    final int totalHits;
+
+    public TopDocsResult(TopDocs topDocs, int totalHits) {
+      this.topDocs = topDocs;
+      this.totalHits = totalHits;
+    }
+  }
+
+  static class MaxScoreResult {
+    final float maxScore;
+
+    public MaxScoreResult(float maxScore) {
+      this.maxScore = maxScore;
+    }
+  }
+
+  static class DocSetResult {
+    final DocSet docSet;
+
+    public DocSetResult(DocSet docSet) {
+      this.docSet = docSet;
+    }
+  }
+
+  static class SearchResult {
+    final Object[] result;
+    final ScoreMode scoreMode;
+
+    public SearchResult(ScoreMode[] scoreMode, Object[] result) {
+      this.scoreMode = scoreMode[0];
+      this.result = result;
+    }
+  }
+  
   // any DocSet returned is for the query only, without any filtering... that way it may
   // be cached if desired.
   private DocSet getDocListAndSetNC(QueryResult qr, QueryCommand cmd) throws IOException {
@@ -1620,10 +1808,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final int lastDocRequested = last;
     int nDocsReturned;
     int totalHits;
-    float maxScore;
+    float maxScore = Float.NaN;
     int[] ids;
     float[] scores;
-    DocSet set;
+    DocSet set = null;
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     int maxDoc = maxDoc();
@@ -1678,6 +1866,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
+      MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();
+      query.visit(allowMT);
+      TopDocs topDocs;
+      if (pf.postFilter != null || cmd.getSegmentTerminateEarly() || cmd.getTimeAllowed() > 0
+              || !allowMT.allowed()) {
       @SuppressWarnings({"rawtypes"})
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
       DocSetCollector setCollector = new DocSetCollector(maxDoc);
@@ -1698,12 +1891,51 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       totalHits = topCollector.getTotalHits();
       assert (totalHits == set.size()) || qr.isPartialResults();
 
-      TopDocs topDocs = topCollector.topDocs(0, len);
-      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+      topDocs = topCollector.topDocs(0, len);
+      if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
       maxScore = totalHits > 0 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore()) : 0.0f;
+
+      } else {
+        log.debug("using CollectorManager");
+
+        boolean needMaxScore = (cmd.getFlags() & GET_SCORES) != 0;
+        SearchResult searchResult = searchCollectorManagers(len, cmd, query, true, needMaxScore, true);
+        Object[] res = searchResult.result;
+        TopDocsResult result = (TopDocsResult) res[0];
+        totalHits = result.totalHits;
+        topDocs = result.topDocs;
+        if (needMaxScore) {
+          if (res.length > 1) {
+            MaxScoreResult result2 = (MaxScoreResult) res[1];
+            maxScore = totalHits > 0 ? result2.maxScore : 0.0f;
+          }
+          if (res.length > 2) {
+            DocSetResult result3 = (DocSetResult) res[2];
+            set = result3.docSet;
+          }
+        } else {
+          if (res.length > 1) {
+            DocSetResult result2 = (DocSetResult) res[1];
+            set = result2.docSet;
+          }
+        }
+
+        populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
+//        if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && (cmd.getFlags() & GET_SCORES) != 0) {
+//          TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+//        }
+       // nDocsReturned = topDocs.scoreDocs.length;
+        //TODO: Is this correct?
+        //hitsRelation = topDocs.totalHits.relation;
+        //   } else {
+        //    hitsRelation = Relation.EQUAL_TO;
+        //   }
+
+      }
+
       nDocsReturned = topDocs.scoreDocs.length;
 
       ids = new int[nDocsReturned];
@@ -1997,7 +2229,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     // bit of a hack to tell if a set is sorted - do it better in the future.
-    boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
+    // boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
 
     @SuppressWarnings({"rawtypes"})
     TopDocsCollector topCollector = buildTopDocsCollector(nDocs, cmd);
@@ -2305,6 +2537,47 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public long getWarmupTime() {
     return warmupTime;
+  }
+
+  private static class MTCollectorQueryCheck extends QueryVisitor {
+
+    private QueryVisitor subVisitor = this;
+
+    private boolean allowMt(Query query) {
+      if (query instanceof RankQuery || query instanceof GraphQuery || query instanceof JoinQuery) {
+        return false;
+      }
+      return true;
+    }
+
+    public void consumeTerms(Query query, Term... terms) {
+      if (!allowMt(query)) {
+        subVisitor = EMPTY_VISITOR;
+      }
+    }
+
+    public void consumeTermsMatching(
+            Query query, String field, Supplier<ByteRunAutomaton> automaton) {
+      if (!allowMt(query)) {
+        subVisitor = EMPTY_VISITOR;
+      } else {
+        super.consumeTermsMatching(query, field, automaton);
+      }
+    }
+
+    public void visitLeaf(Query query) {
+      if (!allowMt(query)) {
+        subVisitor = EMPTY_VISITOR;
+      }
+    }
+
+    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+      return subVisitor;
+    }
+
+    public boolean allowed() {
+      return subVisitor != EMPTY_VISITOR;
+    }
   }
 
 }

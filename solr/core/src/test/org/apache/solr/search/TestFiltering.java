@@ -24,6 +24,7 @@ import java.util.Locale;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -77,7 +78,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
         if (live == null) {
           live = searcher.getLiveDocSet();
         }
-        assertTrue( set == live);
+        assertTrue( set.equals(live) );
 
         QueryCommand cmd = new QueryCommand();
         cmd.setQuery( QParser.getParser(qstr, null, req).getQuery() );
@@ -86,19 +87,31 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue( set == live );
+        // System.out.println("Live: "+bitsString(live.getFixedBitSet()));
+        // System.out.println("Set: "+bitsString(set.getFixedBitSet()));
+        FixedBitSet xor = live.getFixedBitSet().clone();
+        xor.xor(set.getFixedBitSet());
+        // System.out.println("xor: "+bitsString(xor));
+        assertTrue(set.equals(live));
 
         cmd.setQuery( QParser.getParser(qstr + " OR id:0", null, req).getQuery() );
         cmd.setFilterList( QParser.getParser(qstr + " OR id:1", null, req).getQuery() );
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue( set == live );
+        assertTrue(set.equals(live));
       }
 
     } finally {
       req.close();
     }
+  }
+
+  private String bitsString(Bits bits) {
+    StringBuilder s = new StringBuilder();
+    for (int i=0; i<bits.length(); i++)
+      s.append(bits.get(i) ? 1 : 0);
+    return s.toString();
   }
 
     public void testCaching() throws Exception {

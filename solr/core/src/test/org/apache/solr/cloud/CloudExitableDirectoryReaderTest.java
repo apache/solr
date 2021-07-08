@@ -295,7 +295,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   }
 
   public void assertNo500s(String msg) {
-    assertTrue(msg,fiveHundredsByNode.values().stream().allMatch((m)->m.getCount()==0));
+    assertTrue(msg + fiveHundredsByNode, fiveHundredsByNode.values().stream().allMatch((m)->m.getCount()==0));
   }
   
   /**
