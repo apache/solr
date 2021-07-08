@@ -14,27 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
-
-import org.apache.solr.blob.backup.BlobBackupRepository;
-
-import java.io.IOException;
+package org.apache.solr.s3;
 
 /**
- * Generic exception for blob-related failures. Could originate from the
- * {@link BlobBackupRepository} or from its underlying {@link BlobStorageClient}.
+ * Specific exception thrown from {@link S3StorageClient}s when the resource requested is not found (e.g., attempting
+ * to fetch a key in S3 that doesn't exist).
  */
-public class BlobException extends IOException {
+public class S3NotFoundException extends S3Exception {
 
-    public BlobException(Throwable cause) {
+    public S3NotFoundException(Throwable cause) {
         super(cause);
     }
 
-    public BlobException(String message) {
+    public S3NotFoundException(String message) {
         super(message);
     }
 
-    public BlobException(String message, Throwable cause) {
+    public S3NotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 }

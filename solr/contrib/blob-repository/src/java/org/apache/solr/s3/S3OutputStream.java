@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
+package org.apache.solr.s3;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.event.ProgressEvent;
@@ -131,7 +131,7 @@ public class S3OutputStream extends OutputStream {
                     log.debug("Multipart upload aborted for bucketName '{}' key '{}'.", bucketName, key);
                 }
             }
-            throw new BlobException("Part upload failed: ", e);
+            throw new S3Exception("Part upload failed: ", e);
         }
 
         // reset the buffer for eventual next write operation

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
+package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.amazonaws.services.s3.AmazonS3;

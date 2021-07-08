@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.backup;
+package org.apache.solr.s3;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Test for reading files from S3 'the Solr way'.
  */
-public class BlobIndexInputTest extends SolrTestCaseJ4 {
+public class S3IndexInputTest extends SolrTestCaseJ4 {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -57,10 +57,10 @@ public class BlobIndexInputTest extends SolrTestCaseJ4 {
     @Test
     public void testPartialReadBigSlice() throws IOException {
         // Large text, be sure we can't read in a single I/O call
-        int length = BlobIndexInput.LOCAL_BUFFER_SIZE * 10 + 5;
+        int length = S3IndexInput.LOCAL_BUFFER_SIZE * 10 + 5;
         String content = RandomStringUtils.randomAscii(length);
 
-        int slice = BlobIndexInput.LOCAL_BUFFER_SIZE * 2;
+        int slice = S3IndexInput.LOCAL_BUFFER_SIZE * 2;
         doTestPartialRead(false, content, slice);
         doTestPartialRead(true, content, slice);
     }
@@ -72,7 +72,7 @@ public class BlobIndexInputTest extends SolrTestCaseJ4 {
         FileUtils.write(file, content, StandardCharsets.UTF_8);
 
         SliceInputStream slicedStream = new SliceInputStream(new FileInputStream(file), slice);
-        BlobIndexInput input = new BlobIndexInput(slicedStream, "path", file.length());
+        S3IndexInput input = new S3IndexInput(slicedStream, "path", file.length());
 
         // Now read the file
         ByteBuffer buffer;
@@ -94,7 +94,7 @@ public class BlobIndexInputTest extends SolrTestCaseJ4 {
         int expectedReadCount;
         if (directBuffer) {
             // For direct buffer, we may be caped by internal buffer if it's smaller than the size defined by the test
-            expectedReadCount = content.length() / Math.min(slice, BlobIndexInput.LOCAL_BUFFER_SIZE ) + 1;
+            expectedReadCount = content.length() / Math.min(slice, S3IndexInput.LOCAL_BUFFER_SIZE ) + 1;
         }  else {
             expectedReadCount = content.length() / slice + 1;
         }

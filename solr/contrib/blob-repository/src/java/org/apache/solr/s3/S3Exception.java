@@ -14,8 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.s3;
+
+import java.io.IOException;
 
 /**
- * Solr blob backup repository
+ * Generic exception for blob-related failures. Could originate from the
+ * {@link S3BackupRepository} or from its underlying {@link S3StorageClient}.
  */
-package org.apache.solr.blob.backup;
+public class S3Exception extends IOException {
+
+    public S3Exception(Throwable cause) {
+        super(cause);
+    }
+
+    public S3Exception(String message) {
+        super(message);
+    }
+
+    public S3Exception(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

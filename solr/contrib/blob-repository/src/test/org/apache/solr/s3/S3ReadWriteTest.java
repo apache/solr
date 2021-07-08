@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
+package org.apache.solr.s3;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
@@ -45,8 +45,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
      */
     @Test
     public void testWriteNoPath() {
-
-        assertThrows(BlobException.class, () -> pushContent("/", "empty path"));
+        assertThrows(S3Exception.class, () -> pushContent("/", "empty path"));
     }
 
     /**
@@ -54,8 +53,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
      */
     @Test
     public void testReadNoPath() {
-
-        assertThrows(BlobException.class, () -> client.pullStream("/"));
+        assertThrows(S3Exception.class, () -> client.pullStream("/"));
     }
 
     /**
@@ -88,7 +86,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
 
         client.createDirectory("/directory");
 
-        BlobException exception = assertThrows(BlobException.class, () -> client.length("/directory"));
+        S3Exception exception = assertThrows(S3Exception.class, () -> client.length("/directory"));
         assertEquals("Path is Directory", exception.getMessage());
     }
 
@@ -97,8 +95,8 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
      */
     @Test
     public void testNotFound() {
-        assertThrows(BlobNotFoundException.class, () -> client.pullStream("/not-found"));
-        assertThrows(BlobNotFoundException.class, () -> client.length("/not-found"));
-        assertThrows(BlobNotFoundException.class, () -> client.delete(Collections.singleton("/not-found")));
+        assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
+        assertThrows(S3NotFoundException.class, () -> client.length("/not-found"));
+        assertThrows(S3NotFoundException.class, () -> client.delete(Collections.singleton("/not-found")));
     }
 }

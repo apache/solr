@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
+package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.amazonaws.services.s3.AmazonS3;
@@ -41,7 +41,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
             .withInitialBuckets(BUCKET_NAME)
             .build();
 
-    BlobStorageClient client;
+    S3StorageClient client;
 
     @Before
     public void setUpClient() {
@@ -60,14 +60,14 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
      * @param path    Destination path in blob store.
      * @param content Arbitrary content for the test.
      */
-    void pushContent(String path, String content) throws BlobException {
+    void pushContent(String path, String content) throws S3Exception {
 
         OutputStream output = client.pushStream(path);
         try {
             IOUtils.write(content, output, Charset.defaultCharset());
             output.close();
         } catch (IOException e) {
-            throw new BlobException(e);
+            throw new S3Exception(e);
         }
     }
 }

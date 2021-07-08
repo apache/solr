@@ -14,23 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
 
 /**
- * Specific exception thrown from {@link BlobStorageClient}s when the resource requested is not found (e.g., attempting
- * to fetch a key in S3 that doesn't exist).
+ * Solr S3 backup repository
  */
-public class BlobNotFoundException extends BlobException {
-
-    public BlobNotFoundException(Throwable cause) {
-        super(cause);
-    }
-
-    public BlobNotFoundException(String message) {
-        super(message);
-    }
-
-    public BlobNotFoundException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
+package org.apache.solr.s3;

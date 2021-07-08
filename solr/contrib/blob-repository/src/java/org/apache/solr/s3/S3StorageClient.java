@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob.client;
+package org.apache.solr.s3;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
@@ -34,6 +34,7 @@ import org.apache.commons.io.input.ClosedInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
@@ -42,13 +43,15 @@ import java.util.stream.Collectors;
 
 
 /**
- * Creates a {@link BlobStorageClient} for communicating with AWS S3. Utilizes the default credential provider chain;
+ * Creates a {@link AmazonS3} for communicating with AWS S3. Utilizes the default credential provider chain;
  * reference <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">AWS SDK docs</a> for
  * details on where this client will fetch credentials from, and the order of precedence.
  */
-public class S3StorageClient implements BlobStorageClient {
+class S3StorageClient {
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    static final String BLOB_FILE_PATH_DELIMITER = "/";
 
     // S3 has a hard limit of 1000 keys per batch delete request
     private static final int MAX_KEYS_PER_BATCH_DELETE = 1000;
@@ -66,7 +69,7 @@ public class S3StorageClient implements BlobStorageClient {
      */
     private final String bucketName;
 
-    public S3StorageClient(String bucketName, String region, String proxyHost, int proxyPort) {
+    S3StorageClient(String bucketName, String region, String proxyHost, int proxyPort) {
         this(createInternalClient(region, proxyHost, proxyPort), bucketName);
     }
 
@@ -99,12 +102,11 @@ public class S3StorageClient implements BlobStorageClient {
     }
 
     /**
-     * Create Directory in Blob Store
+     * Create Directory in S3 Blob Store.
      *
-     * @param path         Directory Path in Blob Store
+     * @param path Directory Path in Blob Store.
      */
-    @Override
-    public void createDirectory(String path) throws BlobException {
+    void createDirectory(String path) throws S3Exception {
         path = sanitizedPath(path, false);
 
         if (!parentDirectoryExist(path)) {
@@ -129,10 +131,12 @@ public class S3StorageClient implements BlobStorageClient {
     }
 
     /**
-     * Delete files in Blob Store. Deletion order is not guaranteed.
+     /**
+     * Delete files from S3 Blob Store. Deletion order is not guaranteed.
+     *
+     * @param paths Paths to files or blobs.
      */
-    @Override
-    public void delete(Collection<String> paths) throws BlobException {
+    void delete(Collection<String> paths) throws S3Exception {
         Set<String> entries = new HashSet<>();
         for (String path : paths) {
             entries.add(sanitizedPath(path, true));
@@ -141,8 +145,12 @@ public class S3StorageClient implements BlobStorageClient {
         deleteBlobs(entries);
     }
 
-    @Override
-    public void deleteDirectory(String path) throws BlobException {
+    /**
+     * Delete directory, all the files and sub-directories from S3.
+     *
+     * @param path Path to directory in S3.
+     */
+    void deleteDirectory(String path) throws S3Exception {
         path = sanitizedPath(path, false);
 
         List<String> entries = new ArrayList<>();
@@ -155,13 +163,12 @@ public class S3StorageClient implements BlobStorageClient {
     }
 
     /**
-     * List all the Files and Sub directories in Path
+     * List all the files and sub-directories directly under given path.
      *
-     * @param path Path to Directory in Blob Store
-     * @return Files and Sub directories in Path
+     * @param path Path to directory in S3.
+     * @return Files and sub-directories in path.
      */
-    @Override
-    public String[] listDir(String path) throws BlobException {
+    String[] listDir(String path) throws S3Exception {
         path = sanitizedPath(path, false);
 
         String prefix = path.equals("/") ? path : path + BLOB_FILE_PATH_DELIMITER;
@@ -197,13 +204,12 @@ public class S3StorageClient implements BlobStorageClient {
     }
 
     /**
-     * Check if path exists
+     * Check if path exists.
      *
-     * @param path to File/Directory in Blob Store
-     * @return true if path exists otherwise false
+     * @param path to File/Directory in S3.
+     * @return true if path exists, otherwise false?
      */
-    @Override
-    public boolean pathExists(String path) throws BlobException {
+    boolean pathExists(String path) throws S3Exception {
         path = sanitizedPath(path, false);
 
         // for root return true
@@ -219,13 +225,12 @@ public class S3StorageClient implements BlobStorageClient {
     }
 
     /**
-     * Check if path is directory
+     * Check if path is directory.
      *
-     * @param path to File/Directory in Blob Store
-     * @return true if path is directory otherwise false
+     * @param path to File/Directory in S3.
+     * @return true if path is directory, otherwise false.
      */
-    @Override
-    public boolean isDirectory(String path) throws BlobException {
+    boolean isDirectory(String path) throws S3Exception {
         path = sanitizedPath(path, false);
 
         try {
@@ -239,13 +244,12 @@ public class S3StorageClient implements BlobStorageClient {
     }
 
     /**
-     * Get length of File in Bytes
+     * Get length of file in bytes.
      *
-     * @param path to File in Blob Store
-     * @return length of File
+     * @param path to file in S3.
+     * @return length of file.
      */
-    @Override
-    public long length(String path) throws BlobException {
+    long length(String path) throws S3Exception {
         path = sanitizedPath(path, true);
         try {
             ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
@@ -254,20 +258,19 @@ public class S3StorageClient implements BlobStorageClient {
             if (Strings.isNullOrEmpty(blobDirHeaderVal) || !blobDirHeaderVal.equalsIgnoreCase("true")) {
                 return objectMetadata.getContentLength();
             }
-            throw new BlobException("Path is Directory");
+            throw new S3Exception("Path is Directory");
         } catch (AmazonClientException ase) {
             throw handleAmazonException(ase);
         }
     }
 
     /**
-     * Get InputStream of File for Read
+     * Open a new {@link InputStream} to file for read. Caller needs to close the stream.
      *
-     * @param path to File in Blob Store
-     * @return InputStream for File
+     * @param path to file in S3.
+     * @return InputStream for file.
      */
-    @Override
-    public InputStream pullStream(String path) throws BlobException {
+    InputStream pullStream(String path) throws S3Exception {
         path = sanitizedPath(path, true);
 
         try {
@@ -280,17 +283,16 @@ public class S3StorageClient implements BlobStorageClient {
     }
 
     /**
-     * Get OutputStream of File for Write. Caller needs to close the stream
+     * Open a new {@link OutputStream} to file for write. Caller needs to close the stream.
      *
-     * @param path         to File in Blob Store
-     * @return OutputStream for File
+     * @param path to file in S3.
+     * @return OutputStream for file.
      */
-    @Override
-    public OutputStream pushStream(String path) throws BlobException {
+    OutputStream pushStream(String path) throws S3Exception {
         path = sanitizedPath(path, true);
 
         if (!parentDirectoryExist(path)) {
-            throw new BlobException("Parent directory doesn't exist");
+            throw new S3Exception("Parent directory doesn't exist");
         }
 
         try {
@@ -300,12 +302,10 @@ public class S3StorageClient implements BlobStorageClient {
         }
     }
 
-    public BlobstoreProviderType getStorageProvider() {
-        return BlobstoreProviderType.S3;
-    }
-
-    @Override
-    public void close() {
+    /**
+     * Override {@link Closeable} since we throw no exception.
+     */
+    void close() {
         s3Client.shutdown();
     }
 
@@ -314,21 +314,21 @@ public class S3StorageClient implements BlobStorageClient {
      *
      * @param entries collection of blob file keys to the files to be deleted.
      **/
-    private void deleteBlobs(Collection<String> entries) throws BlobException {
+    private void deleteBlobs(Collection<String> entries) throws S3Exception {
         Collection<String> deletedPaths = deleteObjects(entries);
 
         // If we haven't deleted all requested objects, assume that's because some were missing
         if (entries.size() != deletedPaths.size()) {
             Set<String> notDeletedPaths = new HashSet<>(entries);
             entries.removeAll(deletedPaths);
-            throw new BlobNotFoundException(notDeletedPaths.toString());
+            throw new S3NotFoundException(notDeletedPaths.toString());
         }
     }
 
     /**
      *  Any blob file path that specifies a non-existent blob file will not be treated as an error.
      */
-    private Collection<String> deleteObjects(Collection<String> paths) throws BlobException {
+    private Collection<String> deleteObjects(Collection<String> paths) throws S3Exception {
         try {
             /*
              * Per the S3 docs:
@@ -369,7 +369,7 @@ public class S3StorageClient implements BlobStorageClient {
         return new DeleteObjectsRequest(bucketName).withKeys(keysToDelete);
     }
 
-    private List<String> listAll(String path) throws BlobException {
+    private List<String> listAll(String path) throws S3Exception {
         String prefix = path + BLOB_FILE_PATH_DELIMITER;
         ListObjectsRequest listRequest = new ListObjectsRequest()
             .withBucketName(bucketName)
@@ -403,7 +403,7 @@ public class S3StorageClient implements BlobStorageClient {
     /**
      * Assumes the path does not end in a trailing slash
      */
-    private boolean parentDirectoryExist(String path) throws BlobException {
+    private boolean parentDirectoryExist(String path) throws S3Exception {
         if (!path.contains(BLOB_FILE_PATH_DELIMITER)) {
             // Should only happen in S3Mock cases; otherwise we validate that all paths start with '/'
             return true;
@@ -425,7 +425,7 @@ public class S3StorageClient implements BlobStorageClient {
      * -If it's a file, throw an error if it ends with a trailing slash
      * -Else, silently trim the trailing slash
      */
-    String sanitizedPath(String path, boolean isFile) throws BlobException {
+    String sanitizedPath(String path, boolean isFile) throws S3Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
 
         // Trim space from start and end
@@ -433,11 +433,11 @@ public class S3StorageClient implements BlobStorageClient {
 
         // Path should start with file delimiter
         if (!sanitizedPath.startsWith(BLOB_FILE_PATH_DELIMITER)) {
-            throw new BlobException("Invalid Path. Path needs to start with '/'");
+            throw new S3Exception("Invalid Path. Path needs to start with '/'");
         }
 
         if (isFile && sanitizedPath.endsWith(BLOB_FILE_PATH_DELIMITER)) {
-            throw new BlobException("Invalid Path. Path for file can't end with '/'");
+            throw new S3Exception("Invalid Path. Path for file can't end with '/'");
         }
 
         // Trim file delimiter from end
@@ -452,7 +452,7 @@ public class S3StorageClient implements BlobStorageClient {
      * Best effort to handle Amazon exceptions as checked exceptions. Amazon exception are all subclasses
      * of {@link RuntimeException} so some may still be uncaught and propagated.
      */
-    static BlobException handleAmazonException(AmazonClientException ace) {
+    static S3Exception handleAmazonException(AmazonClientException ace) {
 
         if (ace instanceof AmazonServiceException) {
             AmazonServiceException ase = (AmazonServiceException)ace;
@@ -464,12 +464,12 @@ public class S3StorageClient implements BlobStorageClient {
             log.error(errMessage);
 
             if (ase.getStatusCode() == 404 && NOT_FOUND_CODES.contains(ase.getErrorCode())) {
-                return new BlobNotFoundException(errMessage, ase);
+                return new S3NotFoundException(errMessage, ase);
             } else {
-                return new BlobException(errMessage, ase);
+                return new S3Exception(errMessage, ase);
             }
         }
 
-        return new BlobException(ace);
+        return new S3Exception(ace);
     }
 }
