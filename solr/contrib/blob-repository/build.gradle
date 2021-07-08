@@ -18,7 +18,7 @@
 
 apply plugin: 'java-library'
 
-description = 'S3 Blob Repository'
+description = 'S3 Repository'
 
 dependencies {
     api project(':solr:core')

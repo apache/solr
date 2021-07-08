@@ -51,7 +51,7 @@ public class S3BackupRepository implements BackupRepository {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final int CHUNK_SIZE = 16 * 1024 * 1024; // 16 MBs
-    static final String BLOB_SCHEME = "blob";
+    static final String S3_SCHEME = "s3";
 
     private NamedList<String> config;
     private S3StorageClient client;
@@ -84,9 +84,9 @@ public class S3BackupRepository implements BackupRepository {
             result = new URI(location);
             if (!result.isAbsolute()) {
                 if (location.startsWith("/")) {
-                    return new URI(BLOB_SCHEME, null, location, null);
+                    return new URI(S3_SCHEME, null, location, null);
                 } else {
-                    return new URI(BLOB_SCHEME, null, "/" + location, null);
+                    return new URI(S3_SCHEME, null, "/" + location, null);
                 }
             }
         } catch (URISyntaxException ex) {
@@ -101,7 +101,7 @@ public class S3BackupRepository implements BackupRepository {
         Objects.requireNonNull(baseUri);
         Preconditions.checkArgument(baseUri.isAbsolute());
         Preconditions.checkArgument(pathComponents.length > 0);
-        Preconditions.checkArgument(baseUri.getScheme().equalsIgnoreCase(BLOB_SCHEME));
+        Preconditions.checkArgument(baseUri.getScheme().equalsIgnoreCase(S3_SCHEME));
 
         // If paths contains unnecessary '/' separators, they'll be removed by URI.normalize()
         String path = baseUri.toString() + "/" + String.join("/", pathComponents);

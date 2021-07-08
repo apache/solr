@@ -34,7 +34,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
-import static org.apache.solr.s3.S3BackupRepository.BLOB_SCHEME;
+import static org.apache.solr.s3.S3BackupRepository.S3_SCHEME;
 
 public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
@@ -57,9 +57,9 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     public void testURI() {
         try (S3BackupRepository repo = getRepository()) {
             URI uri = repo.createURI("x");
-            assertEquals(BLOB_SCHEME, uri.getScheme());
+            assertEquals(S3_SCHEME, uri.getScheme());
             assertEquals("/x", uri.getPath());
-            assertEquals("blob:/x", uri.toString());
+            assertEquals("s3:/x", uri.toString());
 
         }
     }
@@ -98,32 +98,32 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
         S3BackupRepository repo = new S3BackupRepository();
 
         // Add single element to root
-        assertEquals(new URI("blob:/root/path"),
-                repo.resolve(new URI("blob:/root"), "path"));
+        assertEquals(new URI("s3:/root/path"),
+                repo.resolve(new URI("s3:/root"), "path"));
 
         // Root ends with '/'
-        assertEquals(new URI("blob://root/path"),
-                repo.resolve(new URI("blob://root/"), "path"));
-        assertEquals(new URI("blob://root/path"),
-                repo.resolve(new URI("blob://root///"), "path"));
+        assertEquals(new URI("s3://root/path"),
+                repo.resolve(new URI("s3://root/"), "path"));
+        assertEquals(new URI("s3://root/path"),
+                repo.resolve(new URI("s3://root///"), "path"));
 
         // Add to a sub-element
-        assertEquals(new URI("blob://root/path1/path2"),
-                repo.resolve(new URI("blob://root/path1"), "path2"));
+        assertEquals(new URI("s3://root/path1/path2"),
+                repo.resolve(new URI("s3://root/path1"), "path2"));
 
         // Add two elements to root
-        assertEquals(new URI("blob://root/path1/path2"),
-                repo.resolve(new URI("blob://root"), "path1", "path2"));
+        assertEquals(new URI("s3://root/path1/path2"),
+                repo.resolve(new URI("s3://root"), "path1", "path2"));
 
         // Add compound elements
-        assertEquals(new URI("blob:/root/path1/path2/path3"),
-                repo.resolve(new URI("blob:/root"), "path1/path2", "path3"));
+        assertEquals(new URI("s3:/root/path1/path2/path3"),
+                repo.resolve(new URI("s3:/root"), "path1/path2", "path3"));
 
         // Check URIs with an authority
-        assertEquals(new URI("blob://auth/path"),
-                repo.resolve(new URI("blob://auth"), "path"));
-        assertEquals(new URI("blob://auth/path1/path2"),
-                repo.resolve(new URI("blob://auth/path1"), "path2"));
+        assertEquals(new URI("s3://auth/path"),
+                repo.resolve(new URI("s3://auth"), "path"));
+        assertEquals(new URI("s3://auth/path1/path2"),
+                repo.resolve(new URI("s3://auth/path1"), "path2"));
     }
 
     /**
@@ -158,7 +158,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
             FileUtils.write(new File(tmp, "from-file"), content, StandardCharsets.UTF_8);
 
             Directory sourceDir = new NIOFSDirectory(tmp.toPath());
-            repo.copyIndexFileFrom(sourceDir, "from-file", new URI("blob://to-folder"), "to-file");
+            repo.copyIndexFileFrom(sourceDir, "from-file", new URI("s3://to-folder"), "to-file");
 
             // Sanity check: we do have different files
             File actualSource = new File(tmp, "from-file");
@@ -186,7 +186,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
             // Directly create a file in blob storage
             pushBlob("from-file", content);
 
-            repo.copyIndexFileTo(new URI("blob:///"), "from-file", destDir, "to-file");
+            repo.copyIndexFileTo(new URI("s3:///"), "from-file", destDir, "to-file");
 
             // Sanity check: we do have different files
             File actualSource = pullBlob("from-file");
@@ -229,8 +229,8 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
             // Open an index input on a file
             File subdir = new File(tmp, "my-repo");
             FileUtils.write(new File(subdir, "content"), content, StandardCharsets.UTF_8);
-            repo.copyIndexFileFrom(new NIOFSDirectory(tmp.getAbsoluteFile().toPath()), "my-repo/content", new URI("blob://my-repo"), "content");
-            IndexInput input = repo.openInput(new URI("blob://my-repo"), "content", IOContext.DEFAULT);
+            repo.copyIndexFileFrom(new NIOFSDirectory(tmp.getAbsoluteFile().toPath()), "my-repo/content", new URI("s3://my-repo"), "content");
+            IndexInput input = repo.openInput(new URI("s3://my-repo"), "content", IOContext.DEFAULT);
 
             byte[] buffer = new byte[100];
 
@@ -258,7 +258,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
             String content = "This is the file " + blank + "content";
 
             pushBlob("/content", content);
-            IndexInput input = repo.openInput(new URI("blob:///"), "content", IOContext.DEFAULT);
+            IndexInput input = repo.openInput(new URI("s3:///"), "content", IOContext.DEFAULT);
 
             // Read twice the size of the internal buffer, so first bytes are not in the buffer anymore
             byte[] buffer = new byte[BufferedIndexInput.BUFFER_SIZE * 2];
@@ -287,7 +287,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
     @Override
     protected URI getBaseUri() throws URISyntaxException {
-        return new URI("blob:/");
+        return new URI("s3:/");
     }
 
     @Override
