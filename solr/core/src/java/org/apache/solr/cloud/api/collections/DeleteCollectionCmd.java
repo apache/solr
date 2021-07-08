@@ -66,7 +66,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
       ((Runnable)o).run(); // this will ensure the collection is removed from the alias before it disappears.
@@ -121,7 +121,6 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
-      @SuppressWarnings({"unchecked"})
       List<Replica> failedReplicas = CollectionHandlingUtils.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions, ccc, state);
       for (Replica failedReplica : failedReplicas) {
         boolean isSharedFS = failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedReplica.get("dataDir") != null;

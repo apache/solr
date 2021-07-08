@@ -1127,8 +1127,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
    */
   private static String assertCursorJQ(SolrQueryRequest req, String... tests) throws Exception {
     String json = assertJQ(req, tests);
-    @SuppressWarnings({"rawtypes"})
-    Map rsp = (Map) fromJSONString(json);
+    Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
     assertTrue("response doesn't contain "+CURSOR_MARK_NEXT + ": " + json,
                rsp.containsKey(CURSOR_MARK_NEXT));
     String next = (String)rsp.get(CURSOR_MARK_NEXT);
