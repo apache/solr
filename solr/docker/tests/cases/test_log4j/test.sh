@@ -5,6 +5,8 @@ set -euo pipefail
 TEST_DIR="${TEST_DIR:-$(dirname -- "${BASH_SOURCE[0]}")}"
 source "${TEST_DIR}/../../shared.sh"
 
+container_cleanup "$container_name"
+
 echo "Running $container_name"
 docker run --name "$container_name" -d -e VERBOSE=yes \
   -e LOG4J_PROPS=/opt/solr/server/resources/log4j2.xml \
