@@ -50,16 +50,13 @@ By default it maps to the same name but several parameters control how this is d
 The next step after any update handler is the <<update-request-processors.adoc#,Update Request Processor>> chain.
 
 Solr Cell is a contrib, which means it's not automatically included with Solr but must be configured.
-The example configsets have Solr Cell configured, but if you are not using those,
-you will want to pay attention to the section <<Configuring the ExtractingRequestHandler in solrconfig.xml>> below.
+The example configsets have Solr Cell configured, but if you are not using those, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
 
 === Solr Cell Performance Implications
 
-Rich document formats are frequently not well documented, and even in cases where there is documentation for the
-format, not everyone who creates documents will follow the specifications faithfully.
+Rich document formats are frequently not well documented, and even in cases where there is documentation for the format, not everyone who creates documents will follow the specifications faithfully.
 
-This creates a situation where Tika may encounter something that it is simply not able to handle gracefully,
-despite taking great pains to support as many formats as possible.
+This creates a situation where Tika may encounter something that it is simply not able to handle gracefully, despite taking great pains to support as many formats as possible.
 PDF files are particularly problematic, mostly due to the PDF format itself.
 
 In case of a failure processing any file, the `ExtractingRequestHandler` does not have a secondary mechanism to try to extract some text from the file; it will throw an exception and fail.
@@ -157,10 +154,15 @@ The easiest way to try out the `uprefix` parameter is to start over with a fresh
 
 The following parameters are accepted by the `ExtractingRequestHandler`.
 
-These parameters can be set for each indexing request (as request parameters), or they can be set for all requests to
-the request handler generally by defining them in `solrconfig.xml`, as described in <<Configuring the ExtractingRequestHandler in solrconfig.xml>>.
+These parameters can be set for each indexing request (as request parameters), or they can be set for all requests to the request handler by defining them in <<solrconfig.xml Configuration,`solrconfig.xml`>>.
 
 `capture`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Captures XHTML elements with the specified name for a supplementary addition to the Solr document.
 This parameter can be useful for copying chunks of the XHTML into a separate field.
 For instance, it could be used to grab paragraphs (`<p>`) and index them into a separate field.
@@ -173,6 +175,12 @@ Output: `"p": {"This is a paragraph from my document."}`
 This parameter can also be used with the `fmap._source_field_` parameter to map content from attributes to a new field.
 
 `captureAttr`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 Indexes attributes of the Tika XHTML elements into separate fields, named after the element.
 If set to `true`, when extracting from HTML, Tika can return the href attributes in `<a>` tags as fields named "`a`".
 +
@@ -181,17 +189,34 @@ Example: `captureAttr=true`
 Output: `"div": {"classname1", "classname2"}`
 
 `commitWithin`::
-Add the document within the specified number of milliseconds.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Issue a commit to the index within the specified number of milliseconds.
 +
 Example: `commitWithin=10000` (10 seconds)
 
 `defaultField`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A default field to use if the `uprefix` parameter is not specified and a field cannot otherwise be determined.
 +
 Example: `defaultField=\_text_`
 
 `extractOnly`::
-Default is `false`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, returns the extracted content from Tika without indexing the document.
 This returns the extracted XHTML as a string in the response.
 When viewing on a screen, it may be useful to set the `extractFormat` parameter for a response format other than XML to aid in viewing the embedded XHTML tags.
@@ -199,29 +224,53 @@ When viewing on a screen, it may be useful to set the `extractFormat` parameter 
 Example: `extractOnly=true`
 
 `extractFormat`::
-The default is `xml`, but the other option is `text`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `xml`
+|===
++
 Controls the serialization format of the extract content.
+The options are `xml` or `text`.
 The `xml` format is actually XHTML, the same format that results from passing the `-x` command to the Tika command line application, while the text format is like that produced by Tika's `-t` command.
 +
 This parameter is valid only if `extractOnly` is set to true.
 +
 Example: `extractFormat=text`
 +
-Output: For an example output (in XML), see https://cwiki.apache.org/confluence/display/solr/TikaExtractOnlyExampleOutput
+Output: For an example output (in XML), see https://cwiki.apache.org/confluence/display/solr/TikaExtractOnlyExampleOutput.
 
 `fmap._source_field_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Maps (moves) one field name to another.
 The `source_field` must be a field in incoming documents, and the value is the Solr field to map to.
 +
 Example: `fmap.content=text` causes the data in the `content` field generated by Tika to be moved to the Solr's `text` field.
 
 `ignoreTikaException`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 If `true`, exceptions found during processing will be skipped.
 Any metadata available, however, will be indexed.
 +
 Example: `ignoreTikaException=true`
 
 `literal._fieldname_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Populates a field with the name supplied with the specified value for each document.
 The data can be multivalued if the field is multivalued.
 +
@@ -230,15 +279,26 @@ Example: `literal.doc_status=published`
 Output: `"doc_status": "published"`
 
 `literalsOverride`::
-If `true` (the default), literal field values will override other values with the same field name.
 +
-If `false`, literal values defined with `literal._fieldname_` will be appended to data already in the fields extracted
-from Tika.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, literal field values will override other values with the same field name.
++
+If `false`, literal values defined with `literal._fieldname_` will be appended to data already in the fields extracted from Tika.
 When setting `literalsOverride` to `false`, the field must be multivalued.
 +
 Example: `literalsOverride=false`
 
 `lowernames`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, all field names will be mapped to lowercase with underscores, if needed.
 +
 Example: `lowernames=true`
@@ -246,46 +306,84 @@ Example: `lowernames=true`
 Output: Assuming input of "Content-Type", the result in documents would be a field `content_type`
 
 `multipartUploadLimitInKB`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2048` kilobytes
+|===
++
 Defines the size in kilobytes of documents to allow.
-The default is `2048` (2Mb).
 If you have very large documents, you should increase this or they will be rejected.
 +
 Example: `multipartUploadLimitInKB=2048000`
 
 `parseContext.config`::
-If a Tika parser being used allows parameters, you can pass them to Tika by creating a parser configuration file and
-pointing Solr to it.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+If a Tika parser being used allows parameters, you can pass them to Tika by creating a parser configuration file and pointing Solr to it.
 See the section <<Parser-Specific Properties>> for more information about how to use this parameter.
 +
 Example: `parseContext.config=pdf-config.xml`
 
 `passwordsFile`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Defines a file path and name for a file of file name to password mappings.
-See the section
-<<Indexing Encrypted Documents>> for more information about using a password file.
+See the section <<Indexing Encrypted Documents>> for more information about using a password file.
 +
 Example: `passwordsFile=/path/to/passwords.txt`
 
 `resource.name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Specifies the name of the file to index.
 This is optional, but Tika can use it as a hint for detecting a file's MIME type.
 +
 Example: `resource.name=mydoc.doc`
 
 `resource.password`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Defines a password to use for a password-protected PDF or OOXML file.
-See the section <<Indexing Encrypted Documents>>
-for more information about using this parameter.
+See the section <<Indexing Encrypted Documents>> for more information about using this parameter.
 +
 Example: `resource.password=secret`
 
 `tika.config`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Defines a file path and name to a custom Tika configuration file.
 This is only required if you have customized your Tika implementation.
 +
 Example: `tika.config=/path/to/tika.config`
 
 `uprefix`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Prefixes all fields _that are undefined in the schema_ with the given prefix.
 This is very useful when combined with dynamic field definitions.
 +
@@ -295,17 +393,21 @@ In this case, you could additionally define a rule in the Schema to not index th
 `<dynamicField name="ignored_*" type="ignored" />`
 
 `xpath`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 When extracting, only return Tika XHTML content that satisfies the given XPath expression.
 See http://tika.apache.org/{ivy-tika-version}/ for details on the format of Tika XHTML, it varies with the format being parsed.
 Also see the section <<Defining XPath Expressions>> for an example.
 
-=== Configuring the ExtractingRequestHandler in solrconfig.xml
+=== solrconfig.xml Configuration
 
-If you have started Solr with one of the supplied <<config-sets.adoc#,example configsets>>, you already have
-the `ExtractingRequestHandler` configured by default and you only need to customize it for your content.
+If you have started Solr with one of the supplied <<config-sets.adoc#,example configsets>>, you may already have the `ExtractingRequestHandler` configured by default.
 
-If you are not working with an example configset, the jars required to use Solr Cell will not be loaded automatically.
-You will need to configure your `solrconfig.xml` to find the `ExtractingRequestHandler` and its dependencies:
+If it is not already configured, you will need to configure `solrconfig.xml` to find the `ExtractingRequestHandler` and its dependencies:
 
 [source,xml]
 ----
@@ -314,8 +416,7 @@ You will need to configure your `solrconfig.xml` to find the `ExtractingRequestH
 ----
 
 You can then configure the `ExtractingRequestHandler` in `solrconfig.xml`.
-The following is the default
-configuration found in Solr's `_default` configset, which you can modify as needed:
+The following is the default configuration found in Solr's `sample_techproducts_configs` configset, which you can modify as needed:
 
 [source,xml]
 ----
@@ -333,10 +434,9 @@ In this setup, all field names are lower-cased (with the `lowernames` parameter)
 
 [TIP]
 ====
-You may need to configure <<update-request-processors.adoc#,Update Request Processors>> (URPs)
-that parse numbers and dates and do other manipulations on the metadata fields generated by Solr Cell.
+You may need to configure <<update-request-processors.adoc#,Update Request Processors>> (URPs) that parse numbers and dates and do other manipulations on the metadata fields generated by Solr Cell.
 
-In Solr's default configsets, <<schemaless-mode.adoc#,"schemaless">> (aka data driven, or field guessing) mode is enabled, which does a variety of such processing already.
+In Solr's `_default` configset, <<schemaless-mode.adoc#,"schemaless">> (aka data driven, or field guessing) mode is enabled, which does a variety of such processing already.
 
 If you instead explicitly define the fields for your schema, you can selectively specify the desired URPs.
 An easy way to specify this is to configure the parameter `processor` (under `defaults`) to `uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date`.
@@ -383,10 +483,10 @@ Consult the Tika Java API documentation for configuration parameters that can be
 
 === Indexing Encrypted Documents
 
-The ExtractingRequestHandler will decrypt encrypted files and index their content if you supply a password in either `resource.password` on the request, or in a `passwordsFile` file.
+The ExtractingRequestHandler will decrypt encrypted files and index their content if you supply a password in either `resource.password` in the request, or in a `passwordsFile` file.
 
 In the case of `passwordsFile`, the file supplied must be formatted so there is one line per rule.
-Each rule contains a file name regular expression, followed by "=", then the password in clear-text.
+Each rule contains a file name regular expression, followed by "`=`", then the password in clear-text.
 Because the passwords are in clear-text, the file should have strict access restrictions.
 
 [source,plain]
@@ -411,7 +511,7 @@ Set the parameter `literalsOverride`, which normally defaults to `true`, to `fal
 
 === Metadata Created by Tika
 
-As mentioned before, Tika produces metadata about the document.
+As mentioned earlier, Tika produces metadata about the document.
 Metadata describes different aspects of a document, such as the author's name, the number of pages, the file size, and so on.
 The metadata produced depends on the type of document submitted.
 For instance, PDFs have different metadata than Word documents do.
@@ -420,21 +520,16 @@ For instance, PDFs have different metadata than Word documents do.
 
 In addition to the metadata added by Tika's parsers, Solr adds the following metadata:
 
-`stream_name`::
-The name of the Content Stream as uploaded to Solr.
+* `stream_name`: The name of the Content Stream as uploaded to Solr.
 Depending on how the file is uploaded, this may or may not be set.
 
-`stream_source_info`::
-Any source info about the stream.
+* `stream_source_info`: Any source info about the stream.
 
-`stream_size`::
-The size of the stream in bytes.
+* `stream_size`: The size of the stream in bytes.
 
-`stream_content_type`::
-The content type of the stream, if available.
+* `stream_content_type`: The content type of the stream, if available.
 
-IMPORTANT: It's recommended to use the `extractOnly` option before indexing to discover the values Solr will
-set for these metadata elements on your content.
+IMPORTANT: It's recommended to use the `extractOnly` option before indexing to discover the values Solr will set for these metadata elements on your content.
 
 === Order of Input Processing
 
