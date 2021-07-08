@@ -33,11 +33,21 @@ dependencies {
     exclude group: "org.checkerframework", module: "checker-qual"
   })
 
+  // Many HDFS tests are using/subclassing test framework classes
   testImplementation project(':solr:test-framework')
+
+  // HDFS tests depend on core fixture classes
   testImplementation(testFixtures(project(":solr:core")))
 
+  // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+
+  // classes like solr.ICUCollationField, used by NNFailoverTest for example.
+  testImplementation project(':solr:contrib:analysis-extras')
+
+  // required for instantiating a Zookeeper server in tests or embedded
+  runtimeOnly ('org.xerial.snappy:snappy-java')
 }
