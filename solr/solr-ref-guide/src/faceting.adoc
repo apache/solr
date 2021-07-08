@@ -28,12 +28,23 @@ See also <<json-facet-api.adoc#, JSON Facet API>> for an alternative approach to
 There are two general parameters for controlling faceting.
 
 `facet`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: `false`
+|===
++
 If set to `true`, this parameter enables facet counts in the query response.
 If set to `false`, a blank or missing value, this parameter disables faceting.
 None of the other parameters listed below will have any effect unless this parameter is set to `true`.
-The default value is blank (false).
 
 `facet.query`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 This parameter allows you to specify an arbitrary query in the Lucene default syntax to generate a facet count.
 +
 By default, Solr's faceting feature automatically determines the unique terms for a field and returns a count for each of those terms.
@@ -62,6 +73,12 @@ The Text field should have `indexed="true" docValues=“false"` if used for sear
 Unless otherwise specified, all of the parameters below can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.<parameter>`
 
 `facet.field`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The `facet.field` parameter identifies a field that should be treated as a facet.
 It iterates over each Term in the field and generate a facet count using that Term as the constraint.
 This parameter can be specified multiple times in a query to select multiple facet fields.
@@ -69,66 +86,111 @@ This parameter can be specified multiple times in a query to select multiple fac
 IMPORTANT: If you do not set this parameter to at least one field in the schema, none of the other parameters described in this section will have any effect.
 
 `facet.prefix`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The `facet.prefix` parameter limits the terms on which to facet to those starting with the given string prefix.
 This does not limit the query in any way, only the facets that would be returned in response to the query.
 +
 
 `facet.contains`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The `facet.contains` parameter limits the terms on which to facet to those containing the given substring.
 This does not limit the query in any way, only the facets that would be returned in response to the query.
 
 `facet.contains.ignoreCase`::
-
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 If `facet.contains` is used, the `facet.contains.ignoreCase` parameter causes case to be ignored when matching the given substring against candidate facet terms.
 
 `facet.matches`::
-
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 If you want to only return facet buckets for the terms that match a regular expression.
 
 `facet.sort`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 This parameter determines the ordering of the facet field constraints.
 +
 There are two options for this parameter.
 +
---
 `count`::: Sort the constraints by count (highest count first).
 `index`::: Return the constraints sorted in their index order (lexicographic by indexed term).
 For terms in the ASCII range, this will be alphabetically sorted.
---
 +
 The default is `count` if `facet.limit` is greater than 0, otherwise, the default is `index`.
 Note that the default logic is changed when <<#limiting-facet-with-certain-terms>>
 
 `facet.limit`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `100`
+|===
++
 This parameter specifies the maximum number of constraint counts (essentially, the number of facets for a field that are returned) that should be returned for the facet fields.
 A negative value means that Solr will return unlimited number of constraint counts.
-+
-The default value is `100`.
 
 `facet.offset`::
-
-The `facet.offset` parameter indicates an offset into the list of constraints to allow paging.
 +
-The default value is `0`.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+The `facet.offset` parameter indicates an offset into the list of constraints to allow paging.
 
 `facet.mincount`::
-
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
 The `facet.mincount` parameter specifies the minimum counts required for a facet field to be included in the response.
 If a field's counts are below the minimum, the field's facet is not returned.
-+
-The default value is `0`.
 
 `facet.missing`::
-If set to `true`, this parameter indicates that, in addition to the Term-based constraints of a facet field, a count of all results that match the query but which have no facet value for the field should be computed and returned in the response.
 +
-The default value is `false`.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If set to `true`, this parameter indicates that, in addition to the Term-based constraints of a facet field, a count of all results that match the query but which have no facet value for the field should be computed and returned in the response.
 
 `facet.method`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `fc`
+|===
++
 The `facet.method` parameter selects the type of algorithm or method Solr should use when faceting a field.
 +
 The following methods are available.
 +
---
 `enum`::: Enumerates all terms in a field, calculating the set intersection of documents that match the term with documents that match the query.
 +
 This method is recommended for faceting multi-valued fields that have only a few distinct values.
@@ -136,7 +198,7 @@ The average number of values per document does not matter.
 +
 For example, faceting on a field with U.S. States such as `Alabama, Alaska, ... Wyoming` would lead to fifty cached filters which would be used over and over again.
 The `filterCache` should be large enough to hold all the cached filters.
-
++
 `fc`::: Calculates facet counts by iterating over documents that match the query and summing the terms that appear in each document.
 +
 This is currently implemented using an `UnInvertedField` cache if the field either is multi-valued or is tokenized (according to `FieldType.isTokened()`).
@@ -145,15 +207,21 @@ Each document is looked up in the cache to see what terms/values it contains, an
 This method is excellent for situations where the number of indexed values for the field is high, but the number of values per document is low.
 For multi-valued fields, a hybrid approach is used that uses term filters from the `filterCache` for terms that match many documents.
 The letters `fc` stand for field cache.
-
++
 `fcs`::: Per-segment field faceting for single-valued string fields.
 Enable with `facet.method=fcs` and control the number of threads used with the `threads` local parameter.
 This parameter allows faceting to be faster in the presence of rapid index changes.
---
+
 +
 The default value is `fc` (except for fields using the `BoolField` field type and when `facet.exists=true` is requested) since it tends to use less memory and is faster when a field has many unique terms in the index.
 
 `facet.enum.cache.minDf`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
 This parameter indicates the minimum document frequency (the number of documents matching a term) for which the filterCache should be used when determining the constraint count for that term.
 This is only used with the `facet.method=enum` method of faceting.
 +
@@ -164,23 +232,46 @@ Then, optimize the parameter setting as necessary.
 The default value is `0`, causing the filterCache to be used for all terms in the field.
 
 `facet.exists`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 To cap facet counts by 1, specify `facet.exists=true`.
 This parameter can be used with `facet.method=enum` or when it's omitted.
 It can be used only on non-trie fields (such as strings).
 It may speed up facet counting on large indices and/or high-cardinality facet values.
 
 `facet.excludeTerms`::
-
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 If you want to remove terms from facet counts but keep them in the index, the `facet.excludeTerms` parameter allows you to do that.
 
 `facet.overrequest.count` and `facet.overrequest.ratio`::
-In some situations, the accuracy in selecting the "top" constraints returned for a facet in a distributed Solr query can be improved by "over requesting" the number of desired constraints (i.e., `facet.limit`) from each of the individual shards.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+In some situations, the accuracy in selecting the "top" constraints returned for a facet in a distributed Solr query can be improved by "over-requesting" the number of desired constraints (i.e., `facet.limit`) from each of the individual shards.
 In these situations, each shard is by default asked for the top `10 + (1.5 * facet.limit)` constraints.
 +
-In some situations, depending on how your docs are partitioned across your shards and what `facet.limit` value you used, you may find it advantageous to increase or decrease the amount of over-requesting Solr does.
+Depending on how your docs are partitioned across your shards and what `facet.limit` value you used, you may find it advantageous to increase or decrease the amount of over-requesting Solr does.
 This can be achieved by setting the `facet.overrequest.count` (defaults to `10`) and `facet.overrequest.ratio` (defaults to `1.5`) parameters.
 
 `facet.threads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 This parameter will cause loading the underlying fields used in faceting to be executed in parallel with the number of threads specified.
 Specify as `facet.threads=N` where `N` is the maximum number of threads used.
 +
@@ -193,83 +284,137 @@ You can use Range Faceting on any date field or any numeric field that supports 
 This is particularly useful for stitching together a series of range queries (as facet by query) for things like prices.
 
 `facet.range`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The `facet.range` parameter defines the field for which Solr should create range facets.
 For example:
 +
-`facet.range=price&facet.range=age`
+[source,text]
+facet.range=price&facet.range=age
 +
-`facet.range=lastModified_dt`
+[source,text]
+facet.range=lastModified_dt
 
 `facet.range.start`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The `facet.range.start` parameter specifies the lower bound of the ranges.
 You can specify this parameter on a per field basis with the syntax of `f.<fieldname>.facet.range.start`.
 For example:
 +
-`f.price.facet.range.start=0.0&f.age.facet.range.start=10`
+[source,text]
+f.price.facet.range.start=0.0&f.age.facet.range.start=10
 +
-`f.lastModified_dt.facet.range.start=NOW/DAY-30DAYS`
+[source,text]
+f.lastModified_dt.facet.range.start=NOW/DAY-30DAYS
 
 `facet.range.end`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The `facet.range.end` specifies the upper bound of the ranges.
 You can specify this parameter on a per field basis with the syntax of `f.<fieldname>.facet.range.end`.
 For example:
 +
-`f.price.facet.range.end=1000.0&f.age.facet.range.start=99`
+[source,text]
+f.price.facet.range.end=1000.0&f.age.facet.range.start=99
 +
-`f.lastModified_dt.facet.range.end=NOW/DAY+30DAYS`
+[source,text]
+f.lastModified_dt.facet.range.end=NOW/DAY+30DAYS
 
 `facet.range.gap`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The span of each range expressed as a value to be added to the lower bound.
 For date fields, this should be expressed using the {solr-javadocs}/core/org/apache/solr/util/DateMathParser.html[`DateMathParser` syntax] (such as, `facet.range.gap=%2B1DAY ... '+1DAY'`).
++
 You can specify this parameter on a per-field basis with the syntax of `f.<fieldname>.facet.range.gap`.
 For example:
 +
-`f.price.facet.range.gap=100&f.age.facet.range.gap=10`
+[source,text]
+f.price.facet.range.gap=100&f.age.facet.range.gap=10
 +
-`f.lastModified_dt.facet.range.gap=+1DAY`
+[source,text]
+f.lastModified_dt.facet.range.gap=+1DAY
 
 `facet.range.hardend`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 The `facet.range.hardend` parameter is a Boolean parameter that specifies how Solr should handle cases where the `facet.range.gap` does not divide evenly between `facet.range.start` and `facet.range.end`.
 +
 If `true`, the last range constraint will have the `facet.range.end` value as an upper bound.
-If `false`, the last range will have the smallest possible upper bound greater then `facet.range.end` such that the range is the exact width of the specified range gap.
-The default value for this parameter is false.
+If `false`, the last range will have the smallest possible upper bound greater then `facet.range.end` so the range is the exact width of the specified range gap.
 +
 This parameter can be specified on a per field basis with the syntax `f.<fieldname>.facet.range.hardend`.
 
 `facet.range.include`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
 By default, the ranges used to compute range faceting between `facet.range.start` and `facet.range.end` are inclusive of their lower bounds and exclusive of the upper bounds.
 The "before" range defined with the `facet.range.other` parameter is exclusive and the "after" range is inclusive.
 This default, equivalent to "lower" below, will not result in double counting at the boundaries.
 You can use the `facet.range.include` parameter to modify this behavior using the following options:
-+
---
+
 * `lower`: All gap-based ranges include their lower bound.
 * `upper`: All gap-based ranges include their upper bound.
 * `edge`: The first and last gap ranges include their edge bounds (lower for the first one, upper for the last one) even if the corresponding upper/lower option is not specified.
 * `outer`: The "before" and "after" ranges will be inclusive of their bounds, even if the first or last ranges already include those boundaries.
 * `all`: Includes all options: `lower`, `upper`, `edge`, and `outer`.
---
+
 +
 You can specify this parameter on a per field basis with the syntax of `f.<fieldname>.facet.range.include`, and you can specify it multiple times to indicate multiple choices.
-+
-NOTE: To ensure you avoid double-counting, do not choose both `lower` and `upper`, do not choose `outer`, and do not choose `all`.
+[NOTE]
+To ensure you avoid double-counting, do not choose both `lower` and `upper`, do not choose `outer`, and do not choose `all`.
 
 `facet.range.other`::
-The `facet.range.other` parameter specifies that in addition to the counts for each range constraint between `facet.range.start` and `facet.range.end`, counts should also be computed for these options:
 +
---
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The `facet.range.other` parameter specifies that in addition to the counts for each range constraint between `facet.range.start` and `facet.range.end`, counts should also be computed for these options:
+
 * `before`: All records with field values lower then lower bound of the first range.
 * `after`: All records with field values greater then the upper bound of the last range.
 * `between`: All records with field values between the start and end bounds of all ranges.
 * `none`: Do not compute any counts.
 * `all`: Compute counts for before, between, and after.
---
+
 +
 This parameter can be specified on a per field basis with the syntax of `f.<fieldname>.facet.range.other`.
 In addition to the `all` option, this parameter can be specified multiple times to indicate multiple choices, but `none` will override all other options.
 
 `facet.range.method`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `filter`
+|===
++
 The `facet.range.method` parameter selects the type of algorithm or method Solr should use for range faceting.
 Both methods produce the same results, but performance may vary.
 +
@@ -281,10 +426,6 @@ dv::: This method iterates the documents that match the main query, and for each
 This method will make use of <<docvalues.adoc#,docValues>> (if enabled for the field) or fieldCache.
 The `dv` method is not supported for field type DateRangeField or when using <<result-grouping.adoc#,group.facets>>.
 --
-+
-The default value for this parameter is `filter`.
-
-
 
 .Date Ranges & Time Zones
 [NOTE]
@@ -309,22 +450,33 @@ Another way to look at it is that the query produces a Decision Tree, in that So
 If you were to constrain A by X, then the constraint counts for B would be S/P, T/Q, etc.". In other words, it tells you in advance what the "next" set of facet results would be for a field if you apply a constraint from the current facet results.
 
 `facet.pivot`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The `facet.pivot` parameter defines the fields to use for the pivot.
 Multiple `facet.pivot` values will create multiple "facet_pivot" sections in the response.
 Separate each list of fields with a comma.
 
 `facet.pivot.mincount`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
 The `facet.pivot.mincount` parameter defines the minimum number of documents that need to match in order for the facet to be included in results.
-The default is 1.
 +
 Using the "`bin/solr -e techproducts`" example, A query URL like this one will return the data below, with the pivot faceting results found in the section "facet_pivot":
-
++
 [source,text]
 ----
 http://localhost:8983/solr/techproducts/select?q=*:*&facet.pivot=cat,popularity,inStock
    &facet.pivot=popularity,cat&facet=true&facet.field=cat&facet.limit=5&rows=0&facet.pivot.mincount=2
 ----
-
++
 [source,json]
 ----
 {  "facet_counts":{
@@ -596,13 +748,24 @@ This method will use <<docvalues.adoc#,docValues>> if they are enabled for the f
 Use these parameters for interval faceting:
 
 `facet.interval`::
-
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 This parameter Indicates the field where interval faceting must be applied.
 It can be used multiple times in the same request to indicate multiple fields.
 +
 `facet.interval=price&facet.interval=size`
 
 `facet.interval.set`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 This parameter is used to set the intervals for the field, it can be specified multiple times to indicate multiple intervals.
 This parameter is global, which means that it will be used for all fields indicated with `facet.interval` unless there is an override for a specific field.
 To override this parameter on a specific field you can use: `f.<fieldname>.facet.interval.set`, for example:

@@ -53,7 +53,7 @@ At its core, Solr autoscaling provides users with a rule syntax to define prefer
 
 * There were several other new features released in earlier 6.x releases, which you may have missed:
 ** <<learning-to-rank.adoc#,Learning to Rank>>
-** <<highlighting.adoc#the-unified-highlighter,Unified Highlighter>>
+** <<highlighting.adoc#unified-highlighter,Unified Highlighter>>
 ** <<metrics-reporting.adoc#,Metrics API>>. See also information about related deprecations in the section <<JMX Support and MBeans>> below.
 ** <<other-parsers.adoc#payload-query-parsers,Payload queries>>
 ** <<stream-evaluator-reference.adoc#,Streaming Evaluators>>
@@ -169,7 +169,7 @@ The following changes were made in SolrJ.
 * The `defaultOperator` parameter in the schema is no longer supported. Use the `q.op` parameter instead. This option had been deprecated for several releases. See the section <<standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
 * The `defaultSearchField` parameter in the schema is no longer supported. Use the `df` parameter instead. This option had been deprecated for several releases. See the section <<standard-query-parser.adoc#standard-query-parser-parameters,Standard Query Parser Parameters>> for more information.
 * The `mergePolicy`, `mergeFactor` and `maxMergeDocs` parameters have been removed and are no longer supported. You should define a `mergePolicyFactory` instead. See the section <<index-segments-merging.adoc#mergepolicyfactory,the mergePolicyFactory>> for more information.
-* The PostingsSolrHighlighter has been deprecated. It's recommended that you move to using the UnifiedHighlighter instead. See the section <<highlighting.adoc#the-unified-highlighter,Unified Highlighter>> for more information about this highlighter.
+* The PostingsSolrHighlighter has been deprecated. It's recommended that you move to using the UnifiedHighlighter instead. See the section <<highlighting.adoc#unified-highlighter,Unified Highlighter>> for more information about this highlighter.
 * Index-time boosts have been removed from Lucene, and are no longer available from Solr. If any boosts are provided, they will be ignored by the indexing chain. As a replacement, index-time scoring factors should be indexed in a separate field and combined with the query score using a function query. See the section <<function-queries.adoc#,Function Queries>> for more information.
 * The `StandardRequestHandler` is deprecated. Use `SearchHandler` instead.
 * To improve parameter consistency in the Collections API, the parameter names `fromNode` for the MOVEREPLICA command and `source`, `target` for the REPLACENODE command have been deprecated and replaced with `sourceNode` and `targetNode` instead. The old names will continue to work for back-compatibility but they will be removed in Solr 8.

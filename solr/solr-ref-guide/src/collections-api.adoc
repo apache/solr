@@ -127,9 +127,14 @@ curl -X GET http://localhost:8983/api/cluster/command-status/1000
 === REQUESTSTATUS Parameters
 
 `requestid`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The user defined request ID for the request.
 This can be used to track the status of the submitted asynchronous task.
-This parameter is required.
 
 === Examples using REQUESTSTATUS
 
@@ -218,9 +223,21 @@ curl -X DELETE http://localhost:8983/api/cluster/command-status
 === DELETESTATUS Parameters
 
 `requestid`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The request ID of the asynchronous call whose stored response should be cleared.
 
 `flush`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Set to `true` to clear all stored completed and failed async request responses.
 This is required only with the V1 API.
 

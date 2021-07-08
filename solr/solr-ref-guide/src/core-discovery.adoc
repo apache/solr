@@ -89,43 +89,131 @@ Java properties files allow the hash (`#`) or bang (`!`) characters to specify c
 
 The following properties are available:
 
-`name`:: The name of the SolrCore.
+`name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the SolrCore.
 You'll use this name to reference the SolrCore when running commands with the `CoreAdminHandler`.
 
-`config`:: The configuration file name for a given core.
-The default is `solrconfig.xml`.
+`config`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `solrconfig.xml`
+|===
++
+The configuration file name for a given core.
 
-`schema`:: The schema file name for a given core.
+`schema`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The schema file name for a given core.
 The default is `schema.xml` but please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use.
 See <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for more details.
 
-`dataDir`:: The core's data directory (where indexes are stored) as either an absolute pathname, or a path relative to the value of `instanceDir`.
-This is `data` by default.
+`dataDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `data`
+|===
++
+The core's data directory (where indexes are stored) as either an absolute pathname, or a path relative to the value of `instanceDir`.
 
-`configSet`:: The name of a defined configset, if desired, to use to configure the core (see the section <<config-sets.adoc#,Configsets>> for more details).
+`configSet`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of a defined configset, if desired, to use to configure the core (see the section <<config-sets.adoc#,Configsets>> for more details).
 
-`properties`:: The name of the properties file for this core.
+`properties`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the properties file for this core.
 The value can be an absolute pathname or a path relative to the value of `instanceDir`.
 
-`transient`:: If `true`, the core can be unloaded if Solr reaches the `transientCacheSize`.
-The default is `false`.
+`transient`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+When `true`, the core can be unloaded if Solr reaches the `transientCacheSize`.
 Cores are unloaded in order of least recently used first.
 _Setting this to `true` is not recommended in SolrCloud mode._
 
-`loadOnStartup`:: If `true`, the default, the core will loaded when Solr starts.
+`loadOnStartup`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+When `true`, the default, the core will loaded when Solr starts.
 _Setting this to `false` is not recommended in SolrCloud mode._
 
-`coreNodeName`:: Used only in SolrCloud, this is a unique identifier for the node hosting this replica.
+`coreNodeName`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+Used only in SolrCloud, this is a unique identifier for the node hosting this replica.
 By default a `coreNodeName` is generated automatically, but setting this attribute explicitly allows you to manually assign a new core to replace an existing replica.
 For example, this can be useful when replacing a machine that has had a hardware failure by restoring from backups on a new machine with a new hostname or port.
 
-`ulogDir`:: The absolute or relative directory for the update log for this core (SolrCloud only).
+`ulogDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The absolute or relative directory for the update log for this core (SolrCloud only).
 
-`shard`:: The shard to assign this core to (SolrCloud only).
+`shard`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The shard to assign this core to (SolrCloud only).
 
-`collection`:: The name of the collection this core is part of (SolrCloud only).
+`collection`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the collection this core is part of (SolrCloud only).
 
-`roles`:: Future parameter for SolrCloud or a way for users to mark nodes for their own use.
+`roles`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Future parameter for SolrCloud or a way for users to mark nodes for their own use.
 
 Additional user-defined properties may be specified for use as variables.
 For more information on how to define local properties, see the section <<property-substitution.adoc#,Property Substitution in `solrconfig.xml`>>.
