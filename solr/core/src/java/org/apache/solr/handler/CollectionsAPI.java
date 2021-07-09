@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -76,7 +77,9 @@ public class CollectionsAPI {
       method = GET,
       permission = COLL_READ_PERM)
   public void getCollections(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    CollectionsHandler.CollectionOperation.LIST_OP.execute(req, rsp, collectionsHandler);
+      final Map<String, Object> v1Params = Maps.newHashMap();
+      v1Params.put(ACTION, CollectionAction.LIST.toLower());
+      collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
     @EndPoint(
