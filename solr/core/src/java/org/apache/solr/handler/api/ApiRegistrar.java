@@ -43,4 +43,10 @@ public class ApiRegistrar {
     apiBag.registerObject(new SetCollectionPropertyAPI(collectionsHandler));
     apiBag.registerObject(new CollectionStatusAPI(collectionsHandler));
   }
+
+  public static void registerShardApis(ApiBag apiBag, CollectionsHandler collectionsHandler) {
+    apiBag.registerObject(new SplitShardAPI(collectionsHandler));
+    apiBag.registerObject(new CreateShardAPI(collectionsHandler));
+    apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
+  }
 }
