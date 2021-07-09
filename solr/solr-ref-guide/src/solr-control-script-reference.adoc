@@ -65,7 +65,7 @@ Start Solr in SolrCloud mode, which will also launch the embedded ZooKeeper inst
 +
 This option can be shortened to simply `-c`.
 +
-If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) or pass the -z parameter.
+If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) or pass the `-z` parameter.
 +
 For more details, see the section <<SolrCloud Mode>> below.
 +

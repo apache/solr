@@ -176,18 +176,53 @@ Compound words are most commonly found in Germanic languages.
 
 *Arguments:*
 
-`dictionary`:: (required) The path of a file that contains a list of simple words, one per line.
+`dictionary`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path of a file that contains a list of simple words, one per line.
 Blank lines and lines that begin with "`#`" are ignored.
 +
 See <<resource-loading.adoc#,Resource Loading>> for more information.
 
-`minWordSize`:: (integer, default 5) Any token shorter than this is not decompounded.
+`minWordSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `5`
+|===
++
+Any token shorter than this is not decompounded.
 
-`minSubwordSize`:: (integer, default 2) Subwords shorter than this are not emitted as tokens.
+`minSubwordSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+Subwords shorter than this are not emitted as tokens.
 
-`maxSubwordSize`:: (integer, default 15) Subwords longer than this are not emitted as tokens.
+`maxSubwordSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `15`
+|===
++
+Subwords longer than this are not emitted as tokens.
 
-`onlyLongestMatch`:: (true/false) If true (the default), only the longest matching subwords will generate new tokens.
+`onlyLongestMatch`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, only the longest matching subwords will generate new tokens.
 
 *Example:*
 
@@ -239,48 +274,123 @@ See `solr/contrib/analysis-extras/README.md` for instructions on which jars you 
 
 `solr.ICUCollationField` and `solr.CollationField` fields can be created in two ways:
 
-* Based upon a system collator associated with a Locale.
+* Based upon a system collator associated with a locale.
 * Based upon a tailored `RuleBasedCollator` ruleset.
 
-*Arguments for `solr.ICUCollationField`, specified as attributes within the `<fieldtype>` element:*
+=== ICUCollationField Attributes
 
-Using a System collator:
+*Using a system collator*
 
-`locale`:: (required) http://www.rfc-editor.org/rfc/rfc3066.txt[RFC 3066] locale ID.
+`locale`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+http://www.rfc-editor.org/rfc/rfc3066.txt[RFC 3066] locale ID.
 See http://demo.icu-project.org/icu-bin/locexp[the ICU locale explorer] for a list of supported locales.
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary`, `quaternary`, or `identical`.
+`strength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `primary`, `secondary`, `tertiary`, `quaternary`, or `identical`.
 See http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels[Comparison Levels in ICU Collation Concepts] for more information.
 
-`decomposition`:: Valid values are `no` or `canonical`.
+`decomposition`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `no` or `canonical`.
 See http://userguide.icu-project.org/collation/concepts#TOC-Normalization[Normalization in ICU Collation Concepts] for more information.
 
-Using a Tailored ruleset:
+*Using a Tailored ruleset*
 
-`custom`:: (required) Path to a UTF-8 text file containing rules supported by the ICU http://icu-project.org/apiref/icu4j/com/ibm/icu/text/RuleBasedCollator.html[`RuleBasedCollator`]
+`custom`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Path to a UTF-8 text file containing rules supported by the ICU http://icu-project.org/apiref/icu4j/com/ibm/icu/text/RuleBasedCollator.html[`RuleBasedCollator`]
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary`, `quaternary`, or `identical`.
+`strength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `primary`, `secondary`, `tertiary`, `quaternary`, or `identical`.
 See http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels[Comparison Levels in ICU Collation Concepts] for more information.
 
-`decomposition`:: Valid values are `no` or `canonical`.
+`decomposition`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `no` or `canonical`.
 See http://userguide.icu-project.org/collation/concepts#TOC-Normalization[Normalization in ICU Collation Concepts] for more information.
 
-Expert options:
+*Expert options*
 
-`alternate`:: Valid values are `shifted` or `non-ignorable`.
-Can be used to ignore punctuation/whitespace.
+`alternate`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `shifted` or `non-ignorable`.
+Can be used to ignore punctuation or whitespace.
 
-`caseLevel`:: (true/false) If true, in combination with `strength="primary"`, accents are ignored but case is taken into account.
-The default is `false`.
+`caseLevel`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, in combination with `strength="primary"`, accents are ignored but case is taken into account.
 See http://userguide.icu-project.org/collation/concepts#TOC-CaseLevel[CaseLevel in ICU Collation Concepts] for more information.
 
-`caseFirst`:: Valid values are `lower` or `upper`.
+`caseFirst`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `lower` or `upper`.
 Useful to control which is sorted first when case is not ignored.
 
-`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g., foobar-9 sorts before foobar-10.
-The default is false.
+`numeric`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, digits are sorted according to numeric value, e.g., foobar-9 sorts before foobar-10.
 
-`variableTop`:: Single character or contraction.
+`variableTop`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Single character or contraction.
 Controls what is variable for `alternate`.
 
 === Sorting Text for a Specific Language
@@ -399,30 +509,86 @@ As mentioned above, ICU Unicode Collation is better in several ways than JDK Col
 
 The principles of JDK Collation are the same as those of ICU Collation; you just specify `language`, `country` and `variant` arguments instead of the combined `locale` argument.
 
-*Arguments for `solr.CollationField`, specified as attributes within the `<fieldtype>` element:*
+=== JDK Collation Attributes
 
-Using a System collator (see http://www.oracle.com/technetwork/java/javase/java8locales-2095355.html[Oracle's list of locales supported in Java]):
+*Using a System collator* (see http://www.oracle.com/technetwork/java/javase/java8locales-2095355.html[Oracle's list of locales supported in Java]):
 
-`language`:: (required) http://www.loc.gov/standards/iso639-2/php/code_list.php[ISO-639] language code
+`language`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The http://www.loc.gov/standards/iso639-2/php/code_list.php[ISO-639] language code.
 
-`country`:: http://www.iso.org/iso/country_codes/iso_3166_code_lists/country_names_and_code_elements.htm[ISO-3166] country code
+`country`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The http://www.iso.org/iso/country_codes/iso_3166_code_lists/country_names_and_code_elements.htm[ISO-3166] country code.
 
-`variant`:: Vendor or browser-specific code
+`variant`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Vendor or browser-specific code.
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`.
+`strength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `primary`, `secondary`, `tertiary` or `identical`.
 See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
-`decomposition`:: Valid values are `no`, `canonical`, or `full`.
+`decomposition`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `no`, `canonical`, or `full`.
 See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
-Using a Tailored ruleset:
+*Using a Tailored ruleset*:
 
-`custom`:: (required) Path to a UTF-8 text file containing rules supported by the {java-javadocs}java/text/RuleBasedCollator.html[`JDK RuleBasedCollator`]
+`custom`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Path to a UTF-8 text file containing rules supported by the {java-javadocs}java/text/RuleBasedCollator.html[`JDK RuleBasedCollator`].
 
-`strength`:: Valid values are `primary`, `secondary`, `tertiary` or `identical`.
+`strength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `primary`, `secondary`, `tertiary` or `identical`.
 See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
-`decomposition`:: Valid values are `no`, `canonical`, or `full`.
+`decomposition`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Valid values are `no`, `canonical`, or `full`.
 See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more information.
 
 .A `solr.CollationField` example:
@@ -528,9 +694,12 @@ On the other hand, it can reduce precision because language-specific character d
 == OpenNLP Integration
 
 The `lucene/analysis/opennlp` module provides OpenNLP integration via several analysis components: a tokenizer, a part-of-speech tagging filter, a phrase chunking filter, and a lemmatization filter.
-In addition to these analysis components, Solr also provides an update request processor to extract named entities - see <<update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins,Update Processor Factories That Can Be Loaded as Plugins>>.
+In addition to these analysis components, Solr also provides an update request processor to extract named entities.
+See also <<update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins,Update Processor Factories That Can Be Loaded as Plugins>>.
 
-NOTE: The <<OpenNLP Tokenizer>> must be used with all other OpenNLP analysis components, for two reasons: first, the OpenNLP Tokenizer detects and marks the sentence boundaries required by all the OpenNLP filters; and second, since the pre-trained OpenNLP models used by these filters were trained using the corresponding language-specific sentence-detection/tokenization models, the same tokenization, using the same models, must be used at runtime for optimal performance.
+NOTE: The <<OpenNLP Tokenizer>> must be used with all other OpenNLP analysis components, for two reasons.
+First, the OpenNLP Tokenizer detects and marks the sentence boundaries required by all the OpenNLP filters.
+Second, since the pre-trained OpenNLP models used by these filters were trained using the corresponding language-specific sentence-detection/tokenization models, the same tokenization using the same models must be used at runtime for optimal performance.
 
 To use the OpenNLP components, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
@@ -545,10 +714,24 @@ See the http://opennlp.apache.org/models.html[OpenNLP website] for information o
 
 *Arguments:*
 
-`sentenceModel`:: (required) The path of a language-specific OpenNLP sentence detection model file.
+`sentenceModel`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path of a language-specific OpenNLP sentence detection model file.
 See <<resource-loading.adoc#,Resource Loading>> for more information.
 
-`tokenizerModel`:: (required) The path of a language-specific OpenNLP tokenization model file.
+`tokenizerModel`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path of a language-specific OpenNLP tokenization model file.
 See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 *Example:*
@@ -592,7 +775,14 @@ NOTE: Lucene currently does not index token types, so if you want to keep this i
 
 *Arguments:*
 
-`posTaggerModel`:: (required) The path of a language-specific OpenNLP POS tagger model file.
+`posTaggerModel`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path of a language-specific OpenNLP POS tagger model file.
 See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 *Examples:*
@@ -690,7 +880,14 @@ NOTE: Lucene currently does not index token types, so if you want to keep this i
 
 *Arguments:*
 
-`chunkerModel`:: (required) The path of a language-specific OpenNLP phrase chunker model file.
+`chunkerModel`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path of a language-specific OpenNLP phrase chunker model file.
 See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 *Examples*:
@@ -758,11 +955,25 @@ See the http://opennlp.apache.org/models.html[OpenNLP website] for information o
 
 Either `dictionary` or `lemmatizerModel` must be provided, and both may be provided - see the examples below:
 
-`dictionary`:: (optional) The path of a lemmatization dictionary file.
+`dictionary`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The path of a lemmatization dictionary file.
 See <<resource-loading.adoc#,Resource Loading>> for more information.
 The dictionary file must be encoded as UTF-8, with one entry per line, in the form `word[tab]lemma[tab]part-of-speech`, e.g., `wrote[tab]write[tab]VBD`.
 
-`lemmatizerModel`:: (optional) The path of a language-specific OpenNLP lemmatizer model file.
+`lemmatizerModel`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The path of a language-specific OpenNLP lemmatizer model file.
 See <<resource-loading.adoc#,Resource Loading>> for more information.
 
 *Examples:*
@@ -842,43 +1053,47 @@ Perform model-based lemmatization only, preserving the original token and emitti
 These factories are each designed to work with specific languages.
 The languages covered here are:
 
-* <<Arabic>>
-* <<Bengali>>
-* <<Brazilian Portuguese>>
-* <<Bulgarian>>
-* <<Catalan>>
-* <<Traditional Chinese>>
-* <<Simplified Chinese>>
-* <<Czech>>
-* <<Danish>>
-
-* <<Dutch>>
-* <<Estonian>>
-* <<Finnish>>
-* <<French>>
-* <<Galician>>
-* <<German>>
-* <<Greek>>
-* <<hebrew-lao-myanmar-khmer,Hebrew, Lao, Myanmar, Khmer>>
-* <<Hindi>>
-* <<Indonesian>>
-* <<Italian>>
-* <<Irish>>
-* <<Japanese>>
-* <<Latvian>>
-* <<Norwegian>>
-* <<Persian>>
-* <<Polish>>
-* <<Portuguese>>
-* <<Romanian>>
-* <<Russian>>
-* <<Scandinavian>>
-* <<Serbian>>
-* <<Spanish>>
-* <<Swedish>>
-* <<Thai>>
-* <<Turkish>>
-* <<Ukrainian>>
+// Table form allows spread of list across the page
+// Only 3 columns so it still looks OK on smaller screens
+[cols="1,1,1",frame=none,grid=none,stripes=none]
+|===
+| <<Arabic>>
+| <<Bengali>>
+| <<Brazilian Portuguese>>
+| <<Bulgarian>>
+| <<Catalan>>
+| <<Traditional Chinese>>
+| <<Simplified Chinese>>
+| <<Czech>>
+| <<Danish>>
+| <<Dutch>>
+| <<Estonian>>
+| <<Finnish>>
+| <<French>>
+| <<Galician>>
+| <<German>>
+| <<Greek>>
+| <<hebrew-lao-myanmar-khmer,Hebrew, Lao, Myanmar, Khmer>>
+| <<Hindi>>
+| <<Indonesian>>
+| <<Italian>>
+| <<Irish>>
+| <<Japanese>>
+| <<Latvian>>
+| <<Norwegian>>
+| <<Persian>>
+| <<Polish>>
+| <<Portuguese>>
+| <<Romanian>>
+| <<Russian>>
+| <<Scandinavian>>
+| <<Serbian>>
+| <<Spanish>>
+| <<Swedish>>
+| <<Thai>>
+| <<Turkish>>
+| <<Ukrainian>>
+|===
 
 === Arabic
 
@@ -1055,7 +1270,14 @@ Solr includes a set of contractions for Catalan, which can be stripped using `so
 
 *Arguments:*
 
-`language`:: (required) stemmer language, "Catalan" in this case
+`language`:
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The stemmer language, `Catalan` in this case.
 
 *Example:*
 
@@ -1164,20 +1386,50 @@ In all cases, all non-CJK input is passed through unmodified.
 
 *Arguments:*
 
-`han`:: (true/false) If false, Han (Chinese) characters will not form bigrams.
-Default is true.
+`han`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `false`, Han (Chinese) characters will not form bigrams.
 
-`hiragana`:: (true/false) If false, Hiragana (Japanese) characters will not form bigrams.
-Default is true.
+`hiragana`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `false`, Hiragana (Japanese) characters will not form bigrams.
 
-`katakana`:: (true/false) If false, Katakana (Japanese) characters will not form bigrams.
-Default is true.
+`katakana`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `false`, Katakana (Japanese) characters will not form bigrams.
 
-`hangul`:: (true/false) If false, Hangul (Korean) characters will not form bigrams.
-Default is true.
+`hangul`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `false`, Hangul (Korean) characters will not form bigrams.
 
-`outputUnigrams`:: (true/false) If true, in addition to forming bigrams, all characters are also passed through as unigrams.
-Default is false.
+`outputUnigrams`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, in addition to forming bigrams, all characters are also passed through as unigrams.
 
 See the example under <<Traditional Chinese>>.
 
@@ -1317,7 +1569,14 @@ Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 
 *Arguments:*
 
-`language`:: (required) stemmer language, "Danish" in this case
+`language`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The stemmer language, `Danish` in this case.
 
 *Example:*
 
@@ -1363,7 +1622,14 @@ Solr can stem Dutch using the Snowball Porter Stemmer with an argument of `langu
 
 *Arguments:*
 
-`language`:: (required) stemmer language, "Dutch" in this case
+`language`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The stemmer language, `Dutch` in this case.
 
 *Example:*
 
@@ -1409,7 +1675,14 @@ Solr can stem Estonian using the Snowball Porter Stemmer with an argument of `la
 
 *Arguments:*
 
-`language`:: (required) stemmer language, "Estonian" in this case
+`language`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The stemmer language, `Estonian` in this case.
 
 *Example:*
 
@@ -1501,13 +1774,27 @@ This filter can be useful for languages such as French, Catalan, Italian, and Ir
 
 *Arguments:*
 
-`articles`:: The pathname of a file that contains a list of articles, one per line, to be stripped.
+`articles`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The pathname of a file that contains a list of articles, one per line, to be stripped.
 Articles are words such as "le", which are commonly abbreviated, such as in _l'avion_ (the plane).
 This file should include the abbreviated form, which precedes the apostrophe.
-In this case, simply "_l_". If no `articles` attribute is specified, a default set of French articles is used.
+In this case, simply "_l_".
+If no `articles` attribute is specified, a default set of French articles is used.
 
-`ignoreCase`:: (boolean) If true, the filter ignores the case of words when comparing them to the common word file.
-Defaults to `false`
+`ignoreCase`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the filter ignores the case of words when comparing them to the common word file.
 
 *Example:*
 
@@ -1875,7 +2162,14 @@ Solr also includes a set of contractions for Irish which can be stripped using `
 
 *Arguments:*
 
-`language`:: (required) stemmer language, "Irish" in this case
+`language`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The stemmer language, `Irish` in this case.
 
 *Example:*
 
@@ -1940,9 +2234,23 @@ Vertical iteration marks are not supported.
 
 *Arguments:*
 
-`normalizeKanji`:: set to `false` to not normalize kanji iteration marks (default is `true`)
+`normalizeKanji`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Set to `false` to not normalize kanji iteration marks.
 
-`normalizeKana`:: set to `false` to not normalize kana iteration marks (default is `true`)
+`normalizeKana`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Set to `false` to not normalize kana iteration marks.
 
 ==== Japanese Tokenizer
 
@@ -1954,7 +2262,14 @@ Tokenizer for Japanese that uses morphological analysis, and annotates each term
 
 *Arguments:*
 
-`mode`:: Use `search` mode to get a noun-decompounding effect useful for search.
+`mode`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Use `search` mode to get a noun-decompounding effect useful for search.
 `search` mode improves segmentation for search at the expense of part-of-speech accuracy.
 Valid values for `mode` are:
 +
@@ -1964,14 +2279,42 @@ Valid values for `mode` are:
 +
 For some applications it might be good to use `search` mode for indexing and `normal` mode for queries to increase precision and prevent parts of compounds from being matched and highlighted.
 
-`userDictionary`:: filename for a user dictionary, which allows overriding the statistical model with your own entries for segmentation, part-of-speech tags and readings without a need to specify weights.
+`userDictionary`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Filename for a user dictionary, which allows overriding the statistical model with your own entries for segmentation, part-of-speech tags and readings without a need to specify weights.
 See `lang/userdict_ja.txt` for a sample user dictionary file.
 
-`userDictionaryEncoding`:: user dictionary encoding (default is UTF-8)
+`userDictionaryEncoding`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `UTF-8`
+|===
++
+User dictionary encoding.
 
-`discardPunctuation`:: set to `false` to keep punctuation, `true` to discard (the default)
+`discardPunctuation`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Set to `false` to keep punctuation, `true` to discard.
 
-`discardCompoundToken`:: set to `false` to keep original compound tokens with the `search` mode, `true` to discard.
+`discardCompoundToken`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Set to `false` to keep original compound tokens with the `search` mode, `true` to discard.
 
 ==== Japanese Base Form Filter
 
@@ -1980,7 +2323,7 @@ Replaces original terms' text with the corresponding base form (lemma).
 
 *Factory class:* `JapaneseBaseFormFilterFactory`
 
-(no arguments)
+*Arguments:* None
 
 ==== Japanese Part Of Speech Stop Filter
 
@@ -1991,10 +2334,15 @@ Removes terms with one of the configured parts-of-speech.
 
 *Arguments:*
 
-`tags`:: filename for a list of parts-of-speech for which to remove terms; see `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` <<config-sets.adoc#,configset>> for an example.
-
-`enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens.
-*This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
+`tags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Filename for a list of parts-of-speech for which to remove terms.
+See `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` <<config-sets.adoc#,configset>> for an example.
 
 ==== Japanese Katakana Stem Filter
 
@@ -2006,8 +2354,15 @@ Normalizes common katakana spelling variations ending in a long sound character 
 
 *Arguments:*
 
-`minimumLength`:: terms below this length will not be stemmed.
-Default is 4, value must be 2 or more.
+`minimumLength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `4`
+|===
++
+Terms below this length will not be stemmed.
+Value must be `2` or more.
 
 ==== CJK Width Filter
 
@@ -2015,7 +2370,7 @@ Folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds 
 
 *Factory class:* `CJKWidthFilterFactory`
 
-(no arguments)
+*Arguments:* None
 
 Example:
 
@@ -2154,10 +2509,17 @@ Consider this example:
 
 *Arguments:*
 
-`variant`:: Choose the Norwegian language variant to use.
+`variant`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `nb`
+|===
++
+The Norwegian language variant to use.
 Valid values are:
 +
-* `nb:` Bokmål (default)
+* `nb:` Bokmål
 * `nn:` Nynorsk
 * `no:` both
 
@@ -2211,10 +2573,17 @@ The `NorwegianMinimalStemFilterFactory` stems plural forms of Norwegian nouns on
 
 *Arguments:*
 
-`variant`:: Choose the Norwegian language variant to use.
+`variant`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `nb`
+|===
++
+The Norwegian language variant to use.
 Valid values are:
 +
-* `nb:` Bokmål (default)
+* `nb:` Bokmål
 * `nn:` Nynorsk
 * `no:` both
 
@@ -2458,7 +2827,14 @@ Solr can stem Romanian using the Snowball Porter Stemmer with an argument of `la
 
 *Arguments:*
 
-`language`:: (required) stemmer language, "Romanian" in this case
+`language`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The stemmer language, `Romanian` in this case.
 
 *Example:*
 
@@ -2632,10 +3008,17 @@ For user tips & advice on using this filter, see https://cwiki.apache.org/conflu
 
 *Arguments:*
 
-`haircut`:: Select the extend of normalization.
+`haircut`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `bald`
+|===
++
+Select the extend of normalization.
 Valid values are:
 +
-* `bald`: (Default behavior) Cyrillic characters are first converted to Latin; then, Latin characters have their diacritics removed, with the exception of https://en.wikipedia.org/wiki/D_with_stroke[LATIN SMALL LETTER D WITH STROKE] (U+0111) which is converted to "```dj```"
+* `bald`: Cyrillic characters are first converted to Latin; then, Latin characters have their diacritics removed, with the exception of https://en.wikipedia.org/wiki/D_with_stroke[LATIN SMALL LETTER D WITH STROKE] (U+0111) which is converted to "```dj```"
 * `regular`: Only Cyrillic to Latin normalization will be applied, preserving the Latin diatrics
 
 *Example:*
@@ -2867,7 +3250,15 @@ Lucene also includes an example Ukrainian stopword list, in the `lucene-analyzer
 
 *Arguments:*
 
-`dictionary`:: (required) lemmatizer dictionary - the `lucene-analyzers-morfologik` jar contains a Ukrainian dictionary at `org/apache/lucene/analysis/uk/ukrainian.dict`.
+`dictionary`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The path to a lemmatizer dictionary.
+The `lucene-analyzers-morfologik` jar contains a Ukrainian dictionary at `org/apache/lucene/analysis/uk/ukrainian.dict`.
 
 *Example:*
 
