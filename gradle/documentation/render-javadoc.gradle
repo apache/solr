@@ -151,8 +151,21 @@ configure(project(":solr:test-framework")) {
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
         "org.apache.solr.core",
+        "org.apache.solr.handler",
         "org.apache.solr.handler.component",
         "org.apache.solr.update.processor",
+        "org.apache.solr.util"
+    ]
+  }
+}
+
+configure(project(":solr:contrib:hdfs")) {
+  project.tasks.withType(RenderJavadocTask) {    
+    javadocMissingIgnore = [
+        "org.apache.solr",
+        "org.apache.solr.core",
+        "org.apache.solr.core.backup.repository",
+        "org.apache.solr.update",
         "org.apache.solr.util"
     ]
   }

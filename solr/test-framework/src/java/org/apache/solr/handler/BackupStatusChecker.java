@@ -166,7 +166,7 @@ public final class BackupStatusChecker {
    * if the the most recently reported status to the a particular backup request.
    * </p>
    *
-   * @returns the "directoryName" of the backup if the response indicates that a is completed successfully, otherwise null
+   * @return the "directoryName" of the backup if the response indicates that a is completed successfully, otherwise null
    */
   public String checkBackupSuccess() throws Exception {
     return _checkBackupSuccess(null);
@@ -179,7 +179,7 @@ public final class BackupStatusChecker {
    * (The Replication Handler API does not make it possible to know <em>which</em> backup 
    * this exception was related to)
    *
-   * @returns the "directoryName" of the backup if the response indicates that the specified backupName is completed successfully, otherwise null
+   * @return the "directoryName" of the backup if the response indicates that the specified backupName is completed successfully, otherwise null
    * @see #waitForBackupSuccess(String,TimeOut)
    */
   public String checkBackupSuccess(final String backupName) throws Exception {
@@ -260,7 +260,7 @@ public final class BackupStatusChecker {
    * Throws a test assertion failure if the status is about this backupName but the starts message 
    * with <code>"Unable to delete"</code>
    *
-   * @returns true if the replication status info indicates the backup was deleted, false otherwise
+   * @return true if the replication status info indicates the backup was deleted, false otherwise
    * @see #waitForBackupDeletionSuccess(String,TimeOut)
    */
   public boolean checkBackupDeletionSuccess(final String backupName) throws Exception {
