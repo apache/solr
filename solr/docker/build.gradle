@@ -32,8 +32,6 @@ def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DO
 
 def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName','');
 
-def testCasesDir = "tests/cases"
-
 // Build directory locations
 def imageIdFile = "$buildDir/image-id"
 
@@ -167,54 +165,16 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   }
 }
 
-
-      
-// Re-usable closure to run tests...
-def testDockerImage = { solrImageId, outputDir, testCasesInclude, testCasesExclude ->
-  // Print information on the image before it is tested
-  logger.lifecycle("Testing Solr Image:")
-  logger.lifecycle("\tID: $solrImageId\n")
-  
-  // Run the tests
-  def sourceDir = file(testCasesDir)
-  sourceDir.eachFile  { file ->
-    def testName = file.getName()
-    def testCaseBuildDir = "${outputDir}/${testName}"
-    
-    // If specific tests are specified, only run those. Otherwise run all that are not ignored.
-    def runTest = !testCasesInclude.isEmpty() ? testCasesInclude.contains(testName) : !testCasesExclude.contains(testName)
-    if (runTest) {
-      exec {
-        environment "TEST_DIR", file
-        environment "BUILD_DIR", testCaseBuildDir
-        commandLine "bash", "$file/test.sh", solrImageId
-      }
-    }
-  }
-}
-
-task testDocker(dependsOn: tasks.dockerBuild) {
+task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Test Solr docker image built from Dockerfile.local'
 
-  def iidFile = tasks.dockerBuild.outputs.files.singleFile
+  idFile = tasks.dockerBuild.outputs.files.singleFile
+  outputDir = file("$buildDir/test-results")
 
-  // Ensure that the docker image is re-tested if the image ID changes or the test files change
-  inputs.file(iidFile)
-  inputs.dir(testCasesDir)
-  inputs.properties([
-    // include/exclude options are designed for people who know their customizations will break some tests
-    includeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.include", "SOLR_DOCKER_TESTS_INCLUDE", ",").split(","))),
-    excludeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
-  ])
-  
-  def outputDir = "$buildDir/test-results"
-  outputs.dir(outputDir)
-
-  doLast {
-    def solrImageId = iidFile.text
-    testDockerImage(solrImageId, outputDir, inputs.properties.includeTests, inputs.properties.excludeTests)
-  }
+  // include/exclude options are designed for people who know their customizations will break some tests
+  testCasesInclude.value(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.include", "SOLR_DOCKER_TESTS_INCLUDE", ",").split(",")))
+  testCasesExclude.value(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
 }
 
 task dockerPush(dependsOn: tasks.dockerTag) {
@@ -462,25 +422,110 @@ task testBuildDockerfileOfficial(type: Copy) {
   }
 }
 
-task testDockerfileOfficial(dependsOn: configurations.dockerOfficialSmokeCheckImage) {
+task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSmokeCheckImage) {
   description = 'Smoke Test Solr docker image built from Dockerfile.official'
   
-  def iidFile = file(imageIdFileOfficial)
+  idFile = file(imageIdFileOfficial)
+  outputDir = file("$smokeTestOfficial/test-results")
   
+  // This test does not respect the include/exclude properties that `testDocker` does.
+  // All docker tests will be run, no matter the properties specified.
+  testCasesInclude.empty()
+  testCasesExclude.empty()
+}
+
+// Re-usable class for running tests...
+public abstract class TestDockerImageTask extends DefaultTask {
+
   // Ensure that the docker image is re-tested if the image ID changes or the test files change
-  inputs.file(iidFile)
-  inputs.dir(testCasesDir)
+  @InputFile abstract public RegularFileProperty getIdFile()
+  @InputDirectory final public File sourceDir = project.file("tests/cases")
 
-  // This test does not respect the inputs that `testDocker` does.
-  // All docker tests will be run, no matter the inputs given.
+  @Input final public SetProperty<String> testCasesInclude = project.objects.setProperty(String)
+  @Input final public SetProperty<String> testCasesExclude = project.objects.setProperty(String)
   
-  def outputDir = "$smokeTestOfficial/test-results"
-  outputs.dir(outputDir)
+  @OutputDirectory abstract public DirectoryProperty getOutputDir()
 
-  doLast {
-    def solrImageId = iidFile.text
-    // for smoke testing Dockerfile.official, we always run all tests.
-    // (if there is a test we don't expect to pass, we should delete it)
-    testDockerImage(solrImageId, outputDir, [] as Set, [] as Set)
+  @Inject abstract public WorkerExecutor getWorkerExecutor();
+
+  public static interface SingleTestParameters extends WorkParameters {
+    // NOTE: we explicitly don't use DirectoryProperty here because the way WorkerExecutor serializes the params
+    // causes weird "wrapped" objects to come back that don't work when you try to call `.getAsFile()` or `.getAsFile().getPath()`
+    Property<String> getTestName();
+    Property<String> getTestDir();
+    Property<String> getWorkDir();
+    Property<String> getImageId();
+  }
+  public abstract static class SingleTestAction implements WorkAction<SingleTestParameters> {
+    @Inject
+    abstract public ExecOperations getExec();
+
+    @Override
+    public void execute() {
+      def testCaseName = getParameters().getTestName().get()
+      def testCaseDir = getParameters().getTestDir().get()
+      def testCaseWorkDir = getParameters().getWorkDir().get()
+      def testCaseBuildDir = "${testCaseWorkDir}/build_dir"
+      System.out.println("Starting Solr Docker test: ${testCaseName}")
+
+      def res = getExec().exec {
+        // we'll handle it ourselves so we can report the details of which test failed
+        ignoreExitValue true
+
+        environment "DEBUG", "true"
+        environment "TEST_DIR", testCaseDir
+        environment "BUILD_DIR", testCaseBuildDir
+
+        standardOutput new FileOutputStream("${testCaseWorkDir}/test.std.out")
+        errorOutput new FileOutputStream("${testCaseWorkDir}/test.err.out")
+
+        commandLine "bash", "${testCaseDir}/test.sh", getParameters().getImageId().get()
+      }
+      def ev = res.getExitValue()
+      if (0 != ev) {
+        throw new GradleException("Docker test failure=${ev}: Test: ${testCaseName} Output: ${testCaseWorkDir}");
+      } else {
+        System.out.println("Completed Solr Docker test: ${testCaseName}")
+      }
+    }
+  }
+
+  @TaskAction
+  public void runTests() {
+    // no easy way to control the amount of parallelization of the work queue (independent of `org.gradle.workers.max`)
+    // so the best we can do (simply) is a boolean setting that controls if we `await()` after each `submit()`
+    def workQueue = getWorkerExecutor().noIsolation();
+    def runConcurrentTests = project.propertyOrEnvOrDefault("solr.docker.tests.concurrent", "SOLR_DOCKER_TESTS_CONCURRENT", "false").toBoolean()
+
+    def imageId = idFile.getAsFile().get().text
+    // Print information on the image before it is tested
+    logger.lifecycle("Testing Solr Image ID: $imageId ${ -> runConcurrentTests ? '(concurrently)' : '(sequentially)'}")
+
+    def includes = testCasesInclude.get()
+    def excludes = testCasesExclude.get()
+
+    // "Run" each of the test cases
+    sourceDir.eachFile  { file ->
+      def testName = file.getName()
+      def outDir = outputDir.get()
+      def testCaseWorkDir = outDir.dir(testName)
+
+      // If specific tests are specified, only run those. Otherwise run all that are not ignored.
+      def runTest = !includes.isEmpty() ? includes.contains(testName) : !excludes.contains(testName)
+      if (runTest) {
+        project.mkdir testCaseWorkDir
+
+        def paramSetup = { params ->
+          params.getTestName().set(testName)
+          params.getTestDir().set(file.getPath())
+          params.getWorkDir().set(testCaseWorkDir.getAsFile().getPath())
+          params.getImageId().set(imageId)
+        }
+        workQueue.submit(SingleTestAction.class, paramSetup);
+        if (! runConcurrentTests) {
+          workQueue.await();
+        }
+      }
+    }
   }
 }
