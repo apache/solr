@@ -56,7 +56,6 @@ dependencies {
 
   [":solr:contrib:analysis-extras",
    ":solr:contrib:analytics",
-   ":solr:contrib:blob-repository",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
    ":solr:contrib:gcs-repository",
@@ -64,6 +63,7 @@ dependencies {
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
    ":solr:contrib:prometheus-exporter",
+   ":solr:contrib:s3-repository",
    ":solr:contrib:scripting"
   ].each { contribName ->
     distSolr project(contribName)

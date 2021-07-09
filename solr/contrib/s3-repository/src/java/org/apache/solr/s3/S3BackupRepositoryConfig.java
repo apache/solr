@@ -16,11 +16,9 @@
  */
 package org.apache.solr.s3;
 
-import com.google.common.base.Strings;
 import org.apache.solr.common.util.NamedList;
 
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Class representing the {@code backup} blob config bundle specified in solr.xml. All user-provided config can be
@@ -40,8 +38,8 @@ public class S3BackupRepositoryConfig {
     private final int proxyPort;
     private final boolean s3mock;
 
-    public S3BackupRepositoryConfig(NamedList<String> args) {
-        NamedList<String> config = args.clone();
+    public S3BackupRepositoryConfig(NamedList<?> args) {
+        NamedList<?> config = args.clone();
 
         region = getStringConfig(config, REGION);
         bucketName = getStringConfig(config, BUCKET_NAME);
@@ -54,7 +52,6 @@ public class S3BackupRepositoryConfig {
      * Construct a {@link S3StorageClient} from the provided config.
      */
     public S3StorageClient buildClient() {
-
         if (s3mock) {
             return new AdobeMockS3StorageClient(bucketName);
         } else {
@@ -62,32 +59,36 @@ public class S3BackupRepositoryConfig {
         }
     }
 
-    private static String getStringConfig(NamedList<String> config, String property) {
-        Map<String, String> env = System.getenv();
-        return env.getOrDefault(toEnvVar(property), config.get(property));
+    private static String getStringConfig(NamedList<?> config, String property) {
+        String envProp = System.getenv().get(toEnvVar(property));
+        if (envProp == null) {
+            var configProp = config.get(property);
+            return configProp == null ? null : configProp.toString();
+        } else {
+            return envProp;
+        }
     }
 
-    private static int getIntConfig(NamedList<String> config, String property) {
-        String stringConfig = getStringConfig(config, property);
-
-        if (!Strings.isNullOrEmpty(stringConfig)) {
-            // Backup/restore cmd will fail if present but not an integer.
-            return Integer.parseInt(stringConfig);
+    private static int getIntConfig(NamedList<?> config, String property) {
+        String envProp = System.getenv().get(toEnvVar(property));
+        if (envProp == null) {
+            var configProp = config.get(property);
+            return configProp == null ? 0 : (int) configProp;
         } else {
-            return 0;
+            return Integer.parseInt(envProp);
         }
     }
 
     /**
      * If the property as any other value than 'true' or 'TRUE', this will default to false.
      */
-    private static boolean getBooleanConfig(NamedList<String> config, String property) {
-        String stringConfig = getStringConfig(config, property);
-
-        if (!Strings.isNullOrEmpty(stringConfig)) {
-            return Boolean.parseBoolean(stringConfig);
+    private static boolean getBooleanConfig(NamedList<?> config, String property) {
+        String envProp = System.getenv().get(toEnvVar(property));
+        if (envProp == null) {
+            var configProp = config.getBooleanArg(property);
+            return configProp != null && configProp;
         } else {
-            return false;
+            return Boolean.parseBoolean(envProp);
         }
     }
 

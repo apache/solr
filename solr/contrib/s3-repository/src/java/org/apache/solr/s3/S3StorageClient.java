@@ -33,7 +33,6 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.input.ClosedInputStream;
@@ -437,8 +436,6 @@ class S3StorageClient {
      * -Else, silently trim the trailing slash
      */
     String sanitizedPath(String path, boolean isFile) throws S3Exception {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-
         // Trim space from start and end
         String sanitizedPath = path.trim();
 

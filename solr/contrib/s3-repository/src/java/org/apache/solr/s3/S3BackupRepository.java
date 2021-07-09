@@ -24,6 +24,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
@@ -53,13 +54,12 @@ public class S3BackupRepository implements BackupRepository {
     private static final int CHUNK_SIZE = 16 * 1024 * 1024; // 16 MBs
     static final String S3_SCHEME = "s3";
 
-    private NamedList<String> config;
+    private NamedList<?> config;
     private S3StorageClient client;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void init(NamedList<?> args) {
-        this.config = (NamedList<String>) args;
+        this.config = args;
         S3BackupRepositoryConfig backupConfig = new S3BackupRepositoryConfig(this.config);
 
         // If a client was already created, close it to avoid any resource leak
@@ -78,7 +78,10 @@ public class S3BackupRepository implements BackupRepository {
 
     @Override
     public URI createURI(String location) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(location));
+        if (StringUtils.isEmpty(location)) {
+            throw new IllegalArgumentException("cannot create URI with an empty location");
+        }
+
         URI result;
         try {
             result = new URI(location);
@@ -98,19 +101,18 @@ public class S3BackupRepository implements BackupRepository {
 
     @Override
     public URI resolve(URI baseUri, String... pathComponents) {
-        Objects.requireNonNull(baseUri);
-        Preconditions.checkArgument(baseUri.isAbsolute());
-        Preconditions.checkArgument(pathComponents.length > 0);
-        Preconditions.checkArgument(baseUri.getScheme().equalsIgnoreCase(S3_SCHEME));
+        if (!S3_SCHEME.equalsIgnoreCase(baseUri.getScheme())) {
+            throw new IllegalArgumentException("URI must being with 's3:' scheme");
+        }
 
         // If paths contains unnecessary '/' separators, they'll be removed by URI.normalize()
-        String path = baseUri.toString() + "/" + String.join("/", pathComponents);
+        String path = baseUri + "/" + String.join("/", pathComponents);
         return URI.create(path).normalize();
     }
 
     @Override
     public void createDirectory(URI path) throws IOException {
-        Objects.requireNonNull(path);
+        Objects.requireNonNull(path, "cannot create directory to a null URI");
 
         String blobPath = getS3Path(path);
 
@@ -123,7 +125,7 @@ public class S3BackupRepository implements BackupRepository {
 
     @Override
     public void deleteDirectory(URI path) throws IOException {
-        Objects.requireNonNull(path);
+        Objects.requireNonNull(path, "cannot delete directory with a null URI");
 
         String blobPath = getS3Path(path);
 
@@ -136,12 +138,13 @@ public class S3BackupRepository implements BackupRepository {
 
     @Override
     public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
-        Objects.requireNonNull(path);
-        Objects.requireNonNull(files);
+        Objects.requireNonNull(path, "cannot delete files without a valid URI path");
+        Objects.requireNonNull(files, "collection of files to delete cannot be null");
 
         if (log.isDebugEnabled()) {
             log.debug("Delete files {} from {}", files, getS3Path(path));
         }
+
         Set<String> filesToDelete = files.stream()
             .map(file -> resolve(path, file))
             .map(S3BackupRepository::getS3Path)
@@ -158,7 +161,7 @@ public class S3BackupRepository implements BackupRepository {
 
     @Override
     public boolean exists(URI path) throws IOException {
-        Objects.requireNonNull(path);
+        Objects.requireNonNull(path, "cannot test for existence of a null URI path");
 
         String blobPath = getS3Path(path);
 
@@ -171,14 +174,16 @@ public class S3BackupRepository implements BackupRepository {
 
     @Override
     public IndexInput openInput(URI path, String fileName, IOContext ctx) throws IOException {
-        Objects.requireNonNull(path);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(fileName));
+        Objects.requireNonNull(path, "cannot open a input stream without a valid URI path");
+        if (StringUtils.isEmpty(fileName)) {
+            throw new IllegalArgumentException("need a valid file name to read from S3");
+        }
 
         URI filePath = resolve(path, fileName);
         String blobPath = getS3Path(filePath);
 
         if (log.isDebugEnabled()) {
-            log.debug("Read from blob '{}'", blobPath);
+            log.debug("Read from S3 '{}'", blobPath);
         }
 
         return new S3IndexInput(client.pullStream(blobPath), blobPath, client.length(blobPath));
@@ -186,12 +191,12 @@ public class S3BackupRepository implements BackupRepository {
 
     @Override
     public OutputStream createOutput(URI path) throws IOException {
-        Objects.requireNonNull(path);
+        Objects.requireNonNull(path, "cannot write to S3 without a valid URI path");
 
         String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
-            log.debug("Write to blob '{}'", blobPath);
+            log.debug("Write to S3 '{}'", blobPath);
         }
 
         return client.pushStream(blobPath);
@@ -205,8 +210,6 @@ public class S3BackupRepository implements BackupRepository {
      */
     @Override
     public String[] listAll(URI path) throws IOException {
-        Objects.requireNonNull(path);
-
         String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
@@ -218,8 +221,6 @@ public class S3BackupRepository implements BackupRepository {
 
     @Override
     public PathType getPathType(URI path) throws IOException {
-        Objects.requireNonNull(path);
-
         String blobPath = getS3Path(path);
 
         if (log.isDebugEnabled()) {
@@ -254,40 +255,31 @@ public class S3BackupRepository implements BackupRepository {
         String blobPath = getS3Path(filePath);
         Instant start = Instant.now();
         if (log.isDebugEnabled()) {
-            log.debug("Upload started to blob'{}'", blobPath);
+            log.debug("Upload started to S3 '{}'", blobPath);
         }
 
-        IndexInput indexInput = null;
-        OutputStream outputStream = null;
-        try {
+        try (IndexInput indexInput = sourceDir.openInput(sourceFileName, IOContext.DEFAULT)) {
             client.createDirectory(getS3Path(dest));
-            indexInput = sourceDir.openInput(sourceFileName, IOContext.DEFAULT);
-            outputStream = client.pushStream(blobPath);
+            try (OutputStream outputStream = client.pushStream(blobPath)) {
 
-            byte[] buffer = new byte[CHUNK_SIZE];
-            int bufferLen;
-            long remaining = indexInput.length();
+                byte[] buffer = new byte[CHUNK_SIZE];
+                int bufferLen;
+                long remaining = indexInput.length();
 
-            while (remaining > 0) {
-                bufferLen = remaining >= CHUNK_SIZE ? CHUNK_SIZE : (int) remaining;
+                while (remaining > 0) {
+                    bufferLen = remaining >= CHUNK_SIZE ? CHUNK_SIZE : (int) remaining;
 
-                indexInput.readBytes(buffer, 0, bufferLen);
-                outputStream.write(buffer, 0, bufferLen);
-                remaining -= bufferLen;
-            }
-            outputStream.flush();
-        } finally {
-            if (indexInput != null) {
-                indexInput.close();
-            }
-            if (outputStream != null) {
-                outputStream.close();
+                    indexInput.readBytes(buffer, 0, bufferLen);
+                    outputStream.write(buffer, 0, bufferLen);
+                    remaining -= bufferLen;
+                }
+                outputStream.flush();
             }
         }
 
         long timeElapsed = Duration.between(start, Instant.now()).toMillis();
         if (log.isInfoEnabled()) {
-            log.info("Upload to blob: '{}' finished in {}ms", blobPath, timeElapsed);
+            log.info("Upload to S3: '{}' finished in {}ms", blobPath, timeElapsed);
         }
     }
 
@@ -312,7 +304,7 @@ public class S3BackupRepository implements BackupRepository {
         String blobPath = getS3Path(filePath);
         Instant start = Instant.now();
         if (log.isDebugEnabled()) {
-            log.debug("Download started from blob '{}'", blobPath);
+            log.debug("Download started from S3 '{}'", blobPath);
         }
 
         try (InputStream inputStream = client.pullStream(blobPath);
@@ -327,7 +319,7 @@ public class S3BackupRepository implements BackupRepository {
         long timeElapsed = Duration.between(start, Instant.now()).toMillis();
 
         if (log.isInfoEnabled()) {
-            log.info("Download from blob '{}' finished in {}ms", blobPath, timeElapsed);
+            log.info("Download from S3 '{}' finished in {}ms", blobPath, timeElapsed);
         }
     }
 

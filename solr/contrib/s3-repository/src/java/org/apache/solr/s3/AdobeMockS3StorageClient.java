@@ -21,8 +21,6 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 
 /**
  * This storage client exists to work around some of the incongruencies Adobe S3Mock has with the S3 API.
@@ -59,8 +57,6 @@ class AdobeMockS3StorageClient extends S3StorageClient {
      */
     @Override
     String sanitizedPath(String path, boolean isFile) throws S3Exception {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-
         // Trim space from start and end
         String sanitizedPath = path.trim();
 

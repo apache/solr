@@ -28,7 +28,7 @@ Add this to your `solr.xml`:
     <backup>
         <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
             <str name="blob.s3.bucket.name">TEST_BUCKET</str>
-            <str name="blob.s3.mock">true</str>
+            <bool name="blob.s3.mock">true</bool>
         </repository>
     </backup>
 
