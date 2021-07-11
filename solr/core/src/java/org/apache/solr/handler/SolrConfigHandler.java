@@ -284,8 +284,8 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> reqHandlers = (Map<String, Object>) map.get(SolrRequestHandler.TYPE);
-      if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
+      Map<String, Object> reqHandlers = (Map<String, Object>) map.computeIfAbsent(SolrRequestHandler.TYPE,
+              k -> new LinkedHashMap<>());
       List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
       for (PluginInfo plugin : plugins) {
         if (SolrRequestHandler.TYPE.equals(plugin.type)) {

@@ -35,7 +35,6 @@ import java.util.*;
 /**
  * Implementation for transforming {@link SearchGroup} into a {@link NamedList} structure and visa versa.
  */
-@SuppressWarnings({"rawtypes"})
 public class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command<?>>, Map<String, SearchGroupsFieldCommandResult>> {
 
   private static final String TOP_GROUPS = "topGroups";
@@ -52,7 +51,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     final NamedList<NamedList<Object>> result = new NamedList<>(data.size());
     for (Command<?> command : data) {
       final NamedList<Object> commandResult = new NamedList<>(2);
-      if (SearchGroupsFieldCommand.class.isInstance(command)) {
+      if (command instanceof SearchGroupsFieldCommand) {
         SearchGroupsFieldCommand fieldCommand = (SearchGroupsFieldCommand) command;
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
@@ -95,6 +94,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList<?>> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
     final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
     for (Map.Entry<String, NamedList<?>> command : shardResponse) {

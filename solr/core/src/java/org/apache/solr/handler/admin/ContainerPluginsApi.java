@@ -183,7 +183,7 @@ public class ContainerPluginsApi {
         Map<String, Object> rawJson = bytes == null ? new LinkedHashMap<>() :
             (Map<String, Object>) Utils.fromJSON(bytes);
         @SuppressWarnings("unchecked")
-        Map<?, ?> pluginsModified = modifier.apply((Map<String, Object>) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
+        Map<String, Object> pluginsModified = modifier.apply((Map<String, Object>) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
         if (pluginsModified == null) return null;
         rawJson.put(PLUGIN, pluginsModified);
         return Utils.toJSON(rawJson);
