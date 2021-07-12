@@ -46,10 +46,6 @@ import org.apache.solr.store.hdfs.HdfsDirectory.HdfsIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @deprecated since 8.6
- */
-@Deprecated
 public class HdfsBackupRepository implements BackupRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -66,8 +62,6 @@ public class HdfsBackupRepository implements BackupRepository {
   @Override
   public void init(NamedList<?> args) {
     this.config = args;
-
-    log.warn("HDFS support in Solr has been deprecated as of 8.6. See SOLR-14021 for details.");
 
     // Configure the size of the buffer used for copying index files to/from HDFS, if specified.
     if (args.get(HDFS_COPY_BUFFER_SIZE_PARAM) != null) {
