@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementation is adapted from https://github.com/confluentinc/kafka-connect-storage-cloud/blob/master/kafka-connect-s3/src/main/java/io/confluent/connect/s3/storage/S3OutputStream.java
+ * Implementation is adapted from https://github.com/confluentinc/kafka-connect-storage-cloud/blob/5.0.x/kafka-connect-s3/src/main/java/io/confluent/connect/s3/storage/S3OutputStream.java, which uses ASLv2.
  */
 public class S3OutputStream extends OutputStream {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

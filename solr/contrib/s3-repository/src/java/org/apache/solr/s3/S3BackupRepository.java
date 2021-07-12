@@ -16,8 +16,6 @@
  */
 package org.apache.solr.s3;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -36,7 +34,6 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -45,7 +42,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * A concrete implementation of {@link BackupRepository} interface supporting backup/restore of Solr indexes to a blob store like S3, GCS.
+ * A concrete implementation of {@link BackupRepository} interface supporting backup/restore of Solr indexes to S3.
  */
 public class S3BackupRepository implements BackupRepository {
 
@@ -246,10 +243,12 @@ public class S3BackupRepository implements BackupRepository {
      */
     @Override
     public void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI dest, String destFileName) throws IOException {
-        Objects.requireNonNull(sourceDir);
-        Objects.requireNonNull(dest);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(sourceFileName));
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(destFileName));
+        if (StringUtils.isEmpty(sourceFileName)) {
+            throw new IllegalArgumentException("must have a valid source file name to copy");
+        }
+        if (StringUtils.isEmpty(destFileName)) {
+            throw new IllegalArgumentException("must have a valid destination file name to copy");
+        }
 
         URI filePath = resolve(dest, destFileName);
         String blobPath = getS3Path(filePath);
@@ -295,10 +294,12 @@ public class S3BackupRepository implements BackupRepository {
      */
     @Override
     public void copyIndexFileTo(URI sourceDir, String sourceFileName, Directory dest, String destFileName) throws IOException {
-        Objects.requireNonNull(sourceDir);
-        Objects.requireNonNull(dest);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(sourceFileName));
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(destFileName));
+        if (StringUtils.isEmpty(sourceFileName)) {
+            throw new IllegalArgumentException("must have a valid source file name to copy");
+        }
+        if (StringUtils.isEmpty(destFileName)) {
+            throw new IllegalArgumentException("must have a valid destination file name to copy");
+        }
 
         URI filePath = resolve(sourceDir, sourceFileName);
         String blobPath = getS3Path(filePath);
