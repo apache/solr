@@ -194,6 +194,7 @@ public class SpellCheckCollator {
                               List<SpellCheckCorrection> corrections) {
     StringBuilder collation = new StringBuilder(origQuery);
     int offset = 0;
+    int lastOffset = 0;
     String corr = "";
     for(int i=0 ; i<corrections.size() ; i++) {
       SpellCheckCorrection correction = corrections.get(i);   
@@ -202,6 +203,9 @@ public class SpellCheckCollator {
       // illegal offsets due to previous replacements.
       if (tok.getPositionIncrement() == 0)
         continue;
+      if (tok.startOffset() < lastOffset)
+        continue;
+      lastOffset = tok.endOffset();
       corr = correction.getCorrection();
       boolean addParenthesis = false;
       Character requiredOrProhibited = null;
