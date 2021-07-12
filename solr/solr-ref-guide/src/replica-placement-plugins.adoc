@@ -154,22 +154,42 @@ co-location mapping for the primary collection.
 This plugin supports the following configuration parameters:
 
 `minimalFreeDiskGB`::
-(optional, integer) if a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
-Set to 0 or less to disable.
-Default value is 10.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10` Gigabytes
+|===
++
+If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
+Set to `0` or less to disable.
 
 `prioritizedFreeDiskGB`::
-(optional, integer) replica allocation will assign replicas to nodes with at least this number of GB of free disk space regardless of the number of cores on these nodes rather than assigning replicas to nodes with less than this amount of free disk space if that's an option (if that's not an option, replicas can still be assigned to nodes with less than this amount of free space).
-Default value is 100.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `100` Gigabytes
+|===
++
+Replica allocation will assign replicas to nodes with at least this number of GB of free disk space regardless of the number of cores on these nodes rather than assigning replicas to nodes with less than this amount of free disk space if that's an option (if that's not an option, replicas can still be assigned to nodes with less than this amount of free space).
 
 `withCollection`::
-(optional, map) this property defines an additional constraint that primary collections (keys) must be located on the same nodes as the secondary collections (values).
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Defines an additional constraint that primary collections (keys) must be located on the same nodes as the secondary collections (values).
 The plugin will assume that the secondary collection replicas are already in place and ignore candidate nodes where they are not already present.
-Default value is none.
 
 `nodeType`::
-(optional, map) this property defines an additional constraint that collections (keys)
-must be located only on the nodes that are labeled with one or more of the matching "node type" labels (values in the map are comma-separated labels).
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+This property defines an additional constraint that collections (keys) must be located only on the nodes that are labeled with one or more of the matching "node type" labels (values in the map are comma-separated labels).
 Nodes are labeled using the `node_type` system property with the value being an arbitrary comma-separated list of labels.
 Correspondingly, the plugin configuration can specify that a particular collection must be placed only on the nodes that match at least one of the (comma-separated) labels defined here.
 

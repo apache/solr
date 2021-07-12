@@ -64,77 +64,165 @@ Result Grouping takes the following request parameters.
 Any number of these request parameters can be included in a single request:
 
 `group`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, query results will be grouped.
 
 `group.field`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the field by which to group results.
 The field must be single-valued, and either be indexed or a field type that has a value source and works in a function query, such as `ExternalFileField`.
-It must also be a string-based field, such as `StrField` or `TextField`
+It must also be a string-based field, such as `StrField` or `TextField`.
 
 `group.func`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Group based on the unique values of a function query.
 +
 NOTE: This option does not work with <<Distributed Result Grouping Caveats,distributed searches>>.
 
 `group.query`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Return a single group of documents that match the given query.
 
 `rows`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10`
+|===
++
 The number of groups to return.
-The default value is `10`.
 
 `start`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Specifies an initial offset for the list of groups.
 
 `group.limit`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
 Specifies the number of results to return for each group.
-The default value is `1`.
 
 `group.offset`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Specifies an initial offset for the document list of each group.
 
 `sort`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `score desc`
+|===
++
 Specifies how Solr sorts the groups relative to each other.
 For example, `sort=popularity desc` will cause the groups to be sorted according to the highest popularity document in each group.
-The default value is `score desc`.
 
 `group.sort`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
 Specifies how Solr sorts documents within each group.
 The default behavior if `group.sort` is not specified is to use the same effective value as the `sort` parameter.
 
 `group.format`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `grouped`
+|===
++
 If this parameter is set to `simple`, the grouped documents are presented in a single flat list, and the `start` and `rows` parameters affect the numbers of documents instead of groups.
 An alternate value for this parameter is `grouped`.
 
 `group.main`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 If `true`, the result of the first field grouping command is used as the main result list in the response, using `group.format=simple`.
 
 `group.ngroups`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, Solr includes the number of groups that have matched the query in the results.
-The default value is false.
 +
 See below for <<Distributed Result Grouping Caveats>> when using sharded indexes.
 
 `group.truncate`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, facet counts are based on the most relevant document of each group matching the query.
-The default value is `false`.
 
 `group.facet`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 Determines whether to compute grouped facets for the field facets specified in facet.field parameters.
 Grouped facets are computed based on the first specified group.
 As with normal field faceting, fields shouldn't be tokenized (otherwise counts are computed for each token).
 Grouped faceting supports single and multivalued fields.
-Default is `false`.
 +
 WARNING: There can be a heavy performance cost to this option.
 +
 See below for <<Distributed Result Grouping Caveats>> when using sharded indexes.
 
 `group.cache.percent`::
-Setting this parameter to a number greater than 0 enables caching for result grouping.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+Setting this parameter to a number greater than `0` enables caching for result grouping.
 Result Grouping executes two searches; this option caches the second search.
-The default value is `0`.
-The maximum value is `100`.
 +
 Testing has shown that group caching only improves search time with Boolean, wildcard, and fuzzy queries.
 For simple queries like term or "match all" queries, group caching degrades performance.

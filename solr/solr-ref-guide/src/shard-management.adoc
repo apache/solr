@@ -113,20 +113,44 @@ In order to avoid timeouts, you should run this as an <<collections-api.adoc#asy
 === SPLITSHARD Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the collection that includes the shard to be split.
 This parameter is required.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the shard to be split.
 This parameter is required when `split.key` is not specified.
 
 `ranges`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A comma-separated list of hash ranges in hexadecimal, such as `ranges=0-1f4,1f5-3e8,3e9-5dc`.
 +
 This parameter can be used to divide the original shard's hash range into arbitrary hash range intervals specified in hexadecimal.
 For example, if the original hash range is `0-1500` then adding the parameter: `ranges=0-1f4,1f5-3e8,3e9-5dc` will divide the original shard into three shards with hash range `0-500`, `501-1000`, and `1001-1500` respectively.
 
 `split.key`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The key to use for splitting the index.
 +
 This parameter can be used to split a shard using a route key such that all documents of the specified route key end up in a single dedicated sub-shard.
@@ -138,35 +162,84 @@ Splitting by this route key would yield three sub-shards with ranges `0-11`, `12
 Note that the sub-shard with the hash range of the route key may also contain documents for other route keys whose hash ranges overlap.
 
 `numSubShards`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
 The number of sub-shards to split the parent shard into.
-Allowed values for this are in the range of `2`-`8` and defaults to `2`.
+Allowed values for this are in the range of `2`-`8`.
 +
 This parameter can only be used when `ranges` or `split.key` are not specified.
 
 `splitMethod`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `rewrite`
+|===
++
 Currently two methods of shard splitting are supported:
-* `splitMethod=rewrite` (default) after selecting documents to retain in each partition this method creates sub-indexes from scratch, which is a lengthy CPU- and I/O-intensive process but results in optimally-sized sub-indexes that don't contain any data from documents not belonging to each partition.
-* `splitMethod=link` uses file system-level hard links for creating copies of the original index files and then only modifies the file that contains the list of deleted documents in each partition.
+* `rewrite`: After selecting documents to retain in each partition this method creates sub-indexes from scratch, which is a lengthy CPU- and I/O-intensive process but results in optimally-sized sub-indexes that don't contain any data from documents not belonging to each partition.
+* `link`: Uses filesystem-level hard links for creating copies of the original index files and then only modifies the file that contains the list of deleted documents in each partition.
 This method is many times quicker and lighter on resources than the `rewrite` method but the resulting sub-indexes are still as large as the original index because they still contain data from documents not belonging to the partition.
 This slows down the replication process and consumes more disk space on replica nodes (the multiple hard-linked copies don't occupy additional disk space on the leader node, unless hard-linking is not supported).
 
 `splitFuzz`::
-A float value (default is 0.0f, must be smaller than 0.5f) that allows to vary the sub-shard ranges by this percentage of total shard range, odd shards being larger and even shards being smaller.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0.0`
+|===
++
+A float value which must be smaller than `0.5` that allows to vary the sub-shard ranges by this percentage of total shard range, odd shards being larger and even shards being smaller.
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Set core property _name_ to _value_.
+See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
 
 `waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, the request will complete only when all affected replicas become active.
-The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
 
 `timing`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true` then each stage of processing will be timed and a `timing` section will be included in response.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
 
 `splitByPrefix`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, the split point will be selected by taking into account the distribution of compositeId values in the shard.
 A compositeId has the form `<prefix>!<suffix>`, where all documents with the same prefix are colocated on in the hash space.
 If there are multiple prefixes in the shard being split, then the split point will be selected to divide up the prefixes into as equal sized shards as possible without splitting any prefix.
@@ -270,36 +343,94 @@ This can be customized by explicitly passing the corresponding parameters to the
 === CREATESHARD Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+
 The name of the collection that includes the shard to be split.
-This parameter is required.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+
 The name of the shard to be created.
-This parameter is required.
 
 `createNodeSet`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Allows defining the nodes to spread the new collection across.
 If not provided, the CREATESHARD operation will create shard-replica spread across all live Solr nodes.
 +
 The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 
 `nrtReplicas`::
-The number of `nrt` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `nrt` replicas that should be created for the new shard.
+The defaults for the collection are used if omitted.
 
 `tlogReplicas`::
-The number of `tlog` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `tlog` replicas that should be created for the new shard.
+The defaults for the collection are used if omitted.
 
 `pullReplicas`::
-The number of `pull` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `pull` replicas that should be created for the new shard.
+The defaults for the collection are used if omitted.
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Set core property _name_ to _value_.
+See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
 
 `waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, the request will complete only when all affected replicas become active.
-The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 === CREATESHARD Response
@@ -348,26 +479,60 @@ curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1?
 === DELETESHARD Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the collection that includes the shard to be deleted.
-This parameter is required.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the shard to be deleted.
-This parameter is required.
 
 `deleteInstanceDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 By default Solr will delete the entire instanceDir of each replica that is deleted.
 Set this to `false` to prevent the instance directory from being deleted.
 
 `deleteDataDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 By default Solr will delete the dataDir of each replica that is deleted.
 Set this to `false` to prevent the data directory from being deleted.
 
 `deleteIndex`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 By default Solr will delete the index of each replica that is deleted.
 Set this to `false` to prevent the index directory from being deleted.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 === DELETESHARD Response
@@ -437,10 +602,22 @@ curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1 -H
 === FORCELEADER Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the collection.
 This parameter is required.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the shard where leader election should occur.
 This parameter is required.
 
