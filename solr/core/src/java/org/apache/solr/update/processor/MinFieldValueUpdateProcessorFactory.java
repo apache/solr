@@ -57,10 +57,6 @@ public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetU
   @Override
   public <T> Collection<T> pickSubset(Collection<T> values) {
     try {
-        // TODO: Verify this
-      // NOTE: the extra cast to Object is needed to prevent compile
-      // errors on Eclipse Compiler (ecj) used for javadoc lint
-
       // Use the signature with null comparator to let the JDK deal with unsafe casts, and catch CCE if needed
       return Collections.singletonList(Collections.min(values, null));
     } catch (ClassCastException e) {
