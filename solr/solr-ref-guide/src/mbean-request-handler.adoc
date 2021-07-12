@@ -21,19 +21,43 @@ The MBean Request Handler offers programmatic access to the information provided
 The MBean Request Handler accepts the following parameters:
 
 `key`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Restricts results by object key.
 
 `cat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Restricts results by category name.
 
 `stats`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 Specifies whether statistics are returned with results.
 You can override the `stats` parameter on a per-field basis.
 The default is `false`.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 The output format.
-This operates the same as the <<response-writers.adoc#,`wt` parameter in a query>>. The default is `json`.
+This operates the same as the <<response-writers.adoc#,`wt` parameter in a query>>.
 
 == MBeanRequestHandler Examples
 

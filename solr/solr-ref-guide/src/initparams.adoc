@@ -21,7 +21,7 @@ The `<initParams>` section of `solrconfig.xml` allows you to define request hand
 
 There are a couple of use cases where this might be desired:
 
-* Some handlers are implicitly defined in code (see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>) and there should be a way to add/append/override some of the implicitly defined properties.
+* Some handlers are implicitly defined in code (see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>) and there should be a way to add, append, or override some of the implicitly defined properties.
 * There are a few properties that are used across handlers.
 This helps you keep only a single definition of those properties and apply them over multiple handlers.
 
@@ -49,10 +49,22 @@ The syntax and semantics are similar to that of a `<requestHandler>`.
 The following are the attributes:
 
 `path`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A comma-separated list of paths which will use the parameters.
 Wildcards can be used in paths to define nested paths, as described below.
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of this set of parameters.
 The name can be used directly in a requestHandler definition if a path is not explicitly named.
 If you give your `<initParams>` a name, you can refer to the parameters in a `<requestHandler>` that is not defined as a path.
@@ -85,7 +97,7 @@ For example, if we have an `<initParams>` that looks like this:
 </initParams>
 ----
 
-We've defined three paths with this section:
+We've defined three paths in the first line of the example:
 
 * `/myhandler` declared as a direct path.
 * `/root/*` with a single asterisk to indicate the parameters should apply to paths that are one level deep.
