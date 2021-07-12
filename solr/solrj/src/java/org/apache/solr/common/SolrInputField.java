@@ -29,8 +29,8 @@ import java.util.Iterator;
 public class SolrInputField implements Iterable<Object>, Serializable
 {
   String name;
-  Object value = null; 
-  
+  Object value = null; // TODO SOLR-15532 investigate if this can be a Collection
+
   public SolrInputField( String n )
   {
     this.name = n;
@@ -166,8 +166,10 @@ public class SolrInputField implements Iterable<Object>, Serializable
 
   @Override
   @SuppressWarnings("unchecked")
-  public Iterator<Object> iterator(){
-    if( value instanceof Collection ) {
+  public Iterator<Object> iterator() {
+    if (value == null) {
+      return Collections.emptyIterator();
+    } else if (value instanceof Collection) {
       return ((Collection<Object>)value).iterator();
     }
     return Collections.singleton(value).iterator();

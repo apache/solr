@@ -501,8 +501,8 @@ public class TestPackages extends SolrCloudTestCase {
           Map.of(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);
   }
-    @SuppressWarnings("unchecked")
-    private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer<?> parser, Map<String, Object> expected) throws Exception {
+  @SuppressWarnings("unchecked")
+  private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer<?> parser, Map<String, Object> expected) throws Exception {
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()){
       TestDistribPackageStore.assertResponseValues(10,
           () -> {

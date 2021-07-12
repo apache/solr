@@ -23,7 +23,6 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.CaffeineCache;
 import org.junit.BeforeClass;
@@ -65,12 +64,9 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
     for(Class<?> clazz : classes ) {
       if( SolrInfoBean.class.isAssignableFrom( clazz ) ) {
         try {
-          SolrInfoBean info = (SolrInfoBean)clazz.getConstructor().newInstance();
-          // TODO: The following line is always true?
-          if (info instanceof SolrMetricProducer) {
-            ((SolrMetricProducer)info).initializeMetrics(solrMetricsContext, scope);
-          }
-          
+          SolrInfoBean info = clazz.asSubclass(SolrInfoBean.class).getConstructor().newInstance();
+          info.initializeMetrics(solrMetricsContext, scope);
+
           //System.out.println( info.getClass() );
           assertNotNull( info.getClass().getCanonicalName(), info.getName() );
           assertNotNull( info.getClass().getCanonicalName(), info.getDescription() );

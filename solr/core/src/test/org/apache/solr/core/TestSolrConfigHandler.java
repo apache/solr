@@ -587,8 +587,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         HashMap<String, String> m = new HashMap<>();
         rsp.add("caches", m);
         for (String c : caches) {
-          @SuppressWarnings({"rawtypes"})
-          SolrCache cache = req.getSearcher().getCache(c);
+          SolrCache<?, ?> cache = req.getSearcher().getCache(c);
           if(cache != null) m.put(c, cache.getClass().getName());
         }
       }
