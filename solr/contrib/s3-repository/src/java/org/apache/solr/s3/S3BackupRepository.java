@@ -334,6 +334,6 @@ public class S3BackupRepository implements BackupRepository {
     private static String getS3Path(URI uri) {
         // Depending on the scheme, the first element may be the host. Following ones are the path
         String host = uri.getHost();
-        return host == null ? uri.getPath() : Paths.get(host, uri.getPath()).toString();
+        return host == null ? uri.getPath() : host + uri.getPath();
     }
 }

@@ -53,7 +53,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     public static final S3MockRule S3_MOCK_RULE = S3MockRule.builder()
             .silent()
             .withInitialBuckets(BUCKET_NAME)
-            .withHttpPort(AdobeMockS3StorageClient.DEFAULT_MOCK_S3_PORT)
             .build();
 
     /**
@@ -282,7 +281,8 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
      */
     @Override
     protected S3BackupRepository getRepository() {
-
+        String mockS3Endpoint = "http://localhost:" + S3_MOCK_RULE.getHttpPort();
+        System.setProperty("mock.s3.endpoint", mockS3Endpoint);
         NamedList<Object> args = getBaseBackupRepositoryConfiguration();
 
         S3BackupRepository repo = new S3BackupRepository();

@@ -223,7 +223,7 @@ class S3StorageClient {
         path = sanitizedPath(path, false);
 
         // for root return true
-        if ("/".equals(path)) {
+        if (path.isEmpty() || "/".equals(path)) {
             return true;
         }
 

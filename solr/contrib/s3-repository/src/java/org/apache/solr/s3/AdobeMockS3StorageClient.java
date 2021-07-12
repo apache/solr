@@ -29,8 +29,7 @@ import com.google.common.annotations.VisibleForTesting;
  */
 class AdobeMockS3StorageClient extends S3StorageClient {
 
-    static final int DEFAULT_MOCK_S3_PORT = 9090;
-    private static final String DEFAULT_MOCK_S3_ENDPOINT = "http://localhost:" + DEFAULT_MOCK_S3_PORT;
+    private static final String DEFAULT_MOCK_S3_ENDPOINT = "http://localhost:9090";
 
     AdobeMockS3StorageClient(String bucketName) {
         super(createInternalClient(), bucketName);
@@ -42,7 +41,10 @@ class AdobeMockS3StorageClient extends S3StorageClient {
     }
 
     private static AmazonS3 createInternalClient() {
-        String s3MockEndpoint = System.getenv().getOrDefault("MOCK_S3_ENDPOINT", DEFAULT_MOCK_S3_ENDPOINT);
+        String s3MockEndpoint = System.getProperty("mock.s3.endpoint");
+        if (s3MockEndpoint == null) {
+            s3MockEndpoint = System.getenv().getOrDefault("MOCK_S3_ENDPOINT", DEFAULT_MOCK_S3_ENDPOINT);
+        }
 
         return AmazonS3ClientBuilder.standard()
             .enablePathStyleAccess()
@@ -66,7 +68,7 @@ class AdobeMockS3StorageClient extends S3StorageClient {
         }
 
         // Trim off leading slash
-        if (sanitizedPath.length() > 1 && sanitizedPath.charAt(0) == '/') {
+        if (sanitizedPath.startsWith("/")) {
             return sanitizedPath.substring(1);
         } else {
             return sanitizedPath;
