@@ -28,9 +28,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.solr.common.params.SolrParams;
@@ -89,7 +87,40 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public DelegatingCollector getAnalyticsCollector(ResponseBuilder rb, IndexSearcher searcher) {
+      if (searcher.getIndexReader().maxDoc() <= 0) {
+        return new NoOpTermsCollector(rb);
+      }
       return new SignifcantTermsCollector(rb, searcher, field, numTerms, minDocs, maxDocs, minTermLength);
+    }
+  }
+
+  private static class NoOpTermsCollector extends DelegatingCollector {
+    private ResponseBuilder rb;
+
+    private NoOpTermsCollector(ResponseBuilder rb) {
+      this.rb = rb;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+    }
+
+    @Override
+    public void finish() throws IOException {
+      List<String> outTerms = new ArrayList<>();
+      List<Integer> outFreq = new ArrayList<>();
+      List<Integer> outQueryFreq = new ArrayList<>();
+      List<Double> scores = new ArrayList<>();
+
+      LinkedHashMap<String, Object> response = new LinkedHashMap<>();
+
+      rb.rsp.add("significantTerms", response);
+
+      response.put("numDocs", 0);
+      response.put("sterms", outTerms);
+      response.put("scores", scores);
+      response.put("docFreq", outFreq);
+      response.put("queryDocFreq", outQueryFreq);
     }
   }
 
