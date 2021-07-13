@@ -30,6 +30,12 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
 
   public static final String DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME = "zkDigestReadonlyUsername";
   public static final String DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME = "zkDigestReadonlyPassword";
+
+  // fallback env vars if system props not set
+  public static final String ZK_ALL_ACL_USERNAME = "ZK_ALL_ACL_USERNAME";
+  public static final String ZK_ALL_ACL_PASSWORD = "ZK_ALL_ACL_PASSWORD";
+  public static final String ZK_READ_ACL_USERNAME = "ZK_READ_ACL_USERNAME";
+  public static final String ZK_READ_ACL_PASSWORD = "ZK_READ_ACL_PASSWORD";
   
   final String zkDigestAllUsernameVMParamName;
   final String zkDigestAllPasswordVMParamName;
@@ -70,10 +76,10 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
   }
 
   protected List<ACL> createACLsToAdd(boolean includeReadOnly) {
-    String digestAllUsername = System.getProperty(zkDigestAllUsernameVMParamName);
-    String digestAllPassword = System.getProperty(zkDigestAllPasswordVMParamName);
-    String digestReadonlyUsername = System.getProperty(zkDigestReadonlyUsernameVMParamName);
-    String digestReadonlyPassword = System.getProperty(zkDigestReadonlyPasswordVMParamName);
+    String digestAllUsername = getPropertyWithEnvFallback(zkDigestAllUsernameVMParamName, ZK_ALL_ACL_USERNAME);
+    String digestAllPassword = getPropertyWithEnvFallback(zkDigestAllPasswordVMParamName, ZK_ALL_ACL_PASSWORD);
+    String digestReadonlyUsername = getPropertyWithEnvFallback(zkDigestReadonlyUsernameVMParamName, ZK_READ_ACL_USERNAME);
+    String digestReadonlyPassword = getPropertyWithEnvFallback(zkDigestReadonlyPasswordVMParamName, ZK_READ_ACL_PASSWORD);
 
     return createACLsToAdd(includeReadOnly,
         digestAllUsername, digestAllPassword,
@@ -113,5 +119,9 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
     }
   }
 
+  private String getPropertyWithEnvFallback(final String propName, final String envVarFallback) {
+    String propValue = VMParamsSingleSetCredentialsDigestZkCredentialsProvider.getProperty(propName);
+    return propValue != null ? propValue : System.getenv(envVarFallback);
+  }
 }
 

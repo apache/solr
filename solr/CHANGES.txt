@@ -374,6 +374,8 @@ Improvements
 * SOLR-15499: StatsStream implement ParallelMetricsRollup to allow for tiered computation of SQL metrics
   over collection aliases backed by many collections, potentially with many shards in each (Timothy Potter)
 
+* SOLR-15525: Allow Zookeeper ACL credentials to be passed via env vars instead of Java system properties (Timothy Potter)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)

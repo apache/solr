@@ -27,7 +27,17 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider extends Def
   
   public static final String DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME = "zkDigestUsername";
   public static final String DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME = "zkDigestPassword";
-  
+
+  private static final String ENV_VAR_PREFIX = "env:";
+
+  static String getProperty(final String propName) {
+    String propValue = System.getProperty(propName);
+    if (propValue != null && propValue.startsWith(ENV_VAR_PREFIX) && propValue.length() > ENV_VAR_PREFIX.length()) {
+      propValue = System.getenv(propValue.substring(ENV_VAR_PREFIX.length()));
+    }
+    return propValue;
+  }
+
   final String zkDigestUsernameVMParamName;
   final String zkDigestPasswordVMParamName;
   
@@ -43,14 +53,14 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider extends Def
   @Override
   protected Collection<ZkCredentials> createCredentials() {
     List<ZkCredentials> result = new ArrayList<ZkCredentials>();
-    String digestUsername = System.getProperty(zkDigestUsernameVMParamName);
-    String digestPassword = System.getProperty(zkDigestPasswordVMParamName);
+    String digestUsername = getProperty(zkDigestUsernameVMParamName);
+    String digestPassword = getProperty(zkDigestPasswordVMParamName);
+
     if (!StringUtils.isEmpty(digestUsername) && !StringUtils.isEmpty(digestPassword)) {
       result.add(new ZkCredentials("digest",
           (digestUsername + ":" + digestPassword).getBytes(StandardCharsets.UTF_8)));
     }
     return result;
   }
-  
 }
 
