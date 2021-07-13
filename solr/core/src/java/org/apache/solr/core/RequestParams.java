@@ -69,7 +69,8 @@ public class RequestParams implements MapSerializable {
   @SuppressWarnings({"rawtypes"})
   public static ParamSet createParamSet(Map map, Long version) {
     Map copy = getDeepCopy(map, 3);
-    Map<?,?> meta = (Map<?,?>) copy.remove("");
+    @SuppressWarnings("unchecked")
+    Map<String, Long> meta = (Map<String, Long>) copy.remove("");
     if (meta == null && version != null) {
       meta = Collections.singletonMap("v", version);
     }
@@ -137,7 +138,7 @@ public class RequestParams implements MapSerializable {
   public RequestParams setParams(String name, ParamSet paramSet) {
     Map deepCopy = getDeepCopy(data, 3);
     Map p = (Map) deepCopy.get(NAME);
-    if (p == null) deepCopy.put(NAME, p = new LinkedHashMap());
+    if (p == null) deepCopy.put(NAME, p = new LinkedHashMap<>());
     if (paramSet == null) p.remove(name);
     else p.put(name, paramSet.toMap(new LinkedHashMap<>()));
     return new RequestParams(deepCopy, znodeVersion);
@@ -187,8 +188,7 @@ public class RequestParams implements MapSerializable {
         log.info("conf resource {} loaded . version : {} ", name, version);
       }
       try {
-        @SuppressWarnings({"rawtypes"})
-        Map m = (Map) fromJSON (in);
+        Map<?, ?> m = (Map<?, ?>) fromJSON (in);
         return new Object[]{m, version};
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
@@ -213,14 +213,12 @@ public class RequestParams implements MapSerializable {
 
   @SuppressWarnings({"unchecked"})
   public static class ParamSet implements MapSerializable {
-    @SuppressWarnings({"rawtypes"})
-    private final Map defaults, appends, invariants;
+    private final Map<String, Object> defaults, appends, invariants;
     Map<String, VersionedParams> paramsMap;
-    @SuppressWarnings({"rawtypes"})
-    public final Map meta;
+    public final Map<String, Long> meta;
 
     @SuppressWarnings({"rawtypes"})
-    ParamSet(Map defaults, Map invariants, Map appends, Map meta) {
+    ParamSet(Map defaults, Map invariants, Map appends, Map<String, Long> meta) {
       this.defaults = defaults;
       this.invariants = invariants;
       this.appends = appends;
@@ -233,11 +231,10 @@ public class RequestParams implements MapSerializable {
     }
 
     public Long getVersion() {
-      return meta == null ? Long.valueOf(0l) : (Long) meta.get("v");
+      return meta == null ? 0L : meta.get("v");
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
     public Map<String, Object> toMap(Map<String, Object> result) {
       result.putAll(defaults);
       if (appends != null) result.put(APPENDS, appends);
@@ -258,8 +255,7 @@ public class RequestParams implements MapSerializable {
       );
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static Map mergeMaps(Map m1, Map m2) {
+    private static <K, V> Map<K, V> mergeMaps(Map<K, V> m1, Map<K, V> m2) {
       if (m1 == null && m2 == null) return null;
       if (m1 == null) return m2;
       if (m2 == null) return m1;
@@ -276,7 +272,6 @@ public class RequestParams implements MapSerializable {
 
     /**get the raw map
      */
-    @SuppressWarnings({"unchecked"})
     public Map<String, Object> get() {
       return defaults;
     }

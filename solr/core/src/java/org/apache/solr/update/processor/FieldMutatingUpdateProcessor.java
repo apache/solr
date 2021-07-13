@@ -139,7 +139,7 @@ public abstract class FieldMutatingUpdateProcessor
    * @param excludes a selector identifying field names that should be 
    *        <i>not</i> be selected, even if they are matched by the 'includes' 
    *        selector
-   * @return Either a new FieldNameSelector or one of the input selecors 
+   * @return Either a new FieldNameSelector or one of the input selectors
    *         if the combination lends itself to optimization.
    */
   public static FieldNameSelector wrap(final FieldNameSelector includes, 

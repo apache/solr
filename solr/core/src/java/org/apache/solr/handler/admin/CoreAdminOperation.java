@@ -235,8 +235,7 @@ enum CoreAdminOperation implements CoreAdminOp {
       }
 
       SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-      @SuppressWarnings({"rawtypes"})
-      NamedList result = new NamedList();
+      NamedList<Object> result = new NamedList<>();
       for (String name : mgr.listSnapshots()) {
         Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
         if ( metadata.isPresent() ) {
@@ -275,7 +274,6 @@ enum CoreAdminOperation implements CoreAdminOp {
    * @return - a named list of key/value pairs from the core.
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
@@ -312,7 +310,7 @@ enum CoreAdminOperation implements CoreAdminOp {
             if (cores.isZooKeeperAware()) {
               info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
               info.add("configVersion", core.getSolrConfig().getZnodeVersion());
-              SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
+              SimpleOrderedMap<String> cloudInfo = new SimpleOrderedMap<>();
               cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
               cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
               cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());

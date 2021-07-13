@@ -75,13 +75,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     this.ccc = ccc;
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    split(state, message,(NamedList<Object>) results);
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
+    split(state, message, results);
   }
 
-  @SuppressWarnings({"rawtypes"})
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     final String asyncId = message.getStr(ASYNC);
 
@@ -188,7 +186,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 
-      @SuppressWarnings("deprecation")
       ShardHandler shardHandler = ccc.newShardHandler();
 
 
@@ -213,9 +210,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
           // Extract the recommended splits from the shard response (if it exists)
           // example response: getRangesResults={success={127.0.0.1:62086_solr={responseHeader={status=0,QTime=1},ranges=10-20,3a-3f}}}
-          NamedList successes = (NamedList)getRangesResults.get("success");
+          NamedList<?> successes = (NamedList<?>)getRangesResults.get("success");
           if (successes != null && successes.size() > 0) {
-            NamedList shardRsp = (NamedList)successes.getVal(0);
+            NamedList<?> shardRsp = (NamedList<?>)successes.getVal(0);
             String splits = (String)shardRsp.get(CoreAdminParams.RANGES);
             if (splits != null) {
               log.info("Resulting split ranges to be used: {} slice={} leader={}", splits, slice, parentShardLeader);
@@ -251,7 +248,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             propMap.put(SHARD_ID_PROP, subSlice);
             ZkNodeProps m = new ZkNodeProps(propMap);
             try {
-              new DeleteShardCmd(ccc).call(clusterState, m, new NamedList());
+              new DeleteShardCmd(ccc).call(clusterState, m, new NamedList<>());
             } catch (Exception e) {
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + subSlice,
                   e);
@@ -640,7 +637,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
    * In case of async requests, the ShardRequestTracker's processResponses() does not
    * abort on failure (as it should). Handling this here temporarily for now.
    */
-  private void handleFailureOnAsyncRequest(@SuppressWarnings({"rawtypes"})NamedList results, String msgOnError) {
+  private void handleFailureOnAsyncRequest(NamedList<?> results, String msgOnError) {
     Object splitResultFailure = results.get("failure");
     if (splitResultFailure != null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError);

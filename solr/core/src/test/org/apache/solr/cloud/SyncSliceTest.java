@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -102,8 +101,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     params.set("action", CollectionAction.SYNCSHARD.toString());
     params.set("collection", "collection1");
     params.set("shard", "shard1");
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     
     String baseUrl = ((HttpSolrClient) shardToJetty.get("shard1").get(2).client.solrClient)
