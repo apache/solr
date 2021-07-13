@@ -32,6 +32,7 @@ import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
@@ -83,8 +84,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   private final int topNGroups;
   private final boolean includeGroupCount;
 
-  @SuppressWarnings({"rawtypes"})
-  private FirstPassGroupingCollector firstPassGroupingCollector;
+  private FirstPassGroupingCollector<?> firstPassGroupingCollector;
   private AllGroupsCollector<?> allGroupsCollector;
 
   private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
@@ -123,14 +123,15 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings("unchecked")
   public SearchGroupsFieldCommandResult result() throws IOException {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (firstPassGroupingCollector != null) {
+        Collection<?> values = (Collection<?>) firstPassGroupingCollector.getTopGroups(0);
       if (field.getType().getNumberType() != null) {
-        topGroups = GroupConverter.fromMutable(field, firstPassGroupingCollector.getTopGroups(0));
+        topGroups = GroupConverter.fromMutable(field, (Collection<SearchGroup<MutableValue>>) values);
       } else {
-        topGroups = firstPassGroupingCollector.getTopGroups(0);
+        topGroups = (Collection<SearchGroup<BytesRef>>) values;
       }
     } else {
       topGroups = Collections.emptyList();
