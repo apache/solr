@@ -868,10 +868,16 @@ Note that any punctuation _will_ be included in the tokens.
 *Arguments:*
 
 `rule`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `java`
+|===
++
 Specifies how to define whitespace for the purpose of tokenization.
 Valid values:
 
-* `java`: (Default) Uses {java-javadocs}java/lang/Character.html#isWhitespace-int-[Character.isWhitespace(int)]
+* `java`: Uses {java-javadocs}java/lang/Character.html#isWhitespace-int-[Character.isWhitespace(int)]
 * `unicode`: Uses Unicode's WHITESPACE property
 
 *Example:*
