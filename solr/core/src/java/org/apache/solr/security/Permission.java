@@ -41,14 +41,12 @@ class Permission {
   Set<String> path, role, collections, method;
   Map<String, Function<String[], Boolean>> params;
   PermissionNameProvider.Name wellknownName;
-  @SuppressWarnings({"rawtypes"})
-  Map originalConfig;
+  Map<?, ?> originalConfig;
 
   private Permission() {
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  static Permission load(@SuppressWarnings({"rawtypes"})Map m) {
+  static Permission load(Map<?, ?> m) {
     Permission p = new Permission();
     p.originalConfig = new LinkedHashMap<>(m);
     String name = (String) m.get(NAME);
@@ -71,6 +69,7 @@ class Permission {
     p.path = readSetSmart(name, m, "path");
     p.collections = readSetSmart(name, m, "collection");
     p.method = readSetSmart(name, m, "method");
+    @SuppressWarnings("unchecked")
     Map<String, Object> paramRules = (Map<String, Object>) m.get("params");
     if (paramRules != null) {
       p.params = new LinkedHashMap<>();
@@ -78,13 +77,12 @@ class Permission {
         if (e.getValue() == null) {
           p.params.put(e.getKey(), (String[] val) -> val == null);
         } else {
+          @SuppressWarnings("unchecked")
           List<String> patternStrs = e.getValue() instanceof List ?
               (List) e.getValue() :
               singletonList(e.getValue().toString());
-          List patterns = patternStrs.stream()
-              .map(it -> it.startsWith("REGEX:") ?
-                  Pattern.compile(String.valueOf(it.substring("REGEX:".length())))
-                  : it)
+          List<?> patterns = patternStrs.stream()
+              .map(it -> it.startsWith("REGEX:") ? Pattern.compile(it.substring("REGEX:".length())) : it)
               .collect(Collectors.toList());
           p.params.put(e.getKey(), val -> {
             if (val == null) return false;
@@ -108,7 +106,7 @@ class Permission {
   /**
    * This checks for the defaults available other rules for the keys
    */
-  private static Set<String> readSetSmart(String permissionName, @SuppressWarnings({"rawtypes"})Map m, String key) {
+  private static Set<String> readSetSmart(String permissionName, Map<?, ?> m, String key) {
     if(PermissionNameProvider.values.containsKey(permissionName) && !m.containsKey(key) && "collection".equals(key)) {
       return PermissionNameProvider.Name.get(permissionName).collName;
     }
@@ -128,7 +126,7 @@ class Permission {
    * @param m   the map from which to lookup
    * @param key the key with which to do lookup
    */
-  static Set<String> readValueAsSet(@SuppressWarnings({"rawtypes"})Map m, String key) {
+  static Set<String> readValueAsSet(Map<?, ?> m, String key) {
     Set<String> result = new HashSet<>();
     Object val = m.get(key);
     if (val == null) {
@@ -140,8 +138,7 @@ class Permission {
       return null;
     }
     if (val instanceof Collection) {
-      @SuppressWarnings({"rawtypes"})
-      Collection list = (Collection) val;
+      Collection<?> list = (Collection<?>) val;
       for (Object o : list) result.add(String.valueOf(o));
     } else if (val instanceof String) {
       result.add((String) val);

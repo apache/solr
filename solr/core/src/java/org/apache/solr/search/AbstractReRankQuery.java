@@ -25,6 +25,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Rescorer;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.Weight;
@@ -56,12 +57,12 @@ public abstract class AbstractReRankQuery extends RankQuery {
     return null;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+  @SuppressWarnings({"unchecked"})
+  public TopDocsCollector<ScoreDoc> getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
     if(this.boostedPriority == null) {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if(info != null) {
-        Map context = info.getReq().getContext();
+        Map<Object,Object> context = info.getReq().getContext();
         this.boostedPriority = (Set<BytesRef>)context.get(QueryElevationComponent.BOOSTED);
       }
     }

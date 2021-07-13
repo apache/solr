@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,7 +50,6 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
     protected Object convertHighlights(NamedList<Object> hl) {
       final ArrayList<SimpleOrderedMap<Object>> hlMaps = new ArrayList<>();
       for (int i=0; i<hl.size(); ++i) {
@@ -62,18 +62,16 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
     protected Object[] newHighlightsArray(int size) {
-      return new SimpleOrderedMap[size];
+      return (SimpleOrderedMap<?>[]) Array.newInstance(SimpleOrderedMap.class, size);
     }
 
     @Override
     protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {
-      @SuppressWarnings({"rawtypes"})
-      SimpleOrderedMap[] mapArr = (SimpleOrderedMap[])objArr;
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      final ArrayList<SimpleOrderedMap> hlMaps = (ArrayList<SimpleOrderedMap>)obj;
-      for (@SuppressWarnings({"rawtypes"})SimpleOrderedMap hlMap : hlMaps) {
+      SimpleOrderedMap<?>[] mapArr = (SimpleOrderedMap<?>[])objArr;
+      @SuppressWarnings("unchecked")
+      final ArrayList<SimpleOrderedMap<?>> hlMaps = (ArrayList<SimpleOrderedMap<?>>)obj;
+      for (SimpleOrderedMap<?> hlMap : hlMaps) {
         String id = (String)hlMap.get(id_key);
         ShardDoc sdoc = resultIds.get(id);
         int idx = sdoc.positionInResponse;
@@ -83,12 +81,10 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
 
     @Override
     protected Object getAllHighlights(Object[] objArr) {
-      @SuppressWarnings({"rawtypes"})
-      final SimpleOrderedMap[] mapArr = (SimpleOrderedMap[])objArr;
+      final SimpleOrderedMap<?>[] mapArr = (SimpleOrderedMap<?>[])objArr;
       // remove nulls in case not all docs were able to be retrieved
-      @SuppressWarnings({"rawtypes"})
-      ArrayList<SimpleOrderedMap> mapList = new ArrayList<>();
-      for (@SuppressWarnings({"rawtypes"})SimpleOrderedMap map : mapArr) {
+      ArrayList<SimpleOrderedMap<?>> mapList = new ArrayList<>();
+      for (SimpleOrderedMap<?> map : mapArr) {
         if (map != null) {
           mapList.add(map);
         }

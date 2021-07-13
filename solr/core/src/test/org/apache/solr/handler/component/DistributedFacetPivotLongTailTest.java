@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -81,41 +82,40 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     PivotField pivot = null;
     List<PivotField> pivots = null;
     
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    List<PivotField>[] shardPivots = new List[clients.size()];
+    List<List<PivotField>> shardPivots = new ArrayList<>(clients.size());
     for (int i = 0; i < clients.size(); i++) {
-      shardPivots[i] = clients.get(i).query( req ).getFacetPivot().get("foo_s,bar_s");
+      shardPivots.add(clients.get(i).query( req ).getFacetPivot().get("foo_s,bar_s"));
     }
 
     // top 5 same on all shards
     for (int i = 0; i < 3; i++) {
-      assertEquals(10, shardPivots[i].size());
+      assertEquals(10, shardPivots.get(i).size());
       for (int j = 0; j < 5; j++) {
-        pivot = shardPivots[i].get(j);
+        pivot = shardPivots.get(i).get(j);
         assertEquals(pivot.toString(), "aaa"+j, pivot.getValue());
         assertEquals(pivot.toString(), 100, pivot.getCount());
       }
     }
-    // top 6-10 same on shard0 & shard11
+    // top 6-10 same on shard0 & shard1
     for (int i = 0; i < 2; i++) {
       for (int j = 5; j < 10; j++) {
-        pivot = shardPivots[i].get(j);
+        pivot = shardPivots.get(i).get(j);
         assertTrue(pivot.toString(), pivot.getValue().toString().startsWith("bbb"));
         assertEquals(pivot.toString(), 50, pivot.getCount());
       }
     }
     // 6-10 on shard2
-    assertEquals("junkA", shardPivots[2].get(5).getValue());
-    assertEquals(50, shardPivots[2].get(5).getCount());
-    assertEquals("tail", shardPivots[2].get(6).getValue());
-    assertEquals(45, shardPivots[2].get(6).getCount());
+    assertEquals("junkA", shardPivots.get(2).get(5).getValue());
+    assertEquals(50, shardPivots.get(2).get(5).getCount());
+    assertEquals("tail", shardPivots.get(2).get(6).getValue());
+    assertEquals(45, shardPivots.get(2).get(6).getCount());
     for (int j = 7; j < 10; j++) {
-      pivot = shardPivots[2].get(j);
+      pivot = shardPivots.get(2).get(j);
       assertTrue(pivot.toString(), pivot.getValue().toString().startsWith("ZZZ"));
       assertEquals(pivot.toString(), 1, pivot.getCount());
     }
     // check sub-shardPivots on "tail" from shard2
-    pivots = shardPivots[2].get(6).getPivot();
+    pivots = shardPivots.get(2).get(6).getPivot();
     assertEquals(6, pivots.size());
     for (int j = 0; j < 5; j++) {
       pivot = pivots.get(j);

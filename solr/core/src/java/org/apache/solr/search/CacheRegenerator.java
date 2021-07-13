@@ -38,7 +38,7 @@ public interface CacheRegenerator {
    * @param oldVal      the old value of the cache item
    * @return true to continue with autowarming, false to stop
    */
-  public boolean regenerateItem(SolrIndexSearcher newSearcher,
-                                @SuppressWarnings({"rawtypes"})SolrCache newCache,
-                                @SuppressWarnings({"rawtypes"})SolrCache oldCache, Object oldKey, Object oldVal) throws IOException;
+  public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher,
+                                SolrCache<K,V> newCache,
+                                SolrCache<K,V> oldCache, K oldKey, V oldVal) throws IOException;
 }

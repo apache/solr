@@ -44,7 +44,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.loader.CSVLoaderBase;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.handler.loader.XMLLoader;
@@ -319,12 +318,6 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       }
     }
     return sep;
-  }
-
-  @Override
-  @SuppressWarnings({"rawtypes"})
-  public void init(NamedList args) {
-
   }
 
   private static class NoOpUpdateRequestProcessor extends UpdateRequestProcessor {
