@@ -151,7 +151,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   }
 
   @SuppressWarnings("unchecked")
-  private GroupDocs<BytesRef>[] newGroupDocsArray(int size) {
+  private static GroupDocs<BytesRef>[] newGroupDocsArray(int size) {
     return (GroupDocs<BytesRef>[]) Array.newInstance(GroupDocs.class, size);
   }
 
