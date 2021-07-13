@@ -248,14 +248,38 @@ This is also important because eliminating the noisy terms helps keep the term v
 There are four parameters designed to filter noisy terms from the term vector matrix:
 
 `minTermLength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `3`
+|===
++
 The minimum term length required to include the term in the matrix.
 
 `minDocFreq`::
-The minimum percentage, expressed as a number between 0 and 1, of documents the term must appear in to be included in the index.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `.05`
+|===
++
+The minimum percentage, expressed as a number between `0` and `1`, of documents the term must appear in to be included in the index.
 
 `maxDocFreq`::
-The maximum percentage, expressed as a number between 0 and 1, of documents the term can appear in to be included in the index.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `.5`
+|===
++
+The maximum percentage, expressed as a number between `0` and `1`, of documents the term can appear in to be included in the index.
 
 `exclude`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A comma-delimited list of strings used to exclude terms.
 If a term contains any of the excluded strings that term will be excluded from the term vector.
