@@ -85,6 +85,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
   }
   
   public void testMinExactCount() {
+    // TODO: what if cache warming carried over a suitable exact result from a previous test run?
     assertQ("minExactCount is lower than numFound,should produce approximated results",
             req("q", "field1_s:foo", 
                 "minExactCount", "2",
@@ -152,6 +153,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
       QueryCommand cmd = createBasicQueryCommand(NUM_DOCS / 2, 10, "field1_s", "foo");
       cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
       searcher.search(new QueryResult(), cmd);
+      // TODO: what if cache warming carried over a suitable exact result from a previous test run?
       assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
       while (0 < cmd.getMinExactCount()) {
         cmd.setMinExactCount(cmd.getMinExactCount() - 1);

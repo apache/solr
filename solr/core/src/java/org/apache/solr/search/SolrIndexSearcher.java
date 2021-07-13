@@ -596,13 +596,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             nDocs = Math.min(oldnDocs, 40);
           }
 
+          // TODO: how to choose?
+          // ndocs or key.nc_minExactCount or Integer.MAX_VALUE
+          // or to not warm if old value was approximation?
+          final int minExactCount = key.nc_minExactCount;
+
           QueryCommand qc = new QueryCommand();
           qc.setQuery(key.query)
               .setFilterList(key.filters)
               .setSort(key.sort)
               .setLen(nDocs)
               .setSupersetMaxDoc(nDocs)
-              .setMinExactCount(key.nc_minExactCount)
+              .setMinExactCount(minExactCount)
               .setFlags(NO_CHECK_QCACHE | key.nc_flags);
           QueryResult qr = new QueryResult();
           newSearcher.getDocListC(qr, qc);
