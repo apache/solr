@@ -4,11 +4,6 @@
 
 $( document ).ready(function() {
 
-  /**
-   * AnchorJS
-   */
-  anchors.add('h2,h3,h4,h5');
-
   // "Bootstrap Bootstrap"
   // NOTE: by default, we use "dynamic-tabs" in our wrapper instead of "tab-content"
   // so that if javascript is disabled, bootstrap's CSS doesn't hide all non-active "tab-pane" divs
@@ -67,3 +62,18 @@ $(document).ready(function () {
     });
 
 });
+
+// Forces all non-solr.apache.org links to open in new tab
+$(document).ready(function () {
+  $("a[href^=http]").each(function(){
+    var all_links = document.querySelectorAll('a');
+    for (var i = 0; i < all_links.length; i++){
+       var a = all_links[i];
+       if(a.hostname != location.hostname) {
+               a.rel = 'noopener';
+               a.target = '_blank';
+       }
+}
+  }
+)
+})

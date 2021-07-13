@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -62,6 +64,12 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
    */
   //TODO switch to DocIdSetIterator in Solr 9?
   public abstract DocIterator iterator();
+
+  /**
+   * Returns an ordered iterator of the documents in the set for the specified {@link LeafReaderContext}.
+   * <b>NOTE:</b> may return null if there are no matching documents for this leaf.
+   */
+  public abstract DocIdSetIterator iterator(LeafReaderContext ctx);
 
   /**
    * Returns the intersection of this set with another set.  Neither set is modified - a new DocSet is

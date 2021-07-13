@@ -42,7 +42,6 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testRequestParams() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1");
@@ -55,7 +54,7 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     SolrQueryResponse rsp = new SolrQueryResponse();
     try (SolrQueryRequest req = req(); UpdateRequestHandler handler = new UpdateRequestHandler()) {
-      handler.init(new NamedList());
+      handler.init(new NamedList<>());
       ContentStreamLoader csl = handler.newLoader(req, p);
       RequestWriter.ContentWriter cw = brw.getContentWriter(ureq);
       ByteArrayOutputStream baos = new ByteArrayOutputStream();

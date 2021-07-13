@@ -58,11 +58,13 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentracing.Scope;
 import io.opentracing.Span;
-import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import io.opentracing.noop.NoopSpan;
+import io.opentracing.noop.NoopTracer;
+import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import io.opentracing.util.GlobalTracer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
@@ -90,7 +92,7 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
-import org.apache.solr.util.tracing.GlobalTracer;
+import org.apache.solr.util.tracing.HttpServletCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -423,7 +425,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         httpClient = null;
         cc.shutdown();
       }
-      GlobalTracer.get().close();
     }
   }
   
@@ -436,10 +437,26 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!(_request instanceof HttpServletRequest)) return;
     HttpServletRequest request = closeShield((HttpServletRequest)_request, retry);
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
-    Scope scope = null;
-    Span span = null;
+
+    String requestPath = ServletUtils.getPathAfterContext(request);
+    // No need to even create the HttpSolrCall object if this path is excluded.
+    if (excludePatterns != null) {
+      for (Pattern p : excludePatterns) {
+        Matcher matcher = p.matcher(requestPath);
+        if (matcher.lookingAt()) {
+          chain.doFilter(request, response);
+          return;
+        }
+      }
+    }
+
+    Tracer tracer = cores == null ? GlobalTracer.get() : cores.getTracer();
+    Span span = buildSpan(tracer, request);
+    request.setAttribute(Tracer.class.getName(), tracer);
+    request.setAttribute(Span.class.getName(), span);
     boolean accepted = false;
-    try {
+    try (var scope = tracer.scopeManager().activate(span)) {
+      assert scope != null; // prevent javac warning about scope being unused
 
       if (cores == null || cores.isShutDown()) {
         try {
@@ -450,18 +467,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         if (cores == null || cores.isShutDown()) {
           log.error(msg);
           throw new UnavailableException(msg);
-        }
-      }
-
-      String requestPath = ServletUtils.getPathAfterContext(request);
-      // No need to even create the HttpSolrCall object if this path is excluded.
-      if (excludePatterns != null) {
-        for (Pattern p : excludePatterns) {
-          Matcher matcher = p.matcher(requestPath);
-          if (matcher.lookingAt()) {
-            chain.doFilter(request, response);
-            return;
-          }
         }
       }
 
@@ -479,24 +484,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         response.sendError(429, errorMessage);
       }
 
-      SpanContext parentSpan = GlobalTracer.get().extract(request);
-      Tracer tracer = GlobalTracer.getTracer();
-
-      Tracer.SpanBuilder spanBuilder = null;
-      String hostAndPort = request.getServerName() + "_" + request.getServerPort();
-      if (parentSpan == null) {
-        spanBuilder = tracer.buildSpan(request.getMethod() + ":" + hostAndPort);
-      } else {
-        spanBuilder = tracer.buildSpan(request.getMethod() + ":" + hostAndPort)
-            .asChildOf(parentSpan);
-      }
-
-      spanBuilder
-          .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
-          .withTag(Tags.HTTP_URL.getKey(), request.getRequestURL().toString());
-      span = spanBuilder.start();
-      scope = tracer.scopeManager().activate(span);
-
       AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
       if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
         return;
@@ -510,6 +497,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         if (log.isDebugEnabled()) {
           log.debug("User principal: {}", request.getUserPrincipal());
         }
+        span.setTag(Tags.DB_USER, String.valueOf(request.getUserPrincipal()));
       }
 
       HttpSolrCall call = getHttpSolrCall(request, response, retry);
@@ -518,12 +506,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         Action result = call.call();
         switch (result) {
           case PASSTHROUGH:
+            span.log("SolrDispatchFilter PASSTHROUGH");
             chain.doFilter(request, response);
             break;
           case RETRY:
+            span.log("SolrDispatchFilter RETRY");
             doFilter(request, response, chain, true); // RECURSION
             break;
           case FORWARD:
+            span.log("SolrDispatchFilter FORWARD");
             request.getRequestDispatcher(call.getPath()).forward(request, response);
             break;
           case ADMIN:
@@ -537,10 +528,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } finally {
-      if (span != null) span.finish();
-      if (scope != null) scope.close();
-
-      GlobalTracer.get().clearContext();
       consumeInputFully(request, response);
       SolrRequestInfo.reset();
       SolrRequestParsers.cleanupMultipartFiles(request);
@@ -548,9 +535,27 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
       }
+      span.setTag(Tags.HTTP_STATUS, response.getStatus());
+      span.finish();
     }
   }
-  
+
+  protected Span buildSpan(Tracer tracer, HttpServletRequest request) {
+    if (tracer instanceof NoopTracer) {
+      return NoopSpan.INSTANCE;
+    }
+    Tracer.SpanBuilder spanBuilder = tracer.buildSpan("http.request") // will be changed later
+        .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
+        .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
+        .withTag(Tags.HTTP_METHOD, request.getMethod())
+        .withTag(Tags.HTTP_URL, request.getRequestURL().toString());
+    if (request.getQueryString() != null) {
+      spanBuilder.withTag("http.params", request.getQueryString());
+    }
+    spanBuilder.withTag(Tags.DB_TYPE, "solr");
+    return spanBuilder.start();
+  }
+
   // we make sure we read the full client request so that the client does
   // not hit a connection reset and we can reuse the 
   // connection - see SOLR-8453 and SOLR-8683

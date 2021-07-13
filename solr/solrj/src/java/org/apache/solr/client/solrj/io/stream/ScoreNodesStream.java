@@ -218,8 +218,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     try {
 
       //Get the response from the terms component
-      @SuppressWarnings({"rawtypes"})
-      NamedList response = client.request(request, collection);
+      NamedList<?> response = client.request(request, collection);
       @SuppressWarnings({"unchecked"})
       NamedList<Number> stats = (NamedList<Number>)response.get("indexstats");
       long numDocs = stats.get("numDocs").longValue();

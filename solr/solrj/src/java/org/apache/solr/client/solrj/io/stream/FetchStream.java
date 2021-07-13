@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -204,9 +205,8 @@ public class FetchStream extends TupleStream implements Expressible {
     return l;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void open() throws IOException {
-    tuples = new ArrayList().iterator();
+    tuples = Collections.emptyIterator();
     stream.open();
   }
 

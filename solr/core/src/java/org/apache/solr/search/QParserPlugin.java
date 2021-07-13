@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -94,10 +93,6 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
 
   /** return a {@link QParser} */
   public abstract QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
-
-  @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args ) {
-  }
 
   @Override
   public String getName() {

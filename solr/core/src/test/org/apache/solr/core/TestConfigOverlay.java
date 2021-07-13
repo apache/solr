@@ -65,11 +65,10 @@ public class TestConfigOverlay extends SolrTestCase {
   }
 
   public void testSetProperty(){
-    @SuppressWarnings({"unchecked"})
-    ConfigOverlay overlay = new ConfigOverlay(Collections.EMPTY_MAP,0);
+    ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(),0);
     overlay = overlay.setProperty("query.filterCache.initialSize",100);
     assertEquals(100, overlay.getXPathProperty("query/filterCache/@initialSize"));
-    Map<String, String> map = overlay.getEditableSubProperties("query/filterCache");
+    Map<String, Object> map = overlay.getEditableSubProperties("query/filterCache");
     assertNotNull(map);
     assertEquals(1,map.size());
     assertEquals(100,map.get("initialSize"));

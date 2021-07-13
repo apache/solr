@@ -30,8 +30,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 
 public class CollectionMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -53,8 +55,7 @@ public class CollectionMutator {
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
     if (slice == null) {
-      @SuppressWarnings({"unchecked"})
-      Map<String, Replica> replicas = Collections.EMPTY_MAP;
+      Map<String, Replica> replicas = Collections.emptyMap();
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
       String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
@@ -99,7 +100,7 @@ public class CollectionMutator {
   public ZkWriteCommand modifyCollection(final ClusterState clusterState, ZkNodeProps message) {
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
-    Map<String, Object> m = coll.shallowCopy();
+    Map<String, Object> props = coll.shallowCopy();
     boolean hasAnyOps = false;
     PerReplicaStatesOps replicaOps = null;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
@@ -119,12 +120,17 @@ public class CollectionMutator {
       if (message.containsKey(prop)) {
         hasAnyOps = true;
         if (message.get(prop) == null)  {
-          m.remove(prop);
+          props.remove(prop);
         } else  {
-          m.put(prop, message.get(prop));
+          // rename key from collection.configName to configName
+          if (prop.equals(COLL_CONF)) {
+            props.put(CONFIGNAME_PROP, message.get(prop));
+          } else {
+            props.put(prop, message.get(prop));
+          }
         }
         if (prop == REPLICATION_FACTOR) { //SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
-          m.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
+          props.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
         }
       }
     }
@@ -133,9 +139,9 @@ public class CollectionMutator {
       if (prop.startsWith(CollectionAdminRequest.PROPERTY_PREFIX)) {
         hasAnyOps = true;
         if (message.get(prop) == null) {
-          m.remove(prop);
+          props.remove(prop);
         } else {
-          m.put(prop, message.get(prop));
+          props.put(prop, message.get(prop));
         }
       }
     }
@@ -144,7 +150,9 @@ public class CollectionMutator {
       return ZkStateWriter.NO_OP;
     }
 
-    DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion());
+    assert !props.containsKey(COLL_CONF);
+
+    DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
     if (replicaOps == null){
       return new ZkWriteCommand(coll.getName(), collection);
     } else {

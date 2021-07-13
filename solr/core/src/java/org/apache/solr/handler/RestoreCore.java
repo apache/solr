@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -172,8 +173,8 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   private void openNewSearcher() throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    Future[] waitSearcher = new Future[1];
+    @SuppressWarnings("unchecked")
+    Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
     core.getSearcher(true, false, waitSearcher, true);
     if (waitSearcher[0] != null) {
       waitSearcher[0].get();

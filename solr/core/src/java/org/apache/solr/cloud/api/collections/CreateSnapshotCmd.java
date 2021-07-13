@@ -65,8 +65,7 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
 
@@ -93,10 +92,9 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     SolrSnapshotManager.createCollectionLevelSnapshot(zkClient, collectionName, new CollectionSnapshotMetaData(commitName));
     log.info("Created a ZK path to store snapshot information for collection={} with commitName={}", collectionName, commitName);
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList shardRequestResults = new NamedList();
+    NamedList<Object> shardRequestResults = new NamedList<>();
     Map<String, Slice> shardByCoreName = new HashMap<>();
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
 
     final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
     for (Slice slice : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {
@@ -129,13 +127,12 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     Set<String> failedShards = new HashSet<>();
 
     shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
-    @SuppressWarnings({"rawtypes"})
-    NamedList success = (NamedList) shardRequestResults.get("success");
+    NamedList<?> success = (NamedList<?>) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for ( int i = 0 ; i < success.size() ; i++) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList resp = (NamedList)success.getVal(i);
+        @SuppressWarnings("unchecked")
+        NamedList<Object> resp = (NamedList<Object>)success.getVal(i);
 
         // Check if this core is the leader for the shard. The idea here is that during the backup
         // operation we preferably use the snapshot of the "leader" replica since it is most likely

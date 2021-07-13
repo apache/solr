@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
+import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -53,6 +55,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
@@ -78,6 +81,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -93,6 +97,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.FileUtils;
@@ -223,7 +228,7 @@ public class IndexFetcher {
     return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyConnectionManager(), true);
   }
 
-  public IndexFetcher(@SuppressWarnings({"rawtypes"})final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
+  public IndexFetcher(final NamedList<?> initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
     Object fetchFromLeader = initArgs.get(FETCH_FROM_LEADER);
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
@@ -241,7 +246,7 @@ public class IndexFetcher {
       leaderUrl = leaderUrl.substring(0, leaderUrl.length()-12);
       log.warn("'leaderUrl' must be specified without the {} suffix", ReplicationHandler.PATH);
     }
-    this.leaderUrl = leaderUrl;
+    setLeaderUrl(leaderUrl);
 
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);
@@ -260,11 +265,31 @@ public class IndexFetcher {
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
     myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
   }
-  
-  @SuppressWarnings({"unchecked"})
-  protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+
+  private void setLeaderUrl(String leaderUrl) {
+    if (leaderUrl != null) {
+      ClusterState clusterState = solrCore.getCoreContainer().getZkController() == null ?
+              null : solrCore.getCoreContainer().getZkController().getClusterState();
+      try {
+        solrCore.getCoreContainer().getAllowListUrlChecker()
+                .checkAllowList(Collections.singletonList(leaderUrl), clusterState);
+      } catch (MalformedURLException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Malformed 'leaderUrl' " + leaderUrl, e);
+      } catch (SolrException e) {
+        throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+                "The '" + LEADER_URL + "' parameter value '" + leaderUrl
+                        + "' is not allowed: "
+                        + e.getMessage() + ". "
+                        + AllowListUrlChecker.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
+      }
+    }
+    this.leaderUrl = leaderUrl;
+  }
+
+  protected <T> T getParameter(NamedList<?> initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
+      @SuppressWarnings("unchecked")
       T temp = (T) initArgs.get(configKey);
       toReturn = (temp != null) ? temp : defaultValue;
     }
@@ -275,8 +300,7 @@ public class IndexFetcher {
   /**
    * Gets the latest commit version and generation from the leader
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  NamedList getLatestVersion() throws IOException {
+  NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
@@ -314,8 +338,7 @@ public class IndexFetcher {
         .withConnectionTimeout(connTimeout)
         .withSocketTimeout(soTimeout)
         .build()) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList response = client.request(req);
+      NamedList<?> response = client.request(req);
 
       List<Map<String, Object>> files = (List<Map<String,Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null)
@@ -388,7 +411,7 @@ public class IndexFetcher {
           return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
         }
         if (!replica.getCoreUrl().equals(leaderUrl)) {
-          leaderUrl = replica.getCoreUrl();
+          setLeaderUrl(replica.getCoreUrl());
           log.info("Updated leaderUrl to {}", leaderUrl);
           // TODO: Do we need to set forceReplication = true?
         } else {
@@ -396,8 +419,7 @@ public class IndexFetcher {
         }
       }
       //get the current 'replicateable' index version in the leader
-      @SuppressWarnings({"rawtypes"})
-      NamedList response;
+      NamedList<?> response;
       try {
         response = getLatestVersion();
       } catch (Exception e) {
@@ -653,12 +675,12 @@ public class IndexFetcher {
         markReplicationStop();
         return successfulInstall ? IndexFetchResult.INDEX_FETCH_SUCCESS : IndexFetchResult.INDEX_FETCH_FAILURE;
       } catch (ReplicationHandlerException e) {
-        log.error("User aborted Replication");
+        log.error("User aborted Replication", e);
         return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
-        throw new InterruptedException("Index fetch interrupted");
+        throw (InterruptedException)(new InterruptedException("Index fetch interrupted").initCause(e));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       }
@@ -882,8 +904,8 @@ public class IndexFetcher {
     // todo stop keeping solrCore around
     SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
     try {
-      @SuppressWarnings({"rawtypes"})
-      Future[] waitSearcher = new Future[1];
+      @SuppressWarnings("unchecked")
+      Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
       searcher = core.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {
@@ -927,7 +949,8 @@ public class IndexFetcher {
   private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, long latestGeneration) throws Exception {
     log.info("Starting download of configuration files from leader: {}", confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
-    File tmpconfDir = new File(solrCore.getResourceLoader().getConfigDir(), "conf." + getDateAsStr(new Date()));
+    Path tmpConfPath = solrCore.getResourceLoader().getConfigPath().resolve("conf." + getDateAsStr(new Date()));
+    File tmpconfDir = tmpConfPath.toFile();
     try {
       boolean status = tmpconfDir.mkdirs();
       if (!status) {
@@ -944,7 +967,7 @@ public class IndexFetcher {
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
       terminateAndWaitFsyncService();
-      copyTmpConfFiles2Conf(tmpconfDir);
+      copyTmpConfFiles2Conf(tmpConfPath);
     } finally {
       delTree(tmpconfDir);
     }
@@ -1278,35 +1301,36 @@ public class IndexFetcher {
 
   /**
    * Make file list
+   * TODO: return the stream directly
    */
-  private List<File> makeTmpConfDirFileList(File dir, List<File> fileList) {
-    File[] files = dir.listFiles();
-    for (File file : files) {
-      if (file.isFile()) {
-        fileList.add(file);
-      } else if (file.isDirectory()) {
-        fileList = makeTmpConfDirFileList(file, fileList);
-      }
+  private List<Path> makeTmpConfDirFileList(Path dir) {
+    try {
+      return Files.walk(dir)
+              .filter(Files::isRegularFile)
+              .collect(Collectors.toList());
+    } catch (IOException e) {
+      log.warn("Could not walk file tree", e);
+      return Collections.emptyList();
     }
-    return fileList;
   }
 
   /**
    * The conf files are copied to the tmp dir to the conf dir. A backup of the old file is maintained
    */
-  private void copyTmpConfFiles2Conf(File tmpconfDir) {
+  private void copyTmpConfFiles2Conf(Path tmpconfDir) {
     boolean status = false;
-    File confDir = new File(solrCore.getResourceLoader().getConfigDir());
-    for (File file : makeTmpConfDirFileList(tmpconfDir, new ArrayList<>())) {
-      File oldFile = new File(confDir, file.getPath().substring(tmpconfDir.getPath().length(), file.getPath().length()));
-      if (!oldFile.getParentFile().exists()) {
-        status = oldFile.getParentFile().mkdirs();
-        if (!status) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-                  "Unable to mkdirs: " + oldFile.getParentFile());
-        }
+    Path confPath = solrCore.getResourceLoader().getConfigPath();
+    int numTempPathElements = tmpconfDir.getNameCount();
+    for (Path path : makeTmpConfDirFileList(tmpconfDir)) {
+      Path oldPath = confPath.resolve(path.subpath(numTempPathElements, path.getNameCount()));
+      try {
+        Files.createDirectories(oldPath.getParent());
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+                "Unable to mkdirs: " + oldPath.getParent(), e);
       }
-      if (oldFile.exists()) {
+      if (Files.exists(oldPath)) {
+        File oldFile = oldPath.toFile(); // TODO drop this
         File backupFile = new File(oldFile.getPath() + "." + getDateAsStr(new Date(oldFile.lastModified())));
         if (!backupFile.getParentFile().exists()) {
           status = backupFile.getParentFile().mkdirs();
@@ -1321,10 +1345,11 @@ public class IndexFetcher {
                   "Unable to rename: " + oldFile + " to: " + backupFile);
         }
       }
-      status = file.renameTo(oldFile);
-      if (!status) {
+      try {
+        Files.move(path, oldPath);
+      } catch (IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
-                "Unable to rename: " + file + " to: " + oldFile);
+                "Unable to rename: " + path + " to: " + oldPath, e);
       }
     }
   }
@@ -1379,15 +1404,12 @@ public class IndexFetcher {
    *
    * @return a list of configuration files which have changed on the leader and need to be downloaded.
    */
-  @SuppressWarnings({"unchecked"})
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
       return Collections.emptyList();
     //build a map with alias/name as the key
-    @SuppressWarnings({"rawtypes"})
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
-    @SuppressWarnings({"rawtypes"})
-    NamedList names = new NamedList();
+    NamedList<String> names = new NamedList<>();
     for (Map<String, Object> map : confFilesToDownload) {
       //if alias is present that is the name the file may have in the follower
       String name = (String) (map.get(ALIAS) == null ? map.get(NAME) : map.get(ALIAS));
@@ -1463,7 +1485,6 @@ public class IndexFetcher {
     return timeElapsed;
   }
 
-  @SuppressWarnings({"unchecked"})
   List<Map<String, Object>> getConfFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
@@ -1745,8 +1766,7 @@ public class IndexFetcher {
       }
 
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList response;
+      NamedList<?> response;
       InputStream is = null;
 
       // TODO use shardhandler
@@ -1855,8 +1875,7 @@ public class IndexFetcher {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  NamedList getDetails() throws IOException, SolrServerException {
+  NamedList<Object> getDetails() throws IOException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
     params.set("follower", false);

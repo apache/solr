@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -73,8 +72,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);

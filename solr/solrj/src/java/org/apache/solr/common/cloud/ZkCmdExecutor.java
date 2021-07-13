@@ -101,19 +101,38 @@ public class ZkCmdExecutor {
     return isClosed != null && isClosed.isClosed();
   }
 
+  /**
+   * Create a persistent znode with no data if it does not already exist
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
   public void ensureExists(String path, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
     ensureExists(path, null, CreateMode.PERSISTENT, zkClient, 0);
   }
-  
-  
+
+  /**
+   * Create a persistent znode with the given data if it does not already exist
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
   public void ensureExists(String path, final byte[] data, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
     ensureExists(path, data, CreateMode.PERSISTENT, zkClient, 0);
   }
-  
+
+  /**
+   * Create a znode with the given mode and data if it does not already exist
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
   public void ensureExists(String path, final byte[] data, CreateMode createMode, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
     ensureExists(path, data, createMode, zkClient, 0);
   }
-  
+
+  /**
+   * Create a node if it does not exist
+   * @param path the path at which to create the znode
+   * @param data the optional data to set on the znode
+   * @param createMode the mode with which to create the znode
+   * @param zkClient the client to use to check and create
+   * @param skipPathParts how many path elements to skip
+   */
   public void ensureExists(final String path, final byte[] data,
       CreateMode createMode, final SolrZkClient zkClient, int skipPathParts) throws KeeperException, InterruptedException {
     
@@ -122,10 +141,9 @@ public class ZkCmdExecutor {
     }
     try {
       zkClient.makePath(path, data, createMode, null, true, true, skipPathParts);
-    } catch (NodeExistsException e) {
+    } catch (NodeExistsException ignored) {
       // it's okay if another beats us creating the node
     }
-    
   }
   
   /**

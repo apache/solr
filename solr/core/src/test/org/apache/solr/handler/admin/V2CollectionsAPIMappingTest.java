@@ -132,6 +132,13 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
     }
 
     @Test
+    public void testListCollectionsAllProperties() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/collections", "GET", null);
+
+        assertEquals(CollectionParams.CollectionAction.LIST.lowerName, v1Params.get(ACTION));
+    }
+
+    @Test
     public void testCreateAliasAllProperties() throws Exception {
         final SolrParams v1Params = captureConvertedV1Params("/collections", "POST",
                 "{'create-alias': {" +

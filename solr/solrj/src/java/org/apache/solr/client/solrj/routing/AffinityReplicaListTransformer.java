@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.routing;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
@@ -63,32 +63,31 @@ public class AffinityReplicaListTransformer implements ReplicaListTransformer {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void transform(List<?> choices) {
+  public <T> void transform(List<T> choices) {
     int size = choices.size();
     if (size > 1) {
       int i = 0;
-      SortableChoice[] sortableChoices = new SortableChoice[size];
-      for (Object o : choices) {
-        sortableChoices[i++] = new SortableChoice(o);
+      ArrayList<SortableChoice<T>> sortableChoices = new ArrayList<>(choices.size());
+      for (T choice : choices) {
+        sortableChoices.add(new SortableChoice<>(choice));
       }
-      Arrays.sort(sortableChoices, SORTABLE_CHOICE_COMPARATOR);
-      ListIterator iter = choices.listIterator();
+      sortableChoices.sort(SORTABLE_CHOICE_COMPARATOR);
+      ListIterator<T> iter = choices.listIterator();
       i = routingDividend % size;
       final int limit = i + size;
       do {
         iter.next();
-        iter.set(sortableChoices[i % size].choice);
+        iter.set(sortableChoices.get(i % size).choice);
       } while (++i < limit);
     }
   }
 
-  private static final class SortableChoice {
+  private static final class SortableChoice<T> {
 
-    private final Object choice;
+    private final T choice;
     private final String sortableCoreLabel;
 
-    private SortableChoice(Object choice) {
+    private SortableChoice(T choice) {
       this.choice = choice;
       if (choice instanceof Replica) {
         this.sortableCoreLabel = ((Replica)choice).getCoreUrl();
@@ -101,5 +100,5 @@ public class AffinityReplicaListTransformer implements ReplicaListTransformer {
 
   }
 
-  private static final Comparator<SortableChoice> SORTABLE_CHOICE_COMPARATOR = Comparator.comparing(o -> o.sortableCoreLabel);
+  private static final Comparator<SortableChoice<?>> SORTABLE_CHOICE_COMPARATOR = Comparator.comparing(o -> o.sortableCoreLabel);
 }

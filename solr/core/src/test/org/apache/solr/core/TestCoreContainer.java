@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -460,6 +461,65 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
+    public boolean checkConfigExists(String configName) throws IOException {
+      return false;
+    }
+
+    @Override
+    public void deleteConfig(String configName) throws IOException {
+
+    }
+
+    @Override
+    public void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException {
+
+    }
+
+    public void copyConfig(String fromConfig, String toConfig) throws IOException {
+
+    }
+
+    @Override
+    public void uploadConfig(String configName, Path dir) throws IOException {
+
+    }
+
+    @Override
+    public void uploadFileToConfig(String configName, String fileName, byte[] data, boolean overwriteOnExists) throws IOException {
+
+    }
+
+    @Override
+    public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
+
+    }
+
+    @Override
+    public Map<String, Object> getConfigMetadata(String configName) throws IOException {
+      return null;
+    }
+
+    @Override
+    public void downloadConfig(String configName, Path dir) throws IOException {
+
+    }
+
+    @Override
+    public List<String> listConfigs() throws IOException {
+      return null;
+    }
+
+    @Override
+    public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
+      return new byte[0];
+    }
+
+    @Override
+    public List<String> getAllConfigFiles(String configName) throws IOException {
+      return null;
+    }
+
+    @Override
     protected SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd){
       return null;
     }
@@ -547,6 +607,28 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // UNC paths are always blocked
     assertPathBlocked("\\\\unc-server\\share\\path");
+  }
+
+  @Test
+  public void assertAllowPathNormalization() throws Exception {
+    Assume.assumeFalse(OS.isFamilyWindows());
+    System.setProperty("solr.allowPaths", "/var/solr/../solr");
+    CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    cc.assertPathAllowed(Paths.get("/var/solr/foo"));
+    assertThrows("Path /tmp should not be allowed", SolrException.class, () -> { cc.assertPathAllowed(Paths.get("/tmp")); });
+    cc.shutdown();
+    System.clearProperty("solr.allowPaths");
+  }
+
+  @Test
+  public void assertAllowPathNormalizationWin() throws Exception {
+    Assume.assumeTrue(OS.isFamilyWindows());
+    System.setProperty("solr.allowPaths", "C:\\solr\\..\\solr");
+    CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
+    cc.assertPathAllowed(Paths.get("C:\\solr\\foo"));
+    assertThrows("Path C:\\tmp should not be allowed", SolrException.class, () -> { cc.assertPathAllowed(Paths.get("C:\\tmp")); });
+    cc.shutdown();
+    System.clearProperty("solr.allowPaths");
   }
 
   private static Set<Path> ALLOWED_PATHS = Set.of(Path.of("/var/solr"));

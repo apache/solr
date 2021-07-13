@@ -34,8 +34,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Hash;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -112,7 +114,15 @@ public class HashQParserPlugin extends QParserPlugin {
             @Override
             public boolean advanceExact(int doc) throws IOException { atDoc = values.advanceExact(doc); return true; }
             @Override
-            public long longValue() throws IOException { return atDoc ? values.binaryValue().hashCode() : 0; }
+            public long longValue() throws IOException {
+              //TODO: maybe cache hashCode if same ord as prev doc to save lookupOrd?
+              return atDoc ? hashCode(values.lookupOrd(values.ordValue())) : 0;
+            }
+
+            private int hashCode(BytesRef bytesRef) {
+              // Use deterministic hashCode.  BytesRef.hashCode() varies!
+              return Hash.murmurhash3_x86_32(bytesRef.bytes, bytesRef.offset, bytesRef.length, 0);
+            }
           };
           continue;
         }

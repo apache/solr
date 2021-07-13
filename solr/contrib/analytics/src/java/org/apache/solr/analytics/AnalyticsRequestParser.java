@@ -350,7 +350,6 @@ public class AnalyticsRequestParser {
     return new PivotFacet(name, topPivot);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static PivotNode<?> constructPivot(AnalyticsPivotRequest pivotRequest,
                                       PivotNode<?> childPivot,
                                       ExpressionFactory expressionFactory,
@@ -377,7 +376,7 @@ public class AnalyticsRequestParser {
     if (childPivot == null) {
       pivot = new PivotNode.PivotLeaf(pivotRequest.name, (StringValueStream)expr);
     } else {
-      pivot = new PivotNode.PivotBranch(pivotRequest.name, (StringValueStream)expr, childPivot);
+      pivot = new PivotNode.PivotBranch<>(pivotRequest.name, (StringValueStream)expr, childPivot);
     }
 
     // Check if the pivot is sorted

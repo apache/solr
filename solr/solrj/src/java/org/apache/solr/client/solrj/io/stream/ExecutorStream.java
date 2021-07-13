@@ -153,8 +153,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    ArrayBlockingQueue<Tuple> queue = new ArrayBlockingQueue(10000);
+    ArrayBlockingQueue<Tuple> queue = new ArrayBlockingQueue<>(10000);
     while(true) {
       Tuple tuple = stream.read();
       if (!tuple.EOF) {
@@ -184,8 +183,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
     private StreamFactory streamFactory;
     private StreamContext streamContext;
 
-    @SuppressWarnings({"unchecked"})
-    public StreamTask(@SuppressWarnings({"rawtypes"})ArrayBlockingQueue queue, StreamFactory streamFactory, StreamContext streamContext) {
+    public StreamTask(ArrayBlockingQueue<Tuple> queue, StreamFactory streamFactory, StreamContext streamContext) {
       this.queue = queue;
       this.streamFactory = streamFactory;
       this.streamContext = new StreamContext();

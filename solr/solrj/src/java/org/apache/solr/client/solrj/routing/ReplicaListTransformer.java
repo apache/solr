@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 
+@FunctionalInterface
 public interface ReplicaListTransformer {
 
   /**
@@ -30,6 +31,6 @@ public interface ReplicaListTransformer {
    * @param choices - a list of choices to transform, typically the choices are {@link Replica} objects but choices
    * can also be {@link String} objects such as URLs passed in via the {@link ShardParams#SHARDS} parameter.
    */
-  public void transform(List<?> choices);
+  public <T> void transform(List<T> choices);
 
 }

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -244,23 +245,16 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   }
 
   @Override
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-    if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
-        info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
-      if (info.getUserPrincipal() != null) {
-        if (log.isInfoEnabled()) {
-          log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
-        }
-        httpRequest.setHeader(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
-        return true;
-      }
-    }
-    return false;
+  public boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
+    return intercept(httpRequest::setHeader);
   }
 
   @Override
   protected boolean interceptInternodeRequest(Request request) {
+    return intercept(request::header);
+  }
+
+  private boolean intercept(BiConsumer<String, String> header) {
     SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
     if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
         info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
@@ -268,7 +262,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
         if (log.isInfoEnabled()) {
           log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
         }
-        request.header(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
+        header.accept(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
         return true;
       }
     }

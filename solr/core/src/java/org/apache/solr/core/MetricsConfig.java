@@ -31,7 +31,6 @@ public class MetricsConfig {
   private final PluginInfo meterSupplier;
   private final PluginInfo timerSupplier;
   private final PluginInfo histogramSupplier;
-  private final PluginInfo historyHandler;
   private final Object nullNumber;
   private final Object notANumber;
   private final Object nullString;
@@ -42,7 +41,6 @@ public class MetricsConfig {
                         PluginInfo[] metricReporters, Set<String> hiddenSysProps,
                         PluginInfo counterSupplier, PluginInfo meterSupplier,
                         PluginInfo timerSupplier, PluginInfo histogramSupplier,
-                        PluginInfo historyHandler,
                         Object nullNumber, Object notANumber, Object nullString, Object nullObject) {
     this.enabled = enabled;
     this.metricReporters = metricReporters;
@@ -51,7 +49,6 @@ public class MetricsConfig {
     this.meterSupplier = meterSupplier;
     this.timerSupplier = timerSupplier;
     this.histogramSupplier = histogramSupplier;
-    this.historyHandler = historyHandler;
     this.nullNumber = nullNumber;
     this.notANumber = notANumber;
     this.nullString = nullString;
@@ -136,14 +133,6 @@ public class MetricsConfig {
     }
   }
 
-  public PluginInfo getHistoryHandler() {
-    if (enabled) {
-      return historyHandler;
-    } else {
-      return NO_OP_PLUGIN;
-    }
-  }
-
   public static class MetricsConfigBuilder {
     private PluginInfo[] metricReporterPlugins = new PluginInfo[0];
     private Set<String> hiddenSysProps = new HashSet<>();
@@ -151,7 +140,6 @@ public class MetricsConfig {
     private PluginInfo meterSupplier;
     private PluginInfo timerSupplier;
     private PluginInfo histogramSupplier;
-    private PluginInfo historyHandler;
     private Object nullNumber = null;
     private Object notANumber = null;
     private Object nullString = null;
@@ -201,11 +189,6 @@ public class MetricsConfig {
       return this;
     }
 
-    public MetricsConfigBuilder setHistoryHandler(PluginInfo info) {
-      this.historyHandler = info;
-      return this;
-    }
-
     public MetricsConfigBuilder setNullNumber(Object nullNumber) {
       this.nullNumber = nullNumber;
       return this;
@@ -228,7 +211,7 @@ public class MetricsConfig {
 
     public MetricsConfig build() {
       return new MetricsConfig(enabled, metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
-          timerSupplier, histogramSupplier, historyHandler,
+          timerSupplier, histogramSupplier,
           nullNumber, notANumber, nullString, nullObject);
     }
 

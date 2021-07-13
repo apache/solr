@@ -60,10 +60,12 @@ Let's first see what happens when we visualize the array function as a table.
 
 image::images/math-expressions/array.png[]
 
-It appears as one row with a comma-delimited list of values. You'll find that you can't visualize this output
+It appears as one row with a comma-delimited list of values.
+You'll find that you can't visualize this output
 using any of the plotting tools.
 
-To plot the array you need the `zplot` function. Let's first look at how `zplot` output looks like in JSON format.
+To plot the array you need the `zplot` function.
+Let's first look at how `zplot` output looks like in JSON format.
 
 [source,text]
 ----
@@ -145,7 +147,8 @@ image::images/math-expressions/line1.png[]
 
 Each chart has settings which can be explored by clicking on *settings*.
 
-You can switch between chart types for different types of visualizations. Below is an example of
+You can switch between chart types for different types of visualizations.
+Below is an example of
 a bar chart:
 
 image::images/math-expressions/bar.png[]
@@ -426,8 +429,9 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Vector Summarizations and Norms
 
-There are a set of functions that perform summarizations and return norms of arrays. These functions
-operate over an array and return a single value. The following vector summarizations and norm functions are available:
+There are a set of functions that perform summarizations and return norms of arrays.
+These functions operate over an array and return a single value.
+The following vector summarizations and norm functions are available:
 `mult`, `add`, `sumSq`, `mean`, `l1norm`, `l2norm`, `linfnorm`.
 
 The example below shows the `mult` function, which multiples all the values of an array.
@@ -524,7 +528,8 @@ When this expression is sent to the `/stream` handler it responds with:
 == Element-By-Element Vector Math
 
 Two vectors can be added, subtracted, multiplied and divided using element-by-element
-vector math functions. The available element-by-element vector math functions are:
+vector math functions.
+The available element-by-element vector math functions are:
 `ebeAdd`, `ebeSubtract`, `ebeMultiply`, `ebeDivide`.
 
 The expression below performs the element-by-element subtraction of two arrays.
@@ -560,7 +565,8 @@ When this expression is sent to the `/stream` handler it responds with:
 == Dot Product and Cosine Similarity
 
 The `dotProduct` and `cosineSimilarity` functions are often used as similarity measures between two
-sparse vectors. The `dotProduct` is a measure of both angle and magnitude while `cosineSimilarity`
+sparse vectors.
+The `dotProduct` is a measure of both angle and magnitude while `cosineSimilarity`
 is a measure only of angle.
 
 Below is an example of the `dotProduct` function:

@@ -67,8 +67,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -81,7 +80,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
-    String configName = ccc.getZkStateReader().readConfigName(collectionName);
+    String configName = ccc.getSolrCloudManager().getClusterStateProvider().getCollection(collectionName).getConfigName();
 
     BackupProperties backupProperties = BackupProperties.create(backupName, collectionName,
             extCollectionName, configName);
@@ -104,7 +103,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
             try {
               incrementalCopyIndexFiles(backupUri, collectionName, message, results, backupProperties, backupMgr);
             } catch (SolrException e) {
-              log.error("Error happened during incremental backup for collection:{}", collectionName, e);
+              log.error("Error happened during incremental backup for collection: {}", collectionName, e);
               CollectionHandlingUtils.cleanBackup(repository, backupUri, backupMgr.getBackupId(), ccc);
               throw e;
             }
@@ -121,7 +120,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       log.info("Starting to backup ZK data for backupName={}", backupName);
 
       //Download the configs
-      backupMgr.downloadConfigDir(configName);
+      backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
 
       //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
       //Since we don't want to distinguish we extract the state and back it up as a separate json
@@ -210,7 +209,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
 
     log.info("Starting backup of collection={} with backupName={} at location={}", collectionName, backupName,
             backupUri);
@@ -248,13 +247,11 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     //Aggregating result from different shards
-    @SuppressWarnings({"rawtypes"})
-    NamedList aggRsp = aggregateResults(results, collectionName, backupManager, backupProperties, slices);
+    NamedList<Object> aggRsp = aggregateResults(results, collectionName, backupManager, backupProperties, slices);
     results.add("response", aggRsp);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private NamedList aggregateResults(NamedList results, String collectionName,
+  private NamedList<Object> aggregateResults(NamedList<Object> results, String collectionName,
                                      BackupManager backupManager,
                                      BackupProperties backupProps,
                                      Collection<Slice> slices) {
@@ -266,9 +263,9 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     aggRsp.add("startTime", backupProps.getStartTime());
 
     double indexSizeMB = 0;
-    NamedList shards = (NamedList) results.get("success");
+    NamedList<?> shards = (NamedList<?>) results.get("success");
     for (int i = 0; i < shards.size(); i++) {
-      NamedList shardResp = (NamedList)((NamedList)shards.getVal(i)).get("response");
+      NamedList<?> shardResp = (NamedList<?>)((NamedList<?>)shards.getVal(i)).get("response");
       if (shardResp == null)
         continue;
       indexSizeMB += (double) shardResp.get("indexSizeMB");
@@ -288,12 +285,11 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     return params;
   }
 
-  @SuppressWarnings({"unchecked"})
-  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList<Object> results) throws Exception {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
 
     String commitName = request.getStr(CoreAdminParams.COMMIT_NAME);
     Optional<CollectionSnapshotMetaData> snapshotMeta = Optional.empty();

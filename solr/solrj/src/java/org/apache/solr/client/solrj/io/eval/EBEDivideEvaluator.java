@@ -47,10 +47,9 @@ public class EBEDivideEvaluator extends RecursiveNumericEvaluator implements Two
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
-    @SuppressWarnings({"unchecked"})
     double[] result =  MathArrays.ebeDivide(
-        ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-        ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+        ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+        ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
     );
 
     List<Number> numbers = new ArrayList<>();

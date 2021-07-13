@@ -37,9 +37,8 @@ import static org.apache.solr.update.processor.IgnoreLargeDocumentProcessorFacto
 public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testProcessor() throws IOException {
-    NamedList args = new NamedList();
+    NamedList<Object> args = new NamedList<>();
     args.add(IgnoreLargeDocumentProcessorFactory.LIMIT_SIZE_PARAM, 1);
 
     IgnoreLargeDocumentProcessorFactory factory = new IgnoreLargeDocumentProcessorFactory();
@@ -48,7 +47,7 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     UpdateRequestProcessor processor = factory.getInstance(null, null, null);
     expectThrows(SolrException.class, () -> processor.processAdd(getUpdate(1024)));
 
-    args = new NamedList();
+    args = new NamedList<>();
     args.add(IgnoreLargeDocumentProcessorFactory.LIMIT_SIZE_PARAM, 2);
     factory = new IgnoreLargeDocumentProcessorFactory();
     factory.init(args);

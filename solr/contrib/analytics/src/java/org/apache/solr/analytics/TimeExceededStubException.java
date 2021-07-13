@@ -20,7 +20,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.response.SolrQueryResponse;
 
-@SuppressWarnings("serial")
 public final class TimeExceededStubException extends SolrException {
   private static final int HTTP_CODE = 524;
 

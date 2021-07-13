@@ -80,11 +80,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     return BinaryResponseParser.BINARY_CONTENT_TYPE;
   }
 
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    /* NOOP */
-  }
-
   public static class Resolver implements JavaBinCodec.ObjectResolver , JavaBinCodec.WritableDocFields {
     protected final SolrQueryRequest solrQueryRequest;
     protected IndexSchema schema;
@@ -289,8 +284,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public Object getFirstValue(String name) {
       Object v = _fields.get(name);
       if (v == null || !(v instanceof Collection)) return convertCharSeq(v);
-      @SuppressWarnings({"rawtypes"})
-      Collection c = (Collection) v;
+      Collection<?> c = (Collection<?>) v;
       if (c.size() > 0) {
         return convertCharSeq(c.iterator().next());
       }

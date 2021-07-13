@@ -40,6 +40,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,13 +75,22 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    NamedList values = rsp.getValues();
+    NamedList<Object> values = rsp.getValues();
     if (cores.isZooKeeperAware()) {
       String zkHost = cores.getZkController().getZkServerAddress();
-      SolrZkClient zkClient = cores.getZkController().getZkClient();
-      final ZkDynamicConfig dynConfig = ZkDynamicConfig.parseLines(zkClient.getConfig());
+      ZkDynamicConfig dynConfig = null;
+      try {
+        SolrZkClient zkClient = cores.getZkController().getZkClient();
+        dynConfig = ZkDynamicConfig.parseLines(zkClient.getConfig());
+      } catch (SolrException e) {
+        if (!(e.getCause() instanceof KeeperException)) {
+          throw e;
+        }
+        if (log.isWarnEnabled()) {
+          log.warn("{} - Continuing with static connection string", e.toString());
+        }
+      }
       values.add("zkStatus", getZkStatus(zkHost, dynConfig));
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The Zookeeper status API is only available in Cloud mode");
@@ -102,7 +112,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     final List<String> errors = new ArrayList<>();
     String status = STATUS_NA;
 
-    if (zkDynamicConfig.size() == 0) {
+    if (zkDynamicConfig == null || zkDynamicConfig.size() == 0) {
       // Fallback to parsing zkHost for older zk servers without support for dynamic reconfiguration
       dynamicReconfig = false;
       zookeepers = hostsFromConnectionString;
@@ -147,9 +157,6 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           stat.remove("errors");
         }
         details.add(stat);
-        if ("true".equals(String.valueOf(stat.get("ok")))) {
-          numOk++;
-        }
         String state = String.valueOf(stat.get("zk_server_state"));
         if ("follower".equals(state) || "observer".equals(state)) {
           followers++;
@@ -176,6 +183,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       }
     }
     zkStatus.put("details", details);
+    numOk = (int) details.stream().filter(m -> ((boolean) ((HashMap<String, Object>) m).get("ok"))).count();
     zkStatus.put("dynamicReconfig", dynamicReconfig);
     if (followers+leaders > 0 && standalone > 0) {
       status = STATUS_RED;
@@ -201,7 +209,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       errors.add("Leader reports " + reportedFollowers + " followers, but we only found " + followers + 
         ". Please check zkHost configuration");
     }
-    if (followers+leaders == 0 && standalone == 1) {
+    if (followers+leaders == 0 && (standalone == 1 || zookeepers.size() == 1)) {
       zkStatus.put("mode", "standalone");
     }
     if (followers+leaders > 0 && (zookeepers.size())%2 == 0) {
@@ -212,6 +220,9 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     }
     if (followers+leaders > 0 && standalone == 0) {
       zkStatus.put("mode", "ensemble");
+    }
+    if (numOk == 0) {
+      status = STATUS_RED;
     }
     if (status.equals(STATUS_NA)) {
       if (numOk == zookeepers.size()) {
@@ -312,6 +323,9 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           " towards ZK host " + zkHostPort + ". Add this line to the 'zoo.cfg' " +
           "configuration file on each zookeeper node: '4lw.commands.whitelist=mntr,conf,ruok'. See also chapter " +
           "'Setting Up an External ZooKeeper Ensemble' in the Solr Reference Guide.");
+    }
+    if (response.size() == 1 && response.get(0).contains("not currently serving requests")) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Zookeeper " + zkHostPort + " is not currently serving requests.");
     }
     return true;
   }

@@ -33,7 +33,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -82,10 +81,9 @@ public class SchemaManager {
    * as possible instead of failing at the first error it encounters
    * @return List of errors. If the List is empty then the operation was successful.
    */
-  @SuppressWarnings({"rawtypes"})
-  public List performOperations() throws Exception {
+  public List<Map<String, Object>> performOperations() throws Exception {
     List<CommandOperation> ops = req.getCommands(false);
-    List errs = CommandOperation.captureErrors(ops);
+    List<Map<String, Object>> errs = CommandOperation.captureErrors(ops);
     if (!errs.isEmpty()) return errs;
 
     IndexSchema schema = req.getCore().getLatestSchema();
@@ -96,12 +94,11 @@ public class SchemaManager {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private List doOperations(List<CommandOperation> operations) throws InterruptedException, IOException, KeeperException {
+  private List<Map<String, Object>> doOperations(List<CommandOperation> operations) throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
-    List errors = Collections.emptyList();
+    List<Map<String,Object>> errors = Collections.emptyList();
     int latestVersion = -1;
 
     synchronized (req.getSchema().getSchemaUpdateLock()) {
@@ -145,7 +142,7 @@ public class SchemaManager {
             core.getCoreContainer().reload(core.getName(), core.uniqueId);
           } catch (SolrException e) {
             log.warn(errorMsg);
-            errors = singletonList(errorMsg + e.getMessage());
+            errors = singletonList(singletonMap(CommandOperation.ERR_MSGS, errorMsg + e.getMessage()));
           }
           break;
         }
@@ -158,7 +155,7 @@ public class SchemaManager {
     }
     if (errors.isEmpty() && timeOut.hasTimedOut()) {
       log.warn("{} Timed out", errorMsg);
-      errors = singletonList(errorMsg + "Timed out.");
+      errors = singletonList(singletonMap(CommandOperation.ERR_MSGS, errorMsg + "Timed out."));
     }
     return errors;
   }
@@ -454,7 +451,7 @@ public class SchemaManager {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), name, () -> ConfigSetService.getParsedSchema(in, zkLoader,  core.getLatestSchema().getResourceName()), true, name, version,
+        return new ManagedIndexSchema(core.getSolrConfig(), name, () -> IndexSchemaFactory.getParsedSchema(in, zkLoader,  core.getLatestSchema().getResourceName()), true, name, version,
                 core.getLatestSchema().getSchemaUpdateLock());
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();

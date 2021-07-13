@@ -18,8 +18,12 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -32,7 +36,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.pkg.PackageListeningClassLoader;
@@ -63,20 +66,14 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   private boolean isImmutableConfigSet = false;
   private SolrRequestHandler managedResourceRequestHandler;
 
-  private static final Map<String, String> level2;
-
+  // java.util factory collections do not accept null values, so we roll our own
+  private static final Map<String, String> level2 = new HashMap<>();
   static {
-    @SuppressWarnings({"rawtypes"})
-    Map s = Utils.makeMap(
-        FIELD_TYPES.nameLower, null,
-        FIELDS.nameLower, "fl",
-        DYNAMIC_FIELDS.nameLower, "fl",
-        COPY_FIELDS.nameLower, null
-    );
-
-    level2 = Collections.unmodifiableMap(s);
-  }
-
+    level2.put(FIELD_TYPES.nameLower, null);
+    level2.put(FIELDS.nameLower, "fl");
+    level2.put(DYNAMIC_FIELDS.nameLower, "fl");
+    level2.put(COPY_FIELDS.nameLower, null);
+  };
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -91,8 +88,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
 
       try {
-        @SuppressWarnings({"rawtypes"})
-        List errs = new SchemaManager(req).performOperations();
+        List<Map<String,Object>> errs = new SchemaManager(req).performOperations();
         if (!errs.isEmpty())
           throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
       } catch (IOException e) {
@@ -167,22 +163,19 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             String realName = parts.get(1);
             String fieldName = IndexSchema.nameMapping.get(realName);
 
-            String pathParam = level2.get(realName);
+            String pathParam = level2.get(realName); // Might be null
             if (parts.size() > 2) {
               req.setParams(SolrParams.wrapDefaults(new MapSolrParams(singletonMap(pathParam, parts.get(2))), req.getParams()));
             }
-            @SuppressWarnings({"rawtypes"})
-            Map propertyValues = req.getSchema().getNamedPropertyValues(realName, req.getParams());
+            Map<String,Object> propertyValues = req.getSchema().getNamedPropertyValues(realName, req.getParams());
             Object o = propertyValues.get(fieldName);
             if(parts.size()> 2) {
               String name = parts.get(2);
               if (o instanceof List) {
-                @SuppressWarnings({"rawtypes"})
-                List list = (List) o;
+                List<?> list = (List<?>) o;
                 for (Object obj : list) {
                   if (obj instanceof SimpleOrderedMap) {
-                    @SuppressWarnings({"rawtypes"})
-                    SimpleOrderedMap simpleOrderedMap = (SimpleOrderedMap) obj;
+                    SimpleOrderedMap<?> simpleOrderedMap = (SimpleOrderedMap<?>) obj;
                     if(name.equals(simpleOrderedMap.get("name"))) {
                       rsp.add(fieldName.substring(0, realName.length() - 1), simpleOrderedMap);
                       insertPackageInfo(rsp.getValues(), req);
@@ -212,18 +205,18 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
    * If a plugin is loaded from a package, the version of the package being used should be added
    * to the response
    */
-  @SuppressWarnings("rawtypes")
   private void insertPackageInfo(Object o, SolrQueryRequest req) {
     if (!req.getParams().getBool("meta", false)) return;
     if (o instanceof List) {
-      List l = (List) o;
+      List<?> l = (List<?>) o;
       for (Object o1 : l) {
         if (o1 instanceof NamedList || o1 instanceof List) insertPackageInfo(o1, req);
       }
 
     } else if (o instanceof NamedList) {
-      NamedList nl = (NamedList) o;
-      nl.forEach((BiConsumer) (n, v) -> {
+      @SuppressWarnings("unchecked")
+      NamedList<Object> nl = (NamedList<Object>) o;
+      nl.forEach((n, v) -> {
         if (v instanceof NamedList || v instanceof List) insertPackageInfo(v, req);
       });
       Object v = nl.get("class");
@@ -242,7 +235,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   }
 
-  private static Set<String> subPaths = new HashSet<>(Arrays.asList(
+  private static final Set<String> subPaths = new HashSet<>(Set.of(
       "version",
       "uniquekey",
       "name",

@@ -47,21 +47,18 @@ import static org.apache.solr.common.util.Utils.getDeepCopy;
 public class RequestParams implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @SuppressWarnings({"rawtypes"})
-  private final Map data;
+  private final Map<String, Object> data;
   private final Map<String, ParamSet> paramsets = new LinkedHashMap<>();
   private final int znodeVersion;
 
-  @SuppressWarnings({"rawtypes"})
-  public RequestParams(Map data, int znodeVersion) {
-    if (data == null) data = Collections.EMPTY_MAP;
+  public RequestParams(Map<String, Object> data, int znodeVersion) {
+    if (data == null) data = Collections.emptyMap();
     this.data = data;
-    Map paramsets = (Map) data.get(NAME);
+    Map<?,?> paramsets = (Map<?,?>) data.get(NAME);
     if (paramsets != null) {
-      for (Object o : paramsets.entrySet()) {
-        Map.Entry e = (Map.Entry) o;
+      for (Map.Entry<?,?> e : paramsets.entrySet()) {
         if (e.getValue() instanceof Map) {
-          Map value = (Map) e.getValue();
+          Map<?,?> value = (Map<?,?>) e.getValue();
           this.paramsets.put((String) e.getKey(), createParamSet(value, 0l));
         }
       }
@@ -72,7 +69,8 @@ public class RequestParams implements MapSerializable {
   @SuppressWarnings({"rawtypes"})
   public static ParamSet createParamSet(Map map, Long version) {
     Map copy = getDeepCopy(map, 3);
-    Map meta = (Map) copy.remove("");
+    @SuppressWarnings("unchecked")
+    Map<String, Long> meta = (Map<String, Long>) copy.remove("");
     if (meta == null && version != null) {
       meta = Collections.singletonMap("v", version);
     }
@@ -125,14 +123,12 @@ public class RequestParams implements MapSerializable {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Map<String, Object> toMap(Map<String, Object> map) {
     return getMapWithVersion(data, znodeVersion);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Map<String, Object> getMapWithVersion(Map<String, Object> data, int znodeVersion) {
-    Map result = new LinkedHashMap();
+    Map<String, Object> result = new LinkedHashMap<>();
     result.put(ConfigOverlay.ZNODEVER, znodeVersion);
     result.putAll(data);
     return result;
@@ -142,7 +138,7 @@ public class RequestParams implements MapSerializable {
   public RequestParams setParams(String name, ParamSet paramSet) {
     Map deepCopy = getDeepCopy(data, 3);
     Map p = (Map) deepCopy.get(NAME);
-    if (p == null) deepCopy.put(NAME, p = new LinkedHashMap());
+    if (p == null) deepCopy.put(NAME, p = new LinkedHashMap<>());
     if (paramSet == null) p.remove(name);
     else p.put(name, paramSet.toMap(new LinkedHashMap<>()));
     return new RequestParams(deepCopy, znodeVersion);
@@ -157,10 +153,12 @@ public class RequestParams implements MapSerializable {
           log.debug("latest version of {}/{} in ZK  is : {}", resourceLoader.getConfigSetZkPath(), RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
         }
         if (stat == null) {
-          requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
+          requestParams = new RequestParams(Collections.emptyMap(), -1);
         } else if (requestParams == null || stat.getVersion() > requestParams.getZnodeVersion()) {
           Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
-          requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
+          @SuppressWarnings("unchecked")
+          Map<String, Object> data = (Map<String, Object>)  o[0];
+          requestParams = new RequestParams(data, (Integer) o[1]);
           if (log.isInfoEnabled()) {
             log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
           }
@@ -172,7 +170,9 @@ public class RequestParams implements MapSerializable {
 
     } else {
       Object[] o = getMapAndVersion(loader, RequestParams.RESOURCE);
-      requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> data = (Map<String, Object>)  o[0];
+      requestParams = new RequestParams(data, (Integer) o[1]);
     }
 
     return requestParams;
@@ -188,8 +188,7 @@ public class RequestParams implements MapSerializable {
         log.info("conf resource {} loaded . version : {} ", name, version);
       }
       try {
-        @SuppressWarnings({"rawtypes"})
-        Map m = (Map) fromJSON (in);
+        Map<?, ?> m = (Map<?, ?>) fromJSON (in);
         return new Object[]{m, version};
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
@@ -197,7 +196,7 @@ public class RequestParams implements MapSerializable {
 
     } catch (IOException e) {
       //no problem no overlay.json file
-      return new Object[]{Collections.EMPTY_MAP, -1};
+      return new Object[]{Collections.emptyMap(), -1};
     }
   }
 
@@ -214,14 +213,12 @@ public class RequestParams implements MapSerializable {
 
   @SuppressWarnings({"unchecked"})
   public static class ParamSet implements MapSerializable {
-    @SuppressWarnings({"rawtypes"})
-    private final Map defaults, appends, invariants;
+    private final Map<String, Object> defaults, appends, invariants;
     Map<String, VersionedParams> paramsMap;
-    @SuppressWarnings({"rawtypes"})
-    public final Map meta;
+    public final Map<String, Long> meta;
 
     @SuppressWarnings({"rawtypes"})
-    ParamSet(Map defaults, Map invariants, Map appends, Map meta) {
+    ParamSet(Map defaults, Map invariants, Map appends, Map<String, Long> meta) {
       this.defaults = defaults;
       this.invariants = invariants;
       this.appends = appends;
@@ -234,11 +231,10 @@ public class RequestParams implements MapSerializable {
     }
 
     public Long getVersion() {
-      return meta == null ? Long.valueOf(0l) : (Long) meta.get("v");
+      return meta == null ? 0L : meta.get("v");
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
     public Map<String, Object> toMap(Map<String, Object> result) {
       result.putAll(defaults);
       if (appends != null) result.put(APPENDS, appends);
@@ -259,8 +255,7 @@ public class RequestParams implements MapSerializable {
       );
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static Map mergeMaps(Map m1, Map m2) {
+    private static <K, V> Map<K, V> mergeMaps(Map<K, V> m1, Map<K, V> m2) {
       if (m1 == null && m2 == null) return null;
       if (m1 == null) return m2;
       if (m2 == null) return m1;
@@ -277,7 +272,6 @@ public class RequestParams implements MapSerializable {
 
     /**get the raw map
      */
-    @SuppressWarnings({"unchecked"})
     public Map<String, Object> get() {
       return defaults;
     }

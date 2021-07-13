@@ -119,8 +119,7 @@ public class SolrQueryResponse {
    * Gets data to be returned in this response
    * @see <a href="#returnable_data">Note on Returnable Data</a>
    */
-  @SuppressWarnings({"rawtypes"})
-  public NamedList getValues() { return values; }
+  public NamedList<Object> getValues() { return values; }
 
   /**
    * Sets data to be returned in this response

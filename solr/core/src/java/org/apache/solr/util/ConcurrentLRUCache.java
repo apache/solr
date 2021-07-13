@@ -21,6 +21,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.TimeSource;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -417,8 +418,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     int wantToKeep = lowerWaterMark;
     int wantToRemove = sz - lowerWaterMark;
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    CacheEntry<K,V>[] eset = new CacheEntry[sz];
+    @SuppressWarnings("unchecked")
+    CacheEntry<K,V>[] eset = (CacheEntry<K, V>[]) Array.newInstance(CacheEntry.class, sz);
     int eSize = 0;
 
     // System.out.println("newestEntry="+newestEntry + " oldestEntry="+oldestEntry);
@@ -552,15 +553,14 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           // this loop so far.
           queue.myMaxSize = sz - lowerWaterMark - numRemoved;
           while (queue.size() > queue.myMaxSize && queue.size() > 0) {
-            @SuppressWarnings({"rawtypes"})
-            CacheEntry otherEntry = queue.pop();
+            CacheEntry<K, V> otherEntry = queue.pop();
             newOldestEntry = Math.min(otherEntry.lastAccessedCopy, newOldestEntry);
           }
           if (queue.myMaxSize <= 0) break;
 
-          Object o = queue.myInsertWithOverflow(ce);
+          CacheEntry<K, V> o = queue.myInsertWithOverflow(ce);
           if (o != null) {
-            newOldestEntry = Math.min(((CacheEntry)o).lastAccessedCopy, newOldestEntry);
+            newOldestEntry = Math.min(o.lastAccessedCopy, newOldestEntry);
           }
         }
       }
@@ -596,8 +596,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
 
     @Override
-    protected boolean lessThan(@SuppressWarnings({"rawtypes"})CacheEntry a,
-                               @SuppressWarnings({"rawtypes"})CacheEntry b) {
+    protected boolean lessThan(CacheEntry<K,V> a,
+                               CacheEntry<K,V> b) {
       // reverse the parameter order so that the queue keeps the oldest items
       return b.lastAccessedCopy < a.lastAccessedCopy;
     }

@@ -96,7 +96,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -108,15 +107,16 @@ import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.noggit.CharArr;
@@ -401,7 +401,7 @@ public class SolrCLI implements CLIO {
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
 
-    for (Class<Tool> next : findToolClassesInPackage("org.apache.solr.util")) {
+    for (Class<? extends Tool> next : findToolClassesInPackage("org.apache.solr.util")) {
       Tool tool = next.getConstructor().newInstance();
       if (toolType.equals(tool.getName()))
         return tool;
@@ -430,8 +430,8 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("export", getToolOptions(new ExportTool()));
     formatter.printHelp("package", getToolOptions(new PackageTool()));
 
-    List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
-    for (Class<Tool> next : toolClasses) {
+    List<Class<? extends Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
+    for (Class<? extends Tool> next : toolClasses) {
       Tool tool = next.getConstructor().newInstance();
       formatter.printHelp(tool.getName(), getToolOptions(tool));
     }
@@ -515,9 +515,8 @@ public class SolrCLI implements CLIO {
   /**
    * Scans Jar files on the classpath for Tool implementations to activate.
    */
-  @SuppressWarnings("unchecked")
-  private static List<Class<Tool>> findToolClassesInPackage(String packageName) {
-    List<Class<Tool>> toolClasses = new ArrayList<Class<Tool>>();
+  private static List<Class<? extends Tool>> findToolClassesInPackage(String packageName) {
+    List<Class<? extends Tool>> toolClasses = new ArrayList<>();
     try {
       ClassLoader classLoader = SolrCLI.class.getClassLoader();
       String path = packageName.replace('.', '/');
@@ -531,7 +530,7 @@ public class SolrCLI implements CLIO {
       for (String classInPackage : classes) {
         Class<?> theClass = Class.forName(classInPackage);
         if (Tool.class.isAssignableFrom(theClass))
-          toolClasses.add((Class<Tool>) theClass);
+          toolClasses.add(theClass.asSubclass(Tool.class));
       }
     } catch (Exception e) {
       // safe to squelch this as it's just looking for tools to run
@@ -702,7 +701,6 @@ public class SolrCLI implements CLIO {
    * Utility function for sending HTTP GET request to Solr and then doing some
    * validation of the response.
    */
-  @SuppressWarnings({"unchecked"})
   public static Map<String,Object> getJson(HttpClient httpClient, String getUrl) throws Exception {
     try {
       // ensure we're requesting JSON back from Solr
@@ -799,7 +797,7 @@ public class SolrCLI implements CLIO {
    * you must escape the slash. For instance /config/requestHandler/\/query/defaults/echoParams
    * would get the echoParams value for the "/query" request handler.
    */
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings("unchecked")
   public static Object atPath(String jsonPath, Map<String,Object> json) {
     if ("/".equals(jsonPath))
       return json;
@@ -828,7 +826,7 @@ public class SolrCLI implements CLIO {
       } else {
         if (child instanceof Map) {
           // keep walking the path down to the desired node
-          parent = (Map)child;
+          parent = (Map<String, Object>) child;
         } else {
           // early termination - hit a leaf before the requested node
           break;
@@ -1543,12 +1541,14 @@ public class SolrCLI implements CLIO {
         if (confname == null || "".equals(confname.trim())) {
           confname = collectionName;
         }
-        Path confPath = ZkConfigManager.getConfigsetPath(confdir,
+        Path confPath = ConfigSetService.getConfigsetPath(confdir,
             configsetsDir);
 
         echoIfVerbose("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost(), cli);
-        ((ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider()).uploadConfig(confPath, confname);
+        ZkMaintenanceUtils.uploadToZK(cloudSolrClient.getZkStateReader().getZkClient(),
+                confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
+                ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
       }
 
       // since creating a collection is a heavy-weight operation, check for existence first
@@ -1838,12 +1838,13 @@ public class SolrCLI implements CLIO {
       String confName = cli.getOptionValue("confname");
       try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-        Path confPath = ZkConfigManager.getConfigsetPath(cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
+        Path confPath = ConfigSetService.getConfigsetPath(cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
 
         echo("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + cli.getOptionValue("confname") + " to ZooKeeper at " + zkHost);
+        ZkMaintenanceUtils.uploadToZK(zkClient, confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
+                ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
 
-        zkClient.upConfig(confPath, confName);
       } catch (Exception e) {
         log.error("Could not complete upconfig operation for reason: ", e);
         throw (e);
@@ -2388,7 +2389,7 @@ public class SolrCLI implements CLIO {
         throw new IllegalArgumentException("Collection "+collectionName+" not found!");
       }
 
-      String configName = zkStateReader.readConfigName(collectionName);
+      String configName = zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
       boolean deleteConfig = "true".equals(cli.getOptionValue("deleteConfig", "true"));
       if (deleteConfig && configName != null) {
         if (cli.hasOption("forceDeleteConfig")) {
@@ -2407,7 +2408,7 @@ public class SolrCLI implements CLIO {
             if (collectionName.equals(next))
               continue; // don't check the collection we're deleting
 
-            if (configName.equals(zkStateReader.readConfigName(next))) {
+            if (configName.equals(zkStateReader.getClusterState().getCollection(next).getConfigName())) {
               deleteConfig = false;
               log.warn("Configuration directory {} is also being used by {}{}"
                   , configName, next

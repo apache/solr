@@ -56,13 +56,9 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object value1, Object value2) throws IOException {
-
-
     Matrix matrix = null;
     int k = 0;
-
 
     if(value1 instanceof Matrix) {
       matrix = (Matrix)value1;
@@ -76,8 +72,7 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
       throw new IOException("The second parameter for fuzzyKmeans should be k.");
     }
 
-    @SuppressWarnings({"rawtypes"})
-    FuzzyKMeansClusterer<KmeansEvaluator.ClusterPoint> kmeans = new FuzzyKMeansClusterer(k,
+    FuzzyKMeansClusterer<KmeansEvaluator.ClusterPoint> kmeans = new FuzzyKMeansClusterer<>(k,
                                                                                          fuzziness,
                                                                                          maxIterations,
                                                                                          new EuclideanDistance());
@@ -91,8 +86,7 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
       points.add(new KmeansEvaluator.ClusterPoint(ids.get(i), vec));
     }
 
-    @SuppressWarnings({"rawtypes"})
-    Map fields = new HashMap();
+    Map<String, Object> fields = new HashMap<>();
 
     fields.put("k", k);
     fields.put("fuzziness", fuzziness);

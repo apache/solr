@@ -404,7 +404,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
 
   @Override
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList<?> args) {
     maxWriteMBPerSecFlush = (Double) args.get("maxWriteMBPerSecFlush");
     maxWriteMBPerSecMerge = (Double) args.get("maxWriteMBPerSecMerge");
     maxWriteMBPerSecRead = (Double) args.get("maxWriteMBPerSecRead");

@@ -16,6 +16,14 @@
  */
 package org.apache.solr.common.cloud;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
+import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,14 +37,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
-import org.noggit.JSONWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
@@ -49,6 +50,7 @@ public class ClusterState implements JSONWriter.Writable {
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
   private Set<String> liveNodes;
+  private Set<String> hostAllowList;
 
   /**
    * Use this constr when ClusterState is meant for consumption.
@@ -215,6 +217,7 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**
    * Create a ClusterState from Json.
+   * This method doesn't support legacy configName location and thus don't call it where that's important
    * 
    * @param bytes a byte array of a Json representation of a mapping from collection name to the Json representation of a
    *              {@link DocCollection} as written by {@link #write(JSONWriter)}. It can represent
@@ -228,6 +231,50 @@ public class ClusterState implements JSONWriter.Writable {
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    return createFromCollectionMap(version, stateMap, liveNodes);
+  }
+
+  /**
+   * Create a ClusterState from Json.
+   * This method supports legacy configName location
+   *
+   * @param bytes a byte array of a Json representation of a mapping from collection name to the Json representation of a
+   *              {@link DocCollection} as written by {@link #write(JSONWriter)}. It can represent
+   *              one or more collections.
+   * @param liveNodes list of live nodes
+   * @param coll collection name
+   * @param zkClient ZK client
+   * @return the ClusterState
+   */
+  @SuppressWarnings({"unchecked"})
+  @Deprecated
+  public static ClusterState createFromJsonSupportingLegacyConfigName(int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
+    if (bytes == null || bytes.length == 0) {
+      return new ClusterState(liveNodes, Collections.emptyMap());
+    }
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
+    if (props != null) {
+      if (!props.containsKey(ZkStateReader.CONFIGNAME_PROP)) {
+        try {
+          // read configName from collections/collection node
+          String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
+          byte[] data = zkClient.getData(path, null, null, true);
+          if (data != null && data.length > 0) {
+            ZkNodeProps configProp = ZkNodeProps.load(data);
+            String configName = configProp.getStr(ZkStateReader.CONFIGNAME_PROP);
+            if (configName != null) {
+              props.put(ZkStateReader.CONFIGNAME_PROP, configName);
+              stateMap.put(coll, props);
+            } else {
+              log.warn("configName is null, not found on {}", path);
+            }
+          }
+        } catch (KeeperException | InterruptedException e) {
+          // do nothing
+        }
+      }
+    }
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
@@ -330,6 +377,19 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
+  }
+
+  /**
+   * Gets the set of allowed hosts (host:port) built from the set of live nodes.
+   * The set is cached to be reused.
+   */
+  public Set<String> getHostAllowList() {
+    if (hostAllowList == null) {
+      hostAllowList = getLiveNodes().stream()
+              .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
+              .collect(Collectors.toSet());
+    }
+    return hostAllowList;
   }
 
   /**

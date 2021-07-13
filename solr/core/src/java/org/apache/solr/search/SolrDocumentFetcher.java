@@ -515,7 +515,7 @@ public class SolrDocumentFetcher {
    *          The fields with docValues to populate the document with.
    *          DocValues fields which do not exist or not decodable will be ignored.
    */
-  public void decorateDocValueFields(@SuppressWarnings("rawtypes") SolrDocumentBase doc, int docid, Set<String> fields)
+  public void decorateDocValueFields(SolrDocumentBase<?,?> doc, int docid, Set<String> fields)
       throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
@@ -561,7 +561,7 @@ public class SolrDocumentFetcher {
       case SORTED:
         SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
         if (sdv != null && sdv.advanceExact(localId)) {
-          final BytesRef bRef = sdv.binaryValue();
+          final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
           if (schemaField.getType() instanceof BoolField) {
             return schemaField.getType().toObject(schemaField, bRef);

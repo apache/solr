@@ -75,14 +75,14 @@ public class UniqueAgg extends StrAggValueSource {
     long shardsMissingMax;
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public void merge(Object facetResult, Context mcontext) {
-      SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
+      SimpleOrderedMap<?> map = (SimpleOrderedMap<?>)facetResult;
       long unique = ((Number)map.get(UNIQUE)).longValue();
       sumUnique += unique;
 
       int valsListed = 0;
-      List vals = (List) map.get(VALS);
+      @SuppressWarnings("unchecked")
+      List<?> vals = (List<?>) map.get(VALS);
       if (vals != null) {
         if (values == null) {
           values = new HashSet<>(vals.size()*4);
@@ -178,19 +178,18 @@ public class UniqueAgg extends StrAggValueSource {
       return set == null ? 0 : set.cardinality();
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getShardValue(int slot) throws IOException {
       LongSet set = sets[slot];
       int unique = getCardinality(slot);
 
-      SimpleOrderedMap map = new SimpleOrderedMap();
+      SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
       map.add(UNIQUE, unique);
 
       int maxExplicit=100;
       // TODO: make configurable
       // TODO: share values across buckets
       if (unique <= maxExplicit) {
-        List lst = new ArrayList( Math.min(unique, maxExplicit) );
+        List<Long> lst = new ArrayList<>( Math.min(unique, maxExplicit) );
         if (set != null) {
           LongIterator iter = set.iterator();
           while (iter.hasNext()) {

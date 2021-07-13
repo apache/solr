@@ -45,16 +45,16 @@ public class QuerySenderListener extends AbstractSolrEventListener {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     final SolrIndexSearcher searcher = newSearcher;
     log.debug("QuerySenderListener sending requests to {}", newSearcher);
-    List<NamedList> allLists = (List<NamedList>)getArgs().get("queries");
+    @SuppressWarnings("unchecked")
+    List<NamedList<Object>> allLists = (List<NamedList<Object>>)getArgs().get("queries");
     if (allLists == null) return;
-    for (NamedList nlst : allLists) {
+    for (NamedList<Object> nlst : allLists) {
       try {
         // bind the request to a particular searcher (the newSearcher)
-        NamedList params = addEventParms(currentSearcher, nlst);
+        NamedList<Object> params = addEventParms(currentSearcher, nlst);
         // for this, we default to distrib = false
         if (params.get(DISTRIB) == null) {
           params.add(DISTRIB, false);
@@ -71,7 +71,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
           // Retrieve the Document instances (not just the ids) to warm
           // the OS disk cache, and any Solr document cache.  Only the top
           // level values in the NamedList are checked for DocLists.
-          NamedList values = rsp.getValues();
+          NamedList<?> values = rsp.getValues();
           for (int i=0; i<values.size(); i++) {
             Object o = values.getVal(i);
             if (o instanceof ResultContext) {

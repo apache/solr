@@ -439,8 +439,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         sortedSlots = Arrays.copyOfRange(sortedSlots, off, endOffset);
       }
     }
-    @SuppressWarnings({"rawtypes"})
-    List<SimpleOrderedMap> bucketList = new ArrayList<>(sortedSlots.length);
+    List<SimpleOrderedMap<?>> bucketList = new ArrayList<>(sortedSlots.length);
 
     for (Slot slot : sortedSlots) {
       SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();

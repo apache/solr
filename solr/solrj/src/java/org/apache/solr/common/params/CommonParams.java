@@ -161,6 +161,21 @@ public interface CommonParams {
   String TIME_ALLOWED = "timeAllowed";
 
   /**
+   * Is the query cancellable?
+   */
+  String IS_QUERY_CANCELLABLE = "canCancel";
+
+  /**
+   * Custom query UUID if provided.
+   */
+  String QUERY_UUID = "queryUUID";
+
+  /**
+   * UUID of the task whose status is to be checked
+   */
+  String TASK_CHECK_UUID = "taskUUID";
+
+  /**
    * The number of hits that need to be counted accurately. If more than {@link #MIN_EXACT_COUNT} documents
    * match a query, then the value in "numFound" may be an estimate to speedup search.
    */
@@ -185,7 +200,6 @@ public interface CommonParams {
   String ZK_STATUS_PATH = "/admin/zookeeper/status";
   String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
-  String METRICS_HISTORY_PATH = "/admin/metrics/history";
 
   String STATUS = "status";
 
@@ -198,10 +212,11 @@ public interface CommonParams {
       HEALTH_CHECK_HANDLER_PATH,
       CONFIGSETS_HANDLER_PATH,
       SYSTEM_INFO_PATH,
+      ZK_PATH,
+      ZK_STATUS_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,
-      METRICS_PATH,
-      METRICS_HISTORY_PATH);
+      METRICS_PATH);
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
