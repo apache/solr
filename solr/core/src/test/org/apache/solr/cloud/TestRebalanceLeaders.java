@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -446,8 +445,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       params.set("shardUnique", "true");
     }
 
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);
     String propLC = prop.toLowerCase(Locale.ROOT);

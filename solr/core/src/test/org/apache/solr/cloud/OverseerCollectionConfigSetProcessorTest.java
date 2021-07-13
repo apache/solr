@@ -283,13 +283,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     });
 
     when(workQueueMock.getTailId()).thenAnswer(invocation -> {
-      Object result = null;
-      @SuppressWarnings({"rawtypes"})
-      Iterator iter = queue.iterator();
+      QueueEvent result = null;
+      Iterator<QueueEvent> iter = queue.iterator();
       while(iter.hasNext()) {
         result = iter.next();
       }
-      return result==null ? null : ((QueueEvent)result).getId();
+      return result==null ? null : result.getId();
     });
 
     when(workQueueMock.peek(true)).thenAnswer(invocation -> {

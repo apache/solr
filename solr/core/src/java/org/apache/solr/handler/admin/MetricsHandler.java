@@ -139,8 +139,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     consumer.accept("metrics", response);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void handleKeyRequest(String[] keys, BiConsumer<String, Object> consumer) throws Exception {
+  public void handleKeyRequest(String[] keys, BiConsumer<String, Object> consumer) {
     SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
     SimpleOrderedMap<Object> errors = new SimpleOrderedMap<>();
     for (String key : keys) {
@@ -179,7 +178,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       }
       MetricUtils.convertMetric(key, m, propertyFilter, false, true, true, false, ":", (k, v) -> {
         if ((v instanceof Map) && propertyName != null) {
-          ((Map)v).forEach((k1, v1) -> result.add(k + ":" + k1, v1));
+          ((Map<?, ?>)v).forEach((k1, v1) -> result.add(k + ":" + k1, v1));
         } else if ((v instanceof MapWriter) && propertyName != null) {
           ((MapWriter) v)._forEachEntry((k1, v1) -> result.add(k + ":" + k1, v1));
         } else {

@@ -88,7 +88,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
     return "1";
   }
 
-  class DumbCsvDecoder implements BlobRepository.Decoder<Object> {
+  class DumbCsvDecoder implements BlobRepository.Decoder<TestObject> {
     private final Map<String, String> dict = new HashMap<>();
     
     public DumbCsvDecoder() {}

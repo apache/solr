@@ -2036,7 +2036,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
 
-  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, @SuppressWarnings({"rawtypes"})final Future[] waitSearcher) {
+  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future<Void>[] waitSearcher) {
     return getSearcher(forceNew, returnSearcher, waitSearcher, false);
   }
 
@@ -2232,7 +2232,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @param updateHandlerReopens if true, the UpdateHandler will be used when reopening a {@link SolrIndexSearcher}.
    */
   // TODO waitSearcher should be an AtomicReference or something that is a more clear API
-  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, @SuppressWarnings({"rawtypes"})final Future[] waitSearcher, boolean updateHandlerReopens) {
+  public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future<Void>[] waitSearcher, boolean updateHandlerReopens) {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
     // if it isn't necessary.
@@ -2339,8 +2339,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       final SolrIndexSearcher currSearcher = currSearcherHolder == null ? null : currSearcherHolder.get();
 
-      @SuppressWarnings({"rawtypes"})
-      Future future = null;
+      Future<Void> future = null;
 
       // if the underlying searcher has not changed, no warming is needed
       if (newSearcher != currSearcher) {
@@ -3223,14 +3222,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @param decoder a decoder with which to convert the blob into a Java Object representation (first time only)
    * @return a reference to the blob that has already cached the decoded version.
    */
-  @SuppressWarnings({"rawtypes"})
-  public BlobRepository.BlobContentRef loadDecodeAndCacheBlob(String key, BlobRepository.Decoder<Object> decoder) {
+  public <T> BlobRepository.BlobContentRef<T> loadDecodeAndCacheBlob(String key, BlobRepository.Decoder<T> decoder) {
     // make sure component authors don't give us oddball keys with no version...
     if (!BlobRepository.BLOB_KEY_PATTERN_CHECKER.matcher(key).matches()) {
       throw new IllegalArgumentException("invalid key format, must end in /N where N is the version number");
     }
     // define the blob
-    BlobRepository.BlobContentRef<Object> blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
+    BlobRepository.BlobContentRef<T> blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
     addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {
