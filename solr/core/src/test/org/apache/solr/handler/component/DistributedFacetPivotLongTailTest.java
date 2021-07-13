@@ -96,7 +96,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
         assertEquals(pivot.toString(), 100, pivot.getCount());
       }
     }
-    // top 6-10 same on shard0 & shard11
+    // top 6-10 same on shard0 & shard1
     for (int i = 0; i < 2; i++) {
       for (int j = 5; j < 10; j++) {
         pivot = shardPivots.get(i).get(j);
