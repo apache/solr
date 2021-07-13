@@ -28,7 +28,9 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.solr.common.params.SolrParams;
@@ -114,7 +116,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
 
       LinkedHashMap<String, Object> response = new LinkedHashMap<>();
 
-      rb.rsp.add("significantTerms", response);
+      rb.rsp.add(NAME, response);
 
       response.put("numDocs", 0);
       response.put("sterms", outTerms);
