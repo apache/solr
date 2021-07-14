@@ -37,6 +37,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -46,6 +47,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
+    System.setProperty("queryResultCache.autowarmCount", "0");
     initCore("solrconfig.xml", "schema.xml");
     for (int i = 0 ; i < NUM_DOCS ; i ++) {
       assertU(adoc("id", String.valueOf(i),
@@ -57,6 +59,11 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
   
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("queryResultCache.autowarmCount");
+  }
+
   private static String numbersTo(int i) {
     StringBuilder numbers = new StringBuilder();
     for (int j = 0; j <= i ; j++) {

@@ -102,7 +102,7 @@
     <queryResultCache
       size="512"
       initialSize="512"
-      autowarmCount="2"/>
+      autowarmCount="${queryResultCache.autowarmCount:2}"/>
 
     <documentCache
       size="512"
