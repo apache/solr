@@ -408,7 +408,7 @@ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_
 ]'
 ----
 
-A sample JSON file is provided at `example/exampledocs/books.json` and contains an array of objects that you can add to the Solr `techproducts` example:
+A sample JSON file is provided at `example/exampledocs/books.json` and contains an array of objects that you can add to the Solr "techproducts" example:
 
 [source,bash]
 ----
@@ -514,7 +514,7 @@ This is covered in the section <<transforming-and-indexing-custom-json.adoc#,Tra
 
 CSV formatted update requests may be sent to Solr's `/update` handler using `Content-Type: application/csv` or `Content-Type: text/csv`.
 
-A sample CSV file is provided at `example/exampledocs/books.csv` that you can use to add some documents to the Solr `techproducts` example:
+A sample CSV file is provided at `example/exampledocs/books.csv` that you can use to add some documents to the Solr "techproducts" example:
 
 [source,bash]
 ----

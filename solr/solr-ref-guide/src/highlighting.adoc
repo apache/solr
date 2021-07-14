@@ -302,7 +302,7 @@ In contrast, the Unified Highlighter can only be chosen exclusively.
 
 The Unified Highlighter is exclusively configured via search parameters.
 In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`.
-There's a robust example of the latter in the "```techproducts```" configset.
+There's a robust example of the latter in the "techproducts" configset.
 
 In addition to further information below, more information can be found in the {solr-javadocs}/core/org/apache/solr/highlight/package-summary.html[Solr javadocs].
 
