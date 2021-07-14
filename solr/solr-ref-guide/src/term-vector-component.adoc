@@ -224,7 +224,8 @@ If `true`, returns document term frequency info for each term in the document.
 If `true`, calculates TF / DF (i.e.,: TF * IDF) for each term.
 Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
 +
-This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive.
+This parameter requires both `tv.tf` and `tv.df` to be `true`.
+This can be computationally expensive.
 (The results are not shown in example output)
 
 To see an example of TermVector component output, see the Wiki page: https://cwiki.apache.org/confluence/display/solr/TermVectorComponentExampleOptions

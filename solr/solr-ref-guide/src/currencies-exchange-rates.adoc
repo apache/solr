@@ -46,7 +46,8 @@ This is the default configuration of this type.
 ----
 
 In this example, we have defined the name and class of the field type, and defined the `defaultCurrency` as "USD", for U.S. Dollars.
-We have also defined a `currencyConfig` to use a file called "currency.xml". This is a file of exchange rates between our default currency to other currencies.
+We have also defined a `currencyConfig` to use a file called "currency.xml".
+This is a file of exchange rates between our default currency to other currencies.
 There is an alternate implementation that would allow regular downloading of currency data.
 See <<Exchange Rates>> below for more.
 

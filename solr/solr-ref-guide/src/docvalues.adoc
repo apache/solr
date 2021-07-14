@@ -20,7 +20,8 @@ DocValues are a way of recording field values internally that is more efficient 
 
 == Why DocValues?
 
-The standard way that Solr builds the index is with an _inverted index_. This style builds a list of terms found in all the documents in the index and next to each term is a list of documents that the term appears in (as well as how many times the term appears in that document).
+The standard way that Solr builds the index is with an _inverted index_.
+This style builds a list of terms found in all the documents in the index and next to each term is a list of documents that the term appears in (as well as how many times the term appears in that document).
 This makes search very fast - since users search by terms, having a ready list of term-to-document values makes the query process faster.
 
 For other features that we now commonly associate with search, such as sorting, faceting, and highlighting, this approach is not very efficient.
@@ -70,8 +71,10 @@ Entries are kept in sorted order and duplicates are removed.
 
 These Lucene types are related to how the {lucene-javadocs}/core/org/apache/lucene/index/DocValuesType.html[values are sorted and stored].
 
-There is an additional configuration option available, which is to modify the `docValuesFormat` <<field-type-definitions-and-properties.adoc#docvaluesformat,used by the field type>>. The default implementation employs a mixture of loading some things into memory and keeping some on disk.
-In some cases, however, you may choose to specify an alternative {lucene-javadocs}/core/org/apache/lucene/codecs/DocValuesFormat.html[DocValuesFormat implementation]. For example, you could choose to keep everything in memory by specifying `docValuesFormat="Direct"` on a field type:
+There is an additional configuration option available, which is to modify the `docValuesFormat` <<field-type-definitions-and-properties.adoc#docvaluesformat,used by the field type>>.
+The default implementation employs a mixture of loading some things into memory and keeping some on disk.
+In some cases, however, you may choose to specify an alternative {lucene-javadocs}/core/org/apache/lucene/codecs/DocValuesFormat.html[DocValuesFormat implementation].
+For example, you could choose to keep everything in memory by specifying `docValuesFormat="Direct"` on a field type:
 
 [source,xml]
 ----

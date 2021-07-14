@@ -63,7 +63,8 @@ For indexing non-geodetic points, it depends.
 Use `x y` (a space) if RPT.
 For PointType however, use `x,y` (a comma).
 
-If you'd rather use a standard industry format, Solr supports https://en.wikipedia.org/wiki/Well-known_text[WKT] and http://geojson.org/[GeoJSON]. However it's much bulkier than the raw coordinates for such simple data.
+If you'd rather use a standard industry format, Solr supports https://en.wikipedia.org/wiki/Well-known_text[WKT] and http://geojson.org/[GeoJSON].
+However it's much bulkier than the raw coordinates for such simple data.
 (Not supported by the deprecated LatLonType or PointType)
 
 === Indexing GeoJSON and WKT

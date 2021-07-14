@@ -409,7 +409,8 @@ If `true`, use the leading portion of the text as a snippet if a proper highligh
 |Optional |Default: `1.2`
 |===
 +
-Specifies BM25 term frequency normalization parameter 'k1'. For example, it can be set to `0` to rank passages solely based on the number of query terms that match.
+Specifies BM25 term frequency normalization parameter 'k1'.
+For example, it can be set to `0` to rank passages solely based on the number of query terms that match.
 
 `hl.score.b`::
 +
@@ -418,7 +419,8 @@ Specifies BM25 term frequency normalization parameter 'k1'. For example, it can 
 |Optional |Default: `0.75`
 |===
 +
-Specifies BM25 length normalization parameter 'b'. For example, it can be set to "0" to ignore the length of passages entirely when ranking.
+Specifies BM25 length normalization parameter 'b'.
+For example, it can be set to "0" to ignore the length of passages entirely when ranking.
 
 `hl.score.pivot`::
 +

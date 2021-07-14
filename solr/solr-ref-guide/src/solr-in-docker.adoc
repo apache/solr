@@ -299,7 +299,8 @@ jattach 10 jcmd GC.heap_info
 
 == Updating from Solr 5-7 to 8+
 
-In Solr 8, the Solr Docker image switched from just extracting the Solr tar, to using the <<taking-solr-to-production.adoc#service-installation-script,service installation script>>. This was done for various reasons: to bring it in line with the recommendations by the Solr Ref Guide and to make it easier to mount volumes.
+In Solr 8, the Solr Docker image switched from just extracting the Solr tar, to using the <<taking-solr-to-production.adoc#service-installation-script,service installation script>>.
+This was done for various reasons: to bring it in line with the recommendations by the Solr Ref Guide and to make it easier to mount volumes.
 
 This is a backwards incompatible change, and means that if you're upgrading from an older version, you will most likely need to make some changes.
 If you don't want to upgrade at this time, specify `solr:7` as your container image.

@@ -127,7 +127,8 @@ If you use the `compositeId` router (the default), you can send documents with a
 The prefix can be anything you'd like it to be (it doesn't have to be the shard name, for example), but it must be consistent so Solr behaves consistently.
 
 For example, if you want to co-locate documents for a customer, you could use the customer name or ID as the prefix.
-If your customer is "IBM", for example, with a document with the ID "12345", you would insert the prefix into the document id field: "IBM!12345". The exclamation mark ('!') is critical here, as it distinguishes the prefix used to determine which shard to direct the document to.
+If your customer is "IBM", for example, with a document with the ID "12345", you would insert the prefix into the document id field: "IBM!12345".
+The exclamation mark ('!') is critical here, as it distinguishes the prefix used to determine which shard to direct the document to.
 
 Then at query time, you include the prefix(es) into your query with the `\_route_` parameter (i.e., `q=solr&_route_=IBM!`) to direct queries to specific shards.
 In some situations, this may improve query performance because it overcomes network latency when querying all the shards.
@@ -166,7 +167,8 @@ In most cases, when running in SolrCloud mode, indexing client applications shou
 Rather, you should configure auto commits with `openSearcher=false` and `autoSoftCommit` to make recent updates visible in search requests.
 This ensures that auto commits occur on a regular schedule in the cluster.
 
-NOTE: Using `autoSoftCommit` or `commitWithin` requires the client app to embrace the realities of "eventual consistency". Solr will make documents searchable at _roughly_ the same time across replicas of a collection but there are no hard guarantees.
+NOTE: Using `autoSoftCommit` or `commitWithin` requires the client app to embrace the realities of "eventual consistency".
+Solr will make documents searchable at _roughly_ the same time across replicas of a collection but there are no hard guarantees.
 Consequently, in rare cases, it's possible for a document to show up in one search only for it not to appear in a subsequent search occurring immediately after the first search when the second search is routed to a different replica.
 Also, documents added in a particular order (even in the same batch) might become searchable out of the order of submission when there is sharding.
 The document will become visible on all replicas of a shard after the next `autoCommit` or `commitWithin` interval expires.
