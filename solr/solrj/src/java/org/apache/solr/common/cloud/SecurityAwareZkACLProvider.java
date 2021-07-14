@@ -16,9 +16,15 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.solr.common.StringUtils;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
+import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 
 /**
  * {@link ZkACLProvider} capable of returning a different set of
@@ -72,5 +78,38 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
       }
     }
     return securityACLsToAdd;
+  }
+
+  /**
+   * Note: only used for tests
+   */
+  protected List<ACL> createACLsToAdd(boolean includeReadOnly,
+                                      String digestAllUsername, String digestAllPassword,
+                                      String digestReadonlyUsername, String digestReadonlyPassword) {
+
+    try {
+      List<ACL> result = new ArrayList<>(2);
+
+      // Not to have to provide too much credentials and ACL information to the process it is assumed that you want "ALL"-acls
+      // added to the user you are using to connect to ZK (if you are using VMParamsSingleSetCredentialsDigestZkCredentialsProvider)
+      if (!StringUtils.isEmpty(digestAllUsername) && !StringUtils.isEmpty(digestAllPassword)) {
+        result.add(new ACL(ZooDefs.Perms.ALL, new Id("digest", DigestAuthenticationProvider.generateDigest(digestAllUsername + ":" + digestAllPassword))));
+      }
+
+      if (includeReadOnly) {
+        // Besides that support for adding additional "READONLY"-acls for another user
+        if (!StringUtils.isEmpty(digestReadonlyUsername) && !StringUtils.isEmpty(digestReadonlyPassword)) {
+          result.add(new ACL(ZooDefs.Perms.READ, new Id("digest", DigestAuthenticationProvider.generateDigest(digestReadonlyUsername + ":" + digestReadonlyPassword))));
+        }
+      }
+
+      if (result.isEmpty()) {
+        result = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+      }
+
+      return result;
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("JVM mis-configured: missing SHA-1 algorithm", e);
+    }
   }
 }

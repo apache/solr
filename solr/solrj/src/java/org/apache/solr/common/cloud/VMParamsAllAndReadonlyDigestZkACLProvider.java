@@ -16,26 +16,14 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.solr.common.StringUtils;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Id;
-import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 
 public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkACLProvider {
 
   public static final String DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME = "zkDigestReadonlyUsername";
   public static final String DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME = "zkDigestReadonlyPassword";
-
-  // fallback env vars if system props not set
-  public static final String ZK_ALL_ACL_USERNAME = "ZK_ALL_ACL_USERNAME";
-  public static final String ZK_ALL_ACL_PASSWORD = "ZK_ALL_ACL_PASSWORD";
-  public static final String ZK_READ_ACL_USERNAME = "ZK_READ_ACL_USERNAME";
-  public static final String ZK_READ_ACL_PASSWORD = "ZK_READ_ACL_PASSWORD";
   
   final String zkDigestAllUsernameVMParamName;
   final String zkDigestAllPasswordVMParamName;
@@ -76,52 +64,14 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
   }
 
   protected List<ACL> createACLsToAdd(boolean includeReadOnly) {
-    String digestAllUsername = getPropertyWithEnvFallback(zkDigestAllUsernameVMParamName, ZK_ALL_ACL_USERNAME);
-    String digestAllPassword = getPropertyWithEnvFallback(zkDigestAllPasswordVMParamName, ZK_ALL_ACL_PASSWORD);
-    String digestReadonlyUsername = getPropertyWithEnvFallback(zkDigestReadonlyUsernameVMParamName, ZK_READ_ACL_USERNAME);
-    String digestReadonlyPassword = getPropertyWithEnvFallback(zkDigestReadonlyPasswordVMParamName, ZK_READ_ACL_PASSWORD);
+    String digestAllUsername = System.getProperty(zkDigestAllUsernameVMParamName);
+    String digestAllPassword = System.getProperty(zkDigestAllPasswordVMParamName);
+    String digestReadonlyUsername = System.getProperty(zkDigestReadonlyUsernameVMParamName);
+    String digestReadonlyPassword = System.getProperty(zkDigestReadonlyPasswordVMParamName);
 
     return createACLsToAdd(includeReadOnly,
         digestAllUsername, digestAllPassword,
         digestReadonlyUsername, digestReadonlyPassword);
-  }
-
-  /**
-   * Note: only used for tests
-   */
-  protected List<ACL> createACLsToAdd(boolean includeReadOnly,
-                                      String digestAllUsername, String digestAllPassword,
-                                      String digestReadonlyUsername, String digestReadonlyPassword) {
-
-      try {
-      List<ACL> result = new ArrayList<>(2);
-  
-      // Not to have to provide too much credentials and ACL information to the process it is assumed that you want "ALL"-acls
-      // added to the user you are using to connect to ZK (if you are using VMParamsSingleSetCredentialsDigestZkCredentialsProvider)
-      if (!StringUtils.isEmpty(digestAllUsername) && !StringUtils.isEmpty(digestAllPassword)) {
-        result.add(new ACL(ZooDefs.Perms.ALL, new Id("digest", DigestAuthenticationProvider.generateDigest(digestAllUsername + ":" + digestAllPassword))));
-      }
-
-      if (includeReadOnly) {
-        // Besides that support for adding additional "READONLY"-acls for another user
-        if (!StringUtils.isEmpty(digestReadonlyUsername) && !StringUtils.isEmpty(digestReadonlyPassword)) {
-          result.add(new ACL(ZooDefs.Perms.READ, new Id("digest", DigestAuthenticationProvider.generateDigest(digestReadonlyUsername + ":" + digestReadonlyPassword))));
-        }
-      }
-      
-      if (result.isEmpty()) {
-        result = ZooDefs.Ids.OPEN_ACL_UNSAFE;
-      }
-      
-      return result;
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException("JVM mis-configured: missing SHA-1 algorithm", e);
-    }
-  }
-
-  private String getPropertyWithEnvFallback(final String propName, final String envVarFallback) {
-    String propValue = VMParamsSingleSetCredentialsDigestZkCredentialsProvider.getProperty(propName);
-    return propValue != null ? propValue : System.getenv(envVarFallback);
   }
 }
 
