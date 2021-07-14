@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
@@ -65,6 +67,31 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
   @Before
   public void setUp() throws Exception {
+    /**
+     * If the query result cache size is known let's fill the cache to capacity with
+     * random query results not of interest to any tests ...
+     */
+    final Object cacheSizeObj = h.getCore().getSolrConfig().queryResultCacheConfig.toMap(null).get(SolrCache.SIZE_PARAM);
+    if (cacheSizeObj instanceof String) {
+      final int cacheSize = Integer.valueOf((String) cacheSizeObj);
+      final Set<String> qSet = new HashSet<>();
+      while (qSet.size() < cacheSize) {
+        qSet.add("field1_s:random" + random().nextInt());
+      }
+      for (int ii = 1; ii <= 3; ++ii) {
+        /**
+         *  Because the cache eviction logic might favour "older multiply-used" entries from a previous test
+         *  over "newer once-used" entries from our random queries here, let's run each query multiple times.
+         */
+        for (String q : qSet) {
+          assertQ(req("q", q));
+        }
+      }
+    }
+    /**
+     *  ... this is to ensure that cache warming after this update/commit does not
+     *  carry-over previous tests' results to future tests.
+     */
     assertU(adoc("id", "1",
         "field1_s", "foo",
         "field2_s", "1",
