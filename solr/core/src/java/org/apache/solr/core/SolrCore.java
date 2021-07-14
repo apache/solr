@@ -2695,6 +2695,32 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       responseHeader.add("handler", handler.getName());
     }
 
+    final String logAllParamsOnError = params.get(CommonParams.LOG_ALL_PARAMS_ON_ERROR, "");
+    if (!logAllParamsOnError.isEmpty()) {
+      boolean logAllParams = false;
+      if (logAllParamsOnError.equalsIgnoreCase("true") || logAllParamsOnError.equalsIgnoreCase("false")) {
+        if (Boolean.valueOf(logAllParamsOnError).booleanValue() && status != 0) {
+          logAllParams = true;
+        }
+      } else if (logAllParamsOnError.equals("*")) {
+        logAllParams = true;
+      } else {
+        for (String s : logAllParamsOnError.split(",")) {
+          try {
+            final Integer i = Integer.valueOf(s);
+            if (i != null && i.intValue() == status) {
+              logAllParams = true;
+            }
+          } catch (NumberFormatException nfe) {
+            SolrException.log(log, CommonParams.LOG_ALL_PARAMS_ON_ERROR + " value (" + logAllParamsOnError + ") is invalid", nfe);
+          }
+        }
+      }
+      if (logAllParams) {
+        rsp.getToLog().add("allParams", "{" + params + "}");
+      }
+    }
+
     // Values for echoParams... false/true/all or false/explicit/all ???
     String ep = params.get(CommonParams.HEADER_ECHO_PARAMS, null);
     if (ep != null) {

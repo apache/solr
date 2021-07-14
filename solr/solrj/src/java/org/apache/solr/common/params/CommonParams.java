@@ -246,6 +246,12 @@ public interface CommonParams {
   /** which parameters to log (if not supplied all parameters will be logged) **/
   String LOG_PARAMS_LIST = "logParamsList";
 
+  /**
+   * If <code>logAllParamsOnError</code> is true then all parameters will be logged on error,
+   * irrespective of the presence or value of the <code>logParamsList</code> parameter.
+   */
+  String LOG_ALL_PARAMS_ON_ERROR = "logAllParamsOnError";
+
   String EXCLUDE = "ex";
   String TAG = "tag";
   String TERMS = "terms";
