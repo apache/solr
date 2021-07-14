@@ -118,7 +118,7 @@ If you pass `-y` to the command, confirmation can be skipped.
 
 ==== Manual Deploy
 
-It is also possible to deploy a package's collection level plugins manually by editing a configset (e.g., `solrconfig.xml`, `managed-schema`/`schema.xml`, etc.) and reloading the collection.
+It is also possible to deploy a package's collection level plugins manually by editing a <<config-sets.adoc#,configset>> and reloading the collection.
 
 For example, if a package named `mypackage` contains a request handler, we would add it to a configset's `solrconfig.xml` like this:
 

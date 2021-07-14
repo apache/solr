@@ -66,7 +66,7 @@ Multiple cores can run on a single node.
 See also <<solrclouddef,SolrCloud>>.
 
 [[corereload]]Core reload::
-To re-initialize a Solr core after changes to `schema.xml`, `solrconfig.xml` or other configuration files.
+To re-initialize a Solr core after changes to the schema file, `solrconfig.xml` or other configuration files.
 
 [[SolrGlossary-D]]
 === D

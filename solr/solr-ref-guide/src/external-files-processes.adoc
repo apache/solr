@@ -38,7 +38,7 @@ You might want to update the rank of all the documents daily or hourly, while th
 Without `ExternalFileField`, you would need to update each document just to change the rank.
 Using `ExternalFileField` is much more efficient because all document values for a particular field are stored in an external file that can be updated as frequently as you wish.
 
-In `schema.xml`, the definition of this field type might look like this:
+In the <<solr-schema.adoc,schema>>, the definition of this field type might look like this:
 
 [source,xml]
 ----

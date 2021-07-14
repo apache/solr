@@ -31,7 +31,7 @@ It's also possible for more than one token to have the same position or refer to
 Keep this in mind if you use token metadata for things like highlighting search results in the field text.
 
 == About Tokenizers
-You configure the tokenizer for a text field type in `schema.xml` with a `<tokenizer>` element, as a child of `<analyzer>`:
+You configure the tokenizer for a text field type in the <<solr-schema.adoc,schema>> with a `<tokenizer>` element, as a child of `<analyzer>`:
 
 [.dynamic-tabs]
 --

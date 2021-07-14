@@ -35,7 +35,7 @@ The following features are supported:
 CurrencyField has been deprecated in favor of CurrencyFieldType; all configuration examples below use CurrencyFieldType.
 ====
 
-The `currency` field type is defined in `schema.xml`.
+The `currency` field type is defined in the <<solr-schema.adoc,schema>>.
 This is the default configuration of this type.
 
 [source,xml]
@@ -97,7 +97,7 @@ Natively, two provider types are supported: `FileExchangeRateProvider` or `OpenE
 This provider requires you to provide a file of exchange rates.
 It is the default, meaning that to use this provider you only need to specify the file path and name as a value for `currencyConfig` in the definition for this type.
 
-There is a sample `currency.xml` file included with Solr, found in the same directory as the `schema.xml` file.
+There is a sample `currency.xml` file included with Solr, found in the same directory as the schema file.
 Here is a small snippet from this file:
 
 [source,xml]
