@@ -1009,6 +1009,9 @@ public class CoreContainer {
   }
 
   public void shutdown() {
+    if (isShutDown) {
+      return;
+    }
 
     ZkController zkController = getZkController();
     if (zkController != null) {
