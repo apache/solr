@@ -19,8 +19,6 @@ set -euo pipefail
 TEST_DIR="${TEST_DIR:-$(dirname -- "${BASH_SOURCE[0]}")}"
 source "${TEST_DIR}/../../shared.sh"
 
-container_cleanup "$container_name"
-
 myvarsolr="${BUILD_DIR}/myvarsolr-${container_name}"
 prepare_dir_to_mount 8983 "$myvarsolr"
 

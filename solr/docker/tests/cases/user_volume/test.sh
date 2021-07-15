@@ -55,8 +55,6 @@ mkdir -p "$myvarsolr/data/mycore"
 mkdir -p "$myvarsolr/logs"
 touch "$myvarsolr/data/mycore/core.properties"
 
-container_cleanup "$container_name"
-
 echo "Running $container_name"
 docker run \
   -v "$myvarsolr:/var/solr" \
