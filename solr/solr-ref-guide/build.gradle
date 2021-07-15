@@ -29,6 +29,7 @@ buildscript {
 plugins {
     id 'java'
     id 'com.github.jruby-gradle.base' version '2.0.0'
+    id 'io.github.rwinch.antora' version '0.0.2'
 }
 
 // This project does not contribute anything to main dependencies.
@@ -283,4 +284,8 @@ abstract class PrepareSources extends DefaultTask {
             })
         }
     }
+}
+
+antora {
+  playbookFile = file("playbook.yml")
 }
