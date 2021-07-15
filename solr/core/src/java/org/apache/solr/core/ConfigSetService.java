@@ -271,7 +271,11 @@ public abstract class ConfigSetService {
     String configSet = cd.getConfigSet();
     if (configSet != null && schemaCache != null) {
       String guessSchemaName = indexSchemaFactory.getSchemaResourceName(cdSchemaName);
-      Long modVersion = getCurrentSchemaModificationVersion(configSet, solrConfig, guessSchemaName);
+      Long modVersion = null;
+      try {
+        modVersion = getCurrentSchemaModificationVersion(configSet, solrConfig, guessSchemaName);
+      } catch (IOException e) {
+      }
       if (modVersion != null) {
         // note: luceneMatchVersion influences the schema
         String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
@@ -290,7 +294,7 @@ public abstract class ConfigSetService {
    * Returns a modification version for the schema file.
    * Null may be returned if not known, and if so it defeats schema caching.
    */
-  protected abstract Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile);
+  protected abstract Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile) throws IOException;
 
   /**
    * Return the ConfigSet properties or null if none.
