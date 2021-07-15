@@ -383,6 +383,8 @@ Bug Fixes
 * SOLR-15311: Support async parameter in MODIFYCOLLECTION
   (Nazerke Seidan, Christine Poerschke, David Smiley)
 
+* SOLR-15531: SignificantTerms streaming function should not fail on empty collections (Benedikt Arnold via Mike Drob)
+
 Other Changes
 ---------------------
 (No changes)
