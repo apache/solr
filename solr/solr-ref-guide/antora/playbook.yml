@@ -1,0 +1,13 @@
+site:
+  title: Apache Solr Reference Guide
+  url: https://solr.apache.org/guide
+  start_page: solr::index.adoc
+content:
+  sources:
+  - url: ~/solr-repos/solr-fork
+    branches: [antora-migration]
+    start_path: solr/solr-ref-guide/src
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/master/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
