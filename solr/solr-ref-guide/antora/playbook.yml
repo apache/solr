@@ -4,8 +4,8 @@ site:
   start_page: solr::index.adoc
 content:
   sources:
-  - url: ~/solr-repos/solr-fork
-    branches: [antora-migration]
+  - url: /Users/cass/solr-repos/solr-fork
+    branches: HEAD
     start_path: solr/solr-ref-guide/src
 ui:
   bundle:
