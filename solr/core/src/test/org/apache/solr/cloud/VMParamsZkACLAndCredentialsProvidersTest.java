@@ -297,11 +297,11 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   }
 
   private void saveCredentialsFile(Properties props) throws IOException {
-    File credentialsFile = createTempFile("zk-creds", "properties").toFile();
-    try (FileWriter writer = new FileWriter(credentialsFile, StandardCharsets.UTF_8)) {
-      props.store(writer, "test");
+    Path tmp = createTempFile("zk-creds", "properties");
+    try (OutputStream os = Files.newOutputStream(tmp)) {
+      props.store(os, "test");
     }
-    System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_FILE_VM_PARAM_NAME, credentialsFile.getAbsolutePath());
+    System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_FILE_VM_PARAM_NAME, tmp.toAbsolutePath().toString());
   }
   
   private void setSecuritySystemProperties() {
