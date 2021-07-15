@@ -1,12 +1,12 @@
 site:
   title: Apache Solr Reference Guide
-  url: https://solr.apache.org/guide
+  url: https://solr.apache.org
   start_page: solr::index.adoc
 content:
   sources:
   - url: /Users/cass/solr-repos/solr-fork
     branches: HEAD
-    start_path: solr/solr-ref-guide/src
+    start_path: solr/solr-ref-guide
 ui:
   bundle:
     url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/master/raw/build/ui-bundle.zip?job=bundle-stable
