@@ -24,6 +24,7 @@ prepare_dir_to_mount 8983 "$initdb"
 
 cat > "$initdb/create-was-here.sh" <<EOM
 touch /var/solr/initdb-was-here
+export SOLR_HEAP="745m"
 EOM
 cat > "$initdb/ignore-me" <<EOM
 touch /var/solr/should-not-be
@@ -43,6 +44,11 @@ fi
 data=$(docker exec --user=solr "$container_name" ls /var/solr/should-not-be; true)
 if [[ -n "$data" ]]; then
   echo "Test $TEST_DIR $tag failed; should-not-be was"
+  exit 1
+fi
+data=$(docker exec --user=solr "$container_name" ps -ef)
+if ! grep -q 'Xms745m' <<< "$data"; then
+  echo "Test $TEST_DIR $tag failed; environment variable in initdb script not exported correctly"
   exit 1
 fi
 echo "Checking docker logs"
