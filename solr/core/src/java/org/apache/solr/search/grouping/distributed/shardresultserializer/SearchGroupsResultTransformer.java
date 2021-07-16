@@ -30,7 +30,6 @@ import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldComm
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommandResult;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -85,8 +84,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         searchGroup.groupValue = new BytesRef(groupValue);
       }
     }
-    @SuppressWarnings("unchecked")
-    Comparable<?>[] sv = (Comparable<?>[]) Array.newInstance(Comparable.class, rawSearchGroupData.size());
+    Comparable<?>[] sv = new Comparable<?>[rawSearchGroupData.size()];
     searchGroup.sortValues = rawSearchGroupData.toArray(sv);
     for (int i = 0; i < searchGroup.sortValues.length; i++) {
       SchemaField field = groupSortField[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSortField[i].getField()) : null;

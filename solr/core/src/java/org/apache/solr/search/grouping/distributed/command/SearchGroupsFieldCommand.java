@@ -127,7 +127,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   public SearchGroupsFieldCommandResult result() throws IOException {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (firstPassGroupingCollector != null) {
-      Collection<?> values = (Collection<?>) firstPassGroupingCollector.getTopGroups(0);
+      Collection<?> values = firstPassGroupingCollector.getTopGroups(0);
       if (field.getType().getNumberType() != null) {
         topGroups = GroupConverter.fromMutable(field, (Collection<SearchGroup<MutableValue>>) values);
       } else {
