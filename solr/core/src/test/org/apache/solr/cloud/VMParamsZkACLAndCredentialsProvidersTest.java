@@ -16,12 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
@@ -298,8 +297,8 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   private void saveCredentialsFile(Properties props) throws IOException {
     Path tmp = createTempFile("zk-creds", "properties");
-    try (OutputStream os = Files.newOutputStream(tmp)) {
-      props.store(os, "test");
+    try (FileWriter w = new FileWriter(tmp.toFile(), StandardCharsets.UTF_8)) {
+      props.store(w, "test");
     }
     System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_FILE_VM_PARAM_NAME, tmp.toAbsolutePath().toString());
   }
