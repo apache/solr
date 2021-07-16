@@ -193,6 +193,10 @@ public class LTRRescorer extends Rescorer {
     }
   }
 
+  /**
+   * @deprecated Use {@link #scoreSingleHit(int, int, int, ScoreDoc, int, org.apache.solr.ltr.LTRScoringQuery.ModelWeight.ModelScorer, ScoreDoc[])}
+   * and {@link #logSingleHit(IndexSearcher, org.apache.solr.ltr.LTRScoringQuery.ModelWeight, int, LTRScoringQuery)} instead.
+   */
   @Deprecated
   protected static void scoreSingleHit(IndexSearcher indexSearcher, int topN, LTRScoringQuery.ModelWeight modelWeight, int docBase, int hitUpto, ScoreDoc hit, int docID, LTRScoringQuery rerankingQuery, LTRScoringQuery.ModelWeight.ModelScorer scorer, ScoreDoc[] reranked) throws IOException {
     if (scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked)) {
@@ -200,6 +204,10 @@ public class LTRRescorer extends Rescorer {
     }
   }
 
+  /**
+   * Call this method if the {@link #scoreSingleHit(int, int, int, ScoreDoc, int, org.apache.solr.ltr.LTRScoringQuery.ModelWeight.ModelScorer, ScoreDoc[])}
+   * method indicated that the document's feature info should be logged.
+   */
   protected static void logSingleHit(IndexSearcher indexSearcher, LTRScoringQuery.ModelWeight modelWeight, int docid,  LTRScoringQuery scoringQuery) {
     final FeatureLogger featureLogger = scoringQuery.getFeatureLogger();
     if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
@@ -207,6 +215,11 @@ public class LTRRescorer extends Rescorer {
     }
   }
 
+  /**
+   * Scores a single document and returns true if the document's feature info should be logged via the
+   * {@link #logSingleHit(IndexSearcher, org.apache.solr.ltr.LTRScoringQuery.ModelWeight, int, LTRScoringQuery)}
+   * method. Feature info logging is only necessary for the topN documents.
+   */
   protected static boolean scoreSingleHit(int topN, int docBase, int hitUpto, ScoreDoc hit, int docID, LTRScoringQuery.ModelWeight.ModelScorer scorer, ScoreDoc[] reranked) throws IOException {
     // Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to
     // call score
