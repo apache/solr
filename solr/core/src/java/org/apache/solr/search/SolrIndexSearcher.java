@@ -1316,7 +1316,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if ((flags & NO_CHECK_QCACHE) == 0) {
         final QueryResultCacheEntry qrce = queryResultCache.get(key);
         if (qrce != null &&
-            qrce.docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO &&
+            (qrce.docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO ||
+             qrce.docList.hitCountRelation() == TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO) &&
             qrce.minExactCount >= key.nc_minExactCount) {
           superset = qrce.docList;
         } else {
