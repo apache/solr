@@ -374,6 +374,8 @@ Improvements
 * SOLR-15499: StatsStream implement ParallelMetricsRollup to allow for tiered computation of SQL metrics
   over collection aliases backed by many collections, potentially with many shards in each (Timothy Potter)
 
+* SOLR-14690: Increased queryResultCache hits when a "minExactCount" parameter is provided. (Christine Poerschke, Mike Drob)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
