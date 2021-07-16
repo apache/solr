@@ -35,6 +35,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -44,6 +45,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
+    System.setProperty("queryResultCache.autowarmCount", "0");
     initCore("solrconfig.xml", "schema.xml");
     for (int i = 0 ; i < NUM_DOCS ; i ++) {
       assertU(adoc("id", String.valueOf(i),
@@ -55,6 +57,11 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
   
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("queryResultCache.autowarmCount");
+  }
+
   private static String numbersTo(int i) {
     StringBuilder numbers = new StringBuilder();
     for (int j = 0; j <= i ; j++) {
@@ -440,4 +447,154 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     }
     
   }
+
+  public void testHigherMinExactCountCacheBenefitsLowerMinExactCount() throws IOException {
+
+    final int numRows = 10;
+
+    // start with a low minExactCount and find corresponding number of matches
+    final int lowMinExactCount = numRows;
+    final Long lowMinExactCountMatches =
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(lowMinExactCount, numRows, "field1_s", "foo");
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+      return qr.getDocList().matches();
+    });
+
+    // next find a higher minExactCount that gives a higher corresponding number of matches
+    int highMinExactCount = lowMinExactCount;
+    Long highMinExactCountMatches = lowMinExactCountMatches;
+    do {
+      highMinExactCount++;
+      final int highMinExactCountCopy = highMinExactCount;
+      highMinExactCountMatches = h.getCore().withSearcher(searcher -> {
+        QueryCommand cmd = createBasicQueryCommand(highMinExactCountCopy, numRows, "field1_s", "foo");
+        QueryResult qr = new QueryResult();
+        searcher.search(qr, cmd);
+        assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+        return qr.getDocList().matches();
+      });
+    } while (highMinExactCountMatches <= lowMinExactCountMatches && highMinExactCount < NUM_DOCS);
+
+    assertTrue(highMinExactCount > lowMinExactCount);
+    assertTrue(highMinExactCountMatches > lowMinExactCountMatches);
+
+    // confirm that without caching the low minExactCount still gives the low number of matches
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(lowMinExactCount, numRows, "field1_s", "foo");
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+      assertEquals(lowMinExactCountMatches.longValue(), qr.getDocList().matches());
+      return null;
+    });
+
+    final int highMinExactCountCopy = highMinExactCount;
+    final Long highMinExactCountMatchesCopy = highMinExactCountMatches;
+
+    // query with caching for the high minExactCount expecting the same higher number of matches
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(highMinExactCountCopy, numRows, "field1_s", "foo");
+      cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+      assertEquals(highMinExactCountMatchesCopy.longValue(), qr.getDocList().matches());
+      return null;
+    });
+
+    // query with caching for the low minExactCount expecting the higher number of matches
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(lowMinExactCount, numRows, "field1_s", "foo");
+      cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+      assertEquals(highMinExactCountMatchesCopy.longValue(), qr.getDocList().matches());
+      return null;
+    });
+
+    // lastly confirm that without cache use the low minExactCount still gives the low number of matches
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(lowMinExactCount, numRows, "field1_s", "foo");
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+      assertEquals(lowMinExactCountMatches.longValue(), qr.getDocList().matches());
+      return null;
+    });
+  }
+
+  public void testNoMinExactCountCacheExactCountBenefitsMinExactCount() throws IOException {
+    final int numRows = 10;
+
+    // start with a minExactCount and find corresponding number of matches
+    final int minExactCount = numRows;
+    final Long minExactCountMatches =
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(minExactCount, numRows, "field1_s", "foo");
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+      return qr.getDocList().matches();
+    });
+
+    // next find number of matches for no i.e. maximum minExactCount
+    final Long noMinExactCountMatches =
+    h.getCore().withSearcher(searcher -> {
+        QueryCommand cmd = createBasicQueryCommand(Integer.MAX_VALUE, numRows, "field1_s", "foo");
+        QueryResult qr = new QueryResult();
+        searcher.search(qr, cmd);
+        assertEquals(TotalHits.Relation.EQUAL_TO, qr.getDocList().hitCountRelation());
+        return qr.getDocList().matches();
+      });
+
+    assertTrue(noMinExactCountMatches > minExactCountMatches);
+
+    // confirm that with caching the maximum minExactCount gets the same exact full number of matches
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(Integer.MAX_VALUE, numRows, "field1_s", "foo");
+      cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.EQUAL_TO, qr.getDocList().hitCountRelation());
+      assertEquals(noMinExactCountMatches.longValue(), qr.getDocList().matches());
+      return null;
+    });
+
+    // confirm that without caching the minExactCount still gives the prior inexact number of matches
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(minExactCount, numRows, "field1_s", "foo");
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+      assertEquals(minExactCountMatches.longValue(), qr.getDocList().matches());
+      return null;
+    });
+
+    // confirm that with caching the minExactCount gets the exact full number of matches
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(minExactCount, numRows, "field1_s", "foo");
+      cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.EQUAL_TO, qr.getDocList().hitCountRelation());
+      assertEquals(noMinExactCountMatches.longValue(), qr.getDocList().matches());
+      return null;
+    });
+
+    // lastly confirm that without caching the minExactCount still gives the prior inexact number of matches
+    h.getCore().withSearcher(searcher -> {
+      QueryCommand cmd = createBasicQueryCommand(minExactCount, numRows, "field1_s", "foo");
+      QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+      assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, qr.getDocList().hitCountRelation());
+      assertEquals(minExactCountMatches.longValue(), qr.getDocList().matches());
+      return null;
+    });
+
+  }
+
 }
