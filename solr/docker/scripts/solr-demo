@@ -22,7 +22,8 @@ if [[ "${VERBOSE:-}" == "yes" ]]; then
     set -x
 fi
 
-run-initdb
+# Could set env-variables for solr-fg
+source run-initdb
 
 CORE=demo
 
