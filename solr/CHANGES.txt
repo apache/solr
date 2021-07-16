@@ -374,6 +374,9 @@ Improvements
 * SOLR-15499: StatsStream implement ParallelMetricsRollup to allow for tiered computation of SQL metrics
   over collection aliases backed by many collections, potentially with many shards in each (Timothy Potter)
 
+* SOLR-15525: Read ZK credentials from a file specified using a system property instead of exposing plain-text
+  credentials as system properties (Timothy Potter)
+
 * SOLR-14690: Increased queryResultCache hits when a "minExactCount" parameter is provided. (Christine Poerschke, Mike Drob)
 
 Optimizations
@@ -384,6 +387,8 @@ Bug Fixes
 ---------------------
 * SOLR-15311: Support async parameter in MODIFYCOLLECTION
   (Nazerke Seidan, Christine Poerschke, David Smiley)
+
+* SOLR-15531: SignificantTerms streaming function should not fail on empty collections (Benedikt Arnold via Mike Drob)
 
 Other Changes
 ---------------------

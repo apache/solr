@@ -1,17 +1,30 @@
 #!/bin/bash
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -euo pipefail
 
 TEST_DIR="${TEST_DIR:-$(dirname -- "${BASH_SOURCE[0]}")}"
 source "${TEST_DIR}/../../shared.sh"
-
-container_cleanup "$container_name"
 
 initdb="$BUILD_DIR/initdb-$container_name"
 prepare_dir_to_mount 8983 "$initdb"
 
 cat > "$initdb/create-was-here.sh" <<EOM
 touch /var/solr/initdb-was-here
+export SOLR_HEAP="745m"
 EOM
 cat > "$initdb/ignore-me" <<EOM
 touch /var/solr/should-not-be
@@ -31,6 +44,11 @@ fi
 data=$(docker exec --user=solr "$container_name" ls /var/solr/should-not-be; true)
 if [[ -n "$data" ]]; then
   echo "Test $TEST_DIR $tag failed; should-not-be was"
+  exit 1
+fi
+data=$(docker exec --user=solr "$container_name" ps -ef)
+if ! grep -q 'Xms745m' <<< "$data"; then
+  echo "Test $TEST_DIR $tag failed; environment variable in initdb script not exported correctly"
   exit 1
 fi
 echo "Checking docker logs"

@@ -30,13 +30,25 @@ bin/solr -e techproducts
 The Stats Component accepts the following parameters:
 
 `stats`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, then invokes the Stats component.
 
 `stats.field`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 Specifies a field for which statistics should be generated.
 This parameter may be invoked multiple times in a query in order to request statistics on multiple fields.
 +
-<<local-params.adoc#,Local Params>> may be used to indicate which subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name.
+<<local-params.adoc#,Local Params>> may be used to indicate a subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name.
 See the examples below.
 
 

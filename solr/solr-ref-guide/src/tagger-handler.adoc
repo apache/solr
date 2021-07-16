@@ -67,23 +67,53 @@ The tagger's execution is completely configurable with request parameters.
  Only `field` is required.
 
 `field`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The tag field that serves as the dictionary.
 This is required; you'll probably specify it in the request handler.
 
 `fq`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 You can specify some number of _filter queries_ to limit the dictionary used for tagging.
 This parameter is the same one used by the `solr.SearchHandler`.
 
 `rows`::
-The maximum number of documents to return, but defaulting to 10000 for a tag request.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10000`
+|===
++
+The maximum number of documents to return.
 This parameter is the same as is used by the `solr.SearchHandler`.
 
 `fl`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Solr's standard parameter for listing the fields to return.
 This parameter is the same one used by the `solr.SearchHandler`.
 
 `overlaps`::
-Choose the algorithm to determine which tags in an overlapping set should be retained, versus being pruned away.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `NO_SUB`
+|===
++
+Choose the algorithm to determine which tags in an overlapping set should be retained versus being pruned away.
 Options are:
 
 * `ALL`: Emit all tags.
@@ -93,31 +123,55 @@ If there is a tie, pick the right-most.
 Remove any tags overlapping with this tag then repeat the algorithm to potentially find other tags that can be emitted in the cluster.
 
 `matchText`::
-A boolean indicating whether to return the matched text in the tag response.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, return the matched text in the tag response.
 This will trigger the tagger to fully buffer the input before tagging.
 
 `tagsLimit`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1000`
+|===
++
 The maximum number of tags to return in the response.
 Tagging effectively stops after this point.
-By default this is `1000`.
 
 `skipAltTokens`::
-A boolean flag used to suppress errors that can occur if, for example,
-  you enable synonym expansion at query time in the analyzer, which you normally shouldn't do.
-Let this default to false unless you know that such tokens can't be avoided.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, suppress errors that can occur if, for example, you enable synonym expansion at query time in the analyzer, which you normally shouldn't do.
+Let this default to `false` unless you know that such tokens can't be avoided.
 
 `ignoreStopwords`::
-A boolean flag that causes stopwords (or any condition causing positions to skip like >255 char words)
-to be ignored as if they aren't there.
-Otherwise, the behavior is to treat them as breaks in tagging on the presumption your indexed text-analysis
-  configuration doesn't have a `StopWordFilter` defined.
-By default the indexed analysis chain is checked for the presence of a `StopWordFilter` and if found
-  then `ignoreStopWords` is true if unspecified.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+A boolean flag that causes stopwords (or any condition causing positions to skip like >255 char words) to be ignored as if they aren't there.
+Otherwise, the behavior is to treat them as breaks in tagging on the presumption your indexed text-analysis configuration doesn't have a `StopWordFilter` defined.
+By default the indexed analysis chain is checked for the presence of a `StopWordFilter` and if found then `ignoreStopWords` is true if unspecified.
 You probably shouldn't have a `StopWordFilter` configured and probably won't need to set this parameter either.
 
 `xmlOffsetAdjust`::
-A boolean indicating that the input is XML and furthermore that the offsets of returned tags should be adjusted as
-  necessary to allow for the client to insert an opening and closing element at the tag offset pair.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, indicates the input is XML and the offsets of returned tags should be adjusted as necessary to allow for the client to insert an opening and closing element at the tag offset pair.
 If it isn't possible to do so then the tag will be omitted.
 You are expected to configure `HTMLStripCharFilterFactory` in the schema when using this option.
 This will trigger the tagger to fully buffer the input before tagging.
