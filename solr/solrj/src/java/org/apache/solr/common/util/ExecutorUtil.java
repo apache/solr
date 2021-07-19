@@ -39,6 +39,8 @@ import org.slf4j.MDC;
 public class ExecutorUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final ThreadLocal<Exception> submitter = new ThreadLocal<>();
+
   private static volatile List<InheritableThreadLocalProvider> providers = new ArrayList<>();
 
   /**
@@ -110,7 +112,7 @@ public class ExecutorUtil {
   public static ExecutorService newMDCAwareFixedThreadPool(int nThreads, ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(nThreads, nThreads,
         0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
+        new LinkedBlockingQueue<>(),
         threadFactory);
   }
 
@@ -147,8 +149,6 @@ public class ExecutorUtil {
         new LinkedBlockingQueue<>(maxThreads),
         threadFactory);
   }
-
-  public final static ThreadLocal<Exception> submitter = new ThreadLocal<>();
 
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")
   public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {

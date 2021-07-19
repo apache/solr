@@ -22,7 +22,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -34,14 +33,11 @@ import org.slf4j.LoggerFactory;
 
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>();
+  public static final Map<Object, Exception> OBJECTS = new ConcurrentHashMap<>();
   
   public static boolean track(Object object) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
     Exception submitter = ExecutorUtil.submitter.get();
-    new ObjectTrackerException(object.getClass().getName(), submitter).printStackTrace(pw);
-    OBJECTS.put(object, sw.toString());
+    OBJECTS.put(object, new ObjectTrackerException(object.getClass().getName(), submitter));
     return true;
   }
   
@@ -58,41 +54,46 @@ public class ObjectReleaseTracker {
    * @return null if ok else error message
    */
   public static String checkEmpty() {
-    String error = null;
-    Set<Entry<Object,String>> entries = OBJECTS.entrySet();
+    if (OBJECTS.isEmpty()) {
+      return null;
+    }
 
-    if (entries.size() > 0) {
-      List<String> objects = new ArrayList<>();
-      for (Entry<Object,String> entry : entries) {
-        objects.add(entry.getKey().getClass().getSimpleName());
-      }
-      
-      error = "ObjectTracker found " + entries.size() + " object(s) that were not released!!! " + objects + "\n";
-      for (Entry<Object,String> entry : entries) {
-        error += entry.getValue() + "\n";
-      }
+    StringBuilder error = new StringBuilder();
+    error.append("ObjectTracker found ").append(OBJECTS.size()).append(" object(s) that were not released!!! ");
+
+    Set<Entry<Object, Exception>> entries = OBJECTS.entrySet();
+
+    ArrayList<String> objects = new ArrayList<>(OBJECTS.size());
+    for (Object object : OBJECTS.keySet()) {
+      objects.add(object.getClass().getSimpleName());
+    }
+    error.append(objects).append("\n");
+
+    for (Entry<Object, Exception> entry : entries) {
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      entry.getValue().printStackTrace(pw);
+
+      error.append(entry.getKey().getClass().getName()).append(":");
+      error.append(sw).append("\n");
     }
     
-    return error;
+    return error.toString();
   }
   
   public static void tryClose() {
-    Set<Entry<Object,String>> entries = OBJECTS.entrySet();
-
-    if (entries.size() > 0) {
-      for (Entry<Object,String> entry : entries) {
-        if (entry.getKey() instanceof Closeable) {
-          try {
-            ((Closeable)entry.getKey()).close();
-          } catch (Throwable t) {
-            log.error("", t);
-          }
-        } else if (entry.getKey() instanceof ExecutorService) {
-          try {
-            ExecutorUtil.shutdownAndAwaitTermination((ExecutorService)entry.getKey());
-          } catch (Throwable t) {
-            log.error("", t);
-          }
+    for (Object object : OBJECTS.keySet()) {
+      if (object instanceof Closeable) {
+        try {
+          ((Closeable) object).close();
+        } catch (Throwable t) {
+          log.error("", t);
+        }
+      } else if (object instanceof ExecutorService) {
+        try {
+          ExecutorUtil.shutdownAndAwaitTermination((ExecutorService) object);
+        } catch (Throwable t) {
+          log.error("", t);
         }
       }
     }
