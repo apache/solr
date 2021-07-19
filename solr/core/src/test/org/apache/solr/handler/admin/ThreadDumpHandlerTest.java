@@ -102,20 +102,11 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
 
       @SuppressWarnings({"unchecked"})
       NamedList<Object> threads = (NamedList<Object>) readProperties()._get("system/threadDump", null);
-      boolean found = false;
-      for (Map.Entry<String, Object> threadEntry : threads) {
-        @SuppressWarnings({"unchecked"})
-        NamedList<Object> thread = (NamedList<Object>) threadEntry.getValue();
-        // monitor owner 'ownerT'
-        // (which *MAY* also be waiting on doneWithTestLatch, but may not have reached that line yet)
-        if (thread._getStr("name",  null).contains("test-thread-monitor-owner")) {
-          if (thread._get("monitors-locked", "").toString().contains("TestMonitorStruct")) {
-            found = true;
-            break;
-          }
-        }
-      }
-      assertTrue(found);
+      // monitor owner 'ownerT'
+      // (which *MAY* also be waiting on doneWithTestLatch, but may not have reached that line yet)
+      NamedList<Object> thread = getThread(threads,"test-thread-monitor-owner");
+      assert thread != null;
+      assertTrue("Thread monitor ownerT: ", thread._get("monitors-locked", "").toString().contains("TestMonitorStruct"));
 
       if (checkBlockedThreadViaPolling) {
         log.info("Also checking with blockedT thread setup via polling...");
@@ -131,36 +122,14 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
           Thread.sleep(10); // 10ms at a time, at most 5 sec total
         }
         if (Thread.State.BLOCKED.equals(blockedT.getState())) {
-          @SuppressWarnings({"unchecked"})
-          NamedList<Object> blockedThreads = (NamedList<Object>) readProperties()._get("system/threadDump", null);
-          found = false;
-          for (Map.Entry<String, Object> threadEntry : blockedThreads) {
-            @SuppressWarnings({"unchecked"})
-            NamedList<Object> thread = (NamedList<Object>) threadEntry.getValue();
-            // same monitor owner 'ownerT'
-            if (thread._getStr("name",  null).contains("test-thread-monitor-owner")) {
-              if (thread._get("monitors-locked", "").toString().contains("ReentrantLock")) {
-                found = true;
-                break;
-              }
-            }
-          }
-          assertTrue(found);
-          for (Map.Entry<String, Object> threadEntry : blockedThreads) {
-            @SuppressWarnings({"unchecked"})
-            NamedList<Object> thread = (NamedList<Object>) threadEntry.getValue();
-            // blocked thread 'blockedT', waiting on the monitor
-            if (thread._getStr("name",  null).contains("test-thread-monitor-blocked")) {
-              if (thread._getStr("state",  null).contains("BLOCKED")) {
-                if (thread._get("lock-waiting", "").toString().contains("test-thread-monitor-owner")) {
-                  found = true;
-                  break;
-                }
-              }
+          // same monitor owner 'ownerT'
+          assertTrue("Same thread ownerT: ", thread._get("monitors-locked", "").toString().contains("ReentrantLock"));
 
-            }
-          }
-          assertTrue(found);
+          // blocked thread 'blockedT', waiting on the monitor
+          final NamedList<Object> blockedThread = getThread(threads, "test-thread-monitor-blocked");
+          assert blockedThread != null;
+          assertTrue("blocked thread blockedT waiting on the monitor: ", blockedThread._getStr("state", null).contains("BLOCKED")
+                  && thread._get("lock-waiting", "").toString().contains("test-thread-monitor-owner"));
         }
       }
     } finally {
@@ -232,20 +201,11 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
 
       @SuppressWarnings({"unchecked"})
       NamedList<Object> threads = (NamedList<Object>) readProperties()._get("system/threadDump", null);
-      boolean found = false;
-      for (Map.Entry<String, Object> threadEntry : threads) {
-        @SuppressWarnings({"unchecked"})
-        NamedList<Object> thread = (NamedList<Object>) threadEntry.getValue();
-        // lock owner 'ownerT'
-        // (which *MAY* also be waiting on doneWithTestLatch, but may not have reached that line yet)
-        if (thread._getStr("name",  null).contains("test-thread-sync-lock-owner")) {
-          if (thread._get("synchronizers-locked", "").toString().contains("ReentrantLock")) {
-            found = true;
-            break;
-          }
-        }
-      }
-      assertTrue(found);
+      // lock owner 'ownerT'
+      // (which *MAY* also be waiting on doneWithTestLatch, but may not have reached that line yet)
+      final NamedList<Object> thread = getThread(threads,"test-thread-sync-lock-owner");
+      assert thread != null;
+      assertTrue("Thread lock:", thread._get("synchronizers-locked", "").toString().contains("ReentrantLock"));
       
       if (checkWaitingThreadViaPolling) {
         log.info("Also checking with blockedT thread setup via polling...");
@@ -261,36 +221,16 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
           Thread.sleep(10); // 10ms at a time, at most 5 sec total
         }
         if (lock.hasQueuedThread(blockedT)) {
-          @SuppressWarnings({"unchecked"})
-          NamedList<Object> blockedThreads = (NamedList<Object>) readProperties()._get("system/threadDump", null);
-          found = false;
-          for (Map.Entry<String, Object> threadEntry : blockedThreads) {
-            @SuppressWarnings({"unchecked"})
-            NamedList<Object> thread = (NamedList<Object>) threadEntry.getValue();
-            // lock owner 'ownerT'
-            if (thread._getStr("name",  null).contains("test-thread-sync-lock-owner")) {
-              if (thread._get("synchronizers-locked", "").toString().contains("ReentrantLock")) {
-                found = true;
-                break;
-              }
-            }
-          }
-          assertTrue(found);
-          for (Map.Entry<String, Object> threadEntry : blockedThreads) {
-            @SuppressWarnings({"unchecked"})
-            NamedList<Object> thread = (NamedList<Object>) threadEntry.getValue();
-            // blocked thread 'blockedT', waiting on the lock
-            if (thread._getStr("name",  null).contains("test-thread-sync-lock-blocked")) {
-              if (thread._getStr("state",  null).contains("WAITING")) {
-                if (thread._get("lock-waiting", "").toString().contains("test-thread-sync-lock-owner")) {
-                  found = true;
-                  break;
-                }
-              }
+          // lock owner 'ownerT'
+          final NamedList<Object> blockedThread = getThread(threads, "test-thread-sync-lock-owner");
+          assert blockedThread != null;
+          assertTrue("Thread locked: ", blockedThread._get("synchronizers-locked", "").toString().contains("ReentrantLock"));
 
-            }
-          }
-          assertTrue(found);
+          // blocked thread 'blockedT', waiting on the lock
+          final NamedList<Object> waitingThread = getThread(threads, "test-thread-sync-lock-blocked");
+          assert waitingThread != null;
+          assertTrue("Waiting on the lock: ", waitingThread._getStr("state",  null).contains("WAITING")
+                  && waitingThread._get("lock-waiting", "").toString().contains("test-thread-sync-lock-owner"));
         }
       }
     } finally {
@@ -309,6 +249,18 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     new ThreadDumpHandler().handleRequestBody(req, rsp);
     return rsp.getValues();
+  }
+
+  @SuppressWarnings({"unchecked"})
+  private NamedList<Object> getThread(NamedList<Object> threads, String threadName) {
+    for (Map.Entry<String, Object> threadEntry : threads) {
+      @SuppressWarnings({"unchecked"})
+      NamedList<Object> thread = (NamedList<Object>) threadEntry.getValue();
+      if (thread._getStr("name",  null).contains(threadName)) {
+        return thread;
+      }
+    }
+    return null;
   }
   
 }
