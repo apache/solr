@@ -33,6 +33,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.SolrCore;
@@ -75,6 +76,8 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     this.params = this.origParams = params;
     this.requestTimer = requestTimer;
     this.startTime = System.currentTimeMillis();
+
+    assert ObjectReleaseTracker.track(this);
   }
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
@@ -182,6 +185,8 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
    */
   @Override
   public void close() {
+    assert ObjectReleaseTracker.release(this);
+
     if (searcherHolder!=null) {
       searcherHolder.decref();
       searcherHolder = null;
