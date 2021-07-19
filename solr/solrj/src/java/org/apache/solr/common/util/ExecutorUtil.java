@@ -148,6 +148,8 @@ public class ExecutorUtil {
         threadFactory);
   }
 
+  public final static ThreadLocal<Exception> submitter = new ThreadLocal<>();
+
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")
   public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {
 
@@ -196,7 +198,13 @@ public class ExecutorUtil {
 
       String ctxStr = contextString.toString().replace("/", "//");
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
-      final Exception submitterStackTrace = enableSubmitterStackTrace ? new Exception("Submitter stack trace") : null;
+      final Exception submitterStackTrace;
+      if (enableSubmitterStackTrace) {
+        Exception grandParentSubmitter = submitter.get();
+        submitterStackTrace = new Exception("Submitter stack trace", grandParentSubmitter);
+      } else {
+        submitterStackTrace = null;
+      }
       final List<InheritableThreadLocalProvider> providersCopy = providers;
       final ArrayList<AtomicReference<Object>> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
       if (ctx != null) {
@@ -219,6 +227,9 @@ public class ExecutorUtil {
           currentThread.setName(oldName + "-processing-" + submitterContextStr);
         } else {
           MDC.clear();
+        }
+        if (enableSubmitterStackTrace) {
+          submitter.set(submitterStackTrace);
         }
         try {
           command.run();

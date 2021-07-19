@@ -39,7 +39,8 @@ public class ObjectReleaseTracker {
   public static boolean track(Object object) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
-    new ObjectTrackerException(object.getClass().getName()).printStackTrace(pw);
+    Exception submitter = ExecutorUtil.submitter.get();
+    new ObjectTrackerException(object.getClass().getName(), submitter).printStackTrace(pw);
     OBJECTS.put(object, sw.toString());
     return true;
   }
@@ -98,8 +99,8 @@ public class ObjectReleaseTracker {
   }
   
   private static class ObjectTrackerException extends RuntimeException {
-    ObjectTrackerException(String msg) {
-      super(msg);
+    ObjectTrackerException(String msg, Exception submitter) {
+      super(msg, submitter);
     }
   }
 
