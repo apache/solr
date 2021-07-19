@@ -101,7 +101,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) throws IOException {
     try {
       return ConfigSetProperties.readFromResourceLoader(loader, ".");
     } catch (Exception ex) {

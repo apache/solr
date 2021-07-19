@@ -311,7 +311,7 @@ public abstract class ConfigSetService {
    * Return the ConfigSet flags or null if none.
    */
   // TODO should fold into configSetProps -- SOLR-14059
-  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) throws IOException {
     return null;
   }
 
