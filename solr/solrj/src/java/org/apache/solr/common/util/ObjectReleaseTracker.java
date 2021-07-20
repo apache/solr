@@ -36,6 +36,7 @@ public class ObjectReleaseTracker {
   public static final Map<Object, Exception> OBJECTS = new ConcurrentHashMap<>();
   
   public static boolean track(Object object) {
+    // This is called from within constructors, be careful not to make assumptions about state of object here
     Exception submitter = ExecutorUtil.submitter.get(); // Could be null
     OBJECTS.put(object, new ObjectTrackerException(object.getClass().getName(), submitter));
     return true;

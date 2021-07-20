@@ -39,7 +39,7 @@ import org.slf4j.MDC;
 public class ExecutorUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final ThreadLocal<Exception> submitter = new ThreadLocal<>();
+  static final ThreadLocal<Exception> submitter = new ThreadLocal<>();
 
   private static volatile List<InheritableThreadLocalProvider> providers = new ArrayList<>();
 
