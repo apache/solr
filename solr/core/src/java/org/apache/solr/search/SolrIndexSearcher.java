@@ -2134,7 +2134,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
 
         @Override
-        public void close() { }
+        public void close() {}
       };
 
       final SolrQueryResponse rsp = new SolrQueryResponse();
