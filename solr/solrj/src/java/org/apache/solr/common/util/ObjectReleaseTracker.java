@@ -36,7 +36,7 @@ public class ObjectReleaseTracker {
   public static final Map<Object, Exception> OBJECTS = new ConcurrentHashMap<>();
   
   public static boolean track(Object object) {
-    Exception submitter = ExecutorUtil.submitter.get();
+    Exception submitter = ExecutorUtil.submitter.get(); // Could be null
     OBJECTS.put(object, new ObjectTrackerException(object.getClass().getName(), submitter));
     return true;
   }
@@ -65,7 +65,8 @@ public class ObjectReleaseTracker {
 
     ArrayList<String> objects = new ArrayList<>(OBJECTS.size());
     for (Object object : OBJECTS.keySet()) {
-      objects.add(object.getClass().getSimpleName());
+      Class<?> clazz = object.getClass();
+      objects.add(clazz.isAnonymousClass() ? clazz.getSuperclass().getSimpleName() : clazz.getSimpleName());
     }
     error.append(objects).append("\n");
 

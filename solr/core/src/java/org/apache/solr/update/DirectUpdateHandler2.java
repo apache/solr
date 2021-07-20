@@ -817,13 +817,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     boolean clearRequestInfo = false;
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    if (SolrRequestInfo.getRequestInfo() == null) {
-      clearRequestInfo = true;
-      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp)); // important for debugging
-    }
-    try {
+    try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      if (SolrRequestInfo.getRequestInfo() == null) {
+        clearRequestInfo = true;
+        SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp)); // important for debugging
+      }
 
       if (TestInjection.injectSkipIndexWriterCommitOnClose(writer)) {
         // if this TestInjection triggers, we do some simple rollback()
