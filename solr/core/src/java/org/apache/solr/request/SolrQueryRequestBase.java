@@ -125,13 +125,13 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     // should the core populate one in a factory method to create requests?
     // or there could be a setSearcher() method that Solr calls
 
-    // We start tracking with ORT here instead of at construction, because if getSearcher is never called, it's bad
-    // but not fatal to forget close(), and lots of test code is sloppy about it. However, when we get another
-    // searcher reference, having this tracked may be a good hint about where the leak comes from.
-    assert ObjectReleaseTracker.track(this);
-
     if (searcherHolder==null) {
       searcherHolder = core.getSearcher();
+
+      // We start tracking here instead of at construction, because if getSearcher is never called, it's
+      // not fatal to forget close(), and lots of test code is sloppy about it. However, when we get another
+      // searcher reference, having this tracked may be a good hint about where the leak comes from.
+      assert ObjectReleaseTracker.track(this);
     }
 
     return searcherHolder.get();
