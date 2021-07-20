@@ -53,7 +53,7 @@ public class LTRRescorer extends Rescorer {
     this.scoringQuery = scoringQuery;
   }
 
-  final protected static Comparator<ScoreDoc> docComparator = (a, b) -> a.doc - b.doc;
+  final private static Comparator<ScoreDoc> docComparator = Comparator.comparingInt(a -> a.doc);
 
   final protected static Comparator<ScoreDoc> scoreComparator = (a, b) -> {
     // Sort by score descending, then docID ascending:
@@ -141,10 +141,11 @@ public class LTRRescorer extends Rescorer {
 
     scoreFeatures(searcher,topN, modelWeight, firstPassResults, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
-    sortByScore(reranked);
+    Arrays.sort(reranked, scoreComparator);
     return reranked;
   }
 
+  @Deprecated
   protected static void sortByScore(ScoreDoc[] reranked) {
     Arrays.sort(reranked, scoreComparator);
   }
