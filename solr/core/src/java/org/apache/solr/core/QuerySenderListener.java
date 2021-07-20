@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -62,9 +61,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         }
         SolrQueryRequest req = new LocalSolrQueryRequest(getCore(),params) {
           @Override public SolrIndexSearcher getSearcher() { return searcher; }
-          @Override public void close() {
-            ObjectReleaseTracker.release(this);
-          }
+          @Override public void close() { }
         };
         SolrQueryResponse rsp = new SolrQueryResponse();
         SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
