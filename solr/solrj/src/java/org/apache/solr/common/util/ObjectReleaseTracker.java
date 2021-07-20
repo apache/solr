@@ -62,8 +62,6 @@ public class ObjectReleaseTracker {
     StringBuilder error = new StringBuilder();
     error.append("ObjectTracker found ").append(OBJECTS.size()).append(" object(s) that were not released!!! ");
 
-    Set<Entry<Object, Exception>> entries = OBJECTS.entrySet();
-
     ArrayList<String> objects = new ArrayList<>(OBJECTS.size());
     for (Object object : OBJECTS.keySet()) {
       Class<?> clazz = object.getClass();
@@ -71,7 +69,7 @@ public class ObjectReleaseTracker {
     }
     error.append(objects).append("\n");
 
-    for (Entry<Object, Exception> entry : entries) {
+    for (Entry<Object, Exception> entry : OBJECTS.entrySet()) {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw);
       entry.getValue().printStackTrace(pw);
