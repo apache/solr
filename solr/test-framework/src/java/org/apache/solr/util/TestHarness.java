@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.NamedList.NamedListEntry;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -450,7 +450,6 @@ public class TestHarness extends BaseTestHarness {
      * Perhaps the best we could do is increment the core reference count
      * and decrement it in the request close() method?
      */
-    @SuppressWarnings({"unchecked"})
     public LocalSolrQueryRequest makeRequest(String ... q) {
       if (q.length==1) {
         return new LocalSolrQueryRequest(TestHarness.this.getCore(),
@@ -459,13 +458,7 @@ public class TestHarness extends BaseTestHarness {
       if (q.length%2 != 0) { 
         throw new RuntimeException("The length of the string array (query arguments) needs to be even");
       }
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry<String, String> [] entries = new NamedListEntry[q.length / 2];
-      for (int i = 0; i < q.length; i += 2) {
-        entries[i/2] = new NamedListEntry<>(q[i], q[i+1]);
-      }
-      @SuppressWarnings({"rawtypes"})
-      NamedList nl = new NamedList(entries);
+      NamedList<String> nl = new NamedList<>(Utils.makeMap(q));
       if(nl.get("wt" ) == null) nl.add("wt","xml");
       return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl);
     }

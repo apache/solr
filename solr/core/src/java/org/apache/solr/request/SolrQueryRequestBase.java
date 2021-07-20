@@ -76,8 +76,6 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     this.params = this.origParams = params;
     this.requestTimer = requestTimer;
     this.startTime = System.currentTimeMillis();
-
-    assert ObjectReleaseTracker.track(this);
   }
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
@@ -126,6 +124,11 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     // should this reach out and get a searcher from the core singleton, or
     // should the core populate one in a factory method to create requests?
     // or there could be a setSearcher() method that Solr calls
+
+    // We start tracking with ORT here instead of at construction, because if getSearcher is never called, it's bad
+    // but not fatal to forget close(), and lots of test code is sloppy about it. However, when we get another
+    // searcher reference, having this tracked may be a good hint about where the leak comes from.
+    assert ObjectReleaseTracker.track(this);
 
     if (searcherHolder==null) {
       searcherHolder = core.getSearcher();
@@ -185,9 +188,8 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
    */
   @Override
   public void close() {
-    assert ObjectReleaseTracker.release(this);
-
     if (searcherHolder!=null) {
+      assert ObjectReleaseTracker.release(this);
       searcherHolder.decref();
       searcherHolder = null;
     }
