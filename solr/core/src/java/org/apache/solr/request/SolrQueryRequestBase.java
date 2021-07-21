@@ -33,6 +33,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.SolrCore;
@@ -126,6 +127,11 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
     if (searcherHolder==null) {
       searcherHolder = core.getSearcher();
+
+      // We start tracking here instead of at construction, because if getSearcher is never called, it's
+      // not fatal to forget close(), and lots of test code is sloppy about it. However, when we get another
+      // searcher reference, having this tracked may be a good hint about where the leak comes from.
+      assert ObjectReleaseTracker.track(this);
     }
 
     return searcherHolder.get();
@@ -183,6 +189,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   @Override
   public void close() {
     if (searcherHolder!=null) {
+      assert ObjectReleaseTracker.release(this);
       searcherHolder.decref();
       searcherHolder = null;
     }
