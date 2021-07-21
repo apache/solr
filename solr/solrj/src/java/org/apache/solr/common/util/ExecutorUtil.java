@@ -39,7 +39,7 @@ import org.slf4j.MDC;
 public class ExecutorUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final ThreadLocal<Exception> submitter = new ThreadLocal<>();
+  static final ThreadLocal<Throwable> submitter = new ThreadLocal<>();
 
   private static volatile List<InheritableThreadLocalProvider> providers = new ArrayList<>();
 
@@ -198,9 +198,9 @@ public class ExecutorUtil {
 
       String ctxStr = contextString.toString().replace("/", "//");
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
-      final Exception submitterStackTrace;
+      final Throwable submitterStackTrace; // Never thrown, only used as stack trace holder
       if (enableSubmitterStackTrace) {
-        Exception grandParentSubmitter = submitter.get();
+        Throwable grandParentSubmitter = submitter.get();
         submitterStackTrace = new Exception("Submitter stack trace", grandParentSubmitter);
       } else {
         submitterStackTrace = null;

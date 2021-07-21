@@ -14,12 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
@@ -89,7 +86,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
 
   @Test
   public void testAsyncTracking() throws InterruptedException, ExecutionException {
-    ExecutorService es = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("TestExecutor"));
+    ExecutorService es = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("TestExec"));
     Object trackable = new Object();
 
     Future<?> result = es.submit(() -> {
@@ -98,9 +95,10 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
 
     result.get(); // make sure that track has been called
     String message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
-    MatcherAssert.assertThat(message,
-        // es appears once in the stack trace and once in the submitter stack trace
-        stringContainsInOrder(getTestName(), es.getClass().getName(), es.getClass().getName()));
+    MatcherAssert.assertThat(message, stringContainsInOrder(
+        ObjectReleaseTracker.ObjectTrackerException.class.getName(),
+        "Exception: Submitter stack trace",
+        getClassName() + "." + getTestName()));
 
     // Test the grandparent submitter case
     AtomicReference<Future<?>> indirectResult = new AtomicReference<>();
@@ -113,9 +111,32 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     result.get();
     indirectResult.get().get();
     message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
-    MatcherAssert.assertThat(message,
-        // es appears once in the stack trace and twice in the submitter stack trace
-        stringContainsInOrder(getTestName(), es.getClass().getName(), es.getClass().getName(), es.getClass().getName()));
+    MatcherAssert.assertThat(message, stringContainsInOrder(
+        ObjectReleaseTracker.ObjectTrackerException.class.getName(),
+        "Exception: Submitter stack trace",
+        "Exception: Submitter stack trace",
+        getClassName() + "." + getTestName()));
+
+    // Now test great-grandparent, which we don't explicitly account for, but should have been recursively set
+    AtomicReference<Future<?>> indirectIndirect = new AtomicReference<>();
+    result = es.submit(() ->
+      indirectResult.set(es.submit(() ->
+        indirectIndirect.set(es.submit(() -> {
+          ObjectReleaseTracker.track(trackable);
+        }))
+      ))
+    );
+
+    result.get();
+    indirectResult.get().get();
+    indirectIndirect.get().get();
+    message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
+    MatcherAssert.assertThat(message, stringContainsInOrder(
+        ObjectReleaseTracker.ObjectTrackerException.class.getName(),
+        "Exception: Submitter stack trace",
+        "Exception: Submitter stack trace",
+        "Exception: Submitter stack trace",
+        getClassName() + "." + getTestName()));
 
     es.shutdown();
     assertTrue(es.awaitTermination(1, TimeUnit.SECONDS));

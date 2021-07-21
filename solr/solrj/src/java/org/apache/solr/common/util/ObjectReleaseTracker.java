@@ -36,7 +36,7 @@ public class ObjectReleaseTracker {
   
   public static boolean track(Object object) {
     // This is called from within constructors, be careful not to make assumptions about state of object here
-    Exception submitter = ExecutorUtil.submitter.get(); // Could be null
+    Throwable submitter = ExecutorUtil.submitter.get(); // Could be null
     OBJECTS.put(object, new ObjectTrackerException(object.getClass().getName(), submitter));
     return true;
   }
@@ -98,10 +98,9 @@ public class ObjectReleaseTracker {
     }
   }
   
-  private static class ObjectTrackerException extends RuntimeException {
-    ObjectTrackerException(String msg, Exception submitter) {
+  static class ObjectTrackerException extends RuntimeException {
+    ObjectTrackerException(String msg, Throwable submitter) {
       super(msg, submitter);
     }
   }
-
 }
