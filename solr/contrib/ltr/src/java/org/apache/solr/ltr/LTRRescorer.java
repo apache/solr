@@ -145,11 +145,6 @@ public class LTRRescorer extends Rescorer {
     return reranked;
   }
 
-  @Deprecated
-  protected static void sortByScore(ScoreDoc[] reranked) {
-    Arrays.sort(reranked, scoreComparator);
-  }
-
   protected static ScoreDoc[] getFirstPassDocsRanked(TopDocs firstPassTopDocs) {
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
     Arrays.sort(hits, docComparator);
