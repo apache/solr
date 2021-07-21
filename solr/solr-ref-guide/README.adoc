@@ -23,4 +23,4 @@ Raw content is stored in Asciidoc (`.adoc`) formatted files in the `src/` direct
 To build the Ref Guide, simply run `./gradlew checkSite`.
 This will build the HTML files and validate that page references and internal links work properly.
 
-See the `../dev-docs/ref-guide` directory for information about editing and publishing the Ref Guide.
+See the `../../dev-docs/ref-guide` directory for information about editing and publishing the Ref Guide.
