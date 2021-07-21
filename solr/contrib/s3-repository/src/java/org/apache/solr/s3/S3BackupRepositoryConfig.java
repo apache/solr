@@ -28,6 +28,7 @@ public class S3BackupRepositoryConfig {
 
     public static final String BUCKET_NAME = "blob.s3.bucket.name";
     public static final String REGION = "blob.s3.region";
+    public static final String ENDPOINT = "blob.s3.endpoint";
     public static final String PROXY_HOST = "blob.s3.proxy.host";
     public static final String PROXY_PORT = "blob.s3.proxy.port";
     public static final String S3MOCK = "blob.s3.mock";
@@ -36,6 +37,7 @@ public class S3BackupRepositoryConfig {
     private final String region;
     private final String proxyHost;
     private final int proxyPort;
+    private final String endpoint;
     private final boolean s3mock;
 
     public S3BackupRepositoryConfig(NamedList<?> args) {
@@ -45,6 +47,7 @@ public class S3BackupRepositoryConfig {
         bucketName = getStringConfig(config, BUCKET_NAME);
         proxyHost = getStringConfig(config, PROXY_HOST);
         proxyPort = getIntConfig(config, PROXY_PORT);
+        endpoint = getStringConfig(config, ENDPOINT);
         s3mock = getBooleanConfig(config, S3MOCK);
     }
 
@@ -53,9 +56,9 @@ public class S3BackupRepositoryConfig {
      */
     public S3StorageClient buildClient() {
         if (s3mock) {
-            return new AdobeMockS3StorageClient(bucketName);
+            return new AdobeMockS3StorageClient(bucketName, endpoint);
         } else {
-            return new S3StorageClient(bucketName, region, proxyHost, proxyPort);
+            return new S3StorageClient(bucketName, region, proxyHost, proxyPort, endpoint);
         }
     }
 

@@ -31,8 +31,8 @@ class AdobeMockS3StorageClient extends S3StorageClient {
 
     private static final String DEFAULT_MOCK_S3_ENDPOINT = "http://localhost:9090";
 
-    AdobeMockS3StorageClient(String bucketName) {
-        super(createInternalClient(), bucketName);
+    AdobeMockS3StorageClient(String bucketName, String endpoint) {
+        super(createInternalClient(endpoint), bucketName);
     }
 
     @VisibleForTesting
@@ -40,15 +40,17 @@ class AdobeMockS3StorageClient extends S3StorageClient {
         super(s3client, bucketName);
     }
 
-    private static AmazonS3 createInternalClient() {
-        String s3MockEndpoint = System.getProperty("mock.s3.endpoint");
-        if (s3MockEndpoint == null) {
-            s3MockEndpoint = System.getenv().getOrDefault("MOCK_S3_ENDPOINT", DEFAULT_MOCK_S3_ENDPOINT);
+    private static AmazonS3 createInternalClient(String endpoint) {
+        if (endpoint == null || endpoint.isEmpty()) {
+            endpoint = System.getProperty("mock.s3.endpoint");
+            if (endpoint == null || endpoint.isEmpty()) {
+                endpoint = System.getenv().getOrDefault("MOCK_S3_ENDPOINT", DEFAULT_MOCK_S3_ENDPOINT);
+            }
         }
 
         return AmazonS3ClientBuilder.standard()
             .enablePathStyleAccess()
-            .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(s3MockEndpoint, Regions.US_EAST_1.name()))
+            .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, Regions.US_EAST_1.name()))
             .build();
     }
 

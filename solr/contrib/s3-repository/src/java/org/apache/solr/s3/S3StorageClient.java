@@ -20,7 +20,7 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
-import com.amazonaws.regions.Regions;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
@@ -33,9 +33,9 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.input.ClosedInputStream;
+import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +79,8 @@ class S3StorageClient {
      */
     private final String bucketName;
 
-    S3StorageClient(String bucketName, String region, String proxyHost, int proxyPort) {
-        this(createInternalClient(region, proxyHost, proxyPort), bucketName);
+    S3StorageClient(String bucketName, String region, String proxyHost, int proxyPort, String endpoint) {
+        this(createInternalClient(region, proxyHost, proxyPort, endpoint), bucketName);
     }
 
     @VisibleForTesting
@@ -89,12 +89,12 @@ class S3StorageClient {
         this.bucketName = bucketName;
     }
 
-    private static AmazonS3 createInternalClient(String region, String proxyHost, int proxyPort) {
+    private static AmazonS3 createInternalClient(String region, String proxyHost, int proxyPort, String endpoint) {
         ClientConfiguration clientConfig = new ClientConfiguration()
             .withProtocol(Protocol.HTTPS);
 
         // If configured, add proxy
-        if (!Strings.isNullOrEmpty(proxyHost)) {
+        if (!StringUtils.isEmpty(proxyHost)) {
             clientConfig.setProxyHost(proxyHost);
             if (proxyPort > 0) {
                 clientConfig.setProxyPort(proxyPort);
@@ -104,11 +104,19 @@ class S3StorageClient {
         /*
          * Default s3 client builder loads credentials from disk and handles token refreshes
          */
-        return AmazonS3ClientBuilder.standard()
+        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard()
             .enablePathStyleAccess()
-            .withClientConfiguration(clientConfig)
-            .withRegion(Regions.fromName(region))
-            .build();
+            .withClientConfiguration(clientConfig);
+
+        if (!StringUtils.isEmpty(endpoint)) {
+            clientBuilder.setEndpointConfiguration(
+                new AwsClientBuilder.EndpointConfiguration(endpoint, region)
+            );
+        } else {
+            clientBuilder.setRegion(region);
+        }
+
+        return clientBuilder.build();
     }
 
     /**
@@ -247,7 +255,7 @@ class S3StorageClient {
             ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
             String blobDirHeaderVal = objectMetadata.getUserMetaDataOf(BLOB_DIR_HEADER);
 
-            return !Strings.isNullOrEmpty(blobDirHeaderVal) && blobDirHeaderVal.equalsIgnoreCase("true");
+            return !StringUtils.isEmpty(blobDirHeaderVal) && blobDirHeaderVal.equalsIgnoreCase("true");
         } catch (AmazonClientException ase) {
             throw handleAmazonException(ase);
         }
@@ -265,7 +273,7 @@ class S3StorageClient {
             ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
             String blobDirHeaderVal = objectMetadata.getUserMetaDataOf(BLOB_DIR_HEADER);
 
-            if (Strings.isNullOrEmpty(blobDirHeaderVal) || !blobDirHeaderVal.equalsIgnoreCase("true")) {
+            if (StringUtils.isEmpty(blobDirHeaderVal) || !blobDirHeaderVal.equalsIgnoreCase("true")) {
                 return objectMetadata.getContentLength();
             }
             throw new S3Exception("Path is Directory");
@@ -302,7 +310,7 @@ class S3StorageClient {
         path = sanitizedPath(path, true);
 
         if (!parentDirectoryExist(path)) {
-            throw new S3Exception("Parent directory doesn't exist");
+            throw new S3Exception("Parent directory doesn't exist of path: " + path);
         }
 
         try {

@@ -39,3 +39,20 @@ http://localhost:8983/solr/admin/collections?action=BACKUP&repository=s3&locatio
 To restore from that backup, hit this URL, which will create a new collection `bar` with the contents of the backup `test` you just made: 
 
 http://localhost:8983/solr/admin/collections?action=RESTORE&repository=s3&location=s3:/&name=test&collection=bar
+
+## Change the S3 Endpoint
+
+If you are also running Solr in a docker image, and need to set the endpoint of S3Mock to be different than `localhost`, then add the following under `<repository>`:
+
+    <backup>
+        <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
+            <bool name="blob.s3.mock">true</bool>
+            <str name="blob.s3.bucket.name">TEST_BUCKET</str>
+            <str name="blob.s3.endpoint">http://host.docker.internal:9090</str>
+        </repository>
+    </backup>
+
+This works for the regular S3 backup repository as well (not mock).
+But the plugin only provides official support for AWS S3, not _S3 compatible_ products.
+Use this plugin with _S3 compatible_ products at your own risk.
+Certain options, such as Minio, are known to be incompatible with this plugin.
