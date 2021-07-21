@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.stringContainsInOrder;
 
 public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
 
@@ -97,7 +98,9 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
 
     result.get(); // make sure that track has been called
     String message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
-    MatcherAssert.assertThat(message, containsString(getTestName()));
+    MatcherAssert.assertThat(message,
+        // es appears once in the stack trace and once in the submitter stack trace
+        stringContainsInOrder(getTestName(), es.getClass().getName(), es.getClass().getName()));
 
     // Test the grandparent submitter case
     AtomicReference<Future<?>> indirectResult = new AtomicReference<>();
@@ -110,7 +113,9 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     result.get();
     indirectResult.get().get();
     message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
-    MatcherAssert.assertThat(message, containsString(getTestName()));
+    MatcherAssert.assertThat(message,
+        // es appears once in the stack trace and twice in the submitter stack trace
+        stringContainsInOrder(getTestName(), es.getClass().getName(), es.getClass().getName(), es.getClass().getName()));
 
     es.shutdown();
     assertTrue(es.awaitTermination(1, TimeUnit.SECONDS));
