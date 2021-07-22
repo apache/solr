@@ -50,20 +50,21 @@ public class LTRRescorer extends Rescorer {
     this.scoringQuery = scoringQuery;
   }
 
-  final private static Comparator<ScoreDoc> docComparator = Comparator.comparingInt(a -> a.doc);
+  private static final Comparator<ScoreDoc> docComparator = Comparator.comparingInt(a -> a.doc);
 
-  final protected static Comparator<ScoreDoc> scoreComparator = (a, b) -> {
-    // Sort by score descending, then docID ascending:
-    if (a.score > b.score) {
-      return -1;
-    } else if (a.score < b.score) {
-      return 1;
-    } else {
-      // This subtraction can't overflow int
-      // because docIDs are >= 0:
-      return a.doc - b.doc;
-    }
-  };
+  protected static final Comparator<ScoreDoc> scoreComparator =
+      (a, b) -> {
+        // Sort by score descending, then docID ascending:
+        if (a.score > b.score) {
+          return -1;
+        } else if (a.score < b.score) {
+          return 1;
+        } else {
+          // This subtraction can't overflow int
+          // because docIDs are >= 0:
+          return a.doc - b.doc;
+        }
+      };
 
   protected static void heapAdjust(ScoreDoc[] hits, int size, int root) {
     final ScoreDoc doc = hits[root];
@@ -187,22 +188,36 @@ public class LTRRescorer extends Rescorer {
   }
 
   /**
-   * Call this method if the {@link #scoreSingleHit(int, int, int, ScoreDoc, int, org.apache.solr.ltr.LTRScoringQuery.ModelWeight.ModelScorer, ScoreDoc[])}
-   * method indicated that the document's feature info should be logged.
+   * Call this method if the {@link #scoreSingleHit(int, int, int, ScoreDoc, int,
+   * org.apache.solr.ltr.LTRScoringQuery.ModelWeight.ModelScorer, ScoreDoc[])} method indicated that
+   * the document's feature info should be logged.
    */
-  protected static void logSingleHit(IndexSearcher indexSearcher, LTRScoringQuery.ModelWeight modelWeight, int docid,  LTRScoringQuery scoringQuery) {
+  protected static void logSingleHit(
+      IndexSearcher indexSearcher,
+      LTRScoringQuery.ModelWeight modelWeight,
+      int docid,
+      LTRScoringQuery scoringQuery) {
     final FeatureLogger featureLogger = scoringQuery.getFeatureLogger();
     if (featureLogger != null && indexSearcher instanceof SolrIndexSearcher) {
-      featureLogger.log(docid, scoringQuery, (SolrIndexSearcher)indexSearcher, modelWeight.getFeaturesInfo());
+      featureLogger.log(
+          docid, scoringQuery, (SolrIndexSearcher) indexSearcher, modelWeight.getFeaturesInfo());
     }
   }
 
   /**
-   * Scores a single document and returns true if the document's feature info should be logged via the
-   * {@link #logSingleHit(IndexSearcher, org.apache.solr.ltr.LTRScoringQuery.ModelWeight, int, LTRScoringQuery)}
-   * method. Feature info logging is only necessary for the topN documents.
+   * Scores a single document and returns true if the document's feature info should be logged via
+   * the {@link #logSingleHit(IndexSearcher, org.apache.solr.ltr.LTRScoringQuery.ModelWeight, int,
+   * LTRScoringQuery)} method. Feature info logging is only necessary for the topN documents.
    */
-  protected static boolean scoreSingleHit(int topN, int docBase, int hitUpto, ScoreDoc hit, int docID, LTRScoringQuery.ModelWeight.ModelScorer scorer, ScoreDoc[] reranked) throws IOException {
+  protected static boolean scoreSingleHit(
+      int topN,
+      int docBase,
+      int hitUpto,
+      ScoreDoc hit,
+      int docID,
+      LTRScoringQuery.ModelWeight.ModelScorer scorer,
+      ScoreDoc[] reranked)
+      throws IOException {
     /**
      * Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to call
      * score even if no feature scorers match, since a model might use that info to return a
