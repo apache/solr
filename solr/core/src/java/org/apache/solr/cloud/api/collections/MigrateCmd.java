@@ -69,7 +69,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
 
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
     String extTargetCollectionName = message.getStr("target.collection");
@@ -131,11 +131,10 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   private void migrateKey(ClusterState clusterState, DocCollection sourceCollection, Slice sourceSlice,
                           DocCollection targetCollection, Slice targetSlice,
                           String splitKey, int timeout,
-                          @SuppressWarnings({"rawtypes"})NamedList results, String asyncId, ZkNodeProps message) throws Exception {
+                          NamedList<Object> results, String asyncId, ZkNodeProps message) throws Exception {
     String tempSourceCollectionName = "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     if (clusterState.hasCollection(tempSourceCollectionName)) {
@@ -230,7 +229,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     Replica sourceLeader = zkStateReader.getLeaderRetry(sourceCollection.getName(), sourceSlice.getName(), 10000);
 
     // create a temporary collection with just one node on the shard leader
-    String configName = zkStateReader.readConfigName(sourceCollection.getName());
+    String configName = sourceCollection.getConfigName();
     Map<String, Object> props = Utils.makeMap(
         Overseer.QUEUE_OPERATION, CREATE.toLower(),
         NAME, tempSourceCollectionName,

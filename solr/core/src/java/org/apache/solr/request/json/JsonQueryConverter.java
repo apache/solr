@@ -137,8 +137,7 @@ class JsonQueryConverter {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                   "Error when parsing json query, value of query field should not be a list, found : " + entry.getValue());
             }
-            @SuppressWarnings({"rawtypes"})
-            List l = (List) entry.getValue();
+            List<?> l = (List<?>) entry.getValue();
             for (Object subVal : l) {
               builder.append(key).append("=");
               buildLocalParams(builder, subVal, true, additionalParams);

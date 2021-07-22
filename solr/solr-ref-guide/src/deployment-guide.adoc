@@ -1,0 +1,100 @@
+= Deployment Guide
+:page-children: solr-control-script-reference, \
+    installation-deployment, \
+    scaling-solr, \
+    monitoring-solr, \
+    securing-solr, \
+    client-apis
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+The Deployment Guide covers installation, upgrades, deployments, monitoring, and client integrations.
+
+****
+[discrete]
+=== Solr CLI
+
+<<solr-control-script-reference.adoc#,*Solr Control Script Reference*>>: The options available to the `bin/solr` or `bin\solr.cmd` scripts.
+****
+
+****
+[discrete]
+=== Installation & Deployment
+
+<<installation-deployment.adoc#,*Installation and Deployment*>>
+
+// This pulls the sub-section list from the child page to reduce errors
+include::installation-deployment.adoc[tag=install-sections]
+****
+
+****
+[discrete]
+=== Scaling Solr
+
+<<scaling-solr.adoc#,*Scaling Solr*>>
+
+// This pulls the sub-section list from the child page to reduce errors
+include::scaling-solr.adoc[tag=scaling-sections]
+****
+
+****
+[discrete]
+=== Monitoring Solr
+
+<<monitoring-solr.adoc#,*Monitoring Solr*>>
+
+// This pulls the sub-section list from the child page to reduce errors
+include::monitoring-solr.adoc[tag=monitoring-sections]
+****
+
+****
+[discrete]
+=== Securing Solr
+
+<<securing-solr.adoc#,*Securing Solr*>>
+
+Authentication Plugins:
+
+// This pulls the sub-section list from the child page to reduce errors
+include::securing-solr.adoc[tag=list-of-authentication-plugins]
+
+Authorization Plugins:
+
+// This pulls the sub-section list from the child page to reduce errors
+include::securing-solr.adoc[tag=list-of-authorization-plugins]
+
+Audit Logging and SSL:
+
+[width=100%,cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<audit-logging.adoc#,Audit Logging>>
+| <<enabling-ssl.adoc#,Enabling SSL>>
+| <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>
+|
+|===
+****
+
+****
+[discrete]
+=== Client APIs
+
+<<client-apis.adoc#,*Client APIs*>>: Access Solr through various client APIs, including JavaScript, JSON, and Ruby.
+
+// This pulls the sub-section list from the child page to reduce errors
+include::client-apis.adoc[tag=client-sections]
+****

@@ -181,13 +181,12 @@ public class DistribPackageStore implements PackageStore {
       String baseUrl = url.replace("/solr", "/api");
 
       ByteBuffer metadata = null;
-      @SuppressWarnings({"rawtypes"})
-      Map m = null;
+      Map<?, ?> m = null;
       try {
         metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
                 baseUrl + "/node/files" + getMetaPath(),
                 Utils.newBytesConsumer((int) MAX_PKG_SIZE));
-        m = (Map) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
+        m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
       } catch (SolrException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       }
@@ -250,11 +249,12 @@ public class DistribPackageStore implements PackageStore {
       return getRealpath(path);
     }
 
+    @SuppressWarnings("unchecked")
     MetaData readMetaData() throws IOException {
       File file = getRealpath(getMetaPath()).toFile();
       if (file.exists()) {
         try (InputStream fis = new FileInputStream(file)) {
-          return new MetaData((Map) Utils.fromJSON(fis));
+          return new MetaData((Map<String,Object>) Utils.fromJSON(fis));
         }
       }
       return null;
@@ -586,8 +586,7 @@ public class DistribPackageStore implements PackageStore {
   public static void _persistToFile(Path solrHome, String path, ByteBuffer data, ByteBuffer meta) throws IOException {
     Path realpath = _getRealPath(path, solrHome);
     Files.createDirectories(realpath.getParent());
-    @SuppressWarnings({"rawtypes"})
-    Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
+    Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
     if (m == null || m.isEmpty()) {
       throw new SolrException(SERVER_ERROR, "invalid metadata , discarding : " + path);
     }

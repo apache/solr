@@ -42,7 +42,7 @@ public class SortedNumericStatsValues implements StatsValues {
   }
 
   @Override
-  public void accumulate(@SuppressWarnings({"rawtypes"})NamedList stv) {
+  public void accumulate(NamedList<?> stv) {
     nsv.accumulate(stv);
   }
   

@@ -18,6 +18,19 @@
 
 Tokenizers are responsible for breaking field data into lexical units, or _tokens_.
 
+Each token is (usually) a sub-sequence of the characters in the text.
+An analyzer is aware of the field it is configured for, but a tokenizer is not.
+Tokenizers read from a character stream (a _Reader_) and produce a sequence of token objects (a _TokenStream_).
+
+Characters such as whitespace or other delimiters in the input stream may be discarded.
+They may also be added to or replaced, such as mapping aliases or abbreviations to normalized forms.
+
+A token contains various metadata in addition to its text value, such as the location at which the token occurs in the field.
+Because a tokenizer may produce tokens that diverge from the input text, you should not assume that the text of the token is the same text that occurs in the field, or that its length is the same as the original text.
+It's also possible for more than one token to have the same position or refer to the same offset in the original text.
+Keep this in mind if you use token metadata for things like highlighting search results in the field text.
+
+== About Tokenizers
 You configure the tokenizer for a text field type in `schema.xml` with a `<tokenizer>` element, as a child of `<analyzer>`:
 
 [.dynamic-tabs]
@@ -50,7 +63,10 @@ You configure the tokenizer for a text field type in `schema.xml` with a `<token
 ====
 --
 
-The name/class attribute names a factory class that will instantiate a tokenizer object when needed. Tokenizer factory classes implement the `org.apache.lucene.analysis.TokenizerFactory`. A TokenizerFactory's `create()` method accepts a Reader and returns a TokenStream. When Solr creates the tokenizer it passes a Reader object that provides the content of the text field.
+The name/class attribute names a factory class that will instantiate a tokenizer object when needed.
+Tokenizer factory classes implement the `org.apache.lucene.analysis.TokenizerFactory`.
+A TokenizerFactory's `create()` method accepts a Reader and returns a TokenStream.
+When Solr creates the tokenizer it passes a Reader object that provides the content of the text field.
 
 Arguments may be passed to tokenizer factories by setting attributes on the `<tokenizer>` element.
 
@@ -82,11 +98,21 @@ Arguments may be passed to tokenizer factories by setting attributes on the `<to
 ====
 --
 
+=== When to Use a CharFilter vs. a TokenFilter
+
+There are several pairs of CharFilters and TokenFilters that have related (i.e., `MappingCharFilter` and `ASCIIFoldingFilter`) or nearly identical (i.e., `PatternReplaceCharFilterFactory` and `PatternReplaceFilterFactory`) functionality and it may not always be obvious which is the best choice.
+
+The decision about which to use depends largely on which Tokenizer you are using, and whether you need to preprocess the stream of characters.
+
+For example, suppose you have a tokenizer such as `StandardTokenizer` and although you are pretty happy with how it works overall, you want to customize how some specific characters behave.
+You could modify the rules and re-build your own tokenizer with JFlex, but it might be easier to simply map some of the characters before tokenization with a `CharFilter`.
+
 The following sections describe the tokenizer factory classes included in this release of Solr.
 
 == Standard Tokenizer
 
-This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters. Delimiter characters are discarded, with the following exceptions:
+This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters.
+Delimiter characters are discarded, with the following exceptions:
 
 * Periods (dots) that are not followed by whitespace are kept as part of the token, including Internet domain names.
 * The "@" character is among the set of token-splitting punctuation, so email addresses are *not* preserved as single tokens.
@@ -133,7 +159,10 @@ The Standard Tokenizer supports http://unicode.org/reports/tr29/#Word_Boundaries
 
 == Classic Tokenizer
 
-The Classic Tokenizer preserves the same behavior as the Standard Tokenizer of Solr versions 3.1 and previous. It does not use the http://unicode.org/reports/tr29/#Word_Boundaries[Unicode standard annex UAX#29] word boundary rules that the Standard Tokenizer uses. This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters. Delimiter characters are discarded, with the following exceptions:
+The Classic Tokenizer preserves the same behavior as the Standard Tokenizer of Solr versions 3.1 and previous.
+It does not use the http://unicode.org/reports/tr29/#Word_Boundaries[Unicode standard annex UAX#29] word boundary rules that the Standard Tokenizer uses.
+This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters.
+Delimiter characters are discarded, with the following exceptions:
 
 * Periods (dots) that are not followed by whitespace are kept as part of the token.
 
@@ -255,7 +284,8 @@ This tokenizer creates tokens from strings of contiguous letters, discarding all
 
 == Lower Case Tokenizer
 
-Tokenizes the input stream by delimiting at non-letters and then converting all letters to lowercase. Whitespace and non-letters are discarded.
+Tokenizes the input stream by delimiting at non-letters and then converting all letters to lowercase.
+Whitespace and non-letters are discarded.
 
 *Factory class:* `solr.LowerCaseTokenizerFactory`
 
@@ -305,7 +335,10 @@ Reads the field text and generates n-gram tokens of sizes in the given range.
 
 *Example:*
 
-Default behavior. Note that this tokenizer operates over the whole field. It does not break the field at whitespace. As a result, the space character is included in the encoding.
+Default behavior.
+Note that this tokenizer operates over the whole field.
+It does not break the field at whitespace.
+As a result, the space character is included in the encoding.
 
 [.dynamic-tabs]
 --
@@ -447,7 +480,8 @@ Edge n-gram range of 2 to 5
 
 This tokenizer processes multilingual text and tokenizes it appropriately based on its script attribute.
 
-You can customize this tokenizer's behavior by specifying http://userguide.icu-project.org/boundaryanalysis#TOC-RBBI-Rules[per-script rule files]. To add per-script rules, add a `rulefiles` argument, which should contain a comma-separated list of `code:rulefile` pairs in the following format: four-letter ISO 15924 script code, followed by a colon, then a resource path. For example, to specify rules for Latin (script code "Latn") and Cyrillic (script code "Cyrl"), you would enter `Latn:my.Latin.rules.rbbi,Cyrl:my.Cyrillic.rules.rbbi`.
+You can customize this tokenizer's behavior by specifying http://userguide.icu-project.org/boundaryanalysis#TOC-RBBI-Rules[per-script rule files]. To add per-script rules, add a `rulefiles` argument, which should contain a comma-separated list of `code:rulefile` pairs in the following format: four-letter ISO 15924 script code, followed by a colon, then a resource path.
+For example, to specify rules for Latin (script code "Latn") and Cyrillic (script code "Cyrl"), you would enter `Latn:my.Latin.rules.rbbi,Cyrl:my.Cyrillic.rules.rbbi`.
 
 The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word break rules tokenization (like `solr.StandardTokenizer`), but also includes custom tailorings for Hebrew (specializing handling of double and single quotation marks), for syllable tokenization for Khmer, Lao, and Myanmar, and dictionary-based word segmentation for CJK characters.
 
@@ -514,7 +548,8 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
 [IMPORTANT]
 ====
 
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
 ====
 
@@ -526,7 +561,8 @@ This tokenizer creates synonyms from file path hierarchies.
 
 *Arguments:*
 
-`delimiter`: (character, no default) You can specify the file path delimiter and replace it with a delimiter you provide. This can be useful for working with backslash delimiters.
+`delimiter`: (character, no default) You can specify the file path delimiter and replace it with a delimiter you provide.
+This can be useful for working with backslash delimiters.
 
 `replace`: (character, no default) Specifies the delimiter character Solr uses in the tokenized output.
 
@@ -566,7 +602,8 @@ This tokenizer creates synonyms from file path hierarchies.
 
 == Regular Expression Pattern Tokenizer
 
-This tokenizer uses a Java regular expression to break the input text stream into tokens. The expression provided by the pattern argument can be interpreted either as a delimiter that separates tokens, or to match patterns that should be extracted from the text as tokens.
+This tokenizer uses a Java regular expression to break the input text stream into tokens.
+The expression provided by the pattern argument can be interpreted either as a delimiter that separates tokens, or to match patterns that should be extracted from the text as tokens.
 
 See {java-javadocs}java/util/regex/Pattern.html[the Javadocs for `java.util.regex.Pattern`] for more information on Java regular expression syntax.
 
@@ -576,11 +613,15 @@ See {java-javadocs}java/util/regex/Pattern.html[the Javadocs for `java.util.rege
 
 `pattern`: (Required) The regular expression, as defined by in `java.util.regex.Pattern`.
 
-`group`: (Optional, default -1) Specifies which regex group to extract as the token(s). The value -1 means the regex should be treated as a delimiter that separates tokens. Non-negative group numbers (>= 0) indicate that character sequences matching that regex group should be converted to tokens. Group zero refers to the entire regex, groups greater than zero refer to parenthesized sub-expressions of the regex, counted from left to right.
+`group`: (Optional, default -1) Specifies which regex group to extract as the token(s).
+The value -1 means the regex should be treated as a delimiter that separates tokens.
+Non-negative group numbers (>= 0) indicate that character sequences matching that regex group should be converted to tokens.
+Group zero refers to the entire regex, groups greater than zero refer to parenthesized sub-expressions of the regex, counted from left to right.
 
 *Example:*
 
-A comma separated list. Tokens are separated by a sequence of zero or more spaces, a comma, and zero or more spaces.
+A comma separated list.
+Tokens are separated by a sequence of zero or more spaces, a comma, and zero or more spaces.
 
 [.dynamic-tabs]
 --
@@ -612,7 +653,8 @@ A comma separated list. Tokens are separated by a sequence of zero or more space
 
 *Example:*
 
-Extract simple, capitalized words. A sequence of at least one capital letter followed by zero or more letters of either case is extracted as a token.
+Extract simple, capitalized words.
+A sequence of at least one capital letter followed by zero or more letters of either case is extracted as a token.
 
 [.dynamic-tabs]
 --
@@ -644,7 +686,10 @@ Extract simple, capitalized words. A sequence of at least one capital letter fol
 
 *Example:*
 
-Extract part numbers which are preceded by "SKU", "Part" or "Part Number", case sensitive, with an optional semi-colon separator. Part numbers must be all numeric digits, with an optional hyphen. Regex capture groups are numbered by counting left parenthesis from left to right. Group 3 is the subexpression "[0-9-]+", which matches one or more digits or hyphens.
+Extract part numbers which are preceded by "SKU", "Part" or "Part Number", case sensitive, with an optional semi-colon separator.
+Part numbers must be all numeric digits, with an optional hyphen.
+Regex capture groups are numbered by counting left parenthesis from left to right.
+Group 3 is the subexpression "[0-9-]+", which matches one or more digits or hyphens.
 
 [.dynamic-tabs]
 --
@@ -676,13 +721,16 @@ Extract part numbers which are preceded by "SKU", "Part" or "Part Number", case 
 
 == Simplified Regular Expression Pattern Tokenizer
 
-This tokenizer is similar to the `PatternTokenizerFactory` described above, but uses Lucene {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] pattern matching to construct distinct tokens for the input stream. The syntax is more limited than `PatternTokenizerFactory`, but the tokenization is quite a bit faster.
+This tokenizer is similar to the `PatternTokenizerFactory` described above, but uses Lucene {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] pattern matching to construct distinct tokens for the input stream.
+The syntax is more limited than `PatternTokenizerFactory`, but the tokenization is quite a bit faster.
 
 *Factory class:* `solr.SimplePatternTokenizerFactory`
 
 *Arguments:*
 
-`pattern`: (Required) The regular expression, as defined by in the {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] javadocs, identifying the characters to include in tokens. The matching is greedy such that the longest token matching at a given point is created. Empty tokens are never created.
+`pattern`: (Required) The regular expression, as defined by in the {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] javadocs, identifying the characters to include in tokens.
+The matching is greedy such that the longest token matching at a given point is created.
+Empty tokens are never created.
 
 `maxDeterminizedStates`: (Optional, default 10000) the limit on total state count for the determined automaton computed from the regexp.
 
@@ -716,13 +764,16 @@ To match tokens delimited by simple whitespace characters:
 
 == Simplified Regular Expression Pattern Splitting Tokenizer
 
-This tokenizer is similar to the `SimplePatternTokenizerFactory` described above, but uses Lucene {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] pattern matching to identify sequences of characters that should be used to split tokens. The syntax is more limited than `PatternTokenizerFactory`, but the tokenization is quite a bit faster.
+This tokenizer is similar to the `SimplePatternTokenizerFactory` described above, but uses Lucene {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] pattern matching to identify sequences of characters that should be used to split tokens.
+The syntax is more limited than `PatternTokenizerFactory`, but the tokenization is quite a bit faster.
 
 *Factory class:* `solr.SimplePatternSplitTokenizerFactory`
 
 *Arguments:*
 
-`pattern`: (Required) The regular expression, as defined by in the {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] javadocs, identifying the characters that should split tokens. The matching is greedy such that the longest token separator matching at a given point is matched. Empty tokens are never created.
+`pattern`: (Required) The regular expression, as defined by in the {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] javadocs, identifying the characters that should split tokens.
+The matching is greedy such that the longest token separator matching at a given point is matched.
+Empty tokens are never created.
 
 `maxDeterminizedStates`: (Optional, default 10000) the limit on total state count for the determined automaton computed from the regexp.
 
@@ -756,7 +807,8 @@ To match tokens delimited by simple whitespace characters:
 
 == UAX29 URL Email Tokenizer
 
-This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters. Delimiter characters are discarded, with the following exceptions:
+This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters.
+Delimiter characters are discarded, with the following exceptions:
 
 * Periods (dots) that are not followed by whitespace are kept as part of the token.
 
@@ -808,16 +860,24 @@ The UAX29 URL Email Tokenizer supports http://unicode.org/reports/tr29/#Word_Bou
 
 == White Space Tokenizer
 
-Simple tokenizer that splits the text stream on whitespace and returns sequences of non-whitespace characters as tokens. Note that any punctuation _will_ be included in the tokens.
+Simple tokenizer that splits the text stream on whitespace and returns sequences of non-whitespace characters as tokens.
+Note that any punctuation _will_ be included in the tokens.
 
 *Factory class:* `solr.WhitespaceTokenizerFactory`
 
 *Arguments:*
 
 `rule`::
-Specifies how to define whitespace for the purpose of tokenization. Valid values:
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `java`
+|===
++
+Specifies how to define whitespace for the purpose of tokenization.
+Valid values:
 
-* `java`: (Default) Uses {java-javadocs}java/lang/Character.html#isWhitespace-int-[Character.isWhitespace(int)]
+* `java`: Uses {java-javadocs}java/lang/Character.html#isWhitespace-int-[Character.isWhitespace(int)]
 * `unicode`: Uses Unicode's WHITESPACE property
 
 *Example:*

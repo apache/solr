@@ -313,8 +313,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     int which = r.nextInt(clients.size());
     SolrClient client = clients.get(which);
     QueryResponse rsp = client.query(params);
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList<?>) rsp.getResponse().get("grouped");
+    NamedList<?> nl = (NamedList<?>) rsp.getResponse().get("grouped");
     nl = (NamedList<?>) nl.getVal(0);
     int matches = (Integer) nl.getVal(0);
     int groupCount = (Integer) nl.get("ngroups");

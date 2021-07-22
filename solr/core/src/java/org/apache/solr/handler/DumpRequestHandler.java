@@ -53,8 +53,8 @@ public class DumpRequestHandler extends RequestHandlerBase
 
     String[] returnParams = req.getParams().getParams("param");
     if(returnParams !=null) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList params = (NamedList) rsp.getValues().get("params");
+      @SuppressWarnings({"unchecked"})
+      NamedList<Object> params = (NamedList<Object>) rsp.getValues().get("params");
       for (String returnParam : returnParams) {
         String[] vals = req.getParams().getParams(returnParam);
         if(vals != null){

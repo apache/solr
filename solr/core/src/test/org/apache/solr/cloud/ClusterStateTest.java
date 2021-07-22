@@ -27,7 +27,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
 
 public class ClusterStateTest extends SolrTestCaseJ4 {
@@ -47,14 +49,15 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
 
     props.put("prop1", "value");
     props.put("prop2", "value2");
+    props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
     Replica replica = new Replica("node1", props, "collection1", "shard1");
     sliceToProps.put("node1", replica);
     Slice slice = new Slice("shard1", sliceToProps, null, "collection1");
     slices.put("shard1", slice);
     Slice slice2 = new Slice("shard2", sliceToProps, null, "collection1");
     slices.put("shard2", slice2);
-    collectionStates.put("collection1", new DocCollection("collection1", slices, null, DocRouter.DEFAULT));
-    collectionStates.put("collection2", new DocCollection("collection2", slices, null, DocRouter.DEFAULT));
+    collectionStates.put("collection1", new DocCollection("collection1", slices, props, DocRouter.DEFAULT));
+    collectionStates.put("collection2", new DocCollection("collection2", slices, props, DocRouter.DEFAULT));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);

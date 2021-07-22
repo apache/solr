@@ -125,7 +125,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -207,8 +206,7 @@ public class CoreContainer {
 
   private final OrderedExecutor replayUpdatesExecutor;
 
-  @SuppressWarnings({"rawtypes"})
-  protected volatile LogWatcher logging = null;
+  protected volatile LogWatcher<?> logging = null;
 
   private volatile CloserThread backgroundCloser = null;
   protected final NodeConfig cfg;
@@ -562,10 +560,9 @@ public class CoreContainer {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   private static int readVersion(Map<String, Object> conf) {
     if (conf == null) return -1;
-    Map meta = (Map) conf.get("");
+    Map<?,?> meta = (Map<?,?>) conf.get("");
     if (meta == null) return -1;
     Number v = (Number) meta.get("v");
     return v == null ? -1 : v.intValue();
@@ -1143,9 +1140,7 @@ public class CoreContainer {
       } finally {
         try {
           if (updateShardHandler != null) {
-            customThreadPool.submit(() -> Collections.singleton(shardHandlerFactory).parallelStream().forEach(c -> {
-              updateShardHandler.close();
-            }));
+            customThreadPool.submit(updateShardHandler::close);
           }
         } finally {
           try {
@@ -2054,8 +2049,7 @@ public class CoreContainer {
     return cfg.getManagementPath();
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public LogWatcher getLogging() {
+  public LogWatcher<?> getLogging() {
     return logging;
   }
 

@@ -72,16 +72,14 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
       implements ExecutorUtil.InheritableThreadLocalProvider {
     private final Tracer tracer = GlobalTracer.get();
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void store(AtomicReference ctx) {
+    public void store(AtomicReference<Object> ctx) {
       assert tracer == GlobalTracer.get() : "Tracer changed; not supported!";
       ctx.set(tracer.scopeManager().activeSpan());
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void set(AtomicReference ctx) {
+    public void set(AtomicReference<Object> ctx) {
       final Span span = (Span) ctx.get();
       if (span != null) {
         log.trace("Thread received span to do async work: {}", span);
@@ -90,9 +88,8 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
       }
     }
 
-    @SuppressWarnings({"rawtypes"})
     @Override
-    public void clean(AtomicReference ctx) {
+    public void clean(AtomicReference<Object> ctx) {
       Scope scope = (Scope) ctx.get();
       if (scope != null) {
         scope.close();

@@ -141,8 +141,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
 
       for (int i = 0; i < 300; i++) {
-        @SuppressWarnings({"rawtypes"})
-        Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
+        Map<?, ?> m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);
       }
@@ -226,8 +225,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
 
       for (int i = 0; i < 300; i++) {
-        @SuppressWarnings({"rawtypes"})
-        Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
+        Map<?, ?> m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);
       }
