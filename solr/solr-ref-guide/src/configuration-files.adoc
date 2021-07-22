@@ -76,7 +76,7 @@ For more details on `core.properties`, see the section <<core-discovery.adoc#,Co
 ** `solrconfig.xml` controls high-level behavior.
 You can, for example, specify an alternate location for the data directory.
 For more information on `solrconfig.xml`, see <<configuring-solrconfig-xml.adoc#,Configuring solrconfig.xml>>.
-** `managed-schema` (or `schema.xml`) describes the documents you will ask Solr to index.
+** `managed-schema` or `schema.xml` describes the documents you will ask Solr to index.
 The schema defines a document as a collection of fields.
 You can define both the field types and the fields themselves.
 Field type definitions are powerful and include information about how Solr processes incoming field values and query values.

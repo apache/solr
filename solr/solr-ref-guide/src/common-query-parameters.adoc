@@ -222,7 +222,9 @@ fl=id,title,[explain]
 
 === Field Name Aliases
 
-You can change the key used to in the response for a field, function, or transformer by prefixing it with a `_"displayName_:`". For example:
+You can change the key used to in the response for a field, function, or transformer by prefixing it with a `_displayName_:` value.
+
+For example, `why_score` is the display name below:
 
 [source,text]
 ----

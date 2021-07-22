@@ -678,7 +678,8 @@ As an alternative to the above-described `DefaultWrapperModel`, it is possible t
 
 === Applying Changes
 
-The feature store and the model store are both <<managed-resources.adoc#,Managed Resources>>. Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
+The feature store and the model store are both <<managed-resources.adoc#,Managed Resources>>.
+Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
 
 === LTR Examples
 

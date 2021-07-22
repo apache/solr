@@ -20,7 +20,8 @@
 The fundamental premise of Solr is simple.
 You give it a lot of information, then later you can ask it questions and find the piece of information you want.
 
-The part where you feed in all the information is called _indexing_ or _updating_. When you ask a question, it's called a _query_.
+The part where you feed in all the information is called _indexing_ or _updating_.
+When you ask a question, it's called a _query_.
 
 One way to understand how Solr works is to think of a loose-leaf book of recipes.
 Every time you add a recipe to the book, you update the index at the back.

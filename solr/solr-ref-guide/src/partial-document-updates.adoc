@@ -19,11 +19,14 @@
 Once you have indexed the content you need in your Solr index, you will want to start thinking about your strategy for dealing with changes to those documents.
 Solr supports three approaches to updating documents that have only partially changed.
 
-The first is _<<Atomic Updates,atomic updates>>_. This approach allows changing only one or more fields of a document without having to reindex the entire document.
+The first is _<<Atomic Updates,atomic updates>>_.
+This approach allows changing only one or more fields of a document without having to reindex the entire document.
 
-The second approach is known as _<<In-Place Updates,in-place updates>>_. This approach is similar to atomic updates (is a subset of atomic updates in some sense), but can be used only for updating single valued non-indexed and non-stored docValue-based numeric fields.
+The second approach is known as _<<In-Place Updates,in-place updates>>_.
+This approach is similar to atomic updates (is a subset of atomic updates in some sense), but can be used only for updating single valued non-indexed and non-stored docValue-based numeric fields.
 
-The third approach is known as _<<Optimistic Concurrency,optimistic concurrency>>_ or _optimistic locking_. It is a feature of many NoSQL databases, and allows conditional updating a document based on its version.
+The third approach is known as _<<Optimistic Concurrency,optimistic concurrency>>_ or _optimistic locking_.
+It is a feature of many NoSQL databases, and allows conditional updating a document based on its version.
 This approach includes semantics and rules for how to deal with version matches or mis-matches.
 
 Atomic Updates (and in-place updates) and Optimistic Concurrency may be used as independent strategies for managing changes to documents, or they may be combined: you can use optimistic concurrency to conditionally apply an atomic update.
@@ -360,7 +363,8 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "bbb",1632740120250548224]}
 ----
 
-In this example, we have added 2 documents "aaa" and "bbb". Because we added `versions=true` to the request, the response shows the document version for each document.
+In this example, we have added 2 documents "aaa" and "bbb".
+Because we added `versions=true` to the request, the response shows the document version for each document.
 
 [source,bash]
 ----
@@ -469,7 +473,8 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "ccc",1632740949182382080]}
 ----
 
-In this example, we have added 2 documents "aaa" and "ccc". As we have specified the parameter `\_version_=-1`, this request should not add the document with the id `aaa` because it already exists.
+In this example, we have added 2 documents "aaa" and "ccc".
+As we have specified the parameter `\_version_=-1`, this request should not add the document with the id `aaa` because it already exists.
 The request succeeds & does not throw any error because the `failOnVersionConflicts=false` parameter is specified.
 The response shows that only document `ccc` is added and `aaa` is silently ignored.
 

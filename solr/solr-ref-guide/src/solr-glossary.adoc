@@ -66,7 +66,7 @@ Multiple cores can run on a single node.
 See also <<solrclouddef,SolrCloud>>.
 
 [[corereload]]Core reload::
-To re-initialize a Solr core after changes to `schema.xml`, `solrconfig.xml` or other configuration files.
+To re-initialize a Solr core after changes to the schema file, `solrconfig.xml` or other configuration files.
 
 [[SolrGlossary-D]]
 === D
@@ -76,7 +76,8 @@ Distributed search is one where queries are processed across more than one <<sha
 
 [[document]]Document::
 A group of <<field,fields>> and their values.
-Documents are the basic unit of data in a <<collection,collection>>. Documents are assigned to <<shard,shards>> using standard hashing, or by specifically assigning a shard within the document ID.
+Documents are the basic unit of data in a <<collection,collection>>.
+Documents are assigned to <<shard,shards>> using standard hashing, or by specifically assigning a shard within the document ID.
 Documents are versioned after each write operation.
 
 [[SolrGlossary-E]]
@@ -120,7 +121,8 @@ See also <<solrclouddef,SolrCloud>>.
 === M
 
 [[metadata]]Metadata::
-Literally, _data about data_. Metadata is information about a document, such as its title, author, or location.
+Literally, _data about data_.
+Metadata is information about a document, such as its title, author, or location.
 
 [[SolrGlossary-N]]
 === N
@@ -177,7 +179,8 @@ Logic and configuration parameters used by request handlers to process query req
 Examples of search components include faceting, highlighting, and "more like this" functionality.
 
 [[shard]]Shard::
-In SolrCloud, a logical partition of a single <<collection,Collection>>. Every shard consists of at least one physical <<replica,Replica>>, but there may be multiple Replicas distributed across multiple <<node,Nodes>> for fault tolerance.
+In SolrCloud, a logical partition of a single <<collection,Collection>>.
+Every shard consists of at least one physical <<replica,Replica>>, but there may be multiple Replicas distributed across multiple <<node,Nodes>> for fault tolerance.
 See also <<solrclouddef,SolrCloud>>.
 
 [[solrclouddef]]<<cluster-types.adoc#solrcloud-mode,SolrCloud>>::
@@ -218,7 +221,8 @@ See http://en.wikipedia.org/wiki/Tf-idf and {lucene-javadocs}/core/org/apache/lu
 See also <<idf,Inverse document frequency (IDF)>>.
 
 [[transactionlog]]Transaction log::
-An append-only log of write operations maintained by each <<replica,Replica>>. This log is required with SolrCloud implementations and is created and managed automatically by Solr.
+An append-only log of write operations maintained by each <<replica,Replica>>.
+This log is required with SolrCloud implementations and is created and managed automatically by Solr.
 
 [[SolrGlossary-W]]
 === W
@@ -230,6 +234,7 @@ A wildcard allows a substitution of one or more letters of a word to account for
 === Z
 
 [[zookeeper]]ZooKeeper::
-Also known as http://zookeeper.apache.org/[Apache ZooKeeper]. The system used by SolrCloud to keep track of configuration files and node names for a cluster.
+Also known as http://zookeeper.apache.org/[Apache ZooKeeper].
+The system used by SolrCloud to keep track of configuration files and node names for a cluster.
 A ZooKeeper cluster is used as the central configuration store for the cluster, a coordinator for operations requiring distributed synchronization, and the system of record for cluster topology.
 See also <<solrclouddef,SolrCloud>>.

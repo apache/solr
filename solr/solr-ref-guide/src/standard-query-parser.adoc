@@ -46,7 +46,8 @@ Default parameter values are specified in `solrconfig.xml`, or overridden by que
 == Standard Query Parser Response
 
 By default, the response from the standard query parser contains one `<result>` block, which is unnamed.
-If the <<common-query-parameters.adoc#debug-parameter,`debug` parameter>> is used, then an additional `<lst>` block will be returned, using the name "debug". This will contain useful debugging info, including the original query string, the parsed query string, and explain info for each document in the <result> block.
+If the <<common-query-parameters.adoc#debug-parameter,`debug` parameter>> is used, then an additional `<lst>` block will be returned, using the name "debug".
+This will contain useful debugging info, including the original query string, the parsed query string, and explain info for each document in the <result> block.
 If the <<common-query-parameters.adoc#explainother-parameter,`explainOther` parameter>> is also used, then additional explain info will be provided for all the documents matching that query.
 
 === Sample Responses

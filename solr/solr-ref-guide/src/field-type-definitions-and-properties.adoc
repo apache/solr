@@ -57,7 +57,7 @@ Here is an example of a field type definition for a type called `text_general`:
 <2> The rest of the definition is about field analysis, described in <<document-analysis.adoc#,Document Analysis in Solr>>.
 
 The implementing class is responsible for making sure the field is handled correctly.
-In the class names in `schema.xml`, the string `solr` is shorthand for `org.apache.solr.schema` or `org.apache.solr.analysis`.
+In the class names, the string `solr` is shorthand for `org.apache.solr.schema` or `org.apache.solr.analysis`.
 Therefore, `solr.TextField` is really `org.apache.solr.schema.TextField`.
 
 == Field Type Properties
@@ -180,7 +180,7 @@ This requires that a schema-aware codec, such as the `SchemaCodecFactory`, has b
 [NOTE]
 ====
 Lucene index back-compatibility is only supported for the default codec.
-If you choose to customize the `postingsFormat` or `docValuesFormat` in your `schema.xml`, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
+If you choose to customize the `postingsFormat` or `docValuesFormat` in your schema, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
 ====
 
 === Field Default Properties
@@ -188,7 +188,7 @@ If you choose to customize the `postingsFormat` or `docValuesFormat` in your `sc
 These are properties that can be specified either on the field types, or on individual fields to override the values provided by the field types.
 
 The default values for each property depend on the underlying `FieldType` class, which in turn may depend on the `version` attribute of the `<schema/>`.
-The table below includes the default value for most `FieldType` implementations provided by Solr, assuming a `schema.xml` that declares `version="1.6"`.
+The table below includes the default value for most `FieldType` implementations provided by Solr, assuming a schema that declares `version="1.6"`.
 
 // tags this table for inclusion in another page
 // tag::field-params[]
@@ -231,7 +231,7 @@ One technique is using a text field as a catch-all for keyword searching.
 Most users are not sophisticated about their searches and the most common search is likely to be a simple keyword search.
 You can use `copyField` to take a variety of fields and funnel them all into a single text field for keyword searches.
 
-In the `schema.xml` file for the "```techproducts```" example included with Solr, `copyField` declarations are used to dump the contents of `cat`, `name`, `manu`, `features`, and `includes` into a single field, `text`. In addition, it could be a good idea to copy `ID` into `text` in case users wanted to search for a particular product by passing its product number to a keyword search.
+In the schema for the "techproducts" example included with Solr, `copyField` declarations are used to dump the contents of `cat`, `name`, `manu`, `features`, and `includes` into a single field, `text`. In addition, it could be a good idea to copy `ID` into `text` in case users wanted to search for a particular product by passing its product number to a keyword search.
 
 Another technique is using `copyField` to use the same field in different ways.
 Suppose you have a field that is a list of authors, like this:

@@ -415,7 +415,8 @@ If you specify "de" as the language and "CH" as the country, you will get German
 <copyField source="manu" dest="manuGERMAN"/>
 ----
 
-In the example above, we defined the strength as "primary". The strength of the collation determines how strict the sort order will be, but it also depends upon the language.
+In the example above, we defined the strength as "primary".
+The strength of the collation determines how strict the sort order will be, but it also depends upon the language.
 For example, in English, "primary" strength ignores differences in case and accents.
 
 Another example:
@@ -1434,7 +1435,8 @@ See the example under <<Traditional Chinese>>.
 
 === Simplified Chinese
 
-For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<HMM Chinese Tokenizer>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model.
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<HMM Chinese Tokenizer>>.
+This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model.
 To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
 See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
@@ -2486,7 +2488,8 @@ For normalization, there is a `NorwegianNormalizationFilterFactory` which is a v
 ==== Norwegian Light Stemmer
 
 The `NorwegianLightStemFilterFactory` requires a "two-pass" sort for the -dom and -het endings.
-This means that in the first pass the word "kristendom" is stemmed to "kristen", and then all the general rules apply so it will be further stemmed to "krist". The effect of this is that "kristen," "kristendom," "kristendommen," and "kristendommens" will all be stemmed to "krist."
+This means that in the first pass the word "kristendom" is stemmed to "kristen", and then all the general rules apply so it will be further stemmed to "krist".
+The effect of this is that "kristen," "kristendom," "kristendommen," and "kristendommens" will all be stemmed to "krist."
 
 The second pass is to pick up -dom and -het endings.
 Consider this example:
@@ -2608,7 +2611,8 @@ Valid values are:
 
 ==== Norwegian Normalization Filter
 
-This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØåÅ and folded variants (ae, oe and aa) by transforming them to æÆøØåÅ. This is a variant of `ScandinavianNormalizationFilter`, with folding rules customized for Norwegian.
+This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØåÅ and folded variants (ae, oe and aa) by transforming them to æÆøØåÅ.
+This is a variant of `ScandinavianNormalizationFilter`, with folding rules customized for Norwegian.
 
 *Factory class:* `solr.NorwegianNormalizationFilterFactory`
 
@@ -2913,7 +2917,9 @@ Scandinavian is a language group spanning three languages <<Norwegian>>, <<Swedi
 Swedish å, ä, ö are in fact the same letters as Norwegian and Danish å, æ, ø and thus interchangeable when used between these languages.
 They are however folded differently when people type them on a keyboard lacking these characters.
 
-In that situation almost all Swedish people use a, a, o instead of å, ä, ö. Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø. Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
+In that situation almost all Swedish people use a, a, o instead of å, ä, ö.
+Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø.
+Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
 
 There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö -> o, etc.
 
