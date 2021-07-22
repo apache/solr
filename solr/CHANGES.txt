@@ -396,7 +396,8 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
+  before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
 
 ==================  8.9.0 ==================
 
