@@ -16,16 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
@@ -34,30 +24,58 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CachingDirectoryFactory;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.StandardDirectoryFactory;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.solr.handler.ReplicationTestHelper.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 /**
@@ -70,9 +88,48 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 @SuppressSSL     // Currently unknown why SSL does not work with this test
 // commented 20-July-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 // commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
-public class TestReplicationHandler extends AbstractReplicationTestBase {
+public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
+  HttpSolrClient leaderClient, followerClient, repeaterClient;
+  SolrInstance leader = null, follower = null, repeater = null;
+
+  static String context = "/solr";
+
+  // number of docs to index... decremented for each test case to tell if we accidentally reuse
+  // index from previous test method
+  static int nDocs = 500;
+
+  /* For testing backward compatibility, remove for 10.x */
+  private static boolean useLegacyParams = false;
+
+  @BeforeClass
+  public static void beforeClass() {
+    useLegacyParams = rarely();
+
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    systemSetPropertySolrDisableUrlAllowList("true");
+//    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    // For manual testing only
+    // useFactory(null); // force an FS factory.
+    leader = new SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader.setUp();
+    leaderJetty = createAndStartJetty(leader);
+      leaderClient = ReplicationTestHelper.createNewSolrClient(buildUrl(leaderJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+
+    follower = new SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+    follower.setUp();
+    followerJetty = createAndStartJetty(follower);
+    followerClient = ReplicationTestHelper.createNewSolrClient(buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+
+    System.setProperty("solr.indexfetcher.sotimeout2", "45000");
+  }
 
   public void clearIndexWithReplication() throws Exception {
     if (numFound(query("*:*", leaderClient)) != 0) {
@@ -107,6 +164,110 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
+  static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
+    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
+    Properties nodeProperties = new Properties();
+    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
+    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    jetty.start();
+    return jetty;
+  }
+
+  static int index(SolrClient s, Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    for (int i = 0; i < fields.length; i += 2) {
+      doc.addField((String) (fields[i]), fields[i + 1]);
+    }
+    return s.add(doc).getStatus();
+  }
+
+  NamedList<Object> query(String query, SolrClient s) throws SolrServerException, IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+    params.add("q", query);
+    params.add("sort","id desc");
+
+    QueryResponse qres = s.query(params);
+    return qres.getResponse();
+  }
+
+  /** will sleep up to 30 seconds, looking for expectedDocCount */
+  private NamedList<Object> rQuery(int expectedDocCount, String query, SolrClient client) throws Exception {
+    int timeSlept = 0;
+    NamedList<Object> res = query(query, client);
+    while (expectedDocCount != numFound(res)
+           && timeSlept < 30000) {
+      log.info("Waiting for {} docs", expectedDocCount);
+      timeSlept += 100;
+      Thread.sleep(100);
+      res = query(query, client);
+    }
+    if (log.isInfoEnabled()) {
+      log.info("Waited for {}ms and found {} docs", timeSlept, numFound(res));
+    }
+    return res;
+  }
+
+  private long numFound(NamedList<Object> res) {
+    return ((SolrDocumentList) res.get("response")).getNumFound();
+  }
+
+  private NamedList<Object> getDetails(SolrClient s) throws Exception {
+
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("command","details");
+    params.set("_trace","getDetails");
+    params.set("qt",ReplicationHandler.PATH);
+    QueryRequest req = new QueryRequest(params);
+
+    NamedList<Object> res = s.request(req);
+    assertReplicationResponseSucceeded(res);
+
+    @SuppressWarnings("unchecked") NamedList<Object> details
+      = (NamedList<Object>) res.get("details");
+
+    assertNotNull("null details", details);
+
+    return details;
+  }
+
+  private NamedList<Object> getIndexVersion(SolrClient s) throws Exception {
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("command","indexversion");
+    params.set("_trace","getIndexVersion");
+    params.set("qt",ReplicationHandler.PATH);
+    QueryRequest req = new QueryRequest(params);
+
+    NamedList<Object> res = s.request(req);
+    assertReplicationResponseSucceeded(res);
+
+    return res;
+  }
+
+  private NamedList<Object> reloadCore(SolrClient s, String core) throws Exception {
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action","reload");
+    params.set("core", core);
+    params.set("qt","/admin/cores");
+    QueryRequest req = new QueryRequest(params);
+
+    try (HttpSolrClient adminClient = adminClient(s)) {
+      NamedList<Object> res = adminClient.request(req);
+      assertNotNull("null response from server", res);
+      return res;
+    }
+
+  }
+
+  private HttpSolrClient adminClient(SolrClient client) {
+    String adminUrl = ((HttpSolrClient)client).getBaseURL().replace("/collection1", "");
+    return getHttpSolrClient(adminUrl);
+  }
+
   @Test
   public void doTestHandlerPathUnchanged() throws Exception {
     assertEquals("/replication", ReplicationHandler.PATH);
@@ -133,20 +294,20 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
   @Test
   public void doTestDetails() throws Exception {
     followerJetty.stop();
-    
+
     follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(CONF_DIR + "solrconfig-follower.xml", "solrconfig.xml");
     followerJetty = createAndStartJetty(follower);
-    
+
     followerClient.close();
     leaderClient.close();
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
-    followerClient = createNewSolrClient(followerJetty.getLocalPort());
-    
+    leaderClient = ReplicationTestHelper.createNewSolrClient(buildUrl(leaderJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+    followerClient = ReplicationTestHelper.createNewSolrClient(buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+
     clearIndexWithReplication();
-    { 
+    {
       NamedList<Object> details = getDetails(leaderClient);
-      
+
       assertEquals("leader isLeader?",
                    "true", details.get("isLeader"));
       assertEquals("leader isFollower?",
@@ -170,12 +331,12 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
           details = getDetails(followerClient);
           replicatedAtCount = (List<?>) ((NamedList<?>) details.get("follower")).get("indexReplicatedAtList");
         }
-        
+
         assertNotNull("Expected to see that the follower has replicated" + i + ": " + details.toString(), replicatedAtCount);
-        
-        // we can have more replications than we added docs because a replication can legally fail and try 
+
+        // we can have more replications than we added docs because a replication can legally fail and try
         // again (sometimes we cannot merge into a live index and have to try again)
-        assertTrue("i:" + i + " replicationCount:" + replicatedAtCount.size(), replicatedAtCount.size() >= i); 
+        assertTrue("i:" + i + " replicationCount:" + replicatedAtCount.size(), replicatedAtCount.size() >= i);
       }
 
       assertEquals(i + ": " + "follower isLeader?", "false", details.get("isLeader"));
@@ -202,11 +363,11 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", leaderJetty.getLocalPort());
       repeater.setUp();
       repeaterJetty = createAndStartJetty(repeater);
-      repeaterClient = createNewSolrClient(repeaterJetty.getLocalPort());
+      repeaterClient = ReplicationTestHelper.createNewSolrClient(buildUrl(repeaterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
 
-      
+
       NamedList<Object> details = getDetails(repeaterClient);
-      
+
       assertEquals("repeater isLeader?",
                    "true", details.get("isLeader"));
       assertEquals("repeater isFollower?",
@@ -217,13 +378,13 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
                     details.get("follower"));
 
     } finally {
-      try { 
-        if (repeaterJetty != null) repeaterJetty.stop(); 
+      try {
+        if (repeaterJetty != null) repeaterJetty.stop();
       } catch (Exception e) { /* :NOOP: */ }
       if (repeaterClient != null) repeaterClient.close();
     }
   }
-  
+
   @Test
   public void testLegacyConfiguration() throws Exception {
     SolrInstance solrInstance = null;
@@ -233,11 +394,11 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       solrInstance = new SolrInstance(createTempDir("solr-instance").toFile(), "replication-legacy", leaderJetty.getLocalPort());
       solrInstance.setUp();
       instanceJetty = createAndStartJetty(solrInstance);
-      client = createNewSolrClient(instanceJetty.getLocalPort());
+      client = ReplicationTestHelper.createNewSolrClient(buildUrl(instanceJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
 
-      
+
       NamedList<Object> details = getDetails(client);
-      
+
       assertEquals("repeater isLeader?",
                    "true", details.get("isLeader"));
       assertEquals("repeater isFollower?",
@@ -262,25 +423,25 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
    */
   public void testEmptyCommits() throws Exception {
     clearIndexWithReplication();
-    
+
     // add a doc to leader and commit
     index(leaderClient, "id", "1", "name", "empty1");
     emptyUpdate(leaderClient, "commit", "true");
     // force replication
-    pullFromLeaderToFollower();
+    pullFromTo(leaderJetty, followerJetty);
     // verify doc is on follower
     rQuery(1, "name:empty1", followerClient);
     assertVersions(leaderClient, followerClient);
 
     // do a completely empty commit on leader and force replication
     emptyUpdate(leaderClient, "commit", "true");
-    pullFromLeaderToFollower();
+    pullFromTo(leaderJetty, followerJetty);
 
     // add another doc and verify follower gets it
     index(leaderClient, "id", "2", "name", "empty2");
     emptyUpdate(leaderClient, "commit", "true");
     // force replication
-    pullFromLeaderToFollower();
+    pullFromTo(leaderJetty, followerJetty);
 
     rQuery(1, "name:empty2", followerClient);
     assertVersions(leaderClient, followerClient);
@@ -288,8 +449,8 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     // add a third doc but don't open a new searcher on leader
     index(leaderClient, "id", "3", "name", "empty3");
     emptyUpdate(leaderClient, "commit", "true", "openSearcher", "false");
-    pullFromLeaderToFollower();
-    
+    pullFromTo(leaderJetty, followerJetty);
+
     // verify follower can search the doc, but leader doesn't
     rQuery(0, "name:empty3", leaderClient);
     rQuery(1, "name:empty3", followerClient);
@@ -297,7 +458,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     // final doc with hard commit, follower and leader both showing all docs
     index(leaderClient, "id", "4", "name", "empty4");
     emptyUpdate(leaderClient, "commit", "true");
-    pullFromLeaderToFollower();
+    pullFromTo(leaderJetty, followerJetty);
 
     String q = "name:(empty1 empty2 empty3 empty4)";
     rQuery(4, q, leaderClient);
@@ -314,9 +475,9 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       index(leaderClient, "id", i, "name", "name = " + i);
     }
 
-    invokeReplicationCommand(leaderJetty.getLocalPort(), "disableReplication");
-    invokeReplicationCommand(followerJetty.getLocalPort(), "disablepoll");
-    
+    invokeReplicationCommand(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disableReplication");
+    invokeReplicationCommand(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
+
     leaderClient.commit();
 
     assertEquals(nDocs, numFound(rQuery(nDocs, "*:*", leaderClient)));
@@ -339,8 +500,8 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     assertEquals(1, numFound(rQuery(1, "id:555", followerClient)));
 
     //Let's fetch the index rather than rely on the polling.
-    invokeReplicationCommand(leaderJetty.getLocalPort(), "enablereplication");
-    invokeReplicationCommand(followerJetty.getLocalPort(), "fetchindex");
+    invokeReplicationCommand(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "enablereplication");
+    invokeReplicationCommand(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "fetchindex");
 
     /*
     //the follower should have done a full copy of the index so the doc with id:555 should not be there in the follower now
@@ -352,7 +513,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
     followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(nDocs, followerQueryResult.getNumFound());
-    
+
     */
   }
 
@@ -381,7 +542,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
     assertNull(cmp);
-    
+
     assertVersions(leaderClient, followerClient);
 
     //start config files replication test
@@ -395,7 +556,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(follower.getSolrConfigFile(), "solrconfig.xml");
@@ -414,13 +575,13 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
 
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
-    followerClient = createNewSolrClient(followerJetty.getLocalPort());
+    followerClient = createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
     //add a doc with new field and commit on leader to trigger index fetch from follower.
     index(leaderClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     leaderClient.commit();
 
     assertEquals(1, numFound( rQuery(1, "*:*", leaderClient)));
-    
+
     followerQueryRsp = rQuery(1, "*:*", followerClient);
     assertVersions(leaderClient, followerClient);
     SolrDocument d = ((SolrDocumentList) followerQueryRsp.get("response")).get(0);
@@ -428,7 +589,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
 
     assertTrue(followerFooDir.isDirectory());
     assertTrue(followerBarFile.exists());
-    
+
     checkForSingleIndex(leaderJetty);
     checkForSingleIndex(followerJetty, true);
   }
@@ -460,23 +621,23 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     assertNull(cmp);
 
     // start stop polling test
-    invokeReplicationCommand(followerJetty.getLocalPort(), "disablepoll");
-    
+    invokeReplicationCommand(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
+
     index(leaderClient, "id", 501, "name", "name = " + 501);
     leaderClient.commit();
 
     //get docs from leader and check if number is equal to leader
     assertEquals(nDocs+1, numFound(rQuery(nDocs+1, "*:*", leaderClient)));
-    
+
     // NOTE: this test is wierd, we want to verify it DOESNT replicate...
     // for now, add a sleep for this.., but the logic is wierd.
     Thread.sleep(3000);
-    
+
     //get docs from follower and check if number is not equal to leader; polling is disabled
     assertEquals(nDocs, numFound(rQuery(nDocs, "*:*", followerClient)));
 
     // re-enable replication
-    invokeReplicationCommand(followerJetty.getLocalPort(), "enablepoll");
+    invokeReplicationCommand(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "enablepoll");
 
     assertEquals(nDocs+1, numFound(rQuery(nDocs+1, "*:*", followerClient)));
   }
@@ -500,7 +661,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
 
       // close and re-create leader client because its connection pool has stale connections
       leaderClient.close();
-      leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+      leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
       nDocs--;
       for (int i = 0; i < nDocs; i++)
@@ -545,13 +706,13 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       waitForLeaderToShutdown.waitFor
         ("Gave up after waiting an obscene amount of time for leader to shut down",
          () -> leaderJetty.isStopped() );
-        
-      for(int retries=0; ;retries++) { 
+
+      for(int retries=0; ;retries++) {
 
         Thread.yield(); // might not be necessary at all
         // poll interval on follower is 1 second, so we just sleep for a few seconds
         Thread.sleep(2000);
-        
+
         NamedList<Object> followerDetails=null;
         try {
           followerDetails = getFollowerDetails();
@@ -568,10 +729,10 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
           if (retries>9) {
             log.error("giving up: ", notYet);
             throw notYet;
-          } 
+          }
         }
       }
-      
+
       leaderJetty.start();
 
       // poll interval on follower is 1 second, so we just sleep for a few seconds
@@ -586,6 +747,35 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     }
   }
 
+  private String getFollowerDetails(String keyName) throws SolrServerException, IOException {
+    NamedList<Object> details = getFollowerDetails();
+    return getStringOrNull(details, keyName);
+  }
+
+  private String getStringOrNull(NamedList<Object> details, String keyName) {
+    Object o = details.get(keyName);
+    return o != null ? o.toString() : null;
+  }
+
+  private NamedList<Object> getFollowerDetails() throws SolrServerException, IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(CommonParams.QT, "/replication");
+    params.set("command", "details");
+    if (useLegacyParams) {
+      params.set("slave", "true");
+    } else {
+      params.set("follower", "true");
+    }
+    QueryResponse response = followerClient.query(params);
+
+    // details/follower/timesIndexReplicated
+    @SuppressWarnings({"unchecked"})
+    NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
+    @SuppressWarnings({"unchecked"})
+    NamedList<Object> follower = (NamedList<Object>) details.get("follower");
+    return follower;
+  }
+
   @Test
   public void doTestIndexFetchWithLeaderUrl() throws Exception {
     //change solrconfig on follower
@@ -595,7 +785,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     followerJetty.stop();
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
-    followerClient = createNewSolrClient(followerJetty.getLocalPort());
+    followerClient = ReplicationTestHelper.createNewSolrClient(buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
 
     leaderClient.deleteByQuery("*:*");
     followerClient.deleteByQuery("*:*");
@@ -605,7 +795,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       index(leaderClient, "id", i, "name", "name = " + i);
 
     // make sure prepareCommit doesn't mess up commit  (SOLR-3938)
-    
+
     // todo: make SolrJ easier to pass arbitrary params to
     // TODO: precommit WILL screw with the rest of this test
 
@@ -614,7 +804,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(nDocs, leaderQueryResult.getNumFound());
-    
+
     String urlKey = "leaderUrl";
     if (useLegacyParams) {
       urlKey = "masterUrl";
@@ -626,7 +816,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     URL url = new URL(leaderUrl);
     InputStream stream = url.openStream();
     stream.close();
-    
+
     //get docs from follower and check if number is equal to leader
     NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
@@ -636,15 +826,15 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     assertEquals(null, cmp);
 
     // index fetch from the follower to the leader
-    
+
     for (int i = nDocs; i < nDocs + 3; i++)
       index(followerClient, "id", i, "name", "name = " + i);
 
     followerClient.commit();
-    
-    pullFromFollowerToLeader();
+
+    pullFromTo(followerJetty, leaderJetty);
     rQuery(nDocs + 3, "*:*", leaderClient);
-    
+
     //get docs from follower and check if number is equal to leader
     followerQueryRsp = rQuery(nDocs + 3, "*:*", followerClient);
     followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
@@ -656,9 +846,9 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     assertEquals(null, cmp);
 
     assertVersions(leaderClient, followerClient);
-    
-    pullFromFollowerToLeader();
-    
+
+    pullFromTo(followerJetty, leaderJetty);
+
     //get docs from follower and check if number is equal to leader
     followerQueryRsp = rQuery(nDocs + 3, "*:*", followerClient);
     followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
@@ -668,18 +858,18 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
     assertEquals(null, cmp);
-    
+
     assertVersions(leaderClient, followerClient);
-    
+
     // now force a new index directory
     for (int i = nDocs + 3; i < nDocs + 7; i++)
       index(leaderClient, "id", i, "name", "name = " + i);
-    
+
     leaderClient.commit();
-    
-    pullFromFollowerToLeader();
+
+    pullFromTo(followerJetty, leaderJetty);
     rQuery((int) followerQueryResult.getNumFound(), "*:*", leaderClient);
-    
+
     //get docs from follower and check if number is equal to leader
     followerQueryRsp = rQuery(nDocs + 3, "*:*", followerClient);
     followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
@@ -689,10 +879,10 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
     assertEquals(null, cmp);
-    
+
     assertVersions(leaderClient, followerClient);
-    pullFromFollowerToLeader();
-    
+    pullFromTo(followerJetty, leaderJetty);
+
     //get docs from follower and check if number is equal to leader
     followerQueryRsp = rQuery(nDocs + 3, "*:*", followerClient);
     followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
@@ -702,27 +892,27 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
     assertEquals(null, cmp);
-    
+
     assertVersions(leaderClient, followerClient);
-    
+
     NamedList<Object> details = getDetails(leaderClient);
-   
+
     details = getDetails(followerClient);
-    
+
     checkForSingleIndex(leaderJetty);
     checkForSingleIndex(followerJetty);
   }
-  
-  
+
+
   @Test
   //commented 20-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void doTestStressReplication() throws Exception {
     // change solrconfig on follower
     // this has no entry for pollinginterval
-    
+
     // get us a straight standard fs dir rather than mock*dir
     boolean useStraightStandardDirectory = random().nextBoolean();
-    
+
     if (useStraightStandardDirectory) {
       useFactory(null);
     }
@@ -733,30 +923,30 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     try {
 
       follower.setTestPort(leaderJetty.getLocalPort());
-      follower.copyConfigFile(CONF_DIR +"solrconfig-follower1.xml", "solrconfig.xml");
-      follower.copyConfigFile(CONF_DIR +followerSchema, "schema.xml");
+      follower.copyConfigFile(CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
+      follower.copyConfigFile(CONF_DIR + followerSchema, "schema.xml");
       followerJetty.stop();
       followerJetty = createAndStartJetty(follower);
       followerClient.close();
-      followerClient = createNewSolrClient(followerJetty.getLocalPort());
+      followerClient = createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
       leader.copyConfigFile(CONF_DIR + "solrconfig-leader3.xml",
           "solrconfig.xml");
       leaderJetty.stop();
       leaderJetty = createAndStartJetty(leader);
       leaderClient.close();
-      leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
-      
+      leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+
       leaderClient.deleteByQuery("*:*");
       followerClient.deleteByQuery("*:*");
       followerClient.commit();
-      
+
       int maxDocs = TEST_NIGHTLY ? 1000 : 75;
       int rounds = TEST_NIGHTLY ? 45 : 3;
       int totalDocs = 0;
       int id = 0;
       for (int x = 0; x < rounds; x++) {
-        
+
         final boolean confCoreReload = random().nextBoolean();
         if (confCoreReload) {
           // toggle the schema file used
@@ -765,25 +955,25 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
             FOLLOWER_SCHEMA_2 : FOLLOWER_SCHEMA_1;
           leader.copyConfigFile(CONF_DIR + followerSchema, "schema.xml");
         }
-        
+
         int docs = random().nextInt(maxDocs) + 1;
         for (int i = 0; i < docs; i++) {
           index(leaderClient, "id", id++, "name", "name = " + i);
         }
-        
+
         totalDocs += docs;
         leaderClient.commit();
-        
+
         NamedList<Object> leaderQueryRsp = rQuery(totalDocs, "*:*", leaderClient);
         SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp
             .get("response");
         assertEquals(totalDocs, leaderQueryResult.getNumFound());
-        
+
         // index fetch
-        Date followerCoreStart = watchCoreStartAt(followerClient, 30*1000, null);
-        pullFromLeaderToFollower();
+        Date followerCoreStart = watchCoreStartAt(followerClient, 30 * 1000, null);
+                pullFromTo(leaderJetty, followerJetty);
         if (confCoreReload) {
-          watchCoreStartAt(followerClient, 30*1000, followerCoreStart);
+          watchCoreStartAt(followerClient, 30 * 1000, followerCoreStart);
         }
 
         // get docs from follower and check if number is equal to leader
@@ -795,15 +985,15 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
         String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult,
             followerQueryResult, 0, null);
         assertEquals(null, cmp);
-        
+
         assertVersions(leaderClient, followerClient);
-        
+
         checkForSingleIndex(leaderJetty);
-        
+
         if (!Constants.WINDOWS) {
           checkForSingleIndex(followerJetty);
         }
-        
+
         if (random().nextBoolean()) {
           // move the follower ahead
           for (int i = 0; i < 3; i++) {
@@ -811,14 +1001,72 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
           }
           followerClient.commit();
         }
-        
+
       }
-      
+
     } finally {
       if (useStraightStandardDirectory) {
         resetFactory();
       }
     }
+  }
+
+  private CachingDirectoryFactory getCachingDirectoryFactory(SolrCore core) {
+    return (CachingDirectoryFactory) core.getDirectoryFactory();
+  }
+
+  private void checkForSingleIndex(JettySolrRunner jetty) {
+    checkForSingleIndex(jetty, false);
+  }
+
+  private void checkForSingleIndex(JettySolrRunner jetty, boolean afterReload) {
+    CoreContainer cores = jetty.getCoreContainer();
+    Collection<SolrCore> theCores = cores.getCores();
+    for (SolrCore core : theCores) {
+      String ddir = core.getDataDir();
+      CachingDirectoryFactory dirFactory = getCachingDirectoryFactory(core);
+      synchronized (dirFactory) {
+        Set<String> livePaths = dirFactory.getLivePaths();
+        // one for data, one for the index under data and one for the snapshot metadata.
+        // we also allow one extra index dir - it may not be removed until the core is closed
+        if (afterReload) {
+          assertTrue(livePaths.toString() + ":" + livePaths.size(), 3 == livePaths.size() || 4 == livePaths.size());
+        } else {
+          assertTrue(livePaths.toString() + ":" + livePaths.size(), 3 == livePaths.size());
+        }
+
+        // :TODO: assert that one of the paths is a subpath of hte other
+      }
+      if (dirFactory instanceof StandardDirectoryFactory) {
+        System.out.println(Arrays.asList(new File(ddir).list()));
+        // we also allow one extra index dir - it may not be removed until the core is closed
+        int cnt = indexDirCount(ddir);
+        // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
+        if (afterReload) {
+          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()).toString(), 1 == cnt || 2 == cnt);
+        } else {
+          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()).toString(), 1 == cnt);
+        }
+
+      }
+    }
+  }
+
+  private int indexDirCount(String ddir) {
+    String[] list = new File(ddir).list(new FilenameFilter() {
+      @Override
+      public boolean accept(File dir, String name) {
+        File f = new File(dir, name);
+        return f.isDirectory() && !SolrSnapshotMetaDataManager.SNAPSHOT_METADATA_DIR.equals(name);
+      }
+    });
+    return list.length;
+  }
+
+  public static void pullFromTo(JettySolrRunner srcSolr, JettySolrRunner destSolr) throws IOException {
+    String srcUrl = buildUrl(srcSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
+    String destUrl = buildUrl(destSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
+    ReplicationTestHelper.pullFromTo(srcUrl, destUrl);
   }
 
   @Test
@@ -829,7 +1077,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     followerJetty.stop();
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
-    followerClient = createNewSolrClient(followerJetty.getLocalPort());
+    followerClient = createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     try {
       repeater = new SolrInstance(createTempDir("solr-instance").toFile(), "repeater", leaderJetty.getLocalPort());
@@ -840,47 +1088,47 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       if (repeaterClient != null) {
         repeaterClient.close();
       }
-      repeaterClient = createNewSolrClient(repeaterJetty.getLocalPort());
-      
+      repeaterClient = createNewSolrClient(buildUrl(repeaterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+
       for (int i = 0; i < 3; i++)
         index(leaderClient, "id", i, "name", "name = " + i);
 
       leaderClient.commit();
-      
+
       pullFromTo(leaderJetty, repeaterJetty);
-      
+
       rQuery(3, "*:*", repeaterClient);
-      
+
       pullFromTo(repeaterJetty, followerJetty);
-      
+
       rQuery(3, "*:*", followerClient);
-      
+
       assertVersions(leaderClient, repeaterClient);
       assertVersions(repeaterClient, followerClient);
-      
+
       for (int i = 0; i < 4; i++)
         index(repeaterClient, "id", i, "name", "name = " + i);
       repeaterClient.commit();
-      
+
       pullFromTo(leaderJetty, repeaterJetty);
-      
+
       rQuery(3, "*:*", repeaterClient);
-      
+
       pullFromTo(repeaterJetty, followerJetty);
-      
+
       rQuery(3, "*:*", followerClient);
-      
+
       for (int i = 3; i < 6; i++)
         index(leaderClient, "id", i, "name", "name = " + i);
-      
+
       leaderClient.commit();
-      
+
       pullFromTo(leaderJetty, repeaterJetty);
-      
+
       rQuery(6, "*:*", repeaterClient);
-      
+
       pullFromTo(repeaterJetty, followerJetty);
-      
+
       rQuery(6, "*:*", followerClient);
 
     } finally {
@@ -892,7 +1140,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
         repeaterClient.close();
       }
     }
-    
+
   }
 
   @Test
@@ -906,26 +1154,25 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     leaderClient.commit();
 
 
-
     //change solrconfig having 'replicateAfter startup' option on leader
     leader.copyConfigFile(CONF_DIR + "solrconfig-leader2.xml",
-                          "solrconfig.xml");
+                "solrconfig.xml");
 
     leaderJetty.stop();
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
-    
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+
     for (int i = 0; i < nDocs; i++)
       index(leaderClient, "id", i, "name", "name = " + i);
 
     leaderClient.commit();
-    
+
     NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(nDocs, leaderQueryResult.getNumFound());
-    
+
 
     follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(follower.getSolrConfigFile(), "solrconfig.xml");
@@ -933,7 +1180,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     //start follower
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
-    followerClient = createNewSolrClient(followerJetty.getLocalPort());
+    followerClient = createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     //get docs from follower and check if number is equal to leader
     NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
@@ -945,67 +1192,67 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     assertEquals(null, cmp);
 
   }
-  
+
   @Test
   public void doTestReplicateAfterStartupWithNoActivity() throws Exception {
     useFactory(null);
     try {
-      
+
       // stop follower
       followerJetty.stop();
-      
+
       nDocs--;
       leaderClient.deleteByQuery("*:*");
-      
+
       leaderClient.commit();
-      
+
       // change solrconfig having 'replicateAfter startup' option on leader
       leader.copyConfigFile(CONF_DIR + "solrconfig-leader2.xml",
           "solrconfig.xml");
-      
+
       leaderJetty.stop();
-      
+
       leaderJetty = createAndStartJetty(leader);
       leaderClient.close();
-      leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
-      
+      leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+
       for (int i = 0; i < nDocs; i++)
         index(leaderClient, "id", i, "name", "name = " + i);
-      
+
       leaderClient.commit();
-      
+
       // now we restart to test what happens with no activity before the follower
       // tries to
       // replicate
       leaderJetty.stop();
       leaderJetty.start();
-      
+
       // leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
-      
+
       NamedList<Object> leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
       SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp
           .get("response");
       assertEquals(nDocs, leaderQueryResult.getNumFound());
-      
+
       follower.setTestPort(leaderJetty.getLocalPort());
       follower.copyConfigFile(follower.getSolrConfigFile(), "solrconfig.xml");
-      
+
       // start follower
       followerJetty = createAndStartJetty(follower);
       followerClient.close();
-      followerClient = createNewSolrClient(followerJetty.getLocalPort());
-      
+      followerClient = createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+
       // get docs from follower and check if number is equal to leader
       NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
       SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp
           .get("response");
       assertEquals(nDocs, followerQueryResult.getNumFound());
-      
+
       // compare results
       String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult,
           followerQueryResult, 0, null);
       assertEquals(null, cmp);
-      
+
     } finally {
       resetFactory();
     }
@@ -1014,7 +1261,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
   @Test
   public void doTestReplicateAfterCoreReload() throws Exception {
     int docs = TEST_NIGHTLY ? 200000 : 10;
-    
+
     //stop follower
     followerJetty.stop();
 
@@ -1027,7 +1274,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     leaderClient.deleteByQuery("*:*");
     for (int i = 0; i < docs; i++)
@@ -1038,44 +1285,44 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     NamedList<Object> leaderQueryRsp = rQuery(docs, "*:*", leaderClient);
     SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
     assertEquals(docs, leaderQueryResult.getNumFound());
-    
+
     follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(follower.getSolrConfigFile(), "solrconfig.xml");
 
     //start follower
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
-    followerClient = createNewSolrClient(followerJetty.getLocalPort());
-    
+    followerClient = createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+
     //get docs from follower and check if number is equal to leader
     NamedList<Object> followerQueryRsp = rQuery(docs, "*:*", followerClient);
     SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(docs, followerQueryResult.getNumFound());
-    
+
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
     assertEquals(null, cmp);
-    
+
     Object version = getIndexVersion(leaderClient).get("indexversion");
-    
+
     reloadCore(leaderClient, "collection1");
-    
+
     assertEquals(version, getIndexVersion(leaderClient).get("indexversion"));
-    
+
     index(leaderClient, "id", docs + 10, "name", "name = 1");
     index(leaderClient, "id", docs + 20, "name", "name = 2");
 
     leaderClient.commit();
-    
+
     NamedList<Object> resp = rQuery(docs + 2, "*:*", leaderClient);
     leaderQueryResult = (SolrDocumentList) resp.get("response");
     assertEquals(docs + 2, leaderQueryResult.getNumFound());
-    
+
     //get docs from follower and check if number is equal to leader
     followerQueryRsp = rQuery(docs + 2, "*:*", followerClient);
     followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
     assertEquals(docs + 2, followerQueryResult.getNumFound());
-    
+
   }
 
   @Test
@@ -1125,7 +1372,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(follower.getSolrConfigFile(), "solrconfig.xml");
@@ -1133,12 +1380,12 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     followerJetty.stop();
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
-    followerClient = createNewSolrClient(followerJetty.getLocalPort());
+    followerClient = createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     followerClient.deleteByQuery("*:*");
     followerClient.commit();
     rQuery(0, "*:*", followerClient); // sanity check w/retry
-    
+
     // record collection1's start time on follower
     final Date followerStartTime = watchCoreStartAt(followerClient, 30*1000, null);
 
@@ -1157,7 +1404,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     NamedList<Object> followerQueryRsp2 = rQuery(1, "id:2000", followerClient);
     SolrDocumentList followerQueryResult2 = (SolrDocumentList) followerQueryRsp2.get("response");
     assertEquals(1, followerQueryResult2.getNumFound());
-    
+
     checkForSingleIndex(leaderJetty);
     checkForSingleIndex(followerJetty, true);
   }
@@ -1179,7 +1426,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     useFactory(null);
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     //index docs
     final int totalDocs = TestUtil.nextInt(random(), 17, 53);
@@ -1205,18 +1452,18 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     //Start again and replicate the data
     useFactory(null);
     leaderJetty = createAndStartJetty(leader);
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     //start follower
     follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
-    followerClient = createNewSolrClient(followerJetty.getLocalPort());
+    followerClient = createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     long startTime = System.nanoTime();
 
-    pullFromLeaderToFollower();
+     pullFromTo(leaderJetty, followerJetty);
 
     //Add a few more docs in the leader. Just to make sure that we are replicating the correct index point
     //These extra docs should not get replicated
@@ -1246,7 +1493,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     for (String param : params) {
       for (String filename : illegalFilenames) {
         expectThrows(Exception.class, () ->
-            invokeReplicationCommand(leaderJetty.getLocalPort(), "filecontent&" + param + "=" + filename));
+          invokeReplicationCommand(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "filecontent&" + param + "=" + filename));
       }
     }
   }
@@ -1329,9 +1576,9 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       assertTrue(dirName + " doesn't exist in expected location for backup " + backupName,
                  new File(backupDir, dirName).exists());
     }
-    
+
     index(leaderClient, "id", "1", "name", "foo");
-    
+
     { // second backup w/uncommited doc
       final String backupName = "empty_backup2";
       final GenericSolrRequest req = new GenericSolrRequest
@@ -1341,7 +1588,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
                 "name", backupName));
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
-      
+
       final String dirName = backupStatus.waitForBackupSuccess(backupName, timeout);
       assertEquals("Did not get expected dir name for backup, did API change?",
                    "snapshot.empty_backup2", dirName);
@@ -1358,7 +1605,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       }
     }
   }
-  
+
   public void testGetBoolWithBackwardCompatibility() {
     assertTrue(ReplicationHandler.getBoolWithBackwardCompatibility(params(), "foo", "bar", true));
     assertFalse(ReplicationHandler.getBoolWithBackwardCompatibility(params(), "foo", "bar", false));
@@ -1366,7 +1613,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     assertTrue(ReplicationHandler.getBoolWithBackwardCompatibility(params("bar", "true"), "foo", "bar", false));
     assertTrue(ReplicationHandler.getBoolWithBackwardCompatibility(params("foo", "true", "bar", "false"), "foo", "bar", false));
   }
-  
+
   public void testGetObjectWithBackwardCompatibility() {
     assertEquals("aaa", ReplicationHandler.getObjectWithBackwardCompatibility(params(), "foo", "bar", "aaa"));
     assertEquals("bbb", ReplicationHandler.getObjectWithBackwardCompatibility(params("foo", "bbb"), "foo", "bar", "aaa"));
@@ -1374,7 +1621,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     assertEquals("bbb", ReplicationHandler.getObjectWithBackwardCompatibility(params("foo", "bbb", "bar", "aaa"), "foo", "bar", "aaa"));
     assertNull(ReplicationHandler.getObjectWithBackwardCompatibility(params(), "foo", "bar", null));
   }
-  
+
   public void testGetObjectWithBackwardCompatibilityFromNL() {
     NamedList<Object> nl = new NamedList<>();
     assertNull(ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
@@ -1383,8 +1630,8 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
     nl.add("foo", "aaa");
     assertEquals("aaa", ReplicationHandler.getObjectWithBackwardCompatibility(nl, "foo", "bar"));
   }
-  
-  
+
+
   private class AddExtraDocs implements Runnable {
 
     SolrClient leaderClient;
@@ -1399,7 +1646,7 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
       final int totalDocs = TestUtil.nextInt(random(), 1, 10);
       for (int i = 0; i < totalDocs; i++) {
         try {
-          index(leaderClient, "id", i + startId, "name", TestUtil.randomSimpleString(random(), 1000 , 5000));
+          index(leaderClient, "id", i + startId, "name", TestUtil.randomSimpleString(random(), 1000, 5000));
         } catch (Exception e) {
           //Do nothing. Wasn't able to add doc.
         }
@@ -1410,5 +1657,71 @@ public class TestReplicationHandler extends AbstractReplicationTestBase {
         //Do nothing. No extra doc got committed.
       }
     }
+  }
+
+  private UpdateResponse emptyUpdate(SolrClient client, String... params)
+    throws SolrServerException, IOException {
+
+    UpdateRequest req = new UpdateRequest();
+    req.setParams(params(params));
+    return req.process(client);
+  }
+
+  /**
+   * Polls the SolrCore stats using the specified client until the "startTime"
+   * time for collection is after the specified "min".  Will loop for
+   * at most "timeout" milliseconds before throwing an assertion failure.
+   *
+   * @param client The SolrClient to poll
+   * @param timeout the max milliseconds to continue polling for
+   * @param min the startTime value must exceed this value before the method will return, if null this method will return the first startTime value encountered.
+   * @return the startTime value of collection
+   */
+  @SuppressWarnings("unchecked")
+  private Date watchCoreStartAt(SolrClient client, final long timeout,
+                                final Date min) throws InterruptedException, IOException, SolrServerException {
+    final long sleepInterval = 200;
+    long timeSlept = 0;
+
+    try (HttpSolrClient adminClient = adminClient(client)) {
+      SolrParams p = params("action", "status", "core", "collection1");
+      while (timeSlept < timeout) {
+        QueryRequest req = new QueryRequest(p);
+        req.setPath("/admin/cores");
+        try {
+          NamedList<Object> data = adminClient.request(req);
+          for (String k : new String[]{"status", "collection1"}) {
+            Object o = data.get(k);
+            assertNotNull("core status rsp missing key: " + k, o);
+            data = (NamedList<Object>) o;
+          }
+          Date startTime = (Date) data.get("startTime");
+          assertNotNull("core has null startTime", startTime);
+          if (null == min || startTime.after(min)) {
+            return startTime;
+          }
+        } catch (SolrException e) {
+          // workarround for SOLR-4668
+          if (500 != e.code()) {
+            throw e;
+          } // else server possibly from the core reload in progress...
+        }
+
+        timeSlept += sleepInterval;
+        Thread.sleep(sleepInterval);
+      }
+      fail("timed out waiting for collection1 startAt time to exceed: " + min);
+      return min; // compilation neccessity
+    }
+  }
+
+  private void assertReplicationResponseSucceeded(NamedList<?> response) {
+    assertNotNull("null response from server", response);
+    assertNotNull("Expected replication response to have 'status' field", response.get("status"));
+    assertEquals("OK", response.get("status"));
+  }
+
+    public static String buildUrl(int port) {
+    return buildUrl(port, context);
   }
 }

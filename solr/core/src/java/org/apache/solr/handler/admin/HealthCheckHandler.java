@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.IndexCommit;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -79,7 +80,6 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_REQUIRE_HEALTHY_CORES = "requireHealthyCores";
-  public static final String PARAM_MAX_GENERATION_LAG = "maxGenerationLag";
   private static final List<State> UNHEALTHY_STATES = Arrays.asList(State.DOWN, State.RECOVERING);
 
   CoreContainer coreContainer;
@@ -97,7 +97,6 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    CoreContainer coreContainer = getCoreContainer();
     rsp.setHttpCaching(false);
 
     // Core container should not be null and active (redundant check)
@@ -155,7 +154,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
   }
 
   private void healthCheckLegacyMode(SolrQueryRequest req, SolrQueryResponse rsp) {
-    Integer maxGenerationLag = req.getParams().getInt(PARAM_MAX_GENERATION_LAG);
+    Integer maxGenerationLag = req.getParams().getInt(HealthCheckRequest.PARAM_MAX_GENERATION_LAG);
     List<String> laggingCoresInfo = new ArrayList<>();
     boolean allCoresAreInSync = true;
 
@@ -211,7 +210,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
         // generationDiff should be within the threshold and generationDiff shouldn't be negative
         if(generationDiff < maxGenerationLag && generationDiff >= 0) {
           log.info("For core:[{}] generation lag is above acceptable threshold:[{}], " +
-                    "generation lag:[{}], leader's generation:[{}], follower's generation:[{}]",
+                    "generation lag:[{}], leader generation:[{}], follower generation:[{}]",
                     core, maxGenerationLag, generationDiff, leaderGeneration, followerGeneration);
 
           laggingCoresInfo.add(String.format(Locale.ROOT, "Core %s is lagging by %d generations", core.getName(), generationDiff));
