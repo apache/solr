@@ -186,17 +186,6 @@ public class LTRRescorer extends Rescorer {
   }
 
   /**
-   * @deprecated Use {@link #scoreSingleHit(int, int, int, ScoreDoc, int, org.apache.solr.ltr.LTRScoringQuery.ModelWeight.ModelScorer, ScoreDoc[])}
-   * and {@link #logSingleHit(IndexSearcher, org.apache.solr.ltr.LTRScoringQuery.ModelWeight, int, LTRScoringQuery)} instead.
-   */
-  @Deprecated
-  protected static void scoreSingleHit(IndexSearcher indexSearcher, int topN, LTRScoringQuery.ModelWeight modelWeight, int docBase, int hitUpto, ScoreDoc hit, int docID, LTRScoringQuery rerankingQuery, LTRScoringQuery.ModelWeight.ModelScorer scorer, ScoreDoc[] reranked) throws IOException {
-    if (scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked)) {
-      logSingleHit(indexSearcher, modelWeight, hit.doc, rerankingQuery);
-    }
-  }
-
-  /**
    * Call this method if the {@link #scoreSingleHit(int, int, int, ScoreDoc, int, org.apache.solr.ltr.LTRScoringQuery.ModelWeight.ModelScorer, ScoreDoc[])}
    * method indicated that the document's feature info should be logged.
    */
