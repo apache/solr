@@ -36,7 +36,7 @@ This approach promises to relieve some of the memory requirements of the fieldCa
 
 To use docValues, you only need to enable it for a field that you will use it with.
 As with all schema design, you need to define a field type and then define fields of that type with docValues enabled.
-All of these actions are done in the <<solr-schema.adoc,schema>>.
+All of these actions are done in the <<solr-schema.adoc#,schema>>.
 
 Enabling a field for docValues only requires adding `docValues="true"` to the field (or field type) definition, as in this example from Solr's `sample_techproducts_configs` <<config-sets.adoc#,configset>>:
 

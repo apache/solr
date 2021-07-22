@@ -35,7 +35,7 @@ The following features are supported:
 CurrencyField has been deprecated in favor of CurrencyFieldType; all configuration examples below use CurrencyFieldType.
 ====
 
-The `currency` field type is defined in the <<solr-schema.adoc,schema>>.
+The `currency` field type is defined in the <<solr-schema.adoc#,schema>>.
 This is the default configuration of this type.
 
 [source,xml]

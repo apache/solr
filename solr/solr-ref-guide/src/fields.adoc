@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Fields are defined in the fields element of a <<solr-schema.adoc,schema>>.
+Fields are defined in the fields element of a <<solr-schema.adoc#,schema>>.
 Once you have the field types set up, defining the fields themselves is simple.
 
 == Example Field Definition

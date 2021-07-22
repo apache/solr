@@ -40,7 +40,7 @@ When a document is added, a signature will automatically be generated and attach
 
 == Configuration Options
 
-There are two places in Solr to configure de-duplication: in `solrconfig.xml` and in the <<solr-schema.adoc,schema>>.
+There are two places in Solr to configure de-duplication: in `solrconfig.xml` and in the <<solr-schema.adoc#,schema>>.
 
 === In solrconfig.xml
 
