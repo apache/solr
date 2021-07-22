@@ -110,9 +110,6 @@ When using EmbeddedSolrServer, it will no longer close CoreContainer instances t
 
 === Solr 8.8
 
-See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote88[8.8 Release Notes^]
-for an overview of the main new features of Solr 8.8.
-
 When upgrading to 8.8.x users should be aware of the following major changes from 8.7.
 
 *Nested Documents*

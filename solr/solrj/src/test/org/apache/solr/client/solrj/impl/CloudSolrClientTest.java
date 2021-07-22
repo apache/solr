@@ -62,6 +62,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -72,6 +73,8 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.util.LogLevel;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -773,7 +776,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
       client.setZkClientTimeout(1000 * 60);
       SolrException ex = expectThrows(SolrException.class, client::connect);
-      assertTrue(ex.getMessage().contains("cluster not found/not ready"));
+      MatcherAssert.assertThat("Wrong error message for empty chRoot", ex.getMessage(), Matchers.containsString("cluster not found/not ready"));
+      MatcherAssert.assertThat("Wrong node missing message for empty chRoot", ex.getMessage(), Matchers.containsString("Expected node '" + ZkStateReader.ALIASES + "' does not exist"));
     }
   }
 

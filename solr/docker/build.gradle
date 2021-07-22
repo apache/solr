@@ -286,6 +286,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
     
     dependsOn tasks.createBodySnippetDockerfile
     inputs.properties(props)
+    inputs.file("$buildDir/snippets/Dockerfile.body.snippet")
     outputs.file(outFile)
     
     from "templates/${fileName}.header.template"

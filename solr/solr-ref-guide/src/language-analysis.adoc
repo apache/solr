@@ -289,7 +289,6 @@ s|Required |Default: none
 |===
 +
 http://www.rfc-editor.org/rfc/rfc3066.txt[RFC 3066] locale ID.
-See http://demo.icu-project.org/icu-bin/locexp[the ICU locale explorer] for a list of supported locales.
 
 `strength`::
 +
