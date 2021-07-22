@@ -48,22 +48,17 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final SolrCoreState solrCoreState;
-    if (req.getCore().getCoreContainer().isZooKeeperAware()) {
-      /*
-         We track update requests so that we can preserve consistency by waiting for them to complete
-         on a node shutdown and then immediately trigger a leader election without waiting for the core to close.
-         See how the SolrCoreState#pauseUpdatesAndAwaitInflightRequests() method is used in CoreContainer#shutdown()
+    /*
+       We track update requests so that we can preserve consistency by waiting for them to complete
+       on a node shutdown and then immediately trigger a leader election without waiting for the core to close.
+       See how the SolrCoreState#pauseUpdatesAndAwaitInflightRequests() method is used in CoreContainer#shutdown()
 
-         Also see https://issues.apache.org/jira/browse/SOLR-14942 for details on why we do not care for
-         other kinds of requests.
-      */
-      solrCoreState = req.getCore().getSolrCoreState();
-      if (!solrCoreState.registerInFlightUpdate())  {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Updates are temporarily paused for core: " + req.getCore().getName());
-      }
-    } else {
-      solrCoreState = null;
+       Also see https://issues.apache.org/jira/browse/SOLR-14942 for details on why we do not care for
+       other kinds of requests.
+    */
+    SolrCoreState solrCoreState = req.getCore().getSolrCoreState();
+    if (!solrCoreState.registerInFlightUpdate())  {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Updates are temporarily paused for core: " + req.getCore().getName());
     }
     try {
       SolrParams params = req.getParams();
@@ -100,9 +95,7 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
         }
       }
     } finally {
-      if (solrCoreState != null) {
-        solrCoreState.deregisterInFlightUpdate();
-      }
+      solrCoreState.deregisterInFlightUpdate();
     }
   }
 
