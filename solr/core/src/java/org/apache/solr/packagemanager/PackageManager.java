@@ -155,30 +155,29 @@ public class PackageManager implements Closeable {
     PackageUtils.printGreen("Package uninstalled: " + packageName + ":" + version + ":-)");
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<SolrPackageInstance> fetchInstalledPackageInstances() throws SolrException {
     log.info("Getting packages from packages.json...");
-    List<SolrPackageInstance> ret = new ArrayList<SolrPackageInstance>();
-    packages = new HashMap<String, List<SolrPackageInstance>>();
+    List<SolrPackageInstance> ret = new ArrayList<>();
+    packages = new HashMap<>();
     try {
-      Map packagesZnodeMap = null;
-
       if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true) == true) {
-        packagesZnodeMap = (Map)getMapper().readValue(
-            new String(zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true), "UTF-8"), Map.class).get("packages");
-        for (Object packageName: packagesZnodeMap.keySet()) {
-          List pkg = (List)packagesZnodeMap.get(packageName);
-          for (Map pkgVersion: (List<Map>)pkg) {
+        @SuppressWarnings("unchecked")
+        Map<String, List<Map<?,?>>> packagesZnodeMap = (Map<String, List<Map<?,?>>>)
+                getMapper().readValue(new String(zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true), "UTF-8"), Map.class).get("packages");
+        for (String packageName: packagesZnodeMap.keySet()) {
+          List<Map<?,?>> pkg = packagesZnodeMap.get(packageName);
+          for (Map<?,?> pkgVersion: pkg) {
             Manifest manifest = PackageUtils.fetchManifest(solrClient, solrBaseUrl, pkgVersion.get("manifest").toString(), pkgVersion.get("manifestSHA512").toString());
             List<Plugin> solrPlugins = manifest.plugins;
-            SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName.toString(), null,
+            SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName, null,
                     pkgVersion.get("version").toString(), manifest, solrPlugins, manifest.parameterDefaults);
-            if (pkgVersion.containsKey("files")) {
-              pkgInstance.files = (List) pkgVersion.get("files");
+            @SuppressWarnings("unchecked")
+            List<String> files = (List<String>) pkgVersion.get("files");
+            if (files != null) {
+              pkgInstance.files = files;
             }
-            List<SolrPackageInstance> list = packages.containsKey(packageName) ? packages.get(packageName) : new ArrayList<SolrPackageInstance>();
+            List<SolrPackageInstance> list = packages.computeIfAbsent(packageName, k -> new ArrayList<>());
             list.add(pkgInstance);
-            packages.put(packageName.toString(), list);
             ret.add(pkgInstance);
           }
         }

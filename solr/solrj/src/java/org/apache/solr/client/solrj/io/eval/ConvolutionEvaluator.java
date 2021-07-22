@@ -34,7 +34,6 @@ public class ConvolutionEvaluator extends RecursiveNumericEvaluator implements T
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object first, Object second) throws IOException{
     if(null == first){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
@@ -51,8 +50,8 @@ public class ConvolutionEvaluator extends RecursiveNumericEvaluator implements T
 
     return Arrays.stream(
         MathArrays.convolve(
-          ((List)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray(),
-          ((List)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray()
+          ((List<?>)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray(),
+          ((List<?>)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray()
         )
     ).boxed().collect(Collectors.toList());
   }

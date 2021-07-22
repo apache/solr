@@ -1221,7 +1221,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         return params;
       }
     }),
-    @SuppressWarnings({"unchecked", "rawtypes"})
     LISTBACKUP_OP(LISTBACKUP, (req, rsp, h) -> {
       req.getParams().required().check(NAME);
 
@@ -1260,7 +1259,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         List<BackupId> propsFiles = BackupFilePaths.findAllBackupIdsFromFileListing(subFiles);
 
         NamedList<Object> results = new NamedList<>();
-        ArrayList<Map> backups = new ArrayList<>();
+        ArrayList<Map<Object,Object>> backups = new ArrayList<>();
         String collectionName = null;
         for (BackupId backupId: propsFiles) {
           BackupProperties properties = BackupProperties.readFrom(repository, backupLocation, BackupFilePaths.getBackupPropsName(backupId));

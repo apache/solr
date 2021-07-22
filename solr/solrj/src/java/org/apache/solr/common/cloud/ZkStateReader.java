@@ -231,42 +231,6 @@ public class ZkStateReader implements SolrCloseable {
       PLACEMENT_PLUGIN
       );
 
-  /**
-   * Returns config set name for collection.
-   * TODO move to DocCollection (state.json).
-   *
-   * @param collection to return config set name for
-   */
-  public String readConfigName(String collection) throws KeeperException {
-
-    String configName = null;
-
-    String path = COLLECTIONS_ZKNODE + "/" + collection;
-    log.debug("Loading collection config from: [{}]", path);
-
-    try {
-      byte[] data = zkClient.getData(path, null, null, true);
-      if (data == null) {
-        log.warn("No config data found at path {}.", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-
-      ZkNodeProps props = ZkNodeProps.load(data);
-      configName = props.getStr(CONFIGNAME_PROP);
-
-      if (configName == null) {
-        log.warn("No config data found at path{}. ", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-    } catch (InterruptedException e) {
-      SolrZkClient.checkInterrupted(e);
-      log.warn("Thread interrupted when loading config name for collection {}", collection);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Thread interrupted when loading config name for collection " + collection, e);
-    }
-
-    return configName;
-  }
-
 
   private final SolrZkClient zkClient;
 
@@ -452,7 +416,8 @@ public class ZkStateReader implements SolrCloseable {
       });
     } catch (KeeperException.NoNodeException nne) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
+          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready." +
+              " Expected node '" + nne.getPath() + "' does not exist.");
     }
   }
 
@@ -1464,7 +1429,11 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
-        ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
+
+        // This factory method can detect a missing configName and supply it by reading it from the old ZK location.
+        // TODO in Solr 10 remove that factory method
+        ClusterState state = ClusterState.createFromJsonSupportingLegacyConfigName(stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
+
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {

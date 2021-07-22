@@ -283,7 +283,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
@@ -300,19 +299,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    if (req.getCore().getCircuitBreakerManager().isEnabled()) {
+    final CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+    if (circuitBreakerManager.isEnabled()) {
       List<CircuitBreaker> trippedCircuitBreakers;
 
       if (timer != null) {
         RTimerTree subt = timer.sub("circuitbreaker");
         rb.setTimer(subt);
 
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
 
         rb.getTimer().stop();
       } else {
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
       }
 
@@ -397,8 +395,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
           }
         }
         if(rb.isDebug()) {
-          NamedList debug = new NamedList();
-          debug.add("explain", new NamedList());
+          NamedList<Object> debug = new NamedList<>();
+          debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
         rb.rsp.getResponseHeader().asShallowMap()

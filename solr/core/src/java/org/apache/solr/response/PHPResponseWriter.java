@@ -58,7 +58,7 @@ class PHPWriter extends JSONWriter {
   }
   
   @Override
-  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  public void writeNamedList(String name, NamedList<?> val) throws IOException {
     writeNamedListAsMapMangled(name,val);
   }
 
@@ -78,7 +78,7 @@ class PHPWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, @SuppressWarnings({"rawtypes"})List l) throws IOException {
+  public void writeArray(String name, List<?> l) throws IOException {
     writeArray(name,l.iterator());
   }
 

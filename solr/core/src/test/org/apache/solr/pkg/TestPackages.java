@@ -113,7 +113,6 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   @Test
   public void testCoreReloadingPlugin() throws Exception {
       String FILE1 = "/mypkg/runtimelibs.jar";
@@ -168,7 +167,6 @@ public class TestPackages extends SolrCloudTestCase {
               "mypkg", "2.0" );
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   @Test
   public void testPluginLoading() throws Exception {
       String FILE1 = "/mypkg/runtimelibs.jar";
@@ -296,8 +294,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       executeReq( "/" + COLLECTION_NAME + "/get?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Map.of("class", "org.apache.solr.core.RuntimeLibSearchComponent",
-              "Version","1"));
+          Map.of("Version","1"));
 
 
       executeReq( "/" + COLLECTION_NAME + "/runtime?wt=json1", cluster.getRandomJetty(random()),
@@ -504,15 +501,15 @@ public class TestPackages extends SolrCloudTestCase {
           Map.of(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);
   }
-  @SuppressWarnings({"unchecked","rawtypes"})
-  private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
+  @SuppressWarnings("unchecked")
+  private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer<?> parser, Map<String, Object> expected) throws Exception {
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()){
       TestDistribPackageStore.assertResponseValues(10,
           () -> {
             Object o = Utils.executeGET(client.getHttpClient(),
                 jetty.getBaseUrl() + uri, parser);
             if(o instanceof NavigableObject) return (NavigableObject) o;
-            if(o instanceof Map) return new MapWriterMap((Map) o);
+            if(o instanceof Map) return new MapWriterMap((Map<String, Object>) o);
             throw new RuntimeException("Unknown response");
           }, expected);
 
@@ -690,7 +687,6 @@ public class TestPackages extends SolrCloudTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15448")
   @Test
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
@@ -752,8 +748,8 @@ public class TestPackages extends SolrCloudTestCase {
               withMethod(SolrRequest.METHOD.GET)
               .build().process(cluster.getSolrClient()),
           Map.of(
-              ":result:packages:schemapkg[0]:version", "2.0",
-              ":result:packages:schemapkg[0]:files[0]", FILE1
+              ":result:packages:schemapkg[1]:version", "2.0",
+              ":result:packages:schemapkg[1]:files[0]", FILE1
           ));
 
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
@@ -820,8 +816,7 @@ public class TestPackages extends SolrCloudTestCase {
   }*/
 
 
-  public static ByteBuffer persistZip(String loc,
-                                      @SuppressWarnings({"rawtypes"}) Class... classes) throws IOException {
+  public static ByteBuffer persistZip(String loc, Class<?>... classes) throws IOException {
     ByteBuffer jar = generateZip(classes);
     try (FileOutputStream fos = new FileOutputStream(loc)) {
       fos.write(jar.array(), 0, jar.limit());
@@ -830,11 +825,11 @@ public class TestPackages extends SolrCloudTestCase {
     return jar;
   }
 
-  public static ByteBuffer generateZip(@SuppressWarnings({"rawtypes"}) Class... classes) throws IOException {
+  public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
     SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
-      for (@SuppressWarnings({"rawtypes"}) Class c : classes) {
+      for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
         ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));

@@ -192,18 +192,15 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private SolrRequest getProxyRequest(String user, String doAs) {
+  private SolrRequest<?> getProxyRequest(String user, String doAs) {
     return getProxyRequest(user, doAs, null);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private SolrRequest getProxyRequest(String user, String doAs, String remoteHost) {
+  private SolrRequest<?> getProxyRequest(String user, String doAs, String remoteHost) {
     return getProxyRequest(user, doAs, remoteHost, null);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private SolrRequest getProxyRequest(String user, String doAs, String remoteHost, String remoteAddress) {
+  private SolrRequest<?> getProxyRequest(String user, String doAs, String remoteHost, String remoteAddress) {
     return new CollectionAdminRequest.List() {
       @Override
       public SolrParams getParams() {

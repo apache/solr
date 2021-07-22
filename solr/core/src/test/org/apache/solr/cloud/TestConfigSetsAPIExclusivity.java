@@ -115,14 +115,12 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
       this.trials = trials;
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public abstract ConfigSetAdminRequest createRequest();
+    public abstract ConfigSetAdminRequest<?, ?> createRequest();
 
     public void run() {
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
-      @SuppressWarnings({"rawtypes"})
-      ConfigSetAdminRequest request = createRequest();
+      ConfigSetAdminRequest<?, ?> request = createRequest();
 
       for (int i = 0; i < trials; ++i) {
         try {
@@ -164,8 +162,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
-    public ConfigSetAdminRequest createRequest() {
+    public Create createRequest() {
       Create create = new Create();
       create.setBaseConfigSetName(baseConfigSet).setConfigSetName(configSet);
       return create;
@@ -181,8 +178,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
-    public ConfigSetAdminRequest createRequest() {
+    public Delete createRequest() {
       Delete delete = new Delete();
       delete.setConfigSetName(configSet);
       return delete;

@@ -147,8 +147,7 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     // If Collection API execution is distributed, we're not running on the Overseer node so can't return any Overseer stats.
     if (ccc.getCoreContainer().getDistributedCollectionCommandRunner().isPresent()) {
       // TODO: introduce a per node status command allowing insight into how Cluster state updates, Collection API and
@@ -169,16 +168,11 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
     zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat, true);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList overseerStats = new NamedList();
-    @SuppressWarnings({"rawtypes"})
-    NamedList collectionStats = new NamedList();
-    @SuppressWarnings({"rawtypes"})
-    NamedList stateUpdateQueueStats = new NamedList();
-    @SuppressWarnings({"rawtypes"})
-    NamedList workQueueStats = new NamedList();
-    @SuppressWarnings({"rawtypes"})
-    NamedList collectionQueueStats = new NamedList();
+    NamedList<Object> overseerStats = new NamedList<>();
+    NamedList<Object> collectionStats = new NamedList<>();
+    NamedList<Object> stateUpdateQueueStats = new NamedList<>();
+    NamedList<Object> workQueueStats = new NamedList<>();
+    NamedList<Object> collectionQueueStats = new NamedList<>();
     Stats stats = ccc.getOverseerStats();
     for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
       String key = entry.getKey();

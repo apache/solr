@@ -227,13 +227,12 @@ public class SearchStream extends TupleStream implements Expressible  {
     return comp;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private StreamComparator parseComp(String sort, String fl) throws IOException {
 
-    HashSet fieldSet = null;
+    HashSet<String> fieldSet = null;
 
     if(fl != null) {
-      fieldSet = new HashSet();
+      fieldSet = new HashSet<>();
       String[] fls = fl.split(",");
       for (String f : fls) {
         fieldSet.add(f.trim()); //Handle spaces in the field list.

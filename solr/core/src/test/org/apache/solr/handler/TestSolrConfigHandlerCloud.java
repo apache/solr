@@ -109,8 +109,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     TestSolrConfigHandler.runConfigCommand(writeHarness,"/config/params", payload);
 
-    @SuppressWarnings({"rawtypes"})
-    Map result = TestSolrConfigHandler.testForResponseElement(null,
+    Map<?, ?> result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
         "/config/params",
         cloudClient,

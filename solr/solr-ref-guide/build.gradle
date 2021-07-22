@@ -22,7 +22,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "org.asciidoctor:asciidoctorj:1.6.2"
+        classpath "org.asciidoctor:asciidoctorj:2.5.1"
     }
 }
 
@@ -67,15 +67,17 @@ dependencies {
     depVer('org.apache.tika:tika-core')
     depVer('org.apache.zookeeper:zookeeper')
 
-    // jekyll dependencies
-    gems 'rubygems:jekyll:3.5.2'
+    // jekyll dependencies: we cannot use jekyll >=4, as this version uses native lib
+    // ("sassc" instead of deprecated "sass") which fails to compile on some platforms.
+    // See https://issues.apache.org/jira/browse/SOLR-15520 for more details.
+    gems 'rubygems:jekyll:3.9.1'
     gems 'rubygems:jekyll-asciidoc:3.0.0'
 
     // don't know why we have to explicitly add these deps but it doesn't resolve them
     // automatically.
     gems 'rubygems:tilt:2.0.10'
-    gems 'rubygems:slim:4.0.1'
-    gems 'rubygems:concurrent-ruby:1.0.5'
+    gems 'rubygems:slim:4.1.0'
+    gems 'rubygems:concurrent-ruby:1.1.9'
 }
 
 sourceSets {
@@ -156,6 +158,7 @@ ext {
         def dependencyProps = [
             ["ivyCommonsCodec", "commons-codec", "commons-codec"],
             ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
+            ["ivyHadoop", "org.apache.hadoop", "hadoop-auth"],
             ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
             ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
             ["ivyTika", "org.apache.tika", "tika-core"],

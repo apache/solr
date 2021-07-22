@@ -554,7 +554,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   private void verifyServletState(Http2SolrClient client,
-                                  @SuppressWarnings({"rawtypes"})SolrRequest request) {
+                                  SolrRequest<?> request) {
     // check query String
     Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
     while (paramNames.hasNext()) {

@@ -286,11 +286,10 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     return l;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void open() throws IOException {
 
     List<Map<String,List<String>>> allVisited = new ArrayList<>();
-    Map visited = new HashMap();
+    Map<String, List<String>> visited = new HashMap<>();
     visited.put(this.fromNode, null);
 
     allVisited.add(visited);
@@ -308,10 +307,10 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       while (targets.size() == 0 && depth < maxDepth) {
         Set<String> nodes = visited.keySet();
         Iterator<String> it = nodes.iterator();
-        nextVisited = new HashMap();
+        nextVisited = new HashMap<>();
         int batchCount = 0;
         List<String> queryNodes = new ArrayList<>();
-        List<Future> futures = new ArrayList<>();
+        List<Future<List<Edge>>> futures = new ArrayList<>();
         JOIN:
         //Queue up all the batches
         while (it.hasNext()) {
@@ -327,7 +326,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
               throw new RuntimeException(e);
             }
             batchCount = 0;
-            queryNodes = new ArrayList();
+            queryNodes = new ArrayList<>();
           }
         }
 
@@ -374,25 +373,25 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       threadPool.shutdown();
     }
 
-    Set<String> finalPaths = new HashSet();
+    Set<String> finalPaths = new HashSet<>();
     if(targets.size() > 0) {
       for(Edge edge : targets) {
-        List<LinkedList> paths = new ArrayList<>();
-        LinkedList<String> path = new LinkedList();
+        List<LinkedList<String>> paths = new ArrayList<>();
+        LinkedList<String> path = new LinkedList<>();
         path.addFirst(edge.to);
         paths.add(path);
         //Walk back up the tree a collect the parent nodes.
         INNER:
         for (int i = allVisited.size() - 1; i >= 0; --i) {
           Map<String, List<String>> v = allVisited.get(i);
-          Iterator<LinkedList> it = paths.iterator();
-          List newPaths = new ArrayList();
+          Iterator<LinkedList<String>> it = paths.iterator();
+          List<LinkedList<String>> newPaths = new ArrayList<>();
           while(it.hasNext()) {
-            LinkedList p = it.next();
+            LinkedList<String> p = it.next();
             List<String> parents = v.get(p.peekFirst());
             if (parents != null) {
               for(String parent : parents) {
-                LinkedList newPath = new LinkedList(p);
+                LinkedList<String> newPath = new LinkedList<>(p);
                 newPath.addFirst(parent);
                 newPaths.add(newPath);
               }
@@ -401,7 +400,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
           }
         }
 
-        for(LinkedList p : paths) {
+        for(List<String> p : paths) {
           String s = p.toString();
           if (!finalPaths.contains(s)){
             Tuple shortestPath = new Tuple("path", p);

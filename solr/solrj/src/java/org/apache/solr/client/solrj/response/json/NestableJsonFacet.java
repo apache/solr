@@ -39,13 +39,13 @@ public class NestableJsonFacet {
   private final Map<String, Object> statsByName;
   private final Map<String, HeatmapJsonFacet> heatmapFacetsByName;
 
-  public NestableJsonFacet(NamedList<Object> facetNL) {
+  public NestableJsonFacet(NamedList<?> facetNL) {
     queryFacetsByName = new HashMap<>();
     bucketBasedFacetByName = new HashMap<>();
     heatmapFacetsByName = new HashMap<>();
     statsByName = new HashMap<>();
 
-    for (Map.Entry<String, Object> entry : facetNL) {
+    for (Map.Entry<String, ?> entry : facetNL) {
       final String key = entry.getKey();
       if (getKeysToSkip().contains(key)) {
         continue;
@@ -56,8 +56,7 @@ public class NestableJsonFacet {
         // Stat/agg facet value
         statsByName.put(key, entry.getValue());
       } else if(entry.getValue() instanceof NamedList) { // Either heatmap/query/range/terms facet
-        @SuppressWarnings({"unchecked"})
-        final NamedList<Object> facet = (NamedList<Object>) entry.getValue();
+        final NamedList<?> facet = (NamedList<?>) entry.getValue();
         final boolean isBucketBased = facet.get("buckets") != null;
         final boolean isHeatmap = HeatmapJsonFacet.isHeatmapFacet(facet);
         if (isBucketBased) {

@@ -284,12 +284,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return solrStreams;
   }
 
-  @SuppressWarnings({"unchecked"})
   private StreamComparator parseComp(String sort, String fl) throws IOException {
 
     String[] fls = fl.split(",");
-    @SuppressWarnings({"rawtypes"})
-    HashSet fieldSet = new HashSet();
+    HashSet<String> fieldSet = new HashSet<>();
     for(String f : fls) {
       fieldSet.add(f.trim()); //Handle spaces in the field list.
     }

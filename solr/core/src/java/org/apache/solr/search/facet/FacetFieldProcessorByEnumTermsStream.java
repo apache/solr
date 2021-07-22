@@ -85,7 +85,6 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void process() throws IOException {
     super.process();
 
@@ -96,7 +95,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
 
     setup();
     response = new SimpleOrderedMap<>();
-    response.add("buckets", new Iterator() {
+    response.add("buckets", new Iterator<>() {
       boolean retrieveNext = true;
       Object val;
 

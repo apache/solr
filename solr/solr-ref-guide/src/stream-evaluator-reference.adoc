@@ -18,20 +18,21 @@
 // under the License.
 
 
-Stream evaluators are different then stream sources or stream decorators. Both
-stream sources and stream decorators return streams of tuples. Stream evaluators are more like
-a traditional function that evaluates its parameters and
-returns an result. That result can be a single value, array, map or other structure.
+Stream evaluators are different then stream sources or stream decorators.
+Both stream sources and stream decorators return streams of tuples.
+Stream evaluators are more like a traditional function that evaluates its parameters and returns an result.
+That result can be a single value, array, map or other structure.
 
-Stream evaluators can be nested so that the output of an evaluator becomes the input
-for another evaluator.
+Stream evaluators can be nested so that the output of an evaluator becomes the input for another evaluator.
 
-Stream evaluators can be called in different contexts. For example a stream evaluator
-can be called on its own or it can be called within the context of a streaming expression.
+Stream evaluators can be called in different contexts.
+For example a stream evaluator can be called on its own or it can be called within the context of a streaming expression.
 
 == abs
 
-The `abs` function will return the absolute value of the provided single parameter. The `abs` function will fail to execute if the value is non-numeric. If a null value is found then null will be returned as the result.
+The `abs` function will return the absolute value of the provided single parameter.
+The `abs` function will fail to execute if the value is non-numeric.
+If a null value is found then null will be returned as the result.
 
 === abs Parameters
 
@@ -39,7 +40,9 @@ The `abs` function will return the absolute value of the provided single paramet
 
 === abs Syntax
 
-The expressions below show the various ways in which you can use the `abs` evaluator. Only one parameter is accepted. Returns a numeric value.
+The expressions below show the various ways in which you can use the `abs` evaluator.
+Only one parameter is accepted.
+Returns a numeric value.
 
 [source,text]
 ----
@@ -68,7 +71,9 @@ if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return 
 
 == add
 
-The `add` function will take 2 or more numeric values and add them together. The `add` function will fail to execute if any of the values are non-numeric. If a null value is found then null will be returned as the result.
+The `add` function will take 2 or more numeric values and add them together.
+The `add` function will fail to execute if any of the values are non-numeric.
+If a null value is found then null will be returned as the result.
 
 === add Parameters
 
@@ -79,7 +84,9 @@ The `add` function will take 2 or more numeric values and add them together. The
 
 === add Syntax
 
-The expressions below show the various ways in which you can use the `add` evaluator. The number and order of these parameters do not matter and is not limited except that at least two parameters are required. Returns a numeric value.
+The expressions below show the various ways in which you can use the `add` evaluator.
+The number and order of these parameters do not matter and is not limited except that at least two parameters are required.
+Returns a numeric value.
 
 [source,text]
 ----
@@ -93,9 +100,8 @@ add(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then field
 
 == analyze
 
-The `analyze` function analyzes text using a Lucene/Solr analyzer and returns a list of tokens
-emitted by the analyzer. The `analyze` function can be called on its own or within the
-`<<stream-decorator-reference.adoc#select,select>>` and `<<stream-decorator-reference.adoc#cartesianproduct,cartesianProduct>>` streaming expressions.
+The `analyze` function analyzes text using a Lucene/Solr analyzer and returns a list of tokens emitted by the analyzer.
+The `analyze` function can be called on its own or within the `<<stream-decorator-reference.adoc#select,select>>` and `<<stream-decorator-reference.adoc#cartesianproduct,cartesianProduct>>` streaming expressions.
 
 === analyze Parameters
 
@@ -107,12 +113,16 @@ emitted by the analyzer. The `analyze` function can be called on its own or with
 The expressions below show the various ways in which you can use the `analyze` evaluator.
 
 * Analyze the raw text: `analyze("hello world", analyzerField)`
-* Analyze a text field within a `select` expression. This will annotate tuples with the output of the analyzer: `select(expr, analyze(textField, analyzerField) as outField)`
-* Analyze a text field with a `cartesianProduct` expression. This will stream each token emitted by the analyzer in its own tuple: `cartesianProduct(expr, analyze(textField, analyzer) as outField)`
+* Analyze a text field within a `select` expression.
+This will annotate tuples with the output of the analyzer: `select(expr, analyze(textField, analyzerField) as outField)`
+* Analyze a text field with a `cartesianProduct` expression.
+This will stream each token emitted by the analyzer in its own tuple: `cartesianProduct(expr, analyze(textField, analyzer) as outField)`
 
 == and
 
-The `and` function will return the logical AND of at least 2 boolean parameters. The function will fail to execute if any parameters are non-boolean or null. Returns a boolean value.
+The `and` function will return the logical AND of at least 2 boolean parameters.
+The function will fail to execute if any parameters are non-boolean or null.
+Returns a boolean value.
 
 === and Parameters
 
@@ -123,7 +133,8 @@ The `and` function will return the logical AND of at least 2 boolean parameters.
 
 === and Syntax
 
-The expressions below show the various ways in which you can use the `and` evaluator. At least two parameters are required, but there is no limit to how many you can use.
+The expressions below show the various ways in which you can use the `and` evaluator.
+At least two parameters are required, but there is no limit to how many you can use.
 
 [source,text]
 ----
@@ -198,9 +209,8 @@ if(gt(fieldA,fieldB),atan(fieldA),atan(fieldB)) // if fieldA > fieldB then retur
 
 == betaDistribution
 
-The `betaDistribution` function returns a https://en.wikipedia.org/wiki/Beta_distribution[beta probability distribution]
-based on its parameters. This function is part of the
-probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
+The `betaDistribution` function returns a https://en.wikipedia.org/wiki/Beta_distribution[beta probability distribution] based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
 
 === betaDistribution Parameters
 
@@ -218,8 +228,7 @@ betaDistribution(1, 5)
 
 == binomialCoefficient
 
-The `binomialCoefficient` function returns a https://en.wikipedia.org/wiki/Binomial_coefficient[Binomial Coefficient], the number of k-element subsets that can
-be selected from an n-element set.
+The `binomialCoefficient` function returns a https://en.wikipedia.org/wiki/Binomial_coefficient[Binomial Coefficient], the number of k-element subsets that can be selected from an n-element set.
 
 === binomialCoefficient Parameters
 
@@ -237,9 +246,8 @@ binomialCoefficient(8, 3) // Returns the number of 3 element subsets from an 8 e
 
 == binomialDistribution
 
-The `binomialDistribution` function returns a https://en.wikipedia.org/wiki/Binomial_distribution[binomial probability distribution]
-based on its parameters. This function is part of the probability distribution framework and is designed to
-work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
+The `binomialDistribution` function returns a https://en.wikipedia.org/wiki/Binomial_distribution[binomial probability distribution] based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
 
 === binomialDistribution Parameters
 
@@ -293,8 +301,8 @@ if(gt(fieldA,fieldB),ceil(fieldA),ceil(fieldB)) // if fieldA > fieldB then retur
 
 == col
 
-The `col` function returns a numeric array from a list of tuples. The `col`
-function is used to create numeric arrays from stream sources.
+The `col` function returns a numeric array from a list of tuples.
+The `col` function is used to create numeric arrays from stream sources.
 
 === col Parameters
 
@@ -346,8 +354,7 @@ integer: number columns in the matrix.
 == constantDistribution
 
 The `constantDistribution` function returns a constant probability distribution based on its parameter.
-This function is part of the probability distribution framework and is designed to
-work with the `<<sample>>` and `<<cumulativeProbability>>` functions.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>` and `<<cumulativeProbability>>` functions.
 
 When sampled the constant distribution always returns its constant value.
 
@@ -385,7 +392,8 @@ The `copyOf` function creates a copy of a numeric array.
 === copyOf Parameters
 
 * `numeric array`
-* `length`: The length of the copied array. The returned array will be right padded with zeros if the length parameter exceeds the size of the original array.
+* `length`: The length of the copied array.
+The returned array will be right padded with zeros if the length parameter exceeds the size of the original array.
 
 === copyOf Syntax
 
@@ -421,11 +429,14 @@ The `corr` function support Pearson's, Kendall's and Spearman's correlations.
 
 OR
 
-* `matrix`: The matrix to compute the correlation matrix for. Note that correlation is computed between the `columns` in the matrix.
+* `matrix`: The matrix to compute the correlation matrix for.
+Note that correlation is computed between the `columns` in the matrix.
 
 === corr Named Parameters
 
-* `type`: (Optional) The type of correlation. Possible values are `pearsons`, `kendalls`, or `spearmans`. The default is `pearsons`.
+* `type`: (Optional) The type of correlation.
+Possible values are `pearsons`, `kendalls`, or `spearmans`.
+The default is `pearsons`.
 
 === corr Syntax
 
@@ -486,7 +497,8 @@ The `cov` function returns the covariance of two numeric array or the covariance
 
 OR
 
-* `matrix`: The matrix to compute the covariance matrix from. Note that covariance is computed between the `columns` in the matrix.
+* `matrix`: The matrix to compute the covariance matrix from.
+Note that covariance is computed between the `columns` in the matrix.
 
 === cov Syntax
 
@@ -500,9 +512,8 @@ number | matrix: Either the covariance or covariance matrix.
 
 == cumulativeProbability
 
-The `cumulativeProbability` function returns the cumulative probability of a random variable within a
-probability distribution. The cumulative probability is the total probability of
-all random variables less then or equal to a random variable.
+The `cumulativeProbability` function returns the cumulative probability of a random variable within a probability distribution.
+The cumulative probability is the total probability of all random variables less then or equal to a random variable.
 
 === cumulativeProbability Parameters
 
@@ -520,9 +531,9 @@ cumulativeProbability(normalDistribution(500, 25), 502) // Returns the cumulativ
 
 == derivative
 
-The `derivative` function returns the https://en.wikipedia.org/wiki/Derivative[derivative] of a function. The derivative function
-can compute the derivative of the <<spline>> function and the <<loess>> function. The derivative can also
-take the derivative of a derivative.
+The `derivative` function returns the https://en.wikipedia.org/wiki/Derivative[derivative] of a function.
+The derivative function can compute the derivative of the <<spline>> function and the <<loess>> function.
+The derivative can also take the derivative of a derivative.
 
 === derivative Parameters
 
@@ -561,7 +572,8 @@ Time series differencing is often used to make a time series stationary before f
 === diff Parameters
 
 * `numeric array`: The time series data.
-* `integer`: (Optional) The lag. Defaults to 1.
+* `integer`: (Optional) The lag.
+Defaults to 1.
 
 === diff Syntax
 
@@ -571,7 +583,8 @@ diff(numericArray1, 30) // Perform time series differencing with a lag of 30.
 
 === diff Returns
 
-numeric array: The differenced time series data. The size of the array will be equal to (original array size - lag).
+numeric array: The differenced time series data.
+The size of the array will be equal to (original array size - lag).
 
 == distance
 
@@ -584,11 +597,14 @@ The `distance` function computes the distance of two numeric arrays or the dista
 
 OR
 
-* `matrix`: The matrix to compute the distance matrix for. Note that distance is computed between the `columns` in the matrix.
+* `matrix`: The matrix to compute the distance matrix for.
+Note that distance is computed between the `columns` in the matrix.
 
 === distance Named Parameters
 
-* `type`: (Optional) The distance type. Possible values are `euclidean`, `manhattan`, `canberra`, or `earthMovers`. The default is `euclidean`.
+* `type`: (Optional) The distance type.
+Possible values are `euclidean`, `manhattan`, `canberra`, or `earthMovers`.
+The default is `euclidean`.
 
 === distance Syntax
 
@@ -604,7 +620,9 @@ number | matrix: Either the distance or distance matrix.
 
 == div
 
-The `div` function will take two numeric values and divide them. The function will fail to execute if any of the values are non-numeric or null, or the 2nd value is 0. Returns a numeric value.
+The `div` function will take two numeric values and divide them.
+The function will fail to execute if any of the values are non-numeric or null, or the 2nd value is 0.
+Returns a numeric value.
 
 === div Parameters
 
@@ -613,7 +631,8 @@ The `div` function will take two numeric values and divide them. The function wi
 
 === div Syntax
 
-The expressions below show the various ways in which you can use the `div` evaluator. The first value will be divided by the second and as such the second cannot be 0.
+The expressions below show the various ways in which you can use the `div` evaluator.
+The first value will be divided by the second and as such the second cannot be 0.
 
 [source,text]
 ----
@@ -715,10 +734,11 @@ ebeSubtract(numericArray, numericArray)
 
 == empiricalDistribution
 
-The `empiricalDistribution` function returns https://en.wikipedia.org/wiki/Empirical_distribution_function[empirical distribution function], a continuous probability distribution function based
-on an actual data set. This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
+The `empiricalDistribution` function returns https://en.wikipedia.org/wiki/Empirical_distribution_function[empirical distribution function], a continuous probability distribution function based on an actual data set.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
 
-This function is designed to work with continuous data. To build a distribution from
+This function is designed to work with continuous data.
+To build a distribution from
 a discrete data set use the `<<enumeratedDistribution>>`.
 
 === empiricalDistribution Parameters
@@ -736,21 +756,18 @@ empiricalDistribution(numericArray)
 
 == enumeratedDistribution
 
-The `enumeratedDistribution` function returns a discrete probability distribution function based
-on an actual data set or a pre-defined set of data and probabilities.
-This function is part of the probability distribution framework and is designed to
-work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
+The `enumeratedDistribution` function returns a discrete probability distribution function based on an actual data set or a pre-defined set of data and probabilities.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
 
 The enumeratedDistribution can be called in two different scenarios:
 
-1) Single array of discrete values. This works like an empirical distribution for
-discrete data.
+. Single array of discrete values.
+This works like an empirical distribution for discrete data.
 
-2) An array of singleton discrete values and an array of double values representing
-the probabilities of the discrete values.
+. An array of singleton discrete values and an array of double values representing the probabilities of the discrete values.
 
-This function is designed to work with discrete data. To build a distribution from
-a continuous data set use the `<<empiricalDistribution>>`.
+This function is designed to work with discrete data.
+To build a distribution from a continuous data set use the `<<empiricalDistribution>>`.
 
 === enumeratedDistribution Parameters
 
@@ -769,7 +786,9 @@ enumeratedDistribution(array(1,2,3,4), array(.25,.25,.25,.25)) // This creates a
 
 == eor
 
-The `eor` function will return the logical exclusive or of at least two boolean parameters. The function will fail to execute if any parameters are non-boolean or null. Returns a boolean value.
+The `eor` function will return the logical exclusive or of at least two boolean parameters.
+The function will fail to execute if any parameters are non-boolean or null.
+Returns a boolean value.
 
 === eor Parameters
 
@@ -780,7 +799,8 @@ The `eor` function will return the logical exclusive or of at least two boolean 
 
 === eor Syntax
 
-The expressions below show the various ways in which you can use the `eor` evaluator. At least two parameters are required, but there is no limit to how many you can use.
+The expressions below show the various ways in which you can use the `eor` evaluator.
+At least two parameters are required, but there is no limit to how many you can use.
 
 [source,text]
 ----
@@ -791,7 +811,11 @@ eor(eq(fieldA,fieldB),eq(fieldC,fieldD)) // true iff either fieldA == fieldB or 
 
 == eq
 
-The `eq` function will return whether all the parameters are equal, as per Java's standard `equals(...)` function. The function accepts parameters of any type, but will fail to execute if all the parameters are not of the same type. That is, all are Boolean, all are String, or all are Numeric. If any any parameters are null and there is at least one parameter that is not null then false will be returned. Returns a boolean value.
+The `eq` function will return whether all the parameters are equal, as per Java's standard `equals(...)` function.
+The function accepts parameters of any type, but will fail to execute if all the parameters are not of the same type.
+That is, all are Boolean, all are String, or all are Numeric.
+If any any parameters are null and there is at least one parameter that is not null then false will be returned.
+Returns a boolean value.
 
 === eq Parameters
 
@@ -823,7 +847,8 @@ The `expMovingAverage` function computes an  https://en.wikipedia.org/wiki/Movin
 
 === expMovingAvg Returns
 
-A numeric array. The first element of the returned array will start from the windowSize-1 index of the original array.
+A numeric array.
+The first element of the returned array will start from the windowSize-1 index of the original array.
 
 === expMovingAvg Syntax
 
@@ -838,7 +863,8 @@ The `factorial` function returns the https://en.wikipedia.org/wiki/Factorial[fac
 
 === factorial Parameters
 
-* `integer`: The value to compute the factorial for. The largest supported value of this parameter is 170.
+* `integer`: The value to compute the factorial for.
+The largest supported value of this parameter is 170.
 
 === factorial Returns
 
@@ -885,11 +911,10 @@ if(gt(fieldA,fieldB),floor(fieldA),floor(fieldB)) // if fieldA > fieldB then ret
 
 == freqTable
 
-The `freqTable` function returns a https://en.wikipedia.org/wiki/Frequency_distribution[frequency distribution] from
-an array of discrete values.
+The `freqTable` function returns a https://en.wikipedia.org/wiki/Frequency_distribution[frequency distribution] from an array of discrete values.
 
-This function is designed to work with discrete values. To work with continuous data
-use the `<<hist>>` function.
+This function is designed to work with discrete values.
+To work with continuous data use the `<<hist>>` function.
 
 === freqTable Parameters
 
@@ -908,8 +933,8 @@ freqTable(integerArray)
 
 == gammaDistribution
 
-The `gammaDistribution` function returns a https://en.wikipedia.org/wiki/Gamma_distribution[gamma probability distribution] based on its parameters. This function is part of the
-probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
+The `gammaDistribution` function returns a https://en.wikipedia.org/wiki/Gamma_distribution[gamma probability distribution] based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
 
 === gammaDistribution Parameters
 
@@ -929,8 +954,8 @@ gammaDistribution(1, 10)
 
 == geometricDistribution
 
-The `geometricDistribution` function returns a https://en.wikipedia.org/wiki/Geometric_distribution[geometric probability distribution] based on its parameters. This function is part of the
-probability distribution framework and is designed to work with the <<sample>>, <<probability>> and <<cumulativeProbability>> functions.
+The `geometricDistribution` function returns a https://en.wikipedia.org/wiki/Geometric_distribution[geometric probability distribution] based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the <<sample>>, <<probability>> and <<cumulativeProbability>> functions.
 
 === geometricDistribution Parameters
 
@@ -947,10 +972,11 @@ A probability distribution function
 
 == getAttribute
 
-The `getAttribute` function returns an attribute from a `matrix` by its key. Any function that returns a `matrix` can
-also set attributes on the `matrix` with additional information. The `setAttribute` function can also be used
-to set attributes on a `matrix`. The key to an attribute is always a string. The value of attribute can be any object
-including numerics, arrays, maps, matrixes, etc.
+The `getAttribute` function returns an attribute from a `matrix` by its key.
+Any function that returns a `matrix` can also set attributes on the `matrix` with additional information.
+The `setAttribute` function can also be used to set attributes on a `matrix`.
+The key to an attribute is always a string.
+The value of attribute can be any object including numerics, arrays, maps, matrixes, etc.
 
 === getAttribute Parameters
 
@@ -968,8 +994,8 @@ object: any object
 
 == getAttributes
 
-The `getAttributes` function returns the attribute map from matrix. See the `getAttribute` function for more details
-on attributes.
+The `getAttributes` function returns the attribute map from matrix.
+See the `getAttribute` function for more details on attributes.
 
 === getAttributes Parameters
 
@@ -986,8 +1012,9 @@ map: The map of attributes.
 
 == getColumnLabels
 
-The `getColumnLabels` function returns the columns labels of a matrix. The column labels can be optionally
-set by any function that returns a matrix. The column labels can also be set via the `setColumnLabels` function.
+The `getColumnLabels` function returns the columns labels of a matrix.
+The column labels can be optionally set by any function that returns a matrix.
+The column labels can also be set via the `setColumnLabels` function.
 
 === getColumnLabels Parameters
 
@@ -1003,8 +1030,9 @@ string array: The labels for each column in the matrix
 
 == getRowLabels
 
-The `getRowLabels` function returns the row labels of a matrix. The row labels can be optionally
-set by any function that returns a matrix. The row labels can also be set via the `setRowLabels` function.
+The `getRowLabels` function returns the row labels of a matrix.
+The row labels can be optionally set by any function that returns a matrix.
+The row labels can also be set via the `setRowLabels` function.
 
 === getRowLabels Parameters
 
@@ -1054,7 +1082,11 @@ number: the sum of all the values in the matrix.
 
 == gt
 
-The `gt` function will return whether the first parameter is greater than the second parameter. The function accepts numeric or string parameters, but will fail to execute if all the parameters are not of the same type. That is, all are String or all are Numeric. If any any parameters are null then an error will be raised. Returns a boolean value.
+The `gt` function will return whether the first parameter is greater than the second parameter.
+The function accepts numeric or string parameters, but will fail to execute if all the parameters are not of the same type.
+That is, all are String or all are Numeric.
+If any any parameters are null then an error will be raised.
+Returns a boolean value.
 
 === gt Parameters
 
@@ -1075,7 +1107,11 @@ gt(add(fieldA,fieldB),6) // fieldA + fieldB > 6
 
 == gteq
 
-The `gteq` function will return whether the first parameter is greater than or equal to the second parameter. The function accepts numeric and string parameters, but will fail to execute if all the parameters are not of the same type. That is, all are String or all are Numeric. If any any parameters are null then an error will be raised. Returns a boolean value.
+The `gteq` function will return whether the first parameter is greater than or equal to the second parameter.
+The function accepts numeric and string parameters, but will fail to execute if all the parameters are not of the same type.
+That is, all are String or all are Numeric.
+If any any parameters are null then an error will be raised.
+Returns a boolean value.
 
 === gteq Parameters
 
@@ -1096,15 +1132,15 @@ gteq(add(fieldA,fieldB),6) // fieldA + fieldB >= 6
 
 == hist
 
-The `hist` function creates a histogram from a numeric array. The hist function is designed
-to work with continuous variables.
+The `hist` function creates a histogram from a numeric array.
+The hist function is designed to work with continuous variables.
 
 === hist Parameters
 
 //TODO fill in details of Parameters
 * `numeric array`
-* `bins`: The number of bins in the histogram. Each returned tuple contains
-summary statistics for the observations that were within the bin.
+* `bins`: The number of bins in the histogram.
+Each returned tuple contains summary statistics for the observations that were within the bin.
 
 === hist Syntax
 
@@ -1129,7 +1165,10 @@ if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return 
 
 == if
 
-The `if` function works like a standard conditional if/then statement. If the first parameter is true, then the second parameter will be returned, else the third parameter will be returned. The function accepts a boolean as the first parameter and anything as the second and third parameters. An error will occur if the first parameter is not a boolean or is null.
+The `if` function works like a standard conditional if/then statement.
+If the first parameter is true, then the second parameter will be returned, else the third parameter will be returned.
+The function accepts a boolean as the first parameter and anything as the second and third parameters.
+An error will occur if the first parameter is not a boolean or is null.
 
 === if Parameters
 
@@ -1204,18 +1243,19 @@ length(numericArray)
 == loess
 
 The `leoss` function is a smoothing curve fitter which uses a https://en.wikipedia.org/wiki/Local_regression[local regression] algorithm.
-Unlike the <<spline>> function which touches each control point, the `loess` function puts a smooth curve through
-the control points without having to touch the control points. The `loess` result can be used by the <<derivative>> function to produce smooth derivatives from
-data that is not smooth.
+Unlike the <<spline>> function which touches each control point, the `loess` function puts a smooth curve through the control points without having to touch the control points.
+The `loess` result can be used by the <<derivative>> function to produce smooth derivatives from data that is not smooth.
 
 === loess Positional Parameters
 
-* `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
+* `numeric array`: (Optional) x values.
+If omitted a sequence will be created for the x values.
 * `numeric array`: y values
 
 === loess Named Parameters
 
-* `bandwidth`: (Optional) The percent of the data points to use when drawing the local regression line, defaults to .25. Decreasing the bandwidth increases the number of curves that loess can fit.
+* `bandwidth`: (Optional) The percent of the data points to use when drawing the local regression line, defaults to .25.
+Decreasing the bandwidth increases the number of curves that loess can fit.
 * `robustIterations`: (Optional) The number of iterations used to smooth outliers, defaults to 2.
 
 === loess Syntax
@@ -1231,7 +1271,9 @@ function: The function can be treated as both a `numeric array` of the smoothed 
 
 == log
 
-The `log` function will return the natural log of the provided single parameter. The `log` function will fail to execute if the value is non-numeric. If a null value is found, then null will be returned as the result.
+The `log` function will return the natural log of the provided single parameter.
+The `log` function will fail to execute if the value is non-numeric.
+If a null value is found, then null will be returned as the result.
 
 === log Parameters
 
@@ -1239,7 +1281,9 @@ The `log` function will return the natural log of the provided single parameter.
 
 === log Syntax
 
-The expressions below show the various ways in which you can use the `log` evaluator. Only one parameter is accepted. Returns a numeric value.
+The expressions below show the various ways in which you can use the `log` evaluator.
+Only one parameter is accepted.
+Returns a numeric value.
 
 [source,text]
 ----
@@ -1250,8 +1294,8 @@ log(fieldA)
 
 == logNormalDistribution
 
-The `logNormalDistribution` function returns a https://en.wikipedia.org/wiki/Log-normal_distribution[log normal probability distribution] based on its parameters. This function is part of the probability distribution framework and is designed to
-work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
+The `logNormalDistribution` function returns a https://en.wikipedia.org/wiki/Log-normal_distribution[log normal probability distribution] based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
 
 === logNormalDistribution Parameters
 
@@ -1269,8 +1313,7 @@ logNormalDistribution(.3, .0)
 
 == kolmogorovSmirnov
 
-The `kolmogorovSmirnov` function performs a https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test[Kolmogorov Smirnov test],
-between a reference continuous probability distribution and a sample set.
+The `kolmogorovSmirnov` function performs a https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test[Kolmogorov Smirnov test], between a reference continuous probability distribution and a sample set.
 
 The supported distribution functions are: `<<empiricalDistribution>>`, `<<normalDistribution>>`, `<<logNormalDistribution>>`, `<<weibullDistribution>>`, `<<gammaDistribution>>`, and `<<betaDistribution>>`.
 
@@ -1290,7 +1333,11 @@ kolmogorovSmirnov(normalDistribution(10, 2), sampleSet)
 
 == lt
 
-The `lt` function will return whether the first parameter is less than the second parameter. The function accepts numeric or string parameters, but will fail to execute if all the parameters are not of the same type. That is, all are String or all are Numeric. If any any parameters are null then an error will be raised. Returns a boolean value.
+The `lt` function will return whether the first parameter is less than the second parameter.
+The function accepts numeric or string parameters, but will fail to execute if all the parameters are not of the same type.
+That is, all are String or all are Numeric.
+If any any parameters are null then an error will be raised.
+Returns a boolean value.
 
 === lt Parameters
 
@@ -1311,7 +1358,11 @@ lt(add(fieldA,fieldB),6) // fieldA + fieldB < 6
 
 == lteq
 
-The `lteq` function will return whether the first parameter is less than or equal to the second parameter. The function accepts numeric and string parameters, but will fail to execute if all the parameters are not of the same type. That is, all are String or all are Numeric. If any any parameters are null then an error will be raised. Returns a boolean value.
+The `lteq` function will return whether the first parameter is less than or equal to the second parameter.
+The function accepts numeric and string parameters, but will fail to execute if all the parameters are not of the same type.
+That is, all are String or all are Numeric.
+If any any parameters are null then an error will be raised.
+Returns a boolean value.
 
 === lteq Parameters
 
@@ -1333,9 +1384,8 @@ lteq(add(fieldA,fieldB),6) // fieldA + fieldB <= 6
 == markovChain
 
 The `markovChain` function can be used to perform https://en.wikipedia.org/wiki/Markov_chain[Markov Chain] simulations.
-The `markovChain` function takes as its parameter a https://en.wikipedia.org/wiki/Stochastic_matrix[transition matrix] and
-returns a mathematical model that can be sampled using the <<sample>> function. Each sample taken
-from the Markov Chain represents the current state of system.
+The `markovChain` function takes as its parameter a https://en.wikipedia.org/wiki/Stochastic_matrix[transition matrix] and returns a mathematical model that can be sampled using the <<sample>> function.
+Each sample taken from the Markov Chain represents the current state of system.
 
 === markovChain Parameters
 
@@ -1344,7 +1394,8 @@ from the Markov Chain represents the current state of system.
 === markovChain Syntax
 
 [source,text]
-sample(markovChain(transitionMatrix), 5)  // This creates a Markov Chain given a specific transition matrix. The sample function takes 5 samples from the Markov Chain, representing the next five states of the system.
+sample(markovChain(transitionMatrix), 5)  // This creates a Markov Chain given a specific transition matrix.
+The sample function takes 5 samples from the Markov Chain, representing the next five states of the system.
 
 === markovChain Returns
 
@@ -1390,16 +1441,18 @@ meanDifference(numericArray, numericArray)
 == minMaxScale
 
 The `minMaxScale` function scales numeric arrays within a minimum and maximum value.
-By default `minMaxScale` scales between 0 and 1. The `minMaxScale` function can operate on
-both numeric arrays and matrices.
+By default `minMaxScale` scales between 0 and 1.
+The `minMaxScale` function can operate on both numeric arrays and matrices.
 
 When operating on a matrix the `minMaxScale` function operates on each row of the matrix.
 
 === minMaxScale Parameters
 
 * `numeric array` | `matrix`: The array or matrix to scale
-* `double`: (Optional) The min value. Defaults to 0.
-* `double`: (Optional) The max value. Defaults to 1.
+* `double`: (Optional) The min value.
+Defaults to 0.
+* `double`: (Optional) The max value.
+Defaults to 1.
 
 === minMaxScale Syntax
 
@@ -1435,13 +1488,12 @@ if(gt(fieldA,fieldB),mod(fieldA,fieldB),mod(fieldB,fieldA)) // if fieldA > field
 
 == monteCarlo
 
-The `monteCarlo` function performs a https://en.wikipedia.org/wiki/Monte_Carlo_method[Monte Carlo simulation]
-based on its parameters. The `monteCarlo` function runs another function a specified number of times and returns the results.
-The function being run typically has one or more variables that are drawn from probability
-distributions on each run. The `<<sample>>` function is used in the function to draw the samples.
+The `monteCarlo` function performs a https://en.wikipedia.org/wiki/Monte_Carlo_method[Monte Carlo simulation] based on its parameters.
+The `monteCarlo` function runs another function a specified number of times and returns the results.
+The function being run typically has one or more variables that are drawn from probability distributions on each run.
+The `<<sample>>` function is used in the function to draw the samples.
 
-The simulation's result array can then be treated as an empirical distribution to understand
-the probabilities of the simulation results.
+The simulation's result array can then be treated as an empirical distribution to understand the probabilities of the simulation results.
 
 === monteCarlo Parameters
 
@@ -1460,8 +1512,8 @@ let(a=uniformIntegerDistribution(1, 6),
     c=monteCarlo(add(sample(a), sample(b)), 1000))
 
 In the expression above the `monteCarlo` function is running the function `add(sample(a), sample(b))`
-1000 times and returning the result. Each time the function is run samples are drawn from the
-probability distributions stored in variables `a` and `b`.
+1000 times and returning the result.
+Each time the function is run samples are drawn from the probability distributions stored in variables `a` and `b`.
 
 == movingAvg
 
@@ -1474,7 +1526,8 @@ The `movingAvg` function calculates a https://en.wikipedia.org/wiki/Moving_avera
 
 === movingAvg Returns
 
-A numeric array. The first element of the returned array will start from the windowSize-1 index of the original array.
+A numeric array.
+The first element of the returned array will start from the windowSize-1 index of the original array.
 
 === movingAvg Syntax
 
@@ -1492,7 +1545,8 @@ The `movingMedian` function calculates a moving median over an array of numbers.
 
 === movingMedian Returns
 
-A numeric array. The first element of the returned array will start from the windowSize-1 index of the original array.
+A numeric array.
+The first element of the returned array will start from the windowSize-1 index of the original array.
 
 === movingMedian Syntax
 
@@ -1501,7 +1555,9 @@ movingMedian(numericArray, 30)
 
 == mult
 
-The `mult` function will take two or more numeric values and multiply them together. The `mult` function will fail to execute if any of the values are non-numeric. If a null value is found then null will be returned as the result.
+The `mult` function will take two or more numeric values and multiply them together.
+The `mult` function will fail to execute if any of the values are non-numeric.
+If a null value is found then null will be returned as the result.
 
 === mult Parameters
 
@@ -1512,7 +1568,9 @@ The `mult` function will take two or more numeric values and multiply them toget
 
 === mult Syntax
 
-The expressions below show the various ways in which you can use the `mult` evaluator. The number and order of these parameters do not matter and is not limited except that at least two parameters are required. Returns a numeric value.
+The expressions below show the various ways in which you can use the `mult` evaluator.
+The number and order of these parameters do not matter and is not limited except that at least two parameters are required.
+Returns a numeric value.
 
 [source,text]
 ----
@@ -1527,8 +1585,8 @@ mult(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then fiel
 == normalDistribution
 
 The `normalDistribution` function returns a https://en.wikipedia.org/wiki/Normal_distribution[normal probability distribution]
-based on its parameters. This function is part of the probability distribution framework and is designed to
-work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
+based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
 
 === normalDistribution Parameters
 
@@ -1568,7 +1626,9 @@ numeric array | matrix
 
 == not
 
-The `not` function will return the logical NOT of a single boolean parameter. The function will fail to execute if the parameter is non-boolean or null. Returns a boolean value.
+The `not` function will return the logical NOT of a single boolean parameter.
+The function will fail to execute if the parameter is non-boolean or null.
+Returns a boolean value.
 
 === not Parameters
 
@@ -1576,7 +1636,8 @@ The `not` function will return the logical NOT of a single boolean parameter. Th
 
 === not Syntax
 
-The expressions below show the various ways in which you can use the `not` evaluator. Only one parameter is allowed.
+The expressions below show the various ways in which you can use the `not` evaluator.
+Only one parameter is allowed.
 
 [source,text]
 ----
@@ -1595,7 +1656,9 @@ The output of `olsRegress` can be used with the <<predict>> function to predict 
 
 === olsRegress Parameters
 
-* `matrix`: The regressor observation matrix. Each row in the matrix represents a single multi-variate regressor observation. Note that there is no need to add an initial unitary column (column of 1's) when specifying a model including an intercept term, this column will be added automatically.
+* `matrix`: The regressor observation matrix.
+Each row in the matrix represents a single multi-variate regressor observation.
+Note that there is no need to add an initial unitary column (column of 1's) when specifying a model including an intercept term, this column will be added automatically.
 * `numeric array`: The outcomes array which matches up with each row in the regressor observation matrix.
 
 === olsRegress Syntax
@@ -1609,7 +1672,9 @@ Tuple: The regression model including the estimated regression parameters and di
 
 == or
 
-The `or` function will return the logical OR of at least 2 boolean parameters. The function will fail to execute if any parameters are non-boolean or null. Returns a boolean value.
+The `or` function will return the logical OR of at least 2 boolean parameters.
+The function will fail to execute if any parameters are non-boolean or null.
+Returns a boolean value.
 
 === or Parameters
 
@@ -1620,7 +1685,8 @@ The `or` function will return the logical OR of at least 2 boolean parameters. T
 
 === or Syntax
 
-The expressions below show the various ways in which you can use the `or` evaluator. At least two parameters are required, but there is no limit to how many you can use.
+The expressions below show the various ways in which you can use the `or` evaluator.
+At least two parameters are required, but there is no limit to how many you can use.
 
 [source,text]
 ----
@@ -1633,8 +1699,8 @@ or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
 == poissonDistribution
 
 The `poissonDistribution` function returns a https://en.wikipedia.org/wiki/Poisson_distribution[poisson probability distribution]
-based on its parameter. This function is part of the probability distribution framework and is designed to
-work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
+based on its parameter.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
 
 === poissonDistribution Parameters
 
@@ -1655,9 +1721,11 @@ The `polyFit` function performs https://en.wikipedia.org/wiki/Curve_fitting#Fitt
 
 === polyFit Parameters
 
-* `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
+* `numeric array`: (Optional) x values.
+If omitted a sequence will be created for the x values.
 * `numeric array`: y values
-* `integer`: (Optional) polynomial degree. Defaults to 3.
+* `integer`: (Optional) polynomial degree.
+Defaults to 3.
 
 === polyFit Returns
 
@@ -1760,7 +1828,8 @@ The supported discreet distributions are:
 
 * `probability distribution`: the probability distribution to compute the probability from.
 * `number`: low value of the range.
-* `number`: (Optional for discrete probability distributions) high value of the range. If the high range is omitted then the probability function will compute a probability for the low range value.
+* `number`: (Optional for discrete probability distributions) high value of the range.
+If the high range is omitted then the probability function will compute a probability for the low range value.
 
 === probability Syntax
 
@@ -1792,7 +1861,8 @@ rank(numericArray)
 
 == raw
 
-The `raw` function will return whatever raw value is the parameter. This is useful for cases where you want to use a string as part of another evaluator.
+The `raw` function will return whatever raw value is the parameter.
+This is useful for cases where you want to use a string as part of another evaluator.
 
 === raw Parameters
 
@@ -1800,7 +1870,9 @@ The `raw` function will return whatever raw value is the parameter. This is usef
 
 === raw Syntax
 
-The expressions below show the various ways in which you can use the `raw` evaluator. Whatever is inside will be returned as-is. Internal evaluators are considered strings and are not evaluated.
+The expressions below show the various ways in which you can use the `raw` evaluator.
+Whatever is inside will be returned as-is.
+Internal evaluators are considered strings and are not evaluated.
 
 [source,text]
 ----
@@ -1900,7 +1972,8 @@ The `sample` function can be used to draw random samples from a probability dist
 === sample Parameters
 
 * `probability distribution` | `Markov Chain`: The distribution or Markov Chain to sample.
-* `integer`: (Optional) Sample size. Defaults to 1.
+* `integer`: (Optional) Sample size.
+Defaults to 1.
 
 === sample Returns
 
@@ -1916,8 +1989,8 @@ sample(markovChain(transitionMatrix), 1000) // Returns 1000 random samples from 
 == scalarAdd
 
 The `scalarAdd` function adds a scalar value to every value in a numeric array or matrix.
-When working with numeric arrays, `scalarAdd` returns a new array with the new values. When working
-with a matrix, `scalarAdd` returns a new matrix with new values.
+When working with numeric arrays, `scalarAdd` returns a new array with the new values.
+When working with a matrix, `scalarAdd` returns a new matrix with new values.
 
 === scalarAdd Parameters
 
@@ -1937,8 +2010,8 @@ numericArray | matrix: Depending on what is being operated on.
 == scalarDivide
 
 The `scalarDivide` function divides each number in numeric array or matrix by a scalar value.
-When working with numeric arrays, `scalarDivide` returns a new array with the new values. When working
-with a matrix, `scalarDivide` returns a new matrix with new values.
+When working with numeric arrays, `scalarDivide` returns a new array with the new values.
+When working with a matrix, `scalarDivide` returns a new matrix with new values.
 
 === scalarDivide Parameters
 
@@ -1958,8 +2031,9 @@ numericArray | matrix: depending on what is being operated on.
 == scalarMultiply
 
 The `scalarMultiply` function multiplies each element in a numeric array or matrix by a
-scalar value. When working with numeric arrays, `scalarMultiply` returns a new array with the new values. When working
-with a matrix, `scalarMultiply` returns a new matrix with new values.
+scalar value.
+When working with numeric arrays, `scalarMultiply` returns a new array with the new values.
+When working with a matrix, `scalarMultiply` returns a new matrix with new values.
 
 === scalarMultiply Parameters
 
@@ -1979,8 +2053,8 @@ numericArray | matrix: depending on what is being operated on
 == scalarSubtract
 
 The `scalarSubtract` function subtracts a scalar value from every value in a numeric array or matrix.
-When working with numeric arrays, `scalarSubtract` returns a new array with the new values. When working
-with a matrix, `scalarSubtract` returns a new matrix with new values.
+When working with numeric arrays, `scalarSubtract` returns a new array with the new values.
+When working with a matrix, `scalarSubtract` returns a new matrix with new values.
 
 === scalarSubtract Parameters
 
@@ -2117,14 +2191,14 @@ if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return 
 
 == spline
 
-The `spline` function performs a cubic spline interpolation (https://en.wikiversity.org/wiki/Cubic_Spline_Interpolation) of a curve
-given a set of x,y coordinates. The return value of the spline function is an
-interpolation function which can be used to <<predict>> values along the curve and generate a <<derivative>> of
+The `spline` function performs a cubic spline interpolation (https://en.wikiversity.org/wiki/Cubic_Spline_Interpolation) of a curve given a set of x,y coordinates.
+The return value of the spline function is an interpolation function which can be used to <<predict>> values along the curve and generate a <<derivative>> of
 the curve.
 
 === spline Parameters
 
-* `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
+* `numeric array`: (Optional) x values.
+If omitted a sequence will be created for the x values.
 * `numeric array`: y values
 
 === spline Syntax
@@ -2157,8 +2231,7 @@ if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then retur
 
 == standardize
 
-The `standardize` function standardizes a numeric array so that values within the array
-have a mean of 0 and standard deviation of 1.
+The `standardize` function standardizes a numeric array so that values within the array have a mean of 0 and standard deviation of 1.
 
 === standardize Parameters
 
@@ -2175,7 +2248,9 @@ numeric array: the standardized values
 
 == sub
 
-The `sub` function will take 2 or more numeric values and subtract them, from left to right. The `sub` function will fail to execute if any of the values are non-numeric. If a null value is found then `null` will be returned as the result.
+The `sub` function will take 2 or more numeric values and subtract them, from left to right.
+The `sub` function will fail to execute if any of the values are non-numeric.
+If a null value is found then `null` will be returned as the result.
 
 === sub Parameters
 
@@ -2186,7 +2261,9 @@ The `sub` function will take 2 or more numeric values and subtract them, from le
 
 === sub Syntax
 
-The expressions below show the various ways in which you can use the `sub` evaluator. The number of these parameters does not matter and is not limited except that at least two parameters are required. Returns a numeric value.
+The expressions below show the various ways in which you can use the `sub` evaluator.
+The number of these parameters does not matter and is not limited except that at least two parameters are required.
+Returns a numeric value.
 
 [source,text]
 ----
@@ -2288,9 +2365,8 @@ matrix: the transposed matrix
 
 == triangularDistribution
 
-The `triangularDistribution` function returns a https://en.wikipedia.org/wiki/Triangular_distribution[triangular probability distribution]
-based on its parameters. This function is part of the
-probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
+The `triangularDistribution` function returns a https://en.wikipedia.org/wiki/Triangular_distribution[triangular probability distribution] based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
 
 === triangularDistribution Parameters
 
@@ -2310,8 +2386,9 @@ Probability distribution function
 == uniformDistribution
 
 The `uniformDistribution` function returns a https://en.wikipedia.org/wiki/Uniform_distribution_(continuous)[continuous uniform probability distribution]
-based on its parameters. See the `<<uniformIntegerDistribution>>` to work with discrete uniform distributions. This function is part of the
-probability distribution framework and is designed to work with the `<<sample>>` and `<<cumulativeProbability>>` functions.
+based on its parameters.
+See the `<<uniformIntegerDistribution>>` to work with discrete uniform distributions.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>` and `<<cumulativeProbability>>` functions.
 
 === uniforDistribution Parameters
 
@@ -2330,8 +2407,9 @@ uniformDistribution(0.0, 100.0)
 == uniformIntegerDistribution
 
 The `uniformIntegerDistribution` function returns a https://en.wikipedia.org/wiki/Discrete_uniform_distribution[discrete uniform probability distribution]
-based on its parameters. See the `<<uniformDistribution>>` to work with continuous uniform distributions. This function is part of the
-probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
+based on its parameters.
+See the `<<uniformDistribution>>` to work with continuous uniform distributions.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
 
 === uniformIntegerDistribution Parameters
 
@@ -2371,8 +2449,8 @@ numeric array | matrix
 == weibullDistribution
 
 The `weibullDistribution` function returns a https://en.wikipedia.org/wiki/Weibull_distribution[Weibull probability distribution]
-based on its parameters. This function is part of the
-probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
+based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
 
 === weibullDistribution Parameters
 
@@ -2391,9 +2469,8 @@ weibullDistribution(.5, 10)
 == zipFDistribution
 
 The `zipFDistribution` function returns a https://en.wikipedia.org/wiki/Zeta_distribution[ZipF distribution]
-based on its parameters. This function is part of the
-probability distribution framework and is designed to work with the `<<sample>>`,
-`<<probability>>` and `<<cumulativeProbability>>` functions.
+based on its parameters.
+This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
 
 === zipFDistribution Parameters
 
