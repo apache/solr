@@ -79,7 +79,8 @@ You control which credentials provider will be used by configuring the `zkCreden
 
 You can always make you own implementation, but Solr comes with two implementations:
 
-* `org.apache.solr.common.cloud.DefaultZkCredentialsProvider`: Its `getCredentials()` returns a list of length zero, or "no credentials used". This is the default.
+* `org.apache.solr.common.cloud.DefaultZkCredentialsProvider`: Its `getCredentials()` returns a list of length zero, or "no credentials used".
+This is the default.
 * `org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider`: This lets you define your credentials using system properties.
 It supports at most one set of credentials.
 ** The schema is "digest".
@@ -99,7 +100,8 @@ You control which ACLs will be added by configuring `zkACLProvider` property in 
 You can always make you own implementation, but Solr comes with:
 
 * `org.apache.solr.common.cloud.DefaultZkACLProvider`: It returns a list of length one for all `zNodePath`-s.
-The single ACL entry in the list is "open-unsafe". This is the default.
+The single ACL entry in the list is "open-unsafe".
+This is the default.
 * `org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider`: This lets you define your ACLs using system properties.
 The `getACLsToAdd()` implementation will apply only admin ACLs to pre-defined sensitive paths as defined by `SecurityAwareZkACLProvider` (`/security.json` and `/security/*`) and both admin and user ACLs to the rest of the contents.
 The two sets of roles will be defined as:
