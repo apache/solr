@@ -112,8 +112,12 @@ function prepare_dir_to_mount {
   # to write to it as the user will fail. To deal with that, set the ACL to allow that.
   # If you can't use setfacl (eg on macOS), you'll have to chown the directory to 8983, or apply world
   # write permissions.
-  if command -v setfacl &> /dev/null; then
-    setfacl -m "u:$userid:rwx" "$folder"
+  if ! command -v setfacl &> /dev/null; then
+    echo "Test case requires the 'setfacl' command but it can not be found"
+    exit 1
+  fi
+  if ! setfacl -m "u:$userid:rwx" "$folder"; then
+    echo "Unable to add permissions for $userid to '$folder'"
   fi
 }
 
