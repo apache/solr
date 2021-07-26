@@ -156,7 +156,6 @@ public class StrUtils {
 
     if (buffer.position() > 0) {
       lst.add(buffer.flip().toString());
-      buffer.clear();
     }
 
     return lst;
