@@ -221,6 +221,25 @@ public class GraphTest extends SolrCloudTestCase {
 
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
 
+    // SOLR-15546: fromNode or toNode contains colon
+    for (String fromNode : new String[] { "foo", "https://foo" }) {
+      for (String toNode : new String[] { "bar", "https://bar" }) {
+        final ShortestPathStream spStream = new ShortestPathStream(zkHost,
+            "collection1",
+            fromNode,
+            toNode,
+            "from_s",
+            "to_s",
+            StreamingTest.mapParams("fq", "predicate_s:knows"),
+            10,
+            3,
+            6);
+
+        spStream.setStreamContext(context);
+        assertTrue(getTuples(spStream).isEmpty());
+      }
+    }
+
     cache.close();
   }
 
