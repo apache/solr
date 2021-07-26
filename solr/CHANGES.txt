@@ -396,7 +396,7 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
 
 ==================  8.9.0 ==================
 
