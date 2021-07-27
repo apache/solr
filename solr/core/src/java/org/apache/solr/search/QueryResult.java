@@ -16,11 +16,15 @@
  */
 package org.apache.solr.search;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+
 /**
  * The result of a search.
  */
 public class QueryResult {
-  
   private boolean partialResults;
   private Boolean segmentTerminatedEarly;
   private DocListAndSet docListAndSet;
@@ -48,6 +52,7 @@ public class QueryResult {
       docListAndSet = new DocListAndSet();
     }
     docListAndSet.docSet = set;
+   // log.error("set docset {}",     docListAndSet.docSet.getBits().length());
   }
   
   public boolean isPartialResults() {

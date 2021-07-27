@@ -134,11 +134,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -161,7 +157,11 @@ public class CoreContainer {
 
   final SolrCores solrCores = new SolrCores(this);
 
-  public static class CoreLoadFailure {
+    public Executor getCollectorExecutor() {
+      return collectorExecutor;
+    }
+
+    public static class CoreLoadFailure {
 
     public final CoreDescriptor cd;
     public final Exception exception;
@@ -246,6 +246,8 @@ public class CoreContainer {
   private volatile SolrClientCache solrClientCache;
 
   private final ObjectCache objectCache = new ObjectCache();
+
+  private final ExecutorService collectorExecutor;
 
   private final ClusterSingletons clusterSingletons = new ClusterSingletons(
       () -> getZkController() != null &&
@@ -390,6 +392,9 @@ public class CoreContainer {
     this.allowPaths = allowPathBuilder.build();
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
+
+    this.collectorExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(6,
+        new SolrNamedThreadFactory("searcherCollector"));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -587,6 +592,7 @@ public class CoreContainer {
     distributedCollectionCommandRunner = Optional.empty();
     allowPaths = null;
     allowListUrlChecker = null;
+    collectorExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -1028,6 +1034,7 @@ public class CoreContainer {
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
+    ExecutorUtil.shutdownAndAwaitTermination(collectorExecutor);
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     isShutDown = true;

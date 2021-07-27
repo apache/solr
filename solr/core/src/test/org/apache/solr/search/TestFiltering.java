@@ -87,19 +87,19 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        // System.out.println("Live: "+bitsString(live.getFixedBitSet()));
-        // System.out.println("Set: "+bitsString(set.getFixedBitSet()));
-        FixedBitSet xor = live.getFixedBitSet().clone();
-        xor.xor(set.getFixedBitSet());
+         System.out.println("Live: "+bitsString(live.getFixedBitSet()));
+         System.out.println("Set: "+bitsString(set.getFixedBitSet()));
+     //   FixedBitSet xor = live.getFixedBitSet().clone();
+     //   xor.xor(set.getFixedBitSet());
         // System.out.println("xor: "+bitsString(xor));
-        assertTrue(set.equals(live));
+        assertEquals(live.getBits(), set.getBits());
 
         cmd.setQuery( QParser.getParser(qstr + " OR id:0", null, req).getQuery() );
         cmd.setFilterList( QParser.getParser(qstr + " OR id:1", null, req).getQuery() );
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue(set.equals(live));
+        assertEquals(live.getBits(), set.getBits());
       }
 
     } finally {

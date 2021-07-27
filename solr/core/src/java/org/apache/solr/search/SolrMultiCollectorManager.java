@@ -132,8 +132,11 @@ public class SolrMultiCollectorManager
 
       @Override
       public final void collect(final int doc) throws IOException {
-        for (LeafCollector leafCollector : leafCollectors)
-          if (leafCollector != null) leafCollector.collect(doc);
+        for (LeafCollector leafCollector : leafCollectors) {
+          if (leafCollector != null) {
+            leafCollector.collect(doc);
+          }
+        }
       }
     }
   }

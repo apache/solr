@@ -247,7 +247,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, String name, DirectoryReader r,
       boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory)
           throws IOException {
-    super(wrapReader(core, r));
+    super(wrapReader(core, r), core.getCoreContainer().getCollectorExecutor());
 
     this.path = path;
     this.directoryFactory = directoryFactory;
@@ -1645,104 +1645,133 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   SearchResult searchCollectorManagers(int len, QueryCommand cmd, Query query,
-                                   boolean needTopDocs, boolean needMaxScore, boolean needDocSet) throws IOException {
+                                       boolean needTopDocs, boolean needMaxScore, boolean needDocSet) throws IOException {
     Collection<CollectorManager<Collector, Object>> collectors = new ArrayList<>();
-    final ScoreMode[] scoreMode = {null};
-    if (needTopDocs) collectors.add(new CollectorManager<>() {
-      @Override
-      public Collector newCollector() throws IOException {
+    ScoreMode scoreMode = null;
+
+    Collector[] firstCollectors = new Collector[3];
+
+    if (needTopDocs) {
+
+      collectors.add(new CollectorManager<>() {
+        @Override
+        public Collector newCollector() throws IOException {
+          @SuppressWarnings("rawtypes")
+          TopDocsCollector collector = buildTopDocsCollector(len, cmd);
+          if (firstCollectors[0] == null) {
+            firstCollectors[0] = collector;
+          }
+          return collector;
+        }
+
+        @Override
         @SuppressWarnings("rawtypes")
-        TopDocsCollector collector = buildTopDocsCollector(len, cmd);
-        if (scoreMode[0] == null) {
-          scoreMode[0] = collector.scoreMode();
-        } else if (scoreMode[0] != collector.scoreMode()) {
-          scoreMode[0] = ScoreMode.COMPLETE;;
-        }
-        return collector;
-      }
+        public Object reduce(Collection collectors) throws IOException {
 
-      @Override
-      @SuppressWarnings("rawtypes")
-      public Object reduce(Collection collectors) throws IOException {
+          TopDocs[] topDocs = new TopDocs[collectors.size()];
 
-        TopDocs[] topDocs = new TopDocs[collectors.size()];
+          int totalHits = -1;
+          int i = 0;
 
-        int totalHits = -1;
-        int i = 0;
-
-        Collector collector;
-        for (Object o : collectors) {
-          collector = (Collector) o;
-          if (collector instanceof TopDocsCollector) {
-            TopDocs td = ((TopDocsCollector) collector).topDocs(0, len);
-            assert td != null : Arrays.asList(topDocs);
-            topDocs[i++] = td;
+          Collector collector;
+          for (Object o : collectors) {
+            collector = (Collector) o;
+            if (collector instanceof TopDocsCollector) {
+              TopDocs td = ((TopDocsCollector) collector).topDocs(0, len);
+              assert td != null : Arrays.asList(topDocs);
+              topDocs[i++] = td;
+            }
           }
+
+          TopDocs mergedTopDocs = null;
+
+          if (topDocs.length > 0 && topDocs[0] != null) {
+            if (topDocs[0] instanceof TopFieldDocs) {
+              TopFieldDocs[] topFieldDocs = Arrays.copyOf(topDocs, topDocs.length, TopFieldDocs[].class);
+              mergedTopDocs = TopFieldDocs.merge(weightSort(cmd.getSort()), len, topFieldDocs);
+            } else {
+              mergedTopDocs = TopDocs.merge(0, len, topDocs);
+            }
+            totalHits = (int) mergedTopDocs.totalHits.value;
+          }
+          return new TopDocsResult(mergedTopDocs, totalHits);
+        }
+      });
+    }
+    if (needMaxScore) {
+      collectors.add(new CollectorManager<>() {
+        @Override
+        public Collector newCollector() throws IOException {
+          MaxScoreCollector collector = new MaxScoreCollector();
+          if (firstCollectors[1] == null) {
+            firstCollectors[1] = collector;
+          }
+          return collector;
         }
 
-        TopDocs mergedTopDocs = null;
+        @Override
+        @SuppressWarnings("rawtypes")
+        public Object reduce(Collection collectors) throws IOException {
 
-        if (topDocs.length > 0 && topDocs[0] != null) {
-          if (topDocs[0] instanceof TopFieldDocs) {
-            TopFieldDocs[] topFieldDocs = Arrays.copyOf(topDocs, topDocs.length, TopFieldDocs[].class);
-            mergedTopDocs = TopFieldDocs.merge(weightSort(cmd.getSort()), len, topFieldDocs);
+          MaxScoreCollector collector;
+          float maxScore = 0.0f;
+          for (Iterator var4 = collectors.iterator(); var4.hasNext(); maxScore = Math.max(maxScore, collector.getMaxScore())) {
+            collector = (MaxScoreCollector) var4.next();
+          }
+
+          return new MaxScoreResult(maxScore);
+        }
+      });
+    }
+    if (needDocSet) {
+      int maxDoc = rawReader.maxDoc();
+      log.error("raw read max={}", rawReader.maxDoc());
+
+      LeafSlice[] leaves = getSlices();
+      int[] docBase = new int[1];
+
+   //   DocSetCollector collector = new DocSetCollector(maxDoc);
+
+      ThreadSafeBitSet bits = new ThreadSafeBitSet(14, 2);
+
+
+      collectors.add(new CollectorManager<>() {
+        @Override
+        public Collector newCollector() throws IOException {
+          int numDocs = 0;
+
+          if (leaves != null) {
+            LeafSlice leaf = leaves[docBase[0]++];
+
+            for (LeafReaderContext reader : leaf.leaves) {
+              numDocs += reader.reader().maxDoc();
+            }
           } else {
-            mergedTopDocs = TopDocs.merge(0, len, topDocs);
+            numDocs = maxDoc();
           }
-          totalHits = (int) mergedTopDocs.totalHits.value;
-        }
-        return new TopDocsResult(mergedTopDocs, totalHits);
-      }
-    });
-    if (needMaxScore) collectors.add(new CollectorManager<>() {
-      @Override
-      public Collector newCollector() throws IOException {
-        MaxScoreCollector collector = new MaxScoreCollector();
-        if (scoreMode[0] == null) {
-          scoreMode[0] = collector.scoreMode();
-        } else if (scoreMode[0] != collector.scoreMode()) {
-          scoreMode[0] = ScoreMode.COMPLETE;;
-        }
-        return collector;
-      }
+          log.error("new docset collector for {} max={}", numDocs, maxDoc());
 
-      @Override
-      @SuppressWarnings("rawtypes")
-      public Object reduce(Collection collectors) throws IOException {
-
-        MaxScoreCollector collector;
-        float maxScore = 0.0f;
-        for (Iterator var4 = collectors.iterator(); var4.hasNext(); maxScore = Math.max(maxScore, collector.getMaxScore())) {
-          collector = (MaxScoreCollector) var4.next();
+          return new ThreadSafeBitSetCollector(bits, maxDoc);
         }
 
-        return new MaxScoreResult(maxScore);
-      }
-    });
-    if (needDocSet) collectors.add(new CollectorManager<>() {
-      @Override
-      public Collector newCollector() throws IOException {
-        DocSetCollector collector = new DocSetCollector(maxDoc());
-        if (scoreMode[0] == null) {
-          scoreMode[0] = collector.scoreMode();
-        } else if (scoreMode[0] != collector.scoreMode()) {
-          scoreMode[0] = ScoreMode.COMPLETE;;
-        }
-        return collector;
-      }
+        @Override
+        @SuppressWarnings({"rawtypes"})
+        public Object reduce(Collection collectors) throws IOException {
 
-      @Override
-      @SuppressWarnings({"rawtypes"})
-      public Object reduce(Collection collectors) throws IOException {
-        DocSet docSet = new BitDocSet(new FixedBitSet(maxDoc()));
-        for (Object o : collectors) {
-          DocSetCollector collector = (DocSetCollector) o;
-          docSet = docSet.union(collector.getDocSet());
+          return new DocSetResult(((ThreadSafeBitSetCollector)collectors.iterator().next()).getDocSet());
         }
-
-        return new DocSetResult(docSet);
+      });
+    }
+    for (Collector collector : firstCollectors) {
+      if (collector != null) {
+        if (scoreMode == null) {
+          scoreMode = collector.scoreMode();
+        } else if (scoreMode != collector.scoreMode()) {
+          scoreMode = ScoreMode.COMPLETE;
+        }
       }
-    });
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
     SolrMultiCollectorManager manager = new SolrMultiCollectorManager(colls);
@@ -1793,8 +1822,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final Object[] result;
     final ScoreMode scoreMode;
 
-    public SearchResult(ScoreMode[] scoreMode, Object[] result) {
-      this.scoreMode = scoreMode[0];
+    public SearchResult(ScoreMode scoreMode, Object[] result) {
+      this.scoreMode = scoreMode;
       this.result = result;
     }
   }
