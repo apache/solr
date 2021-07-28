@@ -56,7 +56,7 @@ The Schema Designer supports JSON, CSV, TSV, XML, and JSON lines (jsonl).
 image::images/schema-designer/analyze-sample-docs.png[image,width=500]
 
 The advantage of pasting sample documents into the text area is that you can edit the sample and see the impact of your changes immediately in the analyzed schema.
-The upload feature is useful if you have large or many sample documents; the Schema Designer API allows up to 5,000 sample documents but in most cases you only need a handful of documents to get started.
+The upload feature is useful if you have large or many sample documents; the Schema Designer API allows up to 1,000 sample documents or a max of 5MB upload, but in most cases you only need a handful of documents to get started.
 
 Click on the *Analyze Documents* button to submit the sample documents to the Schema Designer API to generate your new schema.
 
