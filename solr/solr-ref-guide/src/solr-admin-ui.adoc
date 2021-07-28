@@ -85,6 +85,19 @@ This server resides at https://issues.apache.org/jira/browse/SOLR.
 
 These links cannot be modified without editing the `index.html` in the `server/solr/solr-webapp` directory that contains the Admin UI files.
 
+== Schema Designer
+
+The Schema Designer screen provides an interactive process to create a schema using sample data.
+
+image::images/solr-admin-ui/schema-designer.png[image]
+
+.Only Visible When Using SolrCloud
+[NOTE]
+====
+The Schema Designer is only available on Solr instances running <<cluster-types.adoc#solrcloud-mode,SolrCloud>>.
+====
+
+
 == Collection-Specific Tools
 
 In the left-hand navigation bar, you will see a pull-down menu titled Collection Selector that can be used to access collection specific administration screens.
@@ -127,6 +140,7 @@ Here are sections throughout the Guide describing each screen of the Admin UI:
 |===
 | <<configuring-logging.adoc#logging-screen,Logging Screen>>: Recent log messages and configuration of log levels.
 | <<cloud-screens.adoc#,Cloud Screens>>: Access to SolrCloud node data and status.
+| <<schema-designer.adoc#,Schema Designer>>: Interactively create a schema using sample data.
 | <<collections-core-admin.adoc#,Collections / Core Admin>>: Collection or Core management tools.
 | <<jvm-settings.adoc#java-properties-screen,Java Properties Screen>>: Java information for each core.
 | <<thread-dump.adoc#,Thread Dump Screen>>: Detailed thread and state information.
