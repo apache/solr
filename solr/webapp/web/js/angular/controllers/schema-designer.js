@@ -96,6 +96,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.refresh = function () {
+    $scope.isSchemaDesignerEnabled = false;
+
     delete $scope.helpId;
 
     $scope.updateStatusMessage = "";
@@ -141,23 +143,35 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     $scope.query = {q: '*:*', sortBy: 'score', sortDir: 'desc'};
 
     SchemaDesigner.get({path: "configs"}, function (data) {
+      $scope.isSchemaDesignerEnabled = true;
+
       $scope.schemas = [];
-      $scope.schemasWithDefault = [];
-      $scope.schemasWithDefault.push("_default");
+      $scope.publishedSchemas = ["_default"];
 
       for (var s in data.configSets) {
-        $scope.schemasWithDefault.push(s);
-        if (data.configSets[s]) {
+        // 1 means published but not editable
+        if (data.configSets[s] !== 1) {
           $scope.schemas.push(s);
         }
+
+        // 0 means not published yet (so can't copy from it yet)
+        if (data.configSets[s] > 0) {
+          $scope.publishedSchemas.push(s);
+        }
       }
+
       $scope.schemas.sort();
-      $scope.schemasWithDefault.sort();
+      $scope.publishedSchemas.sort();
 
       // if no schemas available to select, open the pop-up immediately
-      if ($scope.schemas.length == 0) {
+      if ($scope.schemas.length === 0) {
         $scope.firstSchemaMessage = true;
         $scope.showNewSchemaDialog();
+      }
+    }, function(e) {
+      if (e.status === 403) {
+        $scope.isSchemaDesignerEnabled = false;
+        $scope.hideAll();
       }
     });
   };
@@ -266,7 +280,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       return;
     }
 
-    if ($scope.schemasWithDefault.includes($scope.newSchema)) {
+    if ($scope.publishedSchemas.includes($scope.newSchema)) {
       $scope.addMessage = "Schema '" + $scope.newSchema + "' already exists!";
       return;
     }
@@ -277,7 +291,6 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
     $scope.resetSchema();
     $scope.schemas.push($scope.newSchema);
-    $scope.schemasWithDefault.push($scope.newSchema);
     $scope.showNewSchema = false;
     $scope.currentSchema = $scope.newSchema;
     $scope.sampleMessage = "Please upload or paste some sample documents to analyze for building the '" + $scope.currentSchema + "' schema.";

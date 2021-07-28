@@ -335,16 +335,16 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     rsp.getValues().addAll(Collections.singletonMap("configSets", listEnabledConfigs()));
   }
 
-  protected Map<String, Boolean> listEnabledConfigs() throws IOException {
+  protected Map<String, Integer> listEnabledConfigs() throws IOException {
     List<String> configsInZk = configSetHelper.listConfigsInZk();
-    final Map<String, Boolean> configs = configsInZk.stream()
+    final Map<String, Integer> configs = configsInZk.stream()
         .filter(c -> !excludeConfigSetNames.contains(c) && !c.startsWith(DESIGNER_PREFIX))
-        .collect(Collectors.toMap(c -> c, c -> !settingsDAO.isDesignerDisabled(c)));
+        .collect(Collectors.toMap(c -> c, c -> settingsDAO.isDesignerDisabled(c) ? 1 : 2));
 
     // add the in-progress but drop the _designer prefix
     configsInZk.stream().filter(c -> c.startsWith(DESIGNER_PREFIX))
         .map(c -> c.substring(DESIGNER_PREFIX.length()))
-        .forEach(c -> configs.putIfAbsent(c, true));
+        .forEach(c -> configs.putIfAbsent(c, 0));
 
     return configs;
   }
