@@ -78,6 +78,40 @@ Previously uploaded sample documents are indexed in the temporary collection eve
 Click on the *Edit Documents* button on the *Query Results* panel to load a JSON representation of indexed documents into the text area.
 ====
 
+=== Iteratively Post Sample Documents
+
+If you have sample documents spread across multiple files, you can POST them to the Schema Designer API and then load your schema in the Designer UI to design your schema.
+Here's an example of how to use the API to "prep" a new schema and then iteratively post Solr's techproducts example files to the Schema Designer:
+
+[source,bash]
+----
+#!/bin/bash
+
+SOLR_INSTALL_DIR="path/to/solr/install"
+
+DIR_WITH_SAMPLE_FILES="$SOLR_INSTALL_DIR/example/exampledocs"
+
+SOLR_URL=http://localhost:8983
+
+MY_NEW_SCHEMA="myNewSchema"
+
+echo "Preparing new schema: ${MY_NEW_SCHEMA}"
+curl -s -o /dev/null -w "%{http_code}" -XPOST \
+  "$SOLR_URL/api/schema-designer/prep?configSet=${MY_NEW_SCHEMA}&copyFrom=_default"
+echo ""
+
+SAMPLE_FILES=( $(ls ${DIR_WITH_SAMPLE_FILES}/*.{xml,csv,json,jsonl}) )
+for f in "${SAMPLE_FILES[@]}"
+do
+  echo "POST'ing contents of $f to Schema Designer analyze endpoint ..."
+  curl -s -o /dev/null -w "%{http_code}" -XPOST \
+    "$SOLR_URL/api/schema-designer/analyze?configSet=${MY_NEW_SCHEMA}" -d @"$f"
+  echo ""
+done
+----
+
+After sending the sample documents to the Schema Designer `/analyze` endpoint, you can open the schema in the UI in your browser.
+
 == Schema Editor
 
 After analyzing your sample documents, the Schema Designer loads the schema in the *Schema Editor* in the middle panel.
