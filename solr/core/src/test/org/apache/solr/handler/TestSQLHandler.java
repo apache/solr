@@ -2218,4 +2218,20 @@ public class TestSQLHandler extends SolrCloudTestCase {
     String country = id % 2 == 0 ? "US" : "CA";
     return updateRequest.add("id", String.valueOf(id), "str_s", String.format(Locale.ROOT, padFmt, id % cardinality), "country_s", country);
   }
+
+  @Test
+  public void testSelectEmptyField() throws Exception {
+    new UpdateRequest()
+        .add("id", "01")
+        .add("id", "02")
+        .add("id", "03")
+        .add("id", "04")
+        .add("id", "05")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    // stringx is declared in the schema but has no docs
+    expectResults("SELECT id, stringx FROM $ALIAS", 5);
+    // notafield_i matches a dynamic field pattern but has no docs, so don't allow this
+    expectThrows(IOException.class, () -> expectResults("SELECT id, stringx, notafield_i FROM $ALIAS", 5));
+  }
 }
