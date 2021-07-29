@@ -173,7 +173,7 @@ limitations under the License.
                 </ul>
               </li>
 
-              <li ng-show="isCloudEnabled" id="schema-designer" class="global" ng-class="{active:page=='schema-designer'}"><p><a href="#/~schema-designer">Schema Designer</a></p></li>
+              <li ng-show="isCloudEnabled && isSchemaDesignerEnabled" id="schema-designer" class="global" ng-class="{active:page=='schema-designer'}"><p><a href="#/~schema-designer">Schema Designer</a></p></li>
 
               <li ng-show="isCloudEnabled" id="collections" class="global" ng-class="{active:page=='collections'}"><p><a href="#/~collections">Collections</a></p></li>
               <li ng-hide="isCloudEnabled" id="cores" class="global" ng-class="{active:page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>
