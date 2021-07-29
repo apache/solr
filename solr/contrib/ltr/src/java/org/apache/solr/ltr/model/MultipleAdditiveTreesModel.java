@@ -122,7 +122,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   public class RegressionTreeNode {
-    private static final float NODE_SPLIT_SLACK = 1E-6f;
 
     private float value = 0f;
     private String feature;
@@ -149,11 +148,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public void setThreshold(float threshold) {
-      this.threshold = threshold + NODE_SPLIT_SLACK;
+      this.threshold = threshold;
     }
 
     public void setThreshold(String threshold) {
-      this.threshold = Float.parseFloat(threshold) + NODE_SPLIT_SLACK;
+      this.threshold = Float.parseFloat(threshold);
     }
 
     @SuppressWarnings({"unchecked"})
@@ -177,7 +176,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         sb.append(value);
       } else {
         sb.append("(feature=").append(feature);
-        sb.append(",threshold=").append(threshold.floatValue()-NODE_SPLIT_SLACK);
+        sb.append(",threshold=").append(threshold.floatValue());
         sb.append(",left=").append(left);
         sb.append(",right=").append(right);
         sb.append(')');
@@ -292,10 +291,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         return 0f;
       }
 
-      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
-        regressionTreeNode = regressionTreeNode.left;
-      } else {
+      if (featureVector[regressionTreeNode.featureIndex] >= regressionTreeNode.threshold) {
         regressionTreeNode = regressionTreeNode.right;
+      } else {
+        regressionTreeNode = regressionTreeNode.left;
       }
     }
   }

@@ -1,0 +1,23 @@
+{
+    "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+    "name":"multipleadditivetreesmodel_split_at_threshold",
+    "features":[
+        { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"}
+    ],
+    "params":{
+        "trees": [
+            {
+                "weight" : "1f",
+                "root": {
+                    "feature": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
+                    "threshold": "1.0f",
+                    "left" : {
+                        "value" : "-100"
+                    }, "right": {
+                        "value" : "100"
+                    }
+                }
+            }
+        ]
+    }
+}

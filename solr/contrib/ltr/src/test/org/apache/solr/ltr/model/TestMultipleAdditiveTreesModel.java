@@ -119,6 +119,31 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
+  public void testMultipleAdditiveTreesSplitAtThreshold() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features.json");
+    loadModels("multipleadditivetreesmodel_split_at_threshold.json");
+
+    doTestSplitsRightAtIntegerThresholdValues();
+  }
+
+  private void doTestSplitsRightAtIntegerThresholdValues() throws Exception {
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("rows", "3");
+    query.add("fl", "*,score");
+
+    // Regular scores
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==1.0");
+
+    // No match scores since user_query not passed in to external feature info
+    // and feature depended on it.
+    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel_split_at_threshold efi.user_query=dsjkafljjk}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==100.0");
+  }
+
+  @Test
   public void multipleAdditiveTreesTestNoParams() throws Exception {
     final ModelException expectedException =
         new ModelException("no trees declared for model multipleadditivetreesmodel_no_params");
@@ -249,5 +274,5 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     });
     assertEquals(expectedException.toString(), ex.toString());
   }
- 
+
 }
