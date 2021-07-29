@@ -96,7 +96,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.refresh = function () {
-    $scope.isSchemaDesignerEnabled = false;
+    $scope.isSchemaDesignerEnabled = true;
 
     delete $scope.helpId;
 
@@ -143,7 +143,6 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     $scope.query = {q: '*:*', sortBy: 'score', sortDir: 'desc'};
 
     SchemaDesigner.get({path: "configs"}, function (data) {
-      $scope.isSchemaDesignerEnabled = true;
 
       $scope.schemas = [];
       $scope.publishedSchemas = ["_default"];
@@ -263,6 +262,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
   $scope.addSchema = function () {
     $scope.firstSchemaMessage = false;
+    delete $scope.addMessage;
 
     if (!$scope.newSchema) {
       $scope.addMessage = "Please provide a schema name!";
@@ -280,11 +280,12 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       return;
     }
 
-    if ($scope.publishedSchemas.includes($scope.newSchema)) {
+    if ($scope.publishedSchemas.includes($scope.newSchema) || $scope.schemas.includes($scope.newSchema)) {
       $scope.addMessage = "Schema '" + $scope.newSchema + "' already exists!";
       return;
     }
 
+    delete $scope.addMessage;
     if (!$scope.copyFrom) {
       $scope.copyFrom = "_default";
     }
