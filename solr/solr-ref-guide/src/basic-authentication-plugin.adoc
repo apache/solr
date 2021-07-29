@@ -90,7 +90,6 @@ Even with Basic authentication enabled, you should not unnecessarily expose Solr
 An Authentication API allows modifying user IDs and passwords.
 The API provides an endpoint with specific commands to set user details or delete a user.
 
-
 === API Entry Point
 
 * v1: `\http://localhost:8983/solr/admin/authentication`
