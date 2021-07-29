@@ -394,8 +394,6 @@ Bug Fixes
 
 * SOLR-15531: SignificantTerms streaming function should not fail on empty collections (Benedikt Arnold via Mike Drob)
 
-* SOLR-15546: ShortestPathStream to handle ids with colons. (Kenny Knecht, Christine Poerschke)
-
 Other Changes
 ---------------------
 (No changes)

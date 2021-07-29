@@ -433,7 +433,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       StringBuffer nodeQuery = new StringBuffer();
 
       for(String node : nodes) {
-        nodeQuery.append('"').append(node).append('"').append(" ");
+        nodeQuery.append(node).append(" ");
       }
 
       String q = fromField + ":(" + nodeQuery.toString().trim() + ")";
