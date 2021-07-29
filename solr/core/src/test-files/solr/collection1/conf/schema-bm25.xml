@@ -35,6 +35,7 @@
       <float name="b">0.76</float>
     </similarity>
   </fieldType>
+  
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
