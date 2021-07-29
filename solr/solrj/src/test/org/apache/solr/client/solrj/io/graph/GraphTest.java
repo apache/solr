@@ -88,6 +88,8 @@ public class GraphTest extends SolrCloudTestCase {
         .add(id, "11", "from_s", "mary", "to_s", "max", "predicate_s", "knows")
         .add(id, "12", "from_s", "mary", "to_s", "jim", "predicate_s", "knows")
         .add(id, "13", "from_s", "mary", "to_s", "steve", "predicate_s", "knows")
+        .add(id, "14", "from_s", "https://aaa", "to_s", "https://bbb", "predicate_s", "links")
+        .add(id, "15", "from_s", "https://bbb", "to_s", "https://ccc", "predicate_s", "links")
         .commit(cluster.getSolrClient(), COLLECTION);
 
     List<Tuple> tuples = null;
@@ -220,6 +222,56 @@ public class GraphTest extends SolrCloudTestCase {
     }
 
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
+
+    final boolean with_SOLR_15546_fix = false;
+
+    // SOLR-15546: fromNode and toNode contains colon
+    stream = new ShortestPathStream(zkHost,
+        "collection1",
+        with_SOLR_15546_fix && random().nextBoolean() ? "https://aaa" : "\"https://aaa\"",
+        "https://bbb",
+        "from_s",
+        "to_s",
+        StreamingTest.mapParams("fq", "predicate_s:links"),
+        10,
+        3,
+        6);
+
+    stream.setStreamContext(context);
+    paths = new HashSet<>();
+    tuples = getTuples(stream);
+    assertTrue(tuples.size() == 1);
+
+    for(Tuple tuple : tuples) {
+      paths.add(tuple.getStrings("path").toString());
+    }
+
+    assertTrue(paths.contains("[https://aaa, https://bbb]"));
+
+    if (with_SOLR_15546_fix) {
+    // SOLR-15546: fromNode and toNode and interim node contains colon
+    stream = new ShortestPathStream(zkHost,
+        "collection1",
+        with_SOLR_15546_fix && random().nextBoolean() ? "https://aaa" : "\"https://aaa\"",
+        "https://ccc",
+        "from_s",
+        "to_s",
+        StreamingTest.mapParams("fq", "predicate_s:links"),
+        10,
+        3,
+        6);
+
+    stream.setStreamContext(context);
+    paths = new HashSet<>();
+    tuples = getTuples(stream);
+    assertTrue(tuples.size() == 1);
+
+    for(Tuple tuple : tuples) {
+      paths.add(tuple.getStrings("path").toString());
+    }
+
+    assertTrue(paths.contains("[https://aaa, https://bbb, https://ccc]"));
+    }
 
     cache.close();
   }
