@@ -329,7 +329,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     rsp.getValues().addAll(Collections.singletonMap("collections", configSetHelper.listCollectionsForConfig(configSet)));
   }
 
-  @EndPoint(method = GET, path = "/schema-designer/configs", permission = CONFIG_READ_PERM)
+  // CONFIG_EDIT_PERM is required here since this endpoint is used by the UI to determine if the user has access to the Schema Designer UI
+  @EndPoint(method = GET, path = "/schema-designer/configs", permission = CONFIG_EDIT_PERM)
   @SuppressWarnings("unchecked")
   public void listConfigs(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     rsp.getValues().addAll(Collections.singletonMap("configSets", listEnabledConfigs()));
