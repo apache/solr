@@ -87,7 +87,7 @@ These links cannot be modified without editing the `index.html` in the `server/s
 
 == Schema Designer
 
-The Schema Designer screen provides an interactive process to create a schema using sample data.
+The <<schema-designer.adoc#,Schema Designer>> screen provides an interactive experience to create a schema using sample data.
 
 image::images/solr-admin-ui/schema-designer.png[image]
 
