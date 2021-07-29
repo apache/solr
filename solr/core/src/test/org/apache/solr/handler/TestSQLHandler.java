@@ -2220,6 +2220,20 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   @Test
+  public void testSelectStarWithLimit() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo", "a_i", "2", "d_s", "a")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT * FROM $ALIAS LIMIT 100", 4);
+    // select * w/o limit is not supported by Solr SQL
+    expectThrows(IOException.class, () -> expectResults("SELECT * FROM $ALIAS", -1));
+  }
+
+  @Test
   public void testSelectEmptyField() throws Exception {
     new UpdateRequest()
         .add("id", "01")
