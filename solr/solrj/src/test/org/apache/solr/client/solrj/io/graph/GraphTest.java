@@ -223,12 +223,10 @@ public class GraphTest extends SolrCloudTestCase {
 
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
 
-    final boolean with_SOLR_15546_fix = false;
-
     // SOLR-15546: fromNode and toNode contains colon
     stream = new ShortestPathStream(zkHost,
         "collection1",
-        with_SOLR_15546_fix && random().nextBoolean() ? "https://aaa" : "\"https://aaa\"",
+        random().nextBoolean() ? "https://aaa" : "\"https://aaa\"",
         "https://bbb",
         "from_s",
         "to_s",
@@ -248,11 +246,10 @@ public class GraphTest extends SolrCloudTestCase {
 
     assertTrue(paths.contains("[https://aaa, https://bbb]"));
 
-    if (with_SOLR_15546_fix) {
     // SOLR-15546: fromNode and toNode and interim node contains colon
     stream = new ShortestPathStream(zkHost,
         "collection1",
-        with_SOLR_15546_fix && random().nextBoolean() ? "https://aaa" : "\"https://aaa\"",
+        random().nextBoolean() ? "https://aaa" : "\"https://aaa\"",
         "https://ccc",
         "from_s",
         "to_s",
@@ -271,7 +268,6 @@ public class GraphTest extends SolrCloudTestCase {
     }
 
     assertTrue(paths.contains("[https://aaa, https://bbb, https://ccc]"));
-    }
 
     cache.close();
   }
