@@ -288,6 +288,11 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
+      public Fields getTermVectors(int docID) {
+        return null;
+      }
+
+      @Override
       public int numDocs() {
         return maxDoc;
       }
@@ -304,11 +309,6 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       public Terms terms(String field) throws IOException {
-        return null;
-      }
-
-      @Override
-      public Fields getTermVectors(int doc) {
         return null;
       }
 
@@ -353,7 +353,8 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public TopDocs searchNearestVectors(String field, float[] target, int k, int fanout) {
+      public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs)
+          throws IOException {
         return null;
       }
 
