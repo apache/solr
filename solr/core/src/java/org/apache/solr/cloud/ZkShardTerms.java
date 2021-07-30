@@ -103,7 +103,7 @@ public class ZkShardTerms implements AutoCloseable{
     ensureTermNodeExist();
     refreshTerms();
     retryRegisterWatcher();
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   /**
@@ -154,7 +154,7 @@ public class ZkShardTerms implements AutoCloseable{
     synchronized (listeners) {
       listeners.clear();
     }
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   // package private for testing, only used by tests

@@ -69,7 +69,8 @@ The first has grown somewhat organically as Solr has developed over time, but th
 In many cases, but not all, the parameters and outputs of API calls are the same between the two styles.
 In all cases the paths and endpoints used are different.
 
-Throughout this Guide, we have added examples of both styles with sections labeled "V1 API" and "V2 API". As of the 7.2 version of this Guide, these examples are not yet complete - more coverage will be added as future versions of the Guide are released.
+Throughout this Guide, we have added examples of both styles with sections labeled "V1 API" and "V2 API".
+As of the 7.2 version of this Guide, these examples are not yet complete - more coverage will be added as future versions of the Guide are released.
 
 The section <<v2-api.adoc#,V2 API>> provides more information about how to work with the new API structure, including how to disable it if you choose to do so.
 

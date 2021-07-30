@@ -230,7 +230,8 @@ ssh -n trinity10.lan "docker pull brandnetworks/tcpproxy && docker run -p 8001 -
 docker port zksolrproxy 8002
 ----
 
-Or use a suitably configured HAProxy to round-robin between all Solr nodes. Or, instead of the overlay network, use http://www.projectcalico.org[Project Calico] and configure L3 routing so you do not need to mess with proxies.
+Or use a suitably configured HAProxy to round-robin between all Solr nodes.
+Or, instead of the overlay network, use http://www.projectcalico.org[Project Calico] and configure L3 routing so you do not need to mess with proxies.
 
 Now I can get to Solr on `http://trinity10:32774/solr/#/`.
 In the Cloud -> Tree -> /live_nodes view I see the Solr nodes.

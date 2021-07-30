@@ -331,6 +331,8 @@ Other Changes
 
 * SOLR-14857: Add optional gradle property to run docker tests in parallel (hossman, Houston Putman)
 
+* SOLR-15309: Add missing IntelliJ IDEA entries to the .gitignore file (Pushkar Raste via Anshum Gupta)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -374,18 +376,29 @@ Improvements
 * SOLR-15499: StatsStream implement ParallelMetricsRollup to allow for tiered computation of SQL metrics
   over collection aliases backed by many collections, potentially with many shards in each (Timothy Potter)
 
+* SOLR-15525: Read ZK credentials from a file specified using a system property instead of exposing plain-text
+  credentials as system properties (Timothy Potter)
+
+* SOLR-15549: ZkStateReader now supports connecting to 9.0 Solr Clouds (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
+
+* SOLR-15496: Reuse comparator objects in contrib/ltr rescorer classes. (marcosfpr via Christine Poerschke)
 
 Bug Fixes
 ---------------------
 * SOLR-15311: Support async parameter in MODIFYCOLLECTION
   (Nazerke Seidan, Christine Poerschke, David Smiley)
 
+* SOLR-15531: SignificantTerms streaming function should not fail on empty collections (Benedikt Arnold via Mike Drob)
+
+* SOLR-15482: Cross-collection join fixed to ignore documents that do not contain value in "from" field (hossman)
+
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
 
 ==================  8.9.0 ==================
 

@@ -229,7 +229,8 @@ http://localhost:8983/solr/gettingstarted/replication?command=restorestatus&wt=x
 </response>
 ----
 
-The status value can be "In Progress", "success" or "failed". If it failed then an "exception" will also be sent in the response.
+The status value can be "In Progress", "success" or "failed".
+If it failed then an "exception" will also be sent in the response.
 
 === Create Snapshot API
 

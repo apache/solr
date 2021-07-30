@@ -170,6 +170,10 @@ Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a pre
 See for example https://solr.apache.org/guide/8_8/cluster-node-management.html#migratestateforma[Solr 8.8 Ref Guide].
 // Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
+* If you're using a SolrJ CloudClient to connect to your Solr cluster, you must be using SolrJ version 8.10 or higher (8.x) when upgrading your SolrCloud from 8.x to 9.x.
+Otherwise, SolrJ will not be able to connect to the cluster once it has upgraded to Solr 9.
+Once you have upgraded all Solr clusters that the client is connecting to, you can upgrade the SolrJ client to 9.x.
+
 * If you're using Solr in standalone mode with the <<query-elevation-component.adoc#,Query Elevation Component>> with it's elevation file in the data directory, you'll have to move it to the <<config-sets.adoc#,Configset>> instead.
 The only reason QEC supported the data directory was to support loading its changes on a commit instead of a more expensive core reload.
 That feature now works from the configset dir too.

@@ -450,7 +450,8 @@ random(baskets,
        fl="basketID")
 ----
 
-In the example above the `random` function is searching the baskets collections for all rows where "productID:productX". It will return 100 pseudo-random results.
+In the example above the `random` function is searching the baskets collections for all rows where "productID:productX".
+It will return 100 pseudo-random results.
 The field list returned is the basketID.
 
 == significantTerms

@@ -447,7 +447,8 @@ The results are typically displayed in a second table showing the summarized dat
 Pivot faceting lets you create a summary table of the results from a faceting documents by multiple fields.
 
 Another way to look at it is that the query produces a Decision Tree, in that Solr tells you "for facet A, the constraints/counts are X/N, Y/M, etc.
-If you were to constrain A by X, then the constraint counts for B would be S/P, T/Q, etc.". In other words, it tells you in advance what the "next" set of facet results would be for a field if you apply a constraint from the current facet results.
+If you were to constrain A by X, then the constraint counts for B would be S/P, T/Q, etc."
+In other words, it tells you in advance what the "next" set of facet results would be for a field if you apply a constraint from the current facet results.
 
 `facet.pivot`::
 +
