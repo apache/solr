@@ -4,7 +4,7 @@ site:
   start_page: solr::index.adoc
 content:
   sources:
-  - url: /Users/cass/solr-repos/solr-fork
+  - url: ../../
     branches: HEAD
     start_path: solr/solr-ref-guide
 ui:
