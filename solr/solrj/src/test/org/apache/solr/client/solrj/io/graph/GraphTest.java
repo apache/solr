@@ -72,6 +72,11 @@ public class GraphTest extends SolrCloudTestCase {
   // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testShortestPathStream() throws Exception {
 
+    final boolean with_SOLR_15546_fix = false;
+
+    final String ORIGINAL_TITLE = random().nextBoolean() ? "Original 'P' paperback" : "Original \"H\" hardback";
+    final String TRANSLATED_TITLE = "Translation";
+
     new UpdateRequest()
         .add(id, "0", "from_s", "jim", "to_s", "mike", "predicate_s", "knows")
         .add(id, "1", "from_s", "jim", "to_s", "dave", "predicate_s", "knows")
@@ -88,8 +93,16 @@ public class GraphTest extends SolrCloudTestCase {
         .add(id, "11", "from_s", "mary", "to_s", "max", "predicate_s", "knows")
         .add(id, "12", "from_s", "mary", "to_s", "jim", "predicate_s", "knows")
         .add(id, "13", "from_s", "mary", "to_s", "steve", "predicate_s", "knows")
+        // SOLR-15546: fromNode and toNode contains colon
         .add(id, "14", "from_s", "https://aaa", "to_s", "https://bbb", "predicate_s", "links")
         .add(id, "15", "from_s", "https://bbb", "to_s", "https://ccc", "predicate_s", "links")
+        // SOLR-15546: fromNode and toNode contains space
+        .add(id, "16", "from_s", "Author", "to_s", TRANSLATED_TITLE, "predicate_s", "author_to_book")
+        .add(id, "17", "from_s", TRANSLATED_TITLE, "to_s", "Translator", "predicate_s", "book_to_translator")
+        .add(id, "18", "from_s", "Ann Author", "to_s", TRANSLATED_TITLE, "predicate_s", "author_to_book")
+        .add(id, "19", "from_s", TRANSLATED_TITLE, "to_s", "Tim Translator", "predicate_s", "book_to_translator")
+        .add(id, "22", "from_s", "Ann Author", "to_s", ORIGINAL_TITLE, "predicate_s", "author_to_book")
+        .add(id, "23", "from_s", ORIGINAL_TITLE, "to_s", "Tim Translator", "predicate_s", "book_to_translator")
         .commit(cluster.getSolrClient(), COLLECTION);
 
     List<Tuple> tuples = null;
@@ -223,12 +236,11 @@ public class GraphTest extends SolrCloudTestCase {
 
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
 
-    final boolean with_SOLR_15546_fix = false;
-
+    if (with_SOLR_15546_fix) {
     // SOLR-15546: fromNode and toNode contains colon
     stream = new ShortestPathStream(zkHost,
         "collection1",
-        with_SOLR_15546_fix && random().nextBoolean() ? "https://aaa" : "\"https://aaa\"",
+        "https://aaa",
         "https://bbb",
         "from_s",
         "to_s",
@@ -248,11 +260,10 @@ public class GraphTest extends SolrCloudTestCase {
 
     assertTrue(paths.contains("[https://aaa, https://bbb]"));
 
-    if (with_SOLR_15546_fix) {
     // SOLR-15546: fromNode and toNode and interim node contains colon
     stream = new ShortestPathStream(zkHost,
         "collection1",
-        with_SOLR_15546_fix && random().nextBoolean() ? "https://aaa" : "\"https://aaa\"",
+        "https://aaa",
         "https://ccc",
         "from_s",
         "to_s",
@@ -271,6 +282,42 @@ public class GraphTest extends SolrCloudTestCase {
     }
 
     assertTrue(paths.contains("[https://aaa, https://bbb, https://ccc]"));
+    }
+
+    // SOLR-15546: fromNode and toNode contains colon
+    stream = new ShortestPathStream(zkHost,
+        "collection1",
+        "Ann Author",
+        "Tim Translator",
+        "from_s",
+        "to_s",
+        StreamingTest.mapParams(),
+        10,
+        3,
+        6);
+
+    stream.setStreamContext(context);
+    paths = new HashSet<>();
+    tuples = getTuples(stream);
+
+    for(Tuple tuple : tuples) {
+      paths.add(tuple.getStrings("path").toString());
+    }
+
+    if (with_SOLR_15546_fix) {
+      if (ORIGINAL_TITLE.contains("\"")) {
+        assertEquals(1, tuples.size());
+        // double quotes in the interim ORIGINAL_TITLE node were not matched
+        assertTrue(paths.contains("[Ann Author, "+TRANSLATED_TITLE+", Tim Translator]"));
+      } else {
+        assertEquals(2, tuples.size());
+        assertTrue(paths.contains("[Ann Author, "+ORIGINAL_TITLE+", Tim Translator]"));
+        assertTrue(paths.contains("[Ann Author, "+TRANSLATED_TITLE+", Tim Translator]"));
+      }
+    } else {
+      assertEquals(1, tuples.size());
+      // "Ann Author" fromNode got interpreted as "Ann" OR "Author"
+      assertTrue(paths.contains("[Author, "+TRANSLATED_TITLE+", Tim Translator]"));
     }
 
     cache.close();
