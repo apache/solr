@@ -1,6 +1,4 @@
 = JSON Query DSL
-:solr-root-path: ../../
-:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -57,7 +55,7 @@ curl -X GET "http://localhost:8983/solr/techproducts/query?q=name:iPod"
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-basic]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-basic]
 ----
 ====
 --
@@ -82,7 +80,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-1]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-1]
 ----
 ====
 --
@@ -107,7 +105,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-2]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-2]
 ----
 ====
 --
@@ -137,7 +135,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-3]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-3]
 ----
 ====
 --
@@ -167,7 +165,7 @@ curl -X GET "http://localhost:8983/solr/techproducts/query?q={!boost b=log(popul
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-basic]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-basic]
 ----
 ====
 --
@@ -198,7 +196,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-1]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-1]
 ----
 ====
 --
@@ -233,7 +231,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-2]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-2]
 ----
 ====
 --
@@ -272,7 +270,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-bool]
 ----
 ====
 --
@@ -305,7 +303,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-condensed]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-bool-condensed]
 ----
 ====
 --
@@ -365,7 +363,7 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-filter]
+include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-bool-filter]
 ----
 ====
 --
@@ -437,7 +435,7 @@ curl -X POST http://localhost:8983/solr/techproducts/select -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-tagged-query]
+include::example$JsonRequestApiTest.java[tag=solrj-tagged-query]
 ----
 ====
 --

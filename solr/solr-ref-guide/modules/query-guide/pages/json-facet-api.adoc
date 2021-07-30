@@ -1,7 +1,5 @@
 = JSON Facet API
 :page-children: json-faceting-domain-changes
-:solr-root-path: ../../
-:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -69,7 +67,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-simple-terms-facet]
+include::example$JsonRequestApiTest.java[tag=solrj-json-simple-terms-facet]
 ----
 ====
 --
@@ -127,7 +125,7 @@ json.facet={
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-facet-1]
+include::example$JsonRequestApiTest.java[tag=solrj-json-metrics-facet-1]
 ----
 ====
 --
@@ -184,7 +182,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet-2]
+include::example$JsonRequestApiTest.java[tag=solrj-json-terms-facet-2]
 ----
 ====
 --
@@ -260,7 +258,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-facet-simple]
+include::example$JsonRequestApiTest.java[tag=solrj-json-query-facet-simple]
 ----
 ====
 --
@@ -296,7 +294,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-facet-expanded]
+include::example$JsonRequestApiTest.java[tag=solrj-json-query-facet-expanded]
 ----
 ====
 --
@@ -344,7 +342,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-range-facet-simple]
+include::example$JsonRequestApiTest.java[tag=solrj-json-range-facet-simple]
 ----
 ====
 --
@@ -542,7 +540,7 @@ curl http://localhost:8983/solr/spatialdata/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiHeatmapFacetingTest.java[tag=solrj-json-heatmap-facet-1]
+include::example$JsonRequestApiHeatmapFacetingTest.java[tag=solrj-json-heatmap-facet-1]
 ----
 ====
 --
@@ -622,7 +620,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-facet-simple]
+include::example$JsonRequestApiTest.java[tag=solrj-json-metrics-facet-simple]
 ----
 ====
 --
@@ -662,7 +660,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-facet-expanded]
+include::example$JsonRequestApiTest.java[tag=solrj-json-metrics-facet-expanded]
 ----
 ====
 --
@@ -707,7 +705,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-simple-terms-facet]
+include::example$JsonRequestApiTest.java[tag=solrj-json-simple-terms-facet]
 ----
 ====
 --
@@ -750,7 +748,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-facet]
+include::example$JsonRequestApiTest.java[tag=solrj-json-nested-cat-facet]
 ----
 ====
 --
@@ -816,7 +814,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-facet-sorted]
+include::example$JsonRequestApiTest.java[tag=solrj-json-nested-cat-facet-sorted]
 ----
 ====
 --

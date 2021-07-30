@@ -1,6 +1,4 @@
 = Indexing Nested Documents
-:solr-root-path: ../../
-:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -218,7 +216,7 @@ The <<indexing-with-update-handlers#json-update-convenience-paths,`/update/json/
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}IndexingNestedDocuments.java[tag=nest-path]
+include::example$IndexingNestedDocuments.java[tag=nest-path]
 ----
 ====
 --
@@ -416,7 +414,7 @@ Although not recommended, it is also possible to index child documents "anonymou
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}IndexingNestedDocuments.java[tag=anon-kids]
+include::example$IndexingNestedDocuments.java[tag=anon-kids]
 ----
 ====
 

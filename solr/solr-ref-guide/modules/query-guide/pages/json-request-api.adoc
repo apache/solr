@@ -44,7 +44,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-simple]
+include::example$JsonRequestApiTest.java[tag=solrj-json-query-simple]
 ----
 ====
 --
@@ -84,7 +84,7 @@ curl 'http://localhost:8983/solr/techproducts/query?json.limit=5&json.filter="ca
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-param-overrides]
+include::example$JsonRequestApiTest.java[tag=solrj-json-query-param-overrides]
 ----
 ====
 --
@@ -111,7 +111,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-param-overrides-equivalent]
+include::example$JsonRequestApiTest.java[tag=solrj-json-query-param-overrides-equivalent]
 ----
 ====
 --
@@ -135,7 +135,7 @@ curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&rows=1&
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-facet-all-query-params]
+include::example$JsonRequestApiTest.java[tag=solrj-json-facet-all-query-params]
 ----
 ====
 --
@@ -169,7 +169,7 @@ curl http://localhost:8983/solr/techproducts/query -d '
 [.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-facet-all-query-params-equivalent]
+include::example$JsonRequestApiTest.java[tag=solrj-json-facet-all-query-params-equivalent]
 ----
 ====
 --
@@ -237,7 +237,7 @@ curl "http://localhost:8983/solr/techproducts/query?fl=name,price"-d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-params-block]
+include::example$JsonRequestApiTest.java[tag=solrj-json-query-params-block]
 ----
 ====
 --
@@ -276,7 +276,7 @@ curl "http://localhost:8983/solr/techproducts/query?FIELD=text&TERM=memory" -d '
 
 [source,java,indent=0]
 ----
-include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-macro-expansion]
+include::example$JsonRequestApiTest.java[tag=solrj-json-query-macro-expansion]
 ----
 ====
 --

@@ -288,4 +288,5 @@ abstract class PrepareSources extends DefaultTask {
 
 antora {
   playbookFile = file("playbook.yml")
+  antoraVersion = "3.0.0-alpha.7"
 }

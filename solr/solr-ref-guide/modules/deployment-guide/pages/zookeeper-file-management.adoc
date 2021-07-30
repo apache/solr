@@ -1,6 +1,4 @@
 = ZooKeeper File Management
-:solr-root-path: ../../
-:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -66,7 +64,7 @@ bin/solr zk upconfig -n <name for configset> -d <path to directory with configse
 The following code shows how this can also be achieved using SolrJ:
 [source,java,indent=0]
 ----
-include::{example-source-dir}ZkConfigFilesTest.java[tag=zk-configset-upload]
+include::example$ZkConfigFilesTest.java[tag=zk-configset-upload]
 ----
 
 It is strongly recommended that the configurations be kept in a version control system, Git, SVN or similar.

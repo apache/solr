@@ -159,7 +159,7 @@ A sample `stemdict.txt` file is shown below:
 
 [source,text]
 ----
-include::{example-source-dir}stemdict.txt[lines=18..22]
+include::example$stemdict.txt[lines=18..22]
 ----
 
 If you have a checkout of Solr's source code locally, you can also find this example in Solr's test resources at `solr/core/src/test-files/solr/collection1/conf/stemdict.txt`.
