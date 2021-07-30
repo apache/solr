@@ -39,8 +39,6 @@ New Features
 
 * SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
 
-* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
-
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
 Improvements
@@ -358,6 +356,8 @@ New Features
   `shards.preference=replica.leader:false` would prefer non-leader replicas. (wei wang via Timothy Potter)
 
 * SOLR-15208: Add the countDist aggregation to the stats, facet and timeseries Streaming Expressions (Joel Bernstein)
+
+* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
 
 * SOLR-15527: Security screen in Admin UI for managing users, roles, and permissions (Timothy Potter)
 
