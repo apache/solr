@@ -72,7 +72,7 @@ public class GraphTest extends SolrCloudTestCase {
   // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testShortestPathStream() throws Exception {
 
-    final boolean with_SOLR_15546_fix = false;
+    final boolean with_SOLR_15546_fix = true;
 
     final String ORIGINAL_TITLE = random().nextBoolean() ? "Original 'P' paperback" : "Original \"H\" hardback";
     final String TRANSLATED_TITLE = "Translation";
