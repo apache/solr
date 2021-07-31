@@ -87,11 +87,7 @@ public class Tuple implements Cloneable, MapWriter {
    * @param fields map containing keys and values to be copied to this tuple
    */
   public Tuple(Map<String, ?> fields) {
-    // TODO Use bulk putAll operation that will properly size the map
-    // https://issues.apache.org/jira/browse/SOLR-15480
-    for (Map.Entry<String, ?> entry : fields.entrySet()) {
-      put(entry.getKey(), entry.getValue());
-    }
+    putAll(fields);
   }
 
   public Object get(String key) {
@@ -103,6 +99,16 @@ public class Tuple implements Cloneable, MapWriter {
     if (key.equals(StreamParams.EOF)) {
       EOF = true;
     } else if (key.equals(StreamParams.EXCEPTION)) {
+      EXCEPTION = true;
+    }
+  }
+
+  public void putAll(Map<String, ?> fields) {
+    this.fields.putAll(fields);
+    if (fields.containsKey(StreamParams.EOF)) {
+      EOF = true;
+    }
+    if (fields.containsKey(StreamParams.EXCEPTION)) {
       EXCEPTION = true;
     }
   }
@@ -276,14 +282,12 @@ public class Tuple implements Cloneable, MapWriter {
 
   public Tuple clone() {
     Tuple clone = new Tuple();
-    clone.fields.putAll(fields);
-    // TODO This doesn't copy EOF/Exception https://issues.apache.org/jira/browse/SOLR-15480
+    clone.putAll(fields);
     return clone;
   }
   
   public void merge(Tuple other) {
-    // TODO This doesn't copy EOF/Exception https://issues.apache.org/jira/browse/SOLR-15480
-    fields.putAll(other.getFields());
+    putAll(other.getFields());
   }
 
   @Override
