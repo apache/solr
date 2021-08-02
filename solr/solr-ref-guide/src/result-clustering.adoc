@@ -26,7 +26,8 @@ The *clustering* (or *cluster analysis*) plugin attempts to automatically discov
 
 The clustering algorithm in Solr is applied to documents included in search result of each single query -— this is called an _on-line_ clustering.
 
-Clusters discovered for a given query can be perceived as _dynamic facets_. This is beneficial when regular faceting is difficult (field values are not known in advance) or when the queries are exploratory in nature.
+Clusters discovered for a given query can be perceived as _dynamic facets_.
+This is beneficial when regular faceting is difficult (field values are not known in advance) or when the queries are exploratory in nature.
 Take a look at the https://search.carrot2.org/#/search/web/apache%20solr/treemap[Carrot^2^] project's demo page to see an example of search results clustering in action (the groups in the visualization have been discovered automatically in search results to the right, there is no external information involved).
 
 image::images/result-clustering/carrot2.png[image,width=900]
@@ -112,7 +113,7 @@ The `labels` element of each cluster is a dynamically discovered phrase that des
 
 == Solr Distribution Example
 
-The `techproducts` example included with Solr is pre-configured with all the necessary components for result clustering -- but they are disabled by default.
+The "techproducts" example included with Solr is pre-configured with all the necessary components for result clustering -- but they are disabled by default.
 
 To enable the clustering component extension and the dedicated search handler configured to use it, specify a JVM System Property when running the example:
 
@@ -325,7 +326,8 @@ A commercial clustering algorithm `Lingo3G` plugs into the same extension point 
 ****
 The question of which algorithm to choose depends on the amount of traffic, the expected result, and the input data (each algorithm will cluster the input slightly differently).
 There is no one answer which algorithm is "the best": Lingo3G provides hierarchical clusters, Lingo and STC provide flat clusters.
-STC is faster than Lingo, but arguably produces less intuitive clusters, Lingo3G is the fastest algorithm but is not free or open source... Experiment and pick one that suits your needs.
+STC is faster than Lingo, but arguably produces less intuitive clusters, Lingo3G is the fastest algorithm but is not free or open source...
+Experiment and pick one that suits your needs.
 
 For a comparison of characteristics of these algorithms see the following links:
 
@@ -475,7 +477,8 @@ We highly recommend tuning both for production uses.
 Improving the default language resources to include words and phrases common to a particular document domain will improve clustering quality significantly.
 
 Carrot^2^ algorithms have an extensive set of parameters and language resource tuning options.
-Please refer to https://carrot2.github.io/release/latest/[up-to-date project documentation]. In particular, the language resources section and each algorithm's attributes section.
+Please refer to https://carrot2.github.io/release/latest/[up-to-date project documentation].
+In particular, the language resources section and each algorithm's attributes section.
 
 
 === Changing Clustering Algorithm Parameters
@@ -526,7 +529,7 @@ The following rules apply.
 
 * If the parameter is added to the engine's configuration in `solrconfig.xml`, the core must be reloaded for the changes to be picked up.
 Alternatively, pass the parameter via the request URL to change things dynamically on a per-request basis.
-For example, if you have the `techproducts` example running, this will cut the clusters to only those containing at least three documents:
+For example, if you have the "techproducts" example running, this will cut the clusters to only those containing at least three documents:
  `http://localhost:8983/solr/techproducts/clustering?q=\*:*&rows=100&wt=json&preprocessing.documentAssigner.minClusterSize=3`
 
 * For complex types, the parameter key with the name of the instantiated type must precede any of its own parameters.

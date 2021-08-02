@@ -1047,7 +1047,8 @@ This filter is generally only useful at index time.
 
 == ICU Folding Filter
 
-This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
+This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>.
+This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
 To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
@@ -3110,7 +3111,7 @@ small => tiny,teeny,weeny
 
 Combining the DelimitedBoostFilter with the Synonym Graph Filter you can achieve Weighted synonyms at query time.
 For more information feel free to refer to:
-https://sease.io/2020/02/introducing-weighted-synonyms-in-apache-lucene.html
+https://sease.io/2020/03/introducing-weighted-synonyms-in-apache-lucene.html
 For the following examples, assume a synonyms file named `boostedSynonyms.txt`:
 
 [source,text]
@@ -3423,9 +3424,11 @@ Note: although this filter produces correct token graphs, it cannot consume an i
 
 The rules for determining delimiters are determined as follows:
 
-* A change in case within a word: "CamelCase" -> "Camel", "Case". This can be disabled by setting `splitOnCaseChange="0"`.
+* A change in case within a word: "CamelCase" -> "Camel", "Case".
+This can be disabled by setting `splitOnCaseChange="0"`.
 
-* A transition from alpha to numeric characters or vice versa: "Gonzo5000" -> "Gonzo", "5000" "4500XL" -> "4500", "XL". This can be disabled by setting `splitOnNumerics="0"`.
+* A transition from alpha to numeric characters or vice versa: "Gonzo5000" -> "Gonzo", "5000" "4500XL" -> "4500", "XL".
+This can be disabled by setting `splitOnNumerics="0"`.
 
 * Non-alphanumeric characters (discarded): "hot-spot" -> "hot", "spot"
 

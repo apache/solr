@@ -126,7 +126,7 @@ You can see the message recorded in the Solr logging UI.
 
 === Javascript
 
-Note: There is a JavaScript example `update-script.js` as part of the `techproducts` configset.
+Note: There is a JavaScript example `update-script.js` as part of the "techproducts" configset.
 Check `solrconfig.xml` and uncomment the update request processor definition to enable this feature.
 
 [source,javascript]

@@ -39,8 +39,6 @@ New Features
 
 * SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
 
-* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
-
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
 Improvements
@@ -359,6 +357,10 @@ New Features
 
 * SOLR-15208: Add the countDist aggregation to the stats, facet and timeseries Streaming Expressions (Joel Bernstein)
 
+* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
+
+* SOLR-15527: Security screen in Admin UI for managing users, roles, and permissions (Timothy Potter)
+
 Improvements
 ---------------------
 * SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)
@@ -381,6 +383,10 @@ Improvements
 
 * SOLR-15549: ZkStateReader now supports connecting to 9.0 Solr Clouds (Houston Putman)
 
+* SOLR-15570: Include fields declared in the schema in table metadata (SQL) even if they are empty (Timothy Potter)
+
+* SOLR-15564: Improve filtering expressions in /admin/metrics. (ab)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
@@ -394,8 +400,12 @@ Bug Fixes
 
 * SOLR-15531: SignificantTerms streaming function should not fail on empty collections (Benedikt Arnold via Mike Drob)
 
+* SOLR-15482: Cross-collection join fixed to ignore documents that do not contain value in "from" field (hossman)
+
 Other Changes
 ---------------------
+* SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
+
 * SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
 

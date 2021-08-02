@@ -93,7 +93,7 @@ Previously indexed documents will *not* be automatically handled - they *must* b
 The `add-field` command adds a new field definition to your schema.
 If a field with the same name exists an error is thrown.
 
-All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API.
+All of the properties available when defining a field with manual schema edits can be passed via the API.
 These request attributes are described in detail in the section <<fields.adoc#,Fields>>.
 
 For example, to define a new stored field named "sell_by", of type "pdate", you would POST the following request:
@@ -167,7 +167,7 @@ The `replace-field` command replaces a field's definition.
 Note that you must supply the full definition for a field - this command will *not* partially modify a field's definition.
 If the field does not exist in the schema an error is thrown.
 
-All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API.
+All of the properties available when defining a field with manual schema edits can be passed via the API.
 These request attributes are described in detail in the section <<fields.adoc#,Fields>>.
 
 For example, to replace the definition of an existing field "sell_by", to make it be of type "date" and to not be stored, you would POST the following request:
@@ -207,7 +207,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `add-dynamic-field` command adds a new dynamic field rule to your schema.
 
-All of the properties available when editing `schema.xml` can be passed with the POST request.
+All of the properties available when editing the schema can be passed with the POST request.
 The section <<dynamic-fields.adoc#,Dynamic Fields>> has details on all of the attributes that can be defined for a dynamic field rule.
 
 For example, to create a new dynamic field rule where all incoming fields ending with "_s" would be stored and have field type "string", you can POST a request like this:
@@ -281,7 +281,7 @@ The `replace-dynamic-field` command replaces a dynamic field rule in your schema
 Note that you must supply the full definition for a dynamic field rule - this command will *not* partially modify a dynamic field rule's definition.
 If the dynamic field rule does not exist in the schema an error is thrown.
 
-All of the properties available when editing `schema.xml` can be passed with the POST request.
+All of the properties available when editing the schema can be passed with the POST request.
 The section <<dynamic-fields.adoc#,Dynamic Fields>> has details on all of the attributes that can be defined for a dynamic field rule.
 
 For example, to replace the definition of the "*_s" dynamic field rule with one where the field type is "text_general" and it's not stored, you can POST a request like this:
@@ -321,7 +321,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `add-field-type` command adds a new field type to your schema.
 
-All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request.
+All of the field type properties available when editing the schema by hand are available for use in a POST request.
 The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc.
 Details of all of the available options are described in the section <<field-types.adoc#,Field Types>>.
 
@@ -440,7 +440,7 @@ The `replace-field-type` command replaces a field type in your schema.
 Note that you must supply the full definition for a field type - this command will *not* partially modify a field type's definition.
 If the field type does not exist in the schema an error is thrown.
 
-All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request.
+All of the field type properties available when editing the schema by hand are available for use in a POST request.
 The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc.
 Details of all of the available options are described in the section <<field-types.adoc#,Field Types>>.
 
@@ -487,7 +487,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `add-copy-field` command adds a new copy field rule to your schema.
 
-The attributes supported by the command are the same as when creating copy field rules by manually editing the `schema.xml`, as below:
+The attributes supported by the command are the same as when creating copy field rules by manually editing the schema, as below:
 
 `source`::
 +

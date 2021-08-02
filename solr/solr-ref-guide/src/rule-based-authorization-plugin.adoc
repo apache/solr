@@ -462,7 +462,7 @@ As an example, consider the permissions below:
 All of the permissions in this list match `/select` queries.
 But different permissions will be used depending on the collection being queried.
 
-For a query to the `techproducts` collection, permission 3 will be used because it specifically targets `techproducts`.
+For a query to the "techproducts" collection, permission 3 will be used because it specifically targets "techproducts".
 Only users with the `other` role will be authorized.
 
 For a query to a collection called `collection1` on the other hand, the most specific permission present is permission 2, so _all_ roles are given access.

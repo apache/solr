@@ -284,7 +284,7 @@ If the status is anything other than "success", an error message will explain wh
 [[reload]]
 == RELOAD: Reload a Collection
 
-The RELOAD action is used when you have changed a configuration file in ZooKeeper, like uploading a new `schema.xml`.
+The RELOAD action is used when you have changed a configuration file in ZooKeeper, like uploading a new `solrconfig.xml`.
 Solr automatically reloads collections when certain files, monitored via a watch in ZooKeeper are changed,
 such as `security.json`.
 However, for changes to files in configsets, like uploading a new schema, you will need to manually trigger the RELOAD.

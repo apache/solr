@@ -34,5 +34,5 @@ Like regular fields, dynamic fields have a name, a field type, and options.
 <dynamicField name="*_i" type="int" indexed="true"  stored="true"/>
 ----
 
-It is recommended that you include basic dynamic field mappings (like that shown above) in your `schema.xml`.
+It is recommended that you include basic dynamic field mappings (like that shown above) in your schema.
 The mappings can be very useful.
