@@ -67,6 +67,13 @@ This has the effect of requiring authentication for HTTP access to Solr.
 In some cases, you may not want authentication after enabling the plugin; for example, if you want to have `security.json` in place but aren't ready to enable authentication.
 However, you will want to ensure that `blockUnknown` is set to `true` or omitted entirely in order for authentication to be enforced for all requests to your system.
 
+[WARNING]
+====
+If you set `blockUnknown` to `false`, then *any* request that is not explicitly protected by a permission will be accessible by anonymous users!
+Consequently, you should define a role binding for every <<rule-based-authorization-plugin.adoc#permissions,predefined>> permission you want to protect.
+You can assign the special `role: null` binding for requests that you want to allow anonymous users to access.
+====
+
 If `realm` is not defined, it will default to `solr`.
 
 If you are using SolrCloud, you must upload `security.json` to ZooKeeper.
