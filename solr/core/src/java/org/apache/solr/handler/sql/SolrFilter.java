@@ -339,9 +339,13 @@ class SolrFilter extends Filter implements SolrRel {
       if (a != null) {
         return a;
       }
-      final Pair<String, RexLiteral> b = translateBinary2(right, left);
-      if (b != null) {
-        return b;
+
+      // we can swap these if doing an equals
+      if (call.op.kind == SqlKind.EQUALS) {
+        final Pair<String, RexLiteral> b = translateBinary2(right, left);
+        if (b != null) {
+          return b;
+        }
       }
 
       if (left.getKind() == SqlKind.CAST && right.getKind() == SqlKind.CAST) {
@@ -501,10 +505,14 @@ class SolrFilter extends Filter implements SolrRel {
         }
         return a;
       }
-      final Pair<String, RexLiteral> b = translateBinary2(right, left);
-      if (b != null) {
-        return b;
+
+      if (call.op.kind == SqlKind.EQUALS) {
+        final Pair<String, RexLiteral> b = translateBinary2(right, left);
+        if (b != null) {
+          return b;
+        }
       }
+
       throw new AssertionError("cannot translate call " + call);
     }
 

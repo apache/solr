@@ -452,6 +452,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
     tuple = tuples.get(1);
     assertEquals("8", tuple.get("id"));
 
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE str_s = 'a'", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE 'a' = str_s", 2);
   }
 
   @Test
