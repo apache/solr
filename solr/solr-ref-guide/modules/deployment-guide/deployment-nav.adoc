@@ -11,7 +11,7 @@
 **** xref:indexupgrader-tool.adoc[]
 *** xref:backup-restore.adoc[]
 *** xref:solr-in-docker.adoc[]
-**** xref:solr-docker-faq.adoc[]
+**** xref:docker-faq.adoc[]
 **** xref:docker-networking.adoc[]
 *** xref:solr-on-hdfs.adoc[]
 

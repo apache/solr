@@ -94,7 +94,7 @@ However, if you are running your own ZooKeeper ensemble, you would supply your o
 The Files screen in the Admin UI lets you browse & view configuration files (such `solrconfig.xml` and the schema file) for the collection you selected.
 
 .The Files Screen
-image::images/configuration-files/files-screen.png[Files screen,height=400]
+image::configuration-files/files-screen.png[Files screen,height=400]
 
 If you are using <<cluster-types.adoc#solrcloud-mode,SolrCloud>>, the files displayed are the configuration files for this collection stored in ZooKeeper.
 In user-managed clusters or single-node installations, all files in the `conf` directory are displayed.

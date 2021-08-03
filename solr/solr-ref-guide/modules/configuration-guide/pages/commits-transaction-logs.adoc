@@ -37,7 +37,7 @@ The `_default` configset included with Solr has this section defined already, bu
 </config>
 ----
 
-Note that `<updateHandler>` configurations do not affect the higher level configuration of <<requesthandlers-searchcomponents.adoc#,request handlers>> that process client update requests.
+Note that `<updateHandler>` configurations do not affect the higher level configuration of xref:requesthandlers-searchcomponents.adoc[request handlers] that process client update requests.
 
 == Commits
 
@@ -69,9 +69,9 @@ When a client includes a `commit=true` parameter with an update request, this en
 If an additional parameter `softCommit=true` is specified, then Solr performs a soft commit.
 This is an implementation of Near Real Time storage, a feature that boosts document visibility, since you don't have to wait for background merges and storage (to ZooKeeper, if using SolrCloud) to finish before moving on to something else.
 
-Details about using explicit commit requests during indexing are in the section <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>.
+Details about using explicit commit requests during indexing are in the section xref:indexing-guide:indexing-with-update-handlers.adoc[Indexing with Update Handlers].
 
-For more information about Near Real Time operations, see <<solrcloud-distributed-requests.adoc#near-real-time-nrt-use-cases,Near Real Time Use Cases>>.
+For more information about Near Real Time operations, see xref:deployment-guide:solrcloud-distributed-requests.adoc#near-real-time-nrt-use-cases[Near Real Time Use Cases].
 
 === Automatic Commits
 
@@ -186,7 +186,7 @@ TIP: For extremely high bulk indexing, especially for the initial load if there 
 An alternative to `autoCommit` is to use `commitWithin`, which can be defined when making the update request to Solr (i.e., when pushing documents), or in an update request handler.
 
 The `commitWithin` settings allow forcing document commits to happen in a defined time period.
-This is used most frequently with <<solrcloud-distributed-requests.adoc#near-real-time-nrt-use-cases,Near Real Time use cases>>, and for that reason the default is to perform a soft commit.
+This is used most frequently with xref:deployment-guide:solrcloud-distributed-requests.adoc#near-real-time-nrt-use-cases[Near Real Time use cases], and for that reason the default is to perform a soft commit.
 This does not, however, replicate new documents to follower servers in a user-managed cluster.
 If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
 
@@ -221,7 +221,7 @@ Therefore it is important that hard commits be enabled when indexing.
 
 === Transaction Log Configuration
 
-Transaction logs are required for all SolrCloud clusters, as well as the <<realtime-get.adoc#,RealTime Get>> feature.
+Transaction logs are required for all SolrCloud clusters, as well as the xref:realtime-get.adoc[] feature.
 It is configured in the `updateHandler` section of `solrconfig.xml`.
 
 Transaction logs are configured in `solrconfig.xml`, in a section like the following:

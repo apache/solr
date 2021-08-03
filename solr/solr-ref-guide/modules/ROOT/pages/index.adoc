@@ -44,7 +44,7 @@ The Guide includes the following sections:
 ****
 [.home-table,cols="1,1,1",frame=none,grid=none,stripes=none]
 |===
-^| <<getting-started.adoc#,Getting Started>> ^| <<deployment-guide.adoc#,Deployment Guide>> ^| <<configuration-guide.adoc#,Configuration Guide>>
+^| xref:getting-started:getting-started.adoc[] ^| xref:deployment-guide:deployment-guide.adoc[] ^| xref:configuration-guide:configuration-guide.adoc[]
 
 | Introductory concepts and tutorials. | Installation, monitoring, scaling, and deploying to production. | Tuning Solr's configuration files for your use case.
 
@@ -52,7 +52,7 @@ The Guide includes the following sections:
 
 [.home-table,cols="1,1,1",frame=none,grid=none,stripes=none]
 |===
-^| <<schema-indexing-guide.adoc#,Schema & Indexing Guide>> ^| <<query-guide.adoc#,Query Guide>> ^| <<solr-upgrade-notes.adoc#,Solr Upgrade Notes>>
+^| xref:indexing-guide:schema-indexing-guide.adoc[] ^| xref:query-guide:query-guide.adoc[] ^| xref:upgrade-notes:solr-upgrade-notes.adoc[]
 
 | Configuring Solr's schema and indexing documents. | All aspects of Solr queries. | Change notes for Solr releases.
 

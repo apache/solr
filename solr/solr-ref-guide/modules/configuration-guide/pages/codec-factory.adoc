@@ -27,7 +27,7 @@ There are two alternatives to Lucene's default codec.
 
 The {solr-javadocs}/core/org/apache/solr/core/SchemaCodecFactory.html[`solr.SchemaCodecFactory`] supports 2 key features:
 
-* Schema based per-fieldtype configuration for `docValuesFormat` and `postingsFormat` - see the <<field-type-definitions-and-properties.adoc#field-type-properties,Field Type Properties>> section for more details.
+* Schema based per-fieldtype configuration for `docValuesFormat` and `postingsFormat` - see the xref:indexing-guide:field-type-definitions-and-properties.adoc#field-type-properties[Field Type Properties] section for more details.
 * A `compressionMode` option:
 ** `BEST_SPEED` (default) is optimized for search speed performance
 ** `BEST_COMPRESSION` is optimized for disk space usage

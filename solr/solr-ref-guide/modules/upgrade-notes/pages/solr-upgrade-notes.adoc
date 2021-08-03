@@ -33,7 +33,7 @@ file found in your Solr package.
 That file includes all the changes and updates
 that may effect your existing implementation.
 
-Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>.
+Detailed steps for upgrading a Solr cluster are in the section xref:deployment-guide:upgrading-a-solr-cluster.adoc[].
 
 == Upgrading to 9.x Releases (NOT RELEASED)
 
@@ -65,18 +65,18 @@ The old format is officially deprecated, and support for it is likely to be remo
 For the time-being the old format can be created by defining a parameter `incremental=false`.
 Again, though, this support is likely to be removed in Solr 9.0.
 
-More documentation on backups is available at <<backup-restore.adoc#,Backup and Restore>>.
+More documentation on backups is available at xref:deployment-guide:backup-restore.adoc[].
 
 New Collections API commands for backups:
 
 * LISTBACKUP: Lists information about each backup stored at the specified repository location.
-See <<collection-management.adoc#listbackup,List Backups>> for more details.
+See xref:deployment-guide:collection-management.adoc#listbackup[List Backups] for more details.
 * DELETEBACKUP: Deletes specified backups from the repository.
-See <<collection-management.adoc#deletebackup,Delete Backups>> for more details.
+See xref:deployment-guide:collection-management.adoc#deletebackup[Delete Backups] for more details.
 
 A new option for backup repository is also available in 8.9, which is to use Google Cloud Storage (GCS).
 This is a contrib (located in `contrib/gcs-repository`).
-See <<backup-restore.adoc#gcsbackuprepository,GCSBackupRepository>> for configuration details.
+See xref:deployment-guide:backup-restore.adoc#gcsbackuprepository[GCSBackupRepository] for configuration details.
 The Solr community is working to add support for S3 buckets in the near future.
 
 *Nested Docs*
@@ -90,15 +90,15 @@ There was no escaping here prior to 8.0 either.
 
 * BlockCollapse: If documents have been (or could be) indexed in a way where documents with the same collapse key have been indexed contiguously in the index, a new "block collapse" provides a significant speed improvement over traditional collapse.
 +
-See <<collapse-and-expand-results.adoc#block-collapsing,Block Collapsing>> for details.
+See xref:query-guide:collapse-and-expand-results.adoc#block-collapsing[Block Collapsing] for details.
 
 * Expand Null Groups: A new parameter `expand.nullGroup` allows an expanded group to be returned containing document with no value in the expanded field.
-See <<collapse-and-expand-results.adoc#expand-component,Expand Component>> for details.
+See xref:query-guide:collapse-and-expand-results.adoc#expand-component[Expand Component] for details.
 
 *In-Place Updates*
 
 A new request parameter `update.partial.requireInPlace=true` allows telling Solr to "fail fast" if all of the necessary conditions are not satisfied to allow an in-place update to succeed.
-See also <<partial-document-updates.adoc#in-place-updates,In-Place Updates>>.
+See also xref:indexing-guide:partial-document-updates.adoc#in-place-updates[In-Place Updates].
 
 *Metrics History*
 
@@ -135,7 +135,7 @@ The contrib will be re-introduced in Solr 9.0.
 
 * Interleaving support has been added to Learning to Rank (LTR).
 Currently only the Team Draft Interleaving algorithm is supported.
-For examples using this feature, see the section <<learning-to-rank.adoc#running-a-rerank-query-interleaving-two-models,Running a Rerank Query Interleaving Two Models>>.
+For examples using this feature, see the section xref:query-guide:learning-to-rank.adoc#running-a-rerank-query-interleaving-two-models[Running a Rerank Query Interleaving Two Models].
 
 *Metrics*
 
@@ -146,7 +146,7 @@ For examples using this feature, see the section <<learning-to-rank.adoc#running
 *Prometheus Exporter*
 
 * The `./bin` scripts included with the Prometheus Exporter contrib now allow use of custom java options with environment variables.
-See the section <<monitoring-with-prometheus-and-grafana.adoc#environment-variable-options,Environment Variable Options>> for more details.
+See the section <xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc#environment-variable-options[Environment Variable Options] for more details.
 * The default Grafana dashboards now include panels for query performance monitoring.
 The default Prometheus Exporter configuration includes metrics like queries-per-second (QPS) and 95th percentiles (P95) to populate the new panels.
 * The default Prometheus Exporter configuration also includes the two new metrics mentioned in the Metrics above.
@@ -203,7 +203,7 @@ Corresponding
 This functionality has only changed in terms of parameter names changed, and we do not expect any back-compatibility issues on upgrade to 8.7 or even 9.0 later.
 +
 However, users should update their `solrconfig.xml` files after completing the upgrade on all nodes of a cluster.
-Comparing your configuration to the updated configuration examples in <<user-managed-index-replication.adoc#,Index Replication>> will show examples of what needs to change, but here are the main changes:
+Comparing your configuration to the updated configuration examples in xref:deployment-guide:user-managed-index-replication.adoc[] will show examples of what needs to change, but here are the main changes:
 +
 . On the replication leader, in the definition of the `/replication` request handler:
 .. Replace "master" with "leader".
@@ -218,7 +218,7 @@ This file can be named anything, so you can change it to whatever you'd like to 
 
 * Performance enhancements for the `relatedness()` statistics function are included with 8.7.
 These yield the highest benefits with high-cardinality fields and can be disabled if working with lower cardinality fields with a new `sweep_collection` parameter.
-See the section <<json-facet-api.adoc#relatedness-options,relatedness() Options>> for details.
+See the section xref:query-guide:json-facet-api.adoc#relatedness-options[relatedness() Options] for details.
 
 *solr.in.sh / solr.in.cmd*
 
@@ -233,7 +233,7 @@ By default, this parameter is set to the same value as `SOLR_STOP_WAIT`.
 
 *Configsets*
 
-* It's now possible to overwrite an existing configset when uploading changes by supplying the `overwrite=true` parameter to the <<configsets-api.adoc#configsets-upload,Configset API>>.
+* It's now possible to overwrite an existing configset when uploading changes by supplying the `overwrite=true` parameter to the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configset API].
 +
 A related parameter is `cleanup=true`, which allows deleting any files from the old configset that are left behind after the overwrite.
 +
@@ -291,7 +291,7 @@ It is guaranteed that the hit count is accurate up to the value of `minExactCoun
 
 A new boolean attribute `numFoundExact` is included in all responses to indicate if the hit count in the response is expected to be exact or not.
 
-More information about this new feature is available in the section <<common-query-parameters.adoc#minexactcount-parameter,minExactCount Parameter>>.
+More information about this new feature is available in the section xref:query-guide:common-query-parameters.adoc#minexactcount-parameter[minExactCount Parameter].
 
 *Autoscaling*
 
@@ -314,7 +314,7 @@ When using the `solr.xml` file that ships with 8.6, you can configure the list o
 Please see `bin/solr.in.sh` or `bin\solr.in.cmd` for example usage.
 Using the value `*` will allow any path as in earlier versions.
 +
-For more on this, see the section <<configuring-solr-xml.adoc#the-solr-element,Solr.xml Parameters>>.
+For more on this, see the section xref:configuration-guide:configuring-solr-xml.adoc#the-solr-element[Solr.xml Parameters].
 +
 Windows SMB shares on the UNC format, such as `\\myhost\myshare\mypath` are now always disallowed.
 Please use drive letter mounts instead, i.e., `S:\mypath`.
@@ -329,7 +329,7 @@ A new link will also appear in the left-hand navigation to allow a user to log o
 
 * The `/export` handler now supports streaming expressions to allow limiting the output of the export to only matching documents.
 +
-For more information about how to use this, see the section <<exporting-result-sets.adoc#specifying-the-local-streaming-expression,Specifying the Local Streaming Expression>>.
+For more information about how to use this, see the section xref:query-guide:exporting-result-sets.adoc#specifying-the-local-streaming-expression[Specifying the Local Streaming Expression].
 
 * The `stats`, `facet`, and `timeseries` expressions now support percentiles and standard deviation aggregations.
 
@@ -382,7 +382,7 @@ If you are upgrading Solr with an atomic restart strategy:
 * If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
 * If you do use Collection API operations:
 . Pause Collection API operations.
-. Cleanup queues (See the section <<collections-api.adoc#deletestatus,DELETESTATUS>> for examples)
+. Cleanup queues (See the section xref:configuration-guide:collections-api.adoc#deletestatus[DELETESTATUS] for examples)
 if you use async operations.
 . Upgrade and restart the nodes.
 . Resume all normal operations.
@@ -395,7 +395,7 @@ any issues.
 way is to:
 . Pause Collection API operations.
 . Upgrade and restart all nodes.
-. Cleanup queues (See the section <<collections-api.adoc#deletestatus,DELETESTATUS>> for examples)
+. Cleanup queues (See the section xref:configuration-guide:collections-api.adoc#deletestatus[DELETESTATUS] for examples)
 if you use async operations.
 . Resume all normal operations.
 
@@ -427,17 +427,17 @@ Solr has two new parameters to allow you to restrict access to Solr using IP add
 Use `SOLR_IP_WHITELIST` to configure a whitelist, and `SOLR_IP_BLACKLIST` to configure a blacklist.
 These properties are defined in `solr.in.sh` or `solr.in.cmd`.
 
-See also the section <<securing-solr.adoc#ip-access-control,Enable IP Access Control>>.
+See also the section xref:deployment-guide:securing-solr.adoc#ip-access-control[Enable IP Access Control].
 
 *BlockJoin Facet Deprecation*
 
 The BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
 Users are encouraged to migrate to `uniqueBlock()` in JSON Facet API.
-More information about this is available in the section <<json-faceting-domain-changes.adoc#block-join-domain-changes,Block Join Domain Changes>>.
+More information about this is available in the section xref:query-guide:json-faceting-domain-changes.adoc#block-join-domain-changes[Block Join Domain Changes].
 
 *Caching with the Boolean Query Parser*
 
-By default, the <<other-parsers.adoc#boolean-query-parser,Boolean Query Parser>> caches queries in Solr's filterCache.
+By default, the xref:query-guide:other-parsers.adoc#boolean-query-parser[Boolean Query Parser] caches queries in Solr's filterCache.
 It's now possible to disable this with the local param `cache=false`.
 
 *Indexing Log Files*
@@ -445,12 +445,12 @@ It's now possible to disable this with the local param `cache=false`.
 Solr now includes a command line tool, `bin/postlogs` which will index Solr's log files into a collection.
 This provides an easy way to use Solr or visualization tools (such as Zeppelin) to troubleshoot problems with the system.
 
-This tool is not yet officially documented in the Reference Guide, but draft documentation is available in a branch and can be accessed https://github.com/apache/lucene-solr/blob/visual-guide/solr/solr-ref-guide/src/logs.adoc[via GitHub^].
+See the documentation for more details at xref:query-guide:logs.adoc[].
 
 *Highlighting*
 
 Solr's Unified Highlighter now has two parameters to help control passage sizing, `hl.fragAlignRatio` and `hl.fragsizeIsMinimum`.
-See the section <<highlighting.adoc#unified-highlighter,Unified Highlighter>> for details about these new parameters.
+See the section xref:query-guide:highlighting.adoc#unified-highlighter[Unified Highlighter] for details about these new parameters.
 Regardless of the settings, the passages may be sized differently than before.
 _Warning: These default settings were found to be a significant performance regression for apps that highlight lots of text with the default sentence break iterator.
 See the 8.6 upgrade notes for advise you can apply in 8.5._
@@ -488,7 +488,7 @@ to Solr.
 The system is currently considered experimental, so use with caution.
 It must
 be enabled with a system parameter passed at start up before it can be used.
-For details, please see the section <<package-manager.adoc#,Package Management>>.
+For details, please see the section xref:configuration-guide:package-manager.adoc[].
 
 With this feature Solr's Blob Store functionality is now deprecated and will likely be removed in 9.0.
 
@@ -508,7 +508,7 @@ the `/browse` sample search interface) are no longer enabled out of the box.
 ** The XSLT and Velocity response writers.
 +
 All of these items can be added to your Solr implementation by manually editing
-`solrconfig.xml` to add them back in, or use the <<config-api.adoc#,Config API>>.
+`solrconfig.xml` to add them back in, or use the xref:configuration-guide:config-api.adoc[].
 +
 The `sample_techproducts_configs` and the examples found in `./example` are unchanged.
 
@@ -523,14 +523,11 @@ directives, their corresponding collections will not load (they will cease to
 work).
 You have a few options in this case:
 
-** You can secure your Solr instance with <<authentication-and-authorization-plugins.adoc#,authentication>>
-and re-upload the configset (using the `bin/solr zk upconfig ...`
-<<solr-control-script-reference.adoc#,Solr CLI>> command);
+** You can secure your Solr instance with xref:deployment-guide:authentication-and-authorization-plugins.adoc[authentication] and re-upload the configset (using the `bin/solr zk upconfig ...` xref:deployment-guide:solr-control-script-reference.adoc[Solr CLI] command);
 ** You can put your custom Jars in Solr's classpath instead of `lib` directories;
 ** You can try the new package management system to manage your custom Jars.
 +
-See the section <<configsets-api.adoc#configsets-upload,Upload a Configset>>
- for more details about trusted vs. untrusted configsets.
+See the section xref:configuration-guide:configsets-api.adoc#configsets-upload[Upload a Configset] for more details about trusted vs. untrusted configsets.
 
 * Our default Jetty configuration has been updated to now set a
 Content-Security-Policy (CSP) by default.
@@ -551,9 +548,7 @@ It has been replaced with the new package management system.
 
 *Using Collapse with Group Disallowed*
 
-Using the <<collapse-and-expand-results.adoc#,CollapsingQueryParser>>
-with <<result-grouping.adoc#,Result Grouping>> has never been
-supported as it causes inconsistent behavior and NullPointerException errors.
+Using the xref:query-guide:collapse-and-expand-results.adoc[CollapsingQueryParser] with xref:query-guide:result-grouping.adoc[] has never been supported as it causes inconsistent behavior and NullPointerException errors.
 We have now explicitly disallowed this combination to prevent these errors.
 If you are using these together, you will need to modify your queries.
 
@@ -562,8 +557,7 @@ If you are using these together, you will need to modify your queries.
 * SolrJ now supports the `shards.preference` parameter for single-shard
 scenarios to ensure multi-shard and single-shard request routing works in the same way.
 +
-See <<solrj.adoc#cloud-request-routing,Cloud Request Routing>> and
-<<solrcloud-distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details.
+See xref:deployment-guide:solrj.adoc#cloud-request-routing[Cloud Request Routing] and xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-preference-parameter[shards.preference Parameter] for details.
 
 * `QueryResponse.getExplainMap()` type has changed from `Map<String, String>` to `Map<String, Object>` in order to support structured explanations.
 +
@@ -624,7 +618,7 @@ Since caching has a direct impact on the performance of your Solr
 * A new parameter, `maxIdleTime`, allows automatic eviction of cache items that have not been used in the defined amount of time.
 This allows the cache to release some memory and should aid those who want or need to fine-tune their caches.
 
-See the section <<caches-warming.adoc#,Caches and Query Warming>> for more details about these and other cache options and parameters.
+See the section xref:configuration-guide:caches-warming.adoc[] for more details about these and other cache options and parameters.
 
 === Solr 8.2
 
@@ -641,7 +635,7 @@ It is recommended that external ensembles set up to work with Solr also be updat
 This ZooKeeper release includes many new security features.
 In order for Solr's Admin UI to work with 3.5.5, the `zoo.cfg` file must allow access to ZooKeeper's "four-letter commands".
 At a minimum, `ruok`, `conf`, and `mntr` must be enabled, but other commands can optionally be enabled if you choose.
-See the section <<zookeeper-ensemble.adoc#configuration-for-a-zookeeper-ensemble,Configuration for a ZooKeeper Ensemble>> for details.
+See the section xref:deployment-guide:zookeeper-ensemble.adoc#configuration-for-a-zookeeper-ensemble[Configuration for a ZooKeeper Ensemble] for details.
 
 [WARNING]
 Until 8.3, https://issues.apache.org/jira/browse/SOLR-13672[SOLR-13672] causes the ZK Status screen in the Admin UI to not be able to report status.
@@ -665,7 +659,7 @@ Collections created with older versions will continue to work.
 *Distributed Tracing Support*
 
 This release adds support for tracing requests in Solr.
-Please review the section <<distributed-tracing.adoc#,Distributed Tracing>> for details on how to configure this feature.
+Please review the section xref:deployment-guide:distributed-tracing.adoc[] for details on how to configure this feature.
 
 === Solr 8.1
 
@@ -685,18 +679,18 @@ An identical parameter is available in `solrconfig.xml` for limiting the size of
 +
 If your use case demands that you a lot of OR or AND clauses in your queries, upon upgrade to 8.1 you may need to adjust the global `maxBooleanClauses` parameter since between 7.0 and 8.1 the limit was effectively unbounded.
 +
-For more information about the new parameter, see the section <<configuring-solr-xml.adoc#global-maxbooleanclauses,Format of solr.xml: maxBooleanClauses>>.
+For more information about the new parameter, see the section xref:configuration-guide:configuring-solr-xml.adoc#global-maxbooleanclauses[maxBooleanClauses].
 
 *Security*
 
 * JSON Web Tokens (JWT) are now supported for authentication.
 These allow Solr to assert a user is already authenticated via an external identity provider, such as an OpenID Connect-enabled IdP.
-For more information, see the section <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>.
+For more information, see the section xref:deployment-guide:jwt-authentication-plugin.adoc[].
 
 * A new security plugin for audit logging has been added.
 A default class `SolrLogAuditLoggerPlugin` is available and configurable in `security.json`.
 The base class is also extendable for adding custom audit plugins if needed.
-See the section <<audit-logging.adoc#,Audit Logging>> for more information.
+See the section xref:deployment-guide:audit-logging.adoc[] for more information.
 
 *Collections API*
 
@@ -707,13 +701,13 @@ Previously, it always returned `0`, even in failure.
 
 * The MODIFYCOLLECTION command now accepts an attribute to set a collection as read-only.
 This can be used to block a collection from receiving any updates while still allowing queries to be served.
-See the section <<collection-management.adoc#modifycollection,MODIFYCOLLECTION>> for details on how to use it.
+See the section xref:deployment-guide:collection-management.adoc#modifycollection[MODIFYCOLLECTION] for details on how to use it.
 
 * A new command RENAME allows renaming a collection by setting up a one-to-one alias using the new name.
-For more information, see the section <<collection-management.adoc#rename,RENAME>>.
+For more information, see the section xref:deployment-guide:collection-management.adoc#rename[RENAME].
 
 * A new command REINDEXCOLLECTION allows indexing existing stored fields from a source collection into a new collection.
-For more information, please see the section <<collection-management.adoc#reindexcollection,REINDEXCOLLECTION>>.
+For more information, please see the section xref:deployment-guide:collection-management.adoc#reindexcollection[REINDEXCOLLECTION].
 
 *Logging*
 
@@ -744,7 +738,7 @@ If you prefer to use CMS or any other GC method, you can modify the `GC_TUNE` se
 == Upgrading from 7.x Releases
 
 The upgrade from 7.x to Solr 8.0 introduces several major changes that you should be aware of before upgrading.
-These changes are described in the section <<major-changes-in-solr-8.adoc#,Major Changes in Solr 8>>.
+These changes are described in the section xref:major-changes-in-solr-8.adoc[].
 It's strongly recommended that you do a thorough review of that section before starting your upgrade.
 
 [NOTE]
@@ -755,6 +749,6 @@ If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order
 Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
 
 The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading.
-Please do a thorough review of the section <<major-changes-in-solr-7.adoc#,Major Changes in Solr 7>> before starting your upgrade.
+Please do a thorough review of the section xref:major-changes-in-solr-7.adoc[] before starting your upgrade.
 
-A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-in-solr-6.adoc#,Major Changes in Solr 6>>.
+A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section xref:major-changes-in-solr-6.adoc[].

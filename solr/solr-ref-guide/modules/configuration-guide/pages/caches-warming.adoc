@@ -19,7 +19,7 @@
 Solr's caches provide an essential way to improve query performance.
 Caches can store documents, filters used in queries, and results from previous queries.
 
-Caches are cleared after a <<commits-transaction-logs.adoc#commits,commit>> and usually need to be re-populated before their benefit can be seen again.
+Caches are cleared after a xref:commits-transaction-logs.adoc#commits[commit] and usually need to be re-populated before their benefit can be seen again.
 To counteract this, caches can be "warmed" before a new searcher is considered opened by automatically populating the new cache with values from the old cache.
 
 Cache management is critical to a successful Solr implementation, so it should be noted that caches will need to be fine-tuned as your application grows.
@@ -61,7 +61,7 @@ Generally this cache usually offers lower memory footprint, higher hit ratio, an
 
 `CaffeineCache` uses an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
 
-The <<plugins-stats-screen.adoc#,Plugins/Stats>> page in the Solr Admin UI will display information about the performance of all the active caches.
+The xref:deployment-guide:plugins-stats-screen.adoc[] in the Solr Admin UI will display information about the performance of all the active caches.
 This information can help you fine-tune the sizes of the various caches appropriately for your particular application.
 When a Searcher terminates, a summary of its cache usage is also written to the log.
 
@@ -80,7 +80,7 @@ The `maxRamMB` attribute limits the maximum amount of memory a cache may consume
 When both `size` and `maxRamMB` limits are specified the `maxRamMB` limit will take precedence and the `size` limit will be ignored.
 
 All caches can be disabled using the parameter `enabled` with a value of `false`.
-Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section <<common-query-parameters.adoc#cache-local-parameter,cache Local Parameter>>.
+Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section xref:query-guide:common-query-parameters.adoc#cache-local-parameter[cache Local Parameter].
 
 Details of each cache are described below.
 
@@ -91,13 +91,13 @@ Unless such a set is trivially small, the set implementation is a bitset.
 
 The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other cases as well.
 Subsequent queries using the same parameter filter query result in cache hits and rapid returns of results.
-See <<common-query-parameters.adoc#fq-filter-query-parameter,fq (Filter Query) Parameter>> for a detailed discussion of `fq`.
-Use of this cache can be disabled for a `fq` using the <<common-query-parameters.adoc#cache-local-parameter,`cache` local parameter>>.
+See xref:query-guide:common-query-parameters.adoc#fq-filter-query-parameter[fq (Filter Query) Parameter] for a detailed discussion of `fq`.
+Use of this cache can be disabled for a `fq` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
 
 Another Solr feature using this cache is the `filter(...)` syntax in the default Lucene query parser.
 
 Solr also uses this cache for faceting when the configuration parameter `facet.method` is set to `fc`.
-For a discussion of faceting parameters, see <<faceting.adoc#field-value-faceting-parameters,Field-Value Faceting Parameters>>.
+For a discussion of faceting parameters, see xref:query-guide:faceting.adoc#field-value-faceting-parameters[Field-Value Faceting Parameters].
 
 [source,xml]
 ----
@@ -127,7 +127,7 @@ This lets you specify the maximum heap size, in megabytes, used by the contents 
 When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit.
 If a `size` is specified in addition to `maxRamMB` then only the heap usage limit is respected.
 
-Use of this cache can be disabled on a query-by-query basis in `q` using the <<common-query-parameters.adoc#cache-local-parameter,cache local parameter>>.
+Use of this cache can be disabled on a query-by-query basis in `q` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
 
 [source,xml]
 ----
@@ -173,8 +173,8 @@ Define it with the `regenerator` parameter as `regenerator="solr.NoOpRegenerator
 
 === Monitoring Cache Sizes and Usage
 
-The section <<performance-statistics-reference.adoc#cache-statistics,Cache Statistics>> describes the metrics available for each cache.
-The metrics can be accessed in the <<plugins-stats-screen.adoc#,Solr Admin UI>> or in the <<metrics-reporting.adoc#metrics-api,Metrics API>>.
+The section xref:deployment-guide:performance-statistics-reference.adoc#cache-statistics[Cache Statistics] describes the metrics available for each cache.
+The metrics can be accessed in the xref:deployment-guide:plugins-stats-screen.adoc[] or with the xref:deployment-guidemetrics-reporting.adoc#metrics-api[Metrics API].
 
 The most important metrics to review when assessing caches are the size and the hit ratio.
 
@@ -187,7 +187,7 @@ Ideally, this number should be as close to 1 as possible.
 
 If you find that you have a low hit ratio but you've set your cache size high, you can optimize by reducing the cache size - there's no need to keep those objects in memory when they are not being used.
 
-Another useful metric is the cache evictions, which measures the ojects removed from the cache.
+Another useful metric is the cache evictions, which measures the objects removed from the cache.
 A high rate of evictions can indicate that your cache is too small and increasing it may show a higher hit ratio.
 Alternatively, if your hit ratio is high but your evictions are low, your cache might be too large and you may benefit from reducing the size.
 
@@ -296,7 +296,7 @@ There are two types of events that can trigger a listener.
 . A `firstSearcher` event occurs when a new searcher is being prepared but there is no current registered searcher to handle requests or to gain auto-warming data from (i.e., on Solr startup).
 . A `newSearcher` event is fired whenever a new searcher is being prepared, such as after a commit, and there is a current searcher handling requests.
 
-The (commented out) examples below can be found in the `solrconfig.xml` file of the `sample_techproducts_configs` <<config-sets.adoc#,configset>> included with Solr, and demonstrate using the `solr.QuerySenderListener` class to warm a set of explicit queries:
+The (commented out) examples below can be found in the `solrconfig.xml` file of the `sample_techproducts_configs` xref:config-sets.adoc[configset] included with Solr, and demonstrate using the `solr.QuerySenderListener` class to warm a set of explicit queries:
 
 [source,xml]
 ----
