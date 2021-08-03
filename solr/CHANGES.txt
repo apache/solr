@@ -402,6 +402,8 @@ Bug Fixes
 
 * SOLR-15482: Cross-collection join fixed to ignore documents that do not contain value in "from" field (hossman)
 
+* SOLR-14506: Fix NPE in COLSTATUS for collections using implicit routing. (Austin Weidler, ab)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
