@@ -402,9 +402,14 @@ Bug Fixes
 
 * SOLR-15482: Cross-collection join fixed to ignore documents that do not contain value in "from" field (hossman)
 
+* SOLR-14506: Fix NPE in COLSTATUS for collections using implicit routing. (Austin Weidler, ab)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
+
+* SOLR-15573: bin/solr auth utility should provide role bindings for `security-read` and `config-edit` by default
+  to protect the security and schema designer screens in the Admin UI (Timothy Potter)
 
 * SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
