@@ -348,6 +348,14 @@ class SolrFilter extends Filter implements SolrRel {
         return translateBinary2(((RexCall)left).operands.get(0), ((RexCall)right).operands.get(0));
       }
 
+      // for WHERE clause like: pdatex >= '2021-07-13T15:12:10.037Z'
+      if (left.getKind() == SqlKind.INPUT_REF && right.getKind() == SqlKind.CAST) {
+        final RexCall cast = ((RexCall)right);
+        if (cast.operands.size() == 1 && cast.operands.get(0).getKind() == SqlKind.LITERAL) {
+          return translateBinary2(left, cast.operands.get(0));
+        }
+      }
+
       throw new AssertionError("cannot translate call " + call);
     }
 

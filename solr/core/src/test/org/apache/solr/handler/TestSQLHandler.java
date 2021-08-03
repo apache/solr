@@ -2059,6 +2059,23 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   @Test
+  public void testISO8601TimestampFiltering() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "pdatex", "2021-07-13T15:12:09.037Z")
+        .add("id", "2", "pdatex", "2021-07-13T15:12:10.037Z")
+        .add("id", "3", "pdatex", "2021-07-13T15:12:11.037Z")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= CAST('2021-07-13 15:12:10.037' as TIMESTAMP)", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z'", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex < '2021-07-13T15:12:10.037Z'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = '2021-07-13T15:12:10.037Z'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-07-13T15:12:09.037Z' AND '2021-07-13T15:12:10.037Z' ORDER BY pdatex ASC", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z'", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z' ORDER BY pdatex ASC LIMIT 10", 2);
+  }
+
+  @Test
   public void testAggsOnCustomFieldType() throws Exception {
     new UpdateRequest()
         .add(withMultiValuedField("pintxs", Arrays.asList(1,5),"id", "1", "tintx", "1", "pintx", "2", "tfloatx", "3.33", "pfloatx", "3.33", "tlongx", "1623875868000", "plongx", "1623875868000", "tdoublex", "3.14159265359", "pdoublex", "3.14159265359", "stringx", "A", "textx", "aaa", "pdatex", "2021-06-17T00:00:00Z"))
