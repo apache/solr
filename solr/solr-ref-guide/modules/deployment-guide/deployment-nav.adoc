@@ -63,6 +63,7 @@
 *** xref:audit-logging.adoc[]
 *** xref:enabling-ssl.adoc[]
 *** xref:zookeeper-access-control.adoc[]
+*** xref:security-ui.adoc[]
 
 ** xref:client-apis.adoc[]
 *** xref:solrj.adoc[]
