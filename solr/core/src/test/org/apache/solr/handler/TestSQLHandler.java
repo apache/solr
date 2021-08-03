@@ -2232,4 +2232,25 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // select * w/o limit is not supported by Solr SQL
     expectThrows(IOException.class, () -> expectResults("SELECT * FROM $ALIAS", -1));
   }
+
+  @Test
+  public void testSelectEmptyField() throws Exception {
+    new UpdateRequest()
+        .add("id", "01", "notstored", "X", "dvonly", "Y")
+        .add("id", "02", "notstored", "X", "dvonly", "Y")
+        .add("id", "03", "notstored", "X", "dvonly", "Y")
+        .add("id", "04", "notstored", "X", "dvonly", "Y")
+        .add("id", "05", "notstored", "X", "dvonly", "Y")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    // stringx is declared in the schema but has no docs
+    expectResults("SELECT id, stringx FROM $ALIAS", 5);
+    expectResults("SELECT id, stringx FROM $ALIAS LIMIT 10", 5);
+    expectResults("SELECT id, stringx, dvonly FROM $ALIAS", 5);
+    expectResults("SELECT id, stringx, dvonly FROM $ALIAS LIMIT 10", 5);
+
+    // notafield_i matches a dynamic field pattern but has no docs, so don't allow this
+    expectThrows(IOException.class, () -> expectResults("SELECT id, stringx, notafield_i FROM $ALIAS", 5));
+    expectThrows(IOException.class, () -> expectResults("SELECT id, stringx, notstored FROM $ALIAS", 5));
+  }
 }
