@@ -35,6 +35,7 @@ import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,7 +219,8 @@ class SolrFilter extends Filter implements SolrRel {
       terms = terms.replace("'", "").replace('%', '*').replace('_', '?');
       boolean wrappedQuotes = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        terms = "\"" + terms + "\"";
+        // restore the * and ? after escaping
+        terms = "\"" + ClientUtils.escapeQueryChars(terms).replace("\\*", "*").replace("\\?", "?") + "\"";
         wrappedQuotes = true;
       }
 
@@ -271,7 +273,7 @@ class SolrFilter extends Filter implements SolrRel {
 
       boolean wrappedQuotes = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        terms = "\"" + terms + "\"";
+        terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
         wrappedQuotes = true;
       }
 

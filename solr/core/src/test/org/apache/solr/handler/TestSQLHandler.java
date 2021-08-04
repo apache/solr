@@ -338,10 +338,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "2", "text_t", "XXXX XXXX", "str_s", "b", "field_i", "8")
         .add("id", "3", "text_t", "XXXX XXXX", "str_s", "a", "field_i", "20")
         .add("id", "4", "text_t", "XXXX XXXX", "str_s", "b", "field_i", "11")
-        .add("id", "5", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "30")
-        .add("id", "6", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "40")
-        .add("id", "7", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "50")
-        .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
+        .add("id", "5", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "30", "specialchars_s", "witha|pipe")
+        .add("id", "6", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "40", "specialchars_s", "witha\\slash")
+        .add("id", "7", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "50", "specialchars_s", "witha!bang")
+        .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60", "specialchars_s", "witha\"quote")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
@@ -456,6 +456,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT id FROM $ALIAS WHERE 'a' = str_s", 2);
     expectResults("SELECT id FROM $ALIAS WHERE str_s <> 'c'", 4);
     expectResults("SELECT id FROM $ALIAS WHERE 'c' <> str_s", 4);
+    expectResults("SELECT id FROM $ALIAS WHERE specialchars_s = 'witha\"quote'", 1);
+    expectResults("SELECT id FROM $ALIAS WHERE specialchars_s = 'witha|pipe'", 1);
+    expectResults("SELECT id FROM $ALIAS WHERE specialchars_s LIKE 'with%'", 4);
+    expectResults("SELECT id FROM $ALIAS WHERE specialchars_s LIKE 'witha|%'", 1);
   }
 
   @Test
