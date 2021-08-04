@@ -239,23 +239,10 @@ class SolrFilter extends Filter implements SolrRel {
       RexLiteral value = binaryTranslated.getValue();
       switch (kind) {
         case EQUALS:
-          SqlTypeName fieldTypeName = ((RexCall) node).getOperands().get(0).getType().getSqlTypeName();
-          String terms = toSolrLiteralForEquals(value, fieldTypeName).trim();
-
-          boolean wrappedQuotes = false;
-          if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-            terms = "\"" + terms + "\"";
-            wrappedQuotes = true;
-          }
-
-          String clause = key + ":" + terms;
-          if (terms.contains("*") && wrappedQuotes) {
-            clause = "{!complexphrase}" + clause;
-          }
           this.negativeQuery = false;
-          return clause;
+          return toEqualsClause(key, value, node);
         case NOT_EQUALS:
-          return "-(" + key + ":" + toSolrLiteral(value) + ")";
+          return "-(" + toEqualsClause(key, value, node) + ")";
         case LESS_THAN:
           this.negativeQuery = false;
           return "(" + key + ": [ * TO " + toSolrLiteral(value) + " })";
@@ -276,6 +263,24 @@ class SolrFilter extends Filter implements SolrRel {
         default:
           throw new AssertionError("cannot translate " + node);
       }
+    }
+
+    private String toEqualsClause(String key, RexLiteral value, RexNode node) {
+      SqlTypeName fieldTypeName = ((RexCall) node).getOperands().get(0).getType().getSqlTypeName();
+      String terms = toSolrLiteralForEquals(value, fieldTypeName).trim();
+
+      boolean wrappedQuotes = false;
+      if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
+        terms = "\"" + terms + "\"";
+        wrappedQuotes = true;
+      }
+
+      String clause = key + ":" + terms;
+      if (terms.contains("*") && wrappedQuotes) {
+        clause = "{!complexphrase}" + clause;
+      }
+
+      return clause;
     }
 
     // translate to a literal string value for Solr queries, such as translating a
@@ -340,8 +345,8 @@ class SolrFilter extends Filter implements SolrRel {
         return a;
       }
 
-      // we can swap these if doing an equals
-      if (call.op.kind == SqlKind.EQUALS) {
+      // we can swap these if doing an equals / not equals
+      if (call.op.kind == SqlKind.EQUALS || call.op.kind == SqlKind.NOT_EQUALS) {
         final Pair<String, RexLiteral> b = translateBinary2(right, left);
         if (b != null) {
           return b;
@@ -506,7 +511,7 @@ class SolrFilter extends Filter implements SolrRel {
         return a;
       }
 
-      if (call.op.kind == SqlKind.EQUALS) {
+      if (call.op.kind == SqlKind.EQUALS || call.op.kind == SqlKind.NOT_EQUALS) {
         final Pair<String, RexLiteral> b = translateBinary2(right, left);
         if (b != null) {
           return b;

@@ -452,8 +452,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     tuple = tuples.get(1);
     assertEquals("8", tuple.get("id"));
 
-    expectResults("SELECT id, pdatex FROM $ALIAS WHERE str_s = 'a'", 2);
-    expectResults("SELECT id, pdatex FROM $ALIAS WHERE 'a' = str_s", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE str_s = 'a'", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE 'a' = str_s", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE str_s <> 'c'", 4);
+    expectResults("SELECT id FROM $ALIAS WHERE 'c' <> str_s", 4);
   }
 
   @Test
@@ -2072,6 +2074,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z'", 2);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex < '2021-07-13T15:12:10.037Z'", 1);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = '2021-07-13T15:12:10.037Z'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex <> '2021-07-13T15:12:10.037Z'", 2);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-07-13T15:12:09.037Z' AND '2021-07-13T15:12:10.037Z' ORDER BY pdatex ASC", 2);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z'", 2);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z' ORDER BY pdatex ASC LIMIT 10", 2);
