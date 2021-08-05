@@ -33,7 +33,7 @@ The `polyfit` function can be visualized in a similar manner to linear regressio
 The example below uses the `polyfit` function to fit a non-linear curve to a scatter plot of a random sample.
 The blue points are the scatter plot of the original observations and the red points are the predicted curve.
 
-image::images/math-expressions/polyfit.png[]
+image::math-expressions/polyfit.png[]
 
 In the example above a random sample containing two fields, `filesize_d` and `response_d`, is drawn from the `logs` collection.
 The two fields are vectorized and set to the variables `x` and `y`.
@@ -44,7 +44,7 @@ The `polyfit` function returns a model that is then directly plotted by `zplot` 
 The fitted model can also be used by the `predict` function in the same manner as linear regression.
 The example below uses the fitted model to predict a response time for a file size of 42000.
 
-image::images/math-expressions/polyfit-predict.png[]
+image::math-expressions/polyfit-predict.png[]
 
 If an array of predictor values is provided an array of predictions will be returned.
 
@@ -56,7 +56,7 @@ The residuals can be calculated and visualized in the same manner as linear regr
 In the example below the `ebeSubtract` function is used to subtract the fitted model from the observed values, to calculate a vector of residuals.
 The residuals are then plotted in a *residual plot* with the predictions along the x-axis and the model error on the y-axis.
 
-image::images/math-expressions/polyfit-resid.png[]
+image::math-expressions/polyfit-resid.png[]
 
 
 == Gaussian Curve Fitting
@@ -83,11 +83,11 @@ The bin count vector is then passed to `gaussfit` as the y-axis.
 In the example below, the blue line is the bin counts, and the smooth yellow line is the fitted curve.
 We can see that the binned residuals fit fairly well to a normal distribution.
 
-image::images/math-expressions/gaussfit.png[]
+image::math-expressions/gaussfit.png[]
 
 The second plot shows the two curves overlaid with an area chart:
 
-image::images/math-expressions/gaussfit2.png[]
+image::math-expressions/gaussfit2.png[]
 
 
 == Harmonic Curve Fitting
@@ -106,11 +106,11 @@ After the curve has been fit it can be extrapolated to any point in time in the 
 
 In the example below the original control points are shown in blue and the fitted curve is shown in yellow.
 
-image::images/math-expressions/harmfit.png[]
+image::math-expressions/harmfit.png[]
 
 The output of `harmfit` is a model that can be used by the `predict` function to interpolate and extrapolate the sine wave.
 In the example below the `natural` function creates an x-axis from 0 to 127
 used to predict results for the model.
 This extrapolates the sine wave out to 128 points, when the original model curve had only 19 control points.
 
-image::images/math-expressions/harmfit2.png[]
+image::math-expressions/harmfit2.png[]

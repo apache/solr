@@ -58,7 +58,7 @@ The `zplot` function can be used to visualize vectors using Zeppelin-Solr.
 
 Let's first see what happens when we visualize the array function as a table.
 
-image::images/math-expressions/array.png[]
+image::math-expressions/array.png[]
 
 It appears as one row with a comma-delimited list of values.
 You'll find that you can't visualize this output
@@ -138,12 +138,12 @@ Now we have three tuples with `x` and `y` fields.
 
 Let's see how Zeppelin-Solr handles this output in table format:
 
-image::images/math-expressions/xy.png[]
+image::math-expressions/xy.png[]
 
 Now that we have `x` and `y` columns defined we can simply switch to one of the line charts
 and plugin the fields to plot using the chart settings:
 
-image::images/math-expressions/line1.png[]
+image::math-expressions/line1.png[]
 
 Each chart has settings which can be explored by clicking on *settings*.
 
@@ -151,7 +151,7 @@ You can switch between chart types for different types of visualizations.
 Below is an example of
 a bar chart:
 
-image::images/math-expressions/bar.png[]
+image::math-expressions/bar.png[]
 
 
 == Array Operations

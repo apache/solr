@@ -31,7 +31,7 @@ A useful first step in understanding the difference is to visualize daily stock 
 The example below uses the `search` function to return 1000 days of daily stock returns for the ticker *CVX* (Chevron).
 The `change_d` field, which is the change in price for the day, is then plotted as a time series.
 
-image::images/math-expressions/randomwalk1.png[]
+image::math-expressions/randomwalk1.png[]
 
 Notice that the time series of daily price changes moves randomly above and
 below zero.
@@ -62,7 +62,7 @@ This is followed by another long period of low intensity correlation.
 This is the autocorrelation plot of pure noise.
 The daily stock changes appear to be a random time series.
 
-image::images/math-expressions/randomwalk2.png[]
+image::math-expressions/randomwalk2.png[]
 
 === Visualizing the Distribution
 
@@ -72,7 +72,7 @@ In the example below the `change_d` vector is plotted using the `empiricalDistri
 Notice that the distribution appears to be normally distributed.
 Daily stock price changes do tend to be normally distributed although *CVX* was chosen specifically for this example because of this characteristic.
 
-image::images/math-expressions/randomwalk3.png[]
+image::math-expressions/randomwalk3.png[]
 
 
 === Fitting the Distribution
@@ -84,7 +84,7 @@ The `ks` test is checking the reference distribution against the `change_d` vect
 Notice in the example below the `ks` test reports a p-value of .16278.
 A p-value of .05 or less is typically used to invalidate the null hypothesis of the test which is that the vector could have been drawn from the reference distribution.
 
-image::images/math-expressions/randomwalk4.png[]
+image::math-expressions/randomwalk4.png[]
 
 
 The `ks` test, which tends to be fairly sensitive, has confirmed the visualization which appeared to be normal.
@@ -116,14 +116,14 @@ The result of the simulation is set to variable `s`, which contains the total re
 The `empiricalDistribution` function is then used to visualize the output of the simulation as a 50 bin histogram.
 The distribution visualizes the probability of the different total returns from 100 days of stock returns for ticker *CVX*.
 
-image::images/math-expressions/randomwalk5.png[]
+image::math-expressions/randomwalk5.png[]
 
 The `probability` and `cumulativeProbability` functions can then used to learn more about the `empiricalDistribution`.
 For example the `probability` function can be used to calculate the probability of a non-negative return from 100 days of stock returns.
 
 The example below uses the `probability` function to return the probability of a return between the range of 0 and 40 from the `empiricalDistribution` of the simulation.
 
-image::images/math-expressions/randomwalk5.1.png[]
+image::math-expressions/randomwalk5.1.png[]
 
 === Random Walk
 
@@ -136,7 +136,7 @@ The variable `v` is maintained between iterations so each iteration uses the pre
 The `double` function is the final function run each iteration, which simply returns the value of `v` as a double.
 The example iterates 1000 times to create a random walk with 1000 steps.
 
-image::images/math-expressions/randomwalk6.png[]
+image::math-expressions/randomwalk6.png[]
 
 Notice the autocorrelation in the daily stock prices caused by the dependency between steps produces a very different plot then the random daily change in stock price.
 
@@ -156,13 +156,13 @@ Before getting started with actual simulations it's useful to first understand t
 The example below runs two searches to retrieve the daily stock returns for all Allstate and Chevron.
 The `change_d` vectors from both returns are read into variables (`all` and `cvx`) and Pearson's correlation is calculated for the two vectors with the `corr` function.
 
-image::images/math-expressions/corrsim1.png[]
+image::math-expressions/corrsim1.png[]
 
 Covariance is an unscaled measure of correlation.
 Covariance is the measure used by the multivariate simulations so it's useful to also compute the covariance for the two stock returns.
 The example below computes the covariance.
 
-image::images/math-expressions/corrsim2.png[]
+image::math-expressions/corrsim2.png[]
 
 === Covariance Matrix
 
@@ -174,7 +174,7 @@ The matrix is then transposed with the `transpose` function so that the `all` ve
 
 The `cov` function then computes the covariance matrix for the columns of the matrix and returns the result.
 
-image::images/math-expressions/corrsim3.png[]
+image::math-expressions/corrsim3.png[]
 
 The covariance matrix is a square matrix which contains the variance of each vector and the covariance between the vectors as follows:
 
@@ -209,7 +209,7 @@ The output of the simulation is a vector which can be treated as an empirical di
 In this example it is plotted as a 50 bin histogram which visualizes the probability of the different total returns from 100 days of stock returns for the tickers `all` and `cvx`.
 
 
-image::images/math-expressions/mnorm.png[]
+image::math-expressions/mnorm.png[]
 
 === The Effect of Correlation
 
@@ -218,4 +218,4 @@ The example below demonstrates this by providing a hard coded covariance matrix 
 This results is a simulated outcome distribution with a higher standard deviation or larger spread from the mean.
 This measures the degree that higher correlation produces higher volatility in the random walk.
 
-image::images/math-expressions/mnorm2.png[]
+image::math-expressions/mnorm2.png[]

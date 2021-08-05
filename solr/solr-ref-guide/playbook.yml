@@ -1,6 +1,6 @@
 site:
   title: Apache Solr Reference Guide
-  url: https://solr.apache.org
+  url: https://solr.apache.org/guide
   start_page: solr::index.adoc
 content:
   sources:

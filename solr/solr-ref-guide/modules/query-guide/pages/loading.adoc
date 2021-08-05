@@ -147,13 +147,13 @@ Once that data has been parsed into tuples with `parseCSV` or `parseTSV` it can 
 
 The example below shows the output of the `parseCSV` function visualized as a table.
 
-image::images/math-expressions/csvtable.png[]
+image::math-expressions/csvtable.png[]
 
 Columns from the table can then be visualized using one of Apache Zeppelin's
 visualizations.
 The example below shows a scatter plot of the `petal_length` and `petal_width` grouped by `species`.
 
-image::images/math-expressions/csv.png[]
+image::math-expressions/csv.png[]
 
 == Selecting Fields and Field Types
 
@@ -165,7 +165,7 @@ This approach allows for fine grain control over schema field types without havi
 Below is an example of selecting fields and mapping them
 to specific field types.
 
-image::images/math-expressions/csvselect.png[]
+image::math-expressions/csvselect.png[]
 
 == Loading Data
 
@@ -176,7 +176,7 @@ The `update` function adds documents to Solr in batches and returns a tuple for 
 In the example below the `update` expression is run using Zeppelin-Solr because the data set is small.
 For larger loads it's best to run the load from a curl command where the output of the `update` function can be spooled to disk.
 
-image::images/math-expressions/update.png[]
+image::math-expressions/update.png[]
 
 == Transforming Data
 
@@ -199,11 +199,11 @@ If the `uuid` function is used the data cannot be reloaded without first deletin
 
 Below is an example using the `concat` function to create a new id.
 
-image::images/math-expressions/selectconcat.png[]
+image::math-expressions/selectconcat.png[]
 
 Below is an example using the `uuid` function to create a new id.
 
-image::images/math-expressions/selectuuid.png[]
+image::math-expressions/selectuuid.png[]
 
 === Record Numbers
 
@@ -213,7 +213,7 @@ the <<Filtering Results>> section below.
 
 The example below shows the syntax of the `recNum` function:
 
-image::images/math-expressions/recNum.png[]
+image::math-expressions/recNum.png[]
 
 
 === Parsing Dates
@@ -297,7 +297,7 @@ The `upper`, `lower`, `split`, `valueAt`, `trim`, and `concat` functions can be 
 The example below shows the `upper` function used to upper case the *species*
 field.
 
-image::images/math-expressions/selectupper.png[]
+image::math-expressions/selectupper.png[]
 
 The example below shows the `split` function which splits a field on
 a delimiter.
@@ -354,7 +354,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 The `valueAt` function can be used to select a specific index from a split array.
 
-image::images/math-expressions/valueat.png[]
+image::math-expressions/valueat.png[]
 
 === Filtering Results
 
@@ -373,21 +373,21 @@ Below are some strategies for using the `having` function to filter records.
 The `eq` (equals) function can be used with the `having` expression to filter the result set
 to a single record number:
 
-image::images/math-expressions/havingId.png[]
+image::math-expressions/havingId.png[]
 
 ==== Skipping
 
 The `gt` (greater than) function can be used on the `recNum` field to filter the result set to
 records with a recNum greater then a specific value:
 
-image::images/math-expressions/skipping.png[]
+image::math-expressions/skipping.png[]
 
 ==== Paging
 
 The `and` function with nested `lt` and `gt` functions can be used to select records within a specific
 record number range:
 
-image::images/math-expressions/paging.png[]
+image::math-expressions/paging.png[]
 
 ==== Striding
 
@@ -395,14 +395,14 @@ The `eq` and nested `mod` function can be used to stride through the data at spe
 record number interval
 This allows for a sample to be taken at different intervals in the data in a systematic way.
 
-image::images/math-expressions/striding.png[]
+image::math-expressions/striding.png[]
 
 ==== Regex Matching
 
 The `matches` function can be used to test if a field in the record matches a specific regular expression.
 This provides a powerful *grep* like capability over the record set.
 
-image::images/math-expressions/matches.png[]
+image::math-expressions/matches.png[]
 
 === Handling Nulls
 
@@ -425,12 +425,12 @@ values.
 In the example below the `having` function returns zero documents because the `notNull` function is applied to
  *field_a* in each tuple.
 
-image::images/math-expressions/havingNotNull.png[]
+image::math-expressions/havingNotNull.png[]
 
 In the example below the `having` function returns all documents because the `isNull` function is applied to
 *field_a* in each tuple.
 
-image::images/math-expressions/havingIsNull.png[]
+image::math-expressions/havingIsNull.png[]
 
 ==== Replacing Nulls
 
@@ -441,7 +441,7 @@ In the example below the `if` function applies the `isNull` boolean expression t
 In the first example it replaces null *petal_width* values with 0, and returns the *petal_width* if present.
 In the second example it replaces null *field1* values with the string literal "NA" and returns *field1* if present.
 
-image::images/math-expressions/ifIsNull.png[]
+image::math-expressions/ifIsNull.png[]
 
 === Text Analysis
 
@@ -525,4 +525,4 @@ This allows each term to be indexed in a separate document so the relationships 
 graph expressions or aggregations.
 
 
-image::images/math-expressions/cartesian.png[]
+image::math-expressions/cartesian.png[]

@@ -32,7 +32,7 @@ In the example the `search` function is passed only the name of the collection b
 This returns a result set of 10 records with all fields.
 This simple function is useful for exploring the fields in the data and understanding how to start refining the search criteria.
 
-image::images/math-expressions/search1.png[]
+image::math-expressions/search1.png[]
 
 === Searching and Sorting
 
@@ -42,11 +42,11 @@ In the example below a search query, field list, rows and sort have been added t
 Now the search is limited to records within a specific time range and returns a maximum result set of 750 records sorted by `tdate_dt` ascending.
 We have also limited the result set to three specific fields.
 
-image::images/math-expressions/search-sort.png[]
+image::math-expressions/search-sort.png[]
 
 Once the data is loaded into the table we can switch to a scatter plot and plot the `filesize_d` column on the *x-axis* and the `response_d` column on the *y-axis*.
 
-image::images/math-expressions/search-sort-plot.png[]
+image::math-expressions/search-sort-plot.png[]
 
 This allows us to quickly visualize the relationship between two variables selected from a very specific slice of the index.
 
@@ -55,7 +55,7 @@ This allows us to quickly visualize the relationship between two variables selec
 The `search` function will score and rank documents when a query is performed on a text field.
 The example below shows an example of the scoring and ranking of results.
 
-image::images/math-expressions/scoring.png[]
+image::math-expressions/scoring.png[]
 
 == Sampling
 
@@ -89,7 +89,7 @@ Based on this the *mean* and *mode* would appear to be around 40,000.
 
 This sample can be re-run multiple times to see if the samples produce similar plots.
 
-image::images/math-expressions/univariate.png[]
+image::math-expressions/univariate.png[]
 
 === Bivariate Scatter Plots
 
@@ -107,7 +107,7 @@ By studying the scatter plot we can learn the following:
 * The variance of the data at each `filesize_d` point seems fairly consistent.
 This means a predictive model would have consistent error across the range of predictions.
 
-image::images/math-expressions/bivariate.png[]
+image::math-expressions/bivariate.png[]
 
 == Aggregation
 
@@ -124,12 +124,12 @@ Any number and combination of statistics can be calculated in a single function 
 The `stats` function can be visualized in Zeppelin-Solr as a table.
 In the example below two statistics are calculated over a result set and are displayed in a table:
 
-image::images/math-expressions/stats-table.png[]
+image::math-expressions/stats-table.png[]
 
 The `stats` function can also be visualized using the *number* visualization which is used to highlight important numbers.
 The example below shows the `count(*)` aggregation displayed in the number visualization:
 
-image::images/math-expressions/stats.png[]
+image::math-expressions/stats.png[]
 
 === facet
 
@@ -140,21 +140,21 @@ The example below performs a single dimension aggregation from the nyc311 (NYC c
 The aggregation returns the top five *complaint types* by *count* for records with a status of *Pending*.
 The results are displayed with Zeppelin-Solr in a table.
 
-image::images/math-expressions/facettab1.png[]
+image::math-expressions/facettab1.png[]
 
 The example below shows the table visualized using a pie chart.
 
-image::images/math-expressions/facetviz1.png[]
+image::math-expressions/facetviz1.png[]
 
 The next example demonstrates a multi-dimension aggregation.
 Notice that the `buckets` parameter now contains two dimensions: `borough_s` and `complaint_type_s`.
 This returns the top 20 combinations of borough and complaint type by count.
 
-image::images/math-expressions/facettab2.png[]
+image::math-expressions/facettab2.png[]
 
 The example below shows the multi-dimension aggregation visualized as a grouped bar chart.
 
-image::images/math-expressions/facetviz2.png[]
+image::math-expressions/facetviz2.png[]
 
 The `facet` function supports any combination of the following aggregate functions: count(*), sum, avg, min, max.
 
@@ -170,7 +170,7 @@ The example below visualizes the output of the `facet2D` function.
 In the example `facet2D` returns the top 5 boroughs and the top 5 complaint types for each borough.
 The output is then visualized as a heatmap.
 
-image::images/math-expressions/facet2D.png[]
+image::math-expressions/facet2D.png[]
 
 The `facet2D` function supports one of the following aggregate functions: `count(*)`, `sum`, `avg`, `min`, `max`.
 
@@ -183,7 +183,7 @@ In this example the average monthly closing price is calculated for the stock ti
 
 The output of the `timeseries` function is then visualized with a line chart.
 
-image::images/math-expressions/timeseries1.png[]
+image::math-expressions/timeseries1.png[]
 
 The `timeseries` function supports any combination of the following aggregate functions: `count(*)`, `sum`, `avg`, `min`, `max`.
 
@@ -203,14 +203,14 @@ The example below illustrates the difference between the `facet` function and th
 In the first example the `facet` function aggregates the top 5 complaint types in Brooklyn.
 This returns the five most common complaint types in Brooklyn, but it's not clear that these terms appear more frequently in Brooklyn then then the other boroughs.
 
-image::images/math-expressions/significantTermsCompare.png[]
+image::math-expressions/significantTermsCompare.png[]
 
 In the next example the `significantTerms` function returns the top 5 significant terms in the `complaint_type_s` field for the borough of Brooklyn.
 The highest scoring term, Elder Abuse, has a foreground count of 285 and background count of 298.
 This means that there were 298 Elder Abuse complaints in the entire data set, and 285 of them were in Brooklyn.
 This shows that Elder Abuse complaints have a much higher occurrence rate in Brooklyn than the other boroughs.
 
-image::images/math-expressions/significantTerms2.png[]
+image::math-expressions/significantTerms2.png[]
 
 The final example shows a visualization of the `significantTerms` from a text field containing movie reviews.
 The result shows the significant terms that appear in movie reviews that have the phrase "sci-fi".
@@ -218,7 +218,7 @@ The result shows the significant terms that appear in movie reviews that have th
 The results are visualized using a bubble chart with the *foreground* count on plotted on the x-axis and the *background* count on the y-axis.
 Each term is shown in a bubble sized by the *score*.
 
-image::images/math-expressions/sterms.png[]
+image::math-expressions/sterms.png[]
 
 === nodes
 
@@ -248,6 +248,6 @@ The result below shows the ticker symbols in the `nodes` field and the counts fo
 Notice *jpm* is first, which shows how many days *jpm* had a change greater then .25 in this time period.
 The next set of ticker symbols (*mtb*, *slvb*, *gs* and *pnc*) are the symbols with highest number of days with a change greater then .25 on the same days that *jpm* had a change greater then .25.
 
-image::images/math-expressions/nodestab.png[]
+image::math-expressions/nodestab.png[]
 
 The `nodes` function supports any combination of the following aggregate functions: `count(*)`, `sum`, `avg`, `min`, `max`.

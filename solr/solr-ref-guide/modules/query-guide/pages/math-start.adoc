@@ -44,11 +44,11 @@ The easiest way to run streaming expressions and math expressions is through the
 
 A sample `search` streaming expression is shown in the screenshot below:
 
-image::images/math-expressions/search.png[]
+image::math-expressions/search.png[]
 
 A sample `add` math expression is shown in the screenshot below:
 
-image::images/math-expressions/add.png[]
+image::math-expressions/add.png[]
 
 === Curl Example
 
@@ -102,7 +102,7 @@ https://github.com/lucidworks/zeppelin-solr
 Once installed the Solr Interpreter can be configured to connect to your Solr instance.
 The screenshot below shows the panel for configuring Zeppelin-Solr.
 
-image::images/math-expressions/zepconf.png[]
+image::math-expressions/zepconf.png[]
 
 Configure the `solr.baseUrl` and `solr.collection` to point to the location where the streaming expressions and math expressions will be sent for execution.
 The `solr.collection` is just the execution collection and does not need to hold data, although it can hold data.

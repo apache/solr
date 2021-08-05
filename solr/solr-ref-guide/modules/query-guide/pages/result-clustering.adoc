@@ -30,7 +30,7 @@ Clusters discovered for a given query can be perceived as _dynamic facets_.
 This is beneficial when regular faceting is difficult (field values are not known in advance) or when the queries are exploratory in nature.
 Take a look at the https://search.carrot2.org/#/search/web/apache%20solr/treemap[Carrot^2^] project's demo page to see an example of search results clustering in action (the groups in the visualization have been discovered automatically in search results to the right, there is no external information involved).
 
-image::images/result-clustering/carrot2.png[image,width=900]
+image::result-clustering/carrot2.png[image,width=900]
 
 The query issued to the system was _Apache Solr_.
 It seems clear that faceting could not yield a similar set of groups, although the goals of both techniques are similar -- to let the user explore the set of search results and either rephrase the query or narrow the focus to a subset of current documents.
@@ -501,13 +501,13 @@ For example, let's assume the following engine configuration:
 First, locate the configuration parameters for the Lingo algorithm
 at https://carrot2.github.io/release/latest/[Carrot^2^ documentation site]:
 
-image::images/result-clustering/carrot2-docs-attrs1.png[image,scaledwidth=75%]
+image::result-clustering/carrot2-docs-attrs1.png[image,scaledwidth=75%]
 
 Then locate the particular setting you'd like to change and note the
 REST API path to that setting (in this case the parameter is
 `minClusterSize` and its path is `preprocessing.documentAssigner.minClusterSize`):
 
-image::images/result-clustering/carrot2-docs-attrs2.png[image,scaledwidth=75%]
+image::result-clustering/carrot2-docs-attrs2.png[image,scaledwidth=75%]
 
 Now add the full path-value pair to the engine's configuration:
 

@@ -147,6 +147,11 @@ html.is-clipped--nav {
 .is-current-page > .nav-link,
 .is-current-page > .nav-text {
   font-weight: var(--body-font-weight-bold);
+  color: var(--color-solr-primary-orange);
+}
+
+.is-current-path {
+  background-color: var(--color-white);
 }
 
 .nav-panel-explore {

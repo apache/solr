@@ -125,7 +125,7 @@ visualization in Apache Zeppelin.
 
 NOTE: In the visualization below the rows are read from the *bottom* up, which is a common convention for heat maps.
 
-image::images/math-expressions/matrix.png[]
+image::math-expressions/matrix.png[]
 
 
 == Accessing Rows and Columns

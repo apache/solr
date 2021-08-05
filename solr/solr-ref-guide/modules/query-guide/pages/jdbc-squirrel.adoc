@@ -31,12 +31,12 @@ Once the driver has been created, you can create a connection to Solr with the c
 
 === Open Drivers
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_1.png[image,width=900,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_1.png[image,width=900,height=400]
 
 
 === Add Driver
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_2.png[image,width=892,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_2.png[image,width=892,height=400]
 
 
 === Name the Driver
@@ -44,28 +44,28 @@ image::images/jdbc-squirrel/squirrelsql_solrjdbc_2.png[image,width=892,height=40
 Provide a name for the driver, and provide the URL format: `jdbc:solr://<zk_connection_string>/?collection=<collection>`.
 Do not fill in values for the variables "```zk_connection_string```" and "```collection```", those will be defined later when the connection to Solr is configured.
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_3.png[image,width=467,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_3.png[image,width=467,height=400]
 
 
 === Add Solr JDBC jars to Classpath
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_4.png[image,width=467,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_4.png[image,width=467,height=400]
 
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_9.png[image,width=469,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_9.png[image,width=469,height=400]
 
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_5.png[image,width=469,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_5.png[image,width=469,height=400]
 
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_7.png[image,width=467,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_7.png[image,width=467,height=400]
 
 
 === Add the Solr JDBC driver class name
 
 After adding the .jars, you will need to additionally define the Class Name `org.apache.solr.client.solrj.io.sql.DriverImpl`.
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_11.png[image,width=470,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_11.png[image,width=470,height=400]
 
 
 == Create an Alias
@@ -74,26 +74,26 @@ To define a JDBC connection, you must define an alias.
 
 === Open Aliases
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_10.png[image,width=840,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_10.png[image,width=840,height=400]
 
 
 === Add an Alias
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_12.png[image,width=959,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_12.png[image,width=959,height=400]
 
 
 === Configure the Alias
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_14.png[image,width=470,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_14.png[image,width=470,height=400]
 
 
 === Connect to the Alias
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_13.png[image,width=522,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_13.png[image,width=522,height=400]
 
 
 == Querying
 
 Once you've successfully connected to Solr, you can use the SQL interface to enter queries and work with data.
 
-image::images/jdbc-squirrel/squirrelsql_solrjdbc_15.png[image,width=655,height=400]
+image::jdbc-squirrel/squirrelsql_solrjdbc_15.png[image,width=655,height=400]

@@ -196,8 +196,9 @@ h1.page + nav.toc.embedded {
 }
 
 .doc table.tableblock {
-  font-size: calc(15 / var(--rem-base) * 1rem);
+  font-size: calc(16 / var(--rem-base) * 1rem);
   margin: 1.5rem 0 0;
+  background-color: var(--color-white);
 }
 
 .doc table.tableblock + * {
@@ -219,6 +220,12 @@ h1.page + nav.toc.embedded {
 
 .doc table.tableblock thead th {
   border-bottom: 2.5px solid var(--table-border-color);
+}
+
+.doc table.tableblock.stripes-none td,
+.doc table.tableblock.stripes-none > :not(thead) th {
+  border-top: none;
+  border-bottom: none;
 }
 
 .doc table.tableblock td,
@@ -680,12 +687,8 @@ h1.page + nav.toc.embedded {
   user-select: none;
 }
 
-.doc .dlist dt {
-  font-style: italic;
-}
-
 .doc .dlist dd {
-  margin: 0 0 0.25rem 1.5rem;
+  margin: 0 0 1.25rem 1.5rem;
 }
 
 .doc .dlist dd:last-of-type {

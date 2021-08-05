@@ -1,5 +1,7 @@
 name: solr
-version: '9.0'
+version: '9_0_0'
+display_version: '9.0'
+title: Solr
 nav:
 - modules/getting-started/getting-started-nav.adoc
 - modules/deployment-guide/deployment-nav.adoc

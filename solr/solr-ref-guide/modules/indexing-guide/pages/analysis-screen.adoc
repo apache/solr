@@ -25,14 +25,14 @@ For example, let's look at some of the "Text" field types available in the `bin/
 
 We can begin with `text_ws` - one of the most simplified Text field types available:
 
-image::images/analysis-screen/analysis_normal.png[Normal Analysis]
+image::analysis-screen/analysis_normal.png[Normal Analysis]
 
 This shows a simple output of only the tokens produced by each step of analysis (a single step in this case).
 The tokenizer is shown with an abbreviation, hover or click on this to see the full name.
 
 If we enable *Verbose Output* by checking the box, more details are shown:
 
-image::images/analysis-screen/analysis_compare_0.png[Verbose Analysis]
+image::analysis-screen/analysis_compare_0.png[Verbose Analysis]
 
 By looking at the start and end positions for each term, we can see that the only thing this field type does is tokenize text on whitespace.
 Notice in this image that the term "Running" has a start position of 0 and an end position of 7, while "an" has a start position of 8 and an end position of 10, and "Analyzer" starts at 11 and ends at 19.
@@ -50,22 +50,22 @@ In particular we want:
 
 For our next attempt, let's try the `text_general` field type:
 
-image::images/analysis-screen/analysis_compare_1.png[image]
+image::analysis-screen/analysis_compare_1.png[image]
 
 With the verbose output enabled, we can see how each stage of our new analyzers modify the tokens they receive before passing them on to the next stage.
 As we scroll down to the final output, we can see that we do start to get a match on "analyzer" from each input string, thanks to the "LCF" stage, which if you hover over with your mouse, you'll see is the `LowerCaseFilter`:
 
-image::images/analysis-screen/analysis_compare_2.png[image]
+image::analysis-screen/analysis_compare_2.png[image]
 
 The `text_general` field type is designed to be generally useful for any language, and it has definitely gotten us closer to our objective than `text_ws` from our first example by solving the problem of case sensitivity.
 It's still not quite what we are looking for because we don't see stemming or stopword rules being applied.
 So now let us try the `text_en` field type:
 
-image::images/analysis-screen/analysis_compare_3.png[image]
+image::analysis-screen/analysis_compare_3.png[image]
 
 Now we can see the "SF" (`StopFilter`) stage of the analyzers solving the problem of removing Stop Words ("an"), and as we scroll down, we also see the "PSF" (`PorterStemFilter`) stage apply stemming rules suitable for our English language input, such that the terms produced by our "index analyzer" and the terms produced by our "query analyzer" match the way we expect.
 
-image::images/analysis-screen/analysis_compare_4.png[image]
+image::analysis-screen/analysis_compare_4.png[image]
 
 
 At this point, we can continue to experiment with additional inputs, verifying that our analyzers produce matching tokens when we expect them to match, and disparate tokens when we do not expect them to match, as we iterate and tweak our field type configuration.

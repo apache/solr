@@ -68,7 +68,7 @@ Samples of this size can be used to reliably estimate the statistics for very la
 
 The `describe` function can also be visualized in a table with Zeppelin-Solr:
 
-image::images/math-expressions/describe.png[]
+image::math-expressions/describe.png[]
 
 
 == Histograms and Frequency Tables
@@ -138,15 +138,15 @@ When this expression is sent to the `/stream` handler it responds with:
 
 With Zeppelin-Solr the histogram can be first visualized as a table:
 
-image::images/math-expressions/histtable.png[]
+image::math-expressions/histtable.png[]
 
 Then the histogram can be visualized with an area chart by plotting the *mean* of the bins on the *x-axis* and the *prob* (probability) on the *y-axis*:
 
-image::images/math-expressions/hist.png[]
+image::math-expressions/hist.png[]
 
 The cumulative probability can be plotted by switching the *y-axis* to the *cumProb* column:
 
-image::images/math-expressions/cumProb.png[]
+image::math-expressions/cumProb.png[]
 
 === Custom Histograms
 
@@ -169,7 +169,7 @@ Then an `array` of labels is created and set to variable *l*.
 Finally the `zplot` function is used to plot the labels vector and the `count(*)` column.
 Notice the `col` function is used inside of the `zplot` function to extract the counts from the `stats` results.
 
-image::images/math-expressions/custom-hist.png[]
+image::math-expressions/custom-hist.png[]
 
 
 === Frequency Tables
@@ -242,11 +242,11 @@ When this expression is sent to the `/stream` handler it responds with:
 
 With Zeppelin-Solr the frequency table can be first visualized as a table:
 
-image::images/math-expressions/freqTable.png[]
+image::math-expressions/freqTable.png[]
 
 The frequency table can then be plotted by switching to a scatter chart and selecting the *value* column for the *x-axis* and the *count* column for the *y-axis*
 
-image::images/math-expressions/freqTable1.png[]
+image::math-expressions/freqTable1.png[]
 
 Notice that the visualization nicely displays the frequency of daily change in stock prices rounded to integers.
 The most frequently occurring value is 0 with 1494 occurrences followed by -1 and 1 with around 700 occurrences.
@@ -337,7 +337,7 @@ Notice that the variable *p* is used to specify the list of percentiles that are
 Finally `zplot` is used to plot the percentiles sequence on the *x-axis* and the calculated percentile values for both distributions on the *y-axis*.
 And a line plot is used to visualize the QQ plot.
 
-image::images/math-expressions/quantile-plot.png[]
+image::math-expressions/quantile-plot.png[]
 
 This quantile plot provides a clear picture of the distributions of daily price changes for *amzn* and *googl*.
 In the plot the *x-axis* is the percentiles and the *y-axis* is the percentile value calculated.
@@ -366,7 +366,7 @@ The type of correlation is specified by adding the *type* named parameter in the
 In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from the logs collection using the `random` function.
 The fields are vectorized into the variables *x* and *y* and then *Spearman's* correlation for the two vectors is calculated using the `corr` function.
 
-image::images/math-expressions/correlation.png[]
+image::math-expressions/correlation.png[]
 
 ==== Correlation Matrices
 
@@ -390,14 +390,14 @@ Another way to look at this is it shows how the different complaint types tend t
 
 Finally the `zplot` function is used to plot the correlation matrix as a heat map.
 
-image::images/math-expressions/corrmatrix.png[]
+image::math-expressions/corrmatrix.png[]
 
 Notice in the example the correlation matrix is square with complaint types shown on both the *x* and y-axises.
 The color of the cells in the heat map shows the intensity of the correlation between the complaint types.
 
 The heat map is interactive, so mousing over one of the cells pops up the values for the cell.
 
-image::images/math-expressions/corrmatrix2.png[]
+image::math-expressions/corrmatrix2.png[]
 
 Notice that HEAT/HOT WATER and UNSANITARY CONDITION complaints have a correlation of 8 (rounded to the nearesttenth).
 
@@ -410,7 +410,7 @@ The `cov` function calculates the covariance of two vectors of data.
 In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from the logs collection using the `random` function.
 The fields are vectorized into the variables *x* and *y* and then the covariance for the two vectors is calculated using the `cov` function.
 
-image::images/math-expressions/covariance.png[]
+image::math-expressions/covariance.png[]
 
 If a matrix is passed to the `cov` function it will automatically compute a covariance matrix for the *columns* of the matrix.
 

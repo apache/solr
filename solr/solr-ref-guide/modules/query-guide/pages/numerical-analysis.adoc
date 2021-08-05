@@ -44,7 +44,7 @@ Then a spline is used to interpolate the smoothed control points.
 One way to better understand interpolation is to visualize what it means to sample along a curve.
 The example below zooms in on a specific region of a curve by sampling the curve between a specific x-axis range.
 
-image::images/math-expressions/interpolate1.png[]
+image::math-expressions/interpolate1.png[]
 
 The visualization above first creates two arrays with x and y-axis points.
 Notice that the x-axis ranges from 0 to 9.
@@ -81,7 +81,7 @@ The `loess` function returns the fitted model of smoothed data points.
 
 The `zplot` function is then used to plot the `x`, `y` and `y1` variables.
 
-image::images/math-expressions/loess.png[]
+image::math-expressions/loess.png[]
 
 
 == Derivatives
@@ -101,7 +101,7 @@ The `derivative` function is then applied to the linear interpolation.
 `zplot` is then used to plot the *`hours`* on the x-axis and `miles` on the y-axis, and the `derivative` as `mph`, at each x-axis point.
 
 
-image::images/math-expressions/derivative.png[]
+image::math-expressions/derivative.png[]
 
 Notice that the *miles_traveled* line has a slope of 10 until the 5th hour where it changes to a slope of 50.
 The *mph* line, which is the derivative, visualizes the *velocity* of the *miles_traveled* line.
@@ -121,7 +121,7 @@ Notice that the second derivative `d2` is taken by applying the derivative funct
 
 The second derivative is plotted as *acceleration* on the chart.
 
-image::images/math-expressions/derivatives.png[]
+image::math-expressions/derivatives.png[]
 
 Notice that the acceleration line is 0 until the *mph* line increases from 10 to 50.
 At this point the *acceleration* line moves to 40.
@@ -134,7 +134,7 @@ In the example a monthly time series is generated for the average closing price 
 The `avg(close)` column is vectorized and interpolated using linear interpolation (`lerp`).
 The `zplot` function is then used to plot the derivative of the time series.
 
-image::images/math-expressions/derivative2.png[]
+image::math-expressions/derivative2.png[]
 
 Notice that the derivative plot clearly shows the rates of change in the stock price over time.
 
@@ -202,7 +202,7 @@ The `avg(close)` column is vectorized and interpolated using a `spline`.
 
 The `zplot` function is then used to plot the cumulative integral of the time series.
 
-image::images/math-expressions/integral.png[]
+image::math-expressions/integral.png[]
 
 The plot above visualizes the volume under the curve as the *AMZN* stock price changes over time.
 Because this plot is cumulative, the volume under a stock price time series which stays the same over time, will have a positive *linear* slope.

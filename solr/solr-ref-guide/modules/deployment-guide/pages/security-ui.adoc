@@ -21,13 +21,13 @@ The Security screen allows administrators with the `security-edit` permission to
 The Security screen works with Solr running in cloud and standalone modes.
 
 .Security Screen
-image::images/solr-admin-ui/security.png[]
+image::solr-admin-ui/security.png[]
 
 == Getting Started
 
 The Security screen warns you if security is not enabled for Solr. You are strongly encouraged to enable security for Solr instances exposed on any network other than localhost.
 
-image::images/security-ui/security-not-enabled-warn.png[image,width=500]
+image::security-ui/security-not-enabled-warn.png[image,width=500]
 
 When first getting started with Solr, use the `bin/solr auth` command-line utility to enable security for your Solr installation (cloud mode only), see <<solr-control-script-reference.adoc#authentication,bin/solr auth>> for usage instructions.
 For example, the following command will enable *basic authentication* and prompt you for the username and password for the initial user with administrative access:
@@ -51,7 +51,7 @@ The Security screen provides the following features:
 
 Administrators can read, create, update, and delete user accounts when using the <<basic-authentication-plugin.adoc#,Basic Authentication>> plugin.
 
-image::images/security-ui/users.png[image,width=500]
+image::security-ui/users.png[image,width=500]
 
 .Limited User Management Capabilities
 [NOTE]
@@ -62,11 +62,11 @@ Consequently, if a user account has been compromised, then an administrator need
 
 To edit a user account, click on the row in the table to open the edit user dialog. You can change a user's password and change their role membership.
 
-image::images/security-ui/edit-user-dialog.png[image,width=400]
+image::security-ui/edit-user-dialog.png[image,width=400]
 
 For systems with many user accounts, use the filter controls at the top of the user table to find users based on common properties.
 
-image::images/security-ui/filter-users.png[image,width=400]
+image::security-ui/filter-users.png[image,width=400]
 
 For other authentication plugins, such as the <<jwt-authentication-plugin.adoc#,JWT Authentication>> plugin, this panel will be disabled as users are managed by an external system.
 
@@ -74,7 +74,7 @@ For other authentication plugins, such as the <<jwt-authentication-plugin.adoc#,
 
 <<rule-based-authorization-plugin.adoc#roles,Roles>> link users to permissions. If using the <<rule-based-authorization-plugin.adoc#,Rule-based Authorization>> plugin, administrators can read, create, and update roles. Deleting roles is not supported.
 
-image::images/security-ui/roles.png[image,width=500]
+image::security-ui/roles.png[image,width=500]
 
 To edit a role, simply click on the corresponding row in the table.
 
@@ -84,7 +84,7 @@ If not using the Rule-based Authorization plugin, the Roles panel will be disabl
 
 The *Permissions* panel on the Security screen allows administrators to read, create, update, and delete permissions.
 
-image::images/security-ui/permissions.png[image,width=900]
+image::security-ui/permissions.png[image,width=900]
 
 For detailed information about how permissions work in Solr, see: <<rule-based-authorization-plugin.adoc#permissions,Rule-based Authorization Permissions>>.
 
@@ -92,7 +92,7 @@ For detailed information about how permissions work in Solr, see: <<rule-based-a
 
 Click on the btn:[Add Permission] button to open the Add Permission dialog.
 
-image::images/security-ui/add-permission.png[image,width=600]
+image::security-ui/add-permission.png[image,width=600]
 
 You can _either_ select a *Predefined* permission from the drop-down select list or provide a unique name for a custom permission.
 Creating a new *Predefined* permission is simply a matter of mapping the permission to zero or more roles as the other settings, such as path, are immutable for predefined permissions.

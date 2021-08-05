@@ -194,7 +194,7 @@ If you need convincing, use a Web browser to see the Admin Console.
 `\http://localhost:8983/solr/`
 
 .The Solr Admin interface.
-image::images/installing-solr/SolrAdminDashboard.png[Solr's Admin UI,pdfwidth=75%]
+image::installing-solr/SolrAdminDashboard.png[Solr's Admin UI,pdfwidth=75%]
 
 If Solr is not running, your browser will complain that it cannot connect to the server.
 Check your port number and try again.

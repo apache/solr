@@ -166,7 +166,7 @@ You can also use the Admin UI to create fields, but it offers a bit less control
 It will work for our case, though:
 
 .Creating a field
-image::images/solr-tutorial/tutorial-add-field.png[Adding a Field,640,480,pdfwidth=75%]
+image::solr-tutorial/tutorial-add-field.png[Adding a Field,640,480,pdfwidth=75%]
 
 ===== Create a "catchall" Copy Field
 
@@ -189,7 +189,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{"add-copy-field"
 In the Admin UI, choose btn:[Add Copy Field], then fill out the source and destination for your field, as in this screenshot.
 
 .Creating a copy field
-image::images/solr-tutorial/tutorial-add-copy-field.png[Adding a copy field,640,480,pdfwidth=75%]
+image::solr-tutorial/tutorial-add-copy-field.png[Adding a copy field,640,480,pdfwidth=75%]
 
 What this does is make a copy of all fields and put the data into the "\_text_" field.
 
@@ -277,7 +277,7 @@ In addition to providing search results, a Solr query can return the number of d
 On the Admin UI Query tab, if you check the `facet` checkbox, you'll see a few facet-related options appear:
 
 .Facet options in the Query screen
-image::images/solr-tutorial/tutorial-admin-ui-facet-options.png[Solr Quick Start: Query tab facet options]
+image::solr-tutorial/tutorial-admin-ui-facet-options.png[Solr Quick Start: Query tab facet options]
 
 To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true`), and specify the field to facet on via the `facet.field` parameter.
 If you only want facets, and no document contents, specify `rows=0`.

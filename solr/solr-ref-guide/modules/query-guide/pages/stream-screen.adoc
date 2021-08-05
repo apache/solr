@@ -28,4 +28,4 @@ Under this, the streamed results are shown.
 A URL to be able to view the output in a browser is also available.
 
 .Stream Screen with query and results
-image::images/stream-screen/StreamScreen.png[image,height=400]
+image::stream-screen/StreamScreen.png[image,height=400]

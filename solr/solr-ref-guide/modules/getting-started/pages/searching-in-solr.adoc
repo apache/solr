@@ -69,7 +69,7 @@ Faceting makes it easy for users to explore search results on sites such as movi
 
 The screen shot below shows an example of faceting from the CNET Web site (CBS Interactive Inc.), which was the first site to use Solr.
 
-image::images/searching-in-solr/cnet-faceting.png[image,width=600,height=300]
+image::searching-in-solr/cnet-faceting.png[image,width=600,height=300]
 
 Faceting makes use of fields defined when the search applications were indexed.
 In the example above, these fields include categories of information that are useful for describing digital cameras: manufacturer, resolution, and zoom range.
@@ -86,4 +86,4 @@ Solr includes a variety of response writers, including an <<response-writers.ado
 
 The diagram below summarizes some key elements of the search process.
 
-image::images/searching-in-solr/search-process.png[image,width=624,height=401]
+image::searching-in-solr/search-process.png[image,width=624,height=401]

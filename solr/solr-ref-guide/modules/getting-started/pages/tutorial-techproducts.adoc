@@ -179,7 +179,7 @@ There is one collection created automatically, `techproducts`, a two shard colle
 The http://localhost:8983/solr/#/~cloud[Cloud tab] in the Admin UI diagrams the collection nicely:
 
 .SolrCloud Diagram
-image::images/solr-tutorial/tutorial-solrcloud.png[]
+image::solr-tutorial/tutorial-solrcloud.png[]
 
 == Index the Techproducts Data
 
@@ -253,7 +253,7 @@ The Solr Admin UI includes a query builder interface via the Query tab for the `
 If you click the btn:[Execute Query] button without changing anything in the form, you'll get 10 documents in JSON format:
 
 .Query Screen
-image::images/solr-tutorial/tutorial-query-screen.png[Solr Quick Start: techproducts Query screen with results]
+image::solr-tutorial/tutorial-query-screen.png[Solr Quick Start: techproducts Query screen with results]
 
 The URL sent by the Admin UI to Solr is shown in light grey near the top right of the above screenshot.
 If you click on it, your browser will show you the raw response.

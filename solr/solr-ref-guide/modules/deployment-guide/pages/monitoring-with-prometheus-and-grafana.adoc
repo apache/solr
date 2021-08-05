@@ -23,7 +23,7 @@ A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr me
 This graphic provides a more detailed view:
 
 .solr-exporter Diagram
-image::images/monitoring-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
+image::monitoring-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
 
 The Prometheus exporter is included in Solr as a contrib, and is located in `contrib/prometheus-exporter` in your Solr instance.
 
@@ -551,7 +551,7 @@ You can test that the Prometheus server, `solr-exporter`, and Solr are working t
 doing a query for `solr_ping` metric in the Prometheus GUI:
 
 .Prometheus Solr Ping expression
-image::images/monitoring-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
+image::monitoring-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
 
 == Sample Grafana Dashboard
 
@@ -567,4 +567,4 @@ TIP: You can directly import the Solr dashboard https://grafana.com/grafana/dash
 This screenshot shows what it might look like:
 
 .Grafana Dashboard
-image::images/monitoring-with-prometheus-and-grafana/grafana-solr-dashboard.png[image,width=800]
+image::monitoring-with-prometheus-and-grafana/grafana-solr-dashboard.png[image,width=800]

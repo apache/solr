@@ -23,7 +23,7 @@ Choose an area of interest on the right, and then drill down into more specifics
 In this example, we've chosen to look at the Searcher stats, from the Core area:
 
 .Searcher Statistics
-image::images/plugins-stats-screen/plugin-searcher.png[image,width=462,height=250]
+image::plugins-stats-screen/plugin-searcher.png[image,width=462,height=250]
 
 The display is a snapshot taken when the page is loaded.
 You can get updated status by choosing to either *Watch Changes* or *Refresh Values*.

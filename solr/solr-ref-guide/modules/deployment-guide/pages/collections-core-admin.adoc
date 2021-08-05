@@ -30,11 +30,11 @@ Clicking on a collection name provides some basic metadata about how the collect
 
 The buttons at the top of the screen let you make various collection level changes to your cluster, from add new collections or aliases to reloading or deleting a single collection.
 
-image::images/collections-core-admin/collection-admin.png[image,width=653,height=250]
+image::collections-core-admin/collection-admin.png[image,width=653,height=250]
 
 
 Replicas can be deleted by clicking the red "X" next to the replica name.
 
 If the shard is inactive, for example after a <<shard-management.adoc#splitshard,SPLITSHARD action>>, an option to delete the shard will appear as a red "X" next to the shard name.
 
-image::images/collections-core-admin/DeleteShard.png[image,width=486,height=250]
+image::collections-core-admin/DeleteShard.png[image,width=486,height=250]

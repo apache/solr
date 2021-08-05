@@ -68,7 +68,7 @@ We won't include butter itself in the graph as it doesn't help with finding a co
 
 Below is an example of this bipartite subgraph represented as a matrix:
 
-image::images/math-expressions/graph1.png[]
+image::math-expressions/graph1.png[]
 
 In this example there are three shopping baskets shown by the rows: basket1, basket2, basket3.
 
@@ -180,7 +180,7 @@ For simplicity this document will sometimes refer to inbound degree simply as de
 
 Back to the shopping basket example:
 
-image::images/math-expressions/graph1.png[]
+image::math-expressions/graph1.png[]
 
 We can calculate the degree of the products in the graph by summing the columns:
 [source,text]
@@ -263,7 +263,7 @@ Because of this the `count(+++*+++)` aggregation always calculates the inbound d
 There is a direct relationship between the *inbound degree* with bipartite graph recommenders and the *dot product*.
 This relationship can be clearly seen in our working example once we include a column for butter:
 
-image::images/math-expressions/graph2.png[]
+image::math-expressions/graph2.png[]
 
 If we compute the dot product between the butter column and the other product columns you will find that the dot product equals the inbound degree in each case.
 This tells us that a nearest neighbor search, using a maximum inner product similarity, would select the column with the highest inbound degree.

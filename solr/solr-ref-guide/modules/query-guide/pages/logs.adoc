@@ -60,7 +60,7 @@ The first step in exploration is to take a random sample from the `logs` collect
 
 In the example below the `random` function is run with one parameter which is the name of the collection to sample.
 
-image::images/math-expressions/logs-sample.png[]
+image::math-expressions/logs-sample.png[]
 
 The sample contains 500 random records with the their full field list.
 By looking at this sample we can quickly learn about the *fields* available in the `logs` collection.
@@ -72,7 +72,7 @@ Its often useful to understand what time period the logs cover and how many log 
 
 The `stats` function can be run to display this information.
 
-image::images/math-expressions/logs-dates.png[]
+image::math-expressions/logs-dates.png[]
 
 
 === Record Types
@@ -81,7 +81,7 @@ One of the key fields in the index is the `type_s` field which is the type of lo
 
 The `facet` expression can be used to visualize the different types of log records and how many records of each type are in the index.
 
-image::images/math-expressions/logs-type.png[]
+image::math-expressions/logs-type.png[]
 
 
 === Collections
@@ -90,14 +90,14 @@ Another important field is the `collection_s` field which is the collection that
 
 The `facet` expression can be used to visualize the different collections and how many log records they generate.
 
-image::images/math-expressions/logs-collection.png[]
+image::math-expressions/logs-collection.png[]
 
 
 === Record Type by Collection
 
 A two dimensional `facet` can be run to visualize the record types by collection.
 
-image::images/math-expressions/logs-type-collection.png[]
+image::math-expressions/logs-type-collection.png[]
 
 
 === Time Series
@@ -106,7 +106,7 @@ The `timeseries` function can be used to visualize a time series for a specific 
 
 In the example below a time series is used to visualize the log record counts at 15 second intervals.
 
-image::images/math-expressions/logs-time-series.png[]
+image::math-expressions/logs-time-series.png[]
 
 Notice that there is a very low level of log activity up until hour 21 minute 27.
 Then a burst of log activity occurs from minute 27 to minute 52.
@@ -116,7 +116,7 @@ This is then followed by a large spike of log activity.
 The example below breaks this down further by adding a query on the `type_s` field to only visualize *query* activity in the log.
 
 
-image::images/math-expressions/logs-time-series2.png[]
+image::math-expressions/logs-time-series2.png[]
 
 Notice the query activity accounts for more then half of the burst of log records between 21:27 and 21:52.
 But the query activity does not account for the large spike in log activity that follows.
@@ -125,7 +125,7 @@ We can account for that spike by changing the search to include only *update*, *
 We can also narrow by collection so we know where these activities are taking place.
 
 
-image::images/math-expressions/logs-time-series3.png[]
+image::math-expressions/logs-time-series3.png[]
 
 Through the various exploratory queries and visualizations we now have a much
 better understanding of what's contained in the logs.
@@ -147,21 +147,21 @@ for specific types of query records.
 
 To find all the top level queries in the logs, add a query to limit results to log records with `distrib_s:true` as follows:
 
-image::images/math-expressions/query-top-level.png[]
+image::math-expressions/query-top-level.png[]
 
 
 === Shard Level Queries
 
 To find all the shard level queries that are not IDs queries, adjust the query to limit results to logs with `distrib_s:false AND ids_s:false` as follows:
 
-image::images/math-expressions/query-shard-level.png[]
+image::math-expressions/query-shard-level.png[]
 
 
 === ID Queries
 
 To find all the *ids* queries, adjust the query to limit results to logs with `distrib_s:false AND ids_s:true` as follows:
 
-image::images/math-expressions/query-ids.png[]
+image::math-expressions/query-ids.png[]
 
 
 == Query Performance
@@ -184,7 +184,7 @@ In this example, `qtime_i` is plotted on the y-axis and the x-axis is simply a s
 NOTE: The `x` field is included in the field list.
 The `random` function automatically generates a sequence for the x-axis when `x` is included in the field list.
 
-image::images/math-expressions/qtime-scatter.png[]
+image::math-expressions/qtime-scatter.png[]
 
 From this scatter plot we can tell a number of important things about the query times:
 
@@ -205,7 +205,7 @@ Then the `zplot` function is used plot the query times on the y-axis of the scat
 
 NOTE: The `rev` function is used to reverse the query times vector so the visualization displays from lowest to highest query times.
 
-image::images/math-expressions/qtime-highest-scatter.png[]
+image::math-expressions/qtime-highest-scatter.png[]
 
 From this plot we can see that the 500 highest query times start at 510ms and slowly move higher, until the last 10 spike upwards, culminating at the highest query time of 2529ms.
 
@@ -233,7 +233,7 @@ The resulting frequency table is shown in the visualization below.
 The x-axis is the number of seconds.
 The y-axis is the number of query times that rounded to each second.
 
-image::images/math-expressions/qtime-dist.png[]
+image::math-expressions/qtime-dist.png[]
 
 Notice that roughly 93 percent of the query times rounded to 0, meaning they were under 500ms.
 About 6 percent round to 1 and the rest rounded to either 2 or 3 seconds.
@@ -254,7 +254,7 @@ The array of percentiles set to variable `p` tells the `percentile` function whi
 
 Then the `zplot` function is used to plot the *percentiles* on the x-axis and the *query time* at each percentile on the y-axis.
 
-image::images/math-expressions/query-qq.png[]
+image::math-expressions/query-qq.png[]
 
 From the plot we can see that the 80th percentile has a query time of 464ms.
 This means that 80% percent of queries are below 464ms.
@@ -265,7 +265,7 @@ A time series aggregation can also be run to visualization how QTime changes ove
 
 The example below shows a time series, area chart that visualizes *average query time* at 15 second intervals for a 3 minute section of a log.
 
-image::images/math-expressions/qtime-series.png[]
+image::math-expressions/qtime-series.png[]
 
 
 == Performance Troubleshooting
@@ -285,7 +285,7 @@ The `core_s` field is particularly useful as its the most granular element and t
 
 The example below uses the `facet` function to calculate `avg(qtime_i)` by core.
 
-image::images/math-expressions/slow-nodes.png[]
+image::math-expressions/slow-nodes.png[]
 
 Notice in the results that the `core_s` field contains information about the
 *collection*, *shard*, and *replica*.
@@ -302,7 +302,7 @@ The `q_s` field is a string field and the `q_t` field has been tokenized.
 The `search` function can be used to return the top N slowest queries in the logs by sorting the results by `qtime_i desc`.
 The example below demonstrates this:
 
-image::images/math-expressions/slow-queries.png[]
+image::math-expressions/slow-queries.png[]
 
 Once the queries have been retrieved they can be inspected and tried individually to determine if the query is consistently slow.
 If the query is shown to be slow a plan to improve the query performance can be devised.
@@ -318,7 +318,7 @@ The time series below limits the log results to records that are type `query` an
 The plot shows the day, hour and minute on the x-axis and `max(qtime_i)` in milliseconds on the y-axis.
 Notice there are some extreme spikes in max `qtime_i` that need to be understood.
 
-image::images/math-expressions/query-spike.png[]
+image::math-expressions/query-spike.png[]
 
 
 The next step is to generate a time series that counts commits across the same time intervals.
@@ -328,7 +328,7 @@ The count for the commits is calculated and plotted on y-axis.
 
 Notice that there are spikes in commit activity that appear near the spikes in max `qtime_i`.
 
-image::images/math-expressions/commit-series.png[]
+image::math-expressions/commit-series.png[]
 
 The final step is to overlay the two time series in the same plot.
 
@@ -343,7 +343,7 @@ The `zplot` function is then used to plot the time stamp vector on the x-axis an
 NOTE: The `minMaxScale` function is used to scale both vectors
 between 0 and 1 so they can be visually compared on the same plot.
 
-image::images/math-expressions/overlay-series.png[]
+image::math-expressions/overlay-series.png[]
 
 Notice in this plot that the commit count seems to be closely related to spikes
 in max `qtime_i`.
@@ -355,10 +355,10 @@ Error records will have a `type_s` field value of `error`.
 
 The example below searches for error records:
 
-image::images/math-expressions/search-error.png[]
+image::math-expressions/search-error.png[]
 
 
 If the error is followed by a stack trace the stack trace will be present in the searchable field `stack_t`.
 The example below shows a search on the `stack_t` field and the stack trace presented in the result.
 
-image::images/math-expressions/stack.png[]
+image::math-expressions/stack.png[]

@@ -18,6 +18,7 @@
   --color-black: #000;
   --color-solr-primary-orange: #D9411E;
   --color-solr-gray: #E6E7E8;
+  --color-solr-light-gray: #f8f8f7;
   --color-solr-light-orange: #FF833D;
   --color-solr-blue: #305CB3;
   --color-solr-light-blue: #A5DBFF;
@@ -30,9 +31,9 @@
   --body-line-height: 1.15;
   --body-font-color: var(--color-jet-70);
   --body-font-family: "Noto Sans", sans-serif;
-  --body-font-weight-bold: 500;
+  --body-font-weight-bold: 700;
   --monospace-font-family: "Inconsolata", monospace;
-  --monospace-font-weight-bold: 500;
+  --monospace-font-weight-bold: 700;
   /* base */
   --body-background: var(--color-white);
   --panel-background: var(--color-smoke-30);
@@ -87,8 +88,8 @@
   --heading-font-weight: normal;
   --alt-heading-font-weight: var(--body-font-weight-bold);
   --section-divider-color: var(--panel-border-color);
-  --link-font-color: #1565c0;
-  --link_hover-font-color: #104d92;
+  --link-font-color: var(--color-solr-blue);
+  --link_hover-font-color: var(--color-solr-blue);
   --link_unresolved-font-color: var(--important-color);
   --abstract-background: var(--color-smoke-70);
   --abstract-font-color: var(--color-jet-20);
@@ -110,7 +111,7 @@
   --quote-border-color: var(--color-gray-70);
   --quote-font-color: var(--color-gray-70);
   --quote-attribution-font-color: var(--color-gray-30);
-  --sidebar-background: var(--color-smoke-90);
+  --sidebar-background: var(--color-solr-light-gray);
   --table-border-color: var(--panel-border-color);
   --table-stripe-background: var(--panel-background);
   --table-footer-background: linear-gradient(to bottom, var(--color-smoke-70) 0%, var(--color-white) 100%);

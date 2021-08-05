@@ -130,7 +130,7 @@ The `hashRollup` function then aggregates the bigrams and the `top` function emi
 
 Then Zeppelin-Solr is used to visualize the top 10 ten bigrams.
 
-image::images/math-expressions/text-analytics.png[]
+image::math-expressions/text-analytics.png[]
 
 Lucene/Solr analyzers can be configured in many different ways to support aggregations over NLP entities (people, places, companies, etc.) as well as tokens extracted with regular expressions or dictionaries.
 

@@ -76,11 +76,11 @@ This expression returns the following response:
 
 In the Zeppelin-Solr interpreter you can simply type in scalar math functions and the result will be shown in a table format.
 
-image::images/math-expressions/scalar.png[]
+image::math-expressions/scalar.png[]
 
 The *Number* visualization can be used to visualize the number with text and icons.
 
-image::images/math-expressions/num.png[]
+image::math-expressions/num.png[]
 
 == Streaming Scalar Math
 
@@ -134,11 +134,11 @@ When this expression is sent to the `/stream` handler it responds with:
 
 The expression above can be visualized as a table using Zeppelin-Solr.
 
-image::images/math-expressions/stream.png[]
+image::math-expressions/stream.png[]
 
 By switching to one of the line chart visualizations the two variables can be plotted on the x and y-axis.
 
-image::images/math-expressions/line.png[]
+image::math-expressions/line.png[]
 
 
 == More Scalar Math Functions

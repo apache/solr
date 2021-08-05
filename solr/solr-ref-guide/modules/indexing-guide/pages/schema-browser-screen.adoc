@@ -22,7 +22,7 @@ If you have accessed this window from the Analysis screen, it will be opened to 
 If there is nothing chosen, use the pull-down menu to choose the field or field type.
 
 .Schema Browser Screen
-image::images/schema-browser-screen/schema_browser_terms.png[image,height=400]
+image::schema-browser-screen/schema_browser_terms.png[image,height=400]
 
 The screen provides a great deal of useful information about each particular field and fieldtype in the Schema, and provides a quick UI for adding fields or fieldtypes using the <<schema-api.adoc#,Schema API>> (if enabled).
 In the example above, we have chosen the `cat` field.

@@ -19,7 +19,7 @@
 Choosing Ping under a core name issues a `ping` request to check whether the core is up and responding to requests.
 
 .Ping Option in Core Dropdown
-image::images/ping/ping.png[image,width=171,height=195]
+image::ping/ping.png[image,width=171,height=195]
 
 The search executed by a Ping is configured with the <<request-parameters-api.adoc#,Request Parameters API>>.
 See <<implicit-requesthandlers.adoc#,Implicit Request Handlers>> for the paramset to use for the `/admin/ping` endpoint.

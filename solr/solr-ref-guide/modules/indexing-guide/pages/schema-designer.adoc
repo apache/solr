@@ -20,7 +20,7 @@
 The Schema Designer screen lets you interactively design a new schema using sample data.
 
 .Schema Designer screen
-image::images/solr-admin-ui/schema-designer.png[image]
+image::solr-admin-ui/schema-designer.png[image]
 
 There are a number of panels on the Schema Designer screen to provide immediate feedback when you make changes to the schema, including:
 
@@ -45,7 +45,7 @@ If the <<rule-based-authorization-plugin.adoc#,Rule-based Authorization Plugin>>
 
 Upon entering the Schema Designer for the first time, you'll be prompted to create a New Schema.
 
-image::images/schema-designer/new-schema.png[image,width=500]
+image::schema-designer/new-schema.png[image,width=500]
 
 Choose a short name that reflects the intended use case for your new schema. You'll need to choose a source schema to copy as the starting point for your new schema.
 Solr includes a `_default` schema which provides a good starting place for building a custom schema for your search application.
@@ -54,7 +54,7 @@ Once a schema is published, it can be used to create new schemas and will be lis
 Once you create the new schema, the next step is to upload or paste a sample of the data you intend to index into Solr.
 The Schema Designer supports JSON, CSV, TSV, XML, and JSON lines (jsonl).
 
-image::images/schema-designer/analyze-sample-docs.png[image,width=400]
+image::schema-designer/analyze-sample-docs.png[image,width=400]
 
 The advantage of pasting sample documents into the text area is that you can edit the sample and see the impact of your changes immediately in the analyzed schema.
 The upload feature is useful if you have large or many sample documents; the Schema Designer API allows up to 1,000 sample documents or a max of 5MB upload, but in most cases you only need a handful of documents to get started.
@@ -70,7 +70,7 @@ These temporary resources are persisted to disk and exist until the schema is pu
 If you close your browser screen while designing a new schema, it will be available when you return.
 Simply choose the name of the schema you created previously in the select box and your schema will load into the designer UI.
 
-image::images/schema-designer/reload-schema.png[image,width=400]
+image::schema-designer/reload-schema.png[image,width=400]
 
 Previously uploaded sample documents are indexed in the temporary collection even though they do not display in the text area.
 
@@ -125,7 +125,7 @@ After analyzing your sample documents, the Schema Designer loads the schema in t
 The editor renders the schema as a tree component composed of Fields, Dynamic Fields, Field Types, and Files.
 For more information about schema objects, see <<fields-and-schema-design.adoc#,Fields and Schema Design>>.
 
-image::images/schema-designer/schema-editor-root.png[image,width=700]
+image::schema-designer/schema-editor-root.png[image,width=700]
 
 .Schema vs. Configset
 [NOTE]
@@ -150,16 +150,16 @@ When first starting out, you can leave the default settings and focus your atten
 Click on the *Fields* node in the editor tree to see an overview of the fields in your schema,
 along with the <<field-type-definitions-and-properties.adoc#,properties>> that govern how the field will be indexed by Solr.
 
-image::images/schema-designer/schema-editor-fields.png[image,width=750]
+image::schema-designer/schema-editor-fields.png[image,width=750]
 
 If there are many fields in your schema, you can filter the displayed fields by type or feature using the filters at the top of the tree.
 For instance, to filter fields with `docValues` enabled, choose `feature` and then `docValues` with `enabled` checked.
 
-image::images/schema-designer/field-filters.png[image,width=500]
+image::schema-designer/field-filters.png[image,width=500]
 
 To edit a field, click on the name of the field in the tree to load the field information in the main editor panel to the right of the tree.
 
-image::images/schema-designer/schema-editor-update.png[image,width=750]
+image::schema-designer/schema-editor-update.png[image,width=750]
 
 [TIP]
 ====
@@ -170,7 +170,7 @@ After making the desired changes, click on the btn:[Update Field] button. The Sc
 Some changes, such as changing a single-valued `docValues` field to multi-valued, may require the underlying Lucene index to be deleted and rebuilt from scratch.
 The Schema Designer will warn you when your change requires a full rebuild.
 
-image::images/schema-designer/incompat-change.png[image,width=450]
+image::schema-designer/incompat-change.png[image,width=450]
 
 Moreover, if you change a field to an incompatible type based on the sample data, the designer will undo the changes automatically.
 For instance, changing a field with text data to a numeric type will be rejected by the designer.
@@ -188,7 +188,7 @@ The Schema Designer does not support deleting fields from the schema.
 
 When you select a text-based field in the tree, the *Text Analysis* panel shows how the text from a sample document gets analyzed for indexing.
 
-image::images/schema-designer/text-analysis.png[image,width=600]
+image::schema-designer/text-analysis.png[image,width=600]
 
 If you need to change the text analysis strategy for a field, you need to edit the Field Type. For more information about text analysis, see: <<analyzers.adoc#,Analyzers>>.
 
@@ -198,7 +198,7 @@ The *Query Tester* panel lets you experiment with queries executed against your 
 Using the Query Tester, you can see how changes to the schema impact the behavior of queries, such as matching, sorting, faceting, and highlighting.
 The Query Tester form is not intended to demonstrate all possible <<query-guide.adoc#,query features>> available in Solr.
 
-image::images/schema-designer/query-tester.png[image]
+image::schema-designer/query-tester.png[image]
 
 Whenever you make a change to the schema, the query tester form is re-submitted to refresh the query results.
 This helps inform you about matching issues where a test query should find a sample document but doesn't return the correct results,
@@ -215,7 +215,7 @@ Similarly, the tester form lists all fields that you can compute facets for; if 
 Click on the btn:[Show Changes] button to view a report of the changes made to the schema during the current editing session.
 The un-published changes are compared to either the original schema you copied from (such as `_default`) or the published schema.
 
-image::images/schema-designer/show-changes.png[image,width=600]
+image::schema-designer/show-changes.png[image,width=600]
 
 You need to take care when changing schemas that have already been published if there are collections with data indexed using the schema.
 
@@ -225,7 +225,7 @@ Publishing a new schema makes it available for use when creating new collections
 will be affected by the publish action; of course there will not be any impacted collections for new schemas. You may also create a new
 collection during publishing that uses the new schema and choose whether to index your sample documents in the new collection.
 
-image::images/schema-designer/publish.png[image,width=450]
+image::schema-designer/publish.png[image,width=450]
 
 You can also choose to prevent future changes to this schema by the Schema Designer. However, this setting only applies to the Schema Designer UI
 and does not prevent someone from changing the schema using the Schema API directly.

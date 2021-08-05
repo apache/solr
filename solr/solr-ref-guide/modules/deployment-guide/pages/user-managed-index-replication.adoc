@@ -25,7 +25,7 @@ The figure below shows a Solr configuration using index replication.
 The leader server's index is replicated on the followers.
 
 .A Solr index can be replicated across multiple follower servers, which then process requests.
-image::images/user-managed-index-replication/user-managed-replication.png[]
+image::user-managed-index-replication/user-managed-replication.png[]
 
 
 == Index Replication in Solr
@@ -304,7 +304,7 @@ If you are using Leader-Follower index replication, you can use this screen to:
 . View the current replication status (on a follower node)
 . Disable replication (on a leader node)
 
-image::images/user-managed-index-replication/replication.png[image,width=412,height=250]
+image::user-managed-index-replication/replication.png[image,width=412,height=250]
 
 == Follower Replication
 

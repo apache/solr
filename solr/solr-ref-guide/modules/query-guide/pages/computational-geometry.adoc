@@ -42,7 +42,7 @@ Before visualizing the convex hull its often useful to visualize the 2D points a
 In this example the `random` function draws a sample of records from the NYC311 (complaints database) collection where the complaint description matches "rat sighting" and the zip code is 11238.
 The latitude and longitude fields are then vectorized and plotted as a scatter plot with longitude on x-axis and latitude on the y-axis.
 
-image::images/math-expressions/convex0.png[]
+image::math-expressions/convex0.png[]
 
 Notice from the scatter plot that many of the points appear to lie near the border of the plot.
 
@@ -62,7 +62,7 @@ The `colAt` function can then be used to retrieve the latitude and longitude vec
 so they can visualized by the `zplot` function.
 In the example below the convex hull points are visualized as a scatter plot.
 
-image::images/math-expressions/hullplot.png[]
+image::math-expressions/hullplot.png[]
 
 Notice that the 15 points in the scatter plot describe that latitude and longitude points of the convex hull.
 
@@ -75,7 +75,7 @@ The `projectToBorder` function returns a matrix of lat/lon points for the border
 In the example the matrix of border points is then clustered into 7 clusters using kmeans clustering.
 The `zplot` function is then used to plot the clustered border points.
 
-image::images/math-expressions/convex1.png[]
+image::math-expressions/convex1.png[]
 
 Notice in the visualization its easy to see which spots along the border have the highest density of points.
 In the case of the rat sightings this information is useful in understanding which border points are closest for the rats to enter or exit from.
@@ -88,7 +88,7 @@ The example below extracts the centroids from the clusters using the `getCentroi
 `getCentroids` returns the matrix of lat/lon points which represent the centroids of border clusters.
 The `colAt` function can then be used to extract the lat/lon vectors so they can be plotted on a map using `zplot`.
 
-image::images/math-expressions/convex2.png[]
+image::math-expressions/convex2.png[]
 
 The map above shows the centroids of the border clusters.
 The centroids from the highest density clusters can now be zoomed and investigated geo-spatially to determine what might be the best places to begin an investigation of the border.

@@ -174,7 +174,7 @@ Define it with the `regenerator` parameter as `regenerator="solr.NoOpRegenerator
 === Monitoring Cache Sizes and Usage
 
 The section xref:deployment-guide:performance-statistics-reference.adoc#cache-statistics[Cache Statistics] describes the metrics available for each cache.
-The metrics can be accessed in the xref:deployment-guide:plugins-stats-screen.adoc[] or with the xref:deployment-guidemetrics-reporting.adoc#metrics-api[Metrics API].
+The metrics can be accessed in the xref:deployment-guide:plugins-stats-screen.adoc[] or with the xref:deployment-guide:metrics-reporting.adoc#metrics-api[Metrics API].
 
 The most important metrics to review when assessing caches are the size and the hit ratio.
 

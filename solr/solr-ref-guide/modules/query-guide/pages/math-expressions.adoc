@@ -41,7 +41,7 @@
 
 == A Visual Guide
 
-image::images/math-expressions/searchiris.png[]
+image::math-expressions/searchiris.png[]
 
 == Table of Contents
 

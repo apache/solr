@@ -36,7 +36,7 @@ Notice that the original vector has 13 elements but the result of the moving ave
 This is because the `movingAvg` function only begins generating results when it has a full window.
 The `ltrim` function is used to trim the first four elements from the original `y` array to line up with the moving average.
 
-image::images/math-expressions/conv1.png[]
+image::math-expressions/conv1.png[]
 
 
 === Convolutional Smoothing
@@ -47,14 +47,14 @@ In the example below the `conv` function is used to compute the moving average o
 Looking at the result, we see that the convolution produced an array with 17 values instead of the 9 values created by the moving average.
 That is because the `conv` function pads zeros to the front and back of the first vector so that the window size is always full.
 
-image::images/math-expressions/conv2.png[]
+image::math-expressions/conv2.png[]
 
 We achieve the same result as the `movingAvg` function by trimming the first and last 4 values of the convolution result using the `ltrim` and `rtrim` functions.
 
 The example below plots both the trimmed convolution and the moving average on the same plot.
 Notice that they perfectly overlap.
 
-image::images/math-expressions/conv3.png[]
+image::math-expressions/conv3.png[]
 
 This demonstrates how convolution can be used to smooth a signal by sliding a filter across the signal and computing the dot product at each point.
 The smoothing effect is caused by the design of the filter.
@@ -83,7 +83,7 @@ The light blue line is the convolution and the orange line is the moving average
 Notice that the convolution responds quicker to the movements in the underlying array.
 This is because more weight has been placed at the front of the filter.
 
-image::images/math-expressions/conv4.png[]
+image::math-expressions/conv4.png[]
 
 == Cross-Correlation
 
@@ -101,7 +101,7 @@ The `conv` function reverses the second vector so it will be flipped back to its
 Notice in the result the highest value is 217.
 This is the point where the two vectors have the highest correlation.
 
-image::images/math-expressions/crosscorr.png[]
+image::math-expressions/crosscorr.png[]
 
 
 == Find Delay
@@ -112,7 +112,7 @@ Under the covers `finddelay` uses convolutional math to compute the cross-correl
 Below is an example of the `finddelay` function.
 Notice that the `finddelay` function reports a 3 period delay between the first and second signal.
 
-image::images/math-expressions/delay.png[]
+image::math-expressions/delay.png[]
 
 
 == Oscillate (Sine Wave)
@@ -127,7 +127,7 @@ Below is an example of the `oscillate` function called with an amplitude of
 1, and angular frequency of .28 and phase of 1.57.
 
 
-image::images/math-expressions/sinewave.png[]
+image::math-expressions/sinewave.png[]
 
 === Sine Wave Interpolation & Extrapolation
 
@@ -135,7 +135,7 @@ The `oscillate` function returns a function which can be used by the `predict` f
 
 The example below extrapolates the sine wave to an x-axis sequence of 0-256.
 
-image::images/math-expressions/sinewave256.png[]
+image::math-expressions/sinewave256.png[]
 
 
 == Autocorrelation
@@ -150,14 +150,14 @@ The result of this is plotted in the image below.
 Notice that there is a structure to the plot that is clearly not random.
 
 
-image::images/math-expressions/sinewave256.png[]
+image::math-expressions/sinewave256.png[]
 
 
 In the next example the `sample` function is used to draw 256 samples from a `uniformDistribution` to create a vector of random data.
 The result of this is plotted in the image below.
 Notice that there is no clear structure to the data and the data appears to be random.
 
-image::images/math-expressions/noise.png[]
+image::math-expressions/noise.png[]
 
 In the next example the random noise is added to the sine wave using the `ebeAdd` function.
 The result of this is plotted in the image below.
@@ -165,7 +165,7 @@ Notice that the sine wave has been hidden somewhat within the noise.
 Its difficult to say for sure if there is structure.
 As plots becomes more dense it can become harder to see a pattern hidden within noise.
 
-image::images/math-expressions/hidden-signal.png[]
+image::math-expressions/hidden-signal.png[]
 
 In the next examples autocorrelation is performed with each of the vectors shown above to see what the autocorrelation plots look like.
 
@@ -179,7 +179,7 @@ Following the peak the correlation moves up and down in decreasing intensity as 
 
 This is the autocorrelation plot of a pure signal.
 
-image::images/math-expressions/signal-autocorrelation.png[]
+image::math-expressions/signal-autocorrelation.png[]
 
 In the example below autocorrelation is performed with the vector of pure noise.
 Notice that the autocorrelation plot has a very different plot then the sine wave.
@@ -189,13 +189,13 @@ This is followed by another long period of low intensity correlation.
 
 This is the autocorrelation plot of pure noise.
 
-image::images/math-expressions/noise-autocorrelation.png[]
+image::math-expressions/noise-autocorrelation.png[]
 
 In the example below autocorrelation is performed on the vector with the sine wave hidden within the noise.
 Notice that this plot shows very clear signs of structure which is similar to autocorrelation plot of the pure signal.
 The correlation is less intense due to noise but the shape of the correlation plot suggests strongly that there is an underlying signal hidden within the noise.
 
-image::images/math-expressions/hidden-signal-autocorrelation.png[]
+image::math-expressions/hidden-signal-autocorrelation.png[]
 
 == Discrete Fourier Transform
 
@@ -243,7 +243,7 @@ This is the power associated with the specific frequency of the sine wave.
 The vast majority of frequencies in the plot have close to 0 power associated with them.
 This `fft` shows a clear signal with very low levels of noise.
 
-image::images/math-expressions/signal-fft.png[]
+image::math-expressions/signal-fft.png[]
 
 In the second example the `fft` function is called on a vector of random data similar to one used in the autocorrelation example.
 The plot of the real values of the `fft` response is shown below.
@@ -252,7 +252,7 @@ Notice that in is this response there is no clear peak.
 Instead all frequencies have accumulated a random level of power.
 This `fft` shows no clear sign of signal and appears to be noise.
 
-image::images/math-expressions/noise-fft.png[]
+image::math-expressions/noise-fft.png[]
 
 In the third example the `fft` function is called on the same signal hidden within noise that was used for the autocorrelation example.
 The plot of the real values of the `fft` response is shown below.
@@ -261,4 +261,4 @@ Notice that there are two clear mirrored peaks, at the same locations as the `ff
 But there is also now considerable noise on the frequencies.
 The `fft` has found the signal and but also shows that there is considerable noise along with the signal.
 
-image::images/math-expressions/hidden-signal-fft.png[]
+image::math-expressions/hidden-signal-fft.png[]

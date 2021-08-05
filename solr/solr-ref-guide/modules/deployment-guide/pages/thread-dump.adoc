@@ -23,7 +23,7 @@ Icons to the left indicate the state of the thread: for example, threads with a 
 On the right of the thread name, a down-arrow means you can expand to see the stacktrace for that thread.
 
 .List of Threads
-image::images/thread-dump/thread_dump_1.png[image,width=484,height=250]
+image::thread-dump/thread_dump_1.png[image,width=484,height=250]
 
 When you move your cursor over a thread name, a box floats over the name with the state for that thread.
 Thread states can be:
@@ -42,6 +42,6 @@ Thread states can be:
 When you click on one of the threads that can be expanded, you'll see the stacktrace, as in the example below:
 
 .Inspecting a Thread
-image::images/thread-dump/thread_dump_2.png[image,width=453,height=250]
+image::thread-dump/thread_dump_2.png[image,width=453,height=250]
 
 You can also check the *Show all Stacktraces* button to automatically enable expansion for all threads.

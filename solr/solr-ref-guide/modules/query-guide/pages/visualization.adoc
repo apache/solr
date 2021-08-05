@@ -21,126 +21,126 @@
 
 === Result Tables
 
-image::images/math-expressions/search-sort.png[]
+image::math-expressions/search-sort.png[]
 
 === Random Sampling & Scatter Plots
 
-image::images/math-expressions/bivariate.png[]
+image::math-expressions/bivariate.png[]
 
 === Correlation Matrices and Heat Maps
 
-image::images/math-expressions/corrmatrix.png[]
+image::math-expressions/corrmatrix.png[]
 
 === Visualizing CSV Files
 
-image::images/math-expressions/csv.png[]
+image::math-expressions/csv.png[]
 
 === Probability Distributions
 
-image::images/math-expressions/dist.png[]
+image::math-expressions/dist.png[]
 
 === Histograms
 
-image::images/math-expressions/cumProb.png[]
+image::math-expressions/cumProb.png[]
 
 === Frequency Tables
 
-image::images/math-expressions/freqTable1.png[]
+image::math-expressions/freqTable1.png[]
 
 === Quantile Plots
 
-image::images/math-expressions/quantiles.png[]
+image::math-expressions/quantiles.png[]
 
 === Time Series Aggregation
 
-image::images/math-expressions/timeseries1.png[]
+image::math-expressions/timeseries1.png[]
 
 === Time Series With Moving Average
 
-image::images/math-expressions/movingavg.png[]
+image::math-expressions/movingavg.png[]
 
 === Time Series Forecast
 
-image::images/math-expressions/forecast.png[]
+image::math-expressions/forecast.png[]
 
 === Multiple Time Lines
 
-image::images/math-expressions/timecompare.png[]
+image::math-expressions/timecompare.png[]
 
 === Linear Regression
 
-image::images/math-expressions/linear.png[]
+image::math-expressions/linear.png[]
 
 === Knn Regression
 
-image::images/math-expressions/knnRegress.png[]
+image::math-expressions/knnRegress.png[]
 
 === Multivariate, Non-linear Regression with Residual Plot
 
-image::images/math-expressions/redwine1.png[]
+image::math-expressions/redwine1.png[]
 
 === Monte Carlo Simulations
 
-image::images/math-expressions/randomwalk5.png[]
+image::math-expressions/randomwalk5.png[]
 
 === Random Walks
 
-image::images/math-expressions/randomwalk6.png[]
+image::math-expressions/randomwalk6.png[]
 
 === Distance Matrices
 
-image::images/math-expressions/distance.png[]
+image::math-expressions/distance.png[]
 
 === DBSCAN Clustering
 
-image::images/math-expressions/dbscan1.png[]
+image::math-expressions/dbscan1.png[]
 
 === KMeans Clustering
 
-image::images/math-expressions/2DCluster1.png[]
+image::math-expressions/2DCluster1.png[]
 
 === Mapping Cluster Centroids
 
-image::images/math-expressions/centroidplot.png[]
+image::math-expressions/centroidplot.png[]
 
 === Convex Hulls
 
-image::images/math-expressions/convex2.png[]
+image::math-expressions/convex2.png[]
 
 === Significant Terms
 
-image::images/math-expressions/sterms.png[]
+image::math-expressions/sterms.png[]
 
 === Phrase Aggregation
 
-image::images/math-expressions/text-analytics.png[]
+image::math-expressions/text-analytics.png[]
 
 === Curve Fitting
 
-image::images/math-expressions/hfit.png[]
+image::math-expressions/hfit.png[]
 
 === Interpolation
 
-image::images/math-expressions/interpolate1.png[]
+image::math-expressions/interpolate1.png[]
 
 === Derivatives
 
-image::images/math-expressions/sined.png[]
+image::math-expressions/sined.png[]
 
 === Integrals
 
-image::images/math-expressions/integral.png[]
+image::math-expressions/integral.png[]
 
 === Convolutional Smoothing
 
-image::images/math-expressions/conv-smooth.png[]
+image::math-expressions/conv-smooth.png[]
 
 === Autocorrelation
 
-image::images/math-expressions/noise-autocorrelation.png[]
+image::math-expressions/noise-autocorrelation.png[]
 
 === Fourier Transform
 
-image::images/math-expressions/signal-fft.png[]
+image::math-expressions/signal-fft.png[]
 
 

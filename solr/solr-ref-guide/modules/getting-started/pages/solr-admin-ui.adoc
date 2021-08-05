@@ -26,7 +26,7 @@ Solr features a Web interface that provides online access to many Solr configura
 Accessing the URL `\http://hostname:8983/solr/` will show the main dashboard, which is divided into two parts.
 
 .Solr Dashboard
-image::images/solr-admin-ui/dashboard.png[image,height=400]
+image::solr-admin-ui/dashboard.png[image,height=400]
 
 The left-side of the screen is a menu under the Solr logo that provides the navigation through the screens of the UI.
 
@@ -52,7 +52,7 @@ A convenience redirect is also supported, so simply accessing the Admin UI at `\
 If authentication has been enabled, Solr will present a login screen to unauthenticated users before allowing them further access to the Admin UI.
 
 .Login Screen
-image::images/solr-admin-ui/login.png[]
+image::solr-admin-ui/login.png[]
 
 This login screen currently only works with Basic Authentication.
 See the section <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>> for
@@ -68,7 +68,7 @@ However, if the user does not have a valid ticket, they will see a message that 
 At the bottom of each screen of the Admin UI is a set of links that can be used to get more assistance with configuring and using Solr.
 
 .Assistance icons
-image::images/solr-admin-ui/Assistance.png[Assistance icons]
+image::solr-admin-ui/Assistance.png[Assistance icons]
 
 These icons include the following links.
 
@@ -91,13 +91,13 @@ Users with the `security-edit` permission can manage users, roles, and permissio
 Users with the `security-read` permission can view the Security panel but all update actions on the panel are disabled.
 
 .Security Screen
-image::images/solr-admin-ui/security.png[image,width=800]
+image::solr-admin-ui/security.png[image,width=800]
 
 == Schema Designer
 
 The <<schema-designer.adoc#,Schema Designer>> screen provides an interactive experience to create a schema using sample data.
 
-image::images/solr-admin-ui/schema-designer.png[image]
+image::solr-admin-ui/schema-designer.png[image]
 
 .Only Visible When Using SolrCloud
 [NOTE]
@@ -121,7 +121,7 @@ Clicking on the Collection Selector pull-down menu will show a list of the colle
 When a collection is selected, the main body of the page will display some  metadata about the collection.
 A secondary menu will appear in the left nav with links to additional collection specific administration screens.
 
-image::images/solr-admin-ui/collection_dashboard.png[image,width=482,height=250]
+image::solr-admin-ui/collection_dashboard.png[image,width=482,height=250]
 
 == Core-Specific Tools
 
@@ -133,7 +133,7 @@ Clicking on the menu will show a list of Solr cores hosted on this Solr node, wi
 When you select a core from the pull-down, the main display of the page will show some basic metadata about the core, and a secondary menu will appear in the left nav with links to additional core specific administration screens.
 
 .Core overview screen
-image::images/solr-admin-ui/core_dashboard.png[image,width=515,height=250]
+image::solr-admin-ui/core_dashboard.png[image,width=515,height=250]
 
 == Links to UI Documentation
 Here are sections throughout the Guide describing each screen of the Admin UI:

@@ -71,7 +71,7 @@ This means that changes in `filesize_d` explain 75% of the variability of the `r
 
 The diagnostics can be visualized in a table using Zeppelin-Solr.
 
-image::images/math-expressions/diagnostics.png[]
+image::math-expressions/diagnostics.png[]
 
 
 === Prediction
@@ -160,7 +160,7 @@ When this expression is sent to the `/stream` handler it responds with:
 Using `zplot` and the Zeppelin-Solr interpreter we can visualize both the observations and the predictions in the same scatter plot.
 In the example below `zplot` is plotting the `filesize_d` observations on the x-axis, the `response_d` observations on the y-axis and the predictions on the y1-axis.
 
-image::images/math-expressions/linear.png[]
+image::math-expressions/linear.png[]
 
 === Residuals
 
@@ -219,7 +219,7 @@ When this expression is sent to the `/stream` handler it responds with:
 Using `zplot` and Zeppelin-Solr we can visualize the residuals with a residuals plot.
 The example residual plot below plots the predicted value on the x-axis and the error of the prediction on the y-axis.
 
-image::images/math-expressions/residual-plot.png[]
+image::math-expressions/residual-plot.png[]
 
 The residual plot can be used to interpret reliability of the model.
 Three things to look for are:
@@ -450,6 +450,6 @@ When this expression is sent to the `/stream` handler it responds with:
 The residual plot for multi-variate linear regression is the same as for simple linear regression.
 The predictions are plotted on the x-axis and the error is plotted on the y-axis.
 
-image::images/math-expressions/residual-plot2.png[]
+image::math-expressions/residual-plot2.png[]
 
 The residual plot for multi-variate linear regression can be interpreted in the exact same way as simple linear regression.

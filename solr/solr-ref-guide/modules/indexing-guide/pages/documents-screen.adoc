@@ -19,7 +19,7 @@
 The Documents screen provides a simple form allowing you to execute various Solr indexing commands in a variety of formats directly from the browser.
 
 .The Documents Screen
-image::images/documents-screen/documents_add_screen.png[image,height=400]
+image::documents-screen/documents_add_screen.png[image,height=400]
 
 The screen allows you to:
 

@@ -173,7 +173,7 @@ For example, to find all documents within five kilometers of a given lat/lon poi
 
 This filter returns all results within a circle of the given radius around the initial point:
 
-image::images/spatial-search/circle.png[5KM radius]
+image::spatial-search/circle.png[5KM radius]
 
 
 === bbox
@@ -191,7 +191,7 @@ The rectangular shape is faster to compute and so it's sometimes used as an alte
 However, if the ideal goal is a circle but you want it to run faster, then instead consider using the RPT field and try a large `distErrPct` value like `0.1` (10% radius).
 This will return results outside the radius but it will do so somewhat uniformly around the shape.
 
-image::images/spatial-search/bbox.png[Bounding box]
+image::spatial-search/bbox.png[Bounding box]
 
 [IMPORTANT]
 ====

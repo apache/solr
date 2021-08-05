@@ -77,7 +77,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 Using Zeppelin-Solr this time series can be visualized using a line chart.
 
-image::images/math-expressions/timeseries1.png[]
+image::math-expressions/timeseries1.png[]
 
 
 == Vectorizing the Time Series
@@ -88,7 +88,7 @@ The `col` function can be used to copy a column of data from a list of tuples in
 The expression below demonstrates the vectorization of the `date_dt` and `avg(close_d)` fields.
 The `zplot` function is then used to plot the months on the x-axis and the average closing prices on the y-axis.
 
-image::images/math-expressions/timeseries2.png[]
+image::math-expressions/timeseries2.png[]
 
 
 == Smoothing
@@ -114,7 +114,7 @@ The `zplot` function is then used to plot the months on the x-axis, and the aver
 Notice that the `ltrim` function is used to trim the first 4 values from the x-axis and the average closing prices.
 This is done to line up the three arrays so they start from the 5th value.
 
-image::images/math-expressions/movingavg.png[]
+image::math-expressions/movingavg.png[]
 
 === Exponential Moving Average
 
@@ -124,7 +124,7 @@ This means that it is less of a lagging indicator than the simple moving average
 Below is an example that computes a moving average and exponential moving average and plots them along with the original y values.
 Notice how the exponential moving average is more sensitive to changes in the y values.
 
-image::images/math-expressions/expmoving.png[]
+image::math-expressions/expmoving.png[]
 
 
 === Moving Median
@@ -134,7 +134,7 @@ In many cases the moving median will be more *robust* to outliers than moving av
 
 Below is an example computing the moving median:
 
-image::images/math-expressions/movingMedian.png[]
+image::math-expressions/movingMedian.png[]
 
 
 == Differencing
@@ -152,24 +152,24 @@ The examples below uses the first difference to make two time series stationary 
 In this example we'll be comparing the average monthly closing price for two stocks: Amazon and Google.
 The image below plots both time series before differencing is applied.
 
-image::images/math-expressions/timecompare.png[]
+image::math-expressions/timecompare.png[]
 
 In the next example the `diff` function is applied to both time series inside the `zplot` function.
 The `diff` can be applied inside the `zplot` function or like any other function inside of the `let` function.
 
 Notice that both time series now have the trend removed and the monthly movements of the stock price can be studied without being influenced by the trend.
 
-image::images/math-expressions/diff1.png[]
+image::math-expressions/diff1.png[]
 
 In the next example the `zoom` function of the time series visualization is used to zoom into a specific range of months.
 This allows for closer inspection of the data.
 With closer inspection of the data there appears to be some correlation between the monthly movements of the two stocks.
 
-image::images/math-expressions/diffzoom.png[]
+image::math-expressions/diffzoom.png[]
 
 In the final example the differenced time series are correlated with the `corr` function.
 
-image::images/math-expressions/diffcorr.png[]
+image::math-expressions/diffcorr.png[]
 
 === Lagged Differences
 
@@ -181,14 +181,14 @@ The simple example below demonstrates how lagged differencing works.
 Notice that the array in the example follows a simple repeated pattern.
 This type of pattern is often displayed with seasonality.
 
-image::images/math-expressions/season.png[]
+image::math-expressions/season.png[]
 
 In this example we remove this pattern using the `diff` function with a lag of 4.
 This will subtract the value lagging four indexes behind the current index.
 Notice that the result set size is the original array size minus the lag.
 This is because the `diff` function only returns results for values where the lag of 4 is possible to compute.
 
-image::images/math-expressions/seasondiff.png[]
+image::math-expressions/seasondiff.png[]
 
 == Anomaly Detection
 
@@ -202,19 +202,19 @@ The daily stock data will provide a larger data set to study.
 
 In the example below the `search` expression is used to return the daily closing price for the ticker *AMZN* over a two year period.
 
-image::images/math-expressions/anomaly.png[]
+image::math-expressions/anomaly.png[]
 
 The next step is to apply the `movingMAD` function to the data to calculate the moving mean absolute deviation over a 10 day window.
 The example below shows the function being applied and visualized.
 
-image::images/math-expressions/mad.png[]
+image::math-expressions/mad.png[]
 
 Once the moving MAD has been calculated we can visualize the distribution of dispersion with the `empiricalDistribution` function.
 The example below plots the empirical distribution with 10 bins, creating a 10 bin histogram of the dispersion of the time series.
 
 This visualization shows that most of the mean absolute deviations fall between 0 and 9.2 with the mean of the final bin at 11.94.
 
-image::images/math-expressions/maddist.png[]
+image::math-expressions/maddist.png[]
 
 The final step is to detect outliers in the series using the `outliers` function.
 The `outliers` function uses a probability distribution to find outliers in a numeric vector.
@@ -242,7 +242,7 @@ The final parameter is the original result set containing the `close_d` and `dat
 The output of the `outliers` function contains the results where an outlier was detected.
 In this case 5 results above the .99 probability threshold were detected.
 
-image::images/math-expressions/outliers.png[]
+image::math-expressions/outliers.png[]
 
 
 == Modeling
@@ -264,7 +264,7 @@ The fitted model is then directly plotted with `zplot` along with the original `
 
 The visualization shows the smooth line fit through the average closing price data.
 
-image::images/math-expressions/timemodel.png[]
+image::math-expressions/timemodel.png[]
 
 
 == Forecasting
@@ -283,4 +283,4 @@ The `predict` function uses the fitted model to predict values for the new x-axi
 The `zplot` function is then used to plot the `x10` vector on the x-axis and the `y10` vector and extrapolated model on the y-axis.
 Notice that the `y10` vector drops to zero where the observed data ends, but the forecast continues along the fitted curve of the model.
 
-image::images/math-expressions/forecast.png[]
+image::math-expressions/forecast.png[]
