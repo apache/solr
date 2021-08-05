@@ -1649,6 +1649,17 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.EOF);
     assert (tuple.EXCEPTION);
     assert (tuple.getException().contains("No match found for function signature blah"));
+
+    // verify exception message formatting with wildcard query
+    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+        "stmt",
+        "select str_s from collection1 where not_a_field LIKE 'foo%'");
+
+    solrStream = new SolrStream(baseUrl, sParams);
+    tuple = getTuple(new ExceptionStream(solrStream));
+    assert (tuple.EOF);
+    assert (tuple.EXCEPTION);
+    assert (tuple.getException().contains("Column 'not_a_field' not found in any table"));
   }
 
   @Test

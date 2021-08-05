@@ -283,9 +283,7 @@ public class JDBCStream extends TupleStream implements Expressible {
       resultSet = statement.executeQuery(sqlQuery);
       resultSet.setFetchSize(fetchSize);
     } catch (SQLException e) {
-      // don't embed the exception message in the format template as wildcard '%' will throw off the formatter
-      throw new IOException(
-          String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'.\n", sqlQuery, connectionUrl)+e.getMessage(), e);
+      throw new IOException(String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'.%nCaused by: %s", sqlQuery, connectionUrl, e.getMessage()), e);
     }
     
     try{
