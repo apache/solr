@@ -18,6 +18,7 @@ package org.apache.solr.cloud.hdfs;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -29,6 +30,7 @@ import org.junit.BeforeClass;
 
 @Slow
 @Nightly
+@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15405")
 @ThreadLeakFilters(defaultFilters = true, filters = {
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class,
