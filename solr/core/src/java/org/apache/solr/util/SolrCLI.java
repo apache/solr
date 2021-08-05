@@ -4000,6 +4000,8 @@ public class SolrCLI implements CLIO {
               "\n   \"class\":\"solr.RuleBasedAuthorizationPlugin\"," +
               "\n   \"permissions\":[" +
               "\n {\"name\":\"security-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"security-read\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"config-edit\", \"role\":\"admin\"}," +
               "\n {\"name\":\"collection-admin-edit\", \"role\":\"admin\"}," +
               "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}" +
               "\n   ]," +
