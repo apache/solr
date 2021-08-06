@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -604,7 +605,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void commit(CommitUpdateCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
     if (cmd.prepareCommit) {
@@ -619,10 +619,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (cmd.expungeDeletes) expungeDeleteCommands.mark();
     }
 
-    Future[] waitSearcher = null;
-    if (cmd.waitSearcher) {
-      waitSearcher = new Future[1];
-    }
+    @SuppressWarnings("unchecked")
+    Future<Void>[] waitSearcher = cmd.waitSearcher ? (Future<Void>[]) Array.newInstance(Future.class, 1) : null;
 
     boolean error=true;
     try {
@@ -684,7 +682,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         callPostOptimizeCallbacks();
       }
 
-
       if (cmd.softCommit) {
         // ulog.preSoftCommit();
         synchronized (solrCoreState.getUpdateLock()) {
@@ -737,7 +734,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     // if we are supposed to wait for the searcher to be registered, then we should do it
     // outside any synchronized block so that other update operations can proceed.
-    if (waitSearcher!=null && waitSearcher[0] != null) {
+    if (waitSearcher != null && waitSearcher[0] != null) {
        try {
         waitSearcher[0].get();
       } catch (InterruptedException | ExecutionException e) {

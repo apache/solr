@@ -41,6 +41,7 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -86,18 +87,18 @@ public abstract class ManagedResourceStorage {
     StorageIO storageIO;
 
     SolrZkClient zkClient = null;
-    String zkConfigName = null;
+    String configName = null;
     if (resourceLoader instanceof ZkSolrResourceLoader) {
       zkClient = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkClient();
       try {
-        zkConfigName = ((ZkSolrResourceLoader)resourceLoader).getZkController().
-            getZkStateReader().readConfigName(collection);
+        final ZkStateReader zkStateReader = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkStateReader();
+        configName = zkStateReader.getClusterState().getCollection(collection).getConfigName();
       } catch (Exception e) {
         log.error("Failed to get config name due to", e);
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Failed to load config name for collection:" + collection  + " due to: ", e);
       }
-      if (zkConfigName == null) {
+      if (configName == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, 
             "Could not find config name for collection:" + collection);
       }
@@ -107,7 +108,7 @@ public abstract class ManagedResourceStorage {
       storageIO = resourceLoader.newInstance(initArgs.get(STORAGE_IO_CLASS_INIT_ARG), StorageIO.class); 
     } else {
       if (zkClient != null) {
-        String znodeBase = "/configs/"+zkConfigName;
+        String znodeBase = "/configs/"+configName;
         log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: {}", znodeBase);
         storageIO = new ManagedResourceStorage.ZooKeeperStorageIO(zkClient, znodeBase);
       } else {

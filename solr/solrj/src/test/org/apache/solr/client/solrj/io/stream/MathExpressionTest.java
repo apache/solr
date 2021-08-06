@@ -40,6 +40,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
+
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class MathExpressionTest extends SolrCloudTestCase {
@@ -140,8 +142,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertEquals(tuples.size(), 1);
-      @SuppressWarnings({"rawtypes"})
-      List terms = (List)tuples.get(0).get("return-value");
+      List<?> terms = (List<?>)tuples.get(0).get("return-value");
       assertTrue(terms.get(0).equals("hello"));
       assertTrue(terms.get(1).equals("world"));
 
@@ -205,8 +206,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
       solrStream.setStreamContext(context);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 1);
-      @SuppressWarnings({"rawtypes"})
-      List l = (List)tuples.get(0).get("test1_t");
+      List<?> l = (List<?>)tuples.get(0).get("test1_t");
       assertTrue(l.get(0).equals("l"));
       assertTrue(l.get(1).equals("b"));
       assertTrue(l.get(2).equals("c"));
@@ -313,7 +313,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
-    @SuppressWarnings({"unchecked"})
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(tuples.size(),  1);
     @SuppressWarnings({"unchecked"})
@@ -6283,23 +6282,6 @@ public void testCache() throws Exception {
         (null != expected && null == actual) ||
         (null != expected && !expected.equals(actual))){
       throw new Exception("Longs not equal:"+expected+" : "+actual);
-    }
-
-    return true;
-  }
-
-  private boolean assertList(@SuppressWarnings({"rawtypes"})List list, Object... vals) throws Exception {
-
-    if(list.size() != vals.length) {
-      throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);
-    }
-
-    for(int i=0; i<list.size(); i++) {
-      Object a = list.get(i);
-      Object b = vals[i];
-      if(!a.equals(b)) {
-        throw new Exception("List items not equals:"+a+" : "+b);
-      }
     }
 
     return true;

@@ -176,8 +176,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
       try {
         response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-        @SuppressWarnings({"rawtypes"})
-        Map m = (Map) fromJSONString(response);
+        Map<?, ?> m = (Map<?, ?>) fromJSONString(response);
         assertFalse("Error in posting blob " + m.toString(), m.containsKey("error"));
       } catch (JSONParser.ParseException e) {
         log.error("$ERROR$: {}", response, e);

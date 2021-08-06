@@ -361,8 +361,8 @@ public class XMLLoader extends ContentStreamLoader {
               } else {
                 // multiple val are present
                 if (val instanceof List) {
-                  @SuppressWarnings({"rawtypes"})
-                  List list = (List) val;
+                  @SuppressWarnings("unchecked")
+                  List<Object> list = (List<Object>) val;
                   list.add(v);
                 } else {
                   List<Object> values = new ArrayList<>();

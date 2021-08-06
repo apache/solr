@@ -4032,24 +4032,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     return true;
   }
 
-  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
-    if(maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
-    }
-
-    int i=0;
-    for(int val : ids) {
-      @SuppressWarnings({"rawtypes"})
-      Map t = maps.get(i);
-      String tip = (String)t.get("id");
-      if(!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
   private void assertTopicRun(TupleStream stream, String... idArray) throws Exception {
     long version = -1;
     int count = 0;

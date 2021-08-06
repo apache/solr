@@ -208,8 +208,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
         }
       }
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList analytics = new NamedList();
+      NamedList<Object> analytics = new NamedList<>();
       rbsp.rsp.add("logit", analytics);
 
       List<Double> outWeights = new ArrayList<>();

@@ -570,7 +570,7 @@ public class AtomicUpdateDocumentMerger {
   }
 
   private Object getNativeFieldValue(String fieldName, Object val) {
-    if (isChildDoc(val) || val == null || (val instanceof Collection && ((Collection) val).isEmpty())) {
+    if (isChildDoc(val) || val == null || (val instanceof Collection && ((Collection<?>) val).isEmpty())) {
       return val;
     }
     SchemaField sf = schema.getField(fieldName);
@@ -589,8 +589,7 @@ public class AtomicUpdateDocumentMerger {
     if(!(obj instanceof Collection)) {
       return obj instanceof SolrDocumentBase;
     }
-    @SuppressWarnings({"rawtypes"})
-    Collection objValues = (Collection) obj;
+    Collection<?> objValues = (Collection<?>) obj;
     if(objValues.size() == 0) {
       return false;
     }

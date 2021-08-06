@@ -18,10 +18,16 @@ package org.apache.solr.handler.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
@@ -38,8 +44,13 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
-
-import com.google.common.collect.ImmutableMap;
+import org.apache.solr.common.luke.FieldFlag;
+import org.apache.solr.schema.DateValueFieldType;
+import org.apache.solr.schema.DoubleValueFieldType;
+import org.apache.solr.schema.FloatValueFieldType;
+import org.apache.solr.schema.IntValueFieldType;
+import org.apache.solr.schema.LongValueFieldType;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 
 class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
@@ -90,33 +101,67 @@ class SolrSchema extends AbstractSchema implements Closeable {
     return builder.build();
   }
 
-  private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
-    String zk = this.properties.getProperty("zk");
-    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+  private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {
+    final String zk = this.properties.getProperty("zk");
+    PKIAuthenticationPlugin.withServerIdentity(true);
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
-      LukeResponse lukeResponse = lukeRequest.process(cloudSolrClient, collection);
-      return lukeResponse.getFieldInfo();
+      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldInfo();
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      PKIAuthenticationPlugin.withServerIdentity(false);
     }
   }
 
+  private LukeResponse getSchema(final String collection) {
+    final String zk = this.properties.getProperty("zk");
+    PKIAuthenticationPlugin.withServerIdentity(true);
+    try {
+      LukeRequest lukeRequest = new LukeRequest();
+      lukeRequest.setShowSchema(true); // for empty fields and custom type info ...
+      lukeRequest.setNumTerms(0);
+      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection);
+    } catch (SolrServerException | IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+      PKIAuthenticationPlugin.withServerIdentity(false);
+    }
+  }
+
+  private boolean isStoredOrDocValues(final EnumSet<FieldFlag> flags) {
+    return flags != null && (flags.contains(FieldFlag.STORED) || flags.contains(FieldFlag.DOC_VALUES));
+  }
+  
   RelProtoDataType getRelDataType(String collection) {
     // Temporary type factory, just for the duration of this method. Allowable
     // because we're creating a proto-type, not a type; before being used, the
     // proto-type will be copied into a real type factory.
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-    Map<String, LukeResponse.FieldInfo> luceneFieldInfoMap = getFieldInfo(collection);
+    
+    // Get fields that have data, including dynamic field instances
+    Map<String, LukeResponse.FieldInfo> fieldsInUseMap = getFieldInfo(collection);
 
-    for(Map.Entry<String, LukeResponse.FieldInfo> entry : luceneFieldInfoMap.entrySet()) {
+    LukeResponse schema = getSchema(collection);
+    // Only want fields that are stored or have docValues enabled
+    Map<String, LukeResponse.FieldInfo> storedFields = schema.getFieldInfo().entrySet().stream()
+            .filter(e -> isStoredOrDocValues(e.getValue().getFlags()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    // merge the actual fields in use returned by Luke with the declared fields in the schema that are empty
+    Map<String, LukeResponse.FieldInfo> combinedFields = Stream.of(fieldsInUseMap, storedFields)
+            .flatMap(map -> map.entrySet().stream())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
+
+    Map<String, Class<?>> javaClassForTypeMap = new HashMap<>(); // local cache for custom field types we've already resolved
+
+    for (Map.Entry<String, LukeResponse.FieldInfo> entry : combinedFields.entrySet()) {
       LukeResponse.FieldInfo luceneFieldInfo = entry.getValue();
 
       String luceneFieldType = luceneFieldInfo.getType();
       // SOLR-13414: Luke can return a field definition with no type in rare situations
-      if(luceneFieldType == null) {
+      if (luceneFieldType == null) {
         continue;
       }
 
@@ -141,8 +186,16 @@ class SolrSchema extends AbstractSchema implements Closeable {
         case "pdouble":
           type = typeFactory.createJavaType(Double.class);
           break;
+        case "pdate":
+          type = typeFactory.createJavaType(Date.class);
+          break;
         default:
-          type = typeFactory.createJavaType(String.class);
+          Class<?> javaClass = javaClassForTypeMap.get(luceneFieldType);
+          if (javaClass == null) {
+            javaClass = guessJavaClassForFieldType(schema.getFieldTypeInfo().get(luceneFieldType));
+            javaClassForTypeMap.put(luceneFieldType, javaClass);
+          }
+          type = typeFactory.createJavaType(javaClass);
       }
 
       /*
@@ -154,9 +207,30 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
       fieldInfo.add(entry.getKey(), type).nullable(true);
     }
-    fieldInfo.add("_query_",typeFactory.createJavaType(String.class));
-    fieldInfo.add("score",typeFactory.createJavaType(Double.class));
+    fieldInfo.add("_query_", typeFactory.createJavaType(String.class));
+    fieldInfo.add("score", typeFactory.createJavaType(Double.class));
 
     return RelDataTypeImpl.proto(fieldInfo.build());
+  }
+
+  private Class<?> guessJavaClassForFieldType(LukeResponse.FieldTypeInfo typeInfo) {
+    Class<?> typeClass = null;
+    if (typeInfo != null && !typeInfo.isTokenized() && typeInfo.getClassName() != null) {
+      try {
+        final Class<?> fieldTypeClass = getClass().getClassLoader().loadClass(typeInfo.getClassName());
+        // a numeric type ... narrow down
+        if (IntValueFieldType.class.isAssignableFrom(fieldTypeClass) || LongValueFieldType.class.isAssignableFrom(fieldTypeClass)) {
+          typeClass = Long.class;
+        } else if (FloatValueFieldType.class.isAssignableFrom(fieldTypeClass) || DoubleValueFieldType.class.isAssignableFrom(fieldTypeClass)) {
+          typeClass = Double.class;
+        } else if (DateValueFieldType.class.isAssignableFrom(fieldTypeClass)) {
+          typeClass = Date.class;
+        }
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    // default to String if we could narrow it down by looking at the field type class
+    return typeClass != null ? typeClass : String.class;
   }
 }

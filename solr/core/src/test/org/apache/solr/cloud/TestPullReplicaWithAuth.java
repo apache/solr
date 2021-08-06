@@ -89,7 +89,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
   public void testPKIAuthWorksForPullReplication() throws Exception {
     int numPullReplicas = 2;
     withBasicAuth(CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas))
-        .process(cluster.getSolrClient());
+        .processAndWait(cluster.getSolrClient(), 10);
     waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
         collectionName, clusterShape(1, numPullReplicas + 1));
     DocCollection docCollection =

@@ -60,8 +60,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
@@ -120,8 +119,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
         if (log.isInfoEnabled()) {
           log.info("Deleting replica for collection={} shard={} on node={}", replica.getStr(COLLECTION_PROP), replica.getStr(SHARD_ID_PROP), replica.getStr(CoreAdminParams.NODE));
         }
-        @SuppressWarnings({"rawtypes"})
-        NamedList deleteResult = new NamedList();
+        NamedList<Object> deleteResult = new NamedList<>();
         try {
           new DeleteReplicaCmd(ccc).deleteReplica(clusterState, replica, deleteResult, () -> {
             cleanupLatch.countDown();
@@ -131,8 +129,8 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
                     " on node=%s", replica.getStr(COLLECTION_PROP), replica.getStr(SHARD_ID_PROP), replica.getStr(NODE_NAME_PROP)));
               }
             }
-            @SuppressWarnings({"rawtypes"})
-            SimpleOrderedMap success = (SimpleOrderedMap) deleteResult.get("success");
+            @SuppressWarnings("unchecked")
+            SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) deleteResult.get("success");
             if (success != null) {
               synchronized (results)  {
                 results.add("success", success);

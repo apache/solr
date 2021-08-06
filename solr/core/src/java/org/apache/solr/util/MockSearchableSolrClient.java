@@ -50,7 +50,7 @@ public class MockSearchableSolrClient extends SolrClient {
   }
 
   @Override
-  public synchronized NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request,
+  public synchronized NamedList<Object> request(SolrRequest<?> request,
                                                 String coll) throws SolrServerException, IOException {
     if (coll == null) {
       if (request.getParams() != null) {

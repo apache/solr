@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -82,8 +83,7 @@ public class Grouping {
   private final SolrIndexSearcher searcher;
   private final QueryResult qr;
   private final QueryCommand cmd;
-  @SuppressWarnings({"rawtypes"})
-  private final List<Command> commands = new ArrayList<>();
+  private final List<Command<?>> commands = new ArrayList<>();
   private final boolean main;
   private final boolean cacheSecondPassSearch;
   private final int maxDocsPercentageToCache;
@@ -133,7 +133,7 @@ public class Grouping {
     this.main = main;
   }
 
-  public void add(@SuppressWarnings({"rawtypes"})Grouping.Command groupingCommand) {
+  public void add(Grouping.Command<?> groupingCommand) {
     commands.add(groupingCommand);
   }
 
@@ -179,8 +179,7 @@ public class Grouping {
   public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, FunctionQParserPlugin.NAME, request);
     Query q = parser.getQuery();
-    @SuppressWarnings({"rawtypes"})
-    final Grouping.Command gc;
+    final Grouping.Command<?> gc;
     if (q instanceof FunctionQuery) {
       ValueSource valueSource = ((FunctionQuery) q).getValueSource();
       if (valueSource instanceof StrFieldSource) {
@@ -288,8 +287,7 @@ public class Grouping {
     return this;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public List<Command> getCommands() {
+  public List<Command<?>> getCommands() {
     return commands;
   }
 
@@ -318,13 +316,13 @@ public class Grouping {
     getDocList = (cmd.getFlags() & SolrIndexSearcher.GET_DOCLIST) != 0;
     query = QueryUtils.makeQueryable(cmd.getQuery());
 
-    for (@SuppressWarnings({"rawtypes"})Command cmd : commands) {
+    for (Command<?> cmd : commands) {
       cmd.prepare();
     }
 
     AllGroupHeadsCollector<?> allGroupHeadsCollector = null;
     List<Collector> collectors = new ArrayList<>(commands.size());
-    for (@SuppressWarnings({"rawtypes"})Command cmd : commands) {
+    for (Command<?> cmd : commands) {
       Collector collector = cmd.createFirstPassCollector();
       if (collector != null) {
         collectors.add(collector);
@@ -371,7 +369,7 @@ public class Grouping {
     }
 
     collectors.clear();
-    for (@SuppressWarnings({"rawtypes"})Command cmd : commands) {
+    for (Command<?> cmd : commands) {
       Collector collector = cmd.createSecondPassCollector();
       if (collector != null)
         collectors.add(collector);
@@ -402,7 +400,7 @@ public class Grouping {
       }
     }
 
-    for (@SuppressWarnings({"rawtypes"})Command cmd : commands) {
+    for (Command<?> cmd : commands) {
       cmd.finish();
     }
 
@@ -593,9 +591,8 @@ public class Grouping {
       }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    protected NamedList commonResponse() {
-      NamedList groupResult = new SimpleOrderedMap();
+    protected NamedList<Object> commonResponse() {
+      NamedList<Object> groupResult = new SimpleOrderedMap<>();
       grouped.add(key, groupResult);  // grouped={ key={
 
       int matches = getMatches();
@@ -608,7 +605,7 @@ public class Grouping {
       return groupResult;
     }
 
-    protected DocList getDocList(@SuppressWarnings({"rawtypes"})GroupDocs groups) {
+    protected DocList getDocList(GroupDocs<?> groups) {
       assert groups.totalHits.relation == TotalHits.Relation.EQUAL_TO;
       int max = Math.toIntExact(groups.totalHits.value);
       int off = groupOffset;
@@ -642,16 +639,14 @@ public class Grouping {
       return docs;
     }
 
-    @SuppressWarnings({"unchecked"})
-    protected void addDocList(@SuppressWarnings({"rawtypes"})NamedList rsp
-            , @SuppressWarnings({"rawtypes"})GroupDocs groups) {
+    protected void addDocList(NamedList<? super DocList> rsp, GroupDocs<?> groups) {
       rsp.add("doclist", getDocList(groups));
     }
 
     // Flatten the groups and get up offset + rows documents
     protected DocList createSimpleResponse() {
-      @SuppressWarnings({"rawtypes"})
-      GroupDocs[] groups = result != null ? result.groups : new GroupDocs[0];
+      @SuppressWarnings("unchecked")
+      GroupDocs<T>[] groups = result != null ? result.groups : (GroupDocs<T>[]) Array.newInstance(GroupDocs.class, 0);
 
       List<Integer> ids = new ArrayList<>();
       List<Float> scores = new ArrayList<>();
@@ -660,7 +655,7 @@ public class Grouping {
       float maxScore = Float.NaN;
 
       outer:
-      for (@SuppressWarnings({"rawtypes"})GroupDocs group : groups) {
+      for (GroupDocs<T> group : groups) {
         maxScore = maxAvoidNaN(maxScore, group.maxScore);
 
         for (ScoreDoc scoreDoc : group.scoreDocs) {
@@ -784,16 +779,14 @@ public class Grouping {
         return;
       }
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList groupResult = commonResponse();
+      NamedList<Object> groupResult = commonResponse();
 
       if (format == Format.simple) {
         groupResult.add("doclist", createSimpleResponse());
         return;
       }
 
-      @SuppressWarnings({"rawtypes"})
-      List groupList = new ArrayList();
+      List<NamedList<Object>> groupList = new ArrayList<>();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
 
       if (result == null) {
@@ -804,8 +797,7 @@ public class Grouping {
       if (numGroups == 0) return;
 
       for (GroupDocs<BytesRef> group : result.groups) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = new SimpleOrderedMap();
+        NamedList<Object> nl = new SimpleOrderedMap<>();
         groupList.add(nl);                         // grouped={ key={ groups=[ {
 
 
@@ -853,11 +845,10 @@ public class Grouping {
    * A group command for grouping on a query.
    */
   //NOTE: doesn't need to be generic. Maybe Command interface --> First / Second pass abstract impl.
-  @SuppressWarnings({"rawtypes"})
-  public class CommandQuery extends Command {
+  public class CommandQuery extends Command<Object> {
 
     public Query query;
-    TopDocsCollector topCollector;
+    TopDocsCollector<? extends ScoreDoc> topCollector;
     MaxScoreCollector maxScoreCollector;
     FilterCollector collector;
 
@@ -904,7 +895,7 @@ public class Grouping {
       if (main) {
         mainResult = getDocList(groupDocs);
       } else {
-        NamedList rsp = commonResponse();
+        NamedList<Object> rsp = commonResponse();
         addDocList(rsp, groupDocs);
       }
     }
@@ -921,10 +912,8 @@ public class Grouping {
   public class CommandFunc extends Command<MutableValue> {
 
     public ValueSource groupBy;
-    @SuppressWarnings({"rawtypes"})
-    Map context;
+    Map<Object,Object> context;
 
-    @SuppressWarnings({"unchecked"})
     private ValueSourceGroupSelector newSelector() {
       return new ValueSourceGroupSelector(groupBy, context);
     }
@@ -998,7 +987,6 @@ public class Grouping {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
     protected void finish() throws IOException {
       if (secondPass != null) {
         result = secondPass.getTopGroups(0);
@@ -1009,16 +997,14 @@ public class Grouping {
         return;
       }
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList groupResult = commonResponse();
+      NamedList<Object> groupResult = commonResponse();
 
       if (format == Format.simple) {
         groupResult.add("doclist", createSimpleResponse());
         return;
       }
 
-      @SuppressWarnings({"rawtypes"})
-      List groupList = new ArrayList();
+      List<NamedList<Object>> groupList = new ArrayList<>();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
 
       if (result == null) {
@@ -1029,8 +1015,7 @@ public class Grouping {
       if (numGroups == 0) return;
 
       for (GroupDocs<MutableValue> group : result.groups) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = new SimpleOrderedMap();
+        NamedList<Object> nl = new SimpleOrderedMap<>();
         groupList.add(nl);                         // grouped={ key={ groups=[ {
         nl.add("groupValue", group.groupValue.toObject());
         addDocList(nl, group);

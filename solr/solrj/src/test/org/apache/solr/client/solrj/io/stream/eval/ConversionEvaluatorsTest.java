@@ -69,8 +69,7 @@ public class ConversionEvaluatorsTest {
       evaluator = factory.constructEvaluator("convert(inches, yards, 3)");
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
-      @SuppressWarnings({"rawtypes"})
-      Tuple tuple = new Tuple(new HashMap());
+      Tuple tuple = new Tuple(new HashMap<>());
       evaluator.evaluate(tuple);
       assertTrue(false);
     } catch (IOException e) {

@@ -371,23 +371,18 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
 
-  public static void assertConditions(@SuppressWarnings({"rawtypes"})Map root,
-                                      @SuppressWarnings({"rawtypes"})Map conditions) {
-    for (Object o : conditions.entrySet()) {
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry e = (Map.Entry) o;
-      String path = (String) e.getKey();
+  public static void assertConditions(Map<?, ?> root, Map<String, Object> conditions) {
+    for (Map.Entry<String, Object> e : conditions.entrySet()) {
+      String path = e.getKey();
       List<String> parts = StrUtils.splitSmart(path, path.charAt(0) == '/' ? '/' : ' ', true);
       Object val = Utils.getObjectByPath(root, false, parts);
       if (e.getValue() instanceof ValidatingJsonMap.PredicateWithErrMsg) {
-        @SuppressWarnings({"rawtypes"})
-        ValidatingJsonMap.PredicateWithErrMsg value = (ValidatingJsonMap.PredicateWithErrMsg) e.getValue();
-        @SuppressWarnings({"unchecked"})
+        @SuppressWarnings("unchecked")
+        ValidatingJsonMap.PredicateWithErrMsg<Object> value = (ValidatingJsonMap.PredicateWithErrMsg<Object>) e.getValue();
         String err = value.test(val);
         if (err != null) {
           assertEquals(err + " for " + e.getKey() + " in :" + Utils.toJSONString(root), e.getValue(), val);
         }
-
       } else {
         assertEquals("incorrect value for path " + e.getKey() + " in :" + Utils.toJSONString(root), e.getValue(), val);
       }

@@ -97,8 +97,7 @@ public class ClusterStatus {
     collection = props.getStr(ZkStateReader.COLLECTION_PROP);
   }
 
-  @SuppressWarnings("unchecked")
-  public void getClusterStatus(@SuppressWarnings({"rawtypes"})NamedList results)
+  public void getClusterStatus(NamedList<Object> results)
       throws KeeperException, InterruptedException {
     // read aliases
     Aliases aliases = zkStateReader.getAliases();
@@ -115,10 +114,9 @@ public class ClusterStatus {
       }
     }
 
-    @SuppressWarnings({"rawtypes"})
-    Map roles = null;
+    Map<?,?> roles = null;
     if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
+      roles = (Map<?,?>) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
     }
 
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -175,6 +173,7 @@ public class ClusterStatus {
       }
 
       byte[] bytes = Utils.toJSON(clusterStateCollection);
+      @SuppressWarnings("unchecked")
       Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
       collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
 
@@ -183,14 +182,9 @@ public class ClusterStatus {
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
         collectionStatus.put("aliases", collectionVsAliases.get(name));
       }
-      try {
-        String configName = zkStateReader.readConfigName(name);
-        collectionStatus.put("configName", configName);
-        collectionProps.add(name, collectionStatus);
-      } catch (KeeperException.NoNodeException ex) {
-        // skip this collection because the configset's znode has been deleted
-        // which can happen during aggressive collection removal, see SOLR-10720
-      }
+      String configName = clusterStateCollection.getConfigName();
+      collectionStatus.put("configName", configName);
+      collectionProps.add(name, collectionStatus);
     }
 
     List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);

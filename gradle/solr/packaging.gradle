@@ -31,7 +31,7 @@
 //       solr platform.
 // lucene-libs - these are lucene modules declared as module's dependencies and not
 //       present in solr platform.
-// test-lib/ - libs not present in solr platform and not included in solr:test-framework.
+// test-lib/ - libs not present in solr platform.
 //
 // None of these are really needed with gradle... they should be collected just in the distribution
 // package, not at each project's level.
@@ -49,7 +49,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
 
     configurations {
       solrPlatformLibs
-      solrTestPlatformLibs
       runtimeLibs {
         extendsFrom runtimeElements
       }
@@ -60,8 +59,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
       solrPlatformLibs project(":solr:core")
       solrPlatformLibs project(":solr:solrj")
       solrPlatformLibs project(":solr:server")
-
-      solrTestPlatformLibs project(":solr:test-framework")
     }
 
     // An aggregate that configures lib, lucene-libs and test-lib in a temporary location.
@@ -115,7 +112,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
           !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
         }
 
-        return testRuntimeLibs - configurations.runtimeLibs - configurations.solrTestPlatformLibs
+        return testRuntimeLibs - configurations.runtimeLibs
       })
 
       into file("${projectDir}/test-lib")

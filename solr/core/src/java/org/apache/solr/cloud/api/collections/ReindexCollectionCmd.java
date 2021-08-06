@@ -165,8 +165,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
 
     log.debug("*** called: {}", message);
 
@@ -243,7 +242,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       router = DocRouter.DEFAULT;
     }
 
-    String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, ccc.getZkStateReader().readConfigName(collection));
+    String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, coll.getConfigName());
     String targetCollection;
     int seq = tmpCollectionSeq.getAndIncrement();
     if (sameTarget) {

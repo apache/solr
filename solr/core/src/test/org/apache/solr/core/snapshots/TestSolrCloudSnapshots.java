@@ -303,8 +303,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     CollectionAdminResponse resp = listSnapshots.process(adminClient);
 
     assertTrue( resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof NamedList );
-    @SuppressWarnings({"rawtypes"})
-    NamedList apiResult = (NamedList) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
+    NamedList<?> apiResult = (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
     for (int i = 0; i < apiResult.size(); i++) {
@@ -317,17 +316,15 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   private Collection<SnapshotMetaData> listCoreSnapshots(SolrClient adminClient, String coreName) throws Exception {
     ListSnapshots req = new ListSnapshots();
     req.setCoreName(coreName);
-    @SuppressWarnings({"rawtypes"})
-    NamedList resp = adminClient.request(req);
+    NamedList<?> resp = adminClient.request(req);
     assertTrue( resp.get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof NamedList );
-    @SuppressWarnings({"rawtypes"})
-    NamedList apiResult = (NamedList) resp.get(SolrSnapshotManager.SNAPSHOTS_INFO);
+    NamedList<?> apiResult = (NamedList<?>) resp.get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     List<SnapshotMetaData> result = new ArrayList<>(apiResult.size());
     for(int i = 0 ; i < apiResult.size(); i++) {
       String commitName = apiResult.getName(i);
-      String indexDirPath = (String)((NamedList)apiResult.get(commitName)).get(SolrSnapshotManager.INDEX_DIR_PATH);
-      long genNumber = Long.parseLong((String)((NamedList)apiResult.get(commitName)).get(SolrSnapshotManager.GENERATION_NUM));
+      String indexDirPath = (String)((NamedList<?>)apiResult.get(commitName)).get(SolrSnapshotManager.INDEX_DIR_PATH);
+      long genNumber = Long.parseLong((String)((NamedList<?>)apiResult.get(commitName)).get(SolrSnapshotManager.GENERATION_NUM));
       result.add(new SnapshotMetaData(commitName, indexDirPath, genNumber));
     }
     return result;

@@ -52,6 +52,7 @@ public class SolrRequestInfo {
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
   protected SolrDispatchFilter.Action action;
+  protected boolean useServerToken = false;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -200,17 +201,28 @@ public class SolrRequestInfo {
     this.action = action;
   }
 
+  /**
+   * Used when making remote requests to other Solr nodes from the thread associated with this request,
+   * true means the server token header should be used instead of the Principal associated with the request.
+   */
+  public boolean useServerToken() {
+    return useServerToken;
+  }
+
+  public void setUseServerToken(boolean use) {
+    this.useServerToken = use;
+  }
+
   public static ExecutorUtil.InheritableThreadLocalProvider getInheritableThreadLocalProvider() {
     return new ExecutorUtil.InheritableThreadLocalProvider() {
       @Override
-      @SuppressWarnings({"unchecked"})
-      public void store(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
+      public void store(AtomicReference<Object> ctx) {
         SolrRequestInfo me = SolrRequestInfo.getRequestInfo();
         if (me != null) ctx.set(me);
       }
 
       @Override
-      public void set(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
+      public void set(AtomicReference<Object> ctx) {
         SolrRequestInfo me = (SolrRequestInfo) ctx.get();
         if (me != null) {
           SolrRequestInfo.setRequestInfo(me);
@@ -218,7 +230,7 @@ public class SolrRequestInfo {
       }
 
       @Override
-      public void clean(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
+      public void clean(AtomicReference<Object> ctx) {
         if (ctx.get() != null) {
           SolrRequestInfo.clearRequestInfo();
         }

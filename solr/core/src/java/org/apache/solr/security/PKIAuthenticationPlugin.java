@@ -58,6 +58,22 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
+
+  /**
+   * Mark the current thread as a server thread and set a flag in SolrRequestInfo to indicate you want
+   * to send a request as the server identity instead of as the authenticated user.
+   *
+   * @param enabled If true, enable the current thread to make requests with the server identity.
+   * @see SolrRequestInfo#setUseServerToken(boolean) 
+   */
+  public static void withServerIdentity(final boolean enabled) {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (requestInfo != null) {
+      requestInfo.setUseServerToken(enabled);
+    }
+    ExecutorUtil.setServerThreadFlag(enabled ? enabled : null);
+  }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
@@ -198,8 +214,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
       entity  = rsp.getEntity();
       byte[] bytes = EntityUtils.toByteArray(entity);
-      @SuppressWarnings({"rawtypes"})
-      Map m = (Map) Utils.fromJSON(bytes);
+      Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
       if (key == null) {
         log.error("No key available from {} {}", url, PublicKeyHandler.PATH);
@@ -282,7 +297,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private Optional<String> generateToken() {
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr;
-    if (reqInfo != null) {
+    if (reqInfo != null && !reqInfo.useServerToken()) {
       Principal principal = reqInfo.getUserPrincipal();
       if (principal == null) {
         log.debug("generateToken: principal is null");

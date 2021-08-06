@@ -39,6 +39,8 @@ import org.slf4j.MDC;
 public class ExecutorUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  static final ThreadLocal<Throwable> submitter = new ThreadLocal<>();
+
   private static volatile List<InheritableThreadLocalProvider> providers = new ArrayList<>();
 
   /**
@@ -67,16 +69,16 @@ public class ExecutorUtil {
      * copy the necessary Objects to the ctx. The object that is passed is same
      * across all three methods
      */
-    public void store(AtomicReference<?> ctx);
+    void store(AtomicReference<Object> ctx);
 
     /**This is invoked in the Threadpool thread. set the appropriate values in the threadlocal
      * of this thread.     */
-    public void set(AtomicReference<?> ctx);
+    void set(AtomicReference<Object> ctx);
 
     /**This method is invoked in the threadpool thread after the execution
      * clean all the variables set in the set method
      */
-    public void clean(AtomicReference<?> ctx);
+    void clean(AtomicReference<Object> ctx);
   }
 
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
@@ -110,7 +112,7 @@ public class ExecutorUtil {
   public static ExecutorService newMDCAwareFixedThreadPool(int nThreads, ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(nThreads, nThreads,
         0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
+        new LinkedBlockingQueue<>(),
         threadFactory);
   }
 
@@ -196,14 +198,18 @@ public class ExecutorUtil {
 
       String ctxStr = contextString.toString().replace("/", "//");
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
-      final Exception submitterStackTrace = enableSubmitterStackTrace ? new Exception("Submitter stack trace") : null;
+      final Throwable submitterStackTrace; // Never thrown, only used as stack trace holder
+      if (enableSubmitterStackTrace) {
+        Throwable grandParentSubmitter = submitter.get();
+        submitterStackTrace = new Exception("Submitter stack trace", grandParentSubmitter);
+      } else {
+        submitterStackTrace = null;
+      }
       final List<InheritableThreadLocalProvider> providersCopy = providers;
-      @SuppressWarnings({"rawtypes"})
-      final ArrayList<AtomicReference> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
+      final ArrayList<AtomicReference<Object>> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
       if (ctx != null) {
         for (int i = 0; i < providers.size(); i++) {
-          @SuppressWarnings({"rawtypes"})
-          AtomicReference reference = new AtomicReference();
+          AtomicReference<Object> reference = new AtomicReference<>();
           ctx.add(reference);
           providersCopy.get(i).store(reference);
         }
@@ -221,6 +227,9 @@ public class ExecutorUtil {
           currentThread.setName(oldName + "-processing-" + submitterContextStr);
         } else {
           MDC.clear();
+        }
+        if (enableSubmitterStackTrace) {
+          submitter.set(submitterStackTrace);
         }
         try {
           command.run();

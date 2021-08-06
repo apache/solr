@@ -264,7 +264,6 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void compareDocs(String m,
                            SolrInputDocument expectedDoc,
                            SolrInputDocument actualDoc) {
@@ -278,9 +277,9 @@ public class TestUpdateRequestCodec extends SolrTestCase {
           actualVal instanceof Collection) {
         // unmarshaled documents never contain Sets, they are just a 
         // List in an arbitrary order based on what the iterator of 
-        // hte original Set returned, so we need a comparison that is 
+        // the original Set returned, so we need a comparison that is
         // order agnostic.
-        actualVal = new HashSet((Collection) actualVal);
+        actualVal = new HashSet<>((Collection<?>) actualVal);
         m += " (Set comparison)";
       }
 

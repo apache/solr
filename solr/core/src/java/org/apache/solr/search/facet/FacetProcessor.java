@@ -45,17 +45,18 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 /** Base abstraction for a class that computes facets. This is fairly internal to the module. */
-public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
+public abstract class FacetProcessor<T extends FacetRequest>  {
   SimpleOrderedMap<Object> response;
   FacetContext fcontext;
-  FacetRequestT freq;
+  // TODO : I'm not sure this needs to be generic but come back to this later
+  T freq;
 
   DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
   LinkedHashMap<String,SlotAcc> accMap;
   SlotAcc[] accs;
   SlotAcc.CountSlotAcc countAcc;
 
-  FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
+  FacetProcessor(FacetContext fcontext, T freq) {
     this.fcontext = fcontext;
     this.freq = freq;
     fcontext.processor = this;
@@ -182,8 +183,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       return;
     }
 
-    @SuppressWarnings({"rawtypes"})
-    Map tagMap = (Map) fcontext.req.getContext().get("tags");
+    Map<?,?> tagMap = (Map<?,?>) fcontext.req.getContext().get("tags");
     if (tagMap == null) {
       // no filters were tagged
       return;
