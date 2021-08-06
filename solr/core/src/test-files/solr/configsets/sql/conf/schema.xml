@@ -68,6 +68,7 @@
 
   <field name="notstored" type="string" indexed="true" docValues="false" stored="false"/>
   <field name="dvonly" type="string" docValues="true" stored="false"/>
+  <field name="stringmv" type="string" docValues="true" stored="false" multiValued="true"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">

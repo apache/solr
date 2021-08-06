@@ -17,11 +17,15 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
@@ -2289,5 +2293,31 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // notafield_i matches a dynamic field pattern but has no docs, so don't allow this
     expectThrows(IOException.class, () -> expectResults("SELECT id, stringx, notafield_i FROM $ALIAS", 5));
     expectThrows(IOException.class, () -> expectResults("SELECT id, stringx, notstored FROM $ALIAS", 5));
+  }
+
+  @Test
+  public void testManyInValues() throws Exception {
+    int maxSize = 1000;
+    int width = 4;
+    List<String> bigList = new ArrayList<>(maxSize);
+    for (int i=0; i < maxSize; i++) {
+      bigList.add(StringUtils.leftPad(String.valueOf(i), width, "0"));
+    }
+
+    UpdateRequest update = new UpdateRequest();
+    final int maxDocs = 10;
+    for (int i = 0; i < maxDocs; i++) {
+      SolrInputDocument doc = new SolrInputDocument("id", String.valueOf(i));
+      doc.setField("stringmv", bigList);
+      update.add(doc);
+    }
+    update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    int numIn = 100;
+    List<String> bigInList = new ArrayList<>(bigList);
+    Collections.shuffle(bigInList);
+    bigInList = bigInList.subList(0, numIn).stream().map(s -> "'"+s+"'").collect(Collectors.toList());
+    String sql = "SELECT id FROM $ALIAS WHERE stringmv IN ("+String.join(",", bigInList)+") ORDER BY id ASC";
+    expectResults(sql, 10);
   }
 }
