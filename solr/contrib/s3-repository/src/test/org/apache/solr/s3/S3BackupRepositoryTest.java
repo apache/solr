@@ -59,13 +59,19 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
      * Sent by {@link org.apache.solr.handler.ReplicationHandler}, ensure we don't choke on the bare URI.
      */
     @Test
-    public void testURI() {
+    public void testURI() throws IOException {
         try (S3BackupRepository repo = getRepository()) {
             URI uri = repo.createURI("x");
             assertEquals(S3_SCHEME, uri.getScheme());
             assertEquals("/x", uri.getPath());
             assertEquals("s3:/x", uri.toString());
 
+            URI directoryUri = repo.createDirectoryURI("d");
+            assertEquals("s3:/d/", directoryUri.toString());
+            repo.createDirectory(directoryUri);
+            assertTrue(repo.exists(directoryUri));
+            directoryUri = repo.createDirectoryURI("d/");
+            assertEquals("s3:/d/", directoryUri.toString());
         }
     }
 

@@ -57,6 +57,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
         client.createDirectory("/simple-directory");
         assertTrue(client.pathExists("/simple-directory"));
         assertTrue(client.pathExists("/simple-directory/"));
+        assertTrue(client.isDirectory("/simple-directory/"));
 
     }
 

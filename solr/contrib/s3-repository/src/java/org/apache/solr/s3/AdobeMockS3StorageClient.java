@@ -60,14 +60,9 @@ class AdobeMockS3StorageClient extends S3StorageClient {
      * -If it's a file, throw an error if it ends with a trailing slash
      */
     @Override
-    String sanitizedPath(String path, boolean isFile) throws S3Exception {
+    String sanitizedPath(String path) throws S3Exception {
         // Trim space from start and end
-        String sanitizedPath = path.trim();
-
-        // Throw error if it's a file with a trailing slash
-        if (isFile && sanitizedPath.endsWith(BLOB_FILE_PATH_DELIMITER)) {
-            throw new S3Exception("Invalid Path. Path for file can't end with '/'");
-        }
+        String sanitizedPath = super.sanitizedPath(path);
 
         // Trim off leading slash
         if (sanitizedPath.startsWith("/")) {

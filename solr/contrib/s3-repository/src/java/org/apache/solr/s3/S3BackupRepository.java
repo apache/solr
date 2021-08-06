@@ -81,25 +81,36 @@ public class S3BackupRepository implements BackupRepository {
 
         URI result;
         try {
-            result = new URI(location);
-            if (!result.isAbsolute()) {
-                if (location.startsWith("/")) {
-                    return new URI(S3_SCHEME, null, location, null);
-                } else {
-                    return new URI(S3_SCHEME, null, "/" + location, null);
-                }
+            if (location.startsWith(S3_SCHEME + ":")) {
+                result = new URI(location);
+            } else if (location.startsWith("/")) {
+                result = new URI(S3_SCHEME, null, location, null);
+            } else {
+                result = new URI(S3_SCHEME, null, "/" + location, null);
             }
+            return result;
         } catch (URISyntaxException ex) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex);
         }
+    }
 
-        return result;
+    @Override
+    public URI createDirectoryURI(String location) {
+        if (StringUtils.isEmpty(location)) {
+            throw new IllegalArgumentException("cannot create URI with an empty location");
+        }
+
+        if (!location.endsWith("/")) {
+            location += "/";
+        }
+
+        return createURI(location);
     }
 
     @Override
     public URI resolve(URI baseUri, String... pathComponents) {
         if (!S3_SCHEME.equalsIgnoreCase(baseUri.getScheme())) {
-            throw new IllegalArgumentException("URI must being with 's3:' scheme");
+            throw new IllegalArgumentException("URI must begin with 's3:' scheme");
         }
 
         // If paths contains unnecessary '/' separators, they'll be removed by URI.normalize()
