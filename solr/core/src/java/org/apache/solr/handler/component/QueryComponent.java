@@ -867,7 +867,7 @@ public class QueryComponent extends SearchComponent
       // documents... we only need to order the top (rows+start)
       final ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
 
-      ResponseBuilder.ShardsInfoContainer shardsInfo = null;
+      ShardsInfoContainer shardsInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
         shardsInfo = rb.newShardsInfoContainer();
       }

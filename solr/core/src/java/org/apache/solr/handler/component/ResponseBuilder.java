@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
@@ -177,24 +175,8 @@ public class ResponseBuilder
     }
   }
 
-  public static abstract class ShardsInfoContainer implements BiConsumer<String,NamedList<Object>>, Supplier<Object> {
-  }
-
   protected ShardsInfoContainer newShardsInfoContainer() {
-    return new ShardsInfoContainer() {
-
-      private final NamedList<Object> container = new SimpleOrderedMap<>();
-
-      @Override
-      public void accept(String shardInfoName, NamedList<Object> shardInfoValue) {
-        container.add(shardInfoName, shardInfoValue);
-      }
-
-      @Override
-      public Object get() {
-        return container;
-      }
-    };
+    return new DefaultShardsInfoContainer();
   }
 
   public Map<Object, ShardDoc> resultIds;

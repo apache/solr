@@ -519,7 +519,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     
     // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
     if(!rb.isDistrib && req.getParams().getBool(ShardParams.SHARDS_INFO, false) && rb.shortCircuitedURL != null) {  
-      ResponseBuilder.ShardsInfoContainer shardsInfo = rb.newShardsInfoContainer();
+      ShardsInfoContainer shardsInfo = rb.newShardsInfoContainer();
       SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();        
       if (rsp.getException() != null) {
         Throwable cause = rsp.getException();
