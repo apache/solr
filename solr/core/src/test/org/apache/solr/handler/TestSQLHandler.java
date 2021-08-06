@@ -2315,7 +2315,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     int numIn = 100;
     List<String> bigInList = new ArrayList<>(bigList);
-    Collections.shuffle(bigInList);
+    Collections.shuffle(bigInList, random());
     bigInList = bigInList.subList(0, numIn).stream().map(s -> "'"+s+"'").collect(Collectors.toList());
     String sql = "SELECT id FROM $ALIAS WHERE stringmv IN ("+String.join(",", bigInList)+") ORDER BY id ASC";
     expectResults(sql, 10);
