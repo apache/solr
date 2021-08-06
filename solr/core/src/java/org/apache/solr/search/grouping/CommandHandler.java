@@ -27,6 +27,8 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
@@ -208,6 +210,13 @@ public class CommandHandler {
     return transformer.transform(commands);
   }
 
+  private static Collector NO_OP_COLLECTOR = new SimpleCollector() {
+    @Override
+    public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
+    @Override
+    public void collect(int doc) throws IOException {}
+  };
+
   /**
    * Invokes search with the specified filter and collector.  
    * If a time limit has been specified then wrap the collector in the TimeLimitingCollector
@@ -216,6 +225,9 @@ public class CommandHandler {
                                      ProcessedFilter filter, 
                                      Collector collector) throws IOException {
     if (queryCommand.getTimeAllowed() > 0 ) {
+      if (collector == null) {
+        collector = NO_OP_COLLECTOR;
+      }
       collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
     }
 
