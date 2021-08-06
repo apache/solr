@@ -120,7 +120,7 @@ public class SnapShooter {
       paths = backupRepo.listAll(baseSnapDirPath);
       for (String path : paths) {
         if (path.equals(this.directoryName)
-            && backupRepo.getPathType(baseSnapDirPath.resolve(path)) == PathType.DIRECTORY) {
+            && backupRepo.getPathType(backupRepo.resolve(baseSnapDirPath, path)) == PathType.DIRECTORY) {
           dirFound = true;
           break;
         }

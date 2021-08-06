@@ -134,6 +134,17 @@ public class GCSBackupRepository implements BackupRepository {
     }
 
     @Override
+    public URI createDirectoryURI(String location) {
+        Objects.requireNonNull(location);
+
+        if (!location.endsWith("/")) {
+            location += "/";
+        }
+
+        return createURI(location);
+    }
+
+    @Override
     public URI resolve(URI baseUri, String... pathComponents) {
         StringBuilder builder = new StringBuilder(baseUri.toString());
         for (String path : pathComponents) {

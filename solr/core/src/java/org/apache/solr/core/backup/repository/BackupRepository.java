@@ -74,6 +74,17 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
   URI createURI(String path);
 
   /**
+   * This method resolves a directory URI using the specified path components (as method arguments).
+   * This method ensures that the resulting URI will be treated as a directory by the BackupRepository.
+   *
+   * @param path The path specified by the user.
+   * @return the URI representation of the user supplied value, ensured to look like a directory.
+   */
+  default URI createDirectoryURI(String path) {
+    return createURI(path);
+  }
+
+  /**
    * This method resolves a URI using the specified path components (as method arguments).
    *
    * @param baseUri The base URI to use for creating the path

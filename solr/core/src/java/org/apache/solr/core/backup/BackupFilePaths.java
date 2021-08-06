@@ -108,7 +108,7 @@ public class BackupFilePaths {
         if (id.id == TRADITIONAL_BACKUP) {
             return ZK_STATE_DIR;
         }
-        return String.format(Locale.ROOT, "%s_%d/", ZK_STATE_DIR, id.id);
+        return String.format(Locale.ROOT, "%s_%d", ZK_STATE_DIR, id.id);
     }
 
     /**
@@ -170,7 +170,7 @@ public class BackupFilePaths {
             // Incremental backups have an additional URI path component representing the collection that was backed up.
             // This collection directory is the path assumed by other backup code.
             if (entries.length != 1) {
-                throw new IllegalStateException("Incremental backup URI [" + backupNameUri + "] expected to hold a single directory");
+                throw new IllegalStateException("Incremental backup URI [" + backupNameUri + "] expected to hold a single directory. Number found: " + entries.length);
             }
             final String collectionName = entries[0];
             return repository.resolve(backupNameUri, entries[0]);

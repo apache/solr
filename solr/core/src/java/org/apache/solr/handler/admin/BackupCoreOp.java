@@ -56,7 +56,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
                 + " parameter or as a default repository property");
       }
 
-      URI locationUri = new URI(location);
+      URI locationUri = repository.createDirectoryURI(location);
       repository.createDirectory(locationUri);
 
       if (incremental) {
