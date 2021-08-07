@@ -557,6 +557,8 @@ Bug Fixes
 
 * SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
 
+* SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
