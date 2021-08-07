@@ -319,8 +319,10 @@ Other Changes
 
 * SOLR-15385, SOLR-15535: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley, Christine Poerschke)
 
-* SOLR-15480: Refactor Tuple copy constructor, clone, and merge methods to use new putAll method. PutAll should cut down
-  on fields resizing and should mark EOF and EXCEPTION booleans as true when those tokens are found. (John Durham)
+* SOLR-15480: Added a new putAll methods for Tuple.fields to take care of marking EOF and EXCEPTION when those tokens are found.
+  The copy constructor (taking only fields), the merge, and the clone methods were updated to use the new putAll method. Additionally,
+  a new copy constructor taking another Tuple object was added and it, along with clone and merge, were refactored to handle setting
+  fieldNames and fieldLabels if necessary. (John Durham)
 
 * SOLR-15470: The binary distribution no longer contains test-framework jars (janhoy)
 

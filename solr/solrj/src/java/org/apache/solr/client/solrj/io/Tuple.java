@@ -90,6 +90,20 @@ public class Tuple implements Cloneable, MapWriter {
     putAll(fields);
   }
 
+  /**
+   * A copy constructor
+   * @param original Tuple that will be copied
+   */
+  public Tuple(Tuple original) {
+    this.putAll(original.fields);
+    if (original.fieldNames != null) {
+      this.fieldNames = new ArrayList<>(original.fieldNames);
+    }
+    if (original.fieldLabels != null) {
+      this.fieldLabels = new HashMap<>(original.fieldLabels);
+    }
+  }
+
   public Object get(String key) {
     return this.fields.get(key);
   }
@@ -281,13 +295,32 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   public Tuple clone() {
-    Tuple clone = new Tuple();
-    clone.putAll(fields);
+    Tuple clone = new Tuple(this.fields);
+    if (this.fieldNames != null) {
+      clone.fieldNames = new ArrayList<>(this.fieldNames);
+    }
+    if (this.fieldLabels != null) {
+      clone.fieldLabels = new HashMap<>(this.fieldLabels);
+    }
     return clone;
   }
   
   public void merge(Tuple other) {
-    putAll(other.getFields());
+    this.putAll(other.getFields());
+    if (other.fieldNames != null) {
+      if (this.fieldNames != null) {
+        this.fieldNames.addAll(other.fieldNames);
+      } else {
+        this.fieldNames = new ArrayList<>(other.fieldNames);
+      }
+    }
+    if (other.fieldLabels != null) {
+      if (this.fieldLabels != null) {
+        this.fieldLabels.putAll(other.fieldLabels);
+      } else {
+        this.fieldLabels = new HashMap<>(other.fieldLabels);
+      }
+    }
   }
 
   @Override
