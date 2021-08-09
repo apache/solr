@@ -80,11 +80,6 @@ public class LocalFileSystemRepository implements BackupRepository {
   }
 
   @Override
-  public URI createDirectoryURI(String location) {
-    return createURI(location);
-  }
-
-  @Override
   public URI resolve(URI baseUri, String... pathComponents) {
     Preconditions.checkArgument(pathComponents.length > 0);
 

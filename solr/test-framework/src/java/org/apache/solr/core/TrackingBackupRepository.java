@@ -59,6 +59,11 @@ public class TrackingBackupRepository implements BackupRepository {
     }
 
     @Override
+    public URI resolveDirectory(URI baseUri, String... pathComponents) {
+        return delegate.resolveDirectory(baseUri, pathComponents);
+    }
+
+    @Override
     public boolean exists(URI path) throws IOException {
         return delegate.exists(path);
     }

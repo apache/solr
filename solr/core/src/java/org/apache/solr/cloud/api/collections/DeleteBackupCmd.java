@@ -189,7 +189,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
         try {
             for (BackupId backupId : backupIdsDeletes) {
-                repository.deleteDirectory(repository.resolve(backupUri, BackupFilePaths.getZkStateDir(backupId)));
+                repository.deleteDirectory(repository.resolveDirectory(backupUri, BackupFilePaths.getZkStateDir(backupId)));
             }
         } catch (FileNotFoundException e) {
             //ignore this

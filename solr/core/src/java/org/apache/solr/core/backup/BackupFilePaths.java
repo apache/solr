@@ -61,7 +61,7 @@ public class BackupFilePaths {
      * Only valid for incremental backups.
      */
     public URI getIndexDir() {
-        return repository.resolve(backupLoc, "index");
+        return repository.resolveDirectory(backupLoc, "index");
     }
 
     /**
@@ -70,7 +70,7 @@ public class BackupFilePaths {
      * Only valid for incremental backups.
      */
     public URI getShardBackupMetadataDir() {
-        return repository.resolve(backupLoc, "shard_backup_metadata");
+        return repository.resolveDirectory(backupLoc, "shard_backup_metadata");
     }
 
     public URI getBackupLocation() {
@@ -163,7 +163,7 @@ public class BackupFilePaths {
      * @param backupName the specific backup name to create a URI for
      */
     public static URI buildExistingBackupLocationURI(BackupRepository repository, URI location, String backupName) throws IOException {
-        final URI backupNameUri = repository.resolve(location, backupName);
+        final URI backupNameUri = repository.resolveDirectory(location, backupName);
         final String[] entries = repository.listAll(backupNameUri);
         final boolean incremental = ! Arrays.stream(entries).anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
         if (incremental) {
@@ -173,7 +173,7 @@ public class BackupFilePaths {
                 throw new IllegalStateException("Incremental backup URI [" + backupNameUri + "] expected to hold a single directory. Number found: " + entries.length);
             }
             final String collectionName = entries[0];
-            return repository.resolve(backupNameUri, entries[0]);
+            return repository.resolveDirectory(backupNameUri, entries[0]);
         } else {
             return backupNameUri;
         }

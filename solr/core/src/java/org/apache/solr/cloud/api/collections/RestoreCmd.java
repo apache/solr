@@ -165,11 +165,11 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       this.repository = this.container.newBackupRepository(repo);
 
       this.location = repository.createDirectoryURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
-      final URI backupNameUri = repository.resolve(location, backupName);
+      final URI backupNameUri = repository.resolveDirectory(location, backupName);
       final String[] entries = repository.listAll(backupNameUri);
       final boolean incremental = ! Arrays.stream(entries).anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
       this.backupPath = (incremental) ?
-              repository.resolve(backupNameUri, entries[0]) : // incremental backups have an extra path component representing the backed up collection
+              repository.resolveDirectory(backupNameUri, entries[0]) : // incremental backups have an extra path component representing the backed up collection
               backupNameUri;
       this.zkStateReader = ccc.getZkStateReader();
       this.backupManager = backupId == -1 ?
