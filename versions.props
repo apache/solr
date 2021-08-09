@@ -119,6 +119,7 @@ org.jsoup:jsoup=1.12.1
 org.locationtech.spatial4j:*=0.7
 org.mockito:mockito-core=3.8.0
 org.objenesis:objenesis=2.6
+org.openjdk.jmh:*=1.32
 org.ow2.asm:*=7.2
 org.slf4j:*=1.7.24
 org.tallison:jmatio=1.5

@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.MultiSolrCloudTestCase;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.security.AllowListUrlChecker;
@@ -79,7 +78,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
           @Override
           public MiniSolrCloudCluster apply(String clusterId) {
             try {
-              final MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(nodesPerCluster(clusterId),
+              final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId),
                   createTempDir())
                       .addConfig("conf", configset("cloud-dynamic"))
                       .withSolrXml(MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
