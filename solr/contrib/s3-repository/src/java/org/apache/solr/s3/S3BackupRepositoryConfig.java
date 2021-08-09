@@ -65,7 +65,7 @@ public class S3BackupRepositoryConfig {
     private static String getStringConfig(NamedList<?> config, String property) {
         String envProp = System.getenv().get(toEnvVar(property));
         if (envProp == null) {
-            var configProp = config.get(property);
+            Object configProp = config.get(property);
             return configProp == null ? null : configProp.toString();
         } else {
             return envProp;
@@ -75,8 +75,8 @@ public class S3BackupRepositoryConfig {
     private static int getIntConfig(NamedList<?> config, String property) {
         String envProp = System.getenv().get(toEnvVar(property));
         if (envProp == null) {
-            var configProp = config.get(property);
-            return configProp == null ? 0 : (int) configProp;
+            Object configProp = config.get(property);
+            return configProp instanceof Integer ? (int) configProp : 0;
         } else {
             return Integer.parseInt(envProp);
         }
@@ -88,7 +88,7 @@ public class S3BackupRepositoryConfig {
     private static boolean getBooleanConfig(NamedList<?> config, String property) {
         String envProp = System.getenv().get(toEnvVar(property));
         if (envProp == null) {
-            var configProp = config.getBooleanArg(property);
+            Boolean configProp = config.getBooleanArg(property);
             return configProp != null && configProp;
         } else {
             return Boolean.parseBoolean(envProp);
