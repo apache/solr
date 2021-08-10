@@ -100,7 +100,7 @@ public class MiniClusterState {
     /** The Mini cluster base dir. */
     Path miniClusterBaseDir;
 
-    /** The Allow cluster reuse. */
+    /** To Allow cluster reuse. */
     boolean allowClusterReuse = false;
 
     /** The Is warmup. */
