@@ -56,11 +56,8 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
    * @param content Arbitrary content for the test.
    */
   void pushContent(String path, String content) throws S3Exception {
-
-    OutputStream output = client.pushStream(path);
-    try {
+    try (OutputStream output = client.pushStream(path)) {
       IOUtils.write(content, output, Charset.defaultCharset());
-      output.close();
     } catch (IOException e) {
       throw new S3Exception(e);
     }

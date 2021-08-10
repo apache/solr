@@ -28,34 +28,35 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   /** Write and read a simple file (happy path). */
   @Test
   public void testBasicWriteRead() throws Exception {
-
     pushContent("/foo", "my blob");
 
-    InputStream stream = client.pullStream("/foo");
-    assertEquals("my blob", IOUtils.toString(stream, Charset.defaultCharset()));
+    try (InputStream stream = client.pullStream("/foo")) {
+      assertEquals("my blob", IOUtils.toString(stream, Charset.defaultCharset()));
+    }
   }
 
   /** Check writing a file with no path. */
   @Test
   public void testWriteNoPath() {
-    assertThrows(S3Exception.class, () -> pushContent("/", "empty path"));
+    assertThrows("Should not be able to write content to empty path", S3Exception.class, () -> pushContent("", "empty path"));
+    assertThrows("Should not be able to write content to root path", S3Exception.class, () -> pushContent("/", "empty path"));
   }
 
   /** Check reading a file with no path. */
   @Test
   public void testReadNoPath() {
-    assertThrows(S3Exception.class, () -> client.pullStream("/"));
+    assertThrows("Should not be able to read content from empty path", S3Exception.class, () -> client.pullStream(""));
+    assertThrows("Should not be able to read content from empty path", S3Exception.class, () -> client.pullStream("/"));
   }
 
   /** Test writing over an existing file and overriding the content. */
   @Test
   public void testWriteOverFile() throws Exception {
-
     pushContent("/override", "old content");
     pushContent("/override", "new content");
 
     InputStream stream = client.pullStream("/override");
-    assertEquals("new content", IOUtils.toString(stream, Charset.defaultCharset()));
+    assertEquals("File contents should have been overriden", "new content", IOUtils.toString(stream, Charset.defaultCharset()));
   }
 
   /** Check getting the length of a written file. */
@@ -68,10 +69,9 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   /** Check an exception is raised when getting the length of a directory. */
   @Test
   public void testDirectoryLength() throws Exception {
-
     client.createDirectory("/directory");
 
-    S3Exception exception = assertThrows(S3Exception.class, () -> client.length("/directory"));
+    S3Exception exception = assertThrows("Getting length on a dir should throw exception", S3Exception.class, () -> client.length("/directory"));
     assertEquals("Path is Directory", exception.getMessage());
   }
 

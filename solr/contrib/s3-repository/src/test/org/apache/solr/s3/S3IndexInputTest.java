@@ -95,7 +95,7 @@ public class S3IndexInputTest extends SolrTestCaseJ4 {
     } else {
       expectedReadCount = content.length() / slice + 1;
     }
-    assertEquals(expectedReadCount, slicedStream.readCount);
+    assertEquals("S3IndexInput did an unexpected number of reads", expectedReadCount, slicedStream.readCount);
   }
 
   /** Input stream that reads, but not too much in a single call. */

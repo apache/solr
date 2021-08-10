@@ -59,37 +59,38 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   public void testURI() throws IOException {
     try (S3BackupRepository repo = getRepository()) {
       URI uri = repo.createURI("x");
-      assertEquals(S3_SCHEME, uri.getScheme());
-      assertEquals("/x", uri.getPath());
+      assertEquals("'S3' scheme should be auto-added to the URI when not provided", S3_SCHEME, uri.getScheme());
+      assertEquals("URI path should be prefixed with /", "/x", uri.getPath());
       assertEquals("s3:/x", uri.toString());
 
       URI directoryUri = repo.createDirectoryURI("d");
-      assertEquals("s3:/d/", directoryUri.toString());
+      assertEquals("'S3' scheme should be auto-added to the dir URI when not provided", S3_SCHEME, directoryUri.getScheme());
+      assertEquals("createDirectoryURI should add a trailing slash to URI", "s3:/d/", directoryUri.toString());
+
       repo.createDirectory(directoryUri);
       assertTrue(repo.exists(directoryUri));
       directoryUri = repo.createDirectoryURI("d/");
-      assertEquals("s3:/d/", directoryUri.toString());
+      assertEquals("createDirectoryURI should have a single trailing slash, even if one is provided", "s3:/d/", directoryUri.toString());
     }
   }
 
   @Test
   public void testLocalDirectoryFunctions() throws Exception {
-
     try (S3BackupRepository repo = getRepository()) {
 
       URI path = new URI("/test");
       repo.createDirectory(path);
       assertTrue(repo.exists(path));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(path));
-      assertEquals(repo.listAll(path).length, 0);
+      assertEquals("No files should exist in dir yet", repo.listAll(path).length, 0);
 
       URI subDir = new URI("/test/dir");
       repo.createDirectory(subDir);
       assertTrue(repo.exists(subDir));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(subDir));
-      assertEquals(repo.listAll(subDir).length, 0);
+      assertEquals("No files should exist in subdir yet", repo.listAll(subDir).length, 0);
 
-      assertEquals(repo.listAll(path).length, 1);
+      assertEquals("subDir should now be returned when listing all in parent dir", repo.listAll(path).length, 1);
 
       repo.deleteDirectory(path);
       assertFalse(repo.exists(path));
@@ -231,12 +232,12 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
       // Read 4 bytes
       input.readBytes(buffer, 0, 4);
-      assertEquals("This", new String(buffer, 0, 4, StandardCharsets.UTF_8));
+      assertEquals("Reading from beginning of buffer should return 'This'", "This", new String(buffer, 0, 4, StandardCharsets.UTF_8));
 
       // Seek to the work 'content' and read it
       input.seek(position);
       input.readBytes(buffer, 0, 7);
-      assertEquals("content", new String(buffer, 0, 7, StandardCharsets.UTF_8));
+      assertEquals("Seeking to pos " + position + " in buffer should return 'content'", "content", new String(buffer, 0, 7, StandardCharsets.UTF_8));
     }
   }
 
@@ -268,7 +269,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   @Override
   protected S3BackupRepository getRepository() {
     String mockS3Endpoint = "http://localhost:" + S3_MOCK_RULE.getHttpPort();
-    System.setProperty("mock.s3.endpoint", mockS3Endpoint);
+    System.setProperty(S3BackupRepositoryConfig.ENDPOINT, mockS3Endpoint);
     NamedList<Object> args = getBaseBackupRepositoryConfiguration();
 
     S3BackupRepository repo = new S3BackupRepository();
@@ -290,7 +291,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     return args;
   }
 
-  private void pushBlob(String path, String content) throws IOException {
+  private void pushBlob(String path, String content) {
     AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
     try {
       s3.putObject(BUCKET_NAME, path, content);
@@ -300,7 +301,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   }
 
   private File pullBlob(String path) throws IOException {
-
     AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
     try {
       File file = temporaryFolder.newFile();

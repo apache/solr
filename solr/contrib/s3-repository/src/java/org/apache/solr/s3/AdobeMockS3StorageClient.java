@@ -41,9 +41,9 @@ class AdobeMockS3StorageClient extends S3StorageClient {
 
   private static AmazonS3 createInternalClient(String endpoint) {
     if (endpoint == null || endpoint.isEmpty()) {
-      endpoint = System.getProperty("mock.s3.endpoint");
+      endpoint = System.getProperty(S3BackupRepositoryConfig.ENDPOINT);
       if (endpoint == null || endpoint.isEmpty()) {
-        endpoint = System.getenv().getOrDefault("MOCK_S3_ENDPOINT", DEFAULT_MOCK_S3_ENDPOINT);
+        endpoint = System.getenv().getOrDefault("BLOB_S3_ENDPOINT", DEFAULT_MOCK_S3_ENDPOINT);
       }
     }
 
