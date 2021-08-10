@@ -15,31 +15,5 @@
  * limitations under the License.
  */
 
-rootProject.name = "solr-root"
-
-includeBuild("dev-tools/missing-doclet")
-
-if (!(System.getProperty("skip.solr") as Boolean)) {
-  include "solr:solrj"
-  include "solr:core"
-  include "solr:server"
-  include "solr:contrib:analysis-extras"
-  include "solr:contrib:analytics"
-  include "solr:contrib:clustering"
-  include "solr:contrib:extraction"
-  include "solr:contrib:langid"
-  include "solr:contrib:jaegertracer-configurator"
-  include "solr:contrib:prometheus-exporter"
-  include "solr:contrib:scripting"
-  include "solr:contrib:ltr"
-  include "solr:contrib:gcs-repository"
-  include "solr:webapp"
-  include "solr:benchmark"
-  include "solr:test-framework"
-  include "solr:solr-ref-guide"
-  include "solr:example"
-
-  include "solr:documentation"
-  include "solr:packaging"
-  include "solr:docker"
-}
+/** Solr JMH benchmarks focused on indexing */
+package org.apache.solr.bench.index;
