@@ -2313,11 +2313,15 @@ public class TestSQLHandler extends SolrCloudTestCase {
     }
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    int numIn = 100;
+    int numIn = 200;
     List<String> bigInList = new ArrayList<>(bigList);
     Collections.shuffle(bigInList, random());
     bigInList = bigInList.subList(0, numIn).stream().map(s -> "'"+s+"'").collect(Collectors.toList());
     String sql = "SELECT id FROM $ALIAS WHERE stringmv IN ("+String.join(",", bigInList)+") ORDER BY id ASC";
     expectResults(sql, 10);
+    sql = "SELECT * FROM $ALIAS WHERE stringmv IN ("+String.join(",", bigInList)+") ORDER BY id ASC LIMIT 100";
+    expectResults(sql, 10);
+    sql = "SELECT * FROM $ALIAS WHERE stringmv NOT IN ("+String.join(",", bigInList)+")";
+    expectResults(sql, 0);
   }
 }
