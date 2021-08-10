@@ -63,7 +63,7 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
-enum CoreAdminOperation implements CoreAdminOp {
+public enum CoreAdminOperation implements CoreAdminOp {
 
   CREATE_OP(CREATE, it -> {
     assert TestInjection.injectRandomDelayInCoreCreation();
@@ -235,7 +235,8 @@ enum CoreAdminOperation implements CoreAdminOp {
       }
 
       SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-      NamedList<Object> result = new NamedList<>();
+      @SuppressWarnings({"rawtypes"})
+      NamedList result = new NamedList();
       for (String name : mgr.listSnapshots()) {
         Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
         if ( metadata.isPresent() ) {
@@ -274,7 +275,8 @@ enum CoreAdminOperation implements CoreAdminOp {
    * @return - a named list of key/value pairs from the core.
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
-  static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
     if (cores.isCoreLoading(cname)) {
