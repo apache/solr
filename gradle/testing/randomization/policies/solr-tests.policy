@@ -40,6 +40,8 @@ grant {
 
   permission java.nio.file.LinkPermission "hard";
 
+  permission java.security.SecurityPermission "putProviderProperty.SolrTestNonSecure";
+
   // all possibilities of accepting/binding/connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
