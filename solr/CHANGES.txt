@@ -412,6 +412,9 @@ Bug Fixes
 * SOLR-15575: Propagate request level basic auth creds from the top-level async CollectionAdminRequest to internally
   used async requests, such as async status checking (Timothy Potter)
 
+* SOLR-14758: Fix NPE in QueryComponent.mergeIds when using timeAllowed and sorting
+  (Bram Van Dam, Uwe Schindler)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
