@@ -25,16 +25,22 @@ dependencies {
 
     implementation platform('com.amazonaws:aws-java-sdk-bom')
 
-    implementation ('com.amazonaws:aws-java-sdk-core')
-    implementation ('com.amazonaws:aws-java-sdk-s3')
+    implementation ('com.amazonaws:aws-java-sdk-core') { exclude group: 'commons-codec', module: 'commons-codec' }
+    implementation ('com.amazonaws:aws-java-sdk-s3') { exclude group: 'commons-codec', module: 'commons-codec' }
 
     // Not strictly needed, but provides better performance according to AWS SDK
     // Can remove this when we upgrade to AWS SDK v2
     implementation ('javax.xml.bind:jaxb-api') { transitive = false }
 
     testImplementation('com.adobe.testing:s3mock-junit4') {
+        // Don't pull in separate versions of these libs, just use what Solr already has
         exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
         exclude group: 'ch.qos.logback', module: 'logback-classic'
+        exclude group: 'org.eclipse.jetty', module: '*'
+        exclude group: 'io.netty', module: '*'
+        exclude group: 'commons-io', module: 'commons-io'
+        exclude group: 'commons-codec', module: 'commons-codec'
+        exclude group: 'org.apache.commons', module: 'commons-lang3'
     }
 
     testImplementation project(':solr:test-framework')
@@ -44,4 +50,7 @@ test {
     // S3Mock uses Spring Boot under the hood, which tries to do too much auto configuration that we don't want
     environment "spring.autoconfigure.exclude", "org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration"
     environment "spring.jmx.enabled", "false"
+
+    // Without this, randomizedtesting will think our tests leak threads (b/c S3Mock's Jetty hasn't bothered to clean up yet)
+    environment "server.jetty.threads.idle-timeout", "3s"
 }

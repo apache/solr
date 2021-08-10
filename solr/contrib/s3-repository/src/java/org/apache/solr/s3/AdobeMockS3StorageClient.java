@@ -24,8 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 
 /**
  * This storage client exists to work around some of the incongruencies Adobe S3Mock has with the S3 API.
- * The main difference is that S3Mock does not support paths with a leading '/', but S3 does, and our code
- * in {@link S3StorageClient} requires all paths to have a leading '/'.
  */
 class AdobeMockS3StorageClient extends S3StorageClient {
 
