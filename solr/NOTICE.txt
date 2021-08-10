@@ -663,3 +663,8 @@ an open source universal data plane API, which can be obtained at:
     * https://github.com/cncf/udpa
   * LOCATION_IN_GRPC:
     * xds/third_party/udpa
+
+The S3 Output Stream is based on ASL 2.0 reference implementations found at:
+    https://github.com/confluentinc/kafka-connect-storage-cloud/blob/5.0.x/kafka-connect-s3/src/main/java/io/confluent/connect/s3/storage/S3OutputStream.java
+This files resides at:
+    contrib/s3-repository/src/java/org/apache/solr/s3/S3OutputStream.java
