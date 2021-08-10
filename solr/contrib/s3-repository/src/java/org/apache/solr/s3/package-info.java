@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Solr S3 backup repository
- */
+/** Solr S3 backup repository */
 package org.apache.solr.s3;

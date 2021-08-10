@@ -17,20 +17,20 @@
 package org.apache.solr.s3;
 
 /**
- * Specific exception thrown from {@link S3StorageClient}s when the resource requested is not found (e.g., attempting
- * to fetch a key in S3 that doesn't exist).
+ * Specific exception thrown from {@link S3StorageClient}s when the resource requested is not found
+ * (e.g., attempting to fetch a key in S3 that doesn't exist).
  */
 public class S3NotFoundException extends S3Exception {
 
-    public S3NotFoundException(Throwable cause) {
-        super(cause);
-    }
+  public S3NotFoundException(Throwable cause) {
+    super(cause);
+  }
 
-    public S3NotFoundException(String message) {
-        super(message);
-    }
+  public S3NotFoundException(String message) {
+    super(message);
+  }
 
-    public S3NotFoundException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  public S3NotFoundException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

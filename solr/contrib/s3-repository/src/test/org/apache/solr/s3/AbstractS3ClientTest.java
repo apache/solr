@@ -18,56 +18,51 @@ package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.amazonaws.services.s3.AmazonS3;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-
-/**
- * Abstract class for test with S3Mock.
- */
+/** Abstract class for test with S3Mock. */
 public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
-    private static final String BUCKET_NAME = "test-bucket";
+  private static final String BUCKET_NAME = "test-bucket";
 
-    @ClassRule
-    public static final S3MockRule S3_MOCK_RULE = S3MockRule.builder()
-            .silent()
-            .withInitialBuckets(BUCKET_NAME)
-            .build();
+  @ClassRule
+  public static final S3MockRule S3_MOCK_RULE =
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
 
-    S3StorageClient client;
+  S3StorageClient client;
 
-    @Before
-    public void setUpClient() {
-        AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
-        client = new AdobeMockS3StorageClient(s3, BUCKET_NAME);
+  @Before
+  public void setUpClient() {
+    AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
+    client = new AdobeMockS3StorageClient(s3, BUCKET_NAME);
+  }
+
+  @After
+  public void tearDownClient() {
+    client.close();
+  }
+
+  /**
+   * Helper method to push a string in the blob storage.
+   *
+   * @param path Destination path in blob store.
+   * @param content Arbitrary content for the test.
+   */
+  void pushContent(String path, String content) throws S3Exception {
+
+    OutputStream output = client.pushStream(path);
+    try {
+      IOUtils.write(content, output, Charset.defaultCharset());
+      output.close();
+    } catch (IOException e) {
+      throw new S3Exception(e);
     }
-
-    @After
-    public void tearDownClient() {
-        client.close();
-    }
-
-    /**
-     * Helper method to push a string in the blob storage.
-     *
-     * @param path    Destination path in blob store.
-     * @param content Arbitrary content for the test.
-     */
-    void pushContent(String path, String content) throws S3Exception {
-
-        OutputStream output = client.pushStream(path);
-        try {
-            IOUtils.write(content, output, Charset.defaultCharset());
-            output.close();
-        } catch (IOException e) {
-            throw new S3Exception(e);
-        }
-    }
+  }
 }

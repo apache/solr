@@ -16,87 +16,71 @@
  */
 package org.apache.solr.s3;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.Test;
-
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
+import org.apache.commons.io.IOUtils;
+import org.junit.Test;
 
-/**
- * Basic test that write data and read them through the blob client.
- */
+/** Basic test that write data and read them through the blob client. */
 public class S3ReadWriteTest extends AbstractS3ClientTest {
 
-    /**
-     * Write and read a simple file (happy path).
-     */
-    @Test
-    public void testBasicWriteRead() throws Exception {
+  /** Write and read a simple file (happy path). */
+  @Test
+  public void testBasicWriteRead() throws Exception {
 
-        pushContent("/foo", "my blob");
+    pushContent("/foo", "my blob");
 
-        InputStream stream = client.pullStream("/foo");
-        assertEquals("my blob", IOUtils.toString(stream, Charset.defaultCharset()));
-    }
+    InputStream stream = client.pullStream("/foo");
+    assertEquals("my blob", IOUtils.toString(stream, Charset.defaultCharset()));
+  }
 
-    /**
-     * Check writing a file with no path.
-     */
-    @Test
-    public void testWriteNoPath() {
-        assertThrows(S3Exception.class, () -> pushContent("/", "empty path"));
-    }
+  /** Check writing a file with no path. */
+  @Test
+  public void testWriteNoPath() {
+    assertThrows(S3Exception.class, () -> pushContent("/", "empty path"));
+  }
 
-    /**
-     * Check reading a file with no path.
-     */
-    @Test
-    public void testReadNoPath() {
-        assertThrows(S3Exception.class, () -> client.pullStream("/"));
-    }
+  /** Check reading a file with no path. */
+  @Test
+  public void testReadNoPath() {
+    assertThrows(S3Exception.class, () -> client.pullStream("/"));
+  }
 
-    /**
-     * Test writing over an existing file and overriding the content.
-     */
-    @Test
-    public void testWriteOverFile() throws Exception {
+  /** Test writing over an existing file and overriding the content. */
+  @Test
+  public void testWriteOverFile() throws Exception {
 
-        pushContent("/override", "old content");
-        pushContent("/override", "new content");
+    pushContent("/override", "old content");
+    pushContent("/override", "new content");
 
-        InputStream stream = client.pullStream("/override");
-        assertEquals("new content", IOUtils.toString(stream, Charset.defaultCharset()));
-    }
+    InputStream stream = client.pullStream("/override");
+    assertEquals("new content", IOUtils.toString(stream, Charset.defaultCharset()));
+  }
 
-    /**
-     * Check getting the length of a written file.
-     */
-    @Test
-    public void testLength() throws Exception {
-        pushContent("/foo", "0123456789");
-        assertEquals(10, client.length("/foo"));
-    }
+  /** Check getting the length of a written file. */
+  @Test
+  public void testLength() throws Exception {
+    pushContent("/foo", "0123456789");
+    assertEquals(10, client.length("/foo"));
+  }
 
-    /**
-     * Check an exception is raised when getting the length of a directory.
-     */
-    @Test
-    public void testDirectoryLength() throws Exception {
+  /** Check an exception is raised when getting the length of a directory. */
+  @Test
+  public void testDirectoryLength() throws Exception {
 
-        client.createDirectory("/directory");
+    client.createDirectory("/directory");
 
-        S3Exception exception = assertThrows(S3Exception.class, () -> client.length("/directory"));
-        assertEquals("Path is Directory", exception.getMessage());
-    }
+    S3Exception exception = assertThrows(S3Exception.class, () -> client.length("/directory"));
+    assertEquals("Path is Directory", exception.getMessage());
+  }
 
-    /**
-     * Check various method throws the expected exception of a missing S3 key.
-     */
-    @Test
-    public void testNotFound() {
-        assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
-        assertThrows(S3NotFoundException.class, () -> client.length("/not-found"));
-        assertThrows(S3NotFoundException.class, () -> client.delete(Collections.singleton("/not-found")));
-    }
+  /** Check various method throws the expected exception of a missing S3 key. */
+  @Test
+  public void testNotFound() {
+    assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
+    assertThrows(S3NotFoundException.class, () -> client.length("/not-found"));
+    assertThrows(
+        S3NotFoundException.class, () -> client.delete(Collections.singleton("/not-found")));
+  }
 }

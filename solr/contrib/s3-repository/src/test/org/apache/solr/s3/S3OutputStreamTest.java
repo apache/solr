@@ -18,6 +18,9 @@ package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.amazonaws.services.s3.AmazonS3;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -26,139 +29,124 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-
 public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
-    private static final String BUCKET = S3OutputStreamTest.class.getSimpleName();
+  private static final String BUCKET = S3OutputStreamTest.class.getSimpleName();
 
-    @ClassRule
-    public static final S3MockRule S3_MOCK_RULE = S3MockRule.builder()
-            .silent()
-            .withInitialBuckets(BUCKET)
-            .build();
+  @ClassRule
+  public static final S3MockRule S3_MOCK_RULE =
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET).build();
 
-    private AmazonS3 s3;
+  private AmazonS3 s3;
 
-    @Before
-    public void setUpClient() {
-        s3 = S3_MOCK_RULE.createS3Client();
-    }
+  @Before
+  public void setUpClient() {
+    s3 = S3_MOCK_RULE.createS3Client();
+  }
 
-    @After
-    public void tearDownClient() {
-        s3.shutdown();
-    }
+  @After
+  public void tearDownClient() {
+    s3.shutdown();
+  }
 
-    /**
-     * Basic check writing content byte-by-byte. They should be kept in the internal buffer and flushed to S3
-     * only once.
-     */
-    @Test
-    public void testWriteByteByByte() throws IOException {
+  /**
+   * Basic check writing content byte-by-byte. They should be kept in the internal buffer and
+   * flushed to S3 only once.
+   */
+  @Test
+  public void testWriteByteByByte() throws IOException {
 
-        S3OutputStream output = new S3OutputStream(s3, "byte-by-byte", BUCKET);
-        output.write('h');
-        output.write('e');
-        output.write('l');
-        output.write('l');
-        output.write('o');
-        output.close();
+    S3OutputStream output = new S3OutputStream(s3, "byte-by-byte", BUCKET);
+    output.write('h');
+    output.write('e');
+    output.write('l');
+    output.write('l');
+    output.write('o');
+    output.close();
 
-        // Check we can re-read same content
-        InputStream input = s3.getObject(BUCKET, "byte-by-byte").getObjectContent();
-        String read = IOUtils.toString(input, Charset.defaultCharset());
-        assertEquals("hello", read);
-    }
+    // Check we can re-read same content
+    InputStream input = s3.getObject(BUCKET, "byte-by-byte").getObjectContent();
+    String read = IOUtils.toString(input, Charset.defaultCharset());
+    assertEquals("hello", read);
+  }
 
-    /**
-     * Write a small byte array, which is smaller than S3 part size.
-     */
-    @Test
-    public void testWriteSmallBuffer() throws IOException {
+  /** Write a small byte array, which is smaller than S3 part size. */
+  @Test
+  public void testWriteSmallBuffer() throws IOException {
 
-        // must be smaller than S3 part size
-        byte[] buffer = "hello".getBytes(Charset.defaultCharset());
-        assertTrue(buffer.length < S3OutputStream.PART_SIZE);
+    // must be smaller than S3 part size
+    byte[] buffer = "hello".getBytes(Charset.defaultCharset());
+    assertTrue(buffer.length < S3OutputStream.PART_SIZE);
 
-        S3OutputStream output = new S3OutputStream(s3, "small-buffer", BUCKET);
-        output.write(buffer);
-        output.close();
+    S3OutputStream output = new S3OutputStream(s3, "small-buffer", BUCKET);
+    output.write(buffer);
+    output.close();
 
-        // Check we can re-read same content
-        InputStream input = s3.getObject(BUCKET, "small-buffer").getObjectContent();
-        String read = IOUtils.toString(input, Charset.defaultCharset());
-        assertEquals("hello", read);
-    }
+    // Check we can re-read same content
+    InputStream input = s3.getObject(BUCKET, "small-buffer").getObjectContent();
+    String read = IOUtils.toString(input, Charset.defaultCharset());
+    assertEquals("hello", read);
+  }
 
-    /**
-     * Write a byte array larger than S3 part size. Simulate a real multi-part upload.
-     */
-    @Test
-    public void testWriteLargeBuffer() throws IOException {
+  /** Write a byte array larger than S3 part size. Simulate a real multi-part upload. */
+  @Test
+  public void testWriteLargeBuffer() throws IOException {
 
-        // must be larger than S3 part size
-        String content = RandomStringUtils.randomAlphanumeric(S3OutputStream.PART_SIZE + 1024);
-        byte[] buffer = content.getBytes(Charset.defaultCharset());
-        assertTrue(buffer.length > S3OutputStream.PART_SIZE);
+    // must be larger than S3 part size
+    String content = RandomStringUtils.randomAlphanumeric(S3OutputStream.PART_SIZE + 1024);
+    byte[] buffer = content.getBytes(Charset.defaultCharset());
+    assertTrue(buffer.length > S3OutputStream.PART_SIZE);
 
-        S3OutputStream output = new S3OutputStream(s3, "large-buffer", BUCKET);
-        output.write(buffer);
-        output.close();
+    S3OutputStream output = new S3OutputStream(s3, "large-buffer", BUCKET);
+    output.write(buffer);
+    output.close();
 
-        // Check we can re-read same content
-        InputStream input = s3.getObject(BUCKET, "large-buffer").getObjectContent();
-        String read = IOUtils.toString(input, Charset.defaultCharset());
-        assertEquals(new String(buffer, Charset.defaultCharset()), read);
-    }
+    // Check we can re-read same content
+    InputStream input = s3.getObject(BUCKET, "large-buffer").getObjectContent();
+    String read = IOUtils.toString(input, Charset.defaultCharset());
+    assertEquals(new String(buffer, Charset.defaultCharset()), read);
+  }
 
-    /**
-     * Check flush is a no-op if data size is lower than required size of S3 part.
-     */
-    @Test
-    public void testFlushSmallBuffer() throws IOException {
-        // must be smaller than S3 minimal part size, so flush is a no-op
-        byte[] buffer = "hello".getBytes(Charset.defaultCharset());
-        assertTrue(buffer.length < S3OutputStream.PART_SIZE);
+  /** Check flush is a no-op if data size is lower than required size of S3 part. */
+  @Test
+  public void testFlushSmallBuffer() throws IOException {
+    // must be smaller than S3 minimal part size, so flush is a no-op
+    byte[] buffer = "hello".getBytes(Charset.defaultCharset());
+    assertTrue(buffer.length < S3OutputStream.PART_SIZE);
 
-        S3OutputStream output = new S3OutputStream(s3, "flush-small", BUCKET);
-        output.write(buffer);
-        output.flush();
+    S3OutputStream output = new S3OutputStream(s3, "flush-small", BUCKET);
+    output.write(buffer);
+    output.flush();
 
-        buffer = ", world!".getBytes(Charset.defaultCharset());
-        output.write(buffer);
-        output.close();
+    buffer = ", world!".getBytes(Charset.defaultCharset());
+    output.write(buffer);
+    output.close();
 
-        // Check we can re-read same content
-        InputStream input = s3.getObject(BUCKET, "flush-small").getObjectContent();
-        String read = IOUtils.toString(input, Charset.defaultCharset());
-        assertEquals("hello, world!", read);
-    }
+    // Check we can re-read same content
+    InputStream input = s3.getObject(BUCKET, "flush-small").getObjectContent();
+    String read = IOUtils.toString(input, Charset.defaultCharset());
+    assertEquals("hello, world!", read);
+  }
 
-    /**
-     * Check flush is happening when data in buffer is larger than S3 minimal part size.
-     */
-    @Test
-    public void testFlushLargeBuffer() throws IOException {
-        // must be larger than S3 minimal part size, so we actually do something for flush()
-        String content = RandomStringUtils.randomAlphanumeric(S3OutputStream.MIN_PART_SIZE + 1024);
-        byte[] buffer = content.getBytes(Charset.defaultCharset());
-        assertTrue(buffer.length > S3OutputStream.MIN_PART_SIZE);
+  /** Check flush is happening when data in buffer is larger than S3 minimal part size. */
+  @Test
+  public void testFlushLargeBuffer() throws IOException {
+    // must be larger than S3 minimal part size, so we actually do something for flush()
+    String content = RandomStringUtils.randomAlphanumeric(S3OutputStream.MIN_PART_SIZE + 1024);
+    byte[] buffer = content.getBytes(Charset.defaultCharset());
+    assertTrue(buffer.length > S3OutputStream.MIN_PART_SIZE);
 
-        S3OutputStream output = new S3OutputStream(s3, "flush-small", BUCKET);
-        output.write(buffer);
-        output.flush();
+    S3OutputStream output = new S3OutputStream(s3, "flush-small", BUCKET);
+    output.write(buffer);
+    output.flush();
 
-        buffer = "some more".getBytes(Charset.defaultCharset());
-        output.write(buffer);
-        output.close();
+    buffer = "some more".getBytes(Charset.defaultCharset());
+    output.write(buffer);
+    output.close();
 
-        // Check we can re-read same content
-        InputStream input = s3.getObject(BUCKET, "flush-small").getObjectContent();
-        String read = IOUtils.toString(input, Charset.defaultCharset());
-        assertEquals(content + "some more", read);
-    }
-
+    // Check we can re-read same content
+    InputStream input = s3.getObject(BUCKET, "flush-small").getObjectContent();
+    String read = IOUtils.toString(input, Charset.defaultCharset());
+    assertEquals(content + "some more", read);
+  }
 }

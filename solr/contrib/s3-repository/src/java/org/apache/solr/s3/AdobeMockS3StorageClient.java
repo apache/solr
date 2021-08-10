@@ -23,50 +23,51 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.common.annotations.VisibleForTesting;
 
 /**
- * This storage client exists to work around some of the incongruencies Adobe S3Mock has with the S3 API.
+ * This storage client exists to work around some of the incongruencies Adobe S3Mock has with the S3
+ * API.
  */
 class AdobeMockS3StorageClient extends S3StorageClient {
 
-    private static final String DEFAULT_MOCK_S3_ENDPOINT = "http://localhost:9090";
+  private static final String DEFAULT_MOCK_S3_ENDPOINT = "http://localhost:9090";
 
-    AdobeMockS3StorageClient(String bucketName, String endpoint) {
-        super(createInternalClient(endpoint), bucketName);
+  AdobeMockS3StorageClient(String bucketName, String endpoint) {
+    super(createInternalClient(endpoint), bucketName);
+  }
+
+  @VisibleForTesting
+  AdobeMockS3StorageClient(AmazonS3 s3client, String bucketName) {
+    super(s3client, bucketName);
+  }
+
+  private static AmazonS3 createInternalClient(String endpoint) {
+    if (endpoint == null || endpoint.isEmpty()) {
+      endpoint = System.getProperty("mock.s3.endpoint");
+      if (endpoint == null || endpoint.isEmpty()) {
+        endpoint = System.getenv().getOrDefault("MOCK_S3_ENDPOINT", DEFAULT_MOCK_S3_ENDPOINT);
+      }
     }
 
-    @VisibleForTesting
-    AdobeMockS3StorageClient(AmazonS3 s3client, String bucketName) {
-        super(s3client, bucketName);
+    return AmazonS3ClientBuilder.standard()
+        .enablePathStyleAccess()
+        .withEndpointConfiguration(
+            new AwsClientBuilder.EndpointConfiguration(endpoint, Regions.US_EAST_1.name()))
+        .build();
+  }
+
+  /**
+   * Ensures path adheres to some rules (different than the rules that S3 cares about): -Trims
+   * leading slash, if given -If it's a file, throw an error if it ends with a trailing slash
+   */
+  @Override
+  String sanitizedPath(String path) throws S3Exception {
+    // Trim space from start and end
+    String sanitizedPath = super.sanitizedPath(path);
+
+    // Trim off leading slash
+    if (sanitizedPath.startsWith("/")) {
+      return sanitizedPath.substring(1);
+    } else {
+      return sanitizedPath;
     }
-
-    private static AmazonS3 createInternalClient(String endpoint) {
-        if (endpoint == null || endpoint.isEmpty()) {
-            endpoint = System.getProperty("mock.s3.endpoint");
-            if (endpoint == null || endpoint.isEmpty()) {
-                endpoint = System.getenv().getOrDefault("MOCK_S3_ENDPOINT", DEFAULT_MOCK_S3_ENDPOINT);
-            }
-        }
-
-        return AmazonS3ClientBuilder.standard()
-            .enablePathStyleAccess()
-            .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, Regions.US_EAST_1.name()))
-            .build();
-    }
-
-    /**
-     * Ensures path adheres to some rules (different than the rules that S3 cares about):
-     * -Trims leading slash, if given
-     * -If it's a file, throw an error if it ends with a trailing slash
-     */
-    @Override
-    String sanitizedPath(String path) throws S3Exception {
-        // Trim space from start and end
-        String sanitizedPath = super.sanitizedPath(path);
-
-        // Trim off leading slash
-        if (sanitizedPath.startsWith("/")) {
-            return sanitizedPath.substring(1);
-        } else {
-            return sanitizedPath;
-        }
-    }
+  }
 }
