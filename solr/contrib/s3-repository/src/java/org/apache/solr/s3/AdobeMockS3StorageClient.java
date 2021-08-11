@@ -53,21 +53,4 @@ class AdobeMockS3StorageClient extends S3StorageClient {
             new AwsClientBuilder.EndpointConfiguration(endpoint, Regions.US_EAST_1.name()))
         .build();
   }
-
-  /**
-   * Ensures path adheres to some rules (different than the rules that S3 cares about): -Trims
-   * leading slash, if given -If it's a file, throw an error if it ends with a trailing slash
-   */
-  @Override
-  String sanitizedPath(String path) throws S3Exception {
-    // Trim space from start and end
-    String sanitizedPath = super.sanitizedPath(path);
-
-    // Trim off leading slash
-    if (sanitizedPath.startsWith("/")) {
-      return sanitizedPath.substring(1);
-    } else {
-      return sanitizedPath;
-    }
-  }
 }

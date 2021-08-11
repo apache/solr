@@ -650,7 +650,7 @@ An example configuration using the overall and GCS-client properties can be seen
     <int name="gcsClientMaxRetries">5</int>
     <int name="gcsClientHttpInitialHttpDelayMillis">1500</int>
     <double name="gcsClientHttpRetryDelayMultiplier">1.5</double>
-    <int name="gcsClientMaxHttpRetryDelayMillis>10000</int>
+    <int name="gcsClientMaxHttpRetryDelayMillis">10000</int>
   </repository>
 </backup>
 ----
@@ -660,6 +660,13 @@ An example configuration using the overall and GCS-client properties can be seen
 Stores and retrieves backup files in an Amazon S3 bucket.
 
 This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
+
+[NOTE]
+====
+When using the Backup & Restore Collections API Calls, you can provide a **location** that either starts with `s3://` or not.
+Either way, if your **location** (or s3 object prefix) starts with a `/`, it will be removed automatically.
+The repository does not allow backup locations that begin with a `/`.
+====
 
 S3BackupRepository accepts the following options (in `solr.xml`) for overall configuration:
 
@@ -692,7 +699,16 @@ Can be overridden by setting `BLOB_S3_REGION` environment variable.
 +
 Explicit S3 endpoint. Not needed under normal operations (the S3 client can infer the endpoint from the `blob.s3.region`).
 This parameter is helpful if using a mock S3 framework and want to explicitly override where S3 requests are routed.
-Can be overridden by setting `BLOB_S3_ENDPOINT` environment variable.
+Can be overridden by setting `BLOB_S3_ENDPOINT` environment variable when `blob.s3.mock` is set to true.
+
+
+[NOTE]
+====
+You can use the `blob.s3.endpoint` option to use this BackupRepository with _s3-compatible_ endpoints.
+Beware that not all _s3-compatible_ endpoints will work with the S3BackupRepository.
+Minio is an example of an _s3-compatible_ endpoint that does not work with the S3BackupRepository.
+The S3BackupRepository is only guaranteed to be compatible with AWS S3 and S3Mock.
+====
 
 `blob.s3.proxy.host`::
 +
