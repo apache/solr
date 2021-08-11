@@ -165,7 +165,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
     try (S3BackupRepository repo = getRepository()) {
 
-      // A file on the local disk (another storage than the local blob)
+      // A file on the local disk
       File tmp = temporaryFolder.newFolder();
       FileUtils.write(new File(tmp, "from-file"), content, StandardCharsets.UTF_8);
 
@@ -174,7 +174,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
       // Sanity check: we do have different files
       File actualSource = new File(tmp, "from-file");
-      File actualDest = pullBlob("to-folder/to-file");
+      File actualDest = pullObject("to-folder/to-file");
       assertNotEquals(actualSource, actualDest);
 
       // Check the copied content
@@ -192,13 +192,13 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       File tmp = temporaryFolder.newFolder();
       Directory destDir = new NIOFSDirectory(tmp.toPath());
 
-      // Directly create a file in blob storage
-      pushBlob("from-file", content);
+      // Directly create a file on S3
+      pushObject("from-file", content);
 
       repo.copyIndexFileTo(new URI("s3:///"), "from-file", destDir, "to-file");
 
       // Sanity check: we do have different files
-      File actualSource = pullBlob("from-file");
+      File actualSource = pullObject("from-file");
       File actualDest = new File(tmp, "to-file");
       assertNotEquals(actualSource, actualDest);
 
@@ -272,7 +272,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       String blank = Strings.repeat(" ", 5 * BufferedIndexInput.BUFFER_SIZE);
       String content = "This is the file " + blank + "content";
 
-      pushBlob("/content", content);
+      pushObject("/content", content);
       IndexInput input = repo.openInput(new URI("s3:///"), "content", IOContext.DEFAULT);
 
       // Read twice the size of the internal buffer, so first bytes are not in the buffer anymore
@@ -286,7 +286,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     }
   }
 
-  /** Initialize a blog repository based on local or S3 blob storage. */
   @Override
   protected S3BackupRepository getRepository() {
     String mockS3Endpoint = "http://localhost:" + S3_MOCK_RULE.getHttpPort();
@@ -312,7 +311,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     return args;
   }
 
-  private void pushBlob(String path, String content) {
+  private void pushObject(String path, String content) {
     AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
     try {
       s3.putObject(BUCKET_NAME, path, content);
@@ -321,7 +320,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     }
   }
 
-  private File pullBlob(String path) throws IOException {
+  private File pullObject(String path) throws IOException {
     AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
     try {
       File file = temporaryFolder.newFile();

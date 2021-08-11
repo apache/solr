@@ -20,18 +20,18 @@ import java.util.Locale;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * Class representing the {@code backup} blob config bundle specified in solr.xml. All user-provided
+ * Class representing the {@code backup} S3 config bundle specified in solr.xml. All user-provided
  * config can be overridden via environment variables (use uppercase, with '_' instead of '.'), see
  * {@link S3BackupRepositoryConfig#toEnvVar}.
  */
 public class S3BackupRepositoryConfig {
 
-  public static final String BUCKET_NAME = "blob.s3.bucket.name";
-  public static final String REGION = "blob.s3.region";
-  public static final String ENDPOINT = "blob.s3.endpoint";
-  public static final String PROXY_HOST = "blob.s3.proxy.host";
-  public static final String PROXY_PORT = "blob.s3.proxy.port";
-  public static final String S3MOCK = "blob.s3.mock";
+  public static final String BUCKET_NAME = "s3.bucket.name";
+  public static final String REGION = "s3.region";
+  public static final String ENDPOINT = "s3.endpoint";
+  public static final String PROXY_HOST = "s3.proxy.host";
+  public static final String PROXY_PORT = "s3.proxy.port";
+  public static final String S3MOCK = "s3.mock";
 
   private final String bucketName;
   private final String region;

@@ -50,9 +50,9 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Helper method to push a string in the blob storage.
+   * Helper method to push a string to S3.
    *
-   * @param path Destination path in blob store.
+   * @param path Destination path in S3.
    * @param content Arbitrary content for the test.
    */
   void pushContent(String path, String content) throws S3Exception {

@@ -134,26 +134,26 @@ public class S3BackupRepository implements BackupRepository {
   public void createDirectory(URI path) throws IOException {
     Objects.requireNonNull(path, "cannot create directory to a null URI");
 
-    String blobPath = getS3Path(path);
+    String s3Path = getS3Path(path);
 
     if (log.isDebugEnabled()) {
-      log.debug("Create directory '{}'", blobPath);
+      log.debug("Create directory '{}'", s3Path);
     }
 
-    client.createDirectory(blobPath);
+    client.createDirectory(s3Path);
   }
 
   @Override
   public void deleteDirectory(URI path) throws IOException {
     Objects.requireNonNull(path, "cannot delete directory with a null URI");
 
-    String blobPath = getS3Path(path);
+    String s3Path = getS3Path(path);
 
     if (log.isDebugEnabled()) {
-      log.debug("Delete directory '{}'", blobPath);
+      log.debug("Delete directory '{}'", s3Path);
     }
 
-    client.deleteDirectory(blobPath);
+    client.deleteDirectory(s3Path);
   }
 
   @Override
@@ -185,13 +185,13 @@ public class S3BackupRepository implements BackupRepository {
   public boolean exists(URI path) throws IOException {
     Objects.requireNonNull(path, "cannot test for existence of a null URI path");
 
-    String blobPath = getS3Path(path);
+    String s3Path = getS3Path(path);
 
     if (log.isDebugEnabled()) {
-      log.debug("Path exists '{}'", blobPath);
+      log.debug("Path exists '{}'", s3Path);
     }
 
-    return client.pathExists(blobPath);
+    return client.pathExists(s3Path);
   }
 
   @Override
@@ -202,26 +202,26 @@ public class S3BackupRepository implements BackupRepository {
     }
 
     URI filePath = resolve(path, fileName);
-    String blobPath = getS3Path(filePath);
+    String s3Path = getS3Path(filePath);
 
     if (log.isDebugEnabled()) {
-      log.debug("Read from S3 '{}'", blobPath);
+      log.debug("Read from S3 '{}'", s3Path);
     }
 
-    return new S3IndexInput(client.pullStream(blobPath), blobPath, client.length(blobPath));
+    return new S3IndexInput(client.pullStream(s3Path), s3Path, client.length(s3Path));
   }
 
   @Override
   public OutputStream createOutput(URI path) throws IOException {
     Objects.requireNonNull(path, "cannot write to S3 without a valid URI path");
 
-    String blobPath = getS3Path(path);
+    String s3Path = getS3Path(path);
 
     if (log.isDebugEnabled()) {
-      log.debug("Write to S3 '{}'", blobPath);
+      log.debug("Write to S3 '{}'", s3Path);
     }
 
-    return client.pushStream(blobPath);
+    return client.pushStream(s3Path);
   }
 
   /**
@@ -232,24 +232,24 @@ public class S3BackupRepository implements BackupRepository {
    */
   @Override
   public String[] listAll(URI path) throws IOException {
-    String blobPath = getS3Path(path);
+    String s3Path = getS3Path(path);
 
     if (log.isDebugEnabled()) {
-      log.debug("listAll for '{}'", blobPath);
+      log.debug("listAll for '{}'", s3Path);
     }
 
-    return client.listDir(blobPath);
+    return client.listDir(s3Path);
   }
 
   @Override
   public PathType getPathType(URI path) throws IOException {
-    String blobPath = getS3Path(path);
+    String s3Path = getS3Path(path);
 
     if (log.isDebugEnabled()) {
-      log.debug("getPathType for '{}'", blobPath);
+      log.debug("getPathType for '{}'", s3Path);
     }
 
-    return client.isDirectory(blobPath) ? PathType.DIRECTORY : PathType.FILE;
+    return client.isDirectory(s3Path) ? PathType.DIRECTORY : PathType.FILE;
   }
 
   /**
@@ -275,15 +275,15 @@ public class S3BackupRepository implements BackupRepository {
     }
 
     URI filePath = resolve(dest, destFileName);
-    String blobPath = getS3Path(filePath);
+    String s3Path = getS3Path(filePath);
     Instant start = Instant.now();
     if (log.isDebugEnabled()) {
-      log.debug("Upload started to S3 '{}'", blobPath);
+      log.debug("Upload started to S3 '{}'", s3Path);
     }
 
     try (IndexInput indexInput = sourceDir.openInput(sourceFileName, IOContext.DEFAULT)) {
       client.createDirectory(getS3Path(dest));
-      try (OutputStream outputStream = client.pushStream(blobPath)) {
+      try (OutputStream outputStream = client.pushStream(s3Path)) {
 
         byte[] buffer = new byte[CHUNK_SIZE];
         int bufferLen;
@@ -302,7 +302,7 @@ public class S3BackupRepository implements BackupRepository {
 
     long timeElapsed = Duration.between(start, Instant.now()).toMillis();
     if (log.isInfoEnabled()) {
-      log.info("Upload to S3: '{}' finished in {}ms", blobPath, timeElapsed);
+      log.info("Upload to S3: '{}' finished in {}ms", s3Path, timeElapsed);
     }
   }
 
@@ -326,13 +326,13 @@ public class S3BackupRepository implements BackupRepository {
     }
 
     URI filePath = resolve(sourceDir, sourceFileName);
-    String blobPath = getS3Path(filePath);
+    String s3Path = getS3Path(filePath);
     Instant start = Instant.now();
     if (log.isDebugEnabled()) {
-      log.debug("Download started from S3 '{}'", blobPath);
+      log.debug("Download started from S3 '{}'", s3Path);
     }
 
-    try (InputStream inputStream = client.pullStream(blobPath);
+    try (InputStream inputStream = client.pullStream(s3Path);
         IndexOutput indexOutput = dest.createOutput(destFileName, IOContext.DEFAULT)) {
       byte[] buffer = new byte[CHUNK_SIZE];
       int len;
@@ -344,7 +344,7 @@ public class S3BackupRepository implements BackupRepository {
     long timeElapsed = Duration.between(start, Instant.now()).toMillis();
 
     if (log.isInfoEnabled()) {
-      log.info("Download from S3 '{}' finished in {}ms", blobPath, timeElapsed);
+      log.info("Download from S3 '{}' finished in {}ms", s3Path, timeElapsed);
     }
   }
 
@@ -353,7 +353,7 @@ public class S3BackupRepository implements BackupRepository {
     client.close();
   }
 
-  /** Return the path to use in underlying blob store. */
+  /** Return the path to use in S3. */
   private static String getS3Path(URI uri) {
     // Depending on the scheme, the first element may be the host. Following ones are the path
     String host = uri.getHost();

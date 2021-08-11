@@ -670,16 +670,16 @@ The repository does not allow backup locations that begin with a `/`.
 
 S3BackupRepository accepts the following options (in `solr.xml`) for overall configuration:
 
-`blob.s3.bucket.name`::
+`s3.bucket.name`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-The S3 bucket to read and write all backup files to. Can be overridden by setting `BLOB_S3_BUCKET_NAME` environment variable.
+The S3 bucket to read and write all backup files to. Can be overridden by setting `S3_BUCKET_NAME` environment variable.
 
-`blob.s3.region`::
+`s3.region`::
 +
 [%autowidth,frame=none]
 |===
@@ -688,29 +688,29 @@ The S3 bucket to read and write all backup files to. Can be overridden by settin
 +
 A valid Amazon S3 region string where your bucket is provisioned. You must have read and write permissions for this bucket.
 For a full list of regions, please reference the https://docs.aws.amazon.com/general/latest/gr/s3.html[S3 documentation].
-Can be overridden by setting `BLOB_S3_REGION` environment variable.
+Can be overridden by setting `S3_REGION` environment variable.
 
-`blob.s3.endpoint`::
+`s3.endpoint`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Explicit S3 endpoint. Not needed under normal operations (the S3 client can infer the endpoint from the `blob.s3.region`).
+Explicit S3 endpoint. Not needed under normal operations (the S3 client can infer the endpoint from the `s3.region`).
 This parameter is helpful if using a mock S3 framework and want to explicitly override where S3 requests are routed.
-Can be overridden by setting `BLOB_S3_ENDPOINT` environment variable when `blob.s3.mock` is set to true.
+Can be overridden by setting `S3_ENDPOINT` environment variable when `s3.mock` is set to true.
 
 
 [NOTE]
 ====
-You can use the `blob.s3.endpoint` option to use this BackupRepository with _s3-compatible_ endpoints.
+You can use the `s3.endpoint` option to use this BackupRepository with _s3-compatible_ endpoints.
 Beware that not all _s3-compatible_ endpoints will work with the S3BackupRepository.
 Minio is an example of an _s3-compatible_ endpoint that does not work with the S3BackupRepository.
 The S3BackupRepository is only guaranteed to be compatible with AWS S3 and S3Mock.
 ====
 
-`blob.s3.proxy.host`::
+`s3.proxy.host`::
 +
 [%autowidth,frame=none]
 |===
@@ -718,10 +718,10 @@ The S3BackupRepository is only guaranteed to be compatible with AWS S3 and S3Moc
 |===
 +
 Proxy hostname for the S3 client to route requests through, if desired.
-Should be used in conjunction with `blob.s3.proxy.port` parameter.
-Can be overridden by setting `BLOB_S3_PROXY_HOST` environment variable.
+Should be used in conjunction with `s3.proxy.port` parameter.
+Can be overridden by setting `S3_PROXY_HOST` environment variable.
 
-`blob.s3.proxy.port`::
+`s3.proxy.port`::
 +
 [%autowidth,frame=none]
 |===
@@ -729,10 +729,10 @@ Can be overridden by setting `BLOB_S3_PROXY_HOST` environment variable.
 |===
 +
 Proxy port number for the S3 client to route requests through, if desired.
-Should be used in conjunction with `blob.s3.proxy.host` parameter.
-Can be overridden by setting `BLOB_S3_PROXY_PORT` environment variable.
+Should be used in conjunction with `s3.proxy.host` parameter.
+Can be overridden by setting `S3_PROXY_PORT` environment variable.
 
-`blob.s3.mock`::
+`s3.mock`::
 +
 [%autowidth,frame=none]
 |===
@@ -740,8 +740,8 @@ Can be overridden by setting `BLOB_S3_PROXY_PORT` environment variable.
 |===
 +
 If this S3 backup repository should route requests to an mock S3 instance (for example, https://github.com/adobe/S3Mock[S3Mock]).
-If true (and `blob.s3.endpoint` is not set), S3 requests will be sent to `localhost:9090`.
-Can be overridden by setting `BLOB_S3_MOCK` environment variable.
+If true (and `s3.endpoint` is not set), S3 requests will be sent to `localhost:9090`.
+Can be overridden by setting `S3_MOCK` environment variable.
 
 An example configuration to enable S3 backups and restore can be seen below:
 
@@ -749,8 +749,8 @@ An example configuration to enable S3 backups and restore can be seen below:
 ----
 <backup>
   <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
-    <str name="blob.s3.bucket.name">my-s3-bucket</str>
-    <str name="blob.s3.region">us-west-2</str>
+    <str name="s3.bucket.name">my-s3-bucket</str>
+    <str name="s3.region">us-west-2</str>
   </repository>
 </backup>
 ----

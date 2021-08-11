@@ -62,20 +62,20 @@ class S3StorageClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final String BLOB_FILE_PATH_DELIMITER = "/";
+  static final String S3_FILE_PATH_DELIMITER = "/";
 
   // S3 has a hard limit of 1000 keys per batch delete request
   private static final int MAX_KEYS_PER_BATCH_DELETE = 1000;
 
   // Metadata name used to identify flag directory entries in S3
-  private static final String BLOB_DIR_CONTENT_TYPE = "application/x-directory";
+  private static final String S3_DIR_CONTENT_TYPE = "application/x-directory";
 
   // Error messages returned by S3 for a key not found.
   private static final Set<String> NOT_FOUND_CODES = Set.of("NoSuchKey", "404 Not Found");
 
   private final AmazonS3 s3Client;
 
-  /** The S3 bucket where we write all of our blobs to. */
+  /** The S3 bucket where we read/write all data. */
   private final String bucketName;
 
   S3StorageClient(
@@ -120,9 +120,7 @@ class S3StorageClient {
   }
 
   /**
-   * Create Directory in S3 Blob Store.
-   *
-   * @param path Directory Path in Blob Store.
+   * Create a directory in S3.
    */
   void createDirectory(String path) throws S3Exception {
     path = sanitizedDirPath(path);
@@ -130,14 +128,14 @@ class S3StorageClient {
     if (!parentDirectoryExist(path)) {
       createDirectory(getParentDirectory(path));
       // TODO see https://issues.apache.org/jira/browse/SOLR-15359
-      //            throw new BlobException("Parent directory doesn't exist, path=" + path);
+      //            throw new S3Exception("Parent directory doesn't exist, path=" + path);
     }
 
     ObjectMetadata objectMetadata = new ObjectMetadata();
-    objectMetadata.setContentType(BLOB_DIR_CONTENT_TYPE);
+    objectMetadata.setContentType(S3_DIR_CONTENT_TYPE);
     objectMetadata.setContentLength(0);
 
-    // Create empty blob object with header
+    // Create empty object with header
     final InputStream im = ClosedInputStream.CLOSED_INPUT_STREAM;
 
     try {
@@ -149,9 +147,8 @@ class S3StorageClient {
   }
 
   /**
-   * /** Delete files from S3 Blob Store. Deletion order is not guaranteed.
-   *
-   * @param paths Paths to files or blobs.
+   * Delete files from S3. Deletion order is not guaranteed.
+   * @throws S3NotFoundException if the number of deleted objects does not match {@code entries} size
    */
   void delete(Collection<String> paths) throws S3Exception {
     Set<String> entries = new HashSet<>();
@@ -159,7 +156,14 @@ class S3StorageClient {
       entries.add(sanitizedFilePath(path));
     }
 
-    deleteBlobs(entries);
+    Collection<String> deletedPaths = deleteObjects(entries);
+
+    // If we haven't deleted all requested objects, assume that's because some were missing
+    if (entries.size() != deletedPaths.size()) {
+      Set<String> notDeletedPaths = new HashSet<>(entries);
+      entries.removeAll(deletedPaths);
+      throw new S3NotFoundException(notDeletedPaths.toString());
+    }
   }
 
   /**
@@ -195,7 +199,7 @@ class S3StorageClient {
         new ListObjectsRequest()
             .withBucketName(bucketName)
             .withPrefix(prefix)
-            .withDelimiter(BLOB_FILE_PATH_DELIMITER);
+            .withDelimiter(S3_FILE_PATH_DELIMITER);
 
     List<String> entries = new ArrayList<>();
     try {
@@ -216,12 +220,12 @@ class S3StorageClient {
                 .filter(s -> !s.isEmpty())
                 .filter(
                     s -> {
-                      int slashIndex = s.indexOf(BLOB_FILE_PATH_DELIMITER);
+                      int slashIndex = s.indexOf(S3_FILE_PATH_DELIMITER);
                       return slashIndex == -1 || slashIndex == s.length() - 1;
                     })
                 .map(
                     s -> {
-                      if (s.endsWith(BLOB_FILE_PATH_DELIMITER)) {
+                      if (s.endsWith(S3_FILE_PATH_DELIMITER)) {
                         return s.substring(0, s.length() - 1);
                       }
                       return s;
@@ -252,7 +256,7 @@ class S3StorageClient {
     path = sanitizedPath(path);
 
     // for root return true
-    if (path.isEmpty() || BLOB_FILE_PATH_DELIMITER.equals(path)) {
+    if (path.isEmpty() || S3_FILE_PATH_DELIMITER.equals(path)) {
       return true;
     }
 
@@ -274,10 +278,10 @@ class S3StorageClient {
 
     try {
       ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
-      String blobDirContentType = objectMetadata.getContentType();
+      String contentType = objectMetadata.getContentType();
 
-      return !StringUtils.isEmpty(blobDirContentType)
-          && blobDirContentType.equalsIgnoreCase(BLOB_DIR_CONTENT_TYPE);
+      return !StringUtils.isEmpty(contentType)
+          && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
     } catch (AmazonClientException ase) {
       throw handleAmazonException(ase);
     }
@@ -293,10 +297,10 @@ class S3StorageClient {
     path = sanitizedFilePath(path);
     try {
       ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
-      String blobDirContentType = objectMetadata.getContentType();
+      String contentType = objectMetadata.getContentType();
 
-      if (StringUtils.isEmpty(blobDirContentType)
-          || !blobDirContentType.equalsIgnoreCase(BLOB_DIR_CONTENT_TYPE)) {
+      if (StringUtils.isEmpty(contentType)
+          || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
         return objectMetadata.getContentLength();
       }
       throw new S3Exception("Path is Directory");
@@ -348,31 +352,14 @@ class S3StorageClient {
     s3Client.shutdown();
   }
 
-  /**
-   * Batch delete blob files from the blob store.
-   *
-   * @param entries collection of blob file keys to the files to be deleted.
-   */
-  private void deleteBlobs(Collection<String> entries) throws S3Exception {
-    Collection<String> deletedPaths = deleteObjects(entries);
-
-    // If we haven't deleted all requested objects, assume that's because some were missing
-    if (entries.size() != deletedPaths.size()) {
-      Set<String> notDeletedPaths = new HashSet<>(entries);
-      entries.removeAll(deletedPaths);
-      throw new S3NotFoundException(notDeletedPaths.toString());
-    }
-  }
-
-  /** Any blob file path that specifies a non-existent blob file will not be treated as an error. */
+  /** Any file path that specifies a non-existent file will not be treated as an error. */
   private Collection<String> deleteObjects(Collection<String> paths) throws S3Exception {
     try {
       /*
        * Per the S3 docs:
        * https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/s3/model/DeleteObjectsResult.html
-       * An exception is thrown if there's a client error processing the request or in
-       * the Blob store itself. However there's no guarantee the delete did not happen
-       * if an exception is thrown.
+       * An exception is thrown if there's a client error processing the request or in S3 itself.
+       * However, there's no guarantee the delete did not happen if an exception is thrown.
        */
       return deleteObjects(paths, MAX_KEYS_PER_BATCH_DELETE);
     } catch (AmazonClientException ase) {
@@ -380,6 +367,12 @@ class S3StorageClient {
     }
   }
 
+  /**
+   * Batch deletes from S3.
+   *
+   * @param entries collection of S3 keys of the files to be deleted.
+   * @param batchSize number of deletes to send to S3 at a time
+   */
   @VisibleForTesting
   Collection<String> deleteObjects(Collection<String> entries, int batchSize) throws S3Exception {
     List<KeyVersion> keysToDelete =
@@ -465,7 +458,7 @@ class S3StorageClient {
     String parentDirectory = getParentDirectory(path);
 
     // If we have no specific parent directory, we consider parent is root (and always exists)
-    if (parentDirectory.isEmpty() || parentDirectory.equals(BLOB_FILE_PATH_DELIMITER)) {
+    if (parentDirectory.isEmpty() || parentDirectory.equals(S3_FILE_PATH_DELIMITER)) {
       return true;
     }
 
@@ -473,18 +466,18 @@ class S3StorageClient {
   }
 
   private String getParentDirectory(String path) {
-    if (!path.contains(BLOB_FILE_PATH_DELIMITER)) {
+    if (!path.contains(S3_FILE_PATH_DELIMITER)) {
       return "";
     }
 
     // Get the last non-slash character of the string, to find the parent directory
     int fromEnd = path.length() - 1;
-    if (path.endsWith(BLOB_FILE_PATH_DELIMITER)) {
+    if (path.endsWith(S3_FILE_PATH_DELIMITER)) {
       fromEnd -= 1;
     }
     return fromEnd > 0
-        ? path.substring(0, path.lastIndexOf(BLOB_FILE_PATH_DELIMITER, fromEnd) + 1)
-        : BLOB_FILE_PATH_DELIMITER;
+        ? path.substring(0, path.lastIndexOf(S3_FILE_PATH_DELIMITER, fromEnd) + 1)
+        : S3_FILE_PATH_DELIMITER;
   }
 
   /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
@@ -493,7 +486,7 @@ class S3StorageClient {
     String sanitizedPath = path.trim();
 
     // Path should start with file delimiter
-    if (sanitizedPath.startsWith(BLOB_FILE_PATH_DELIMITER)) {
+    if (sanitizedPath.startsWith(S3_FILE_PATH_DELIMITER)) {
       // throw new S3Exception("Invalid Path. Path needs to start with '/'");
       sanitizedPath = sanitizedPath.substring(1).trim();
     }
@@ -509,7 +502,7 @@ class S3StorageClient {
     // Trim space from start and end
     String sanitizedPath = sanitizedPath(path);
 
-    if (sanitizedPath.endsWith(BLOB_FILE_PATH_DELIMITER)) {
+    if (sanitizedPath.endsWith(S3_FILE_PATH_DELIMITER)) {
       throw new S3Exception("Invalid Path. Path for file can't end with '/'");
     }
 
@@ -528,12 +521,12 @@ class S3StorageClient {
     // Trim space from start and end
     String sanitizedPath = sanitizedPath(path);
 
-    if (!sanitizedPath.endsWith(BLOB_FILE_PATH_DELIMITER)) {
-      sanitizedPath += BLOB_FILE_PATH_DELIMITER;
+    if (!sanitizedPath.endsWith(S3_FILE_PATH_DELIMITER)) {
+      sanitizedPath += S3_FILE_PATH_DELIMITER;
     }
 
     // Trim file delimiter from end
-    // if (sanitizedPath.length() > 1 && sanitizedPath.endsWith(BLOB_FILE_PATH_DELIMITER)) {
+    // if (sanitizedPath.length() > 1 && sanitizedPath.endsWith(S3_FILE_PATH_DELIMITER)) {
     //    sanitizedPath = sanitizedPath.substring(0, path.length() - 1);
     // }
 

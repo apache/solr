@@ -22,7 +22,7 @@ import java.util.Collections;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
-/** Basic test that write data and read them through the blob client. */
+/** Basic test that write data and read them through the S3 client. */
 public class S3ReadWriteTest extends AbstractS3ClientTest {
 
   /** Write and read a simple file (happy path). */

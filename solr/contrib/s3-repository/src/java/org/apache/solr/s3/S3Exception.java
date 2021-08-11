@@ -19,7 +19,7 @@ package org.apache.solr.s3;
 import java.io.IOException;
 
 /**
- * Generic exception for blob-related failures. Could originate from the {@link S3BackupRepository}
+ * Generic exception for S3 related failures. Could originate from the {@link S3BackupRepository}
  * or from its underlying {@link S3StorageClient}.
  */
 public class S3Exception extends IOException {
