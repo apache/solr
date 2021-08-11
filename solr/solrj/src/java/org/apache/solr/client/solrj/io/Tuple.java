@@ -52,22 +52,16 @@ public class Tuple implements Cloneable, MapWriter {
 
   /**
    * Tuple fields.
-   * @deprecated use {@link #getFields()} instead of this public field.
    */
-  @Deprecated
-  public Map<String, Object> fields = new HashMap<>(2);
+  private Map<String, Object> fields = new HashMap<>(2);
   /**
    * External serializable field names.
-   * @deprecated use {@link #getFieldNames()} instead of this public field.
    */
-  @Deprecated
-  public List<String> fieldNames;
+  private List<String> fieldNames;
   /**
    * Mapping of external field names to internal tuple field names.
-   * @deprecated use {@link #getFieldLabels()} instead of this public field.
    */
-  @Deprecated
-  public Map<String, String> fieldLabels;
+  private Map<String, String> fieldLabels;
 
   public Tuple() {
     // just an empty tuple
@@ -217,15 +211,6 @@ public class Tuple implements Cloneable, MapWriter {
    * Return all tuple fields and their values.
    */
   public Map<String, Object> getFields() {
-    return this.fields;
-  }
-
-  /**
-   * Return all tuple fields.
-   * @deprecated use {@link #getFields()} instead.
-   */
-  @Deprecated(since = "8.6.0")
-  public Map<String,Object> getMap() {
     return this.fields;
   }
 
