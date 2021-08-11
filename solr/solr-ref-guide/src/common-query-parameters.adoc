@@ -44,7 +44,7 @@ Solr can sort query responses according to:
 * A SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
 * A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document.
 TextField does not support `docValues="true"`, but a DocValue-like structure will be built on the fly at runtime.
-** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copy-fields.adoc#,use a `copyField` directive>> in the the Schema to clone the field.
+** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copy-fields.adoc#,use a `copyField` directive>> in the Schema to clone the field.
 Then search on the field and sort on its clone.
 
 In the case of primitive fields, or SortableTextFields, that are `multiValued="true"` the representative value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.
