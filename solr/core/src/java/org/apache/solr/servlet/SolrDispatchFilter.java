@@ -86,18 +86,19 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.solr.security.AuditEvent.EventType;
 import static org.apache.solr.servlet.ServletUtils.closeShield;
+import static org.apache.solr.servlet.ServletUtils.configExcludes;
+import static org.apache.solr.servlet.ServletUtils.excludedPath;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
  *
  * @since solr 1.2
  */
-public class SolrDispatchFilter extends BaseSolrFilter {
+public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile CoreContainer cores;
@@ -106,6 +107,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected String abortErrorMessage = null;
   //TODO using Http2Client
   protected HttpClient httpClient;
+
+  @Override
+  public void setExcludePatterns(ArrayList<Pattern> excludePatterns) {
+    this.excludePatterns = excludePatterns;
+  }
+
   private ArrayList<Pattern> excludePatterns;
   
   private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
@@ -174,15 +181,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         log.info("Log level override, property solr.log.level={}", logLevel);
         StartupLoggingUtils.changeLogLevel(logLevel);
       }
-      
-      String exclude = config.getInitParameter("excludePatterns");
-      if(exclude != null) {
-        String[] excludeArray = exclude.split(",");
-        excludePatterns = new ArrayList<>();
-        for (String element : excludeArray) {
-          excludePatterns.add(Pattern.compile(element));
-        }
-      }
+
+      configExcludes(this, config.getInitParameter("excludePatterns"));
 
       coresInit = createCoreContainer(computeSolrHome(config), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
@@ -432,16 +432,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     HttpServletRequest request = closeShield((HttpServletRequest)_request, retry);
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
 
-    String requestPath = ServletUtils.getPathAfterContext(request);
-    // No need to even create the HttpSolrCall object if this path is excluded.
-    if (excludePatterns != null) {
-      for (Pattern p : excludePatterns) {
-        Matcher matcher = p.matcher(requestPath);
-        if (matcher.lookingAt()) {
-          chain.doFilter(request, response);
-          return;
-        }
-      }
+    if (excludedPath(excludePatterns, request, response, chain)) {
+      return;
     }
 
     Tracer tracer = cores == null ? GlobalTracer.get() : cores.getTracer();
