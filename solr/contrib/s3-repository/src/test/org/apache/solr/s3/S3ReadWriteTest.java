@@ -38,15 +38,27 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   /** Check writing a file with no path. */
   @Test
   public void testWriteNoPath() {
-    assertThrows("Should not be able to write content to empty path", S3Exception.class, () -> pushContent("", "empty path"));
-    assertThrows("Should not be able to write content to root path", S3Exception.class, () -> pushContent("/", "empty path"));
+    assertThrows(
+        "Should not be able to write content to empty path",
+        S3Exception.class,
+        () -> pushContent("", "empty path"));
+    assertThrows(
+        "Should not be able to write content to root path",
+        S3Exception.class,
+        () -> pushContent("/", "empty path"));
   }
 
   /** Check reading a file with no path. */
   @Test
   public void testReadNoPath() {
-    assertThrows("Should not be able to read content from empty path", S3Exception.class, () -> client.pullStream(""));
-    assertThrows("Should not be able to read content from empty path", S3Exception.class, () -> client.pullStream("/"));
+    assertThrows(
+        "Should not be able to read content from empty path",
+        S3Exception.class,
+        () -> client.pullStream(""));
+    assertThrows(
+        "Should not be able to read content from empty path",
+        S3Exception.class,
+        () -> client.pullStream("/"));
   }
 
   /** Test writing over an existing file and overriding the content. */
@@ -56,7 +68,10 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
     pushContent("/override", "new content");
 
     InputStream stream = client.pullStream("/override");
-    assertEquals("File contents should have been overriden", "new content", IOUtils.toString(stream, Charset.defaultCharset()));
+    assertEquals(
+        "File contents should have been overriden",
+        "new content",
+        IOUtils.toString(stream, Charset.defaultCharset()));
   }
 
   /** Check getting the length of a written file. */
@@ -71,7 +86,11 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   public void testDirectoryLength() throws Exception {
     client.createDirectory("/directory");
 
-    S3Exception exception = assertThrows("Getting length on a dir should throw exception", S3Exception.class, () -> client.length("/directory"));
+    S3Exception exception =
+        assertThrows(
+            "Getting length on a dir should throw exception",
+            S3Exception.class,
+            () -> client.length("/directory"));
     assertEquals("Path is Directory", exception.getMessage());
   }
 

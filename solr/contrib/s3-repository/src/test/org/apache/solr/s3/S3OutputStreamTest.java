@@ -127,7 +127,10 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     // Check we can re-read same content
     InputStream input = s3.getObject(BUCKET, "flush-small").getObjectContent();
     String read = IOUtils.toString(input, Charset.defaultCharset());
-    assertEquals("Flushing a small frame of an S3OutputStream should not impact data written", "hello, world!", read);
+    assertEquals(
+        "Flushing a small frame of an S3OutputStream should not impact data written",
+        "hello, world!",
+        read);
   }
 
   /** Check flush is happening when data in buffer is larger than S3 minimal part size. */
@@ -149,6 +152,9 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     // Check we can re-read same content
     InputStream input = s3.getObject(BUCKET, "flush-large").getObjectContent();
     String read = IOUtils.toString(input, Charset.defaultCharset());
-    assertEquals("Flushing a large frame of an S3OutputStream should not impact data written", content + "some more", read);
+    assertEquals(
+        "Flushing a large frame of an S3OutputStream should not impact data written",
+        content + "some more",
+        read);
   }
 }

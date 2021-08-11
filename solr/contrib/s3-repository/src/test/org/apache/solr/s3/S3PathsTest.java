@@ -49,8 +49,12 @@ public class S3PathsTest extends AbstractS3ClientTest {
     assertTrue(client.pathExists("/simple-directory"));
     assertTrue("Dir should exist without a leading slash", client.pathExists("simple-directory/"));
     assertTrue("Dir should exist with a leading slash", client.pathExists("/simple-directory/"));
-    assertTrue("Leading slash should be irrelevant for determining if dir is a dir", client.isDirectory("simple-directory/"));
-    assertTrue("Leading slash should be irrelevant for determining if dir is a dir", client.isDirectory("/simple-directory/"));
+    assertTrue(
+        "Leading slash should be irrelevant for determining if dir is a dir",
+        client.isDirectory("simple-directory/"));
+    assertTrue(
+        "Leading slash should be irrelevant for determining if dir is a dir",
+        client.isDirectory("/simple-directory/"));
   }
 
   /** Happy path of deleting a directory */
@@ -65,8 +69,10 @@ public class S3PathsTest extends AbstractS3ClientTest {
     client.deleteDirectory("/delete-dir");
 
     assertFalse("dir should no longer exist after deletion", client.pathExists("/delete-dir"));
-    assertFalse("files in dir should be recursively deleted", client.pathExists("/delete-dir/file1"));
-    assertFalse("files in dir should be recursively deleted", client.pathExists("/delete-dir/file2"));
+    assertFalse(
+        "files in dir should be recursively deleted", client.pathExists("/delete-dir/file1"));
+    assertFalse(
+        "files in dir should be recursively deleted", client.pathExists("/delete-dir/file2"));
   }
 
   /** Ensure directory deletion is recursive. */
@@ -130,7 +136,8 @@ public class S3PathsTest extends AbstractS3ClientTest {
     assertFalse(client.pathExists("/my/file3"));
 
     // Other files with same prefix should be there
-    assertTrue("Deletes to file1 and file3 should not affect file2", client.pathExists("/my/file2"));
+    assertTrue(
+        "Deletes to file1 and file3 should not affect file2", client.pathExists("/my/file2"));
   }
 
   /** Test deleting a directory which is the prefix of another objects (without deleting them). */
@@ -168,6 +175,9 @@ public class S3PathsTest extends AbstractS3ClientTest {
     pushContent("/list-dir-file2", "file2");
 
     String[] items = client.listDir("/list-dir");
-    assertEquals("listDir returned a different set of files than expected", Set.of("file", "sub-dir"), Set.of(items));
+    assertEquals(
+        "listDir returned a different set of files than expected",
+        Set.of("file", "sub-dir"),
+        Set.of(items));
   }
 }

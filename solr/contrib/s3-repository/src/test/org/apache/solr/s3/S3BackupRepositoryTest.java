@@ -59,18 +59,30 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   public void testURI() throws IOException {
     try (S3BackupRepository repo = getRepository()) {
       URI uri = repo.createURI("x");
-      assertEquals("'S3' scheme should be auto-added to the URI when not provided", S3_SCHEME, uri.getScheme());
+      assertEquals(
+          "'S3' scheme should be auto-added to the URI when not provided",
+          S3_SCHEME,
+          uri.getScheme());
       assertEquals("URI path should be prefixed with /", "/x", uri.getPath());
       assertEquals("s3:/x", uri.toString());
 
       URI directoryUri = repo.createDirectoryURI("d");
-      assertEquals("'S3' scheme should be auto-added to the dir URI when not provided", S3_SCHEME, directoryUri.getScheme());
-      assertEquals("createDirectoryURI should add a trailing slash to URI", "s3:/d/", directoryUri.toString());
+      assertEquals(
+          "'S3' scheme should be auto-added to the dir URI when not provided",
+          S3_SCHEME,
+          directoryUri.getScheme());
+      assertEquals(
+          "createDirectoryURI should add a trailing slash to URI",
+          "s3:/d/",
+          directoryUri.toString());
 
       repo.createDirectory(directoryUri);
       assertTrue(repo.exists(directoryUri));
       directoryUri = repo.createDirectoryURI("d/");
-      assertEquals("createDirectoryURI should have a single trailing slash, even if one is provided", "s3:/d/", directoryUri.toString());
+      assertEquals(
+          "createDirectoryURI should have a single trailing slash, even if one is provided",
+          "s3:/d/",
+          directoryUri.toString());
     }
   }
 
@@ -90,7 +102,10 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(subDir));
       assertEquals("No files should exist in subdir yet", repo.listAll(subDir).length, 0);
 
-      assertEquals("subDir should now be returned when listing all in parent dir", repo.listAll(path).length, 1);
+      assertEquals(
+          "subDir should now be returned when listing all in parent dir",
+          repo.listAll(path).length,
+          1);
 
       repo.deleteDirectory(path);
       assertFalse(repo.exists(path));
@@ -232,12 +247,18 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
       // Read 4 bytes
       input.readBytes(buffer, 0, 4);
-      assertEquals("Reading from beginning of buffer should return 'This'", "This", new String(buffer, 0, 4, StandardCharsets.UTF_8));
+      assertEquals(
+          "Reading from beginning of buffer should return 'This'",
+          "This",
+          new String(buffer, 0, 4, StandardCharsets.UTF_8));
 
       // Seek to the work 'content' and read it
       input.seek(position);
       input.readBytes(buffer, 0, 7);
-      assertEquals("Seeking to pos " + position + " in buffer should return 'content'", "content", new String(buffer, 0, 7, StandardCharsets.UTF_8));
+      assertEquals(
+          "Seeking to pos " + position + " in buffer should return 'content'",
+          "content",
+          new String(buffer, 0, 7, StandardCharsets.UTF_8));
     }
   }
 
