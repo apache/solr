@@ -204,7 +204,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
       if (sameScores) {
         assertEquals("cloud score differs from control", controlScore, cloudScore, controlScore * 0.01f);
       } else {
-        assertFalse("cloud score the same as control", controlScore == cloudScore);
+        assertNotEquals("cloud score the same as control", controlScore, cloudScore, controlScore * 0.01f);
       }
     }
   }
