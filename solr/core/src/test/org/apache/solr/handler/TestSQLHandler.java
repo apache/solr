@@ -2326,12 +2326,13 @@ public class TestSQLHandler extends SolrCloudTestCase {
       doc.setField("booleans", booleans);
       update.add(doc);
     }
+    update.add("id", String.valueOf(maxDocs)); // all multi-valued fields are null
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a'", 10);
-    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a')", 0);
+    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a')", 1);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a' LIMIT 10", 10);
-    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a') LIMIT 10", 0);
+    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a') LIMIT 10", 1);
 
     // can't sort by a mv field
     expectThrows(IOException.class,

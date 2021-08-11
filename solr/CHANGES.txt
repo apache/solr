@@ -392,7 +392,7 @@ Improvements
 
 * SOLR-15576: Allow filtering on ISO-8601 formatted timestamp literals in SQL WHERE clause (Timothy Potter)
 
-* SOLR-9853: Improve SQL handling of multi-valued fields to allow project, group by, and where filters (Timothy Potter)
+* SOLR-9853: Project multi-valued fields in SQL query results (Timothy Potter)
 
 Optimizations
 ---------------------
