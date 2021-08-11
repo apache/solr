@@ -17,7 +17,9 @@
 
 package org.apache.solr.servlet;
 
+import javax.servlet.FilterChain;
 import javax.servlet.ReadListener;
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -28,6 +30,9 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Various Util methods for interaction on servlet level, i.e. HttpServletRequest
@@ -73,8 +78,8 @@ public abstract class ServletUtils {
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
-              assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_STREAM_MSG;
+              assert !Thread.currentThread().getStackTrace()[2].getClassName().matches(
+                  "org\\.apache\\.(?:solr|lucene).*") : CLOSE_STREAM_MSG;
               this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
             }
           };
@@ -108,9 +113,8 @@ public abstract class ServletUtils {
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
-              assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false
-                      : true : CLOSE_STREAM_MSG;
+              assert !Thread.currentThread().getStackTrace()[2].getClassName().matches(
+                  "org\\.apache\\.(?:solr|lucene).*") : CLOSE_STREAM_MSG;
               stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
             }
           };
@@ -119,6 +123,38 @@ public abstract class ServletUtils {
       };
     } else {
       return response;
+    }
+  }
+
+  static boolean excludedPath(ArrayList<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+    String requestPath = getPathAfterContext(request);
+    // No need to even create the HttpSolrCall object if this path is excluded.
+    if (excludePatterns != null) {
+      for (Pattern p : excludePatterns) {
+        Matcher matcher = p.matcher(requestPath);
+        if (matcher.lookingAt()) {
+          if (chain != null) {
+            chain.doFilter(request, response);
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  static boolean excludedPath(ArrayList<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    return excludedPath(excludePatterns,request,response, null);
+  }
+
+  static void configExcludes(PathExcluder excluder, String patternConfig) {
+    if(patternConfig != null) {
+      String[] excludeArray = patternConfig.split(",");
+      ArrayList<Pattern> patterns = new ArrayList<>();
+      excluder.setExcludePatterns(patterns);
+      for (String element : excludeArray) {
+        patterns.add(Pattern.compile(element));
+      }
     }
   }
 
