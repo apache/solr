@@ -2304,64 +2304,97 @@ public class TestSQLHandler extends SolrCloudTestCase {
     List<Double> pdoublesx = Arrays.asList(1d, 2d, 3d);
     List<Double> pdoublexmv = Arrays.asList(4d, 5d, 6d);
     List<Boolean> booleans = Arrays.asList(false, true);
-    List<Long> longs = Arrays.asList(10L, 20L, 30L);
+    List<Long> evenLongs = Arrays.asList(2L, 4L, 6L);
+    List<Long> oddLongs = Arrays.asList(1L, 3L, 5L);
 
     UpdateRequest update = new UpdateRequest();
     final int maxDocs = 10;
     for (int i = 0; i < maxDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument("id", String.valueOf(i));
+      if (i % 2 == 0) {
+        doc.setField("stringsx", stringsx);
+        doc.setField("pdoublexmv", pdoublexmv);
+        doc.setField("longs", evenLongs);
+      } else {
+        // stringsx & pdoublexmv null
+        doc.setField("longs", oddLongs);
+      }
       doc.setField("stringxmv", stringxmv);
-      doc.setField("stringsx", stringsx);
       doc.setField("pdoublesx", pdoublesx);
-      doc.setField("pdoublexmv", pdoublexmv);
       doc.setField("pdatexs", dates);
       doc.setField("textmv", textmv);
       doc.setField("booleans", booleans);
-      doc.setField("longs", longs);
       update.add(doc);
     }
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    expectListInResults("1", "stringxmv", stringxmv, -1);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a'", 10);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a')", 0);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a' LIMIT 10", 10);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a') LIMIT 10", 0);
-    expectListInResults("1", "stringsx", stringsx, -1);
-    expectListInResults("1", "pdoublesx", pdoublesx, -1);
-    expectListInResults("1", "pdoublexmv", pdoublexmv, -1);
-    expectListInResults("1", "pdatexs", listOfTimestamps, -1);
-    expectListInResults("1", "booleans", booleans, -1);
-    expectListInResults("1", "longs", longs, -1);
-    expectListInResults("2", "stringxmv", stringxmv, 10);
-    expectListInResults("2", "stringsx", stringsx, 10);
-    expectListInResults("2", "pdoublesx", pdoublesx, 10);
-    expectListInResults("2", "pdoublexmv", pdoublexmv, 10);
-    expectListInResults("2", "pdatexs", listOfTimestamps, 10);
-    expectListInResults("2", "textmv", textmv, 10);
-    expectListInResults("2", "booleans", booleans, 10);
-    expectListInResults("2", "longs", longs, 10);
+
+    // can't sort by a mv field
+    expectThrows(IOException.class,
+        () -> expectResults("SELECT stringxmv FROM $ALIAS WHERE stringxmv IS NOT NULL ORDER BY stringxmv ASC", 0));
+
+    // even id's have these fields, odd's are null ...
+    expectListInResults("0", "stringsx", stringsx, -1, 5);
+    expectListInResults("0", "pdoublexmv", pdoublexmv, -1, 5);
+    expectListInResults("1", "stringsx", null, -1, 0);
+    expectListInResults("1", "pdoublexmv", null, -1, 0);
+    expectListInResults("2", "stringsx", stringsx, 10, 5);
+    expectListInResults("2", "pdoublexmv", pdoublexmv, 10, 5);
+
+    expectListInResults("1", "stringxmv", stringxmv, -1, 10);
+    expectListInResults("1", "pdoublesx", pdoublesx, -1, 10);
+    expectListInResults("1", "pdatexs", listOfTimestamps, -1, 10);
+    expectListInResults("1", "booleans", booleans, -1, 10);
+    expectListInResults("1", "longs", oddLongs, -1, 5);
+
+    expectListInResults("2", "stringxmv", stringxmv, 10, 10);
+    expectListInResults("2", "pdoublesx", pdoublesx, 10, 10);
+    expectListInResults("2", "pdatexs", listOfTimestamps, 10, 10);
+    expectListInResults("2", "textmv", textmv, 10, 10);
+    expectListInResults("2", "booleans", booleans, 10, 10);
+    expectListInResults("2", "longs", evenLongs, 10, 5);
+
+    expectAggCount("stringxmv", 3);
+    expectAggCount("stringsx", 3);
+    expectAggCount("pdoublesx", 3);
+    expectAggCount("pdoublexmv", 3);
+    expectAggCount("pdatexs", 3);
+    expectAggCount("booleans", 2);
+    expectAggCount("longs", 6);
   }
 
-  private void expectListInResults(String id, String mvField, List<?> expected, int limit) throws Exception {
+  private void expectListInResults(String id, String mvField, List<?> expected, int limit, int expCount) throws Exception {
     String projection = limit > 0 ? "*" : "id," + mvField;
     String sql = "SELECT " + projection + " FROM $ALIAS WHERE id='" + id + "'";
     if (limit > 0) sql += " LIMIT " + limit;
     List<Tuple> results = expectResults(sql, 1);
-    assertEquals(expected, results.get(0).get(mvField));
-    String crit = "'" + expected.get(0) + "'";
-    sql = "SELECT " + projection + " FROM $ALIAS WHERE " + mvField + "=" + crit;
-    if (limit > 0) sql += " LIMIT " + limit;
-    expectResults(sql, 10);
-
-    if (!"textmv".equals(mvField)) {
-      String inClause = expected.stream().map(o -> "'" + o + "'").collect(Collectors.joining(","));
-      sql = "SELECT " + projection + " FROM $ALIAS WHERE " + mvField + " IN (" + inClause + ")";
-      if (limit > 0) sql += " LIMIT " + limit;
-      expectResults(sql, 10);
-
-      sql = "SELECT COUNT(*), " + mvField + " FROM $ALIAS GROUP BY " + mvField;
-      expectResults(sql, expected.size());
+    if (expected != null) {
+      assertEquals(expected, results.get(0).get(mvField));
+    } else {
+      assertNull(results.get(0).get(mvField));
     }
+
+    if (expected != null) {
+      String crit = "'" + expected.get(0) + "'";
+      sql = "SELECT " + projection + " FROM $ALIAS WHERE " + mvField + "=" + crit;
+      if (limit > 0) sql += " LIMIT " + limit;
+      expectResults(sql, expCount);
+
+      // test "IN" operator but skip for text analyzed fields
+      if (!"textmv".equals(mvField)) {
+        String inClause = expected.stream().map(o -> "'" + o + "'").collect(Collectors.joining(","));
+        sql = "SELECT " + projection + " FROM $ALIAS WHERE " + mvField + " IN (" + inClause + ")";
+        if (limit > 0) sql += " LIMIT " + limit;
+        expectResults(sql, expCount);
+      }
+    }
+  }
+
+  private void expectAggCount(String mvField, int expCount) throws Exception {
+    expectResults("SELECT COUNT(*), " + mvField + " FROM $ALIAS GROUP BY " + mvField, expCount);
   }
 }
