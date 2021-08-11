@@ -420,28 +420,32 @@ class SolrFilter extends Filter implements SolrRel {
     protected String translateSearch(RexNode condition) {
       final String fieldName = getSolrFieldName(condition);
 
-      RexCall search = (RexCall) RexUtil.expandSearch(builder, null, condition);
-      final RexNode peekAt0 = !search.operands.isEmpty() ? search.operands.get(0) : null;
-      if (search.op.kind == SqlKind.AND) {
+      RexCall expanded = (RexCall) RexUtil.expandSearch(builder, null, condition);
+      final RexNode peekAt0 = !expanded.operands.isEmpty() ? expanded.operands.get(0) : null;
+      if (expanded.op.kind == SqlKind.AND) {
         // See if NOT IN was translated into a big AND not
         if (peekAt0 instanceof RexCall) {
           RexCall op0 = (RexCall) peekAt0;
           if (op0.op.kind == SqlKind.NOT_EQUALS) {
-            return "*:* -" + fieldName + ":" + toOrClause(search);
+            return "*:* -" + fieldName + ":" + toOrClause(expanded);
           }
         }
-        return translateMatch(search);
-      } else if (search.op.kind == SqlKind.OR) {
+      } else if (expanded.op.kind == SqlKind.OR) {
         if (peekAt0 instanceof RexCall) {
           RexCall op0 = (RexCall) peekAt0;
           if (op0.op.kind == SqlKind.EQUALS) {
-            return fieldName + ":" + toOrClause(search);
+            return fieldName + ":" + toOrClause(expanded);
           }
         }
-        return translateMatch(search);
       }
 
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported filter " + condition);
+      if (expanded.getKind() != SqlKind.SEARCH) {
+        // passing a search back to translateMatch would lead to infinite recursion ...
+        return translateMatch(expanded);
+      }
+
+      // don't know how to handle this search!
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported search filter: " + condition);
     }
 
     protected String toOrClause(RexCall search) {
