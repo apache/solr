@@ -64,9 +64,8 @@ allprojects {
 configure(project(":solr:benchmark")) {
   plugins.withType(JavaPlugin) {
     tasks.named('compileJava').configure {
-      options.compilerArgs.remove("-Werror")
-      options.compilerArgs.remove("-proc:none")
-      options.compilerArgs.add("-Xlint:none")
+      options.compilerArgs -= [ "-Werror", "-proc:none" ]
+      options.compilerArgs += "-Xlint:none"
     }
   }
 }
