@@ -119,9 +119,7 @@ class S3StorageClient {
     return clientBuilder.build();
   }
 
-  /**
-   * Create a directory in S3.
-   */
+  /** Create a directory in S3. */
   void createDirectory(String path) throws S3Exception {
     path = sanitizedDirPath(path);
 
@@ -148,7 +146,9 @@ class S3StorageClient {
 
   /**
    * Delete files from S3. Deletion order is not guaranteed.
-   * @throws S3NotFoundException if the number of deleted objects does not match {@code entries} size
+   *
+   * @throws S3NotFoundException if the number of deleted objects does not match {@code entries}
+   *     size
    */
   void delete(Collection<String> paths) throws S3Exception {
     Set<String> entries = new HashSet<>();
@@ -280,8 +280,7 @@ class S3StorageClient {
       ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
       String contentType = objectMetadata.getContentType();
 
-      return !StringUtils.isEmpty(contentType)
-          && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
+      return !StringUtils.isEmpty(contentType) && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
     } catch (AmazonClientException ase) {
       throw handleAmazonException(ase);
     }
@@ -299,8 +298,7 @@ class S3StorageClient {
       ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
       String contentType = objectMetadata.getContentType();
 
-      if (StringUtils.isEmpty(contentType)
-          || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
+      if (StringUtils.isEmpty(contentType) || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
         return objectMetadata.getContentLength();
       }
       throw new S3Exception("Path is Directory");
