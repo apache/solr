@@ -97,13 +97,18 @@ public class S3OutputStream extends OutputStream {
       return;
     }
 
-    if (buffer.remaining() <= len) {
+    int currentOffset = off;
+    int lenRemaining = len;
+    while (buffer.remaining() < lenRemaining) {
       int firstPart = buffer.remaining();
-      buffer.put(b, off, firstPart);
+      buffer.put(b, currentOffset, firstPart);
       uploadPart(false);
-      write(b, off + firstPart, len - firstPart);
-    } else {
-      buffer.put(b, off, len);
+
+      currentOffset += firstPart;
+      lenRemaining -= firstPart;
+    }
+    if (lenRemaining > 0) {
+      buffer.put(b, currentOffset, lenRemaining);
     }
   }
 

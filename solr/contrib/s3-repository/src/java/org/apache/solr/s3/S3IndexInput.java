@@ -87,18 +87,27 @@ class S3IndexInput extends BufferedIndexInput {
   }
 
   @Override
-  protected void seekInternal(long pos) throws IOException {
-    if (pos > length()) {
-      throw new EOFException("read past EOF: pos=" + pos + " vs length=" + length() + ": " + this);
+  protected void seekInternal(long toPosition) throws IOException {
+    if (toPosition > length()) {
+      throw new EOFException("read past EOF: pos=" + toPosition + " vs length=" + length() + ": " + this);
     }
 
-    long diff = pos - this.position;
-
     // If we seek forward, skip unread bytes
-    if (diff > 0) {
-      inputStream.skip(diff);
-      position = pos;
-    } else if (diff < 0) {
+    while (this.position < toPosition) {
+      long skipped = inputStream.skip(toPosition - this.position);
+      if (skipped == 0) {
+        // If we didn't skip any bytes, make sure we are not at the end of the file
+        if (inputStream.read() == -1) {
+          // We are at the end of the file
+          break;
+        } else {
+          // Not at the end of the file, and we did skip one byte with the read()
+          skipped = 1;
+        }
+      }
+      this.position += skipped;
+    }
+    if (this.position > toPosition) {
       throw new IOException("Cannot seek backward");
     }
   }

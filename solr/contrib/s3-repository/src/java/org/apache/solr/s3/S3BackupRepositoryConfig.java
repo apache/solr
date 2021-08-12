@@ -38,9 +38,7 @@ public class S3BackupRepositoryConfig {
   private final int proxyPort;
   private final String endpoint;
 
-  public S3BackupRepositoryConfig(NamedList<?> args) {
-    NamedList<?> config = args.clone();
-
+  public S3BackupRepositoryConfig(NamedList<?> config) {
     region = getStringConfig(config, REGION);
     bucketName = getStringConfig(config, BUCKET_NAME);
     proxyHost = getStringConfig(config, PROXY_HOST);

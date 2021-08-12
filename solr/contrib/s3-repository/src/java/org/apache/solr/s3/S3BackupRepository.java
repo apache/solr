@@ -296,7 +296,6 @@ public class S3BackupRepository implements BackupRepository {
           outputStream.write(buffer, 0, bufferLen);
           remaining -= bufferLen;
         }
-        outputStream.flush();
       }
     }
 
