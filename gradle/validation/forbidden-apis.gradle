@@ -128,7 +128,7 @@ allprojects { prj ->
       }
     }
 
-    // Disable checks on JMH.
+    // Disable checks on JMH generated files.
     if (prj.path == ":solr:benchmark") {
       forbiddenApisMain.exclude("**/jmh_generated/**")
     }
