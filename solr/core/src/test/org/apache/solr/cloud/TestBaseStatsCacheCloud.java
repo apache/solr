@@ -202,9 +202,9 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
       Float controlScore = (Float) controlDoc.getFieldValue("score");
       Float cloudScore = (Float) cloudDoc.getFieldValue("score");
       if (sameScores) {
-        assertEquals("cloud score differs from control", controlScore, cloudScore, controlScore * 0.01f);
+        assertEquals("cloud score differs from control", controlScore, cloudScore, controlScore * 0.001f);
       } else {
-        assertNotEquals("cloud score the same as control", controlScore, cloudScore, controlScore * 0.01f);
+        assertNotEquals("cloud score is the same as control", controlScore, cloudScore, controlScore * 0.001f);
       }
     }
   }
