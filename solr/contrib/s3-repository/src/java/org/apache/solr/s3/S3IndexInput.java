@@ -89,7 +89,8 @@ class S3IndexInput extends BufferedIndexInput {
   @Override
   protected void seekInternal(long toPosition) throws IOException {
     if (toPosition > length()) {
-      throw new EOFException("read past EOF: pos=" + toPosition + " vs length=" + length() + ": " + this);
+      throw new EOFException(
+          "read past EOF: pos=" + toPosition + " vs length=" + length() + ": " + this);
     }
 
     // If we seek forward, skip unread bytes
