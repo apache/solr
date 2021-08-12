@@ -86,7 +86,7 @@ class SolrFilter extends Filter implements SolrRel {
       Translator translator = new Translator(SolrRules.solrFieldNames(getRowType()), builder);
       String query = translator.translateMatch(condition);
       implementor.addQuery(query);
-      implementor.setNegativeQuery(translator.negativeQuery);
+      implementor.setNegativeQuery(query.startsWith("-"));
     }
   }
 
@@ -94,7 +94,6 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected final List<String> fieldNames;
     private final RexBuilder builder;
-    public boolean negativeQuery = true;
 
     Translator(List<String> fieldNames, RexBuilder builder) {
       this.fieldNames = fieldNames;
@@ -113,7 +112,6 @@ class SolrFilter extends Filter implements SolrRel {
       } else if (kind.belongsTo(SqlKind.COMPARISON) || kind == SqlKind.NOT) {
         return translateComparison(condition);
       } else if (condition.isA(SqlKind.AND)) {
-        this.negativeQuery = false;
         return translateAndOrBetween(condition);
       } else if (condition.isA(SqlKind.OR)) {
         return "(" + translateOr(condition) + ")";
@@ -156,7 +154,6 @@ class SolrFilter extends Filter implements SolrRel {
       String query = null;
       if (fieldName.equals(lte.getKey()) && compareRexLiteral(gte.right, lte.right) < 0) {
         query = fieldName + ":[" + toSolrLiteral(gte.getValue()) + " TO " + toSolrLiteral(lte.getValue()) + "]";
-        this.negativeQuery = false; // so we don't get *:* AND range
       }
 
       return query;
@@ -181,7 +178,6 @@ class SolrFilter extends Filter implements SolrRel {
       if (left instanceof RexInputRef) {
         String name = fieldNames.get(((RexInputRef) left).getIndex());
         SqlKind kind = node.getKind();
-        this.negativeQuery = false;
         return kind == SqlKind.IS_NOT_NULL ? "+" + name + ":*" : "(*:* -" + name + ":*)";
       }
 
@@ -191,7 +187,11 @@ class SolrFilter extends Filter implements SolrRel {
     protected String translateOr(RexNode condition) {
       List<String> ors = new ArrayList<>();
       for (RexNode node : RelOptUtil.disjunctions(condition)) {
-        ors.add(translateMatch(node));
+        String orQuery = translateMatch(node);
+        if (orQuery.startsWith("-")) {
+          orQuery = "(*:* "+orQuery+")";
+        }
+        ors.add(orQuery);
       }
       return String.join(" OR ", ors);
     }
@@ -253,21 +253,16 @@ class SolrFilter extends Filter implements SolrRel {
       RexLiteral value = binaryTranslated.getValue();
       switch (kind) {
         case EQUALS:
-          this.negativeQuery = false;
           return toEqualsClause(key, value, node);
         case NOT_EQUALS:
           return "-" + toEqualsClause(key, value, node);
         case LESS_THAN:
-          this.negativeQuery = false;
           return "(" + key + ": [ * TO " + toSolrLiteral(value) + " })";
         case LESS_THAN_OR_EQUAL:
-          this.negativeQuery = false;
           return "(" + key + ": [ * TO " + toSolrLiteral(value) + " ])";
         case GREATER_THAN:
-          this.negativeQuery = false;
           return "(" + key + ": { " + toSolrLiteral(value) + " TO * ])";
         case GREATER_THAN_OR_EQUAL:
-          this.negativeQuery = false;
           return "(" + key + ": [ " + toSolrLiteral(value) + " TO * ])";
         case LIKE:
           return translateLike(node);
@@ -427,14 +422,14 @@ class SolrFilter extends Filter implements SolrRel {
         if (peekAt0 instanceof RexCall) {
           RexCall op0 = (RexCall) peekAt0;
           if (op0.op.kind == SqlKind.NOT_EQUALS) {
-            return "*:* -" + fieldName + ":" + toOrClause(expanded);
+            return "*:* -" + fieldName + ":" + toOrSetOnSameField(expanded);
           }
         }
       } else if (expanded.op.kind == SqlKind.OR) {
         if (peekAt0 instanceof RexCall) {
           RexCall op0 = (RexCall) peekAt0;
           if (op0.op.kind == SqlKind.EQUALS) {
-            return fieldName + ":" + toOrClause(expanded);
+            return fieldName + ":" + toOrSetOnSameField(expanded);
           }
         }
       }
@@ -448,10 +443,11 @@ class SolrFilter extends Filter implements SolrRel {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported search filter: " + condition);
     }
 
-    protected String toOrClause(RexCall search) {
+    protected String toOrSetOnSameField(RexCall search) {
       String orClause = search.operands.stream().map(n -> {
         RexCall next = (RexCall) n;
-        return "\"" + toSolrLiteral((RexLiteral) next.getOperands().get(1)) + "\""; // TODO: dates
+        RexLiteral lit = (RexLiteral) next.getOperands().get(1);
+        return "\"" + toSolrLiteral(lit) + "\"";
       }).collect(Collectors.joining(" OR "));
       return "(" + orClause + ")";
     }
