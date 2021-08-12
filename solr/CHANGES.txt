@@ -417,6 +417,9 @@ Bug Fixes
 * SOLR-14758: Fix NPE in QueryComponent.mergeIds when using timeAllowed and sorting
   (Bram Van Dam, Uwe Schindler)
 
+* SOLR-15579: Allow for many values in a SQL IN clause; previously using more than 19 would result in
+  the IN clause being ignored, now users are only limited by the `maxBooleanClauses` configured for a collection (Timothy Potter)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
