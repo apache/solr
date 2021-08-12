@@ -19,6 +19,7 @@ package org.apache.solr.s3;
 import static org.apache.solr.s3.S3BackupRepository.S3_SCHEME;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.google.common.base.Strings;
 import java.io.File;
@@ -288,8 +289,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   @Override
   protected S3BackupRepository getRepository() {
-    String mockS3Endpoint = "http://localhost:" + S3_MOCK_RULE.getHttpPort();
-    System.setProperty(S3BackupRepositoryConfig.ENDPOINT, mockS3Endpoint);
     NamedList<Object> args = getBaseBackupRepositoryConfiguration();
 
     S3BackupRepository repo = new S3BackupRepository();
@@ -306,8 +305,9 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   @Override
   protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
     NamedList<Object> args = new NamedList<>();
-    args.add(S3BackupRepositoryConfig.S3MOCK, "true");
+    args.add(S3BackupRepositoryConfig.REGION, Regions.US_EAST_1.name());
     args.add(S3BackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
+    args.add(S3BackupRepositoryConfig.ENDPOINT, "http://localhost:" + S3_MOCK_RULE.getHttpPort());
     return args;
   }
 

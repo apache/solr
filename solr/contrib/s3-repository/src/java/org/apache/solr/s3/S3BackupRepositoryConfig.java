@@ -31,14 +31,12 @@ public class S3BackupRepositoryConfig {
   public static final String ENDPOINT = "s3.endpoint";
   public static final String PROXY_HOST = "s3.proxy.host";
   public static final String PROXY_PORT = "s3.proxy.port";
-  public static final String S3MOCK = "s3.mock";
 
   private final String bucketName;
   private final String region;
   private final String proxyHost;
   private final int proxyPort;
   private final String endpoint;
-  private final boolean s3mock;
 
   public S3BackupRepositoryConfig(NamedList<?> args) {
     NamedList<?> config = args.clone();
@@ -48,16 +46,11 @@ public class S3BackupRepositoryConfig {
     proxyHost = getStringConfig(config, PROXY_HOST);
     proxyPort = getIntConfig(config, PROXY_PORT);
     endpoint = getStringConfig(config, ENDPOINT);
-    s3mock = getBooleanConfig(config, S3MOCK);
   }
 
   /** Construct a {@link S3StorageClient} from the provided config. */
   public S3StorageClient buildClient() {
-    if (s3mock) {
-      return new AdobeMockS3StorageClient(bucketName, endpoint);
-    } else {
-      return new S3StorageClient(bucketName, region, proxyHost, proxyPort, endpoint);
-    }
+    return new S3StorageClient(bucketName, region, proxyHost, proxyPort, endpoint);
   }
 
   private static String getStringConfig(NamedList<?> config, String property) {

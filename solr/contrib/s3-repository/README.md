@@ -27,8 +27,9 @@ Add this to your `solr.xml`:
 
     <backup>
         <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
+            <str name="s3.endpoint">http://localhost:9090</str>
             <str name="s3.bucket.name">TEST_BUCKET</str>
-            <bool name="s3.mock">true</bool>
+            <str name="s3.region">us-east-1</str>
         </repository>
     </backup>
 
@@ -46,9 +47,9 @@ If you are also running Solr in a docker image, and need to set the endpoint of 
 
     <backup>
         <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
-            <bool name="s3.mock">true</bool>
             <str name="s3.bucket.name">TEST_BUCKET</str>
             <str name="s3.endpoint">http://host.docker.internal:9090</str>
+            <str name="s3.region">us-east-1</str>
         </repository>
     </backup>
 

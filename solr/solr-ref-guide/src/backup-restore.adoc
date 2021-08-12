@@ -697,9 +697,9 @@ Can be overridden by setting `S3_REGION` environment variable.
 |Optional |Default: none
 |===
 +
-Explicit S3 endpoint. Not needed under normal operations (the S3 client can infer the endpoint from the `s3.region`).
-This parameter is helpful if using a mock S3 framework and want to explicitly override where S3 requests are routed.
-Can be overridden by setting `S3_ENDPOINT` environment variable when `s3.mock` is set to true.
+Explicit S3 endpoint. Not needed under normal operations when using AWS S3 (the S3 client can infer the endpoint from the `s3.region`).
+This parameter is helpful if using a mock S3 framework and want to explicitly override where S3 requests are routed, such as when using S3Mock.
+Can be overridden by setting `S3_ENDPOINT` environment variable.
 
 
 [NOTE]
@@ -731,17 +731,6 @@ Can be overridden by setting `S3_PROXY_HOST` environment variable.
 Proxy port number for the S3 client to route requests through, if desired.
 Should be used in conjunction with `s3.proxy.host` parameter.
 Can be overridden by setting `S3_PROXY_PORT` environment variable.
-
-`s3.mock`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: false
-|===
-+
-If this S3 backup repository should route requests to an mock S3 instance (for example, https://github.com/adobe/S3Mock[S3Mock]).
-If true (and `s3.endpoint` is not set), S3 requests will be sent to `localhost:9090`.
-Can be overridden by setting `S3_MOCK` environment variable.
 
 An example configuration to enable S3 backups and restore can be seen below:
 

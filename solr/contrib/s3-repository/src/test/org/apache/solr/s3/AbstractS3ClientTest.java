@@ -41,7 +41,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   @Before
   public void setUpClient() {
     AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
-    client = new AdobeMockS3StorageClient(s3, BUCKET_NAME);
+    client = new S3StorageClient(s3, BUCKET_NAME);
   }
 
   @After
