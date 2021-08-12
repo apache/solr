@@ -24,7 +24,7 @@ If you run a user-managed cluster or a single-node installation, you will use th
 
 [NOTE]
 ====
-Backups (and Snapshots) capture data that has been <<commits-transaction-logs.adoc#hard-commits-vs-soft-commits,hard commited>>.
+Backups (and Snapshots) capture data that has been <<commits-transaction-logs.adoc#hard-commits-vs-soft-commits,hard committed>>.
 Committing changes using `softCommit=true` may result in changes that are visible in search results but not included in subsequent backups.
 
 Likewise, committing changes using `openSearcher=false` may result in changes committed to disk and included in subsequent backups, even if they are not currently visible in search results.
@@ -460,7 +460,7 @@ An example configuration using these properties can be found below:
 
 === GCSBackupRepository
 
-Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
+Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
 
 GCSBackupRepository accepts the following options for overall configuration:
 
@@ -657,7 +657,7 @@ An example configuration using the overall and GCS-client properties can be seen
 
 === S3BackupRepository
 
-Stores and retrieves backup files in an Amazon S3 bucket.
+Stores and retrieves backup files in an Amazon S3 bucket. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
 
 This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 
