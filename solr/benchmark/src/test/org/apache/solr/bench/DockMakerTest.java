@@ -17,7 +17,6 @@
 package org.apache.solr.bench;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
