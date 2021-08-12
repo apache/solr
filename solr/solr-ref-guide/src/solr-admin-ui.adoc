@@ -85,6 +85,26 @@ This server resides at https://issues.apache.org/jira/browse/SOLR.
 
 These links cannot be modified without editing the `index.html` in the `server/solr/solr-webapp` directory that contains the Admin UI files.
 
+== Security
+
+Users with the `security-edit` permission can manage users, roles, and permissions using the <<security-ui.adoc#,Security>> panel in the Admin UI.
+Users with the `security-read` permission can view the Security panel but all update actions on the panel are disabled.
+
+.Security Screen
+image::images/solr-admin-ui/security.png[image,width=800]
+
+== Schema Designer
+
+The <<schema-designer.adoc#,Schema Designer>> screen provides an interactive experience to create a schema using sample data.
+
+image::images/solr-admin-ui/schema-designer.png[image]
+
+.Only Visible When Using SolrCloud
+[NOTE]
+====
+The Schema Designer is only available on Solr instances running <<cluster-types.adoc#solrcloud-mode,SolrCloud>>.
+====
+
 == Collection-Specific Tools
 
 In the left-hand navigation bar, you will see a pull-down menu titled Collection Selector that can be used to access collection specific administration screens.
@@ -126,7 +146,9 @@ Here are sections throughout the Guide describing each screen of the Admin UI:
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
 | <<configuring-logging.adoc#logging-screen,Logging Screen>>: Recent log messages and configuration of log levels.
+| <<security-ui.adoc#,Security>>: Manage users, roles, and permissions.
 | <<cloud-screens.adoc#,Cloud Screens>>: Access to SolrCloud node data and status.
+| <<schema-designer.adoc#,Schema Designer>>: Interactively create a schema using sample data.
 | <<collections-core-admin.adoc#,Collections / Core Admin>>: Collection or Core management tools.
 | <<jvm-settings.adoc#java-properties-screen,Java Properties Screen>>: Java information for each core.
 | <<thread-dump.adoc#,Thread Dump Screen>>: Detailed thread and state information.

@@ -43,12 +43,12 @@ To cancel an active task, please use the following syntax:
 
 `\http://localhost:8983/solr/tasks/cancel?queryUUID=foobar`
 
-==== Sample Response
-===== If the task UUID was found and successfully cancelled:
+=== Sample Response
+==== If the task UUID was found and successfully cancelled:
 
 `{responseHeader={status=0, QTime=39}, status=Query with queryID 85 cancelled successfully}`
 
-===== If the task UUID was not found
+==== If the task UUID was not found
 
 `{responseHeader={status=0, QTime=39}, status=Query with queryID 85 not found}`
 

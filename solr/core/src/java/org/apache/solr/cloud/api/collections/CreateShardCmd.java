@@ -52,8 +52,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -107,24 +106,29 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     CollectionHandlingUtils.addPropertyParams(message, propertyParams);
     addReplicasProps = addReplicasProps.plus(propertyParams);
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
-    final NamedList addResult = new NamedList();
+    final NamedList<Object> addResult = new NamedList<>();
     try {
       new AddReplicaCmd(ccc).addReplica(clusterState, addReplicasProps, addResult, () -> {
-        Object addResultFailure = addResult.get("failure");
+        @SuppressWarnings("unchecked")
+        NamedList<Object> addResultFailure = (NamedList<Object>) addResult.get("failure");
         if (addResultFailure != null) {
-          SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+          @SuppressWarnings("unchecked")
+          SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
           if (failure == null) {
-            failure = new SimpleOrderedMap();
+            failure = new SimpleOrderedMap<>();
             results.add("failure", failure);
           }
-          failure.addAll((NamedList) addResultFailure);
+          failure.addAll(addResultFailure);
         } else {
-          SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+          @SuppressWarnings("unchecked")
+          SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
           if (success == null) {
-            success = new SimpleOrderedMap();
+            success = new SimpleOrderedMap<>();
             results.add("success", success);
           }
-          success.addAll((NamedList) addResult.get("success"));
+          @SuppressWarnings("unchecked")
+          NamedList<Object> addResultSuccess = (NamedList<Object>) addResult.get("success");
+          success.addAll(addResultSuccess);
         }
       });
     } catch (Assign.AssignmentException e) {

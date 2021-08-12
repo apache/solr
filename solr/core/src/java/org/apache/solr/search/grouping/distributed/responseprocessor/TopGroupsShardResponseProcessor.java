@@ -119,8 +119,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
         continue; // continue if there was an error and we're tolerant.  
       }
-      @SuppressWarnings({"rawtypes"})
-      NamedList<NamedList> secondPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("secondPhase");
+      NamedList<NamedList<?>> secondPhaseResult = (NamedList<NamedList<?>>) srsp.getSolrResponse().getResponse().get("secondPhase");
       if(secondPhaseResult == null)
         continue;
       Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSort, withinGroupSort, srsp.getShard());

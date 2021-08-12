@@ -501,15 +501,15 @@ public class TestPackages extends SolrCloudTestCase {
           Map.of(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);
   }
-  @SuppressWarnings({"unchecked","rawtypes"})
-  private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
+  @SuppressWarnings("unchecked")
+  private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer<?> parser, Map<String, Object> expected) throws Exception {
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()){
       TestDistribPackageStore.assertResponseValues(10,
           () -> {
             Object o = Utils.executeGET(client.getHttpClient(),
                 jetty.getBaseUrl() + uri, parser);
             if(o instanceof NavigableObject) return (NavigableObject) o;
-            if(o instanceof Map) return new MapWriterMap((Map) o);
+            if(o instanceof Map) return new MapWriterMap((Map<String, Object>) o);
             throw new RuntimeException("Unknown response");
           }, expected);
 
@@ -816,8 +816,7 @@ public class TestPackages extends SolrCloudTestCase {
   }*/
 
 
-  public static ByteBuffer persistZip(String loc,
-                                      @SuppressWarnings({"rawtypes"}) Class... classes) throws IOException {
+  public static ByteBuffer persistZip(String loc, Class<?>... classes) throws IOException {
     ByteBuffer jar = generateZip(classes);
     try (FileOutputStream fos = new FileOutputStream(loc)) {
       fos.write(jar.array(), 0, jar.limit());
@@ -826,11 +825,11 @@ public class TestPackages extends SolrCloudTestCase {
     return jar;
   }
 
-  public static ByteBuffer generateZip(@SuppressWarnings({"rawtypes"}) Class... classes) throws IOException {
+  public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
     SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
-      for (@SuppressWarnings({"rawtypes"}) Class c : classes) {
+      for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
         ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));

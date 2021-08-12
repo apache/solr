@@ -55,13 +55,14 @@ public class UniqFieldsUpdateProcessorFactory extends FieldValueSubsetUpdateProc
   }
 
   @Override
-  public Collection<Object> pickSubset(@SuppressWarnings({"rawtypes"})Collection values) {
-    Set<Object> uniqs = new HashSet<>();
-    List<Object> result = new ArrayList<>(values.size());
-    for (Object o : values) {
-      if (!uniqs.contains(o)) {
-        uniqs.add(o);
-        result.add(o);
+  public <T> Collection<T> pickSubset(Collection<T> values) {
+    // The trivial implementation return new HashSet<>(values) would not preserve order
+    // So we use a secondary set to track which values are new
+    Set<T> uniqs = new HashSet<>();
+    List<T> result = new ArrayList<>(values.size());
+    for (T t : values) {
+      if (uniqs.add(t)) {
+        result.add(t);
       }
     }
     return result;

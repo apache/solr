@@ -35,6 +35,7 @@ if (!(System.getProperty("skip.solr") as Boolean)) {
   include "solr:contrib:ltr"
   include "solr:contrib:gcs-repository"
   include "solr:webapp"
+  include "solr:benchmark"
   include "solr:test-framework"
   include "solr:solr-ref-guide"
   include "solr:example"

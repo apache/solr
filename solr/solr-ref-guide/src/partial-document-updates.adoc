@@ -19,11 +19,14 @@
 Once you have indexed the content you need in your Solr index, you will want to start thinking about your strategy for dealing with changes to those documents.
 Solr supports three approaches to updating documents that have only partially changed.
 
-The first is _<<Atomic Updates,atomic updates>>_. This approach allows changing only one or more fields of a document without having to reindex the entire document.
+The first is _<<Atomic Updates,atomic updates>>_.
+This approach allows changing only one or more fields of a document without having to reindex the entire document.
 
-The second approach is known as _<<In-Place Updates,in-place updates>>_. This approach is similar to atomic updates (is a subset of atomic updates in some sense), but can be used only for updating single valued non-indexed and non-stored docValue-based numeric fields.
+The second approach is known as _<<In-Place Updates,in-place updates>>_.
+This approach is similar to atomic updates (is a subset of atomic updates in some sense), but can be used only for updating single valued non-indexed and non-stored docValue-based numeric fields.
 
-The third approach is known as _<<Optimistic Concurrency,optimistic concurrency>>_ or _optimistic locking_. It is a feature of many NoSQL databases, and allows conditional updating a document based on its version.
+The third approach is known as _<<Optimistic Concurrency,optimistic concurrency>>_ or _optimistic locking_.
+It is a feature of many NoSQL databases, and allows conditional updating a document based on its version.
 This approach includes semantics and rules for how to deal with version matches or mis-matches.
 
 Atomic Updates (and in-place updates) and Optimistic Concurrency may be used as independent strategies for managing changes to documents, or they may be combined: you can use optimistic concurrency to conditionally apply an atomic update.
@@ -360,7 +363,8 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "bbb",1632740120250548224]}
 ----
 
-In this example, we have added 2 documents "aaa" and "bbb". Because we added `versions=true` to the request, the response shows the document version for each document.
+In this example, we have added 2 documents "aaa" and "bbb".
+Because we added `versions=true` to the request, the response shows the document version for each document.
 
 [source,bash]
 ----
@@ -469,7 +473,8 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "ccc",1632740949182382080]}
 ----
 
-In this example, we have added 2 documents "aaa" and "ccc". As we have specified the parameter `\_version_=-1`, this request should not add the document with the id `aaa` because it already exists.
+In this example, we have added 2 documents "aaa" and "ccc".
+As we have specified the parameter `\_version_=-1`, this request should not add the document with the id `aaa` because it already exists.
 The request succeeds & does not throw any error because the `failOnVersionConflicts=false` parameter is specified.
 The response shows that only document `ccc` is added and `aaa` is silently ignored.
 
@@ -504,10 +509,21 @@ Users can not re-purpose that field and specify it as the `versionField` for use
 `DocBasedVersionConstraintsProcessorFactory` supports the following additional configuration parameters, which are all optional:
 
 `ignoreOldUpdates`::
-A boolean option which defaults to `false`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If set to `true`, the update will be silently ignored (and return a status 200 to the client) instead of rejecting updates where the `versionField` is too low.
 
 `deleteVersionParam`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A String parameter that can be specified to indicate that this processor should also inspect Delete By Id commands.
 +
 The value of this option should be the name of a request parameter that the processor will consider mandatory for all attempts to Delete By Id, and must be be used by clients to specify a value for the `versionField` which is greater then the existing value of the document to be deleted.
@@ -517,6 +533,12 @@ When using this request parameter, any Delete By Id command with a high enough d
 If `versionField` is specified as a list, then this parameter too must be specified as a comma-delimited list of the same size so that the parameters correspond with the fields.
 
 `supportMissingVersionOnOldDocs`::
-This boolean parameter defaults to `false`, but if set to `true` allows any documents written *before* this feature is enabled, and which are missing the `versionField`, to be overwritten.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If set to `true`, allows any document written *before* this feature is enabled and are missing the `versionField`, to be overwritten.
 
 Please consult the {solr-javadocs}/core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml[test solrconfig.xml file] for additional information and example usages.

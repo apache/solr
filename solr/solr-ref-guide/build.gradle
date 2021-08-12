@@ -167,7 +167,7 @@ ext {
 
         props.putAll([
             htmlOutDir: "../${details.path}",
-            javadocLink : "https://docs.oracle.com/en/java/javase/11/docs/api/",
+            javadocLink : "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
             solrGuideDraftStatus : propertyOrDefault('solrGuideDraft', "true").toBoolean() ? "DRAFT" : "",
             solrRootPath : project(':solr').projectDir.toString() + File.separator,
             solrDocsVersion : project.ext['solrDocsVersion'],

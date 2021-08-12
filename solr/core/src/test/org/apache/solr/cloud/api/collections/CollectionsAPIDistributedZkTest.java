@@ -42,7 +42,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -213,8 +212,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("action", CollectionAction.CREATE.toString());
     params.set("numShards", 2);
     // missing required collection parameter
-    @SuppressWarnings({"rawtypes"})
-    final SolrRequest request = new QueryRequest(params);
+    final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
     expectThrows(Exception.class, () -> {
@@ -231,8 +229,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set(REPLICATION_FACTOR, 10);
     params.set("collection.configName", "conf");
 
-    @SuppressWarnings({"rawtypes"})
-    final SolrRequest request = new QueryRequest(params);
+    final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
     expectThrows(Exception.class, () -> {
@@ -249,8 +246,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("numShards", 0);
     params.set("collection.configName", "conf");
 
-    @SuppressWarnings({"rawtypes"})
-    final SolrRequest request = new QueryRequest(params);
+    final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(request);

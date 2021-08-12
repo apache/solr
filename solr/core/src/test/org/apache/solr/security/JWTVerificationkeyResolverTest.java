@@ -65,11 +65,9 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private KeyHolder k4;
   private KeyHolder k5;
   private List<JsonWebKey> keysToReturnFromSecondJwk;
-  @SuppressWarnings({"rawtypes"})
-  private Iterator refreshSequenceForSecondJwk;
+  private Iterator<List<JsonWebKey>> refreshSequenceForSecondJwk;
 
   @Before
-  @SuppressWarnings({"unchecked"})
   public void setUp() throws Exception {
     super.setUp();
     k1 = new KeyHolder("k1");
@@ -80,13 +78,13 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
 
     when(firstJwkList.getJsonWebKeys()).thenReturn(asList(k1.getJwk(), k2.getJwk()));
     doAnswer(invocation -> {
-      keysToReturnFromSecondJwk = (List<JsonWebKey>) refreshSequenceForSecondJwk.next();
+      keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
       System.out.println("Refresh called, next to return is " + keysToReturnFromSecondJwk);
       return null;
     }).when(secondJwkList).refresh();
     when(secondJwkList.getJsonWebKeys()).then(inv -> {
       if (keysToReturnFromSecondJwk == null)
-        keysToReturnFromSecondJwk = (List<JsonWebKey>) refreshSequenceForSecondJwk.next();
+        keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
       return keysToReturnFromSecondJwk;
     });
     when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
@@ -121,7 +119,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     resolver.resolveKey(k5.getJws(), null);
   }
 
-  public class KeyHolder {
+  public static class KeyHolder {
     private final RsaJsonWebKey key;
     private final String kid;
 

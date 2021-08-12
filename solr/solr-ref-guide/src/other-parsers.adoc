@@ -36,22 +36,52 @@ Sub-queries along with their typed occurrences indicate how documents will be ma
 *Parameters*
 
 `must`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A list of queries that *must* appear in matching documents and contribute to the score.
 
 `must_not`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A list of queries that *must not* appear in matching documents.
 
 `should`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A list of queries *should* appear in matching documents.
 For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
 
 `filter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A list of queries that *must* appear in matching documents.
 However, unlike `must`, the score of filter queries is ignored.
 Also, these queries are cached in filter cache.
 To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
 
 `excludeTags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Comma separated list of tags for excluding queries from parameters above.
 See explanation below.
 
@@ -142,10 +172,21 @@ Under the covers, this query parser makes use of the Span group of queries, e.g.
 *Parameters*
 
 `inOrder`::
-Set to true to force phrase queries to match terms in the order specified.
-The default is `true`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Set to `true` to force phrase queries to match terms in the order specified.
 
 `df`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The default search field.
 
 *Examples*
@@ -170,7 +211,8 @@ A mix of ordered and unordered complex phrase queries:
 === Complex Phrase Parser Limitations
 
 Performance is sensitive to the number of unique terms that are associated with a pattern.
-For instance, searching for "a*" will form a large OR clause (technically a SpanOr with many terms) for all of the terms in your index for the indicated field that start with the single letter 'a'. It may be prudent to restrict wildcards to at least two or preferably three letters as a prefix.
+For instance, searching for "a*" will form a large OR clause (technically a SpanOr with many terms) for all of the terms in your index for the indicated field that start with the single letter 'a'.
+It may be prudent to restrict wildcards to at least two or preferably three letters as a prefix.
 Allowing very short prefixes may result in to many low-quality documents being returned.
 
 Notice that it also supports leading wildcards "*a" as well with consequent performance implications.
@@ -189,9 +231,9 @@ This property is described in more detail in the section <<caches-warming.adoc#q
 
 ==== Stopwords with Complex Phrase Parser
 
-It is recommended not to use stopword elimination with this query parser.
+It is not recommended to use stopword elimination with this query parser.
 
-Lets say we add the terms *the*, *up*, and *to* to `stopwords.txt` for your collection, and index a document containing the text _"Stores up to 15,000 songs, 25,00 photos, or 150 yours of video"_ in a field named "features".
+Assume we add the terms *the*, *up*, and *to* to `stopwords.txt` for a collection, and index a document containing the text _"Stores up to 15,000 songs, 25,00 photos, or 150 yours of video"_ in a field named "features".
 
 While the query below does not use this parser:
 
@@ -245,7 +287,7 @@ which is equivalent to:
 [literal]
 q=+field:text +COLOR:Red +SIZE:XL
 
-`param` local parameter uses "$" syntax to refer to a few queries, where `excludeTags` may omit some of them.
+The `param` local parameter uses "`$`" syntax to refer to a few queries, where `excludeTags` may omit some of them.
 
 == Function Query Parser
 
@@ -267,22 +309,40 @@ This is also referred to as `frange`, as seen in the examples below.
 *Parameters*
 
 `l`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The lower bound.
-This parameter is optional.
 
 `u`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The upper bound.
-This parameter is optional.
 
 `incl`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Include the lower bound.
-This parameter is optional.
-The default is `true`.
 
 `incu`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Include the upper bound.
-This parameter is optional.
-The default is `true`.
 
 *Examples*
 
@@ -309,37 +369,72 @@ The graph is built according to linkages between documents based on the terms fo
 
 Supported field types are point fields with docValues enabled, or string fields with `indexed=true` or `docValues=true`.
 
-TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}/sandbox/org/apache/lucene/sandbox/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`]
-for its performance characteristics so `indexed=true` will perform better for most use-cases.
+TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}/sandbox/org/apache/lucene/sandbox/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`] for its performance characteristics so `indexed=true` will perform better for most use-cases.
 
 === Graph Query Parameters
 
 `to`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `edge_ids`
+|===
++
 The field name of matching documents to inspect to identify outgoing edges for graph traversal.
-Defaults to `edge_ids`.
 
 `from`::
-The field name to of candidate documents to inspect to identify incoming graph edges.
-Defaults to `node_id`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `node_id`
+|===
++
+The field name in candidate documents to inspect to identify incoming graph edges.
 
 `traversalFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 An optional query that can be supplied to limit the scope of documents that are traversed.
 
 `maxDepth`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `-1` (unlimited)
+|===
++
 Integer specifying how deep the breadth first search of the graph should go beginning with the initial query.
-Defaults to `-1` (unlimited).
 
 `returnRoot`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Boolean to indicate if the documents that matched the original query (to define the starting points for graph) should be included in the final results.
-Defaults to `true`.
 
 `returnOnlyLeaf`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 Boolean that indicates if the results of the query should be filtered so that only documents with no outgoing edges are returned.
-Defaults to `false`.
 
 `useAutn`::
-Boolean that indicates if an Automatons should be compiled for each iteration of the breadth first search, which may be faster for some graphs.
-Defaults to `false`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Boolean that indicates if Automatons should be compiled for each iteration of the breadth first search, which may be faster for some graphs.
 
 === Graph Query Limitations
 
@@ -470,13 +565,14 @@ http://localhost:8983/solr/alt_graph/query?fl=id&q={!graph+from=id+to=out_edge+m
 
 == Hash Range Query Parser
 
-The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.
-This is used by the join query when using method=crossCollection.
-The hash rang query parser has a per segment cache for each field that this query parser will operate on.
+The hash range query parser will return documents with a field that contains a value that would be hashed to a particular range.
+This is used by the join query parser when using `method=crossCollection`.
+The hash range query parser has a per-segment cache for each field that this query parser will operate on.
 
-When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.
+When specifying a min/max hash range and a field name with the hash range query parser, only documents that contain a field value that hashes into that range will be returned.
 If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.
-In the cross collection join case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
+
+In the <<join-query-parser.adoc#cross-collection-join,cross collection join>> case, the hash range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
 
 This query parser uses the MurmurHash3_x86_32.
 This is the same as the default hashing for the default composite ID router in Solr.
@@ -484,13 +580,31 @@ This is the same as the default hashing for the default composite ID router in S
 === Hash Range Parameters
 
 `f`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The field name to operate on.
-This field should have docValues enabled and should be single-valued
+This field should have docValues enabled and should be single-valued.
 
 `l`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The lower bound of the hash range for the query.
 
 `u`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The upper bound for the hash range for the query.
 
 === Hash Range Example
@@ -500,11 +614,11 @@ The upper bound for the hash range for the query.
 {!hash_range f="field_name" l="0" u="12345"}
 ----
 
-=== Hash Range Cache Config
+=== Hash Range Cache Configuration
 
 The hash range query parser uses a special cache to improve the speedup of the queries.
 The following should be added to the `solrconfig.xml` for the various fields that you want to perform the hash range query on.
-Note the name of the cache should be the field name prefixed by "hash_".
+Note the name of the cache should be the field name prefixed by "`hash_`".
 
 [source,xml]
 ----
@@ -548,6 +662,227 @@ Example:
 ----
 {!maxscore tie=0.01}C OR (D AND E)
 ----
+
+== MinHash Query Parser
+
+The `MinHashQParser` builds queries for fields analysed with the `MinHashFilterFactory`.
+The queries measure Jaccard similarity between the query string and MinHash fields; allowing for faster, approximate matching if required.
+The parser supports two modes of operation.
+The first, when tokens are generated from text by normal analysis; and the second, when explicit tokens are provided.
+
+Currently the score returned by the query reflects the number of top level elements that match and is *not* normalised between 0 and 1.
+
+`sim`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The minimum similarity.
+The default behaviour is to find any similarity greater than zero.
+A numeric value between `0.0` and `1.0`.
+
+`tp`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1.0`
+|===
++
+The required true positive rate.
+For values lower than `1.0`, an optimised and faster banded query may be used.
+The banding behaviour depends on the values of `sim` and `tp` requested.
+
+`field`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The field in which the MinHash value is indexed.
+This field is normally used to analyse the text provided to the query parser.
+It is also used for the query field.
+
+`sep`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: " " (empty string)
+|===
++
+A separator string.
+If a non-empty separator string is provided, the query string is interpreted as a list of pre-analysed values separated by the separator string.
+In this case, no other analysis of the string is performed: the tokens are used as found.
+
+`analyzer_field`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+This parameter can be used to define how text is analysed, distinct from the query field.
+It is used to analyse query text when using a pre-analysed string `field` to store MinHash values.
+See the example below.
+
+This query parser is registered with the name `min_hash`.
+
+=== Example with Analysed Fields
+
+Typical analysis:
+
+[source,xml]
+----
+ <fieldType name="text_min_hash" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.ICUTokenizerFactory"/>
+      <filter class="solr.ICUFoldingFilterFactory"/>
+      <filter class="solr.ShingleFilterFactory" minShingleSize="5" outputUnigrams="false" outputUnigramsIfNoShingles="false" maxShingleSize="5" tokenSeparator=" "/>
+      <filter class="org.apache.lucene.analysis.minhash.MinHashFilterFactory" bucketCount="512" hashSetSize="1" hashCount="1"/>
+    </analyzer>
+  </fieldType>
+...
+
+  <field name="min_hash_analysed" type="text_min_hash" multiValued="false" indexed="true" stored="false" />
+----
+
+Here, the input text is split on whitespace, the tokens normalised, the resulting token stream assembled into a stream of all the 5 word shingles which are then hashed.
+The lowest hashes from each of 512 buckets are kept and produced as the output tokens.
+
+Queries to this field would need to generate at least one shingle so would require 5 distinct tokens.
+
+Example queries:
+
+[source,plain]
+----
+ {!min_hash field="min_hash_analysed"}At least five or more tokens
+
+ {!min_hash field="min_hash_analysed" sim="0.5"}At least five or more tokens
+
+ {!min_hash field="min_hash_analysed" sim="0.5" tp="0.5"}At least five or more tokens
+----
+
+=== Example with Pre-Analysed Fields
+
+Here, the MinHash is pre-computed, most likely using Lucene analysis inline as shown below.
+It would be more prudent to get the analyser from the schema.
+
+[source,java]
+----
+    ICUTokenizerFactory factory = new ICUTokenizerFactory(Collections.EMPTY_MAP);
+    factory.inform(null);
+    Tokenizer tokenizer = factory.create();
+    tokenizer.setReader(new StringReader(text));
+    ICUFoldingFilterFactory filter = new ICUFoldingFilterFactory(Collections.EMPTY_MAP);
+    TokenStream ts = filter.create(tokenizer);
+    HashMap<String, String> args = new HashMap<>();
+    args.put("minShingleSize", "5");
+    args.put("outputUnigrams", "false");
+    args.put("outputUnigramsIfNoShingles", "false");
+    args.put("maxShingleSize", "5");
+    args.put("tokenSeparator", " ");
+    ShingleFilterFactory sff = new ShingleFilterFactory(args);
+    ts = sff.create(ts);
+    HashMap<String, String> args2 = new HashMap<>();
+    args2.put("bucketCount", "512");
+    args2.put("hashSetSize", "1");
+    args2.put("hashCount", "1");
+    MinHashFilterFactory mhff = new MinHashFilterFactory(args2);
+    ts = mhff.create(ts);
+
+    CharTermAttribute termAttribute = ts.getAttribute(CharTermAttribute.class);
+
+    ts.reset();
+    while (ts.incrementToken())
+    {
+        char[] buff = termAttribute.buffer();
+        ...
+     }
+     ts.end();
+----
+
+The schema will just define a multi-valued string value and an optional field to use at anlysis time - similar to above.
+
+[source,xml]
+----
+ <field name="min_hash_string" type="strings" multiValued="true" indexed="true" stored="true"/>
+
+ <!-- Optional -->
+ <field name="min_hash_analysed" type="text_min_hash" multiValued="false" indexed="true" stored="false"/>
+
+ <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true"/>
+
+ <!-- Optional -->
+ <fieldType name="text_min_hash" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.ICUTokenizerFactory"/>
+      <filter class="solr.ICUFoldingFilterFactory"/>
+      <filter class="solr.ShingleFilterFactory" minShingleSize="5" outputUnigrams="false" outputUnigramsIfNoShingles="false" maxShingleSize="5" tokenSeparator=" "/>
+      <filter class="org.apache.lucene.analysis.minhash.MinHashFilterFactory" bucketCount="512" hashSetSize="1" hashCount="1"/>
+    </analyzer>
+  </fieldType>
+----
+
+Example queries:
+
+[source,plain]
+----
+{!min_hash field="min_hash_string" sep=","}HASH1,HASH2,HASH3
+
+{!min_hash field="min_hash_string" sim="0.9" analyzer_field="min_hash_analysed"}Lets hope the config and code for analysis are in sync
+----
+
+It is also possible to query analysed fields using known hashes (the reverse of the above)
+
+[source,plain]
+{!min_hash field="min_hash_analysed" analyzer_field="min_hash_string" sep=","}HASH1,HASH2,HASH3
+
+Pre-analysed fields mean hash values can be recovered per document rather than re-hashed.
+An initial query stage that returns the minhash stored field could be followed by a `min_hash` query to find similar documents.
+
+=== Banded Queries
+
+The default behaviour of the query parser, given the configuration above is to generate a boolean query and OR 512 constant score term queries together: one for each hash.
+In this case, generating a score of 1 if one hash matches and a score of 512 if they all match.
+
+A banded query mixes conjunctions and disjunctions.
+We could have 256 bands each of two queries ANDed together, 128 with 4 hashes ANDed together etc.
+With fewer bands query performance increases but we may miss some matches.
+There is a trade off between speed and accuracy.
+With 64 bands the score will range from 0 to 64 (the number of bands ORed together)
+
+Given the required similarity and an acceptable true positive rate, the query parser computes the appropriate band size^[1]^.
+It finds the minimum number of bands subject to
+
+latexmath:[tp \leq 1 - (1 - sim^{rows})^{bands}]
+
+If there are not enough hashes to fill the final band of the query it wraps to the start.
+
+=== A Note on Similarity
+
+Low similarities can be meaningful.
+The number of 5 word hashes is large.
+Even a single match may indicate some kind of similarity either in meaning, style or structure.
+
+=== Further Reading
+
+For a general introduction see "Mining of Massive Datasets"^[1]^.
+
+For documents of ~1500 words expect an index size overhead of ~10%; your milage will vary.
+512 hashes would be expected to represent ~2500 words well.
+
+Using a set of MinHash values was proposed in the initial paper^[2]^ but provides a biased estimate of Jaccard similarity.
+There may be cases where that bias is a good thing.
+Likewise with rotation and short documents.
+The implementation is derived from an unbiased method proposed in later work^[3]^.
+
+^[1]^ Leskovec, Jure; Rajaraman, Anand & Ullman, Jeffrey D. "Mining of Massive Datasets",  Cambridge University Press; 2 edition (December 29, 2014), Chapter 3, ISBN: 9781107077232.
+
+^[2]^ Broder, Andrei Z. (1997), "On the resemblance and containment of documents", Compression and Complexity of Sequences: Proceedings, Positano, Amalfitan Coast, Salerno, Italy, June 11-13, 1997 (PDF), IEEE, pp. 21–29, doi:10.1109/SEQUEN.1997.666900.
+
+^[3]^ Shrivastava, Anshumali & Li, Ping (2014), "Improved Densification of One Permutation Hashing", 30th Conference on Uncertainty in Artificial Intelligence (UAI), Quebec City, Quebec, Canada, July 23-27, 2014, AUAI, pp. 225-234, http://www.auai.org/uai2014/proceedings/individuals/225.pdf
 
 == More Like This Query Parser
 
@@ -594,23 +929,45 @@ The main query is parsed from the field type's query analysis into a `SpanQuery`
 This parser accepts the following parameters:
 
 `f`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The field to use.
-This parameter is required.
 
 `func`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The payload function.
 The options are: `min`, `max`, `average`, or `sum`.
-This parameter is required.
 
 `operator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A search operator.
 The options are:
-  * `or` will generate either a `SpanTermQuery` or a `SpanOrQuery` depending on the number of tokens emitted.
-  * `phrase` will generate either `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted.
+* `or` will generate either a `SpanTermQuery` or a `SpanOrQuery` depending on the number of tokens emitted.
+* `phrase` will generate either `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted.
 
 `includeSpanScore`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, multiples the computed payload factor by the score of the original query.
-If `false`, the default, the computed payload factor is the score.
+If `false`, the computed payload factor is the score.
 
 *Examples*
 
@@ -628,40 +985,61 @@ The main query, for both of these parsers, is parsed straightforwardly from the 
 The generated `SpanQuery` will be either a `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted.
 The net effect is that the main query always operates in a manner similar to a phrase query in the standard Lucene parser (thus ignoring any value for `q.op`).
 
-NOTE: If when the field analysis is applied to the query, it alters the number of tokens, the final number of tokens must match the number of payloads supplied in the `payloads` parameter.
-If there is a mismatch between the number of query tokens, and the number of payload values supplied with this query, the query will not match.
+NOTE: When the field analysis is applied to the query, if it alters the number of tokens the final number of tokens must match the number of payloads supplied in the `payloads` parameter.
+If there is a mismatch between the number of query tokens and the number of payload values supplied with this query, the query will not match.
 
 This parser accepts the following parameters:
 
 `f`::
-The field to use (required).
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The field to use.
 
 `payloads`::
-A space-separated list of payloads to be compared with payloads in the matching tokens from the document (required).
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+A space-separated list of payloads to be compared with payloads in the matching tokens from the document.
 Each specified payload will be encoded using the encoder determined from the field type prior to matching.
-Integer, float and identity (string) encodings are supported with the same meanings as for DelimitedPayloadTokenFilter.
+Integer, float, and identity (string) encodings are supported with the same meanings as for `DelimitedPayloadTokenFilter`.
 
 `op`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `eq`
+|===
++
 The inequality operation to apply to the payload check.
 All operations require that consecutive tokens derived from the analysis of the query match consecutive tokens in the document, and additionally the payloads on the document tokens must be:
- * `eq` -  equal to the specified payloads (default)
- * `gt` -  greater than the specified payloads
- * `lt` -  less than the specified payloads
- * `gte` -  greater than or equal to the specified payloads
- * `lte` -  less than or equal to the specified payloads
+ * `eq`: equal to the specified payloads
+ * `gt`: greater than the specified payloads
+ * `lt`: less than the specified payloads
+ * `gte`: greater than or equal to the specified payloads
+ * `lte`: less than or equal to the specified payloads
 
 *Examples*
 
-Find all documents with the phrase "searching stuff" where searching has a payload of "VERB" and "stuff" has a payload of "NOUN"
+Find all documents with the phrase "searching stuff" where searching has a payload of "VERB" and "stuff" has a payload of "NOUN":
+
 [source,text]
 {!payload_check f=words_dps payloads="VERB NOUN"}searching stuff
 
-Find all documents with "foo" where "foo" has a payload with a value of greater than or equal to 0.75
+Find all documents with "foo" where "foo" has a payload with a value of greater than or equal to 0.75:
+
 [source,text]
 {!payload_check f=words_dpf payloads="0.75" op="gte"}foo
 
-Find all documents with the phrase "foo bar" where term "foo" has a payload greater than 9 and "bar" has a payload greater than 5
-[source,text]
+Find all documents with the phrase "foo bar" where term "foo" has a payload greater than 9 and "bar" has a payload greater than 5:
+
+[literal]
 {!payload_check f=words_dpi payloads="9 5" op="gt"}foo bar
 
 
@@ -727,6 +1105,12 @@ This query parser is designed to allow users to enter queries however they want,
 This parser takes the following parameters:
 
 `q.operators`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
 Comma-separated list of names of parsing operators to enable.
 By default, all operations are enabled, and this parameter can be used to effectively disable specific operators as needed, by excluding them from the list.
 Passing an empty string with this parameter disables all operators.
@@ -758,14 +1142,32 @@ At the end of terms, specifies a fuzzy query.
 |===
 
 `q.op`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `OR`
+|===
++
 Defines the default operator to use if none is defined by the user.
 Allowed values are `AND` and `OR`.
 `OR` is used if none is specified.
 
 `qf`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A list of query fields and boosts to use when building the query.
 
 `df`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Defines the default field if none is defined in the Schema, or overrides the default field if it is already defined.
 
 Any errors in syntax are ignored and the query parser will interpret queries as best it can.
@@ -887,19 +1289,34 @@ This can be useful for generating filter queries from the external human readabl
 This query parser takes the following parameters:
 
 `f`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The field on which to search.
-This parameter is required.
 
 `separator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `,` (comma)
+|===
++
 Separator to use when parsing the input.
 If set to " " (a single blank space), will trim additional white space from the input terms.
-Defaults to  a comma (`,`).
 
 `method`::
-An optional parameter used to determine which of several query implementations should be used by Solr.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `termsFilter`
+|===
++
+Determine which of several query implementations should be used by Solr.
 +
 Options are restricted to: `termsFilter`, `booleanQuery`, `automaton`, `docValuesTermsFilterPerSegment`, `docValuesTermsFilterTopLevel` or `docValuesTermsFilter`.
-If unspecified, the default value is `termsFilter`.
 +
 Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.
 Heuristics are given below.
@@ -907,8 +1324,7 @@ Heuristics are given below.
 `booleanQuery` creates a `BooleanQuery` representing the request.
 Scales well with index size, but poorly with the number of terms being searched for.
 +
-`termsFilter` the default `method`.
-Uses a `BooleanQuery` or a `TermInSetQuery` depending on the number of terms.
+`termsFilter` uses a `BooleanQuery` or a `TermInSetQuery` depending on the number of terms.
 Scales well with index size, but only moderately with the number of query terms.
 +
 `docValuesTermsFilter` can only be used on fields with docValues data.

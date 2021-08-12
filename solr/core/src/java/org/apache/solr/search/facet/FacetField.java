@@ -70,8 +70,7 @@ public class FacetField extends FacetRequestSorted {
   }
 
   @Override
-  @SuppressWarnings("rawtypes")
-  public FacetProcessor createFacetProcessor(FacetContext fcontext) {
+  public FacetProcessor<FacetField> createFacetProcessor(FacetContext fcontext) {
     SchemaField sf = fcontext.searcher.getSchema().getField(field);
     FieldType ft = sf.getType();
     boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();

@@ -1047,7 +1047,8 @@ This filter is generally only useful at index time.
 
 == ICU Folding Filter
 
-This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
+This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>.
+This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
 To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
@@ -1822,6 +1823,79 @@ With this configuration the set of mappings is named "english" and can be manage
 --
 
 See <<Synonym Graph Filter>> below for example input/output.
+
+== MinHash Filter
+
+Generates a repeatably random fixed number of hash tokens from all the input tokens in the stream.
+To do this it first consumes all of the input tokens from its source.
+This filter would normally be preceded by a <<Shingle Filter>>, as shown in the example below.
+
+Each input token is hashed.
+It is subsequently "rehashed" `hashCount` times by combining with a set of precomputed hashes.
+For each of the resulting hashes, the hash space is divided in to `bucketCount` buckets.
+The lowest set of `hashSetSize` hashes (usually a set of one) is generated for each bucket.
+
+This filter generates one type of signature or sketch for the input tokens and can be used to compute Jaccard similarity between documents.
+
+*Arguments:*
+
+`hashCount`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+The number of hashes to use.
+
+`bucketCount`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `512`
+|===
++
+The number of buckets to use.
+
+`hashSetSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+The size of the set for the lowest hashes from each bucket.
+
+`withRotation`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+If a hash bucket is empty, generate a hash value from the first previous bucket that has a value.
+The default is `true` if the `bucketCount` is greater than `1` and `false` otherwise.
+
+The number of hashes generated depends on the options above.
+With the default settings for `withRotation`, the number of hashes generated is `hashCount` x `bucketCount` x `hashSetSize` => 512, by default.
+
+*Example:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.ICUTokenizerFactory"/>
+  <filter class="solr.ICUFoldingFilterFactory"/>
+  <filter class="solr.ShingleFilterFactory" minShingleSize="5" outputUnigrams="false" outputUnigramsIfNoShingles="false" maxShingleSize="5" tokenSeparator=" "/>
+  <filter class="org.apache.lucene.analysis.minhash.MinHashFilterFactory" bucketCount="512" hashSetSize="1" hashCount="1"/>
+</analyzer>
+----
+
+*In:* "woof woof woof woof woof"
+
+*Tokenizer to Filter:* "woof woof woof woof woof"
+
+*Out:* "℁팽徭聙↝ꇁ홱杯", "℁팽徭聙↝ꇁ홱杯", "℁팽徭聙↝ꇁ홱杯",     .... a total of 512 times
 
 == N-Gram Filter
 
@@ -3110,7 +3184,7 @@ small => tiny,teeny,weeny
 
 Combining the DelimitedBoostFilter with the Synonym Graph Filter you can achieve Weighted synonyms at query time.
 For more information feel free to refer to:
-https://sease.io/2020/02/introducing-weighted-synonyms-in-apache-lucene.html
+https://sease.io/2020/03/introducing-weighted-synonyms-in-apache-lucene.html
 For the following examples, assume a synonyms file named `boostedSynonyms.txt`:
 
 [source,text]
@@ -3423,9 +3497,11 @@ Note: although this filter produces correct token graphs, it cannot consume an i
 
 The rules for determining delimiters are determined as follows:
 
-* A change in case within a word: "CamelCase" -> "Camel", "Case". This can be disabled by setting `splitOnCaseChange="0"`.
+* A change in case within a word: "CamelCase" -> "Camel", "Case".
+This can be disabled by setting `splitOnCaseChange="0"`.
 
-* A transition from alpha to numeric characters or vice versa: "Gonzo5000" -> "Gonzo", "5000" "4500XL" -> "4500", "XL". This can be disabled by setting `splitOnNumerics="0"`.
+* A transition from alpha to numeric characters or vice versa: "Gonzo5000" -> "Gonzo", "5000" "4500XL" -> "4500", "XL".
+This can be disabled by setting `splitOnNumerics="0"`.
 
 * Non-alphanumeric characters (discarded): "hot-spot" -> "hot", "spot"
 
