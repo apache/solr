@@ -37,20 +37,6 @@ jmhReport {
   jmhReportOutput = project.file('build/reports/jmh')
 }
 
-compileJava {
-  doFirst {
-    options.compilerArgs.remove("-Werror")
-    options.compilerArgs.remove("-proc:none")
-    options.compilerArgs.add("-Xlint:none")
-
-  }
-}
-
-// forbiddenApis scans code that JMH generates
-forbiddenApis {
-  ignoreFailures = true
-}
-
 task echoCp {
   doLast {
     print toPath((sourceSets.main.runtimeClasspath + sourceSets.main.resources).files)
@@ -71,5 +57,4 @@ dependencies {
 
   implementation 'org.openjdk.jmh:jmh-core'
   annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess'
-
 }

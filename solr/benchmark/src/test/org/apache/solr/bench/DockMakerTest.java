@@ -31,7 +31,7 @@ public class DockMakerTest extends SolrTestCaseJ4 {
 
   @Before
   public void setup() {
-    System.setProperty("randomSeed", Long.toString(new Random().nextLong()));
+    System.setProperty("randomSeed", Long.toString(random().nextLong()));
   }
 
   @Test
