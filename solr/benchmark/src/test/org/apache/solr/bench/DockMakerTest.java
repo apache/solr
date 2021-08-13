@@ -17,7 +17,6 @@
 package org.apache.solr.bench;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
@@ -31,7 +30,7 @@ public class DockMakerTest extends SolrTestCaseJ4 {
 
   @Before
   public void setup() {
-    System.setProperty("randomSeed", Long.toString(new Random().nextLong()));
+    System.setProperty("randomSeed", Long.toString(random().nextLong()));
   }
 
   @Test
