@@ -17,6 +17,20 @@
 
 package org.apache.solr.servlet;
 
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.noop.NoopSpan;
+import io.opentracing.noop.NoopTracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.tag.Tags;
+import org.apache.http.HttpHeaders;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.util.tracing.HttpServletCarrier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.FilterChain;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -30,6 +44,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,6 +53,8 @@ import java.util.regex.Pattern;
  * Various Util methods for interaction on servlet level, i.e. HttpServletRequest
  */
 public abstract class ServletUtils {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   static String CLOSE_STREAM_MSG = "Attempted close of http request or response stream - in general you should not do this, "
       + "you may spoil connection reuse and possibly disrupt a client. If you must close without actually needing to close, "
       + "use a CloseShield*Stream. Closing or flushing the response stream commits the response and prevents us from modifying it. "
@@ -154,6 +171,124 @@ public abstract class ServletUtils {
       excluder.setExcludePatterns(patterns);
       for (String element : excludeArray) {
         patterns.add(Pattern.compile(element));
+      }
+    }
+  }
+
+  static void rateLimitRequest(HttpServletRequest request, HttpServletResponse response, Runnable limitedExecution, boolean trace) throws ServletException, IOException {
+    boolean accepted = false;
+    RateLimitManager rateLimitManager = getRateLimitManager(request);
+    try {
+      try {
+        accepted = rateLimitManager.handleRequest(request);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
+      }
+
+      if (!accepted) {
+        String errorMessage = "Too many requests for this request type." +
+            "Please try after some time or increase the quota for this request type";
+
+        response.sendError(429, errorMessage);
+      }
+      // todo: this shouldn't be required, tracing and rate limiting should be independently composable
+      traceHttpRequestExecution2(request, response, limitedExecution, trace);
+    } finally {
+      if (accepted) {
+        rateLimitManager.decrementActiveRequests(request);
+      }
+    }
+  }
+
+  /**
+   * Sets up tracing for an HTTP request.
+   *
+   * @param tracedExecution the executed code
+   */
+  private static void traceHttpRequestExecution2(HttpServletRequest request, HttpServletResponse response, Runnable tracedExecution, boolean required) throws ServletException, IOException {
+    Tracer tracer = getTracer(request);
+    if (tracer != null) {
+      Span span = buildSpan(tracer, request);
+
+      request.setAttribute(Span.class.getName(), span);
+      try (var scope = tracer.scopeManager().activate(span)) {
+
+        assert scope != null; // prevent javac warning about scope being unused
+        try {
+          tracedExecution.run();
+        } catch (ExceptionWhileTracing e) {
+          if (e.e instanceof SolrAuthenticationException) {
+            throw (SolrAuthenticationException) e.e;
+          }
+          if (e.e instanceof ServletException) {
+            throw (ServletException) e.e;
+          }
+          if (e.e instanceof IOException) {
+            throw (IOException) e.e;
+          }
+          if (e.e instanceof RuntimeException) {
+            throw (RuntimeException) e.e;
+          } else {
+            throw new RuntimeException(e.e);
+          }
+        }
+      } catch (SolrAuthenticationException e) {
+        // done, the response and status code have already been sent
+      } finally {
+        consumeInputFully(request, response);
+        SolrRequestInfo.reset();
+        SolrRequestParsers.cleanupMultipartFiles(request);
+
+
+        span.setTag(Tags.HTTP_STATUS, response.getStatus());
+        span.finish();
+      }
+    } else {
+      if (required) {
+        throw new IllegalStateException("Tracing required, but could not find Tracer in request attribute:" + SolrDispatchFilter.ATTR_TRACING_TRACER);
+      } else {
+        tracedExecution.run();
+      }
+    }
+  }
+
+  private static Tracer getTracer(HttpServletRequest req) {
+    return (Tracer) req.getAttribute(SolrDispatchFilter.ATTR_TRACING_TRACER);
+  }
+
+  private static RateLimitManager getRateLimitManager(HttpServletRequest req) {
+    return (RateLimitManager) req.getAttribute(SolrDispatchFilter.ATTR_RATELIMIT_MANAGER);
+  }
+
+  protected static Span buildSpan(Tracer tracer, HttpServletRequest request) {
+    if (tracer instanceof NoopTracer) {
+      return NoopSpan.INSTANCE;
+    }
+    Tracer.SpanBuilder spanBuilder = tracer.buildSpan("http.request") // will be changed later
+        .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
+        .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
+        .withTag(Tags.HTTP_METHOD, request.getMethod())
+        .withTag(Tags.HTTP_URL, request.getRequestURL().toString());
+    if (request.getQueryString() != null) {
+      spanBuilder.withTag("http.params", request.getQueryString());
+    }
+    spanBuilder.withTag(Tags.DB_TYPE, "solr");
+    return spanBuilder.start();
+  }
+
+  // we make sure we read the full client request so that the client does
+  // not hit a connection reset and we can reuse the
+  // connection - see SOLR-8453 and SOLR-8683
+  private static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
+    try {
+      ServletInputStream is = req.getInputStream();
+      while (!is.isFinished() && is.read() != -1) {}
+    } catch (IOException e) {
+      if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
+        log.debug("No input stream to consume from client");
+      } else {
+        log.info("Could not consume full client request", e);
       }
     }
   }

@@ -23,17 +23,14 @@ import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.noop.NoopTracer;
-import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
 import io.opentracing.util.GlobalTracer;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.cloud.ZkController;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -48,14 +45,12 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
-import org.apache.solr.util.tracing.HttpServletCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +61,6 @@ import javax.naming.NoInitialContextException;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
@@ -98,8 +92,14 @@ import static org.apache.solr.servlet.ServletUtils.excludedPath;
  *
  * @since solr 1.2
  */
+// todo: get rid of this class entirely! Request dispatch is the container's responsibility. Much of what we have here
+//  should be several separate but composable servlet Filters, and a ServletContextListener for startup/shutdown
+//  that sets up a service from which things like CoreContainer can be requested. (or better yet injected)
 public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String ATTR_TRACING_SPAN = Span.class.getName();
+  public static final String ATTR_TRACING_TRACER = Tracer.class.getName();
+  public static final String ATTR_RATELIMIT_MANAGER = RateLimitManager.class.getName();
 
   protected volatile CoreContainer cores;
   protected final CountDownLatch init = new CountDownLatch(1);
@@ -435,129 +435,86 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     if (excludedPath(excludePatterns, request, response, chain)) {
       return;
     }
+    waitForCoreContainer(cores, init);
+    request.setAttribute(Tracer.class.getName(), cores == null ? GlobalTracer.get() : cores.getTracer());
+    request.setAttribute(RateLimitManager.class.getName(), rateLimitManager);
+    ServletUtils.rateLimitRequest(request, response, () -> {
+      try {
+        dispatch(chain, request, response, retry);
+      } catch (IOException | ServletException | SolrAuthenticationException e) {
+        throw new ExceptionWhileTracing( e);
+      }
+    }, true);
+  }
 
-    Tracer tracer = cores == null ? GlobalTracer.get() : cores.getTracer();
-    Span span = buildSpan(tracer, request);
-    request.setAttribute(Tracer.class.getName(), tracer);
-    request.setAttribute(Span.class.getName(), span);
-    boolean accepted = false;
-    try (var scope = tracer.scopeManager().activate(span)) {
-      assert scope != null; // prevent javac warning about scope being unused
 
+  private static void waitForCoreContainer(CoreContainer cores, CountDownLatch latch) throws UnavailableException {
+    if (cores == null || cores.isShutDown()) {
+      try {
+        latch.await();
+      } catch (InterruptedException e) { //well, no wait then
+      }
+      final String msg = "Error processing the request. CoreContainer is either not initialized or shutting down.";
       if (cores == null || cores.isShutDown()) {
-        try {
-          init.await();
-        } catch (InterruptedException e) { //well, no wait then
-        }
-        final String msg = "Error processing the request. CoreContainer is either not initialized or shutting down.";
-        if (cores == null || cores.isShutDown()) {
-          log.error(msg);
-          throw new UnavailableException(msg);
-        }
+        log.error(msg);
+        throw new UnavailableException(msg);
       }
+    }
+  }
 
-      try {
-        accepted = rateLimitManager.handleRequest(request);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
+  private static Span getSpan(HttpServletRequest req) {
+    return (Span) req.getAttribute(ATTR_TRACING_SPAN);
+  }
+
+  private void dispatch(FilterChain chain, HttpServletRequest request, HttpServletResponse response, boolean retry) throws IOException, ServletException, SolrAuthenticationException {
+
+
+
+    AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
+    if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
+      throw new SolrAuthenticationException();
+    }
+
+    if (wrappedRequest.get() != null) {
+      request = wrappedRequest.get();
+    }
+
+    if (cores.getAuthenticationPlugin() != null) {
+      if (log.isDebugEnabled()) {
+        log.debug("User principal: {}", request.getUserPrincipal());
       }
+      getSpan(request).setTag(Tags.DB_USER, String.valueOf(request.getUserPrincipal()));
+    }
 
-      if (!accepted) {
-        String errorMessage = "Too many requests for this request type." +
-            "Please try after some time or increase the quota for this request type";
-
-        response.sendError(429, errorMessage);
-      }
-
-      AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
-      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
-        return;
-      }
-
-      if (wrappedRequest.get() != null) {
-        request = wrappedRequest.get();
-      }
-
-      if (cores.getAuthenticationPlugin() != null) {
-        if (log.isDebugEnabled()) {
-          log.debug("User principal: {}", request.getUserPrincipal());
-        }
-        span.setTag(Tags.DB_USER, String.valueOf(request.getUserPrincipal()));
-      }
-
-      HttpSolrCall call = getHttpSolrCall(request, response, retry);
-      ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
-      try {
-        Action result = call.call();
-        switch (result) {
-          case PASSTHROUGH:
-            span.log("SolrDispatchFilter PASSTHROUGH");
-            chain.doFilter(request, response);
-            break;
-          case RETRY:
-            span.log("SolrDispatchFilter RETRY");
-            doFilter(request, response, chain, true); // RECURSION
-            break;
-          case FORWARD:
-            span.log("SolrDispatchFilter FORWARD");
-            request.getRequestDispatcher(call.getPath()).forward(request, response);
-            break;
-          case ADMIN:
-          case PROCESS:
-          case REMOTEQUERY:
-          case RETURN:
-            break;
-        }
-      } finally {
-        call.destroy();
-        ExecutorUtil.setServerThreadFlag(null);
+    HttpSolrCall call = getHttpSolrCall(request, response, retry);
+    ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
+    try {
+      Action result = call.call();
+      switch (result) {
+        case PASSTHROUGH:
+          getSpan(request).log("SolrDispatchFilter PASSTHROUGH");
+          chain.doFilter(request, response);
+          break;
+        case RETRY:
+          getSpan(request).log("SolrDispatchFilter RETRY");
+          doFilter(request, response, chain, true); // RECURSION
+          break;
+        case FORWARD:
+          getSpan(request).log("SolrDispatchFilter FORWARD");
+          request.getRequestDispatcher(call.getPath()).forward(request, response);
+          break;
+        case ADMIN:
+        case PROCESS:
+        case REMOTEQUERY:
+        case RETURN:
+          break;
       }
     } finally {
-      consumeInputFully(request, response);
-      SolrRequestInfo.reset();
-      SolrRequestParsers.cleanupMultipartFiles(request);
-
-      if (accepted) {
-        rateLimitManager.decrementActiveRequests(request);
-      }
-      span.setTag(Tags.HTTP_STATUS, response.getStatus());
-      span.finish();
+      call.destroy();
+      ExecutorUtil.setServerThreadFlag(null);
     }
   }
 
-  protected Span buildSpan(Tracer tracer, HttpServletRequest request) {
-    if (tracer instanceof NoopTracer) {
-      return NoopSpan.INSTANCE;
-    }
-    Tracer.SpanBuilder spanBuilder = tracer.buildSpan("http.request") // will be changed later
-        .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
-        .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
-        .withTag(Tags.HTTP_METHOD, request.getMethod())
-        .withTag(Tags.HTTP_URL, request.getRequestURL().toString());
-    if (request.getQueryString() != null) {
-      spanBuilder.withTag("http.params", request.getQueryString());
-    }
-    spanBuilder.withTag(Tags.DB_TYPE, "solr");
-    return spanBuilder.start();
-  }
-
-  // we make sure we read the full client request so that the client does
-  // not hit a connection reset and we can reuse the 
-  // connection - see SOLR-8453 and SOLR-8683
-  private void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
-    try {
-      ServletInputStream is = req.getInputStream();
-      while (!is.isFinished() && is.read() != -1) {}
-    } catch (IOException e) {
-      if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
-        log.debug("No input stream to consume from client");
-      } else {
-        log.info("Could not consume full client request", e);
-      }
-    }
-  }
-  
   /**
    * Allow a subclass to modify the HttpSolrCall.  In particular, subclasses may
    * want to add attributes to the request and send errors differently
@@ -573,7 +530,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   }
 
   private boolean authenticateRequest(HttpServletRequest request, HttpServletResponse response, final AtomicReference<HttpServletRequest> wrappedRequest) throws IOException {
-    boolean requestContinues = false;
+    boolean requestContinues;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
