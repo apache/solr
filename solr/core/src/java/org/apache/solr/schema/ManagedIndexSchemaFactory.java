@@ -135,7 +135,12 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         // Attempt to load the managed schema, and if it doesn't exist, check for legacy name, and rename it
         
         if (zkClient.exists(legacyManagedSchemaPath, true)){
-          zkClient.moveZnode(legacyManagedSchemaPath, managedSchemaPath);
+          //System.out.println("HEY< IS THE LEGACYE ALSO THE ACTUAL CAUSE ITS HARD CODED? leg" + legacyManagedSchemaPath + ", man:" + managedSchemaPath);
+          //System.out.println("ERIC HERE, do they match:" + (legacyManagedSchemaPath.equalsIgnoreCase(managedSchemaPath)));
+          if (!legacyManagedSchemaPath.equalsIgnoreCase(managedSchemaPath)) {
+            // Migrate the legacy managed-schema to the current managed schema, presumably managed-schema.xml
+            zkClient.moveZnode(legacyManagedSchemaPath, managedSchemaPath);
+          }
         }
         // Attempt to load the managed schema
         byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
