@@ -342,7 +342,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-
+    System.out.println("\n\n\n ERIC HERE, looking for " + resource);
     Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
     if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
       return Files.newInputStream(checkPathIsSafe(inConfigDir));

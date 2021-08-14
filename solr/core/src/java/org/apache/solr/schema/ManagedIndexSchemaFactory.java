@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -49,7 +50,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   public static final String UPGRADED_SCHEMA_EXTENSION = ".bak";
   private static final String SCHEMA_DOT_XML = "schema.xml";
 
-  public static final String DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME = "managed-schema";
+  public static final String DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME = "managed-schema.xml";
+  public static final String LEGACY_MANAGED_SCHEMA_RESOURCE_NAME = "managed-schema";
   public static final String MANAGED_SCHEMA_RESOURCE_NAME = "managedSchemaResourceName";
 
   private boolean isMutable = true;
@@ -74,7 +76,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     args.remove("mutable");
     managedSchemaResourceName = params.get(MANAGED_SCHEMA_RESOURCE_NAME, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
     args.remove(MANAGED_SCHEMA_RESOURCE_NAME);
-    if (SCHEMA_DOT_XML.equals(managedSchemaResourceName)) {
+    if (SCHEMA_DOT_XML.equals(managedSchemaResourceName)) { // TODO Still needed?
       String msg = MANAGED_SCHEMA_RESOURCE_NAME + " can't be '" + SCHEMA_DOT_XML + "'";
       log.error(msg);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
@@ -127,8 +129,14 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
       final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
       final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+      final String legacyManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;      
       Stat stat = new Stat();
       try {
+        // Attempt to load the managed schema, and if it doesn't exist, check for legacy name, and rename it
+        
+        if (zkClient.exists(legacyManagedSchemaPath, true)){
+          zkClient.moveZnode(legacyManagedSchemaPath, managedSchemaPath);
+        }
         // Attempt to load the managed schema
         byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
         schemaZkVersion = stat.getVersion();
@@ -144,6 +152,10 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
             , managedSchemaResourceName, resourceName);
       } catch (KeeperException e) {
         String msg = "Error attempting to access " + managedSchemaPath;
+        log.error(msg, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+      } catch (SolrServerException e) {
+        String msg = "Error attempting to upgrade managed schema file from  " + legacyManagedSchemaPath + " to " + managedSchemaPath;
         log.error(msg, e);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
       }
@@ -195,7 +207,17 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     InputStream schemaInputStream = null;
     try {
       // Attempt to load the managed schema
+      try {
       schemaInputStream = loader.openResource(managedSchemaResourceName);
+      System.out.println("\n\nTIME: " + (schemaInputStream == null));
+      }
+      catch (IOException e) {
+        //   Attempt to load the managed schema with the legacy name.
+        log.info("The schema is configured as managed, but managed schema resource {}  not found - looking for legacy {} instead"
+            , managedSchemaResourceName, LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
+        schemaInputStream = loader.openResource(LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
+      }
+      
       loadedResource = managedSchemaResourceName;
       warnIfNonManagedSchemaExists();
     } catch (IOException e) {
