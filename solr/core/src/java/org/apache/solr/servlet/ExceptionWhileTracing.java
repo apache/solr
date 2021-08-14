@@ -16,9 +16,10 @@
  */
 package org.apache.solr.servlet;
 
-import java.util.ArrayList;
-import java.util.regex.Pattern;
+public class ExceptionWhileTracing extends RuntimeException {
+  public Exception e;
 
-public interface PathExcluder {
-  void setExcludePatterns(ArrayList<Pattern> excludePatterns);
+  public ExceptionWhileTracing(Exception e) {
+    this.e = e;
+  }
 }
