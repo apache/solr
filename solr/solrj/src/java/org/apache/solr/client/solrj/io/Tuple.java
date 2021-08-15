@@ -295,13 +295,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   public Tuple clone() {
-    Tuple clone = new Tuple(this.fields);
-    if (this.fieldNames != null) {
-      clone.fieldNames = new ArrayList<>(this.fieldNames);
-    }
-    if (this.fieldLabels != null) {
-      clone.fieldLabels = new HashMap<>(this.fieldLabels);
-    }
+    Tuple clone = new Tuple(this);
     return clone;
   }
   
