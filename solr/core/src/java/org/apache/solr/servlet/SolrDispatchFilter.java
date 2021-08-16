@@ -16,50 +16,29 @@
  */
 package org.apache.solr.servlet;
 
-import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import io.opentracing.util.GlobalTracer;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
-import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
-import org.apache.solr.cloud.ZkController;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.logging.MDCSnapshot;
-import org.apache.solr.metrics.AltBufferPoolMetricSet;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.OperatingSystemMetricSet;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.servlet.CoreService.ServiceHolder;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.naming.NoInitialContextException;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -68,17 +47,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -103,12 +74,12 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   public static final String ATTR_TRACING_TRACER = Tracer.class.getName();
   public static final String ATTR_RATELIMIT_MANAGER = RateLimitManager.class.getName();
 
-  protected volatile CoreContainer cores;
+  // TODO: see if we can get rid of the holder here (Servlet spec actually guarantees ContextListeners run before filter init)
+  private ServiceHolder coreService;
+
   protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
-  //TODO using Http2Client
-  protected HttpClient httpClient;
 
   @Override
   public void setExcludePatterns(ArrayList<Pattern> excludePatterns) {
@@ -117,15 +88,17 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   private ArrayList<Pattern> excludePatterns;
   
-  private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
-
-  private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
-  private SolrMetricManager metricManager;
-  private String registryName;
-  private volatile boolean closeOnDestroy = true;
-  private Properties extraProperties;
+  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
   private RateLimitManager rateLimitManager;
+
+  public HttpClient getHttpClient() {
+    try {
+      return coreService.getService().getHttpClient();
+    } catch (UnavailableException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Internal Http Client Unavailable, startup may have failed");
+    }
+  }
 
   /**
    * Enum to define action that needs to be processed.
@@ -156,280 +129,45 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   @Override
   public void init(FilterConfig config) throws ServletException {
-    SSLConfigurationsFactory.current().init();
-    if (log.isTraceEnabled()) {
-      log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
-    }
-    CoreContainer coresInit = null;
     try {
-      // "extra" properties must be init'ed first so we know things like "do we have a zkHost"
-      // wrap as defaults (if set) so we can modify w/o polluting the Properties provided by our caller
-      this.extraProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded
-        ((Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE));
-      
-      StartupLoggingUtils.checkLogDir();
-      if (log.isInfoEnabled()) {
-        log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
-      }
-      
-      logWelcomeBanner();
-      
-      String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
-      if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
-        StartupLoggingUtils.muteConsole();
-      }
-      String logLevel = System.getProperty(SOLR_LOG_LEVEL);
-      if (logLevel != null) {
-        log.info("Log level override, property solr.log.level={}", logLevel);
-        StartupLoggingUtils.changeLogLevel(logLevel);
+      coreService = CoreService.serviceForContext(config.getServletContext());
+      SSLConfigurationsFactory.current().init();
+      if (log.isTraceEnabled()) {
+        log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
 
       configExcludes(this, config.getInitParameter("excludePatterns"));
+    } catch (InterruptedException e) {
+      throw new ServletException("Interrupted while fetching core service");
 
-      coresInit = createCoreContainer(computeSolrHome(config), extraProperties);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
-      setupJvmMetrics(coresInit);
-      
-      SolrZkClient zkClient = null;
-      ZkController zkController = coresInit.getZkController();
-      
-      if (zkController != null) {
-        zkClient = zkController.getZkClient();
-      }
-      
-      RateLimitManager.Builder builder = new RateLimitManager.Builder(zkClient);
-      
-      this.rateLimitManager = builder.build();
-      
-      if (zkController != null) {
-        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
-      }
-      
-      if (log.isDebugEnabled()) {
-        log.debug("user.dir={}", System.getProperty("user.dir"));
-      }
-    } catch( Throwable t ) {
+    } catch (Throwable t) {
       // catch this so our filter still works
-      log.error( "Could not start Solr. Check solr/home property and the logs");
-      SolrCore.log( t );
+      log.error("Could not start Dispatch Filter.");
+      SolrCore.log(t);
       if (t instanceof Error) {
         throw (Error) t;
       }
-      
-    } finally{
+    } finally {
       log.trace("SolrDispatchFilter.init() done");
-      this.cores = coresInit; // crucially final assignment 
       init.countDown();
     }
   }
 
-  private void setupJvmMetrics(CoreContainer coresInit)  {
-    metricManager = coresInit.getMetricManager();
-    registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
-    final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
-    try {
-      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "buffers");
-      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "classes");
-      metricManager.registerAll(registryName, new OperatingSystemMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "os");
-      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "gc");
-      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "memory");
-      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
-      MetricsMap sysprops = new MetricsMap(map -> {
-        System.getProperties().forEach((k, v) -> {
-          if (!hiddenSysProps.contains(k)) {
-            map.putNoEx(String.valueOf(k), v);
-          }
-        });
-      });
-      metricManager.registerGauge(null, registryName, sysprops, metricTag, SolrMetricManager.ResolutionStrategy.IGNORE, "properties", "system");
-      MetricsMap sysenv = new MetricsMap(map -> {
-        System.getenv().forEach((k, v) -> {
-          if (!hiddenSysProps.contains(k)) {
-            map.putNoEx(String.valueOf(k), v);
-          }
-        });
-      });
-      metricManager.registerGauge(null, registryName, sysenv, metricTag, SolrMetricManager.ResolutionStrategy.IGNORE, "env", "system");
-    } catch (Exception e) {
-      log.warn("Error registering JVM metrics", e);
-    }
+  public CoreContainer getCores() throws UnavailableException {
+    return coreService.getService().getCoreContainer();
   }
 
-  private void logWelcomeBanner() {
-    // _Really_ sorry about how clumsy this is as a result of the logging call checker, but this is the only one
-    // that's so ugly so far.
-    if (log.isInfoEnabled()) {
-      log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
-    }
-    if (log.isInfoEnabled()) {
-      log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
-    }
-    if (log.isInfoEnabled()) {
-      log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
-    }
-    if (log.isInfoEnabled()) {
-      log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
-    }
-  }
-
-  private String solrVersion() {
-    String specVer = Version.LATEST.toString();
-    try {
-      String implVer = SolrCore.class.getPackage().getImplementationVersion();
-      return (specVer.equals(implVer.split(" ")[0])) ? specVer : implVer;
-    } catch (Exception e) {
-      return specVer;
-    }
-  }
-
-  private String getSolrPort() {
-    return System.getProperty("jetty.port");
-  }
-
-  /** 
-   * We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty 
-   * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
-   * @see #extraProperties
-   * @see #init
-   */
-  private boolean isCloudMode() {
-    assert null != extraProperties; // we should never be called w/o this being initialized
-    return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST)) || (null != System.getProperty("zkRun"));
-  }
-
-  /**
-   * Returns the effective Solr Home to use for this node, based on looking up the value in this order:
-   * <ol>
-   * <li>attribute in the FilterConfig</li>
-   * <li>JNDI: via java:comp/env/solr/home</li>
-   * <li>The system property solr.solr.home</li>
-   * <li>Look in the current working directory for a solr/ directory</li>
-   * </ol>
-   * <p>
-   *
-   * @return the Solr home, absolute and normalized.
-   * @see #SOLRHOME_ATTRIBUTE
-   */
-  private static Path computeSolrHome(FilterConfig config) {
-
-    // start with explicit check of servlet config...
-    String source = "servlet config: " + SOLRHOME_ATTRIBUTE;
-    String home = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-
-    if (null == home) {
-      final String lookup = "java:comp/env/solr/home";
-      // Try JNDI
-      source = "JNDI: " + lookup;
-      try {
-        Context c = new InitialContext();
-        home = (String) c.lookup(lookup);
-      } catch (NoInitialContextException e) {
-        log.debug("JNDI not configured for solr (NoInitialContextEx)");
-      } catch (NamingException e) {
-        log.debug("No /solr/home in JNDI");
-      } catch (RuntimeException ex) {
-        log.warn("Odd RuntimeException while testing for JNDI: ", ex);
-      }
-    }
-
-    if (null == home) {
-      // Now try system property
-      final String prop = "solr.solr.home";
-      source = "system property: " + prop;
-      home = System.getProperty(prop);
-    }
-
-    if (null == home) {
-      // if all else fails, assume default dir
-      home = "solr/";
-      source = "defaulted to '" + home + "' ... could not find system property or JNDI";
-    }
-    final Path solrHome = Paths.get(home).toAbsolutePath().normalize();
-    log.info("Solr Home: {} (source: {})", solrHome, source);
-    
-    return solrHome;
-  }
-  
-  /**
-   * Override this to change CoreContainer initialization
-   * @return a CoreContainer to hold this server's cores
-   */
-  protected CoreContainer createCoreContainer(Path solrHome, Properties nodeProps) {
-    NodeConfig nodeConfig = loadNodeConfig(solrHome, nodeProps);
-    final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
-    coreContainer.load();
-    return coreContainer;
-  }
-
-  /**
-   * Get the NodeConfig whether stored on disk, in ZooKeeper, etc.
-   * This may also be used by custom filters to load relevant configuration.
-   * @return the NodeConfig
-   */
-  public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
-    if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
-      log.warn("Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
-    }
-    nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
-    String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
-    if (!StringUtils.isEmpty(zkHost)) {
-      int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
-      startUpZkTimeOut *= 1000;
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut, startUpZkTimeOut)) {
-        if (zkClient.exists("/solr.xml", true)) {
-          log.info("solr.xml found in ZooKeeper. Loading...");
-          byte[] data = zkClient.getData("/solr.xml", null, null, true);
-          return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
-        }
-      } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
-      }
-      log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
-    }
-
-    return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
-  }
-  
-  public CoreContainer getCores() {
-    return cores;
-  }
-  
   @Override
   public void destroy() {
-    if (closeOnDestroy) {
-      close();
-    }
+    // CoreService shuts itself down as a ContextListener. The filter does not own anything with a lifecycle anymore! Yay!
   }
-  
-  public void close() {
-    CoreContainer cc = cores;
-    cores = null;
-    try {
-      if (metricManager != null) {
-        try {
-          metricManager.unregisterGauges(registryName, metricTag);
-        } catch (NullPointerException e) {
-          // okay
-        } catch (Exception e) {
-          log.warn("Exception closing FileCleaningTracker", e);
-        } finally {
-          metricManager = null;
-        }
-      }
-    } finally {
-      if (cc != null) {
-        httpClient = null;
-        cc.shutdown();
-      }
-    }
-  }
-  
+
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
     try (var mdcSnapshot = MDCSnapshot.create()) {
       assert null != mdcSnapshot; // prevent compiler warning
       MDCLoggingContext.reset();
-      MDCLoggingContext.setNode(cores);
+      MDCLoggingContext.setNode(getCores());
 
       doFilter(request, response, chain, false);
     }
@@ -443,8 +181,9 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     if (excludedPath(excludePatterns, request, response, chain)) {
       return;
     }
-    waitForCoreContainer(cores, init);
-    request.setAttribute(Tracer.class.getName(), cores == null ? GlobalTracer.get() : cores.getTracer());
+    Tracer t = getCores() == null ? GlobalTracer.get() : getCores().getTracer();
+    request.setAttribute(Tracer.class.getName(), t);
+    RateLimitManager rateLimitManager = coreService.getService().getRateLimitManager();
     request.setAttribute(RateLimitManager.class.getName(), rateLimitManager);
     ServletUtils.rateLimitRequest(request, response, () -> {
       try {
@@ -453,21 +192,6 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         throw new ExceptionWhileTracing( e);
       }
     }, true);
-  }
-
-
-  private static void waitForCoreContainer(CoreContainer cores, CountDownLatch latch) throws UnavailableException {
-    if (cores == null || cores.isShutDown()) {
-      try {
-        latch.await();
-      } catch (InterruptedException e) { //well, no wait then
-      }
-      final String msg = "Error processing the request. CoreContainer is either not initialized or shutting down.";
-      if (cores == null || cores.isShutDown()) {
-        log.error(msg);
-        throw new UnavailableException(msg);
-      }
-    }
   }
 
   private static Span getSpan(HttpServletRequest req) {
@@ -487,7 +211,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       request = wrappedRequest.get();
     }
 
-    if (cores.getAuthenticationPlugin() != null) {
+    if (getCores().getAuthenticationPlugin() != null) {
       if (log.isDebugEnabled()) {
         log.debug("User principal: {}", request.getUserPrincipal());
       }
@@ -530,6 +254,12 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   protected HttpSolrCall getHttpSolrCall(HttpServletRequest request, HttpServletResponse response, boolean retry) {
     String path = ServletUtils.getPathAfterContext(request);
 
+    CoreContainer cores;
+    try {
+      cores = getCores();
+    } catch (UnavailableException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
+    }
     if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
       return new V2HttpCall(this, cores, request, response, false);
     } else {
@@ -540,6 +270,12 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   private boolean authenticateRequest(HttpServletRequest request, HttpServletResponse response, final AtomicReference<HttpServletRequest> wrappedRequest) throws IOException {
     boolean requestContinues;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
+    CoreContainer cores;
+    try {
+      cores = getCores();
+    } catch (UnavailableException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
+    }
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
       if (shouldAudit(EventType.ANONYMOUS)) {
@@ -600,15 +336,20 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
    * @param eventType the audit event
    */
   private boolean shouldAudit(AuditEvent.EventType eventType) {
+    CoreContainer cores;
+    try {
+      cores = getCores();
+    } catch (UnavailableException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
+    }
     return cores.getAuditLoggerPlugin() != null && cores.getAuditLoggerPlugin().shouldLog(eventType);
   }
 
-  public void closeOnDestroy(boolean closeOnDestroy) {
-    this.closeOnDestroy = closeOnDestroy;
+  public void closeOnDestroy() {
   }
 
   @VisibleForTesting
   void replaceRateLimitManager(RateLimitManager rateLimitManager) {
-    this.rateLimitManager = rateLimitManager;
+    coreService.getService().setRateLimitManager(rateLimitManager);
   }
 }
