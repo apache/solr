@@ -420,6 +420,9 @@ Bug Fixes
 * SOLR-15579: Allow for many values in a SQL IN clause; previously using more than 19 would result in
   the IN clause being ignored, now users are only limited by the `maxBooleanClauses` configured for a collection (Timothy Potter)
 
+* SOLR-8889: Fixed various problems in Solr and SolrJ that could cause deleteById commands with "_route_" information to processed
+  by the wrong shard, and/or fail when forwarded to replicas from the shard leader. (Dan Fox, Yuki Yano, hossman)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
