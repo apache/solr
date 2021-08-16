@@ -25,15 +25,19 @@ import com.google.common.base.Strings;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -163,12 +167,17 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   /** Check copying a file to the repo (backup). Specified content is used for the file. */
   private void doTestCopyFileFrom(String content) throws Exception {
-
     try (S3BackupRepository repo = getRepository()) {
 
       // A file on the local disk
       File tmp = temporaryFolder.newFolder();
-      FileUtils.write(new File(tmp, "from-file"), content, StandardCharsets.UTF_8);
+      try (OutputStream os = FileUtils.openOutputStream(new File(tmp, "from-file"));
+          IndexOutput indexOutput = new OutputStreamIndexOutput("", "", os, content.length())) {
+        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+        indexOutput.writeBytes(bytes, bytes.length);
+
+        CodecUtil.writeFooter(indexOutput);
+      }
 
       Directory sourceDir = new NIOFSDirectory(tmp.toPath());
       repo.copyIndexFileFrom(sourceDir, "from-file", new URI("s3://to-folder"), "to-file");
@@ -235,13 +244,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       File tmp = temporaryFolder.newFolder();
 
       // Open an index input on a file
-      File subdir = new File(tmp, "my-repo");
-      FileUtils.write(new File(subdir, "content"), content, StandardCharsets.UTF_8);
-      repo.copyIndexFileFrom(
-          new NIOFSDirectory(tmp.getAbsoluteFile().toPath()),
-          "my-repo/content",
-          new URI("s3://my-repo"),
-          "content");
+      pushObject("/my-repo/content", content);
       IndexInput input = repo.openInput(new URI("s3://my-repo"), "content", IOContext.DEFAULT);
 
       byte[] buffer = new byte[100];

@@ -40,6 +40,9 @@ import org.slf4j.LoggerFactory;
  * Implementation is adapted from
  * https://github.com/confluentinc/kafka-connect-storage-cloud/blob/5.0.x/kafka-connect-s3/src/main/java/io/confluent/connect/s3/storage/S3OutputStream.java,
  * which uses ASLv2.
+ *
+ * <p>More recent versions of the kafka-connect-storage-cloud implementation use the CCL license,
+ * but this class was based off of the ASLv2 version.
  */
 public class S3OutputStream extends OutputStream {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

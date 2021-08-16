@@ -28,7 +28,9 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -36,6 +38,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -281,13 +284,18 @@ public class S3BackupRepository implements BackupRepository {
       log.debug("Upload started to S3 '{}'", s3Path);
     }
 
-    try (IndexInput indexInput = sourceDir.openInput(sourceFileName, IOContext.DEFAULT)) {
+    try (ChecksumIndexInput indexInput =
+        sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+      if (indexInput.length() <= CodecUtil.footerLength()) {
+        throw new CorruptIndexException("file is too small:" + indexInput.length(), indexInput);
+      }
+
       client.createDirectory(getS3Path(dest));
       try (OutputStream outputStream = client.pushStream(s3Path)) {
 
         byte[] buffer = new byte[CHUNK_SIZE];
         int bufferLen;
-        long remaining = indexInput.length();
+        long remaining = indexInput.length() - CodecUtil.footerLength();
 
         while (remaining > 0) {
           bufferLen = remaining >= CHUNK_SIZE ? CHUNK_SIZE : (int) remaining;
@@ -296,6 +304,8 @@ public class S3BackupRepository implements BackupRepository {
           outputStream.write(buffer, 0, bufferLen);
           remaining -= bufferLen;
         }
+        final long checksum = CodecUtil.checkFooter(indexInput);
+        writeFooter(checksum, outputStream);
       }
     }
 
@@ -357,5 +367,34 @@ public class S3BackupRepository implements BackupRepository {
     // Depending on the scheme, the first element may be the host. Following ones are the path
     String host = uri.getHost();
     return host == null ? uri.getPath() : host + uri.getPath();
+  }
+
+  private void writeFooter(long checksum, OutputStream outputStream) throws IOException {
+    IndexOutput out =
+        new IndexOutput("", "") {
+          @Override
+          public void writeByte(byte b) throws IOException {
+            outputStream.write(b);
+          }
+
+          @Override
+          public void writeBytes(byte[] b, int offset, int length) throws IOException {
+            outputStream.write(b, offset, length);
+          }
+
+          @Override
+          public void close() {}
+
+          @Override
+          public long getFilePointer() {
+            return 0;
+          }
+
+          @Override
+          public long getChecksum() {
+            return checksum;
+          }
+        };
+    CodecUtil.writeFooter(out);
   }
 }
