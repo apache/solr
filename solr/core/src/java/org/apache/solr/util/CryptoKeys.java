@@ -290,7 +290,7 @@ public final class CryptoKeys {
         // See: https://crypto.stackexchange.com/questions/20085/which-attacks-are-possible-against-raw-textbook-rsa
         Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
         rsaCipher.init(Cipher.ENCRYPT_MODE, privateKey);
-        return rsaCipher.doFinal(buffer.array(),buffer.position(), buffer.limit());
+        return rsaCipher.doFinal(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.limit());
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
       }
