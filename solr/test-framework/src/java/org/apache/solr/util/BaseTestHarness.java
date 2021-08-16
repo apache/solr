@@ -77,14 +77,21 @@ abstract public class BaseTestHarness {
 
     if (tests==null || tests.length == 0) return null;
 
-    Document document = null;
+    Document document;
     try {
+//      if (xml.startsWith("<html>")) {
+//        // probably got an error page
+//        System.err.println(xml);
+//      }
       document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
           (xml.getBytes(StandardCharsets.UTF_8)));
     } catch (UnsupportedEncodingException e1) {
       throw new RuntimeException("Totally weird UTF-8 exception", e1);
     } catch (IOException e2) {
       throw new RuntimeException("Totally weird io exception", e2);
+//    } catch (SAXParseException spe) {
+//      System.err.println(xml);
+//      throw spe;
     }
 
     for (String xp : tests) {
@@ -102,7 +109,7 @@ abstract public class BaseTestHarness {
     throws XPathExpressionException, SAXException {
     if (null == xpath) return null;
 
-    Document document = null;
+    Document document;
     try {
       document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
           (xml.getBytes(StandardCharsets.UTF_8)));

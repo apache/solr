@@ -460,7 +460,7 @@ public class HttpSolrCall {
 
     if (statusCode == AuthorizationResponse.PROMPT.statusCode) {
       @SuppressWarnings({"unchecked"})
-      Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
+      Map<String, String> headers = (Map<String, String>) getReq().getAttribute(AuthenticationPlugin.class.getName());
       if (headers != null) {
         for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
       }
@@ -730,7 +730,7 @@ public class HttpSolrCall {
       }
 
       final HttpResponse response
-          = solrDispatchFilter.httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+          = solrDispatchFilter.getHttpClient().execute(method, HttpClientUtil.createNewHttpClientRequestContext());
       int httpStatus = response.getStatusLine().getStatusCode();
       httpEntity = response.getEntity();
 
