@@ -188,7 +188,7 @@ public class S3OutputStream extends OutputStream {
     }
   }
 
-  // Dummy listener for now, just logs the event progress.
+  // Placeholder listener for now, just logs the event progress.
   private static class ConnectProgressListener extends SyncProgressListener {
     public void progressChanged(ProgressEvent progressEvent) {
       if (log.isDebugEnabled()) {

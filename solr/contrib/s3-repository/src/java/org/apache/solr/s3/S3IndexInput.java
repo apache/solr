@@ -57,7 +57,7 @@ class S3IndexInput extends BufferedIndexInput {
       int read;
 
       if (b.hasArray()) {
-        read = inputStream.read(localBuffer, b.position(), b.remaining());
+        read = inputStream.read(localBuffer, b.arrayOffset() + b.position(), b.remaining());
       } else {
         read = inputStream.read(localBuffer, 0, Math.min(b.remaining(), LOCAL_BUFFER_SIZE));
       }
