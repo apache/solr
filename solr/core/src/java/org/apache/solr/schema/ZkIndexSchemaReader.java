@@ -49,6 +49,15 @@ public class ZkIndexSchemaReader implements OnReconnect {
     zkLoader = (ZkSolrResourceLoader)managedIndexSchemaFactory.getResourceLoader();
     this.zkClient = zkLoader.getZkController().getZkClient();
     this.managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedIndexSchemaFactory.getManagedSchemaResourceName();
+    try {
+      if (!zkClient.exists(managedSchemaPath, true)){
+        this.managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;
+      }
+    } catch (KeeperException e) {
+      throw new RuntimeException(e);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
     this.uniqueCoreId = solrCore.getName()+":"+solrCore.getStartNanoTime();
 
     // register a CloseHook for the core this reader is linked to, so that we can de-register the listener

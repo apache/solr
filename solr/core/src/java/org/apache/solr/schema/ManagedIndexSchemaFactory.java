@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -133,16 +132,19 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       Stat stat = new Stat();
       try {
         // Attempt to load the managed schema, and if it doesn't exist, check for legacy name, and rename it
-        if (zkClient.exists(legacyManagedSchemaPath, true)){
-          if (!legacyManagedSchemaPath.equalsIgnoreCase(managedSchemaPath)) {
-            // Migrate the legacy managed-schema to the current managed schema, presumably managed-schema.xml
-            zkClient.moveZnode(legacyManagedSchemaPath, managedSchemaPath);
-          }
+        String schemaPath = null;
+        if (zkClient.exists(managedSchemaPath, true)){
+          schemaPath = managedSchemaPath;
+        }
+        else {
+          log.info("The schema is configured as managed, but managed schema resource {} not found - loading legacy managed schema {} instead"
+              , managedSchemaResourceName, LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
+          schemaPath = legacyManagedSchemaPath;
         }
         // Attempt to load the managed schema
-        byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
+        byte[] data = zkClient.getData(schemaPath, null, stat, true);
         schemaZkVersion = stat.getVersion();
-        schemaInputStream = new ZkSolrResourceLoader.ZkByteArrayInputStream(data, managedSchemaPath, stat);
+        schemaInputStream = new ZkSolrResourceLoader.ZkByteArrayInputStream(data, schemaPath, stat);
         loadedResource = managedSchemaResourceName;
         warnIfNonManagedSchemaExists();
       } catch (InterruptedException e) {
@@ -156,11 +158,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         String msg = "Error attempting to access " + managedSchemaPath;
         log.error(msg, e);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
-      } catch (SolrServerException e) {
-        String msg = "Error attempting to upgrade managed schema file from  " + legacyManagedSchemaPath + " to " + managedSchemaPath;
-        log.error(msg, e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
-      }
+      } 
       if (null == schemaInputStream) {
         // The managed schema file could not be found - load the non-managed schema
         try {
