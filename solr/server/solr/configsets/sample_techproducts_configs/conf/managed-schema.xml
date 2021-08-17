@@ -431,7 +431,7 @@
          This makes it a bit more useful then TextField in many situations, but the trade-off
          is that it takes up more space on disk; which is why it's not used in place of TextField
          for every fieldType in this _default schema.
-	  -->
+    -->
     <fieldType name="text_gen_sort" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
       <analyzer type="index">
         <tokenizer name="standard"/>
