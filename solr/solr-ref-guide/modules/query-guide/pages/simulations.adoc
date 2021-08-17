@@ -167,7 +167,7 @@ image::math-expressions/corrsim2.png[]
 === Covariance Matrix
 
 A covariance matrix is actually whats needed by the `multiVariateNormalDistribution` as it contains both the variance of the two stock return vectors and the covariance between the two vectors.
-The `cov` function will compute the covariance matrix for the the columns of a matrix.
+The `cov` function will compute the covariance matrix for the columns of a matrix.
 
 The example below demonstrates how to compute the covariance matrix by adding the `all` and `cvx` vectors as rows to a matrix.
 The matrix is then transposed with the `transpose` function so that the `all` vector is the first column and the `cvx` vector is the second column.

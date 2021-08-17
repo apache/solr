@@ -385,6 +385,6 @@ This is because one result for "memory" did not have a price assigned to it.
 
 Grouping is supported for <<cluster-types.adoc#solrcloud-mode,distributed searches>>, with some caveats:
 
-* Currently `group.func` is is not supported in any distributed searches
+* Currently `group.func` is not supported in any distributed searches
 * `group.ngroups` and `group.facet` require that all documents in each group must be co-located on the same shard in order for accurate counts to be returned.
 <<solrcloud-shards-indexing.adoc#,Document routing via composite keys>> can be a useful solution in many situations.

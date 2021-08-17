@@ -331,6 +331,9 @@ Other Changes
 
 * SOLR-15309: Add missing IntelliJ IDEA entries to the .gitignore file (Pushkar Raste via Anshum Gupta)
 
+* SOLR-15428: Integrate the OpenJDK JMH micro benchmark framework for micro benchmarks and performance comparisons and investigation.
+  (Mark Miller)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -361,6 +364,8 @@ New Features
 
 * SOLR-15527: Security screen in Admin UI for managing users, roles, and permissions (Timothy Potter)
 
+* SOLR-15089: Allow backup/restoration to Amazon's S3 blobstore (Andy Throgmorton, Houston Putman, Jason Gerlowski, Pierre Salagnac, Mike Drob)
+
 Improvements
 ---------------------
 * SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)
@@ -387,6 +392,10 @@ Improvements
 
 * SOLR-15564: Improve filtering expressions in /admin/metrics. (ab)
 
+* SOLR-15576: Allow filtering on ISO-8601 formatted timestamp literals in SQL WHERE clause (Timothy Potter)
+
+* SOLR-9853: Project multi-valued fields in SQL query results (Timothy Potter)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
@@ -406,6 +415,15 @@ Bug Fixes
 
 * SOLR-15575: Propagate request level basic auth creds from the top-level async CollectionAdminRequest to internally
   used async requests, such as async status checking (Timothy Potter)
+
+* SOLR-14758: Fix NPE in QueryComponent.mergeIds when using timeAllowed and sorting
+  (Bram Van Dam, Uwe Schindler)
+
+* SOLR-15579: Allow for many values in a SQL IN clause; previously using more than 19 would result in
+  the IN clause being ignored, now users are only limited by the `maxBooleanClauses` configured for a collection (Timothy Potter)
+
+* SOLR-8889: Fixed various problems in Solr and SolrJ that could cause deleteById commands with "_route_" information to processed
+  by the wrong shard, and/or fail when forwarded to replicas from the shard leader. (Dan Fox, Yuki Yano, hossman)
 
 Other Changes
 ---------------------

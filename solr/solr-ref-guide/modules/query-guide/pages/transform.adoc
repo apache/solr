@@ -102,7 +102,7 @@ image::math-expressions/search-resort.png[]
 The `rollup` and `hashRollup` functions can be used to perform aggregations over result sets.
 This is different then the `facet`, `facet2D` and `timeseries` aggregation functions which push the aggregations into the search engine using the JSON facet API.
 
-The `rollup` function performs map-reduce style rollups, which requires the result stream be sorted by the the grouping fields.
+The `rollup` function performs map-reduce style rollups, which requires the result stream be sorted by the grouping fields.
 This allows for aggregations over very high cardinality fields.
 The `hashRollup` function performs rollups keeping all buckets in an in-memory hashmap.
 This requires enough memory to store all the distinct group by fields in memory, but does not require that the underlying stream be sorted.
