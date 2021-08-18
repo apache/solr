@@ -50,7 +50,8 @@ public class SecurityHeadersTest extends SolrCloudTestCase {
     = params("Content-Security-Policy", "default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self'; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';",
              "X-Content-Type-Options", "nosniff",
              "X-Frame-Options", "SAMEORIGIN",
-             "X-XSS-Protection", "1; mode=block");
+             "X-XSS-Protection", "1; mode=block",
+             "Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   
   @BeforeClass
   public static void setupCluster() throws Exception {
