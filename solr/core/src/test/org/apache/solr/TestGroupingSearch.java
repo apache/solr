@@ -237,6 +237,53 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testGroupingNoNPENull() {
+    assertU(add(doc("id", "1","name", "author1", "weight", "12.1")));
+    assertU(add(doc("id", "2","name", "author1", "weight", "2.1")));
+    assertU(add(doc("id", "3","name", "author2", "weight", "0.1")));
+    assertU(add(doc("id", "4","name", "author2", "weight", "0.11")));
+    assertU(commit());
+
+
+    assertQ(req( "group", "true", "group.query", null)
+            , "*[count(//arr[@name='groups']/lst) = 2]"
+            , "//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author1']"
+            //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
+            , "//arr[@name='groups']/lst[1]/result[@numFound='2']"
+            , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='1']"
+
+            , "//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
+            //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
+            , "//arr[@name='groups']/lst[2]/result[@numFound='2']"
+            , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
+    );
+  }
+
+
+  @Test
+  public void testGroupingNPEmptyString() {
+    assertU(add(doc("id", "1","name", "author1", "weight", "12.1")));
+    assertU(add(doc("id", "2","name", "author1", "weight", "2.1")));
+    assertU(add(doc("id", "3","name", "author2", "weight", "0.1")));
+    assertU(add(doc("id", "4","name", "author2", "weight", "0.11")));
+    assertU(commit());
+
+
+    assertQ(req( "group", "true", "group.query", "")
+            , "*[count(//arr[@name='groups']/lst) = 2]"
+            , "//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author1']"
+            //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
+            , "//arr[@name='groups']/lst[1]/result[@numFound='2']"
+            , "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='1']"
+
+            , "//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
+            //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
+            , "//arr[@name='groups']/lst[2]/result[@numFound='2']"
+            , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
+    );
+  }
+
+  @Test
   public void testGroupingSimpleFormatArrayIndexOutOfBoundsException() throws Exception {
     assertU(add(doc("id", "1")));
     assertU(add(doc("id", "2")));
