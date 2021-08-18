@@ -126,6 +126,15 @@
           </New>
         </Arg>
       </Call>
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+            <Set name="pattern">*</Set>
+            <Set name="name">Strict-Transport-Security</Set>
+            <Set name="value">max-age=31536000; includeSubDomains</Set>
+          </New>
+        </Arg>
+      </Call>
 
       <!-- redirect root to solr -->
       <Call name="addRule">
