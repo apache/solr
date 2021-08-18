@@ -135,7 +135,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     SolrQueryResponse response = new SolrQueryResponse();
     admin.handleRequestBody(request, response);
     assertNull("Exception on create", response.getException());
-    assertSchemaResource(collection, "managed-schema");
+    assertSchemaResource(collection, "managed-schema.xml");
   }
   
   private void assertSchemaResource(String collection, String expectedSchemaResource) throws Exception {
