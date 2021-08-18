@@ -76,6 +76,18 @@ public class SortSpec
     return includesScore(sort);
   }
 
+  public boolean includesNonScoreOrDocField() {
+    return includesNonScoreOrDocField(sort);
+  }
+
+  public static boolean includesNonScoreOrDocField(Sort sort) {
+    if (sort==null) return false;
+    for (SortField sf : sort.getSort()) {
+      if (sf.getType() != SortField.Type.SCORE && sf.getType() != SortField.Type.DOC) return true;
+    }
+    return false;
+  }
+
   /**
    * Gets the Lucene Sort object, or null for the default sort
    * by score descending.

@@ -955,9 +955,12 @@ public class QueryComponent extends SearchComponent
 
         @SuppressWarnings("unchecked")
         NamedList<List<Object>> sortFieldValues = (NamedList<List<Object>>)(srsp.getSolrResponse().getResponse().get("sort_values"));
-        if ((null == sortFieldValues || sortFieldValues.size()==0) && // we bypass merging this response only if it's partial itself
-                            thisResponseIsPartial) { // but not the previous one!!
-          continue; //fsv timeout yields empty sort_vlaues
+        if (null == sortFieldValues) {
+          sortFieldValues = new NamedList<>();
+        }
+        // skip merging results for this shard if the sortSpec includes a non-scoredoc field but the sortFieldValues is empty.
+        if (thisResponseIsPartial && sortFieldValues.size() == 0 && ss.includesNonScoreOrDocField()) {
+          continue;
         }
         NamedList<List<Object>> unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
 
