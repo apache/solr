@@ -118,6 +118,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    */
   public boolean persistManagedSchema(boolean createOnly) {
     if (loader instanceof ZkSolrResourceLoader) {
+      System.out.println("\n\n\nAbout to persist, and createOnly is" + createOnly);
       return persistManagedSchemaToZooKeeper(createOnly);
     }
     // Persist locally
@@ -168,10 +169,16 @@ public final class ManagedIndexSchema extends IndexSchema {
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
-    final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+    String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+
     boolean success = true;
     boolean schemaChangedInZk = false;
     try {
+      // check if we are using the legacy managed-schema name.
+      if (!zkClient.exists(managedSchemaPath, true)){
+        managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;
+      }
+      
       // Persist the managed schema
       StringWriter writer = new StringWriter();
       persist(writer);
