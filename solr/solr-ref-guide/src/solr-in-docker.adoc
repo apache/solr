@@ -107,7 +107,7 @@ When Solr runs in standalone mode, you create "cores" to store data.
 On a non-Docker Solr, you would run the server in the background, then use the <<solr-control-script-reference.adoc#,Solr control script>> to create cores and load data.
 With Solr docker you have various options.
 
-*Manually*
+==== Manually
 
 The first is exactly the same: start Solr running in a container, then execute the control script manually in the same container:
 
@@ -119,7 +119,7 @@ docker exec -it my_solr solr create_core -c gettingstarted
 
 This is not very convenient for users, and makes it harder to turn it into configuration for Docker Compose and orchestration tools like Kubernetes.
 
-*Using solr-precreate Command*
+==== Using solr-precreate Command
 
 So, typically you will use the `solr-precreate` command which prepares the specified core and then runs Solr:
 
@@ -136,9 +136,9 @@ docker run -d -p 8983:8983 --name my_solr -v $PWD/config/solr:/my_core_config/co
 ----
 
 N.B. When specifying the full path to the configset, the actual core configuration should be located inside that directory in the `conf` directory.
-See <<config-sets.adoc#_configsets,Configsets>> for details.
+See <<config-sets.adoc#,Configsets>> for details.
 
-*Using solr-create Command*
+==== Using solr-create Command
 
 The third option is to use the `solr-create` command.
 This runs a Solr in the background in the container, then uses the Solr control script to create the core, then stops the Solr server and restarts it in the foreground.
@@ -149,7 +149,7 @@ This method is less popular because the double Solr run can be confusing.
 docker run -d -p 8983:8983 --name my_solr solr solr-create -c gettingstarted
 ----
 
-*Custom Set-Up Scripts*
+==== Custom Set-Up Scripts
 
 Finally, you can run your own command-line and specify what to do, and even invoke mounted scripts.
 For example:
