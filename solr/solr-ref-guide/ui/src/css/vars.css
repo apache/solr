@@ -16,12 +16,12 @@
   --color-jet-70: #222;
   --color-jet-80: #191919;
   --color-black: #000;
-  --color-solr-primary-orange: #D9411E;
-  --color-solr-gray: #E6E7E8;
+  --color-solr-primary-orange: #d9411e;
+  --color-solr-gray: #e6e7e8;
   --color-solr-light-gray: #f8f8f7;
-  --color-solr-light-orange: #FF833D;
-  --color-solr-blue: #305CB3;
-  --color-solr-light-blue: #A5DBFF;
+  --color-solr-light-orange: #ff833d;
+  --color-solr-blue: #305cb3;
+  --color-solr-light-blue: #a5dbff;
   --color-solr-dark-blue: #262130;
   /* fonts */
   --rem-base: 18; /* used to compute rem value from desired pixel value (e.g., calc(18 / var(--rem-base) * 1rem) = 18px) */
