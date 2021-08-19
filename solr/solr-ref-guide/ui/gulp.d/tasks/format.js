@@ -1,6 +1,6 @@
 'use strict'
 
-const prettier = require('../lib/gulp-prettier-eslint')
+const prettier = require('../tools/gulp-prettier-eslint')
 const vfs = require('vinyl-fs')
 
 module.exports = (files) => () =>
