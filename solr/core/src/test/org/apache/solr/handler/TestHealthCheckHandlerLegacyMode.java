@@ -49,9 +49,9 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
     HttpSolrClient leaderClient, followerClient;
     ReplicationTestHelper.SolrInstance leader = null, follower = null;
 
-    private static String context = "/solr";
+    private static final String context = "/solr";
 
-    static int nDocs = 500;
+    int nDocs = 500;
 
     @Before
     public void setUp() throws Exception {
@@ -202,7 +202,4 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
         assertEquals(nDocs, numFound(queryRsp));
     }
 
-    private static String buildUrlForCore(final int port, final String core) {
-        return buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME;
-    }
 }

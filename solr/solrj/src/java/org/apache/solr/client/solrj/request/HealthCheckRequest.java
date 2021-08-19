@@ -29,9 +29,9 @@ import java.util.OptionalInt;
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
 public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
-    public static final String PARAM_MAX_GENERATION_LAG = "maxGenerationLag";
+  public static final String PARAM_MAX_GENERATION_LAG = "maxGenerationLag";
 
-    private OptionalInt maxLagAllowed = OptionalInt.empty();
+  private OptionalInt maxLagAllowed = OptionalInt.empty();
 
   public HealthCheckRequest() {
     this(METHOD.GET, HEALTH_CHECK_HANDLER_PATH);

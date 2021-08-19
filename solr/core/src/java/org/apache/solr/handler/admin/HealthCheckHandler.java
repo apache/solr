@@ -18,7 +18,11 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.IndexCommit;
@@ -69,7 +73,7 @@ import static org.apache.solr.handler.ReplicationHandler.GENERATION;
  *     For the legacy mode the handler returns status <code>200 OK</code> if all the cores configured as follower have
  *     successfully replicated index from their respective leader after startup. Note that this is a weak check
  *     i.e. once a follower has caught up with the leader the health check will keep reporting <code>200 OK</code>
- *     even if the follower starts lagging behind. You should specify the acceptable generation lag lag follower should
+ *     even if the follower starts lagging behind. You should specify the acceptable generation lag follower should
  *     be with respect to its leader using the <code>maxGenerationLag=&lt;max_generation_lag&gt;</code> request
  *     parameter. If <code>maxGenerationLag</code> is not provided then health check would simply return OK.
  * </p>
@@ -163,10 +167,9 @@ public class HealthCheckHandler extends RequestHandlerBase {
       for(SolrCore core : coreContainer.getCores()) {
         ReplicationHandler replicationHandler =
           (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
-        // if maxGeneration lag is not specified don't check if follower is in sync.
         if(replicationHandler.isFollower()) {
           boolean isCoreInSync =
-            generationLagFromLeader(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
+            isWithinGenerationLag(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
 
           allCoresAreInSync &= isCoreInSync;
         }
@@ -180,25 +183,23 @@ public class HealthCheckHandler extends RequestHandlerBase {
       rsp.add(STATUS, OK);
     } else {
       rsp.add("message",
-        String.format(Locale.ROOT,"Cores violating maxGenerationLag:%d.\n%s", maxGenerationLag,
+        String.format(Locale.ROOT,"Cores violating maxGenerationLag:%d.%n%s", maxGenerationLag,
           String.join(",\n", laggingCoresInfo)));
       rsp.add(STATUS, FAILURE);
     }
   }
 
-  private boolean generationLagFromLeader(final SolrCore core, ReplicationHandler replicationHandler,
-                                          int maxGenerationLag, List<String> laggingCoresInfo) {
+  private boolean isWithinGenerationLag(final SolrCore core, ReplicationHandler replicationHandler,
+                                        int maxGenerationLag, List<String> laggingCoresInfo) {
     IndexFetcher indexFetcher = null;
     try {
       // may not be the best way to get leader's replicableCommit
-      @SuppressWarnings({"rawtypes"})
-      NamedList follower =
+      NamedList<?> follower =
         ReplicationHandler.getObjectWithBackwardCompatibility(replicationHandler.getInitArgs(), "follower",
                   "slave");
       indexFetcher = new IndexFetcher(follower, replicationHandler, core);
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList replicableCommitOnLeader = indexFetcher.getLatestVersion();
+      NamedList<?> replicableCommitOnLeader = indexFetcher.getLatestVersion();
       long leaderGeneration = (Long) replicableCommitOnLeader.get(GENERATION);
 
       // Get our own commit and generation from the commit
@@ -218,7 +219,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
         }
       }
     } catch (Exception e) {
-      log.error("Failed to check if the follower is in sync with the leader");
+      log.error("Failed to check if the follower is in sync with the leader", e);
     } finally {
       if(indexFetcher != null) {
         indexFetcher.destroy();

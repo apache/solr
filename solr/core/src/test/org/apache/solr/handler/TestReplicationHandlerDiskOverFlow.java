@@ -61,7 +61,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   
   JettySolrRunner leaderJetty, followerJetty;
   SolrClient leaderClient, followerClient;
-    ReplicationTestHelper.SolrInstance leader = null, follower = null;
+  ReplicationTestHelper.SolrInstance leader = null, follower = null;
 
   static String context = "/solr";
 
@@ -118,7 +118,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
   @Test
   public void testDiskOverFlow() throws Exception {
-      invokeReplicationCommand(TestReplicationHandler.buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
+    invokeReplicationCommand(TestReplicationHandler.buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
     //index docs
     log.info("Indexing to LEADER");
     int docsInLeader = 1000;

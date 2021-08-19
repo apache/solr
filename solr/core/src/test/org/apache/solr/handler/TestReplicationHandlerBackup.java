@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
 public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   JettySolrRunner leaderJetty;
-    ReplicationTestHelper.SolrInstance leader = null;
+  ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
   
   private static final String CONF_DIR = "solr" + File.separator + "collection1" + File.separator + "conf"
