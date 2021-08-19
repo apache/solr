@@ -92,6 +92,33 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   public String getSchemaResourceName(String cdResourceName) {
     return managedSchemaResourceName; // actually a guess; reality depends on the actual files in the config set :-(
   }
+  
+  /**
+   * Lookup the path to the managed schema, dealing with falling back to the
+   * legacy managed-schema file, instead of the expected managed-schema.xml file.
+   * 
+   * This method is duplicated in ManagedIndexSchema.
+   * @see org.apache.solr.schema.ManagedIndexSchema#lookupManagedSchemaPath
+   */
+  public String lookupManagedSchemaPath() {
+    final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
+    final ZkController zkController = zkLoader.getZkController();
+    final SolrZkClient zkClient = zkController.getZkClient();
+    String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+    try {
+      // check if we are using the legacy managed-schema file name.
+      if (!zkClient.exists(managedSchemaPath, true)){
+        log.info("Managed schema resource {} not found - loading legacy managed schema {} file instead"
+            , managedSchemaResourceName, ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
+        managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;
+      }
+    } catch (KeeperException e) {
+      throw new RuntimeException(e);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+    return managedSchemaPath;
+  }  
 
   /**
    * First, try to locate the managed schema file named in the managedSchemaResourceName
@@ -127,24 +154,13 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     } else { // ZooKeeper
       final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
       final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
-      final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
-      final String legacyManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;
+      final String managedSchemaPath = lookupManagedSchemaPath();
       Stat stat = new Stat();
       try {
-        // Attempt to load the managed schema, and if it doesn't exist, check for legacy name, and rename it
-        String schemaPath = null;
-        if (zkClient.exists(managedSchemaPath, true)){
-          schemaPath = managedSchemaPath;
-        }
-        else {
-          log.info("The schema is configured as managed, but managed schema resource {} not found - loading legacy managed schema {} instead"
-              , managedSchemaResourceName, LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
-          schemaPath = legacyManagedSchemaPath;
-        }
         // Attempt to load the managed schema
-        byte[] data = zkClient.getData(schemaPath, null, stat, true);
+        byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
         schemaZkVersion = stat.getVersion();
-        schemaInputStream = new ZkSolrResourceLoader.ZkByteArrayInputStream(data, schemaPath, stat);
+        schemaInputStream = new ZkSolrResourceLoader.ZkByteArrayInputStream(data, managedSchemaPath, stat);
         loadedResource = managedSchemaResourceName;
         warnIfNonManagedSchemaExists();
       } catch (InterruptedException e) {
