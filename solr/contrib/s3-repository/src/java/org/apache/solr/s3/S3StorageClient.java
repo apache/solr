@@ -460,7 +460,12 @@ public class S3StorageClient {
       return true;
     }
 
-    return pathExists(parentDirectory);
+    // Check for existence twice, because s3Mock has issues in the tests
+    if (pathExists(parentDirectory)) {
+      return true;
+    } else {
+      return pathExists(parentDirectory);
+    }
   }
 
   private String getParentDirectory(String path) {
@@ -475,7 +480,7 @@ public class S3StorageClient {
     }
     return fromEnd > 0
         ? path.substring(0, path.lastIndexOf(S3_FILE_PATH_DELIMITER, fromEnd) + 1)
-        : S3_FILE_PATH_DELIMITER;
+        : "";
   }
 
   /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
