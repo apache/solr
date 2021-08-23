@@ -2674,7 +2674,7 @@ The string to use when joining adjacent tokens to form a shingle.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `_` (_underscore character_)
+|Optional |Default: `_` (underscore)
 |===
 +
 The character used to fill in for removed stop words in order to preserve position increments.
