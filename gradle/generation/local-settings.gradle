@@ -51,6 +51,9 @@ org.gradle.jvmargs=-Xmx3g \\
  --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \\
  --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
 
+# Activate gradle caching
+# org.gradle.caching=true
+
 # Run at normal priority, in parallel
 org.gradle.parallel=true
 org.gradle.priority=normal
