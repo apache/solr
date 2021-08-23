@@ -80,7 +80,7 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
         testPartialResultsForSortSpec(sortSpec, false);
     }
 
-    private void testPartialResultsForSortSpec(SortSpec sortSpec, boolean shouldIncludesPartialShardResult) {
+    private void testPartialResultsForSortSpec(SortSpec sortSpec, boolean shouldIncludePartialShardResult) {
         final int shard1Size = 2;
         final int shard2Size = 3;
 
@@ -101,7 +101,7 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
         queryComponent.mergeIds(responseBuilder, shardRequest);
 
         // do we have the expected document count
-        assertEquals((shouldIncludesPartialShardResult ? shard1Size : 0) + shard2Size, responseBuilder.getResponseDocs().size());
+        assertEquals((shouldIncludePartialShardResult ? shard1Size : 0) + shard2Size, responseBuilder.getResponseDocs().size());
     }
 
     private static class MockResponseBuilder extends ResponseBuilder {

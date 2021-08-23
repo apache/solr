@@ -76,6 +76,11 @@ public class SortSpec
     return includesScore(sort);
   }
 
+  /**
+   * Returns whether SortFields for the Sort includes a
+   * field besides SortField.Type.SCORE or SortField.Type.DOC
+   * @return true if SortFields contains a field besides score or the Lucene doc
+   */
   public boolean includesNonScoreOrDocField() {
     return includesNonScoreOrDocField(sort);
   }
@@ -83,6 +88,7 @@ public class SortSpec
   /**
    * Returns whether SortFields for the Sort includes a
    * field besides SortField.Type.SCORE or SortField.Type.DOC
+   * @param sort org.apache.lucene.search.Sort
    * @return true if SortFields contains a field besides score or the Lucene doc
    */
   public static boolean includesNonScoreOrDocField(Sort sort) {
