@@ -27,7 +27,6 @@ import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import org.junit.Test;
 
 @Slow
 @Nightly

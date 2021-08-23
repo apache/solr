@@ -107,6 +107,10 @@ allprojects { prj ->
       suppressAnnotations += [
           "**.SuppressForbidden"
       ]
+
+      // for all test fixture projects, exclude classes which were copied from Hadoop
+      exclude("**/org/apache/hadoop/**")
+
     }
 
     // Configure defaults for sourceSets.tools (if present).
@@ -152,6 +156,12 @@ allprojects { prj ->
     if (prj.path == ":solr:benchmark") {
       forbiddenApisMain.exclude("**/jmh_generated/**")
     }
+
+    // Disable checks on code copied from Hadoop
+    if (prj.path == ":solr:contrib:hdfs") {
+      forbiddenApisTest.exclude("**/org/apache/hadoop/**")
+    }
+
 
     // We rely on resolved configurations to compute the relevant set of rule
     // files for forbiddenApis. Since we don't want to resolve these configurations until
