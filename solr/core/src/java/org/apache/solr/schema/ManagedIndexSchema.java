@@ -89,13 +89,13 @@ public final class ManagedIndexSchema extends IndexSchema {
   @Override public boolean isMutable() { return isMutable; }
 
   final String managedSchemaResourceName;
-  
+
   int schemaZkVersion;
-  
+
   final Object schemaUpdateLock;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   /**
    * Constructs a schema using the specified resource name and stream.
    *
@@ -110,14 +110,13 @@ public final class ManagedIndexSchema extends IndexSchema {
     this.schemaZkVersion = schemaZkVersion;
     this.schemaUpdateLock = schemaUpdateLock;
   }
-  
+
   /**
    * Persist the schema to local storage or to ZooKeeper
    * @param createOnly set to false to allow update of existing schema
    */
   public boolean persistManagedSchema(boolean createOnly) {
     if (loader instanceof ZkSolrResourceLoader) {
-      System.out.println("\n\n\nAbout to persist, and createOnly is" + createOnly);
       return persistManagedSchemaToZooKeeper(createOnly);
     }
     // Persist locally
@@ -161,8 +160,8 @@ public final class ManagedIndexSchema extends IndexSchema {
    * <p/>
    * If createOnly is false, success is when the schema is persisted - this will only happen
    * if schemaZkVersion matches the version in ZooKeeper.
-   * 
-   * @return true on success 
+   *
+   * @return true on success
    */
   boolean persistManagedSchemaToZooKeeper(boolean createOnly) {
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
@@ -172,7 +171,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     boolean success = true;
     boolean schemaChangedInZk = false;
-    try { 
+    try {
       // Persist the managed schema
       StringWriter writer = new StringWriter();
       persist(writer);
@@ -215,7 +214,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       log.info(msg);
       throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
     }
-    return success; 
+    return success;
   }
 
   /**
@@ -393,7 +392,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       super(code, msg);
     }
   }
-  
+
 
   @Override
   public ManagedIndexSchema addFields(Collection<SchemaField> newFields,
@@ -461,7 +460,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (isMutable) {
       newSchema = shallowCopy(true);
       for (String name : names) {
-        SchemaField field = getFieldOrNull(name); 
+        SchemaField field = getFieldOrNull(name);
         if (null != field) {
           String message = "Can't delete field '" + name
               + "' because it's referred to by at least one copy field directive.";
@@ -580,9 +579,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     return newSchema;
   }
-  
+
   @Override
-  public ManagedIndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields, 
+  public ManagedIndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields,
                                              Map<String,Collection<String>> copyFieldNames, boolean persist) {
     ManagedIndexSchema newSchema;
     if (isMutable) {
@@ -653,7 +652,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           String msg = "The dynamic field '" + fieldNamePattern
               + "' is not present in this schema, and so cannot be deleted.";
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);
-        }          
+        }
         for (int i = 0 ; i < newSchema.dynamicCopyFields.length ; ++i) {
           DynamicCopy dynamicCopy = newSchema.dynamicCopyFields[i];
           DynamicField destDynamicBase = dynamicCopy.getDestDynamicBase();
@@ -714,7 +713,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
       if (null == oldDynamicField) {
-        String msg = "The dynamic field '" + fieldNamePattern 
+        String msg = "The dynamic field '" + fieldNamePattern
             + "' is not present in this schema, and so cannot be replaced.";
         throw new SolrException(ErrorCode.BAD_REQUEST, msg);
       }
@@ -817,7 +816,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     return newSchema;
   }
-  
+
   @Override
   @SuppressWarnings({"unchecked"})
   public ManagedIndexSchema deleteCopyFields(Map<String,Collection<String>> copyFields) {
@@ -846,7 +845,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     return newSchema;
   }
-  
+
   private void deleteCopyField(String source, String dest) {
     // Assumption: a copy field directive will exist only if the source & destination (dynamic) fields exist
     SchemaField destSchemaField = fields.get(dest);
@@ -929,8 +928,8 @@ public final class ManagedIndexSchema extends IndexSchema {
 
   /**
    * Registers new copy fields with the source, destination and maxChars taken from each of the oldCopyFields.
-   * 
-   * Assumption: the fields in oldCopyFields still exist in the schema. 
+   *
+   * Assumption: the fields in oldCopyFields still exist in the schema.
    */
   private void rebuildCopyFields(List<CopyField> oldCopyFields) {
     if (oldCopyFields.size() > 0) {
@@ -961,7 +960,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (!isMutable) {
       String msg = "This ManagedIndexSchema is not mutable.";
       log.error(msg);
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg);    
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
 
     ManagedIndexSchema newSchema = shallowCopy(true);
@@ -974,18 +973,18 @@ public final class ManagedIndexSchema extends IndexSchema {
     newSchema.fieldTypes = clone;
 
     // do a first pass to validate the field types don't exist already
-    for (FieldType fieldType : fieldTypeList) {    
+    for (FieldType fieldType : fieldTypeList) {
       String typeName = fieldType.getTypeName();
       if (newSchema.getFieldTypeByName(typeName) != null) {
         throw new FieldExistsException(ErrorCode.BAD_REQUEST,
             "Field type '" + typeName + "' already exists!");
       }
-      
+
       newSchema.fieldTypes.put(typeName, fieldType);
     }
 
     newSchema.postReadInform();
-    
+
     newSchema.refreshAnalyzers();
 
     if (persist) {
@@ -1045,7 +1044,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     return newSchema;
   }
-  
+
   private Map<String,List<CopyField>> cloneCopyFieldsMap(Map<String,List<CopyField>> original) {
     Map<String,List<CopyField>> clone = new HashMap<>(original.size());
     Iterator<Map.Entry<String,List<CopyField>>> iterator = original.entrySet().iterator();
@@ -1075,7 +1074,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       System.arraycopy(dynamicCopyFields, 0, newSchema.dynamicCopyFields, 0, dynamicCopyFields.length);
       newSchema.dynamicFields = new DynamicField[dynamicFields.length];
       System.arraycopy(dynamicFields, 0, newSchema.dynamicFields, 0, dynamicFields.length);
-      
+
       newSchema.fieldTypes.remove(typeName);
       FieldType replacementFieldType = newSchema.newFieldType(typeName, replacementClassName, replacementArgs);
       newSchema.fieldTypes.put(typeName, replacementFieldType);
@@ -1089,12 +1088,12 @@ public final class ManagedIndexSchema extends IndexSchema {
         SchemaField oldField = entry.getValue();
         if (oldField.getType().getTypeName().equals(typeName)) {
           String fieldName = oldField.getName();
-          
+
           // Drop the old field
           fieldsIter.remove();
           newSchema.fieldsWithDefaultValue.remove(oldField);
           newSchema.requiredFields.remove(oldField);
-          
+
           // Add the replacement field
           SchemaField replacementField = SchemaField.create(fieldName, replacementFieldType, oldField.getArgs());
           replacementFields.add(replacementField); // Save the new field to be added after iteration is finished
@@ -1180,7 +1179,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     return newSchema;
   }
-  
+
   @Override
   protected void postReadInform() {
     super.postReadInform();
@@ -1220,10 +1219,10 @@ public final class ManagedIndexSchema extends IndexSchema {
         informResourceLoaderAwareObjectsInChain((TokenizerChain)multiTermAnalyzer);
     }
   }
-  
+
   @Override
   public SchemaField newField(String fieldName, String fieldType, Map<String,?> options) {
-    SchemaField sf; 
+    SchemaField sf;
     if (isMutable) {
       try {
         if (-1 != fieldName.indexOf('*')) {
@@ -1254,7 +1253,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     return sf;
   }
-  
+
   public int getSchemaZkVersion() {
     return schemaZkVersion;
   }
@@ -1354,7 +1353,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
     }
   }
-  
+
   private ManagedIndexSchema(Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
                              String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock, Properties substitutableProps) {
     super(luceneVersion, loader, substitutableProps);
@@ -1366,9 +1365,9 @@ public final class ManagedIndexSchema extends IndexSchema {
 
   /**
    * Makes a shallow copy of this schema.
-   * 
-   * Not copied: analyzers 
-   * 
+   *
+   * Not copied: analyzers
+   *
    * @param includeFieldDataStructures if true, fields, fieldsWithDefaultValue, and requiredFields
    *                                   are copied; otherwise, they are not.
    * @return A shallow copy of this schema
@@ -1385,7 +1384,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     newSchema.uniqueKeyField = uniqueKeyField;
     newSchema.uniqueKeyFieldName = uniqueKeyFieldName;
     newSchema.uniqueKeyFieldType = uniqueKeyFieldType;
-    
+
     // After the schema is persisted, resourceName is the same as managedSchemaResourceName
     newSchema.resourceName = managedSchemaResourceName;
 
@@ -1396,7 +1395,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.requiredFields.addAll(requiredFields);
     }
 
-    // These don't need new collections - addFields() won't add members to them 
+    // These don't need new collections - addFields() won't add members to them
     newSchema.fieldTypes = fieldTypes;
     newSchema.dynamicFields = dynamicFields;
     newSchema.dynamicCopyFields = dynamicCopyFields;
