@@ -958,11 +958,12 @@ public class QueryComponent extends SearchComponent
         if (null == sortFieldValues) {
           sortFieldValues = new NamedList<>();
         }
-        // skip merging results for this shard if the sortSpec includes a non-scoredoc field but the sortFieldValues is empty.
-        if (thisResponseIsPartial && sortFieldValues.size() == 0 && ss.includesNonScoreOrDocField()) {
+        boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
+        // skip merging results for this shard if the sortSpec sort values need to be marshalled but the sortFieldValues is empty.
+        if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
           continue;
         }
-        NamedList<List<Object>> unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
+        NamedList<List<Object>> unmarshalledSortFieldValues = needsUnmarshalling ? unmarshalSortValues(ss, sortFieldValues, schema) : new NamedList<>();
 
         // go through every doc in this response, construct a ShardDoc, and
         // put it in the priority queue so it can be ordered.

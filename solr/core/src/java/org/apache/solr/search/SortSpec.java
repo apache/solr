@@ -80,6 +80,11 @@ public class SortSpec
     return includesNonScoreOrDocField(sort);
   }
 
+  /**
+   * Returns whether SortFields for the Sort includes a
+   * field besides SortField.Type.SCORE or SortField.Type.DOC
+   * @return true if SortFields contains a field besides score or the Lucene doc
+   */
   public static boolean includesNonScoreOrDocField(Sort sort) {
     if (sort==null) return false;
     for (SortField sf : sort.getSort()) {
