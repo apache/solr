@@ -112,34 +112,6 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
   
   /**
-   * Lookup the path to the managed schema, dealing with falling back to the
-   * legacy managed-schema file, instead of the expected managed-schema.xml file.
-   * 
-   * This method is duplicated in ManagedIndexSchemaFactory.
-   * @see org.apache.solr.schema.ManagedIndexSchemaFactory#lookupManagedSchemaPath
-   */
-  public String lookupManagedSchemaPath() {
-    final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
-    final ZkController zkController = zkLoader.getZkController();
-    final SolrZkClient zkClient = zkController.getZkClient();
-    String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
-    try {
-      // check if we are using the legacy managed-schema file name.
-      if (!zkClient.exists(managedSchemaPath, true)){
-        log.info("Managed schema resource {} not found - loading legacy managed schema {} file instead"
-            , managedSchemaResourceName, ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
-        managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;
-      }
-    } catch (KeeperException e) {
-      throw new RuntimeException(e);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-    return managedSchemaPath;
-  }
-  
-  
-  /**
    * Persist the schema to local storage or to ZooKeeper
    * @param createOnly set to false to allow update of existing schema
    */
@@ -196,7 +168,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
-    final String managedSchemaPath = lookupManagedSchemaPath();
+    final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
 
     boolean success = true;
     boolean schemaChangedInZk = false;

@@ -75,7 +75,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     args.remove("mutable");
     managedSchemaResourceName = params.get(MANAGED_SCHEMA_RESOURCE_NAME, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
     args.remove(MANAGED_SCHEMA_RESOURCE_NAME);
-    if (SCHEMA_DOT_XML.equals(managedSchemaResourceName)) { // TODO Still needed?
+    if (SCHEMA_DOT_XML.equals(managedSchemaResourceName)) {
       String msg = MANAGED_SCHEMA_RESOURCE_NAME + " can't be '" + SCHEMA_DOT_XML + "'";
       log.error(msg);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
@@ -98,26 +98,59 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    * legacy managed-schema file, instead of the expected managed-schema.xml file.
    * 
    * This method is duplicated in ManagedIndexSchema.
-   * @see org.apache.solr.schema.ManagedIndexSchema#lookupManagedSchemaPath
    */
-  public String lookupManagedSchemaPath() {
+  public String lookupZKManagedSchemaPath() {
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
     String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+    final String legacyManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;
     try {
       // check if we are using the legacy managed-schema file name.
-      if (!zkClient.exists(managedSchemaPath, true)){
-        log.info("Managed schema resource {} not found - loading legacy managed schema {} file instead"
-            , managedSchemaResourceName, ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
-        managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;
+      if (zkClient.exists(legacyManagedSchemaPath, true)){
+        log.debug("Legacy managed schema resource {} found - loading legacy managed schema instead of {} file."
+            , ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME, managedSchemaResourceName);
+        managedSchemaPath = legacyManagedSchemaPath;
       }
     } catch (KeeperException e) {
       throw new RuntimeException(e);
     } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
     return managedSchemaPath;
+  }  
+  
+  /**
+   * Lookup the path to the managed schema, dealing with falling back to the
+   * legacy managed-schema file, instead of the expected managed-schema.xml file.
+   * 
+   * This method is duplicated in ManagedIndexSchemaFactory.
+   * @see org.apache.solr.schema.ManagedIndexSchemaFactory#lookupZKManagedSchemaPath
+   */
+  public File lookupLocalManagedSchemaPath() {
+    final File legacyManagedSchemaPath = new File(loader.getConfigPath().toFile(), ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
+    
+    File managedSchemaFile = new File(loader.getConfigPath().toFile(), managedSchemaResourceName);
+    
+    // check if we are using the legacy managed-schema file name.    
+    if (legacyManagedSchemaPath.exists()){
+      log.info("Legacy managed schema resource {} found - loading legacy managed schema instead of {} file."
+          , ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME, managedSchemaResourceName);
+      managedSchemaFile = legacyManagedSchemaPath;
+    }
+    
+    File parentDir = managedSchemaFile.getParentFile();
+    if ( ! parentDir.isDirectory()) {
+      if ( ! parentDir.mkdirs()) {
+        final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
+        log.error(msg);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+      }
+    }
+    
+    return managedSchemaFile;
   }  
 
   /**
@@ -154,7 +187,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     } else { // ZooKeeper
       final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
       final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
-      final String managedSchemaPath = lookupManagedSchemaPath();
+      final String managedSchemaPath = lookupZKManagedSchemaPath();
+      managedSchemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/")+1); // not loving this
       Stat stat = new Stat();
       try {
         // Attempt to load the managed schema
@@ -181,7 +215,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           schemaInputStream = loader.openResource(resourceName);
           loadedResource = resourceName;
           shouldUpgrade = true;
-        } catch (Exception e) {
+        } catch (IOException e) {
           try {
             // Retry to load the managed schema, in case it was created since the first attempt
             byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
@@ -223,15 +257,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     InputStream schemaInputStream = null;
     try {
       // Attempt to load the managed schema
-      try {
-        schemaInputStream = loader.openResource(managedSchemaResourceName);
-      }
-      catch (IOException e) {
-        //   Attempt to load the managed schema with the legacy name.
-        log.info("The schema is configured as managed, but managed schema resource {}  not found - looking for legacy {} instead"
-            , managedSchemaResourceName, LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
-        schemaInputStream = loader.openResource(LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
-      }
+      final String managedSchemaPath = lookupLocalManagedSchemaPath().toString();
+      schemaInputStream = loader.openResource(lookupLocalManagedSchemaPath().toString());
+      managedSchemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/")+1); // not loving this
 
       loadedResource = managedSchemaResourceName;
       warnIfNonManagedSchemaExists();

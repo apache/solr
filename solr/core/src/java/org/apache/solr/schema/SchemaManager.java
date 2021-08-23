@@ -428,17 +428,22 @@ public class SchemaManager {
 
     SolrResourceLoader resourceLoader = core.getResourceLoader();
     String name = core.getLatestSchema().getResourceName();
+
     if (resourceLoader instanceof ZkSolrResourceLoader) {
       final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)resourceLoader;
       SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+
+      String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + name;
+      
       try {
-        if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + name, true)) {
+        if (!zkClient.exists(managedSchemaPath, true)) {
           String backupName = name + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
           if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName, true)) {
             log.warn("Unable to retrieve fresh managed schema, neither {} nor {} exist.", name, backupName);
             // use current schema
             return (ManagedIndexSchema) core.getLatestSchema();
           } else {
+            // DOES THIS MAKE SENSE????????
             name = backupName;
           }
         }
@@ -447,6 +452,8 @@ public class SchemaManager {
         // use current schema
         return (ManagedIndexSchema) core.getLatestSchema();
       }
+      
+      name = managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/")+1);
       InputStream in = resourceLoader.openResource(name);
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
