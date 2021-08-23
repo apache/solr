@@ -20,6 +20,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
@@ -129,19 +132,19 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    * This method is duplicated in ManagedIndexSchemaFactory.
    * @see org.apache.solr.schema.ManagedIndexSchemaFactory#lookupZKManagedSchemaPath
    */
-  public File lookupLocalManagedSchemaPath() {
-    final File legacyManagedSchemaPath = new File(loader.getConfigPath().toFile(), ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
+  public Path lookupLocalManagedSchemaPath() {
+    final Path legacyManagedSchemaPath = Paths.get(loader.getConfigPath().toString(), ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
     
-    File managedSchemaFile = new File(loader.getConfigPath().toFile(), managedSchemaResourceName);
+    Path managedSchemaPath = Paths.get(loader.getConfigPath().toString(), managedSchemaResourceName);
     
     // check if we are using the legacy managed-schema file name.    
-    if (legacyManagedSchemaPath.exists()){
-      log.info("Legacy managed schema resource {} found - loading legacy managed schema instead of {} file."
+    if (Files.exists(legacyManagedSchemaPath)){
+      log.debug("Legacy managed schema resource {} found - loading legacy managed schema instead of {} file."
           , ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME, managedSchemaResourceName);
-      managedSchemaFile = legacyManagedSchemaPath;
+      managedSchemaPath = legacyManagedSchemaPath;
     }
     
-    File parentDir = managedSchemaFile.getParentFile();
+    File parentDir = managedSchemaPath.toFile().getParentFile();
     if ( ! parentDir.isDirectory()) {
       if ( ! parentDir.mkdirs()) {
         final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
@@ -150,7 +153,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       }
     }
     
-    return managedSchemaFile;
+    return managedSchemaPath;
   }  
 
   /**
@@ -257,9 +260,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     InputStream schemaInputStream = null;
     try {
       // Attempt to load the managed schema
-      final String managedSchemaPath = lookupLocalManagedSchemaPath().toString();
-      schemaInputStream = loader.openResource(lookupLocalManagedSchemaPath().toString());
-      managedSchemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/")+1); // not loving this
+      final Path managedSchemaPath = lookupLocalManagedSchemaPath();
+      managedSchemaResourceName = managedSchemaPath.getName(managedSchemaPath.getNameCount()-1).toString();
+      schemaInputStream = loader.openResource(managedSchemaResourceName);
 
       loadedResource = managedSchemaResourceName;
       warnIfNonManagedSchemaExists();
