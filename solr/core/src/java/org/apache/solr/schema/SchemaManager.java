@@ -443,7 +443,6 @@ public class SchemaManager {
             // use current schema
             return (ManagedIndexSchema) core.getLatestSchema();
           } else {
-            // DOES THIS MAKE SENSE????????
             name = backupName;
           }
         }
