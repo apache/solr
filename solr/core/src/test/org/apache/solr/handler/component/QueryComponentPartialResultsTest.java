@@ -16,32 +16,28 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.*;
 import org.apache.solr.search.SortSpec;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.*;
 
 public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
-    private static int id = 0;
     private static final String SORT_FIELD_NAME = "category";
+    private static final int shard1Size = 2;
+    private static final int shard2Size = 3;
+
+    private static int id = 0;
+    private static ShardRequest shardRequestWithPartialResults;
 
     @BeforeClass
     public static void setup() {
         assumeWorkingMockito();
+        shardRequestWithPartialResults = createShardRequestWithPartialResults();
     }
 
     @Test
@@ -81,124 +77,31 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
     }
 
     private void testPartialResultsForSortSpec(SortSpec sortSpec, boolean shouldIncludePartialShardResult) {
-        final int shard1Size = 2;
-        final int shard2Size = 3;
 
         MockResponseBuilder responseBuilder = MockResponseBuilder.create().withSortSpec(sortSpec);
 
-        // shard 1 is marked partial
-        NamedList<Object> responseHeader1 = new NamedList<>();
-        responseHeader1.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-
-        // shard 2 is not partial
-        NamedList<Object> responseHeader2 = new NamedList<>();
-
-        MockShardRequest shardRequest = MockShardRequest.create()
-                .withShardResponse(responseHeader1, createSolrDocumentList(shard1Size))
-                .withShardResponse(responseHeader2, createSolrDocumentList(shard2Size));
-
         QueryComponent queryComponent = new QueryComponent();
-        queryComponent.mergeIds(responseBuilder, shardRequest);
+        queryComponent.mergeIds(responseBuilder, shardRequestWithPartialResults);
 
-        // do we have the expected document count
-        assertEquals((shouldIncludePartialShardResult ? shard1Size : 0) + shard2Size, responseBuilder.getResponseDocs().size());
+        // do we have the expected document count?
+        // if results are not merged for the partial results shard, then the total doc count will exclude them
+        if (shouldIncludePartialShardResult) {
+            assertEquals(shard1Size + shard2Size, responseBuilder.getResponseDocs().size());
+        } else {
+            assertEquals(shard2Size, responseBuilder.getResponseDocs().size());
+        }
     }
 
-    private static class MockResponseBuilder extends ResponseBuilder {
+    private static ShardRequest createShardRequestWithPartialResults() {
+        final NamedList<Object> shard1ResponseHeader = new NamedList<>();
+        final NamedList<Object> shard2ResponseHeader = new NamedList<>();
 
-        private MockResponseBuilder(SolrQueryRequest request, SolrQueryResponse response, List<SearchComponent> components) {
-            super(request, response, components);
-        }
+        // the results from shard1 are marked partial
+        shard1ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
 
-        public static MockResponseBuilder create() {
-
-            // the mocks
-            SolrQueryRequest request = Mockito.mock(SolrQueryRequest.class);
-            SolrQueryResponse response = Mockito.mock(SolrQueryResponse.class);
-            IndexSchema indexSchema = Mockito.mock(IndexSchema.class);
-            SolrParams params = Mockito.mock(SolrParams.class);
-
-            // SchemaField must be concrete due to field access
-            SchemaField uniqueIdField = new SchemaField("id", new StrField());
-
-            // we need this because QueryComponent adds a property to it.
-            NamedList<Object> responseHeader = new NamedList<>();
-
-            // the mock implementations
-            Mockito.when(request.getSchema()).thenReturn(indexSchema);
-            Mockito.when(indexSchema.getUniqueKeyField()).thenReturn(uniqueIdField);
-            Mockito.when(params.getBool(ShardParams.SHARDS_INFO)).thenReturn(false);
-            Mockito.when(request.getParams()).thenReturn(params);
-            Mockito.when(response.getResponseHeader()).thenReturn(responseHeader);
-
-            List<SearchComponent> components = new ArrayList<>();
-            return new MockResponseBuilder(request, response, components);
-
-        }
-
-        public MockResponseBuilder withSortSpec(SortSpec sortSpec) {
-            this.setSortSpec(sortSpec);
-            return this;
-        }
-
-    }
-
-    private static class MockShardRequest extends ShardRequest {
-
-        public static MockShardRequest create() {
-            MockShardRequest mockShardRequest = new MockShardRequest();
-            mockShardRequest.responses = new ArrayList<>();
-            return mockShardRequest;
-        }
-
-        public MockShardRequest withShardResponse(NamedList<Object> responseHeader, SolrDocumentList solrDocuments) {
-            ShardResponse shardResponse = buildShardResponse(responseHeader, solrDocuments);
-            responses.add(shardResponse);
-            return this;
-        }
-
-        private ShardResponse buildShardResponse(NamedList<Object> responseHeader, SolrDocumentList solrDocuments) {
-            SolrResponse solrResponse = Mockito.mock(SolrResponse.class);
-            ShardResponse shardResponse = new ShardResponse();
-            NamedList<Object> response = new NamedList<>();
-            response.add("response", solrDocuments);
-            shardResponse.setSolrResponse(solrResponse);
-            response.add("responseHeader", responseHeader);
-            Mockito.when(solrResponse.getResponse()).thenReturn(response);
-
-            return shardResponse;
-        }
-
-    }
-
-    private static class MockSortSpecBuilder {
-        private final SortSpec sortSpec;
-
-        public MockSortSpecBuilder() {
-            this.sortSpec = Mockito.mock(SortSpec.class);
-            Mockito.when(sortSpec.getCount()).thenReturn(10);
-        }
-
-        public static MockSortSpecBuilder create() {
-            return new MockSortSpecBuilder();
-        }
-
-        public MockSortSpecBuilder withSortFields(SortField[] sortFields) {
-            Sort sort = Mockito.mock(Sort.class);
-            Mockito.when(sort.getSort()).thenReturn(sortFields);
-            Mockito.when(sortSpec.getSort()).thenReturn(sort);
-            return this;
-        }
-
-        public MockSortSpecBuilder withIncludesNonScoreOrDocSortField(boolean include) {
-            Mockito.when(sortSpec.includesNonScoreOrDocField()).thenReturn(include);
-            return this;
-        }
-
-        public SortSpec build() {
-            return sortSpec;
-        }
-
+        return MockShardRequest.create()
+                .withShardResponse(shard1ResponseHeader, createSolrDocumentList(shard1Size))
+                .withShardResponse(shard2ResponseHeader, createSolrDocumentList(shard2Size));
     }
 
     private static SolrDocumentList createSolrDocumentList(int size) {
@@ -206,8 +109,8 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
         for(int i = 0; i < size; i++) {
             SolrDocument solrDocument = new SolrDocument();
             solrDocument.addField("id", id++);
-            solrDocument.addField("score", id * 1.1F);
-            solrDocument.addField(SORT_FIELD_NAME, id * 10);
+            solrDocument.addField("score", (float)id);
+            solrDocument.addField(SORT_FIELD_NAME, id);
             solrDocuments.add(solrDocument);
         }
         return solrDocuments;

@@ -958,11 +958,19 @@ public class QueryComponent extends SearchComponent
         if (null == sortFieldValues) {
           sortFieldValues = new NamedList<>();
         }
+
+        // if the SortSpec contains a field besides score or the Lucene docid, then the values will need to be unmarshalled from
+        // sortFieldValues.
         boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
-        // skip merging results for this shard if the sortSpec sort values need to be marshalled but the sortFieldValues is empty.
+
+        // if we need to unmarshal the sortFieldValues for sorting but we have none, which can happen if partial results are
+        // being returned from the shard, then skip merging the results for the shard. This avoids an exception below.
+        // if the shard returned partial results but we don't need to unmarshal (a normal scoring query), then merge what we got.
         if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
           continue;
         }
+
+        // Checking needsUnmarshalling saves on iterating the SortFields in the SortSpec again.
         NamedList<List<Object>> unmarshalledSortFieldValues = needsUnmarshalling ? unmarshalSortValues(ss, sortFieldValues, schema) : new NamedList<>();
 
         // go through every doc in this response, construct a ShardDoc, and
