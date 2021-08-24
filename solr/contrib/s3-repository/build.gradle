@@ -28,10 +28,6 @@ dependencies {
     implementation ('com.amazonaws:aws-java-sdk-core') { exclude group: 'commons-codec', module: 'commons-codec' }
     implementation ('com.amazonaws:aws-java-sdk-s3') { exclude group: 'commons-codec', module: 'commons-codec' }
 
-    // Not strictly needed, but provides better performance according to AWS SDK
-    // Can remove this when we upgrade to AWS SDK v2
-    implementation ('javax.xml.bind:jaxb-api') { transitive = false }
-
     testImplementation('com.adobe.testing:s3mock-junit4') {
         // Don't pull in separate versions of these libs, just use what Solr already has
         exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
