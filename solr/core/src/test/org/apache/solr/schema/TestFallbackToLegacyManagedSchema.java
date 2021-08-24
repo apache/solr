@@ -23,10 +23,13 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceNotFoundException;
 import org.apache.solr.util.RestTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 /**
  * Test updating a Managed Schema that is the legacy "managed-schema" instead of the
@@ -89,12 +92,16 @@ public class TestFallbackToLegacyManagedSchema extends RestTestBase {
       assertEquals("legacy-managed-schema", core.getLatestSchema().getSchemaName());
       
       String managedSchemaText = new String(core.getResourceLoader().openResource(schemaResourceName).readAllBytes(), StandardCharsets.UTF_8);
-      assertTrue(managedSchemaText.contains("<field name=\"a1\" type=\"string\" indexed=\"false\" stored=\"true\"/>"));      
+      assertTrue(managedSchemaText.contains("<field name=\"a1\" type=\"string\" indexed=\"false\" stored=\"true\"/>"));
+      
+      assertExceptionThrownWithMessageContaining(SolrResourceNotFoundException.class, Lists.newArrayList("Can't find resource 'managed-schema.xml' in classpath"), () -> {
+        core.getResourceLoader().openResource("managed-schema.xml");
+      });
+      
     }
     finally{
       core.close();
     }
-    assertTrue(false);
   }
 
 }
