@@ -127,7 +127,8 @@ public class S3OutputStream extends OutputStream {
       }
       multiPartUpload = newMultipartUpload();
     }
-    try (ByteArrayInputStream inputStream = new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), size)) {
+    try (ByteArrayInputStream inputStream =
+        new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), size)) {
       multiPartUpload.uploadPart(inputStream, size);
     } catch (Exception e) {
       if (multiPartUpload != null) {
@@ -176,8 +177,7 @@ public class S3OutputStream extends OutputStream {
   private MultipartUpload newMultipartUpload() throws IOException {
     try {
       return new MultipartUpload(
-          s3Client.createMultipartUpload(b -> b.bucket(bucketName).key(key)).uploadId()
-      );
+          s3Client.createMultipartUpload(b -> b.bucket(bucketName).key(key)).uploadId());
     } catch (SdkException e) {
       throw S3StorageClient.handleAmazonException(e);
     }
@@ -213,8 +213,10 @@ public class S3OutputStream extends OutputStream {
       if (log.isDebugEnabled()) {
         log.debug("Uploading part {} for id '{}'", currentPartNumber, uploadId);
       }
-      UploadPartResponse response = s3Client.uploadPart(request, RequestBody.fromInputStream(inputStream, partSize));
-      completedParts.add(CompletedPart.builder().partNumber(currentPartNumber).eTag(response.eTag()).build());
+      UploadPartResponse response =
+          s3Client.uploadPart(request, RequestBody.fromInputStream(inputStream, partSize));
+      completedParts.add(
+          CompletedPart.builder().partNumber(currentPartNumber).eTag(response.eTag()).build());
     }
 
     /** To be invoked when closing the stream to mark upload is done. */
@@ -222,12 +224,12 @@ public class S3OutputStream extends OutputStream {
       if (log.isDebugEnabled()) {
         log.debug("Completing multi-part upload for key '{}', id '{}'", key, uploadId);
       }
-      s3Client.completeMultipartUpload(b -> b
-          .bucket(bucketName)
-          .key(key)
-          .uploadId(uploadId)
-          .multipartUpload(mub -> mub.parts(completedParts))
-      );
+      s3Client.completeMultipartUpload(
+          b ->
+              b.bucket(bucketName)
+                  .key(key)
+                  .uploadId(uploadId)
+                  .multipartUpload(mub -> mub.parts(completedParts)));
     }
 
     public void abort() {
@@ -235,10 +237,7 @@ public class S3OutputStream extends OutputStream {
         log.warn("Aborting multi-part upload with id '{}'", uploadId);
       }
       try {
-        s3Client.abortMultipartUpload(b -> b
-            .bucket(bucketName)
-            .key(key)
-            .uploadId(uploadId));
+        s3Client.abortMultipartUpload(b -> b.bucket(bucketName).key(key).uploadId(uploadId));
       } catch (Exception e) {
         // ignoring failure on abort.
         log.error("Unable to abort multipart upload, you may need to purge uploaded parts: ", e);

@@ -86,7 +86,11 @@ public class S3StorageClient {
   private final String bucketName;
 
   S3StorageClient(
-      String bucketName, String region, String proxyUrl, boolean proxyUseSystemSettings, String endpoint) {
+      String bucketName,
+      String region,
+      String proxyUrl,
+      boolean proxyUseSystemSettings,
+      String endpoint) {
     this(createInternalClient(region, proxyUrl, proxyUseSystemSettings, endpoint), bucketName);
   }
 
@@ -137,12 +141,14 @@ public class S3StorageClient {
 
     try {
       // Create empty object with content type header
-      PutObjectRequest putRequest = PutObjectRequest.builder()
-          .bucket(bucketName)
-          .contentType(S3_DIR_CONTENT_TYPE)
-          .key(path)
-          .build();
-      s3Client.putObject(putRequest, RequestBody.fromInputStream(ClosedInputStream.CLOSED_INPUT_STREAM, 0L));
+      PutObjectRequest putRequest =
+          PutObjectRequest.builder()
+              .bucket(bucketName)
+              .contentType(S3_DIR_CONTENT_TYPE)
+              .key(path)
+              .build();
+      s3Client.putObject(
+          putRequest, RequestBody.fromInputStream(ClosedInputStream.CLOSED_INPUT_STREAM, 0L));
     } catch (SdkClientException ase) {
       throw handleAmazonException(ase);
     }
@@ -202,17 +208,17 @@ public class S3StorageClient {
 
     List<String> entries = new ArrayList<>();
     try {
-      ListObjectsV2Iterable objectListing = s3Client.listObjectsV2Paginator(builder -> builder
-          .bucket(bucketName)
-          .prefix(prefix)
-          .delimiter(S3_FILE_PATH_DELIMITER)
-          .build()
-          );
+      ListObjectsV2Iterable objectListing =
+          s3Client.listObjectsV2Paginator(
+              builder ->
+                  builder
+                      .bucket(bucketName)
+                      .prefix(prefix)
+                      .delimiter(S3_FILE_PATH_DELIMITER)
+                      .build());
 
       List<String> files =
-          objectListing.contents().stream()
-              .map(S3Object::key)
-              .collect(Collectors.toList());
+          objectListing.contents().stream().map(S3Object::key).collect(Collectors.toList());
       objectListing.commonPrefixes().stream().map(CommonPrefix::prefix).forEach(files::add);
       // This filtering is needed only for S3mock. Real S3 does not ignore the trailing '/' in the
       // prefix.
@@ -258,9 +264,7 @@ public class S3StorageClient {
     }
 
     try {
-      s3Client.headObject(builder ->
-          builder.bucket(bucketName).key(s3Path)
-      );
+      s3Client.headObject(builder -> builder.bucket(bucketName).key(s3Path));
       return true;
     } catch (NoSuchKeyException e) {
       return false;
@@ -279,9 +283,8 @@ public class S3StorageClient {
     final String s3Path = sanitizedDirPath(path);
 
     try {
-      HeadObjectResponse objectMetadata = s3Client.headObject(builder ->
-          builder.bucket(bucketName).key(s3Path)
-          );
+      HeadObjectResponse objectMetadata =
+          s3Client.headObject(builder -> builder.bucket(bucketName).key(s3Path));
       String contentType = objectMetadata.contentType();
 
       return !StringUtils.isEmpty(contentType) && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
@@ -299,7 +302,8 @@ public class S3StorageClient {
   long length(String path) throws S3Exception {
     String s3Path = sanitizedFilePath(path);
     try {
-      HeadObjectResponse objectMetadata = s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
+      HeadObjectResponse objectMetadata =
+          s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
       String contentType = objectMetadata.contentType();
 
       if (StringUtils.isEmpty(contentType) || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
@@ -392,9 +396,7 @@ public class S3StorageClient {
       try {
         DeleteObjectsResponse response = s3Client.deleteObjects(request);
 
-        response.deleted().stream()
-            .map(DeletedObject::key)
-            .forEach(deletedPaths::add);
+        response.deleted().stream().map(DeletedObject::key).forEach(deletedPaths::add);
       } catch (AwsServiceException ase) {
         if (ase.statusCode() == 501) {
           // This means that the batch-delete is not implemented by this S3 server
@@ -411,7 +413,8 @@ public class S3StorageClient {
     if (deleteIndividually) {
       for (ObjectIdentifier k : keysToDelete) {
         try {
-          DeleteObjectResponse response = s3Client.deleteObject(b -> b.bucket(bucketName).key(k.key()));
+          DeleteObjectResponse response =
+              s3Client.deleteObject(b -> b.bucket(bucketName).key(k.key()));
           if (response.deleteMarker()) {
             deletedPaths.add(k.key());
           }
@@ -436,11 +439,9 @@ public class S3StorageClient {
 
     List<String> entries = new ArrayList<>();
     try {
-      ListObjectsV2Iterable objectListing = s3Client.listObjectsV2Paginator(builder -> builder
-          .bucket(bucketName)
-          .prefix(prefix)
-          .build()
-      );
+      ListObjectsV2Iterable objectListing =
+          s3Client.listObjectsV2Paginator(
+              builder -> builder.bucket(bucketName).prefix(prefix).build());
 
       List<String> files =
           objectListing.contents().stream()
@@ -559,8 +560,10 @@ public class S3StorageClient {
 
       log.error(errMessage);
 
-      if (sdke instanceof NoSuchKeyException || sdke instanceof NoSuchBucketException ||
-          (ase.statusCode() == 404 && NOT_FOUND_CODES.contains(ase.awsErrorDetails().errorCode()))) {
+      if (sdke instanceof NoSuchKeyException
+          || sdke instanceof NoSuchBucketException
+          || (ase.statusCode() == 404
+              && NOT_FOUND_CODES.contains(ase.awsErrorDetails().errorCode()))) {
         return new S3NotFoundException(errMessage, ase);
       } else {
         return new S3Exception(errMessage, ase);

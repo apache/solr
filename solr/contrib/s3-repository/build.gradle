@@ -23,14 +23,16 @@ description = 'S3 Repository'
 dependencies {
     api project(':solr:core')
 
-    implementation platform(group: 'software.amazon.awssdk', name: 'bom', version: '2.16.93')
-    implementation (group: 'software.amazon.awssdk', name: 'auth', version: '2.16.93')
-    implementation (group: 'software.amazon.awssdk', name: 'apache-client', version: '2.16.93')
-    implementation (group: 'software.amazon.awssdk', name: 'aws-core', version: '2.16.93')
-    implementation (group: 'software.amazon.awssdk', name: 's3', version: '2.16.93')
-    implementation (group: 'software.amazon.awssdk', name: 'sdk-core', version: '2.16.93')
-    implementation (group: 'software.amazon.awssdk', name: 'protocol-core', version: '2.16.93')
-    runtime (group: 'com.fasterxml.woodstox', name: 'woodstox-core', version: '6.2.4')
+    implementation platform(group: 'software.amazon.awssdk', name: 'bom')
+    implementation (group: 'software.amazon.awssdk', name: 'auth')
+    implementation (group: 'software.amazon.awssdk', name: 'apache-client')
+    implementation (group: 'software.amazon.awssdk', name: 'aws-core')
+    implementation (group: 'software.amazon.awssdk', name: 's3') {
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
+    implementation (group: 'software.amazon.awssdk', name: 'sdk-core')
+    implementation (group: 'software.amazon.awssdk', name: 'protocol-core')
+    runtime (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
     runtime (group: 'org.codehaus.woodstox', name: 'stax2-api')
 
     testImplementation('com.adobe.testing:s3mock-junit4') {
@@ -42,6 +44,7 @@ dependencies {
         exclude group: 'commons-io', module: 'commons-io'
         exclude group: 'commons-codec', module: 'commons-codec'
         exclude group: 'org.apache.commons', module: 'commons-lang3'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
     }
 
     testImplementation project(':solr:test-framework')
