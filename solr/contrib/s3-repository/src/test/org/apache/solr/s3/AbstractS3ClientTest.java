@@ -25,7 +25,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import software.amazon.awssdk.services.s3.S3Client;
 
 /** Abstract class for test with S3Mock. */
 public class AbstractS3ClientTest extends SolrTestCaseJ4 {
@@ -42,8 +41,10 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   public void setUpClient() {
     System.setProperty("aws.sharedCredentialsFile", "conf/temp");
     System.setProperty("aws.configFile", "conf/temp");
-    S3Client s3 = S3_MOCK_RULE.createS3ClientV2();
-    client = new S3StorageClient(s3, BUCKET_NAME);
+    System.setProperty("aws.accessKeyId", "foo");
+    System.setProperty("aws.secretAccessKey", "bar");
+    client = new S3StorageClient(BUCKET_NAME, "us-east-1", "",
+        false, "http://localhost:"+S3_MOCK_RULE.getHttpPort());
   }
 
   @After
