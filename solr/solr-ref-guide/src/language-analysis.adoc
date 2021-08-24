@@ -2512,7 +2512,7 @@ Defines how to handle compound tokens. The options are:
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: `false`
 |===
 +
 If `true`, unigrams will be output for unknown words.
