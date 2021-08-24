@@ -238,8 +238,8 @@ public class Grouping {
       }
 
       commands.add(gc);
-    } catch (Throwable e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+        throw e;
     }
 
   }
