@@ -23,10 +23,15 @@ description = 'S3 Repository'
 dependencies {
     api project(':solr:core')
 
-    implementation platform('com.amazonaws:aws-java-sdk-bom')
-
-    implementation ('com.amazonaws:aws-java-sdk-core') { exclude group: 'commons-codec', module: 'commons-codec' }
-    implementation ('com.amazonaws:aws-java-sdk-s3') { exclude group: 'commons-codec', module: 'commons-codec' }
+    implementation platform(group: 'software.amazon.awssdk', name: 'bom', version: '2.16.93')
+    implementation (group: 'software.amazon.awssdk', name: 'auth', version: '2.16.93')
+    implementation (group: 'software.amazon.awssdk', name: 'apache-client', version: '2.16.93')
+    implementation (group: 'software.amazon.awssdk', name: 'aws-core', version: '2.16.93')
+    implementation (group: 'software.amazon.awssdk', name: 's3', version: '2.16.93')
+    implementation (group: 'software.amazon.awssdk', name: 'sdk-core', version: '2.16.93')
+    implementation (group: 'software.amazon.awssdk', name: 'protocol-core', version: '2.16.93')
+    runtime (group: 'com.fasterxml.woodstox', name: 'woodstox-core', version: '6.2.4')
+    runtime (group: 'org.codehaus.woodstox', name: 'stax2-api')
 
     testImplementation('com.adobe.testing:s3mock-junit4') {
         // Don't pull in separate versions of these libs, just use what Solr already has
@@ -48,9 +53,12 @@ test {
     environment "spring.jmx.enabled", "false"
 
     // Without this, randomizedtesting will think our tests leak threads (b/c S3Mock's Jetty hasn't bothered to clean up yet)
-    environment "server.jetty.threads.idle-timeout", "3s"
+    environment "server.jetty.threads.idle-timeout", "1s"
 
     // Reduce logging noise during the tests
     environment "aws.accessKeyId", "foo"
-    environment "aws.secretKey", "bar"
+    environment "aws.secretAccessKey", "bar"
+    environment "aws.sharedCredentialsFile", "conf/credentials"
+    environment "aws.configFile", "conf/config"
+    environment "aws.profile", "dev"
 }

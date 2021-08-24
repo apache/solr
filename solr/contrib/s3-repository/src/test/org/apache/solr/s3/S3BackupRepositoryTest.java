@@ -19,8 +19,6 @@ package org.apache.solr.s3;
 import static org.apache.solr.s3.S3BackupRepository.S3_SCHEME;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
 import com.google.common.base.Strings;
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +43,9 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
@@ -291,6 +292,11 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   @Override
   protected S3BackupRepository getRepository() {
+    System.setProperty("aws.accessKeyId", "foo");
+    System.setProperty("aws.secretAccessKey", "bar");
+    System.setProperty("aws.sharedCredentialsFile", "conf/temp");
+    System.setProperty("aws.configFile", "conf/temp");
+
     NamedList<Object> args = getBaseBackupRepositoryConfiguration();
 
     S3BackupRepository repo = new S3BackupRepository();
@@ -307,30 +313,24 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   @Override
   protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
     NamedList<Object> args = new NamedList<>();
-    args.add(S3BackupRepositoryConfig.REGION, Regions.US_EAST_1.name());
+    args.add(S3BackupRepositoryConfig.REGION, Region.US_EAST_1.id());
     args.add(S3BackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
     args.add(S3BackupRepositoryConfig.ENDPOINT, "http://localhost:" + S3_MOCK_RULE.getHttpPort());
     return args;
   }
 
   private void pushObject(String path, String content) {
-    AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
-    try {
-      s3.putObject(BUCKET_NAME, path, content);
-    } finally {
-      s3.shutdown();
+    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+      s3.putObject(b -> b.bucket(BUCKET_NAME).key(path), RequestBody.fromString(content));
     }
   }
 
   private File pullObject(String path) throws IOException {
-    AmazonS3 s3 = S3_MOCK_RULE.createS3Client();
-    try {
+    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
       File file = temporaryFolder.newFile();
-      InputStream input = s3.getObject(BUCKET_NAME, path).getObjectContent();
+      InputStream input = s3.getObject(b -> b.bucket(BUCKET_NAME).key(path));
       FileUtils.copyInputStreamToFile(input, file);
       return file;
-    } finally {
-      s3.shutdown();
     }
   }
 }
