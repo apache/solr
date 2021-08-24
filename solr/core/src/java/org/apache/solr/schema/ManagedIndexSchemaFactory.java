@@ -98,7 +98,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   
   /**
    * Lookup the path to the managed schema, dealing with falling back to the
-   * legacy managed-schema file, instead of the expected managed-schema.xml file.
+   * legacy managed-schema file, instead of the expected managed-schema.xml file if the legacy file exists.
    * 
    * This method is duplicated in ManagedIndexSchema.
    */
@@ -127,10 +127,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   
   /**
    * Lookup the path to the managed schema, dealing with falling back to the
-   * legacy managed-schema file, instead of the expected managed-schema.xml file.
-   * 
-   * This method is duplicated in ManagedIndexSchemaFactory.
-   * @see org.apache.solr.schema.ManagedIndexSchemaFactory#lookupZKManagedSchemaPath
+   * legacy managed-schema file, instead of the expected managed-schema.xml file if the legacy file exists.
    */
   public Path lookupLocalManagedSchemaPath() {
     final Path legacyManagedSchemaPath = Paths.get(loader.getConfigPath().toString(), ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
@@ -144,7 +141,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       managedSchemaPath = legacyManagedSchemaPath;
     }
     
-    File parentDir = managedSchemaPath.toFile().getParentFile();
+    File parentDir = managedSchemaPath.toFile().getParentFile(); // Do we need this clause?   A managed file that is in a dir that doesn't exist?
     if ( ! parentDir.isDirectory()) {
       if ( ! parentDir.mkdirs()) {
         final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
