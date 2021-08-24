@@ -1142,7 +1142,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Returns the set of document ids matching both the query. ----- ####### why "both the query"
+   * Returns the set of document ids matching both the query.
    * This method is cache-aware and attempts to retrieve a DocSet of the query from the cache if possible.
    * If the answer was not cached, it may have been inserted into the cache as a result of this call.
    *
@@ -1184,7 +1184,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // note: can't use computeIfAbsent because can be recursive
     DocSet absAnswer = filterCache.get(absQ);
-
     if (absAnswer == null) {
       absAnswer = getDocSetNC(absQ, null);
       filterCache.put(absQ, absAnswer);

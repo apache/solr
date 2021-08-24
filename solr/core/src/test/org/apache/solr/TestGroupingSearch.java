@@ -325,9 +325,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(commit());
 
     // Just checking if no errors occur
-    assertJQ(req("q", "*:*", "group", "true", "group.query", "id:1", "group.query", "id:2", "timeAllowed", "1")
-
-    );
+    assertJQ(req("q", "*:*", "group", "true", "group.query", "id:1", "group.query", "id:2", "timeAllowed", "1"));
   }
 
   @Test

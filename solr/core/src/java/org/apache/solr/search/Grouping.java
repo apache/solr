@@ -210,39 +210,35 @@ public class Grouping {
   public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, request);
     Query gq = parser.getQuery();
-    try {
-      if (gq == null) {
-        // normalize a null query to a query that matches nothing
-        gq = new MatchNoDocsQuery();
-      }
-      Grouping.CommandQuery gc = new CommandQuery();
-      gc.query = gq;
-      gc.withinGroupSort = withinGroupSort;
-      gc.key = groupByStr;
-      gc.numGroups = limitDefault;
-      gc.docsPerGroup = docsPerGroupDefault;
-      gc.groupOffset = groupOffsetDefault;
 
-      // these two params will only be used if this is for the main result set
-      gc.offset = cmd.getOffset();
-      gc.numGroups = limitDefault;
-      gc.format = defaultFormat;
+    if (gq == null) {
+      // normalize a null query to a query that matches nothing
+      gq = new MatchNoDocsQuery();
+    }
+    Grouping.CommandQuery gc = new CommandQuery();
+    gc.query = gq;
+    gc.withinGroupSort = withinGroupSort;
+    gc.key = groupByStr;
+    gc.numGroups = limitDefault;
+    gc.docsPerGroup = docsPerGroupDefault;
+    gc.groupOffset = groupOffsetDefault;
 
-      if (main) {
-        gc.main = true;
-        gc.format = Grouping.Format.simple;
-      }
-      if (gc.format == Grouping.Format.simple) {
-        gc.docsPerGroup = gc.numGroups;  // doesn't make sense to limit to one
-        gc.groupOffset = gc.offset;
-      }
+    // these two params will only be used if this is for the main result set
+    gc.offset = cmd.getOffset();
+    gc.numGroups = limitDefault;
+    gc.format = defaultFormat;
 
-      commands.add(gc);
-    } catch (Exception e) {
-        throw e;
+    if (main) {
+      gc.main = true;
+      gc.format = Grouping.Format.simple;
+    }
+    if (gc.format == Grouping.Format.simple) {
+      gc.docsPerGroup = gc.numGroups;  // doesn't make sense to limit to one
+      gc.groupOffset = gc.offset;
     }
 
-  }
+    commands.add(gc);
+    }
 
   public Grouping setGroupSort(Sort groupSort) {
     this.groupSort = groupSort;

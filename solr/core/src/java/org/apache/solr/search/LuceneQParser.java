@@ -33,8 +33,6 @@ public class LuceneQParser extends QParser {
   }
 
 
-  // value of qstr: "*:*"
-  //
   @Override
   public Query parse() throws SyntaxError {
     String qstr = getString();

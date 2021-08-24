@@ -1115,10 +1115,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       try {
         response = h.query(req);
         failed = false;
-      } catch (Exception e) {
-      throw e; // put a break point here too
-      }
-    finally {
+      } finally {
         if (failed) {
           log.error("REQUEST FAILED: {}", req.getParamString());
         }
