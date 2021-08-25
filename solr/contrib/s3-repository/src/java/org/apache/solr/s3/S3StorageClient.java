@@ -31,7 +31,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -214,25 +213,24 @@ public class S3StorageClient {
                       .build());
 
       return Stream.concat(
-                  objectListing.contents().stream().map(S3Object::key),
-                  objectListing.commonPrefixes().stream().map(CommonPrefix::prefix)
-              )
-              .filter(s -> s.startsWith(prefix))
-              .map(s -> s.substring(prefix.length()))
-              .filter(s -> !s.isEmpty())
-              .filter(
-                  s -> {
-                    int slashIndex = s.indexOf(S3_FILE_PATH_DELIMITER);
-                    return slashIndex == -1 || slashIndex == s.length() - 1;
-                  })
-              .map(
-                  s -> {
-                    if (s.endsWith(S3_FILE_PATH_DELIMITER)) {
-                      return s.substring(0, s.length() - 1);
-                    }
-                    return s;
-                  })
-              .toArray(String[]::new);
+              objectListing.contents().stream().map(S3Object::key),
+              objectListing.commonPrefixes().stream().map(CommonPrefix::prefix))
+          .filter(s -> s.startsWith(prefix))
+          .map(s -> s.substring(prefix.length()))
+          .filter(s -> !s.isEmpty())
+          .filter(
+              s -> {
+                int slashIndex = s.indexOf(S3_FILE_PATH_DELIMITER);
+                return slashIndex == -1 || slashIndex == s.length() - 1;
+              })
+          .map(
+              s -> {
+                if (s.endsWith(S3_FILE_PATH_DELIMITER)) {
+                  return s.substring(0, s.length() - 1);
+                }
+                return s;
+              })
+          .toArray(String[]::new);
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -432,11 +430,11 @@ public class S3StorageClient {
               builder -> builder.bucket(bucketName).prefix(prefix).build());
 
       return objectListing.contents().stream()
-              .map(S3Object::key)
-              // This filtering is needed only for S3mock. Real S3 does not ignore the trailing
-              // '/' in the prefix.
-              .filter(s -> s.startsWith(prefix))
-              .collect(Collectors.toSet());
+          .map(S3Object::key)
+          // This filtering is needed only for S3mock. Real S3 does not ignore the trailing
+          // '/' in the prefix.
+          .filter(s -> s.startsWith(prefix))
+          .collect(Collectors.toSet());
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
