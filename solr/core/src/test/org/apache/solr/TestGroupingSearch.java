@@ -213,7 +213,6 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
   }
 
-
   @Test
   public void testGroupingGroupSortingWeight() {
     assertU(add(doc("id", "1","name", "author1", "weight", "12.1")));
@@ -236,19 +235,13 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
   }
 
-
   @Test
-  public void testGroupingNPEmptyString() {
+  public void testGroupingNoQuery() {
     assertU(add(doc("id", "1","name", "author1", "weight", "12.1")));
-    assertU(add(doc("id", "2","name", "author1", "weight", "2.1")));
-    assertU(add(doc("id", "3","name", "author2", "weight", "0.1")));
-    assertU(add(doc("id", "4","name", "author2", "weight", "0.11")));
     assertU(commit());
-
 
     assertQ(req( "group", "true", "group.query", "")
             ,"//lst[2]/lst[@name='']/result[@numFound='0']"
-
     );
   }
 
