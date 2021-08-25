@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -31,7 +30,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.io.input.ClosedInputStream;
+import java.util.stream.Stream;
+
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,8 +147,7 @@ public class S3StorageClient {
               .contentType(S3_DIR_CONTENT_TYPE)
               .key(path)
               .build();
-      s3Client.putObject(
-          putRequest, RequestBody.fromInputStream(ClosedInputStream.CLOSED_INPUT_STREAM, 0L));
+      s3Client.putObject(putRequest, RequestBody.empty());
     } catch (SdkClientException ase) {
       throw handleAmazonException(ase);
     }
@@ -184,13 +183,11 @@ public class S3StorageClient {
   void deleteDirectory(String path) throws S3Exception {
     path = sanitizedDirPath(path);
 
-    Set<String> entries = new HashSet<>();
+    // Get all the files and subdirectories
+    Set<String> entries = listAll(path);
     if (pathExists(path)) {
       entries.add(path);
     }
-
-    // Get all the files and subdirectories
-    entries.addAll(listAll(path));
 
     deleteObjects(entries);
   }
@@ -206,7 +203,6 @@ public class S3StorageClient {
 
     final String prefix = path;
 
-    List<String> entries = new ArrayList<>();
     try {
       ListObjectsV2Iterable objectListing =
           s3Client.listObjectsV2Paginator(
@@ -217,13 +213,10 @@ public class S3StorageClient {
                       .delimiter(S3_FILE_PATH_DELIMITER)
                       .build());
 
-      List<String> files =
-          objectListing.contents().stream().map(S3Object::key).collect(Collectors.toList());
-      objectListing.commonPrefixes().stream().map(CommonPrefix::prefix).forEach(files::add);
-      // This filtering is needed only for S3mock. Real S3 does not ignore the trailing '/' in the
-      // prefix.
-      files =
-          files.stream()
+      return Stream.concat(
+                  objectListing.contents().stream().map(S3Object::key),
+                  objectListing.commonPrefixes().stream().map(CommonPrefix::prefix)
+              )
               .filter(s -> s.startsWith(prefix))
               .map(s -> s.substring(prefix.length()))
               .filter(s -> !s.isEmpty())
@@ -239,11 +232,7 @@ public class S3StorageClient {
                     }
                     return s;
                   })
-              .collect(Collectors.toList());
-
-      entries.addAll(files);
-
-      return entries.toArray(new String[0]);
+              .toArray(String[]::new);
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -434,26 +423,20 @@ public class S3StorageClient {
         .build();
   }
 
-  private List<String> listAll(String path) throws S3Exception {
+  private Set<String> listAll(String path) throws S3Exception {
     String prefix = sanitizedDirPath(path);
 
-    List<String> entries = new ArrayList<>();
     try {
       ListObjectsV2Iterable objectListing =
           s3Client.listObjectsV2Paginator(
               builder -> builder.bucket(bucketName).prefix(prefix).build());
 
-      List<String> files =
-          objectListing.contents().stream()
+      return objectListing.contents().stream()
               .map(S3Object::key)
               // This filtering is needed only for S3mock. Real S3 does not ignore the trailing
               // '/' in the prefix.
               .filter(s -> s.startsWith(prefix))
-              .collect(Collectors.toList());
-
-      entries.addAll(files);
-
-      return entries;
+              .collect(Collectors.toSet());
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
