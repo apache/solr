@@ -160,13 +160,20 @@ public class CommandHandler {
     } else if (!collectors.isEmpty()) {
       searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
     } else {
-      searchWithTimeLimiter(query, filter, null);
+      searchWithTimeLimiter(query, filter, NO_OP_COLLECTOR);
     }
 
     for (Command<?> command : commands) {
       command.postCollect(searcher);
     }
   }
+
+  private static Collector NO_OP_COLLECTOR = new SimpleCollector() {
+    @Override
+    public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
+    @Override
+    public void collect(int doc) throws IOException {}
+  };
 
   private DocSet computeGroupedDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
     Command<?> firstCommand = commands.get(0);
@@ -210,13 +217,6 @@ public class CommandHandler {
     return transformer.transform(commands);
   }
 
-  private static Collector NO_OP_COLLECTOR = new SimpleCollector() {
-    @Override
-    public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
-    @Override
-    public void collect(int doc) throws IOException {}
-  };
-
   /**
    * Invokes search with the specified filter and collector.  
    * If a time limit has been specified then wrap the collector in the TimeLimitingCollector
@@ -225,9 +225,6 @@ public class CommandHandler {
                                      ProcessedFilter filter, 
                                      Collector collector) throws IOException {
     if (queryCommand.getTimeAllowed() > 0 ) {
-      if (collector == null) {
-        collector = NO_OP_COLLECTOR;
-      }
       collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
     }
 
