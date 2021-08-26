@@ -87,7 +87,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   
   public void setupCluster(boolean security) throws Exception {
     // we want at most one core per node to force lots of network traffic to try and tickle distributed bugs
-    final Builder b = configureCluster(4)
+    final MiniSolrCloudCluster.Builder b = configureCluster(4)
       .addConfig("conf", TEST_PATH().resolve("configsets").resolve("doc-expiry").resolve("conf"));
 
     COLLECTION = "expiring";

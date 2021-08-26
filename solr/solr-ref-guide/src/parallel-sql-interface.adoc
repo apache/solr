@@ -124,6 +124,13 @@ In some cases, fields used in SQL queries must be configured as DocValue fields.
 If queries are unlimited, all fields must be DocValue fields.
 If queries are limited (with the `limit` clause) then fields do not have to be have DocValues enabled.
 
+.Multi-valued Fields
+[IMPORTANT]
+====
+Multi-valued fields in the project list will be returned as a `List` of values; with JDBC, use `getObject(col)` to retrieve the multi-valued field and then cast to a `List`.
+In general, you can project, filter, and group by, but you cannot sort by multi-valued fields.
+====
+
 === Sending Queries
 
 The SQL Interface provides a basic JDBC driver and an HTTP interface to perform queries.
@@ -299,7 +306,6 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 |Operator |Description |Example |Solr Query
 |= |Equals |`fielda = 10` |`fielda:10`
 |<> |Does not equal |`fielda <> 10` |`-fielda:10`
-|!= |Does not equal |`fielda != 10` |`-fielda:10`
 |> |Greater than |`fielda > 10` |`fielda:{10 TO *]`
 |>= |Greater than or equals |`fielda >= 10` |`fielda:[10 TO *]`
 |< |Less than |`fielda < 10` |`fielda:[* TO 10}`
@@ -311,9 +317,11 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 |IS NOT NULL |Match columns with value |`fielda IS NOT NULL` |`field:*`
 |===
 
+* Use `<>` instead of `!=` for not equals
 * IN, LIKE, BETWEEN support the NOT keyword to find rows where the condition is not true, such as `fielda NOT LIKE 'day%'`
 * String literals must be wrapped in single-quotes; double-quotes indicate database objects and not a string literal.
 * A simplistic LIKE can be used with an asterisk wildcard, such as `field = 'sam*'`; this is Solr specific and not part of the SQL standard.
+* The maximum number of values for an `IN` clause is limited by the `maxBooleanClauses` configured for your collection.
 * When performing ANDed range queries over a multi-valued field, Apache Calcite short-circuits to zero results if the ANDed predicates appear to be disjoint sets.
 For example, +++b_is <= 2 AND b_is >= 5+++ appears to Calcite to be disjoint sets, which they are from a single-valued field perspective.
 However, this may not be the case with multi-valued fields, as Solr might match documents.
@@ -361,6 +369,7 @@ Unlimited queries do not.
 Unlimited queries require the fields to be stored as a DocValues field.
 * Limited queries allow any indexed field in the `ORDER BY` list.
 Unlimited queries require the fields to be stored as a DocValues field.
+* If a field is indexed but not stored or has docValues, you can filter on the field but you cannot return it in results.
 
 === SELECT DISTINCT Queries
 

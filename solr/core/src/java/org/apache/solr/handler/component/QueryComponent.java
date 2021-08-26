@@ -955,7 +955,7 @@ public class QueryComponent extends SearchComponent
 
         @SuppressWarnings("unchecked")
         NamedList<List<Object>> sortFieldValues = (NamedList<List<Object>>)(srsp.getSolrResponse().getResponse().get("sort_values"));
-        if (sortFieldValues.size()==0 && // we bypass merging this response only if it's partial itself
+        if ((null == sortFieldValues || sortFieldValues.size()==0) && // we bypass merging this response only if it's partial itself
                             thisResponseIsPartial) { // but not the previous one!!
           continue; //fsv timeout yields empty sort_vlaues
         }
