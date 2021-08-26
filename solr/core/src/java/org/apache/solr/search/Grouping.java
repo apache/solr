@@ -250,7 +250,7 @@ public class Grouping {
       gc.groupOffset = gc.offset;
     }
     commands.add(gc);
-    }
+  }
 
   public Grouping setGroupSort(Sort groupSort) {
     this.groupSort = groupSort;
