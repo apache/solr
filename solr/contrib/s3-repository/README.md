@@ -14,7 +14,7 @@ Add this to your `solr.xml`:
         </repository>
     </backup>
 
-This plugin uses the [default AWS credentials provider chain](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html), so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
+This plugin uses the [default AWS credentials provider chain](https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html), so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 
 ## Testing locally
 

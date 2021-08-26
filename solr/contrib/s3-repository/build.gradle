@@ -63,5 +63,4 @@ test {
     environment "aws.secretAccessKey", "bar"
     environment "aws.sharedCredentialsFile", "conf/credentials"
     environment "aws.configFile", "conf/config"
-    environment "aws.profile", "dev"
 }
