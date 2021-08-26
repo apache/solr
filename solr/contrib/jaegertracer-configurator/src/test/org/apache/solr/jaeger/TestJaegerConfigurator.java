@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -52,7 +51,7 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
   @Test
   public void testInjected() throws Exception {
     MiniSolrCloudCluster cluster =
-        new SolrCloudTestCase.Builder(2, createTempDir())
+        new MiniSolrCloudCluster.Builder(2, createTempDir())
             .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
             .withSolrXml(getFile("solr/solr.xml").toPath())
             .build();

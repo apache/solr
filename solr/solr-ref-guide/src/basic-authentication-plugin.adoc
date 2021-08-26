@@ -26,6 +26,8 @@ To control user permissions, you may need to configure an authorization plugin a
 To use Basic authentication, you must first create a `security.json` file.
 This file and where to put it is described in detail in the section <<authentication-and-authorization-plugins.adoc#configuring-security-json,Configuring security.json>>.
 
+If running in cloud mode, you can use the `bin/solr auth` command-line utility to enable security for a new installation, see: `bin/solr auth --help` for more details.
+
 For Basic authentication, `security.json` must have an `authentication` block which defines the class being used for authentication.
 Usernames and passwords (as a sha256(password+salt) hash) could be added when the file is created, or can be added later with the Authentication API, described below.
 
@@ -64,6 +66,14 @@ If `blockUnknown` is not defined in the `security.json` file, it will default to
 This has the effect of requiring authentication for HTTP access to Solr.
 In some cases, you may not want authentication after enabling the plugin; for example, if you want to have `security.json` in place but aren't ready to enable authentication.
 However, you will want to ensure that `blockUnknown` is set to `true` or omitted entirely in order for authentication to be enforced for all requests to your system.
+
+[WARNING]
+====
+If you set `blockUnknown` to `false`, then *any* request that is not explicitly protected by a permission will be accessible by anonymous users!
+Consequently, you should define a role binding for every <<rule-based-authorization-plugin.adoc#permissions,predefined>> permission you want to protect.
+You can assign the special `role: null` binding for requests that you want to allow anonymous users to access. To protect all endpoints except those with `role:null`,
+you can add a role binding for the `all` permission and place it in the last position in `security.json`.
+====
 
 If `realm` is not defined, it will default to `solr`.
 

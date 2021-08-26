@@ -20,6 +20,8 @@ out/
 #    Eclipse Gradle oddity
 **/bin/default/
 
+.editorconfig
+
 # macOS
 .DS_Store
 

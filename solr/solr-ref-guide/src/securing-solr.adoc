@@ -2,7 +2,8 @@
 :page-children: authentication-and-authorization-plugins, \
     audit-logging, \
     enabling-ssl, \
-    zookeeper-access-control
+    zookeeper-access-control, \
+    security-ui
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -38,6 +39,8 @@ TLS is also normally a requirement to prevent credential sniffing when using Aut
 See the section <<enabling-ssl.adoc#,Enabling TLS (SSL)>> for details.
 
 == Authentication and Authorization
+
+Use the <<security-ui.adoc#,Security>> screen in the Admin UI to manage users, roles, and permissions.
 
 See chapter <<authentication-and-authorization-plugins.adoc#,Configuring Authentication and Authorization>> to learn how to work with the `security.json` file.
 

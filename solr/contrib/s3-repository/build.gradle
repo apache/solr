@@ -1,0 +1,60 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+apply plugin: 'java-library'
+
+description = 'S3 Repository'
+
+dependencies {
+    api project(':solr:core')
+
+    implementation platform('com.amazonaws:aws-java-sdk-bom')
+
+    implementation ('com.amazonaws:aws-java-sdk-core') { exclude group: 'commons-codec', module: 'commons-codec' }
+    implementation ('com.amazonaws:aws-java-sdk-s3') { exclude group: 'commons-codec', module: 'commons-codec' }
+
+    // Not strictly needed, but provides better performance according to AWS SDK
+    // Can remove this when we upgrade to AWS SDK v2
+    implementation ('javax.xml.bind:jaxb-api') { transitive = false }
+
+    testImplementation('com.adobe.testing:s3mock-junit4') {
+        // Don't pull in separate versions of these libs, just use what Solr already has
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+        exclude group: 'org.eclipse.jetty', module: '*'
+        exclude group: 'io.netty', module: '*'
+        exclude group: 'commons-io', module: 'commons-io'
+        exclude group: 'commons-codec', module: 'commons-codec'
+        exclude group: 'org.apache.commons', module: 'commons-lang3'
+    }
+
+    testImplementation project(':solr:test-framework')
+}
+
+test {
+    // S3Mock uses Spring Boot under the hood, which tries to do too much auto configuration that we don't want
+    environment "spring.autoconfigure.exclude", "org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration"
+    environment "spring.jmx.enabled", "false"
+
+    // Without this, randomizedtesting will think our tests leak threads (b/c S3Mock's Jetty hasn't bothered to clean up yet)
+    environment "server.jetty.threads.idle-timeout", "3s"
+
+    // Reduce logging noise during the tests
+    environment "aws.accessKeyId", "foo"
+    environment "aws.secretKey", "bar"
+}

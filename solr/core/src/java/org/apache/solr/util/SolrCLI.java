@@ -3977,8 +3977,15 @@ public class SolrCLI implements CLIO {
             password = credentials.split(":")[1];
           } else {
             Console console = System.console();
-            username = console.readLine("Enter username: ");
-            password = new String(console.readPassword("Enter password: "));
+            // keep prompting until they've entered a non-empty username & password
+            do {
+              username = console.readLine("Enter username: ");
+            } while (username == null || username.trim().length() == 0);
+            username = username.trim();
+
+            do {
+              password = new String(console.readPassword("Enter password: "));
+            } while (password.length() == 0);
           }
 
           boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "true"));
@@ -3993,6 +4000,8 @@ public class SolrCLI implements CLIO {
               "\n   \"class\":\"solr.RuleBasedAuthorizationPlugin\"," +
               "\n   \"permissions\":[" +
               "\n {\"name\":\"security-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"security-read\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"config-edit\", \"role\":\"admin\"}," +
               "\n {\"name\":\"collection-admin-edit\", \"role\":\"admin\"}," +
               "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}" +
               "\n   ]," +

@@ -48,7 +48,7 @@ import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchG
 public class SearchGroupShardResponseProcessor implements ShardResponseProcessor {
 
   @Override
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
     Sort groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort();
