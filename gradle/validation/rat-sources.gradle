@@ -65,7 +65,7 @@ allprojects {
             exclude "src/**/*.svg"
             exclude "src/**/*.csv"
 
-            // TODO: These should carry the license, perhaps?
+            // TODO: SOLR-15601: Some of these should carry the license, perhaps?
             exclude "**/README.md"
             exclude "**/*.html"
             exclude "**/*.xml"
