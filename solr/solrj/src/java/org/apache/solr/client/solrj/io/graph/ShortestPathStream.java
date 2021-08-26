@@ -74,6 +74,33 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   private int threads;
   private SolrParams queryParams;
 
+  private boolean legacyJoin = false;
+
+  public ShortestPathStream(String zkHost,
+                            String collection,
+                            String fromNode,
+                            String toNode,
+                            String fromField,
+                            String toField,
+                            SolrParams queryParams,
+                            int joinBatchSize,
+                            int threads,
+                            int maxDepth,
+                            boolean legacyJoin) {
+
+    init(zkHost,
+        collection,
+        fromNode,
+        toNode,
+        fromField,
+        toField,
+        queryParams,
+        joinBatchSize,
+        threads,
+        maxDepth,
+        legacyJoin);
+  }
+
   public ShortestPathStream(String zkHost,
                             String collection,
                             String fromNode,
@@ -94,7 +121,8 @@ public class ShortestPathStream extends TupleStream implements Expressible {
         queryParams,
         joinBatchSize,
         threads,
-        maxDepth);
+        maxDepth,
+        false /* legacyJoin */);
   }
 
   public ShortestPathStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -169,12 +197,21 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       maxDepth = Integer.parseInt(((StreamExpressionValue) depthExpression.getParameter()).getValue());
     }
 
+    boolean legacyJoin = false;
+
+    StreamExpressionNamedParameter legacyJoinExpression = factory.getNamedOperand(expression, "legacyJoin");
+
+    if(legacyJoinExpression != null) {
+      legacyJoin = Boolean.valueOf(((StreamExpressionValue)legacyJoinExpression.getParameter()).getValue());
+    }
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost") &&
           !namedParam.getName().equals("to") &&
           !namedParam.getName().equals("from") &&
           !namedParam.getName().equals("edge") &&
+          !namedParam.getName().equals("legacyJoin") &&
           !namedParam.getName().equals("maxDepth") &&
           !namedParam.getName().equals("threads") &&
           !namedParam.getName().equals("partitionSize"))
@@ -199,7 +236,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     }
 
     // We've got all the required items
-    init(zkHost, collectionName, fromNode, toNode, fromField, toField, params, partitionSize, threads, maxDepth);
+    init(zkHost, collectionName, fromNode, toNode, fromField, toField, params, partitionSize, threads, maxDepth, legacyJoin);
   }
 
   private void init(String zkHost,
@@ -211,7 +248,8 @@ public class ShortestPathStream extends TupleStream implements Expressible {
                     SolrParams queryParams,
                     int joinBatchSize,
                     int threads,
-                    int maxDepth) {
+                    int maxDepth,
+                    boolean legacyJoin) {
     this.zkHost = zkHost;
     this.collection = collection;
     this.fromNode = fromNode;
@@ -222,6 +260,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     this.joinBatchSize = joinBatchSize;
     this.threads = threads;
     this.maxDepth = maxDepth;
+    this.legacyJoin = legacyJoin;
   }
 
   @Override
@@ -252,6 +291,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("from", fromNode));
     expression.addParameter(new StreamExpressionNamedParameter("to", toNode));
     expression.addParameter(new StreamExpressionNamedParameter("edge", fromField+"="+toField));
+    expression.addParameter(new StreamExpressionNamedParameter("legacyJoin", Boolean.toString(legacyJoin)));
     return expression;
   }
   
@@ -433,7 +473,11 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       StringBuffer nodeQuery = new StringBuffer();
 
       for(String node : nodes) {
-        nodeQuery.append('"').append(node).append('"').append(" ");
+        if (legacyJoin) {
+          nodeQuery.append(node).append(" ");
+        } else {
+          nodeQuery.append('"').append(node).append('"').append(" ");
+        }
       }
 
       String q = fromField + ":(" + nodeQuery.toString().trim() + ")";

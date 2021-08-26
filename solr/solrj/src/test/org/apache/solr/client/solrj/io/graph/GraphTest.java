@@ -71,8 +71,15 @@ public class GraphTest extends SolrCloudTestCase {
   @Test
   // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testShortestPathStream() throws Exception {
+    implTestShortestPathStream(false);
+  }
 
-    final boolean with_SOLR_15546_fix = true;
+  @Test
+  public void testLegacyShortestPathStream() throws Exception {
+    implTestShortestPathStream(true);
+  }
+
+  private void implTestShortestPathStream(final boolean legacyJoin) throws Exception {
 
     final String ORIGINAL_TITLE = random().nextBoolean() ? "Original 'P' paperback" : "Original \"H\" hardback";
     final String TRANSLATED_TITLE = "Translation";
@@ -236,7 +243,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
 
-    if (with_SOLR_15546_fix) {
+    if (!legacyJoin) {
     // SOLR-15546: fromNode and toNode contains colon
     stream = new ShortestPathStream(zkHost,
         "collection1",
@@ -294,7 +301,8 @@ public class GraphTest extends SolrCloudTestCase {
         StreamingTest.mapParams(),
         10,
         3,
-        6);
+        6,
+        legacyJoin);
 
     stream.setStreamContext(context);
     paths = new HashSet<>();
@@ -304,7 +312,7 @@ public class GraphTest extends SolrCloudTestCase {
       paths.add(tuple.getStrings("path").toString());
     }
 
-    if (with_SOLR_15546_fix) {
+    if (!legacyJoin) {
       if (ORIGINAL_TITLE.contains("\"")) {
         assertEquals(1, tuples.size());
         // double quotes in the interim ORIGINAL_TITLE node were not matched
