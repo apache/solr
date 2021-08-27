@@ -3698,7 +3698,7 @@ public class SolrCLI implements CLIO {
   }
 
   public static class ZeppelinTool extends ToolBase {
-    private static final String ZEPP_VERSION = "0.9.0";
+    private static final String ZEPP_VERSION = "0.10.0";
     private static final String ZEPP_INSTALL_TYPE = "netinst";
     private static final String ZEPP_UNPACK_DIR_NAME = "zeppelin-" + ZEPP_VERSION + "-bin-" + ZEPP_INSTALL_TYPE;
     private static final String MIRROR_BASE = "http://apache.cs.utah.edu/zeppelin/zeppelin-" + ZEPP_VERSION + "/";
