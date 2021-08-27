@@ -45,7 +45,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.CommonPrefix;
 import software.amazon.awssdk.services.s3.model.Delete;
-import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
 import software.amazon.awssdk.services.s3.model.DeletedObject;
@@ -400,11 +399,8 @@ public class S3StorageClient {
     if (deleteIndividually) {
       for (ObjectIdentifier k : keysToDelete) {
         try {
-          DeleteObjectResponse response =
-              s3Client.deleteObject(b -> b.bucket(bucketName).key(k.key()));
-          if (response.deleteMarker()) {
-            deletedPaths.add(k.key());
-          }
+          s3Client.deleteObject(b -> b.bucket(bucketName).key(k.key()));
+          deletedPaths.add(k.key());
         } catch (SdkException sdke) {
           throw new S3Exception("Could not delete object with key: " + k.key(), sdke);
         }

@@ -32,8 +32,8 @@ dependencies {
     }
     implementation (group: 'software.amazon.awssdk', name: 'sdk-core')
     implementation (group: 'software.amazon.awssdk', name: 'protocol-core')
-    runtime (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
-    runtime (group: 'org.codehaus.woodstox', name: 'stax2-api')
+    runtimeOnly (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
+    runtimeOnly (group: 'org.codehaus.woodstox', name: 'stax2-api')
 
     testImplementation('com.adobe.testing:s3mock-junit4') {
         // Don't pull in separate versions of these libs, just use what Solr already has
@@ -45,6 +45,7 @@ dependencies {
         exclude group: 'commons-codec', module: 'commons-codec'
         exclude group: 'org.apache.commons', module: 'commons-lang3'
         exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+        exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
     }
 
     testImplementation project(':solr:test-framework')
