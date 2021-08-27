@@ -19,8 +19,6 @@ package org.apache.solr.search.similarities;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.misc.search.similarity.LegacyBM25Similarity;
-import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
@@ -35,13 +33,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * that delegates to the field type, if it's configured.  For field types that
  * do not have a <code>Similarity</code> explicitly configured, the global <code>Similarity</code> 
  * will use per fieldtype defaults -- either based on an explicitly configured 
- * <code>defaultSimFromFieldType</code> a sensible default depending on the {@link Version} 
- * matching configured:
- * </p>
- * <ul>
- *  <li><code>luceneMatchVersion &lt; 8.0</code> = {@link LegacyBM25Similarity}</li>
- *  <li><code>luceneMatchVersion &gt;= 8.0</code> = {@link BM25Similarity}</li>
- * </ul>
+ * <code>defaultSimFromFieldType</code> or {@link BM25Similarity} as a sensible default.
  * <p>
  * The <code>defaultSimFromFieldType</code> option accepts the name of any fieldtype, and uses 
  * whatever <code>Similarity</code> is explicitly configured for that fieldType as the default for
@@ -85,12 +77,10 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
   
   private volatile SolrCore core; // set by inform(SolrCore)
   private volatile Similarity similarity; // lazy instantiated
-  private Version coreVersion = Version.LATEST;
 
   @Override
   public void inform(SolrCore core) {
     this.core = core;
-    this.coreVersion = this.core.getSolrConfig().luceneMatchVersion;
   }
   
   @Override
@@ -111,9 +101,7 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
       Similarity defaultSim = null;
       if (null == defaultSimFromFieldType) {
         // nothing configured, choose a sensible implicit default...
-        defaultSim = coreVersion.onOrAfter(Version.LUCENE_8_0_0) ? 
-            new BM25Similarity() :
-            new LegacyBM25Similarity();
+        defaultSim = new BM25Similarity();
       } else {
         FieldType defSimFT = core.getLatestSchema().getFieldTypeByName(defaultSimFromFieldType);
         if (null == defSimFT) {
