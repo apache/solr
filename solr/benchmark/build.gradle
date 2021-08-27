@@ -39,7 +39,7 @@ jmhReport {
 
 task echoCp {
   doLast {
-    logger.lifecycle((sourceSets.main.runtimeClasspath + sourceSets.main.resources).asPath)
+    print "${(sourceSets.main.runtimeClasspath + sourceSets.main.resources).asPath}"
   }
 }
 
