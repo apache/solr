@@ -134,7 +134,7 @@ solrAdminApp.controller('QueryController',
 
       purgeParams(params, ["q.alt", "qf", "mm", "pf", "ps", "qs", "tie", "bq", "bf"], $scope.val.defType !== "dismax" && $scope.val.defType !== "edismax");
       purgeParams(params, ["uf", "pf2", "pf3", "ps2", "ps3", "boost", "stopwords", "lowercaseOperators"], $scope.val.defType !== "edismax");
-      purgeParams(params, getDependentFields("indent"), $scope.val.indent !== false);
+      // purgeParams(params, getDependentFields("indent"), $scope.val.indent !== false);
       purgeParams(params, getDependentFields("hl"), $scope.val.hl !== true);
       purgeParams(params, getDependentFields("facet"), $scope.val.facet !== true);
       purgeParams(params, getDependentFields("spatial"), $scope.val.spatial !== true);
