@@ -149,6 +149,8 @@ apply from: file('gradle/validation/check-broken-links.gradle')
 
 apply from: file('gradle/validation/solr.config-file-sanity.gradle')
 
+apply from: file('gradle/validation/spotless.gradle')
+
 // Source or data regeneration tasks
 apply from: file('gradle/generation/javacc.gradle')
 

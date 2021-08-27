@@ -23,7 +23,6 @@ import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 public class Pair<T1, T2> implements Serializable, MapWriter {
@@ -52,7 +51,7 @@ public class Pair<T1, T2> implements Serializable, MapWriter {
 
   @Override
   public String toString() {
-    return toJSONString(makeMap("first", first, "second", second));
+    return toJSONString(Map.of("first", first, "second", second));
   }
 
   @Override
@@ -67,7 +66,7 @@ public class Pair<T1, T2> implements Serializable, MapWriter {
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Pair parse(Map m) {
+  public static Pair parse(Map<String, ?> m) {
     return new Pair(m.get("first"), m.get("second"));
   }
 

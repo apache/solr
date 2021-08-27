@@ -54,23 +54,28 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
+    if (ccc.isDistributedCollectionAPI()) {
+      // No Overseer (not accessible from Collection API command execution in any case) so this command can't be run...
+      log.error("Cluster is running with distributed Collection API execution. Ignoring Collection API operation " + operation); // nowarn
+      return;
+    }
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    Map roles = null;
+    Map<String, List<String>> roles = null;
     String node = message.getStr("node");
 
     String roleName = message.getStr("role");
     boolean nodeExists = false;
     if (nodeExists = zkClient.exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+      @SuppressWarnings("unchecked")
+      Map<String, List<String>> tmp = (Map<String, List<String>>) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+      roles = tmp;
     } else {
       roles = new LinkedHashMap<>(1);
     }
 
-    List nodeList = (List) roles.get(roleName);
-    if (nodeList == null) roles.put(roleName, nodeList = new ArrayList<>());
+    List<String> nodeList = roles.computeIfAbsent(roleName, k -> new ArrayList<>());
     if (ADDROLE == operation) {
       log.info("Overseer role added to {}", node);
       if (!nodeList.contains(node)) nodeList.add(node);

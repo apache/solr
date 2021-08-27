@@ -340,13 +340,12 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
   }
 
   @Override
-  @SuppressWarnings({"unchecked","rawtypes"})
   public final boolean equals(final Object o) {
     if (o==this) return true;
     if (!super.equals(o))
       return false;
     if (o instanceof LegacyNumericRangeQuery) {
-      final LegacyNumericRangeQuery q=(LegacyNumericRangeQuery)o;
+      final LegacyNumericRangeQuery<?> q=(LegacyNumericRangeQuery<?>)o;
       return (
         (q.min == null ? min == null : q.min.equals(min)) &&
         (q.max == null ? max == null : q.max.equals(max)) &&

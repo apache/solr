@@ -328,7 +328,6 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     // All words are "correct" per the dictionary, but this collation would
     // return no results if tried.
     SolrRequestHandler handler = core.getRequestHandler("/spellCheckCompRH");
-    @SuppressWarnings({"rawtypes"})
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap());
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);

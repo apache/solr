@@ -803,8 +803,7 @@ public class SolrMetricManager {
     AtomicInteger removed = new AtomicInteger();
     registry.removeMatching((name, metric) -> {
       if (metric instanceof GaugeWrapper) {
-        @SuppressWarnings({"rawtypes"})
-        GaugeWrapper wrapper = (GaugeWrapper) metric;
+        GaugeWrapper<?> wrapper = (GaugeWrapper<?>) metric;
         boolean toRemove = wrapper.getTag().contains(tagSegment);
         if (toRemove) {
           removed.incrementAndGet();
@@ -1003,7 +1002,6 @@ public class SolrMetricManager {
    *                      component instances.
    * @throws Exception if any argument is missing or invalid
    */
-  @SuppressWarnings({"rawtypes"})
   public void loadReporter(String registry, SolrResourceLoader loader, CoreContainer coreContainer, SolrCore solrCore, PluginInfo pluginInfo, String tag) throws Exception {
     if (registry == null || pluginInfo == null || pluginInfo.name == null || pluginInfo.className == null) {
       throw new IllegalArgumentException("loadReporter called with missing arguments: " +
@@ -1015,7 +1013,7 @@ public class SolrMetricManager {
         pluginInfo.className,
         SolrMetricReporter.class,
         new String[0],
-    new Class[]{SolrMetricManager.class, String.class},
+        new Class<?>[]{SolrMetricManager.class, String.class},
         new Object[]{this, registry}
     );
     // prepare MDC for plugins that want to use its properties
@@ -1228,7 +1226,7 @@ public class SolrMetricManager {
     return result;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   private PluginInfo preparePlugin(PluginInfo info, Map<String, String> defaultAttributes,
                                    Map<String, Object> defaultInitArgs) {
     if (info == null) {
@@ -1252,7 +1250,7 @@ public class SolrMetricManager {
         initArgs.put(k, v);
       }
     });
-    return new PluginInfo(info.type, attrs, new NamedList(initArgs), null);
+    return new PluginInfo(info.type, attrs, new NamedList<>(initArgs), null);
   }
 
   public void loadShardReporters(PluginInfo[] pluginInfos, SolrCore core) {

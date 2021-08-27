@@ -16,43 +16,44 @@
  */
 package org.apache.solr.util;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**A utility class to verify signatures
- *
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * A utility class with helpers for various signature and certificate tasks
  */
 public final class CryptoKeys {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -168,142 +169,6 @@ public final class CryptoKeys {
 
   }
 
-
-  private static byte[][] evpBytesTokey(int key_len, int iv_len, MessageDigest md,
-                                        byte[] salt, byte[] data, int count) {
-    byte[][] both = new byte[2][];
-    byte[] key = new byte[key_len];
-    int key_ix = 0;
-    byte[] iv = new byte[iv_len];
-    int iv_ix = 0;
-    both[0] = key;
-    both[1] = iv;
-    byte[] md_buf = null;
-    int nkey = key_len;
-    int niv = iv_len;
-    int i = 0;
-    if (data == null) {
-      return both;
-    }
-    int addmd = 0;
-    for (; ; ) {
-      md.reset();
-      if (addmd++ > 0) {
-        md.update(md_buf);
-      }
-      md.update(data);
-      if (null != salt) {
-        md.update(salt, 0, 8);
-      }
-      md_buf = md.digest();
-      for (i = 1; i < count; i++) {
-        md.reset();
-        md.update(md_buf);
-        md_buf = md.digest();
-      }
-      i = 0;
-      if (nkey > 0) {
-        for (; ; ) {
-          if (nkey == 0)
-            break;
-          if (i == md_buf.length)
-            break;
-          key[key_ix++] = md_buf[i];
-          nkey--;
-          i++;
-        }
-      }
-      if (niv > 0 && i != md_buf.length) {
-        for (; ; ) {
-          if (niv == 0)
-            break;
-          if (i == md_buf.length)
-            break;
-          iv[iv_ix++] = md_buf[i];
-          niv--;
-          i++;
-        }
-      }
-      if (nkey == 0 && niv == 0) {
-        break;
-      }
-    }
-    for (i = 0; i < md_buf.length; i++) {
-      md_buf[i] = 0;
-    }
-    return both;
-  }
-
-  public static String decodeAES(String base64CipherTxt, String pwd) {
-    int[] strengths = new int[]{256, 192, 128};
-    Exception e = null;
-    for (int strength : strengths) {
-      try {
-        return decodeAES(base64CipherTxt, pwd, strength);
-      } catch (Exception exp) {
-        e = exp;
-      }
-    }
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error decoding ", e);
-  }
-
-
-  public static String decodeAES(String base64CipherTxt, String pwd, final int keySizeBits) {
-    final Charset ASCII = StandardCharsets.US_ASCII;
-    final int INDEX_KEY = 0;
-    final int INDEX_IV = 1;
-    final int ITERATIONS = 1;
-    final int SALT_OFFSET = 8;
-    final int SALT_SIZE = 8;
-    final int CIPHERTEXT_OFFSET = SALT_OFFSET + SALT_SIZE;
-
-    try {
-      byte[] headerSaltAndCipherText = Base64.base64ToByteArray(base64CipherTxt);
-
-      // --- extract salt & encrypted ---
-      // header is "Salted__", ASCII encoded, if salt is being used (the default)
-      byte[] salt = Arrays.copyOfRange(
-          headerSaltAndCipherText, SALT_OFFSET, SALT_OFFSET + SALT_SIZE);
-      byte[] encrypted = Arrays.copyOfRange(
-          headerSaltAndCipherText, CIPHERTEXT_OFFSET, headerSaltAndCipherText.length);
-
-      // --- specify cipher and digest for evpBytesTokey method ---
-
-      Cipher aesCBC = Cipher.getInstance("AES/CBC/PKCS5Padding");
-      MessageDigest md5 = MessageDigest.getInstance("MD5");
-
-      // --- create key and IV  ---
-
-      // the IV is useless, OpenSSL might as well have use zero's
-      final byte[][] keyAndIV = evpBytesTokey(
-          keySizeBits / Byte.SIZE,
-          aesCBC.getBlockSize(),
-          md5,
-          salt,
-          pwd.getBytes(ASCII),
-          ITERATIONS);
-
-      SecretKeySpec key = new SecretKeySpec(keyAndIV[INDEX_KEY], "AES");
-      IvParameterSpec iv = new IvParameterSpec(keyAndIV[INDEX_IV]);
-
-      // --- initialize cipher instance and decrypt ---
-
-      aesCBC.init(Cipher.DECRYPT_MODE, key, iv);
-      byte[] decrypted = aesCBC.doFinal(encrypted);
-      return new String(decrypted, ASCII);
-    } catch (BadPaddingException e) {
-      // AKA "something went wrong"
-      throw new IllegalStateException(
-          "Bad password, algorithm, mode or padding;" +
-              " no salt, wrong number of iterations or corrupted ciphertext.", e);
-    } catch (IllegalBlockSizeException e) {
-      throw new IllegalStateException(
-          "Bad algorithm, mode or corrupted (resized) ciphertext.", e);
-    } catch (GeneralSecurityException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
   public static PublicKey deserializeX509PublicKey(String pubKey) {
     try {
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
@@ -323,6 +188,39 @@ public final class CryptoKeys {
     }
     rsaCipher.init(Cipher.DECRYPT_MODE, pubKey);
     return rsaCipher.doFinal(buffer, 0, buffer.length);
+  }
+
+  /**
+   * Tries for find X509 certificates in the input stream in DER or PEM format.
+   * Supports multiple certs in same stream if multiple PEM certs are concatenated.
+   * @param certsStream input stream with the contents of either PEM (plaintext) or DER (binary) certs
+   * @return collection of found certificates, else throws exception
+   */
+  public static Collection<X509Certificate> parseX509Certs(InputStream certsStream) {
+    try {
+      CertificateFactory cf = CertificateFactory.getInstance("X.509");
+      Collection<? extends Certificate> parsedCerts = cf.generateCertificates(certsStream);
+      List<X509Certificate> certs = parsedCerts.stream().filter(c -> c instanceof X509Certificate)
+          .map(c -> (X509Certificate) c).collect(Collectors.toList());
+      if (certs.size() > 0) {
+        return certs;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Wrong type of certificates. Must be DER or PEM format");
+      }
+    } catch (CertificateException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed loading certificate(s) from input stream", e);
+    }
+  }
+
+  /**
+   * Given a file, will try to
+   * @param pemContents the raw string content of the PEM file
+   * @return the certificate content between BEGIN and END markers
+   */
+  public static String extractCertificateFromPem(String pemContents) {
+    int from = pemContents.indexOf("-----BEGIN CERTIFICATE-----");
+    int end = pemContents.lastIndexOf("-----END CERTIFICATE-----") + 25;
+    return pemContents.substring(from, end);
   }
 
   public static class RSAKeyPair {

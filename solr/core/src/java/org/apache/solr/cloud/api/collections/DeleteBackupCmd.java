@@ -70,7 +70,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     @Override
-    public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
         String backupLocation = message.getStr(CoreAdminParams.BACKUP_LOCATION);
         String backupName = message.getStr(NAME);
         String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
@@ -101,12 +101,11 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         }
     }
 
-    @SuppressWarnings({"unchecked"})
     /**
      * Clean up {@code backupPath} by removing all index files, shard-metadata files, and backup property files that are
      * unreachable, uncompleted or corrupted.
      */
-    void purge(BackupRepository repository, URI backupPath, @SuppressWarnings({"rawtypes"}) NamedList result) throws IOException {
+    void purge(BackupRepository repository, URI backupPath, NamedList<Object> result) throws IOException {
         PurgeGraph purgeGraph = new PurgeGraph();
         purgeGraph.build(repository, backupPath);
 
@@ -115,8 +114,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         repository.delete(backupPaths.getShardBackupMetadataDir(), purgeGraph.shardBackupMetadataDeletes, true);
         repository.delete(backupPath, purgeGraph.backupIdDeletes, true);
 
-        @SuppressWarnings({"rawtypes"})
-        NamedList details = new NamedList();
+        NamedList<Integer> details = new NamedList<>();
         details.add("numBackupIds", purgeGraph.backupIdDeletes.size());
         details.add("numShardBackupIds", purgeGraph.shardBackupMetadataDeletes.size());
         details.add("numIndexFiles", purgeGraph.indexFileDeletes.size());
@@ -128,7 +126,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
      */
     void keepNumberOfBackup(BackupRepository repository, URI backupPath,
                             int maxNumBackup,
-                            @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+                            NamedList<Object> results) throws Exception {
         List<BackupId> backupIds = BackupFilePaths.findAllBackupIdsFromFileListing(repository.listAllOrEmpty(backupPath));
         if (backupIds.size() <= maxNumBackup) {
             return;
@@ -141,7 +139,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
 
     void deleteBackupIds(URI backupUri, BackupRepository repository,
                          Set<BackupId> backupIdsDeletes,
-                         @SuppressWarnings({"rawtypes"}) NamedList results) throws IOException {
+                         NamedList<Object> results) throws IOException {
         BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupUri);
         URI shardBackupMetadataDir = incBackupFiles.getShardBackupMetadataDir();
 
@@ -185,7 +183,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         }
 
         repository.delete(incBackupFiles.getShardBackupMetadataDir(),
-                shardBackupIdFileDeletes.stream().map(ShardBackupId::getIdAsString).collect(Collectors.toList()), true);
+                shardBackupIdFileDeletes.stream().map(ShardBackupId::getBackupMetadataFilename).collect(Collectors.toList()), true);
         repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
         try {
             for (BackupId backupId : backupIdsDeletes) {
@@ -200,15 +198,13 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         repository.delete(backupUri, backupIdsDeletes.stream().map(id -> BackupFilePaths.getBackupPropsName(id)).collect(Collectors.toList()), true);
     }
 
-    @SuppressWarnings("unchecked")
     private void addResult(URI backupPath, BackupRepository repository,
                            Set<BackupId> backupIdDeletes,
                            Map<BackupId, AggregateBackupStats> backupIdToCollectionBackupPoint,
-                           @SuppressWarnings({"rawtypes"}) NamedList results) {
+                           NamedList<Object> results) {
 
         String collectionName = null;
-        @SuppressWarnings({"rawtypes"})
-        List<NamedList> shardBackupIdDetails = new ArrayList<>();
+        List<NamedList<Object>> shardBackupIdDetails = new ArrayList<>();
         results.add("deleted", shardBackupIdDetails);
         for (BackupId backupId : backupIdDeletes) {
             NamedList<Object> backupIdResult = new NamedList<>();
@@ -233,7 +229,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     private void deleteBackupId(BackupRepository repository, URI backupPath,
-                                int bid, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+                                int bid, NamedList<Object> results) throws Exception {
         BackupId backupId = new BackupId(bid);
         if (!repository.exists(repository.resolve(backupPath, BackupFilePaths.getBackupPropsName(backupId)))) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Backup ID [" + bid + "] not found; cannot be deleted");

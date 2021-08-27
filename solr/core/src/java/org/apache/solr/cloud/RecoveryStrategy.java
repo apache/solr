@@ -63,6 +63,7 @@ import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -78,16 +79,14 @@ import org.slf4j.LoggerFactory;
 public class RecoveryStrategy implements Runnable, Closeable {
 
   public static class Builder implements NamedListInitializedPlugin {
-    @SuppressWarnings({"rawtypes"})
-    private NamedList args;
+    private NamedList<?> args;
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+    public void init(NamedList<?> args) {
       this.args = args;
     }
 
     // this should only be used from SolrCoreState
-    @SuppressWarnings({"unchecked"})
     public RecoveryStrategy create(CoreContainer cc, CoreDescriptor cd,
         RecoveryStrategy.RecoveryListener recoveryListener) {
       final RecoveryStrategy recoveryStrategy = newRecoveryStrategy(cc, cd, recoveryListener);
@@ -305,6 +304,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       log.info("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
 
+      final RTimer timer = new RTimer();
       try {
         doRecovery(core);
       } catch (InterruptedException e) {
@@ -314,6 +314,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       } catch (Exception e) {
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+      }
+
+      if (log.isInfoEnabled()) {
+        log.info("Finished recovery process. recoveringAfterStartup={} msTimeTaken={}", recoveringAfterStartup, timer.getTime());
       }
     }
   }

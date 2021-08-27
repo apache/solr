@@ -71,7 +71,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -87,7 +86,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -106,7 +104,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * expand.fq=type:child (optional, overrides the main filter queries)<br>
  * expand.field=field (mandatory, if the not used with the CollapsingQParserPlugin. This is given higher priority when both are present)<br>
  */
-public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
+public class ExpandComponent extends SearchComponent implements PluginInfoInitialized {
   public static final String COMPONENT_NAME = "expand";
   private static final int finishingStage = ResponseBuilder.STAGE_GET_FIELDS;
   private PluginInfo info = PluginInfo.EMPTY_INFO;
@@ -126,12 +124,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
-  @Override
-  public void inform(SolrCore core) {
-
-  }
-
-  @SuppressWarnings("unchecked")
   @Override
   public void process(ResponseBuilder rb) throws IOException {
 
@@ -220,7 +212,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        @SuppressWarnings("resource")
         LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -390,7 +381,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(values != null) {
       //Get The Top Level SortedDocValues again so we can re-iterate:
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        @SuppressWarnings("resource")
         LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -445,7 +435,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
 
     if (!rb.doExpand) {
@@ -453,15 +442,16 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       SolrQueryRequest req = rb.req;
-      NamedList expanded = (NamedList) req.getContext().get("expanded");
+      @SuppressWarnings("unchecked")
+      NamedList<Object> expanded = (NamedList<Object>) req.getContext().get("expanded");
       if (expanded == null) {
-        expanded = new SimpleOrderedMap();
+        expanded = new SimpleOrderedMap<>();
         req.getContext().put("expanded", expanded);
       }
 
       for (ShardResponse srsp : sreq.responses) {
-        NamedList response = srsp.getSolrResponse().getResponse();
-        NamedList ex = (NamedList) response.get("expanded");
+        NamedList<Object> response = srsp.getSolrResponse().getResponse();
+        NamedList<?> ex = (NamedList<?>) response.get("expanded");
         for (int i=0; i<ex.size(); i++) {
           String name = ex.getName(i);
           SolrDocumentList val = (SolrDocumentList) ex.getVal(i);
@@ -471,7 +461,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public void finishStage(ResponseBuilder rb) {
 
@@ -483,9 +472,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
 
-    NamedList expanded = (NamedList) rb.req.getContext().get("expanded");
+    NamedList<?> expanded = (NamedList<?>) rb.req.getContext().get("expanded");
     if (expanded == null) {
-      expanded = new SimpleOrderedMap();
+      expanded = new SimpleOrderedMap<>();
     }
 
     rb.rsp.add("expanded", expanded);

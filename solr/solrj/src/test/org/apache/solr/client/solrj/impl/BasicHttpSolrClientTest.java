@@ -558,8 +558,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       HttpSolrClient solrClient = getHttpSolrClient(jetty.getBaseUrl().toString() + "/collection1",
           client, null);
       QueryRequest req = new QueryRequest();
-      @SuppressWarnings({"rawtypes"})
-      NamedList response = solrClient.request(req);
+      NamedList<?> response = solrClient.request(req);
       InputStream stream = (InputStream) response.get("stream");
       assertNotNull(stream);
       stream.close();
@@ -676,7 +675,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   }
 
   private void verifyServletState(HttpSolrClient client,
-                                  @SuppressWarnings({"rawtypes"})SolrRequest request) {
+                                  SolrRequest<?> request) {
     // check query String
     Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
     while (paramNames.hasNext()) {

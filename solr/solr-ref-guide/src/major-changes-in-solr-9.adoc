@@ -1,3 +1,4 @@
+
 = Major Changes in Solr 9
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -86,7 +87,7 @@ _(raw; not yet edited)_
   Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
   (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
 
-* SOLR-14147: Solr now runs with the java security manager enabled by default. Administrators that need to run Solr with Hadoop will need to disable this feature by setting SOLR_SECURITY_MANAGER=false in the environment or in one of the Solr init scripts. Other features in Solr could also break. (Robert Muir, marcussorealheis)
+* SOLR-14147: Solr now runs with the java security manager enabled by default. Administrators that need to run Solr with Hadoop will need to disable this feature by setting SOLR_SECURITY_MANAGER_ENABLED=false in the environment or in one of the Solr init scripts. Other features in Solr could also break. (Robert Muir, marcussorealheis)
 
 * SOLR-14118: Solr embedded zookeeper only binds to localhost by default.
   This embedded zookeeper should not be used in production. If you rely
@@ -130,7 +131,7 @@ _(raw; not yet edited)_
 
 * SOLR-14792: VelocityResponseWriter has been removed from Solr.  This encompasses all previous included `/browse` and
   `wt=velocity` examples.  This feature has been migrated to an installable package at
-  https://github.com/erikhatcher/solritas
+  https://github.com/erikhatcher/solr-velocity
 
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the numFound value (exact vs approximation).
   Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
@@ -150,12 +151,15 @@ _(raw; not yet edited)_
 * SOLR-15121: XSLTResponseWriter moved to /contrib/scripting/ package instead
  of shipping as part of Solr, due to security concerns.
 
-* SOLR-15156: Child Doc Transformer's `childFilter` param no longer applies query syntax
-escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
-
 * SOLR-15203: Remove the deprecated `jwkUrl` in favour of `jwksUrl` when configuring JWT authentication.
 
 * SOLR-15276: V2 API call to look up async request status restful style of "/cluster/command-status/1000" instead of "/cluster/command-status?requestid=1000".
+
+* SOLR-15409: Zookeeper client libraries upgraded to 3.7.0, which may not be compatible with your existing server installations
+
+* SOLR-15470: The binary distribution no longer contains test-framework jars.
+
+* SOLR-15471: The language identification "whitelist" configuration is now an "allowlist" to better convey the meaning of the property
 
 === Upgrade Prerequisites in Solr 9
 
@@ -166,7 +170,11 @@ Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a pre
 See for example https://solr.apache.org/guide/8_8/cluster-node-management.html#migratestateforma[Solr 8.8 Ref Guide].
 // Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
-* If you're using Solr in standalone mode with the <<the-query-elevation-component.adoc#,Query Elevation Component>> with it's elevation file in the data directory, you'll have to move it to the <<config-sets.adoc#,Configset>> instead.
+* If you're using a SolrJ CloudClient to connect to your Solr cluster, you must be using SolrJ version 8.10 or higher (8.x) when upgrading your SolrCloud from 8.x to 9.x.
+Otherwise, SolrJ will not be able to connect to the cluster once it has upgraded to Solr 9.
+Once you have upgraded all Solr clusters that the client is connecting to, you can upgrade the SolrJ client to 9.x.
+
+* If you're using Solr in standalone mode with the <<query-elevation-component.adoc#,Query Elevation Component>> with it's elevation file in the data directory, you'll have to move it to the <<config-sets.adoc#,Configset>> instead.
 The only reason QEC supported the data directory was to support loading its changes on a commit instead of a more expensive core reload.
 That feature now works from the configset dir too.
 SolrCloud doesn't support that but may sometime.
@@ -175,11 +183,25 @@ SolrCloud doesn't support that but may sometime.
 
 === Reindexing After Upgrades in Solr 9
 
+In Solr 8, it's possible to add docValues to a schema without re-indexing via UninvertDocValuesMergePolicy, an advanced/expert utility.
+Due to changes in Lucene 9, that isn't possible any more; the component was removed.
+If re-indexing is too onerous, use this mechanism in Solr 8.
+
 == New Features & Enhancements in Solr 9
 
 == Configuration and Default Parameter Changes in Solr 9
 
-* base_url removed from stored state*
+=== solr.xml maxBooleanClauses now enforced recursively
+
+Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
+
+In previous versios of Solr, this option was a hard limit on the number of clauses in any `BooleanQuery` object - but it was only enforced for the _direct_ clauses.  Starting with Solr 9, this global limit is now also enforced against the total number of clauses in a _nested_ query structure.
+
+Users who upgrade from prior versions of Solr may find that some requests involving complex internal query structures (Example: long query strings using `edismax` with many `qf` and `pf` fields that include query time synonym expansion) which worked in the past now hit this limit and fail.
+
+User's in this situation are advised to consider the complexity f their queries/configuration, and increase the value of `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` if warranted.
+
+=== base_url removed from stored state
 
 If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1)
 to better align the stored state in Zookeeper with future versions of Solr; as of Solr 9.x, the `base_url` will no longer be
@@ -188,8 +210,18 @@ set `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url
 
 Support for the `solr.storeBaseUrl` system property will be removed in Solr 10.x and `base_url` will no longer be stored.
 
+* Solr's distributed tracing no longer incorporates a special `samplePercentage` SolrCloud cluster property.
+Instead, consult the documentation for the tracing system you use on how to sample the traces.
+Consequently, if you use a Tracer at all, you will always have traces and thus trace IDs in logs.
+What percentage of them get reported to a tracing server is up to you.
+
+* JaegerTracerConfigurator no longer recognizes any configuration in solr.xml.
+  It is now completely configured via System properties and/or Environment variables as documented by Jaeger.
+
 === Schema Changes in 9
 
 === Authentication & Security Changes in Solr 9
 
 * BasicAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.
+
+* The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see <<configuring-solr-xml.adoc#allow-urls, Format of solr.allowUrls>> documentation.

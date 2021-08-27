@@ -132,7 +132,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void load(SolrQueryRequest req, SolrQueryResponse rsp,
       ContentStream stream, UpdateRequestProcessor processor) throws Exception {
     Parser parser = null;
@@ -191,7 +190,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           if (xpathExpr != null) {
             Matcher matcher =
                     PARSER.parse(xpathExpr);
-            serializer.startDocument();//The MatchingContentHandler does not invoke startDocument.  See http://tika.markmail.org/message/kknu3hw7argwiqin
+            serializer.startDocument();//The MatchingContentHandler does not invoke startDocument.  See https://lists.apache.org/thread.html/5ec63e104e564a2363e45f74d5aced6520b7d32b4b625762ef56cb86%401226775505%40%3Cdev.tika.apache.org%3E
             parsingHandler = new MatchingContentHandler(serializer, matcher);
           } else {
             parsingHandler = serializer;
@@ -244,8 +243,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           rsp.add(stream.getName(), writer.toString());
           writer.close();
           String[] names = metadata.names();
-          @SuppressWarnings({"rawtypes"})
-          NamedList metadataNL = new NamedList();
+          NamedList<String[]> metadataNL = new NamedList<>();
           for (int i = 0; i < names.length; i++) {
             String[] vals = metadata.getValues(names[i]);
             metadataNL.add(names[i], vals);

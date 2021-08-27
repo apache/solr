@@ -25,7 +25,8 @@ The first, and most common, is to use it as a request handler.
 In this case, you would send text to the MoreLikeThis request handler as needed (as in when a user clicked on a "similar documents" link).
 
 The second is to use it as a search component.
-This is less desirable since it performs the MoreLikeThis analysis on every document that matches a user query. This may slow search results.
+This is less desirable since it performs the MoreLikeThis analysis on every document that matches a user query.
+This may slow search results.
 
 Another approach is to use it as a request handler but with externally supplied text.
 This case, also referred to as the MoreLikeThisHandler, will supply information about similar documents in the index based on the text of the input document.
@@ -38,7 +39,7 @@ This operates in much the same way as the request handler but since it is a quer
 `MoreLikeThis` constructs a Lucene query based on terms in a document.
 It does this by pulling terms from the list of fields provided with the request.
 
-For best results, the fields should have stored term vectors (`termVectors=true`), which can be <<defining-fields.adoc#,configured in the schema>>.
+For best results, the fields should have stored term vectors (`termVectors=true`), which can be <<fields.adoc#,configured in the schema>>.
 If term vectors are not stored, MoreLikeThis can generate terms from stored fields.
 The field used for the `uniqueKey` must also be stored in order for MoreLikeThis to work properly.
 
@@ -156,7 +157,7 @@ Possible values are `true` or `false`.
 |Optional |Default: none
 |===
 +
-Query fields and their boosts using the same format used by the <<the-dismax-query-parser.adoc#,DisMax Query Parser>>.
+Query fields and their boosts using the same format used by the <<dismax-query-parser.adoc#,DisMax Query Parser>>.
 These fields must also be specified in `mlt.fl`.
 
 `mlt.interestingTerms`::
@@ -176,7 +177,7 @@ Unless `mlt.boost=true`, all terms will have `boost=1.0`.
 
 +
 To use this parameter with the <<MoreLikeThis Search Component,search component>>, the query cannot be distributed.
-In order to get interesting terms, the query must be sent to a single shard and limited to that shard only (with the <<distributed-requests.adoc#limiting-which-shards-are-queried,`shards`>> parameter).
+In order to get interesting terms, the query must be sent to a single shard and limited to that shard only (with the <<solrcloud-distributed-requests.adoc#limiting-which-shards-are-queried,`shards`>> parameter).
 Multi-shard support is, however, available with the MoreLikeThis request handler.
 
 === MoreLikeThis Request Handler
@@ -220,7 +221,7 @@ curl -X POST -H 'Content-type:application/json' -d {
 Both of the above examples set the `mlt.fl` parameter to "body" for the request handler.
 This means that all requests to the handler will use that value for the parameter unless specifically overridden in an individual request.
 
-For more about request handler configuration in general, see the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#default-components,RequestHandlers and SearchComponents in Solrconfig>>.
+For more about request handler configuration in general, see the section <<requesthandlers-searchcomponents.adoc#default-components,Request Handlers and SearchComponents>>.
 
 ==== Request Handler Parameters
 
@@ -338,7 +339,7 @@ It's important to note this could incur a cost to search performance so should o
 
 ==== Search Component Configuration
 
-The MoreLikeThis search component is a default search component that works with all search handlers (see also <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#default-components,Default Components>>).
+The MoreLikeThis search component is a default search component that works with all search handlers (see also <<requesthandlers-searchcomponents.adoc#default-components,Default Components>>).
 
 Since it is configured already, it doesn't need any additional configuration unless you'd like to set parameters for a particular collection that override the MoreLikeThis defaults.
 To do this, you could configure it like this:
@@ -355,7 +356,7 @@ The above example would always enable MoreLikeThis for all queries and will alwa
 This is probably not something you really want!
 But the example serves to show how you might define whichever parameters you would like to be default for MoreLikeThis.
 
-If you gave the search component a name other than "mlt" as in the above example, you would need to explicitly add it to a request handler as described in the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#referencing-search-components,Referencing Search Components>>.
+If you gave the search component a name other than "mlt" as in the above example, you would need to explicitly add it to a request handler as described in the section <<requesthandlers-searchcomponents.adoc#referencing-search-components,Referencing Search Components>>.
 Because the above example uses the same name as the default, the parameters defined there override Solr's default.
 
 ==== Search Component Parameters
@@ -586,11 +587,12 @@ Sets the maximum number of tokens to parse in each example document field that i
 |Optional |Default: `false`
 |===
 +
-Specifies if the query will be boosted by the interesting term relevance. It can be either `true` or `false`.
+Specifies if the query will be boosted by the interesting term relevance.
+It can be either `true` or `false`.
 
 === Query Parser Query and Response
 
-The structure of a MoreLikeThis query parser request is like a query using <<local-parameters-in-queries.adoc#,local params>>, as in:
+The structure of a MoreLikeThis query parser request is like a query using <<local-params.adoc#,local params>>, as in:
 
 [source,bash]
 ----

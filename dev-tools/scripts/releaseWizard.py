@@ -1158,7 +1158,7 @@ def configure_pgp(gpg_todo):
             return False
         if length < 4096:
             print("Your key length is < 4096, Please generate a stronger key.")
-            print("Alternatively, follow instructions in http://www.apache.org/dev/release-signing.html#note")
+            print("Alternatively, follow instructions in https://infra.apache.org/release-signing.html#note")
             if not ask_yes_no("Have you configured your gpg to avoid SHA-1?"):
                 print("Please either generate a strong key or reconfigure your client")
                 return False
@@ -1181,7 +1181,7 @@ def configure_pgp(gpg_todo):
         if apache_sigs < 1:
             print(textwrap.dedent("""\
                 Your key is not signed by any other committer. 
-                Please review http://www.apache.org/dev/openpgp.html#apache-wot
+                Please review https://infra.apache.org/openpgp.html#apache-wot
                 and make sure to get your key signed until next time.
                 You may want to run 'gpg --refresh-keys' to refresh your keychain."""))
         uses_apacheid = is_code_signing_key = False
@@ -1191,9 +1191,9 @@ def configure_pgp(gpg_todo):
                 if 'CODE SIGNING KEY' in line.upper():
                     is_code_signing_key = True
         if not uses_apacheid:
-            print("WARNING: Your key should use your apache-id email address, see http://www.apache.org/dev/release-signing.html#user-id")
+            print("WARNING: Your key should use your apache-id email address, see https://infra.apache.org/release-signing.html#user-id")
         if not is_code_signing_key:
-            print("WARNING: You code signing key should be labeled 'CODE SIGNING KEY', see http://www.apache.org/dev/release-signing.html#key-comment")
+            print("WARNING: You code signing key should be labeled 'CODE SIGNING KEY', see https://infra.apache.org/release-signing.html#key-comment")
     except Exception as e:
         print("Could not check signatures of your key: %s" % e)
 

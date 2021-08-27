@@ -40,6 +40,11 @@ public class OcmhCollectionCommandContext implements CollectionCommandContext {
   }
 
   @Override
+  public  boolean isDistributedCollectionAPI() {
+    return false;
+  }
+
+  @Override
   public ShardHandler newShardHandler() {
     return ocmh.shardHandlerFactory.getShardHandler();
   }

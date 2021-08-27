@@ -18,6 +18,12 @@
 package org.apache.solr.client.solrj.request;
 
 
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.Pair;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,37 +33,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTION_STATE;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_COMMANDS;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_DELETE;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_SHARDS_COMMANDS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.COLLECTIONPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
-import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.*;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.*;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 
 /**
  * Stores the mapping of v1 API parameters to v2 API parameters
@@ -67,48 +46,23 @@ public class CollectionApiMapping {
 
   public enum Meta implements CommandMeta {
     GET_A_COLLECTION(COLLECTION_STATE, GET, CLUSTERSTATUS),
-    RELOAD_COLL(PER_COLLECTION,
-        POST,
-        RELOAD,
-        RELOAD.toLower(),
-        Utils.makeMap(NAME, "collection")),
-    MODIFY_COLLECTION(PER_COLLECTION,
-        POST,
-        MODIFYCOLLECTION,
-        "modify",null),
-    MIGRATE_DOCS(PER_COLLECTION,
-        POST,
-        MIGRATE,
-        "migrate-docs",
-        Utils.makeMap("split.key", "splitKey",
-            "target.collection", "target",
-            "forward.timeout", "forwardTimeout"
-        )),
-    MOVE_REPLICA(PER_COLLECTION,
-        POST, MOVEREPLICA, "move-replica", null),
-    REBALANCE_LEADERS(PER_COLLECTION,
-        POST,
-        REBALANCELEADERS,
-        "rebalance-leaders", null),
     CREATE_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
         CREATESHARD,
         "create",
-        Utils.makeMap("createNodeSet", V2ApiConstants.NODE_SET),
-        Utils.makeMap("property.", "coreProperties.")) {
+        Map.of("createNodeSet", V2ApiConstants.NODE_SET),
+        Map.of("property.", "coreProperties.")) {
       @Override
       public String getParamSubstitute(String param) {
         return super.getParamSubstitute(param);
       }
     },
-
     SPLIT_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
         SPLITSHARD,
         "split",
-        Utils.makeMap(
-            "split.key", "splitKey"),
-        Utils.makeMap("property.", "coreProperties.")),
+        Map.of("split.key", "splitKey"),
+        Map.of("property.", "coreProperties.")),
     DELETE_SHARD(PER_COLLECTION_PER_SHARD_DELETE,
         DELETE, DELETESHARD),
 
@@ -117,37 +71,16 @@ public class CollectionApiMapping {
         ADDREPLICA,
         "add-replica",
         null,
-        Utils.makeMap("property.", "coreProperties.")),
+        Map.of("property.", "coreProperties.")),
 
     DELETE_REPLICA(PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE,
         DELETE, DELETEREPLICA),
-
     SYNC_SHARD(PER_COLLECTION_PER_SHARD_COMMANDS,
         POST,
         CollectionAction.SYNCSHARD,
         "synch-shard",
         null),
-    ADD_REPLICA_PROPERTY(PER_COLLECTION,
-        POST,
-        CollectionAction.ADDREPLICAPROP,
-        "add-replica-property",
-        Utils.makeMap("property", "name", "property.value", "value")),
-    DELETE_REPLICA_PROPERTY(PER_COLLECTION,
-        POST,
-        DELETEREPLICAPROP,
-        "delete-replica-property",
-        null),
-    SET_COLLECTION_PROPERTY(PER_COLLECTION,
-        POST,
-        COLLECTIONPROP,
-        "set-collection-property",
-        Utils.makeMap(
-            NAME, "collection",
-            "propertyName", "name",
-            "propertyValue", "value")),
-    FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null),
-    BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null)
-    ;
+    FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null);
 
     public final String commandName;
     public final EndPoint endPoint;
@@ -171,16 +104,14 @@ public class CollectionApiMapping {
 
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action,
          String commandName,
-         @SuppressWarnings({"rawtypes"})Map paramsToAttrs) {
+         Map<String, String> paramsToAttrs) {
       this(endPoint, method, action, commandName, paramsToAttrs, Collections.emptyMap());
     }
 
-    // lame... the Maps aren't typed simply because callers want to use Utils.makeMap which yields object vals
-    @SuppressWarnings("unchecked")
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CollectionAction action,
          String commandName,
-         @SuppressWarnings({"rawtypes"})Map paramsToAttrs,
-         @SuppressWarnings({"rawtypes"})Map prefixParamsToAttrs) {
+         Map<String, String> paramsToAttrs,
+         Map<String, String> prefixParamsToAttrs) {
       this.action = action;
       this.commandName = commandName;
       this.endPoint = endPoint;
@@ -269,7 +200,6 @@ public class CollectionApiMapping {
 
   public enum EndPoint implements V2EndPoint {
     COLLECTION_STATE("collections.collection"),
-    PER_COLLECTION("collections.collection.Commands"),
     PER_COLLECTION_SHARDS_COMMANDS("collections.collection.shards.Commands"),
     PER_COLLECTION_PER_SHARD_COMMANDS("collections.collection.shards.shard.Commands"),
     PER_COLLECTION_PER_SHARD_DELETE("collections.collection.shards.shard.delete"),
@@ -292,11 +222,11 @@ public class CollectionApiMapping {
     String getSpecName();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Collection<String> getParamNames_(CommandOperation op, CommandMeta command) {
     Object o = op.getCommandData();
     if (o instanceof Map) {
-      Map map = (Map) o;
+      @SuppressWarnings("unchecked")
+      Map<String,Object> map = (Map<String, Object>) o;
       List<String> result = new ArrayList<>();
       collectKeyNames(map, result, "");
       return result;
@@ -309,7 +239,7 @@ public class CollectionApiMapping {
   public static void collectKeyNames(Map<String, Object> map, List<String> result, String prefix) {
     for (Map.Entry<String, Object> e : map.entrySet()) {
       if (e.getValue() instanceof Map) {
-        collectKeyNames((Map) e.getValue(), result, prefix + e.getKey() + ".");
+        collectKeyNames((Map<String, Object>) e.getValue(), result, prefix + e.getKey() + ".");
       } else {
         result.add(prefix + e.getKey());
       }

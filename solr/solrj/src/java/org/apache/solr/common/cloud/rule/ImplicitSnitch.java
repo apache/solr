@@ -49,7 +49,6 @@ public class ImplicitSnitch extends Snitch {
   public static final String ROLE = "role";
   public static final String NODEROLE = "nodeRole";
   public static final String SYSPROP = "sysprop.";
-  public static final String SYSENV = "sysenv.";
   public static final String SYSLOADAVG = "sysLoadAvg";
   public static final String HEAPUSAGE = "heapUsage";
   public static final List<String> IP_SNITCHES = Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));
@@ -96,8 +95,7 @@ public class ImplicitSnitch extends Snitch {
   }
 
   private void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {
-    @SuppressWarnings({"rawtypes"})
-    Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
+    Map<?,?> roles = (Map<?,?>) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
     // so cache and reuse
     try {
       if (roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
@@ -108,14 +106,12 @@ public class ImplicitSnitch extends Snitch {
   }
 
   private void cacheRoles(String solrNode, SnitchContext ctx, String key,
-                          @SuppressWarnings({"rawtypes"})Map roles) {
+                          Map<?,?> roles) {
     ctx.store(ZkStateReader.ROLES, roles);
     if (roles != null) {
-      for (Object o : roles.entrySet()) {
-        @SuppressWarnings({"rawtypes"})
-        Map.Entry e = (Map.Entry) o;
+      for (Map.Entry<?,?> e : roles.entrySet()) {
         if (e.getValue() instanceof List) {
-          if (((List) e.getValue()).contains(solrNode)) {
+          if (((List<?>) e.getValue()).contains(solrNode)) {
             ctx.getTags().put(key, e.getKey());
             break;
           }

@@ -16,18 +16,10 @@
  */
 package org.apache.solr.common.cloud;
 
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -645,26 +637,6 @@ public class SolrZkClient implements Closeable {
     StringBuilder sb = new StringBuilder();
     printLayout("/", 0, sb);
     out.println(sb.toString());
-  }
-
-  public static String prettyPrint(String input, int indent) {
-    try {
-      Source xmlInput = new StreamSource(new StringReader(input));
-      StringWriter stringWriter = new StringWriter();
-      StreamResult xmlOutput = new StreamResult(stringWriter);
-      TransformerFactory transformerFactory = TransformerFactory.newInstance();
-      transformerFactory.setAttribute("indent-number", indent);
-      Transformer transformer = transformerFactory.newTransformer();
-      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-      transformer.transform(xmlInput, xmlOutput);
-      return xmlOutput.getWriter().toString();
-    } catch (Exception e) {
-      throw new RuntimeException("Problem pretty printing XML", e);
-    }
-  }
-
-  private static String prettyPrint(String input) {
-    return prettyPrint(input, 2);
   }
 
   public void close() {

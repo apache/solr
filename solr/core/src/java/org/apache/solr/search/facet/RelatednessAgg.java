@@ -124,7 +124,7 @@ public class RelatednessAgg extends AggValueSource {
   }
 
   @Override
-  public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
@@ -419,9 +419,7 @@ public class RelatednessAgg extends AggValueSource {
         slotVal.incSizes(fgSize, bgSize);
       }
 
-      @SuppressWarnings({"rawtypes"})
-      SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
-      return res;
+      return slotVal.externalize(fcontext.isShard());
     }
 
     @Override
@@ -594,9 +592,8 @@ public class RelatednessAgg extends AggValueSource {
      * @see Merger#getMergedResult
      */
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public SimpleOrderedMap externalize(final boolean isShardRequest) {
-      SimpleOrderedMap result = new SimpleOrderedMap<Number>();
+    public SimpleOrderedMap<Object> externalize(final boolean isShardRequest) {
+      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
 
       // if counts are non-zero, then this bucket must not be implied
       assert 0 == fg_count || ! implied : "Implied bucket has non-zero fg_count";

@@ -323,7 +323,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
       Thread thread = new Thread("READER" + i) {
         Random rand = new Random(random().nextInt());
 
-        @SuppressWarnings("unchecked")
         @Override
         public void run() {
           try {
@@ -538,7 +537,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     }
   }
 
-  @SuppressWarnings("rawtypes")
   protected long addDocAndGetVersion(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
@@ -554,13 +552,12 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     // send updates to leader, to avoid SOLR-8733
     resp = ureq.process(leaderClient);
 
-    long returnedVersion = Long.parseLong(((NamedList) resp.getResponse().get("adds")).getVal(0).toString());
+    long returnedVersion = Long.parseLong(((NamedList<?>) resp.getResponse().get("adds")).getVal(0).toString());
     assertTrue("Due to SOLR-8733, sometimes returned version is 0. Let us assert that we have successfully"
         + " worked around that problem here.", returnedVersion > 0);
     return returnedVersion;
   }
 
-  @SuppressWarnings("rawtypes")
   protected long deleteDocAndGetVersion(String id, ModifiableSolrParams params, boolean deleteByQuery) throws Exception {
     params.add("versions", "true");
    
@@ -576,7 +573,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     resp = ureq.process(leaderClient);
     
     String key = deleteByQuery? "deleteByQuery": "deletes";
-    long returnedVersion = Long.parseLong(((NamedList) resp.getResponse().get(key)).getVal(0).toString());
+    long returnedVersion = Long.parseLong(((NamedList<?>) resp.getResponse().get(key)).getVal(0).toString());
     assertTrue("Due to SOLR-8733, sometimes returned version is 0. Let us assert that we have successfully"
         + " worked around that problem here.", returnedVersion < 0);
     return returnedVersion;

@@ -33,7 +33,6 @@ public class EBEMultiplyEvaluator extends RecursiveNumericEvaluator implements T
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object first, Object second) throws IOException{
     if(null == first){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
@@ -49,8 +48,8 @@ public class EBEMultiplyEvaluator extends RecursiveNumericEvaluator implements T
     }
 
     double[] result =  MathArrays.ebeMultiply(
-        ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-        ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+        ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+        ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
     );
 
     List<Number> numbers = new ArrayList<>();

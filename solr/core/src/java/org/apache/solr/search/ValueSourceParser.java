@@ -46,7 +46,6 @@ import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.FieldType;
@@ -94,12 +93,6 @@ import org.locationtech.spatial4j.distance.DistanceUtils;
  * Intended usage is to create pluggable, named functions for use in function queries.
  */
 public abstract class ValueSourceParser implements NamedListInitializedPlugin {
-  /**
-   * Initialize the plugin.
-   */
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
-
   /**
    * Parse the user input into a ValueSource.
    */
@@ -1185,10 +1178,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   }
 
   static class DateValueSourceParser extends ValueSourceParser {
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    }
-
     public Date getDate(FunctionQParser fp, String arg) {
       if (arg == null) return null;
       // check character index 1 to be a digit.  Index 0 might be a +/-.
@@ -1304,7 +1293,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context
+    public FunctionValues getValues(Map<Object, Object> context
             , LeafReaderContext readerContext) throws IOException {
       return new LongDocValues(this) {
         @Override
@@ -1410,8 +1399,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
-        @SuppressWarnings({"unchecked"})
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
         final FunctionValues vals =  source.getValues(context, readerContext);
         return new DoubleDocValues(this) {
           @Override
@@ -1458,10 +1446,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
-        @SuppressWarnings({"unchecked"})
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
         final FunctionValues aVals =  a.getValues(context, readerContext);
-        @SuppressWarnings({"unchecked"})
         final FunctionValues bVals =  b.getValues(context, readerContext);
         return new DoubleDocValues(this) {
           @Override
@@ -1476,7 +1462,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public void createWeight(@SuppressWarnings({"rawtypes"})Map context, IndexSearcher searcher) throws IOException {
+      public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
       }
 
       @Override
@@ -1516,7 +1502,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context,
+    public FunctionValues getValues(Map<Object, Object> context,
                                     LeafReaderContext readerContext) throws IOException {
       return new BoolDocValues(this) {
         @Override
@@ -1577,8 +1563,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context
+    public FunctionValues getValues(Map<Object, Object> context
             , LeafReaderContext readerContext) throws IOException {
       if (context.get(this) == null) {
         SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
@@ -1603,8 +1588,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
-    public void createWeight(@SuppressWarnings({"rawtypes"})Map context, IndexSearcher searcher) throws IOException {
+    public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
       context.put(this, this);
     }
 

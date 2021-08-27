@@ -72,7 +72,7 @@ public class CountUsageValueSourceParser extends ValueSourceParser {
       this.counter = counter;
     }
     @Override
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context,
+    public FunctionValues getValues(Map<Object, Object> context,
                                     LeafReaderContext readerContext) throws IOException {
       return new DoubleDocValues(this) {
         @Override

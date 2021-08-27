@@ -28,11 +28,6 @@ public interface AttributeValues {
   Optional<String> getSystemProperty(Node node, String name);
 
   /**
-   * For the given node: environment variable value
-   */
-  Optional<String> getEnvironmentVariable(Node node, String name);
-
-  /**
    * For the given node: metric identified by an instance of {@link NodeMetric}
    */
   <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);

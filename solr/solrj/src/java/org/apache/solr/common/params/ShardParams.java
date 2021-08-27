@@ -28,6 +28,9 @@ import org.apache.solr.common.util.StrUtils;
 public interface ShardParams {
   /** the shards to use (distributed configuration) */
   String SHARDS = "shards";
+
+  /** UUID of the query */
+  String QUERY_ID = "queryID";
   
   /** per-shard start and rows */
   String SHARDS_ROWS = "shards.rows";
@@ -65,6 +68,9 @@ public interface ShardParams {
 
   /** Replica location sort rule */
   String SHARDS_PREFERENCE_REPLICA_LOCATION = "replica.location";
+
+  /** Replica leader status sort rule, value= true/false */
+  String SHARDS_PREFERENCE_REPLICA_LEADER = "replica.leader";
 
   /** Node with same system property sort rule */
   String SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP = "node.sysprop";

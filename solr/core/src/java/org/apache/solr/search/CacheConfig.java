@@ -104,36 +104,33 @@ public class CacheConfig implements MapSerializable{
   }
 
 
-  @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
     Node node = solrConfig.getNode(xpath, false);
     if(node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
-      Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
+      Map<?, ?> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
       if(m==null) return null;
       List<String> parts = StrUtils.splitSmart(xpath, '/');
-      return getConfig(solrConfig,parts.get(parts.size()-1) , Collections.EMPTY_MAP,xpath);
+      return getConfig(solrConfig,parts.get(parts.size()-1), Collections.emptyMap(), xpath);
     }
     return getConfig(solrConfig, node.getNodeName(),DOMUtil.toMap(node.getAttributes()), xpath);
   }
 
 
-  @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, String nodeName, Map<String,String> attrs, String xpath) {
     CacheConfig config = new CacheConfig();
     config.nodeName = nodeName;
-    @SuppressWarnings({"rawtypes"})
-    Map attrsCopy = new LinkedHashMap<>(attrs.size());
+    Map<String,String> attrsCopy = new LinkedHashMap<>(attrs.size());
     for (Map.Entry<String, String> e : attrs.entrySet()) {
       attrsCopy.put(e.getKey(), String.valueOf(e.getValue()));
     }
     attrs = attrsCopy;
     config.args = attrs;
 
-    Map<String, String> map = xpath == null ? null : solrConfig.getOverlay().getEditableSubProperties(xpath);
+    Map<String, Object> map = xpath == null ? null : solrConfig.getOverlay().getEditableSubProperties(xpath);
     if(map != null){
       HashMap<String, String> mapCopy = new HashMap<>(config.args);
-      for (Map.Entry<String, String> e : map.entrySet()) {
-        mapCopy.put(e.getKey(),String.valueOf(e.getValue()));
+      for (Map.Entry<String, Object> e : map.entrySet()) {
+        mapCopy.put(e.getKey(), String.valueOf(e.getValue()));
       }
       config.args = mapCopy;
     }
@@ -147,13 +144,13 @@ public class CacheConfig implements MapSerializable{
     if (config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
     config.clazz = new Supplier<>() {
       @SuppressWarnings("rawtypes")
-      Class<SolrCache> loadedClass;
+      Class<? extends SolrCache> loadedClass;
 
       @Override
       @SuppressWarnings("rawtypes")
       public Class<? extends SolrCache> get() {
         if (loadedClass != null) return loadedClass;
-        return loadedClass = (Class<SolrCache>) loader.findClass(
+        return loadedClass = loader.findClass(
                 new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
                 SolrCache.class, true);
       }
@@ -169,7 +166,7 @@ public class CacheConfig implements MapSerializable{
   @SuppressWarnings({"rawtypes"})
   public SolrCache newInstance() {
     try {
-      SolrCache cache = clazz.get().getConstructor().newInstance();
+      SolrCache<?,?> cache = clazz.get().getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {
@@ -182,6 +179,7 @@ public class CacheConfig implements MapSerializable{
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
+    // TODO: Should not create new HashMap?
     return new HashMap<>(args);
   }
 

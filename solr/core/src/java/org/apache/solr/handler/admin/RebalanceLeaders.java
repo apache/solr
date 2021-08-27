@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -110,8 +111,7 @@ class RebalanceLeaders {
   final static String INACTIVE_PREFERREDS = "inactivePreferreds";
   final static String ALREADY_LEADERS = "alreadyLeaders";
   final static String SUMMARY = "Summary";
-  @SuppressWarnings({"rawtypes"})
-  final SimpleOrderedMap results = new SimpleOrderedMap();
+  final SimpleOrderedMap<SimpleOrderedMap<SimpleOrderedMap<String>>> results = new SimpleOrderedMap<>();
   final Map<String, String> pendingOps = new HashMap<>();
   private String collectionName;
 
@@ -123,7 +123,6 @@ class RebalanceLeaders {
     coreContainer = collectionsHandler.getCoreContainer();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   void execute() throws KeeperException, InterruptedException {
     DocCollection dc = checkParams();
 
@@ -156,7 +155,7 @@ class RebalanceLeaders {
     }
 
     checkLeaderStatus();
-    SimpleOrderedMap summary = new SimpleOrderedMap();
+    SimpleOrderedMap<String> summary = new SimpleOrderedMap<>();
     if (pendingOps.size() == 0) {
       summary.add("Success", "All active replicas with the preferredLeader property set are leaders");
     } else {
@@ -288,14 +287,13 @@ class RebalanceLeaders {
 
   // Provide some feedback to the user about what actually happened, or in this case where no action was
   // possible
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addInactiveToResults(Slice slice, Replica replica) {
-    SimpleOrderedMap inactives = (SimpleOrderedMap) results.get(INACTIVE_PREFERREDS);
+    SimpleOrderedMap<SimpleOrderedMap<String>> inactives = results.get(INACTIVE_PREFERREDS);
     if (inactives == null) {
-      inactives = new SimpleOrderedMap();
+      inactives = new SimpleOrderedMap<>();
       results.add(INACTIVE_PREFERREDS, inactives);
     }
-    SimpleOrderedMap res = new SimpleOrderedMap();
+    SimpleOrderedMap<String> res = new SimpleOrderedMap<>();
     res.add("status", "skipped");
     res.add("msg", "Replica " + replica.getName() + " is a referredLeader for shard " + slice.getName() + ", but is inactive. No change necessary");
     inactives.add(replica.getName(), res);
@@ -303,14 +301,13 @@ class RebalanceLeaders {
 
   // Provide some feedback to the user about what actually happened, or in this case where no action was
   // necesary since this preferred replica was already the leader
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addAlreadyLeaderToResults(Slice slice, Replica replica) {
-    SimpleOrderedMap alreadyLeaders = (SimpleOrderedMap) results.get(ALREADY_LEADERS);
+    SimpleOrderedMap<SimpleOrderedMap<String>> alreadyLeaders = results.get(ALREADY_LEADERS);
     if (alreadyLeaders == null) {
-      alreadyLeaders = new SimpleOrderedMap();
+      alreadyLeaders = new SimpleOrderedMap<>();
       results.add(ALREADY_LEADERS, alreadyLeaders);
     }
-    SimpleOrderedMap res = new SimpleOrderedMap();
+    SimpleOrderedMap<String> res = new SimpleOrderedMap<>();
     res.add("status", "skipped");
     res.add("msg", "Replica " + replica.getName() + " is already the leader for shard " + slice.getName() + ". No change necessary");
     alreadyLeaders.add(replica.getName(), res);
@@ -403,20 +400,21 @@ class RebalanceLeaders {
   private void rejoinElectionQueue(Slice slice, String electionNode, String core, boolean rejoinAtHead)
       throws KeeperException, InterruptedException {
     Replica replica = slice.getReplica(LeaderElector.getNodeName(electionNode));
+    final CollectionParams.CollectionAction rebalanceleaders = REBALANCELEADERS;
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(COLLECTION_PROP, collectionName);
     propMap.put(SHARD_ID_PROP, slice.getName());
-    propMap.put(QUEUE_OPERATION, REBALANCELEADERS.toLower());
+    propMap.put(QUEUE_OPERATION, rebalanceleaders.toLower());
     propMap.put(CORE_NAME_PROP, core);
     propMap.put(CORE_NODE_NAME_PROP, replica.getName());
     propMap.put(ZkStateReader.NODE_NAME_PROP, replica.getNodeName());
     propMap.put(REJOIN_AT_HEAD_PROP, Boolean.toString(rejoinAtHead)); // Get ourselves to be first in line.
     propMap.put(ELECTION_NODE_PROP, electionNode);
-    String asyncId = REBALANCELEADERS.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());
+    String asyncId = rebalanceleaders.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());
     propMap.put(ASYNC, asyncId);
     asyncRequests.add(asyncId);
 
-    collectionsHandler.sendToOCPQueue(new ZkNodeProps(propMap)); // ignore response; we construct our own
+    collectionsHandler.submitCollectionApiCommand(new ZkNodeProps(propMap), rebalanceleaders); // ignore response; we construct our own
   }
 
   // maxWaitSecs - How long are we going to wait? Defaults to 30 seconds.
@@ -462,17 +460,16 @@ class RebalanceLeaders {
   }
 
   // If we actually changed the leader, we should send that fact back in the response.
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addToSuccesses(Slice slice, Replica replica) {
-    SimpleOrderedMap successes = (SimpleOrderedMap) results.get("successes");
+    SimpleOrderedMap<SimpleOrderedMap<String>> successes = results.get("successes");
     if (successes == null) {
-      successes = new SimpleOrderedMap();
+      successes = new SimpleOrderedMap<>();
       results.add("successes", successes);
     }
     if (log.isInfoEnabled()) {
       log.info("Successfully changed leader of shard {} to replica {}", slice.getName(), replica.getName());
     }
-    SimpleOrderedMap res = new SimpleOrderedMap();
+    SimpleOrderedMap<String> res = new SimpleOrderedMap<>();
     res.add("status", "success");
     res.add("msg", "Successfully changed leader of slice " + slice.getName() + " to " + replica.getName());
     successes.add(slice.getName(), res);
@@ -481,19 +478,18 @@ class RebalanceLeaders {
   // If for any reason we were supposed to change leadership, that should be recorded in changingLeaders. Any
   // time we verified that the change actually occurred, that entry should have been removed. So report anything
   // left over as a failure.
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addAnyFailures() {
     if (pendingOps.size() == 0) {
       return;
     }
-    SimpleOrderedMap fails = new SimpleOrderedMap();
+    SimpleOrderedMap<SimpleOrderedMap<String>> fails = new SimpleOrderedMap<>();
     results.add("failures", fails);
 
     for (Map.Entry<String, String> ent : pendingOps.entrySet()) {
       if (log.isInfoEnabled()) {
         log.info("Failed to change leader of shard {} to replica {}", ent.getKey(), ent.getValue());
       }
-      SimpleOrderedMap res = new SimpleOrderedMap();
+      SimpleOrderedMap<String> res = new SimpleOrderedMap<>();
       res.add("status", "failed");
       res.add("msg", String.format(Locale.ROOT, "Could not change leder for slice %s to %s", ent.getKey(), ent.getValue()));
       fails.add(ent.getKey(), res);

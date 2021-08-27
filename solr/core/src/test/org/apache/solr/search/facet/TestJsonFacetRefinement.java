@@ -42,7 +42,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     
@@ -63,7 +63,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
 
 
@@ -118,15 +118,14 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     JSONParser parser = new JSONParser(json);
     ObjectBuilder ob = new ObjectBuilder(parser) {
       @Override
-      @SuppressWarnings({"rawtypes"})
       public Object newObject() throws IOException {
-        return new SimpleOrderedMap();
+        return new SimpleOrderedMap<>();
       }
 
       @Override
-      @SuppressWarnings({"unchecked", "rawtypes"})
+      @SuppressWarnings("unchecked")
       public void addKeyVal(Object map, Object key, Object val) throws IOException {
-        ((SimpleOrderedMap) map).add(key.toString(), val);
+        ((SimpleOrderedMap<Object>) map).add(key.toString(), val);
       }
     };
 
@@ -138,8 +137,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     try {
       int nShards = responsesAndTests.length / 2;
       Object jsonFacet = Utils.fromJSONString(facet);
-      @SuppressWarnings({"rawtypes"})
-      FacetParser parser = new FacetParser.FacetTopParser(req);
+      FacetParser<FacetQuery> parser = new FacetParser.FacetTopParser(req);
       FacetRequest facetRequest = parser.parse(jsonFacet);
 
       FacetMerger merger = null;

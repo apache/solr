@@ -32,7 +32,6 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.PluginInfo;
@@ -196,23 +195,27 @@ public class SolrIndexConfig implements MapSerializable {
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
-    Map<String, Object> m = Utils.makeMap("useCompoundFile", useCompoundFile,
-        "maxBufferedDocs", maxBufferedDocs,
-        "ramBufferSizeMB", ramBufferSizeMB,
-        "ramPerThreadHardLimitMB", ramPerThreadHardLimitMB,
-        "maxCommitMergeWaitTime", maxCommitMergeWaitMillis,
-        "writeLockTimeout", writeLockTimeout,
-        "lockType", lockType,
-        "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
-    if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo);
+    map.put("useCompoundFile", useCompoundFile);
+    map.put("maxBufferedDocs", maxBufferedDocs);
+    map.put("ramBufferSizeMB", ramBufferSizeMB);
+    map.put("ramPerThreadHardLimitMB", ramPerThreadHardLimitMB);
+    map.put("maxCommitMergeWaitTime", maxCommitMergeWaitMillis);
+    map.put("writeLockTimeout", writeLockTimeout);
+    map.put("lockType", lockType);
+    map.put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
+    if(mergeSchedulerInfo != null) {
+      map.put("mergeScheduler",mergeSchedulerInfo);
+    }
     if (metricsInfo != null) {
-      m.put("metrics", metricsInfo);
+      map.put("metrics", metricsInfo);
     }
     if (mergePolicyFactoryInfo != null) {
-      m.put("mergePolicyFactory", mergePolicyFactoryInfo);
+      map.put("mergePolicyFactory", mergePolicyFactoryInfo);
     }
-    if(mergedSegmentWarmerInfo != null) m.put("mergedSegmentWarmer",mergedSegmentWarmerInfo);
-    return m;
+    if(mergedSegmentWarmerInfo != null) {
+      map.put("mergedSegmentWarmer",mergedSegmentWarmerInfo);
+    }
+    return map;
   }
 
   private PluginInfo getPluginInfo(String path, SolrConfig solrConfig, PluginInfo def)  {
@@ -267,11 +270,10 @@ public class SolrIndexConfig implements MapSerializable {
 
     if (mergedSegmentWarmerInfo != null) {
       // TODO: add infostream -> normal logging system (there is an issue somewhere)
-      @SuppressWarnings({"rawtypes"})
       IndexReaderWarmer warmer = core.getResourceLoader().newInstance(mergedSegmentWarmerInfo.className,
                                                                         IndexReaderWarmer.class,
                                                                         null,
-                                                                        new Class[] { InfoStream.class },
+                                                                        new Class<?>[] { InfoStream.class },
                                                                         new Object[] { iwc.getInfoStream() });
       iwc.setMergedSegmentWarmer(warmer);
     }
@@ -283,7 +285,6 @@ public class SolrIndexConfig implements MapSerializable {
    * Builds a MergePolicy using the configured MergePolicyFactory
    * or if no factory is configured uses the configured mergePolicy PluginInfo.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private MergePolicy buildMergePolicy(SolrResourceLoader resourceLoader, IndexSchema schema) {
 
     final String mpfClassName;
@@ -300,13 +301,12 @@ public class SolrIndexConfig implements MapSerializable {
         mpfClassName,
         MergePolicyFactory.class,
         NO_SUB_PACKAGES,
-        new Class[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class },
+        new Class<?>[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class },
         new Object[] {resourceLoader, mpfArgs, schema });
 
     return mpf.getMergePolicy();
   }
 
-  @SuppressWarnings({"unchecked"})
   private MergeScheduler buildMergeScheduler(SolrResourceLoader resourceLoader) {
     String msClassName = mergeSchedulerInfo == null ? SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME : mergeSchedulerInfo.className;
     MergeScheduler scheduler = resourceLoader.newInstance(msClassName, MergeScheduler.class);
@@ -315,8 +315,7 @@ public class SolrIndexConfig implements MapSerializable {
       // LUCENE-5080: these two setters are removed, so we have to invoke setMaxMergesAndThreads
       // if someone has them configured.
       if (scheduler instanceof ConcurrentMergeScheduler) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList args = mergeSchedulerInfo.initArgs.clone();
+        NamedList<?> args = mergeSchedulerInfo.initArgs.clone();
         Integer maxMergeCount = (Integer) args.remove("maxMergeCount");
         if (maxMergeCount == null) {
           maxMergeCount = ((ConcurrentMergeScheduler) scheduler).getMaxMergeCount();

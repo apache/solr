@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -250,8 +250,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       addDummyDoc(newCore);
       
       // Open a new searcher, this should call the newSearcherListeners
-      @SuppressWarnings({"rawtypes"})
-      Future<?>[] future = new Future[1];
+      @SuppressWarnings("unchecked")
+      Future<Void>[] future = (Future<Void>[]) Array.newInstance(Future.class, 1);
       newCore.getSearcher(true, false, future);
       future[0].get();
       
@@ -439,9 +439,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static AtomicInteger numberOfTimesCalledFirstSearcher;
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
-
-    @Override
     public void postCommit() {}
 
     @Override
@@ -462,9 +459,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static AtomicInteger numberOfTimesCalled;
     static CountDownLatch latch;
     
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
-
     @Override
     public void postCommit() {}
 

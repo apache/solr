@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
@@ -57,6 +58,22 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
+
+  /**
+   * Mark the current thread as a server thread and set a flag in SolrRequestInfo to indicate you want
+   * to send a request as the server identity instead of as the authenticated user.
+   *
+   * @param enabled If true, enable the current thread to make requests with the server identity.
+   * @see SolrRequestInfo#setUseServerToken(boolean) 
+   */
+  public static void withServerIdentity(final boolean enabled) {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (requestInfo != null) {
+      requestInfo.setUseServerToken(enabled);
+    }
+    ExecutorUtil.setServerThreadFlag(enabled ? enabled : null);
+  }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
@@ -84,29 +101,28 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   @SuppressForbidden(reason = "Needs currentTimeMillis to compare against time in header")
   @Override
   public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
+    // Getting the received time must be the first thing we do, processing the request can take time
+    long receivedTime = System.currentTimeMillis();
 
     String requestURI = request.getRequestURI();
     if (requestURI.endsWith(PublicKeyHandler.PATH)) {
+      assert false : "Should already be handled by SolrDispatchFilter.authenticateRequest";
+
       numPassThrough.inc();
       filterChain.doFilter(request, response);
       return true;
     }
-    long receivedTime = System.currentTimeMillis();
+
     String header = request.getHeader(HEADER);
-    if (header == null) {
-      //this must not happen
-      log.error("No SolrAuth header present");
-      numMissingCredentials.inc();
-      filterChain.doFilter(request, response);
-      return true;
-    }
+    assert header != null : "Should have been checked by SolrDispatchFilter.authenticateRequest";
 
     List<String> authInfo = StrUtils.splitWS(header, false);
-    if (authInfo.size() < 2) {
-      log.error("Invalid SolrAuth Header {}", header);
+    if (authInfo.size() != 2) {
       numErrors.mark();
-      filterChain.doFilter(request, response);
-      return true;
+      log.error("Invalid SolrAuth header: {}", header);
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, HEADER);
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid SolrAuth header");
+      return false;
     }
 
     String nodeName = authInfo.get(0);
@@ -114,16 +130,19 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     PKIHeaderData decipher = decipherHeader(nodeName, cipher);
     if (decipher == null) {
-      log.error("Could not decipher a header {} . No principal set", header);
       numMissingCredentials.inc();
-      filterChain.doFilter(request, response);
-      return true;
+      log.error("Could not load principal from SolrAuth header.");
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, HEADER);
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Could not load principal from SolrAuth header.");
+      return false;
     }
-    if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
-      log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
+    long elapsed = receivedTime - decipher.timestamp;
+    if (elapsed > MAX_VALIDITY) {
       numErrors.mark();
-      filterChain.doFilter(request, response);
-      return true;
+      log.error("Expired key request timestamp, elapsed={}, TTL={}", elapsed, MAX_VALIDITY);
+      response.setHeader(HttpHeaders.WWW_AUTHENTICATE, HEADER);
+      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Expired key request timestamp");
+      return false;
     }
 
     final Principal principal = "$".equals(decipher.userName) ?
@@ -158,7 +177,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     }
   }
 
-  private static  PKIHeaderData parseCipher(String cipher, PublicKey key) {
+  private static PKIHeaderData parseCipher(String cipher, PublicKey key) {
     byte[] bytes;
     try {
       bytes = CryptoKeys.decryptRSA(Base64.base64ToByteArray(cipher), key);
@@ -195,8 +214,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
       entity  = rsp.getEntity();
       byte[] bytes = EntityUtils.toByteArray(entity);
-      @SuppressWarnings({"rawtypes"})
-      Map m = (Map) Utils.fromJSON(bytes);
+      Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
       if (key == null) {
         log.error("No key available from {} {}", url, PublicKeyHandler.PATH);
@@ -279,7 +297,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private Optional<String> generateToken() {
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr;
-    if (reqInfo != null) {
+    if (reqInfo != null && !reqInfo.useServerToken()) {
       Principal principal = reqInfo.getUserPrincipal();
       if (principal == null) {
         log.debug("generateToken: principal is null");

@@ -65,7 +65,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.EMPTY_MAP;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySortedSet;
 import static org.apache.solr.common.cloud.UrlScheme.HTTP;
 import static org.apache.solr.common.util.Utils.fromJSON;
@@ -128,8 +128,6 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String CONFIGS_ZKNODE = "/configs";
   public final static String CONFIGNAME_PROP = "configName";
-
-  public static final String SAMPLE_PERCENTAGE = "samplePercentage";
 
   /**
    * @deprecated use {@link org.apache.solr.common.params.CollectionAdminParams#DEFAULTS} instead.
@@ -227,48 +225,11 @@ public class ZkStateReader implements SolrCloseable {
       CoreAdminParams.BACKUP_LOCATION,
       DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,
-      SAMPLE_PERCENTAGE,
       SOLR_ENVIRONMENT,
       CollectionAdminParams.DEFAULTS,
       CONTAINER_PLUGINS,
       PLACEMENT_PLUGIN
       );
-
-  /**
-   * Returns config set name for collection.
-   * TODO move to DocCollection (state.json).
-   *
-   * @param collection to return config set name for
-   */
-  public String readConfigName(String collection) throws KeeperException {
-
-    String configName = null;
-
-    String path = COLLECTIONS_ZKNODE + "/" + collection;
-    log.debug("Loading collection config from: [{}]", path);
-
-    try {
-      byte[] data = zkClient.getData(path, null, null, true);
-      if (data == null) {
-        log.warn("No config data found at path {}.", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-
-      ZkNodeProps props = ZkNodeProps.load(data);
-      configName = props.getStr(CONFIGNAME_PROP);
-
-      if (configName == null) {
-        log.warn("No config data found at path{}. ", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-    } catch (InterruptedException e) {
-      SolrZkClient.checkInterrupted(e);
-      log.warn("Thread interrupted when loading config name for collection {}", collection);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Thread interrupted when loading config name for collection " + collection, e);
-    }
-
-    return configName;
-  }
 
 
   private final SolrZkClient zkClient;
@@ -442,7 +403,7 @@ public class ZkStateReader implements SolrCloseable {
       if (securityNodeListener != null) {
         addSecurityNodeWatcher(pair -> {
           ConfigData cd = new ConfigData();
-          cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+          cd.data = pair.first() == null || pair.first().length == 0 ? emptyMap() : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
           cd.version = pair.second() == null ? -1 : pair.second().getVersion();
           securityData = cd;
           securityNodeListener.run();
@@ -455,7 +416,8 @@ public class ZkStateReader implements SolrCloseable {
       });
     } catch (KeeperException.NoNodeException nne) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
+          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready." +
+              " Expected node '" + nne.getPath() + "' does not exist.");
     }
   }
 
@@ -1004,13 +966,14 @@ public class ZkStateReader implements SolrCloseable {
     loadClusterProperties();
   };
 
-  @SuppressWarnings("unchecked")
   private void loadClusterProperties() {
     try {
       while (true) {
         try {
           byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
-          this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
+          @SuppressWarnings("unchecked")
+          Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(data);
+          this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat(properties);
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
 
           // Make the urlScheme globally accessible
@@ -1113,7 +1076,6 @@ public class ZkStateReader implements SolrCloseable {
     return COLLECTIONS_ZKNODE + '/' + collection + '/' + COLLECTION_PROPS_ZKNODE;
   }
 
-  @SuppressWarnings("unchecked")
   private VersionedCollectionProps fetchCollectionProperties(String collection, Watcher watcher) throws KeeperException, InterruptedException {
     final String znodePath = getCollectionPropsPath(collection);
     // lazy init cache cleaner once we know someone is using collection properties.
@@ -1128,7 +1090,9 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(znodePath, watcher, stat, true);
-        return new VersionedCollectionProps(stat.getVersion(), (Map<String, String>) Utils.fromJSON(data));
+        @SuppressWarnings("unchecked")
+        Map<String, String> props = (Map<String, String>) Utils.fromJSON(data);
+        return new VersionedCollectionProps(stat.getVersion(), props);
       } catch (ClassCastException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to parse collection properties for collection " + collection, e);
       } catch (KeeperException.NoNodeException e) {
@@ -1141,7 +1105,7 @@ public class ZkStateReader implements SolrCloseable {
             continue;
           }
         }
-        return new VersionedCollectionProps(-1, EMPTY_MAP);
+        return new VersionedCollectionProps(-1, emptyMap());
       }
     }
   }
@@ -1150,10 +1114,10 @@ public class ZkStateReader implements SolrCloseable {
    * Returns the content of /security.json from ZooKeeper as a Map
    * If the files doesn't exist, it returns null.
    */
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings("unchecked")
   public ConfigData getSecurityProps(boolean getFresh) {
     if (!getFresh) {
-      if (securityData == null) return new ConfigData(EMPTY_MAP, -1);
+      if (securityData == null) return new ConfigData(emptyMap(), -1);
       return new ConfigData(securityData.data, securityData.version);
     }
     try {
@@ -1465,7 +1429,11 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
-        ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
+
+        // This factory method can detect a missing configName and supply it by reading it from the old ZK location.
+        // TODO in Solr 10 remove that factory method
+        ClusterState state = ClusterState.createFromJsonSupportingLegacyConfigName(stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
+
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {
