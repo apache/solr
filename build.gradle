@@ -28,7 +28,7 @@ plugins {
   id 'com.diffplug.spotless' version "5.14.3" apply false 
 }
 
-apply from: file('gradle/defaults.gradle')
+apply from: file('gradle/globals.gradle')
 
 // General metadata.
 
@@ -183,6 +183,7 @@ apply from: file('gradle/hacks/solr.findbugs.gradle')
 apply from: file('gradle/hacks/wipe-temp.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
 apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
+apply from: file('gradle/hacks/dummy-outputs.gradle')
 
 apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')

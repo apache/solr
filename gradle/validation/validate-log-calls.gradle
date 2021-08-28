@@ -40,9 +40,6 @@ configure(subprojects.findAll { it.path.startsWith(':solr') }) {
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
 
-      // This task has no proper outputs.
-      setupDummyOutputs(task)
-
       sourceFiles = files(sourceSets*.java)
     }
  
