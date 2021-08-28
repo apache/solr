@@ -54,6 +54,19 @@ allprojects {
         "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
       ]
 
+      // enable some warnings only relevant to newer language features
+      if (rootProject.runtimeJavaVersion >= JavaVersion.VERSION_15) {
+        options.compilerArgs += [
+          "-Xlint:text-blocks",
+        ]
+      }
+
+      if (rootProject.runtimeJavaVersion >= JavaVersion.VERSION_16) {
+        options.compilerArgs += [
+          "-Xlint:synchronization",
+        ]
+      }
+
       if (propertyOrDefault("javac.failOnWarnings", true).toBoolean()) {
         options.compilerArgs += "-Werror"
       }
