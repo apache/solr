@@ -216,7 +216,7 @@ class RenderJavadocTask extends DefaultTask {
 
   @Input
   @Optional
-  Property<String> solrDocUrl = project.objects.property(String)
+  final Property<String> solrDocUrl = project.objects.property(String)
 
   // default is to require full javadocs
   @Input

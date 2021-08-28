@@ -215,20 +215,20 @@ check.dependsOn checkLocalJavadocLinksSite, checkSite
 // Hook site building to assemble.
 assemble.dependsOn buildSite
 
-abstract class PrepareSources extends DefaultTask {
+class PrepareSources extends DefaultTask {
     // Original Source files we'll be syncing <b>FROM</b>
     @InputDirectory
-    public DirectoryProperty srcDir = project.objects.directoryProperty()
+    final DirectoryProperty srcDir = project.objects.directoryProperty()
 
     // Destination folder.
     @OutputDirectory
-    public DirectoryProperty outDir = project.objects.directoryProperty()
+    final DirectoryProperty outDir = project.objects.directoryProperty()
 
     /**
      * Task specific props (lazy provider)
      */
     @Input
-    public MapProperty<String, String> props = project.objects.mapProperty(String, String)
+    final MapProperty<String, String> props = project.objects.mapProperty(String, String)
 
     public PrepareSources() {
         // setup 'dependsOn classes, configurations.depVer' here
