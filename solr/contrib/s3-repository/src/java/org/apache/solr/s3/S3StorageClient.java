@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * docs</a> for details on where this client will fetch credentials from, and the order of
  * precedence.
  */
-class S3StorageClient {
+public class S3StorageClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -460,7 +460,12 @@ class S3StorageClient {
       return true;
     }
 
-    return pathExists(parentDirectory);
+    // Check for existence twice, because s3Mock has issues in the tests
+    if (pathExists(parentDirectory)) {
+      return true;
+    } else {
+      return pathExists(parentDirectory);
+    }
   }
 
   private String getParentDirectory(String path) {
@@ -475,7 +480,7 @@ class S3StorageClient {
     }
     return fromEnd > 0
         ? path.substring(0, path.lastIndexOf(S3_FILE_PATH_DELIMITER, fromEnd) + 1)
-        : S3_FILE_PATH_DELIMITER;
+        : "";
   }
 
   /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
@@ -522,11 +527,6 @@ class S3StorageClient {
     if (!sanitizedPath.endsWith(S3_FILE_PATH_DELIMITER)) {
       sanitizedPath += S3_FILE_PATH_DELIMITER;
     }
-
-    // Trim file delimiter from end
-    // if (sanitizedPath.length() > 1 && sanitizedPath.endsWith(S3_FILE_PATH_DELIMITER)) {
-    //    sanitizedPath = sanitizedPath.substring(0, path.length() - 1);
-    // }
 
     return sanitizedPath;
   }

@@ -39,17 +39,8 @@ jmhReport {
 
 task echoCp {
   doLast {
-    print toPath((sourceSets.main.runtimeClasspath + sourceSets.main.resources).files)
+    print "${(sourceSets.main.runtimeClasspath + sourceSets.main.resources).asPath}"
   }
-}
-
-private static String toPath(Set<File> classpathUnderTest) {
-  StringBuilder sb = new StringBuilder();
-  for (File entry : classpathUnderTest) {
-    sb.append(entry.getAbsolutePath());
-    sb.append(File.pathSeparatorChar);
-  }
-  return sb.toString();
 }
 
 dependencies {

@@ -53,4 +53,8 @@ test {
 
     // Without this, randomizedtesting will think our tests leak threads (b/c S3Mock's Jetty hasn't bothered to clean up yet)
     environment "server.jetty.threads.idle-timeout", "3s"
+
+    // Reduce logging noise during the tests
+    environment "aws.accessKeyId", "foo"
+    environment "aws.secretKey", "bar"
 }
