@@ -151,8 +151,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         final String msg = "Can't create managed schema directory " + parentPath;
         log.error(msg);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-      }
-       
+      }       
     }
     
     return managedSchemaPath;
