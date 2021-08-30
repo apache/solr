@@ -346,6 +346,8 @@ Bug Fixes
 
 * SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
 
+* SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda)
+
 ==================  8.10.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
