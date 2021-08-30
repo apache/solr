@@ -142,13 +142,17 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       managedSchemaPath = legacyManagedSchemaPath;
     }
     
-    File parentDir = managedSchemaPath.toFile().getParentFile(); // Do we need this clause?   A managed file that is in a dir that doesn't exist?
-    if ( ! parentDir.isDirectory()) {
-      if ( ! parentDir.mkdirs()) {
-        final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
+    Path parentPath = managedSchemaPath.getParent();
+    if (!Files.isDirectory(parentPath)) {
+      try {
+        Files.createDirectories(parentPath);
+      }
+      catch (IOException ioe) {
+        final String msg = "Can't create managed schema directory " + parentPath;
         log.error(msg);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg);
       }
+       
     }
     
     return managedSchemaPath;
