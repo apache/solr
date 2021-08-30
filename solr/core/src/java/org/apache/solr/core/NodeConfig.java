@@ -378,7 +378,8 @@ public class NodeConfig {
         "zkDigestPassword",
         "zkDigestReadonlyPassword",
         "aws.secretKey", // AWS SDK v1
-        "aws.secretAccessKey" // AWS SDK v2
+        "aws.secretAccessKey", // AWS SDK v2
+        "http.proxyPassword"
     ));
 
     public NodeConfigBuilder(String nodeName, Path solrHome) {
