@@ -70,7 +70,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
           S3_SCHEME,
           uri.getScheme());
       assertEquals("URI path should be prefixed with /", "/x", uri.getPath());
-      assertEquals("s3:/x", uri.toString());
+      assertEquals("s3:///x", uri.toString());
 
       URI directoryUri = repo.createDirectoryURI("d");
       assertEquals(
@@ -79,7 +79,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
           directoryUri.getScheme());
       assertEquals(
           "createDirectoryURI should add a trailing slash to URI",
-          "s3:/d/",
+          "s3:///d/",
           directoryUri.toString());
 
       repo.createDirectory(directoryUri);
@@ -87,8 +87,13 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       directoryUri = repo.createDirectoryURI("d/");
       assertEquals(
           "createDirectoryURI should have a single trailing slash, even if one is provided",
-          "s3:/d/",
+          "s3:///d/",
           directoryUri.toString());
+
+      assertEquals(
+          "createDirectoryURI should have a single trailing slash, even if one is provided",
+          "s3:///this_is_not_a_host/",
+          repo.createURI("/this_is_not_a_host/").toString());
     }
   }
 
