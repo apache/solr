@@ -37,6 +37,7 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrResourceNotFoundException;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.CreateMode;
@@ -309,8 +310,10 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           if (null != nonManagedSchemaInputStream) {
             exists = true;
           }
-        } catch (IOException e) {
+        } catch (SolrResourceNotFoundException e) {
           // This is expected when the non-managed schema does not exist
+        } catch (IOException e) {
+          throw new RuntimeException(e);
         } finally {
           IOUtils.closeQuietly(nonManagedSchemaInputStream);
         }
