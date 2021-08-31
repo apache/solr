@@ -82,25 +82,26 @@
   <query>
     <queryResultCache
             enabled="${queryResultCache.enabled:false}"
-            class="${queryResultCache.class:solr.LRUCache}"
+            class="${queryResultCache.class:solr.CaffeineCache}"
             size="${queryResultCache.size:0}"
             initialSize="${queryResultCache.initialSize:0}"
             autowarmCount="${queryResultCache.autowarmCount:0}"/>
       <documentCache
               enabled="${documentCache.enabled:false}"
-              class="${documentCache.class:solr.LRUCache}"
+              class="${documentCache.class:solr.CaffeineCache}"
               size="${documentCache.size:0}"
               initialSize="${documentCache.initialSize:0}"
               autowarmCount="${documentCache.autowarmCount:0}"/>
       <filterCache
-              enabled="${filterCache.enabled:false}"
-              class="${filterCache.class:solr.LRUCache}"
-              size="${filterCache.size:0}"
-              initialSize="${filterCache.initialSize:0}"
-              autowarmCount="${filterCache.autowarmCount:0}"/>
+              enabled ="${filterCache.enabled:false}"
+              class="${filterCache.class:solr.CaffeineCache}"
+              size="${filterCache.size:1}"
+              initialSize="${filterCache.initialSize:1}"
+              autowarmCount="${filterCache.autowarmCount:0}"
+              async="${filterCache.async:false}"/>
     <cache name="myPerSegmentCache"
            enabled="${myPerSegmentCache.enabled:false}"
-           class="${myPerSegmentCache.class:solr.LRUCache}"
+           class="${myPerSegmentCache.class:solr.CaffeineCache}"
            size="${myPerSegmentCache.size:0}"
            initialSize="${myPerSegmentCache.initialSize:0}"
            autowarmCount="${myPerSegmentCache.autowarmCount:0}"/>
