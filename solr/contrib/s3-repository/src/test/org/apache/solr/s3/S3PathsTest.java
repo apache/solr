@@ -68,7 +68,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
 
     client.deleteDirectory("/delete-dir");
 
-    assertFalse("dir should no longer exist after deletion", client.pathExists("/delete-dir"));
+    assertFalse("dir should no longer exist after deletion", client.pathExists("/delete-dir/"));
     assertFalse(
         "files in dir should be recursively deleted", client.pathExists("/delete-dir/file1"));
     assertFalse(
@@ -91,11 +91,11 @@ public class S3PathsTest extends AbstractS3ClientTest {
     client.deleteDirectory("/delete-dir");
 
     // All files and subdirs in /delete-dir should no longer exist
-    assertFalse(client.pathExists("/delete-dir"));
+    assertFalse(client.pathExists("/delete-dir/"));
     assertFalse(client.pathExists("/delete-dir/file1"));
-    assertFalse(client.pathExists("/delete-dir/sub-dir1"));
+    assertFalse(client.pathExists("/delete-dir/sub-dir1/"));
     assertFalse(client.pathExists("/delete-dir/sub-dir1/file2"));
-    assertFalse(client.pathExists("/delete-dir/sub-dir1/sub-dir2"));
+    assertFalse(client.pathExists("/delete-dir/sub-dir1/sub-dir2/"));
     assertFalse(client.pathExists("/delete-dir/sub-dir1/sub-dir2/file3"));
   }
 
