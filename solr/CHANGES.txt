@@ -334,6 +334,8 @@ Other Changes
 * SOLR-15428: Integrate the OpenJDK JMH micro benchmark framework for micro benchmarks and performance comparisons and investigation.
   (Mark Miller)
 
+* SOLR-15111: Use JDK8 Base64 instead of own implementation (Andras Salamon via janhoy)
+
 * SOLR-13138: Remove deprecated LegacyBM25SimilarityFactory class. (Christine Poerschke, janhoy)
 
 Bug Fixes
@@ -398,6 +400,8 @@ Improvements
 
 * SOLR-9853: Project multi-valued fields in SQL query results (Timothy Potter)
 
+* SOLR-15599: Upgrade AWS SDK from v1 to v2 for S3 Repository (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
@@ -427,6 +431,8 @@ Bug Fixes
 * SOLR-8889: Fixed various problems in Solr and SolrJ that could cause deleteById commands with "_route_" information to processed
   by the wrong shard, and/or fail when forwarded to replicas from the shard leader. (Dan Fox, Yuki Yano, hossman)
 
+* SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda via Mike Drob)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
@@ -438,6 +444,8 @@ Other Changes
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
 
 * SOLR-15324: Upgrade Jaeger dependency from 1.1.0 to 1.6.0 and thus also libthrift to 0.14.1 (janhoy)
+
+* SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
 
 ==================  8.9.0 ==================
 
