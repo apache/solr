@@ -76,6 +76,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
 
   private boolean legacyJoin = false;
 
+  @Deprecated
   public ShortestPathStream(String zkHost,
                             String collection,
                             String fromNode,
@@ -291,7 +292,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("from", fromNode));
     expression.addParameter(new StreamExpressionNamedParameter("to", toNode));
     expression.addParameter(new StreamExpressionNamedParameter("edge", fromField+"="+toField));
-    expression.addParameter(new StreamExpressionNamedParameter("legacyJoin", Boolean.toString(legacyJoin)));
+    if (legacyJoin) expression.addParameter(new StreamExpressionNamedParameter("legacyJoin", Boolean.toString(legacyJoin)));
     return expression;
   }
   
