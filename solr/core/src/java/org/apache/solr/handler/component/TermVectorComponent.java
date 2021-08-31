@@ -18,8 +18,11 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,7 +43,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermVectorParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -364,7 +366,7 @@ public class TermVectorComponent extends SearchComponent {
               thePayloads = new NamedList<>();
               termInfo.add("payloads", thePayloads);
             }
-            thePayloads.add("payload", Base64.byteArrayToBase64(payload.bytes, payload.offset, payload.length));
+            thePayloads.add("payload", new String(Base64.getEncoder().encode(ByteBuffer.wrap(payload.bytes, payload.offset, payload.length)).array(), StandardCharsets.ISO_8859_1));
           }
         }
       }
