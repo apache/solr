@@ -334,6 +334,8 @@ Other Changes
 * SOLR-15428: Integrate the OpenJDK JMH micro benchmark framework for micro benchmarks and performance comparisons and investigation.
   (Mark Miller)
 
+* SOLR-15111: Use JDK8 Base64 instead of own implementation (Andras Salamon via janhoy)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -438,8 +440,6 @@ Other Changes
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
 
 * SOLR-15324: Upgrade Jaeger dependency from 1.1.0 to 1.6.0 and thus also libthrift to 0.14.1 (janhoy)
-
-* SOLR-15111: Use JDK8 Base64 instead of own implementation (Andras Salamon via janhoy)
 
 * SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
 
