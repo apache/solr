@@ -555,7 +555,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     // only set slop of the phrase query was a result of this parser
     // and not a sub-parser.
-    if (subQParser == null) {
+    if (!field.equals(lastMagicField)) {
       if (query instanceof PhraseQuery) {
         PhraseQuery pq = (PhraseQuery) query;
         Term[] terms = pq.getTerms();
@@ -1028,8 +1028,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return out == null ? part : out.utf8ToString();
   }
 
-
-  private QParser subQParser = null;
+  private String lastMagicField = null;
 
   // Create a "normal" query from a RawQuery (or just return the current query if it's not raw)
   Query rawToNormal(Query q) {
@@ -1079,7 +1078,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (allowSubQueryParsing && field.startsWith("_") && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
-          subQParser = parser.subQuery(queryText, magic.subParser);
+          QParser subQParser = parser.subQuery(queryText, magic.subParser);
+          lastMagicField = field;
           return subQParser.getQuery();
         }
       }
@@ -1127,7 +1127,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (allowSubQueryParsing && field.startsWith("_") && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
-          subQParser = parser.subQuery(String.join(" ", queryTerms), magic.subParser);
+          QParser subQParser = parser.subQuery(String.join(" ", queryTerms), magic.subParser);
+          lastMagicField = field;
           return subQParser.getQuery();
         }
       }

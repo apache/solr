@@ -1642,4 +1642,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       }
     }
   }
+
+  @Test
+  public void testSlopAfterSubQParser() throws SyntaxError {
+    SolrQueryRequest req = req("df", "text");
+
+    String qstr1 = "foo \"foo bar\"~1";
+    String qstr2 = "_query_:\"{!term f=text}foo\" \"foo bar\"~1";
+    Query q1 = QParser.getParser(qstr1, req).getQuery();
+    Query q2 = QParser.getParser(qstr2, req).getQuery();
+    assertEquals(q1, q2);
+  }
 }
