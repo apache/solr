@@ -431,6 +431,8 @@ Bug Fixes
 
 * SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda via Mike Drob)
 
+* SOLR-14457: SolrClient leaks connections on compressed responses if the response is malformed (Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
