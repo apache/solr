@@ -20,6 +20,9 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -715,27 +718,33 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
   @Test
   public void testMaxFutureMs() throws Exception {
-    final Integer maxFutureMs = 10 * 24 * 60 * 60 * 1000; // TODO: 100 days instead of 10 days
+    final Long maxFutureMs = 100L * 24L * 60L * 60L * 1000L; // 100 DAYS
 
-    final String YYYY_MM_DD_a = "2021-08-13"; // TODO: real 'today'
-    final String YYYY_MM_DD_b = "2021-08-15"; // TODO: 'today + 2 months' instead of 'today + 2 days'
-    final String YYYY_MM_DD_c = "2022-08-13"; // TODO: 'today next year'
+    ZonedDateTime a = ZonedDateTime.now(ZoneId.from(ZoneOffset.UTC));
+    ZonedDateTime b = a.plusMonths(2);
+    ZonedDateTime c = a.plusYears(1);
+    DateTimeFormatter SOLR_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneId.from(ZoneOffset.UTC));
+
+
+    final String YYYY_MM_DD_a = SOLR_DATE_TIME_FORMATTER.format(a);
+    final String YYYY_MM_DD_b = SOLR_DATE_TIME_FORMATTER.format(b);
+    final String YYYY_MM_DD_c = SOLR_DATE_TIME_FORMATTER.format(c);
 
     final int numShards = 1 + random().nextInt(4);
     final int numReplicas = 1 + random().nextInt(3);
-    CollectionAdminRequest.createTimeRoutedAlias(alias, YYYY_MM_DD_a+"T00:00:00Z", "+180DAY", getTimeField(),
+    CollectionAdminRequest.createTimeRoutedAlias(alias, YYYY_MM_DD_a, "+180DAY", getTimeField(),
         CollectionAdminRequest.createCollection("_unused_", "_default", numShards, numReplicas))
         .setMaxFutureMs(maxFutureMs)
         .process(solrClient);
 
     final ModifiableSolrParams params = params();
 
-    final String dayB = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), YYYY_MM_DD_b+"T12:34:56Z").toInstant());
+    final String dayB = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), YYYY_MM_DD_b).toInstant());
       assertUpdateResponse(add(alias, Arrays.asList(
           sdoc("id", "2", "timestamp_dt", dayB)),
           params));
 
-    final String dayC = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), YYYY_MM_DD_c+"T12:48:16Z").toInstant());
+    final String dayC = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), YYYY_MM_DD_c).toInstant());
     try {
       assertUpdateResponse(add(alias, Arrays.asList(
           sdoc("id", "3", "timestamp_dt", dayC)),
