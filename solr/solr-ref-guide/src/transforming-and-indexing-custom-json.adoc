@@ -26,6 +26,12 @@ One or more valid JSON documents can be sent to the `/update/json/docs` path wit
 These parameters allow you to define how a JSON file should be read for multiple Solr documents.
 
 `split`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Defines the path at which to split the input JSON into multiple Solr documents and is required if you have multiple documents in a single JSON file.
 If the entire JSON makes a single Solr document, the path must be “`/`”.
 +
@@ -33,6 +39,12 @@ It is possible to pass multiple `split` paths by separating them with a pipe `(|
 If one path is a child of another, they automatically become a child document.
 
 `f`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 Provides multivalued mapping to map document field names to Solr field names.
 The format of the parameter is `target-field-name:json-path`, as in `f=first:/first`.
 The `json-path` is required.
@@ -43,20 +55,44 @@ The default target field name is the fully qualified name of the field.
 Wildcards can be used here, see <<Using Wildcards for Field Names>> below for more information.
 
 `mapUniqueKeyOnly`::
-(boolean) This parameter is particularly convenient when the fields in the input JSON are not available in the schema and <<schemaless-mode.adoc#,schemaless mode>> is not enabled.
-This will index all the fields into the default search field (using the `df` parameter, below) and only the `uniqueKey` field is mapped to the corresponding field in the schema.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+This parameter is particularly convenient when the fields in the input JSON are not available in the schema and <<schemaless-mode.adoc#,schemaless mode>> is not enabled.
+This will index all the fields into the default search field (using the `df` parameter) and only the `uniqueKey` field is mapped to the corresponding field in the schema.
 If the input JSON does not have a value for the `uniqueKey` field then a UUID is generated for the same.
 
 `df`::
-If the `mapUniqueKeyOnly` flag is used, the update handler needs a field where the data should be indexed to.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+If the `mapUniqueKeyOnly` flag is enabled, the update handler needs a field where the data should be indexed to.
 This is the same field that other handlers use as a default search field.
 
 `srcField`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 This is the name of the field to which the JSON source will be stored into.
 This can only be used if `split=/` (i.e., you want your JSON input file to be indexed as a single Solr document).
 Note that atomic updates will cause the field to be out-of-sync with the document.
 
 `echo`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 This is for debugging purpose only.
 Set it to `true` if you want the docs to be returned as a response.
 Nothing will be indexed.
@@ -620,7 +656,8 @@ curl 'http://localhost:8983/api/collections/techproducts/update/json'\
 ====
 --
 
-In the above example, we've said all of the fields should be added to a field in Solr named 'txt'. This will add multiple fields to a single field, so whatever field you choose should be multi-valued.
+In the above example, we've said all of the fields should be added to a field in Solr named 'txt'.
+This will add multiple fields to a single field, so whatever field you choose should be multi-valued.
 
 The default behavior is to use the fully qualified name (FQN) of the node.
 So, if we don't define any field mappings, like this:
@@ -824,7 +861,7 @@ It is possible to send any JSON to the `/update/json/docs` endpoint and the defa
   <lst name="defaults">
     <!-- this ensures that the entire JSON doc will be stored verbatim into one field -->
     <str name="srcField">_src_</str>
-    <!-- This means a the uniqueKeyField will be extracted from the fields and
+    <!-- This means the uniqueKeyField will be extracted from the fields and
          all fields go into the 'df' field. In this config df is already configured to be 'text'
      -->
     <str name="mapUniqueKeyOnly">true</str>

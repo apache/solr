@@ -23,14 +23,14 @@ For each document in the response, the TermVectorCcomponent can return the term 
 == Term Vector Component Configuration
 
 The TermVectorComponent is not enabled implicitly in Solr - it must be explicitly configured in your `solrconfig.xml` file.
-The examples on this page show how it is configured in Solr's "```techproducts```" example:
+The examples on this page show how it is configured in Solr's "techproducts" example:
 
 [source,bash]
 ----
 bin/solr -e techproducts
 ----
 
-To enable the this component, you need to configure it using a `searchComponent` element:
+To enable this component, you need to configure it using a `searchComponent` element:
 
 [source,xml]
 ----
@@ -38,7 +38,7 @@ To enable the this component, you need to configure it using a `searchComponent`
 ----
 
 A request handler must then be configured to use this component name.
-In the `techproducts` example, the component is associated with a special request handler named `/tvrh`, that enables term vectors by default using the `tv=true` parameter; but you can associate it with any request handler:
+In the "techproducts" example, the component is associated with a special request handler named `/tvrh`, that enables term vectors by default using the `tv=true` parameter; but you can associate it with any request handler:
 
 [source,xml]
 ----
@@ -52,7 +52,7 @@ In the `techproducts` example, the component is associated with a special reques
 </requestHandler>
 ----
 
-Once your handler is defined, you may use in conjunction with any schema (that has a `uniqueKeyField)` to fetch term vectors for fields configured with the `termVector` attribute, such as in the `techproducts` sample schema.
+Once your handler is defined, you may use in conjunction with any schema (that has a `uniqueKeyField)` to fetch term vectors for fields configured with the `termVector` attribute, such as in the "techproducts" sample schema.
 For example:
 
 [source,xml]
@@ -132,39 +132,100 @@ The example below shows some of the available request parameters for this compon
 http://localhost:8983/solr/techproducts/tvrh?q=includes:[* TO *]&rows=10&indent=true&tv=true&tv.tf=true&tv.df=true&tv.positions=true&tv.offsets=true&tv.payloads=true&tv.fl=includes
 
 `tv`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, the Term Vector Component will run.
 
 `tv.docIds`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 For a given comma-separated list of Lucene document IDs (*not* the Solr Unique Key), term vectors will be returned.
 
 `tv.fl`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 For a given comma-separated list of fields, term vectors will be returned.
 If not specified, the `fl` parameter is used.
 
 `tv.all`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, all the boolean parameters listed below (`tv.df`, `tv.offsets`, `tv.positions`, `tv.payloads`, `tv.tf` and `tv.tf_idf`) will be enabled.
 
 `tv.df`::
-If `true`, returns the Document Frequency (DF) of the term in the collection.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, returns the document frequency (DF) of the term in the collection.
 This can be computationally expensive.
 
 `tv.offsets`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, returns offset information for each term in the document.
 
 `tv.positions`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, returns position information.
 
 `tv.payloads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, returns payload information.
 
 `tv.tf`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, returns document term frequency info for each term in the document.
 
 `tv.tf_idf`::
-If `true`, calculates TF / DF (i.e.,: TF * IDF) for each term.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, calculates TF / DF (i.e., TF * IDF) for each term.
 Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
 +
-This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive.
+This parameter requires both `tv.tf` and `tv.df` to be `true`.
+This can be computationally expensive.
 (The results are not shown in example output)
 
 To see an example of TermVector component output, see the Wiki page: https://cwiki.apache.org/confluence/display/solr/TermVectorComponentExampleOptions

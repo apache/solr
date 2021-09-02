@@ -34,10 +34,9 @@ public abstract class SolrFilter extends Filter {
 
   /** Implementations should propagate createWeight to sub-ValueSources which can store weight info in the context.
    * The context object will be passed to getDocIdSet() where this info can be retrieved. */
-  public abstract void createWeight(@SuppressWarnings({"rawtypes"})Map context
-          , IndexSearcher searcher) throws IOException;
+  public abstract void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException;
   
-  public abstract DocIdSet getDocIdSet(@SuppressWarnings({"rawtypes"})Map context
+  public abstract DocIdSet getDocIdSet(Map<Object, Object> context
           , LeafReaderContext readerContext, Bits acceptDocs) throws IOException;
 
   @Override

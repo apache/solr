@@ -89,8 +89,7 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
 
     String response = harness.post("/schema", json(payload));
 
-    @SuppressWarnings({"rawtypes"})
-    Map m = (Map) Utils.fromJSONString(response);
+    Map<?, ?> m = (Map<?, ?>) Utils.fromJSONString(response);
     assertNull(response, m.get("errors"));
 
     // default value of useDocValuesAsStored

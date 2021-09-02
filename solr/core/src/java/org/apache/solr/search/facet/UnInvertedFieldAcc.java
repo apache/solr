@@ -131,10 +131,9 @@ public abstract class UnInvertedFieldAcc extends SlotAcc implements UnInvertedFi
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
-        ArrayList lst = new ArrayList(3);
+        ArrayList<Number> lst = new ArrayList<>(3);
         lst.add(counts[slot]);
         lst.add(result[slot]);
         lst.add(sum[slot]);

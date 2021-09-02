@@ -301,6 +301,14 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       }
     }
 
+    // SOLR-6156: timeAllowed with rows>0 and rows==0
+    for (String ngroups : new String[] { "false", "true" }) {
+      for (String rows : new String[] { "10", "0" }) {
+        simpleQuery("q", "*:*", "group", "true", "group.field", i1, "group.ngroups", ngroups, "rows", rows);
+        simpleQuery("q", "*:*", "group", "true", "group.field", i1, "group.ngroups", ngroups, "rows", rows, "timeAllowed", "123456");
+      }
+    }
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     Object[] q =  {"q", "*:*", "fq", s1 + ":a", "rows", 1, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "group.ngroups", "true"};
 
@@ -313,8 +321,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     int which = r.nextInt(clients.size());
     SolrClient client = clients.get(which);
     QueryResponse rsp = client.query(params);
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList<?>) rsp.getResponse().get("grouped");
+    NamedList<?> nl = (NamedList<?>) rsp.getResponse().get("grouped");
     nl = (NamedList<?>) nl.getVal(0);
     int matches = (Integer) nl.getVal(0);
     int groupCount = (Integer) nl.get("ngroups");

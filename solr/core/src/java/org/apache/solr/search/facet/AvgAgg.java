@@ -115,10 +115,9 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
-        ArrayList lst = new ArrayList(2);
+        ArrayList<Number> lst = new ArrayList<>(2);
         lst.add(counts[slot]);
         lst.add(result[slot]);
         return lst;
@@ -170,10 +169,9 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
-        ArrayList lst = new ArrayList(2);
+        ArrayList<Number> lst = new ArrayList<>(2);
         lst.add(counts[slot]);
         lst.add(result[slot]);
         return lst;
@@ -227,10 +225,9 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
-        ArrayList lst = new ArrayList(2);
+        ArrayList<Number> lst = new ArrayList<>(2);
         lst.add(counts[slot]);
         lst.add(result[slot]);
         return lst;

@@ -61,12 +61,24 @@ Below is an example of a `schemaFactory` that reflects Solr's defaults:
 The defaults can be overridden by explicitly configuring `ManagedIndexSchemaFactory` and changing one of the following options:
 
 `mutable`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Controls whether changes may be made to the schema data.
 This must be set to `true` to allow edits to be made with the Schema API.
 +
 With the default configuration shown above, you could use the <<schema-api.adoc#,Schema API>> to modify the schema as much as you want, and then later change the value of `mutable` to `false` to "lock" the schema in place and prevent future changes.
 
 `managedSchemaResourceName`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `managed-schema`
+|===
++
 The name of the schema file.
 The name can be anything other than `schema.xml`, as that name is reserved for the `ClassicIndexSchemaFactory`.
 

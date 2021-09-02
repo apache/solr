@@ -86,8 +86,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     try (RestoreContext restoreContext = new RestoreContext(message, ccc)) {
       if (state.hasCollection(restoreContext.restoreCollectionName)) {
         RestoreOnExistingCollection restoreOnExistingCollection = new RestoreOnExistingCollection(restoreContext);
@@ -100,7 +99,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     }
   }
 
-  private void requestReplicasToRestore(@SuppressWarnings({"rawtypes"}) NamedList results, DocCollection restoreCollection,
+  private void requestReplicasToRestore(NamedList<Object> results, DocCollection restoreCollection,
                                         ClusterState clusterState,
                                         BackupProperties backupProperties,
                                         URI backupPath,
@@ -164,12 +163,12 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       this.container = ccc.getCoreContainer();
       this.repository = this.container.newBackupRepository(repo);
 
-      this.location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
-      final URI backupNameUri = repository.resolve(location, backupName);
+      this.location = repository.createDirectoryURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
+      final URI backupNameUri = repository.resolveDirectory(location, backupName);
       final String[] entries = repository.listAll(backupNameUri);
       final boolean incremental = ! Arrays.stream(entries).anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
       this.backupPath = (incremental) ?
-              repository.resolve(backupNameUri, entries[0]) : // incremental backups have an extra path component representing the backed up collection
+              repository.resolveDirectory(backupNameUri, entries[0]) : // incremental backups have an extra path component representing the backed up collection
               backupNameUri;
       this.zkStateReader = ccc.getZkStateReader();
       this.backupManager = backupId == -1 ?
@@ -221,7 +220,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       this.numPullReplicas = getInt(message, PULL_REPLICAS, backupCollectionState.getNumPullReplicas(), 0);
     }
 
-    public void process(@SuppressWarnings("rawtypes") NamedList results, RestoreContext rc) throws Exception {
+    public void process(NamedList<Object> results, RestoreContext rc) throws Exception {
       // Avoiding passing RestoreContext around
       uploadConfig(rc.backupProperties.getConfigName(),
               rc.restoreConfigName,
@@ -251,7 +250,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
 
       createSingleReplicaPerShard(results, restoreCollection, rc.asyncId, clusterState, replicaPositions);
       Object failures = results.get("failure");
-      if (failures != null && ((SimpleOrderedMap) failures).size() > 0) {
+      if (failures != null && ((SimpleOrderedMap<?>) failures).size() > 0) {
         log.error("Restore failed to create initial replicas.");
         CollectionHandlingUtils.cleanupCollection(rc.restoreCollectionName, new NamedList<>(), ccc);
         return;
@@ -286,7 +285,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void createCoreLessCollection(String restoreCollectionName,
                                           String restoreConfigName,
                                           DocCollection backupCollectionState,
@@ -312,6 +310,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       propMap.put(CollectionAdminParams.COLL_CONF, restoreConfigName);
 
       // router.*
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> routerProps = (Map<String, Object>) backupCollectionState.getProperties().get(DocCollection.DOC_ROUTER);
       for (Map.Entry<String, Object> pair : routerProps.entrySet()) {
         propMap.put(DocCollection.DOC_ROUTER + "." + pair.getKey(), pair.getValue());
@@ -333,7 +332,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         propMap.put(CollectionHandlingUtils.SHARDS_PROP, newSlices);
       }
 
-      new CreateCollectionCmd(ccc).call(clusterState, new ZkNodeProps(propMap), new NamedList());
+      new CreateCollectionCmd(ccc).call(clusterState, new ZkNodeProps(propMap), new NamedList<>());
       // note: when createCollection() returns, the collection exists (no race)
     }
 
@@ -369,8 +368,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       return assignStrategy.assign(ccc.getSolrCloudManager(), assignRequest);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private void createSingleReplicaPerShard(NamedList results,
+    private void createSingleReplicaPerShard(NamedList<Object> results,
                                              DocCollection restoreCollection,
                                              String asyncId,
                                              ClusterState clusterState, List<ReplicaPosition> replicaPositions) throws Exception {
@@ -410,23 +408,28 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           propMap.put(ASYNC, asyncId);
         }
         CollectionHandlingUtils.addPropertyParams(message, propMap);
-        final NamedList addReplicaResult = new NamedList();
+        final NamedList<Object> addReplicaResult = new NamedList<>();
         new AddReplicaCmd(ccc).addReplica(clusterState, new ZkNodeProps(propMap), addReplicaResult, () -> {
-          Object addResultFailure = addReplicaResult.get("failure");
+          @SuppressWarnings("unchecked")
+          NamedList<Object> addResultFailure = (NamedList<Object>) addReplicaResult.get("failure");
           if (addResultFailure != null) {
-            SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+            @SuppressWarnings("unchecked")
+            SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
             if (failure == null) {
-              failure = new SimpleOrderedMap();
+              failure = new SimpleOrderedMap<>();
               results.add("failure", failure);
             }
-            failure.addAll((NamedList) addResultFailure);
+            failure.addAll(addResultFailure);
           } else {
-            SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+              @SuppressWarnings("unchecked")
+            SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
             if (success == null) {
-              success = new SimpleOrderedMap();
+              success = new SimpleOrderedMap<>();
               results.add("success", success);
             }
-            success.addAll((NamedList) addReplicaResult.get("success"));
+            @SuppressWarnings("unchecked")
+            NamedList<Object> addReplicaSuccess = (NamedList<Object>) addReplicaResult.get("success");
+            success.addAll(addReplicaSuccess);
           }
           countDownLatch.countDown();
         });
@@ -477,7 +480,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    private void addReplicasToShards(@SuppressWarnings({"rawtypes"}) NamedList results,
+    private void addReplicasToShards(NamedList<Object> results,
                                      ClusterState clusterState,
                                      DocCollection restoreCollection,
                                      List<ReplicaPosition> replicaPositions,
@@ -573,7 +576,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    public void process(RestoreContext rc, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+    public void process(RestoreContext rc, NamedList<Object> results) throws Exception {
       ClusterState clusterState = rc.zkStateReader.getClusterState();
       DocCollection restoreCollection = clusterState.getCollection(rc.restoreCollectionName);
 

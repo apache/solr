@@ -66,9 +66,6 @@ subprojects {
     group = 'Verification'
     description = 'Validate Source Patterns'
 
-    // This task has no proper outputs.
-    setupDummyOutputs(task)
-
     sourceFiles = fileTree(projectDir) {
       extensions.each{
         include "**/*.${it}"
@@ -99,9 +96,6 @@ configure(rootProject) {
   task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
-
-    // This task has no proper outputs.
-    setupDummyOutputs(task)
 
     sourceFiles = fileTree(projectDir) {
       extensions.each{
@@ -156,7 +150,6 @@ class ValidateSourcePatternsTask extends DefaultTask {
       (~$/\$$Header\b/$) : 'svn keyword',
       (~$/\$$Source\b/$) : 'svn keyword',
       (~$/^\uFEFF/$) : 'UTF-8 byte order mark',
-      (~$/Collections\.singleton.*forEach/$) : 'potentially unnecessary forEach() use with Collections.singleton',
       (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
     ]
 

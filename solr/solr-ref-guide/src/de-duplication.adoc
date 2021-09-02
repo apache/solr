@@ -40,7 +40,7 @@ When a document is added, a signature will automatically be generated and attach
 
 == Configuration Options
 
-There are two places in Solr to configure de-duplication: in `solrconfig.xml` and in `schema.xml`.
+There are two places in Solr to configure de-duplication: in `solrconfig.xml` and in the <<solr-schema.adoc#,schema>>.
 
 === In solrconfig.xml
 
@@ -62,8 +62,13 @@ The `SignatureUpdateProcessorFactory` has to be registered in `solrconfig.xml` a
 The `SignatureUpdateProcessorFactory` takes several properties:
 
 `signatureClass`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.update.processor.Lookup3Signature`
+|===
++
 A Signature implementation for generating a signature hash.
-The default is `org.apache.solr.update.processor.Lookup3Signature`.
 +
 The full classpath of the implementation must be specified.
 The available options are described above, the associated classpaths to use are:
@@ -73,20 +78,42 @@ The available options are described above, the associated classpaths to use are:
 * `org.apache.solr.update.process.TextProfileSignature`
 
 `fields`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: all fields
+|===
++
 The fields to use to generate the signature hash in a comma separated list.
 By default, all fields on the document will be used.
 
 `signatureField`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `signatureField`
+|===
++
 The name of the field used to hold the fingerprint/signature.
 The field should be defined in your schema.
-The default is `signatureField`.
 
 `enabled`::
-Set to *false* to disable de-duplication processing.
-The default is *true*.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Set to `false` to disable de-duplication processing.
 
 `overwriteDupes`::
-If *true*, the default, when a document exists that already matches this signature, it will be overwritten.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, when a document exists that already matches this signature, it will be overwritten.
 If you are using `overwriteDupes=true` the `signatureField` must be `indexed="true"` in your Schema.
 
 .Using `SignatureUpdateProcessorFactory` in SolrCloud

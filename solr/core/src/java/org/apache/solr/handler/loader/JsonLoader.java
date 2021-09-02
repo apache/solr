@@ -84,24 +84,24 @@ public class JsonLoader extends ContentStreamLoader {
     new SingleThreadedJsonLoader(req, rsp, processor).load(req, rsp, stream, processor);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   public static SolrInputDocument buildDoc(Map<String, Object> m) {
     SolrInputDocument result = new SolrInputDocument();
     for (Map.Entry<String, Object> e : m.entrySet()) {
       if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
         if (e.getValue() instanceof List) {
-          List value = (List) e.getValue();
+          List<?> value = (List<?>) e.getValue();
           for (Object o : value) {
             if (o instanceof Map) {
               // retain the value as a list, even if the list contains a single value.
               if(!result.containsKey(e.getKey())) {
                 result.setField(e.getKey(), new ArrayList<>(1));
               }
-              result.addField(e.getKey(), buildDoc((Map) o));
+              result.addField(e.getKey(), buildDoc((Map<String, Object>) o));
             }
           }
         } else if (e.getValue() instanceof Map) {
-          result.addField(e.getKey(), buildDoc((Map) e.getValue()));
+          result.addField(e.getKey(), buildDoc((Map<String, Object>) e.getValue()));
         }
       } else {
         result.setField(e.getKey(), e.getValue());
@@ -112,8 +112,7 @@ public class JsonLoader extends ContentStreamLoader {
 
   private static boolean mapEntryIsChildDoc(Object val) {
     if(val instanceof List) {
-      @SuppressWarnings({"rawtypes"})
-      List listVal = (List) val;
+      List<?> listVal = (List<?>) val;
       if (listVal.size() == 0) return false;
       return  listVal.get(0) instanceof Map;
     }
@@ -282,12 +281,11 @@ public class JsonLoader extends ContentStreamLoader {
       });
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private Map<String, Object> getDocMap(Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
-      Map result = record;
+      Map<String, Object> result = record;
       if (srcField != null && parser instanceof RecordingJSONParser) {
         //if srcFIeld specified extract it out first
-        result = new LinkedHashMap(record);
+        result = new LinkedHashMap<>(record);
         RecordingJSONParser rjp = (RecordingJSONParser) parser;
         result.put(srcField, rjp.getBuf());
         rjp.resetBuf();
@@ -298,7 +296,7 @@ public class JsonLoader extends ContentStreamLoader {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No uniqueKey specified in schema");
         String df = req.getParams().get(CommonParams.DF);
         if (df == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No 'df' specified in request");
-        Map copy = new LinkedHashMap();
+        Map<String, Object> copy = new LinkedHashMap<>();
         String uniqueField = (String) record.get(sf.getName());
         if (uniqueField == null) uniqueField = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
         copy.put(sf.getName(), uniqueField);
@@ -430,7 +428,7 @@ public class JsonLoader extends ContentStreamLoader {
     void parseCommitOptions(CommitUpdateCommand cmd) throws IOException {
       assertNextEvent(JSONParser.OBJECT_START);
       @SuppressWarnings({"unchecked"})
-      final Map<String, Object> map = (Map) ObjectBuilder.getVal(parser);
+      final Map<String, Object> map = (Map<String,Object>) ObjectBuilder.getVal(parser);
 
       // SolrParams currently expects string values...
       SolrParams p = new SolrParams() {
@@ -595,12 +593,10 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    @SuppressWarnings({"unchecked"})
     private List<Object> parseArrayFieldValue(int ev, String fieldName) throws IOException {
       assert ev == JSONParser.ARRAY_START;
 
-      @SuppressWarnings({"rawtypes"})
-      ArrayList lst = new ArrayList(2);
+      ArrayList<Object> lst = new ArrayList<>(2);
       for (; ; ) {
         ev = parser.nextEvent();
         if (ev == JSONParser.ARRAY_END) {
@@ -641,15 +637,15 @@ public class JsonLoader extends ContentStreamLoader {
 
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object changeChildDoc(Object o) {
     if (o instanceof List) {
-      return ((List) o)
+      return ((List<?>) o)
           .stream()
           .map(JsonLoader::changeChildDoc)
           .collect(toList());
     }
-    Map m = (Map) o;
+    @SuppressWarnings("unchecked")
+    Map<Object, Object> m = (Map<Object, Object>) o;
     if (m.containsKey(null)) m.put(CHILD_DOC_KEY, changeChildDoc(m.remove(null)));
     return m;
   }

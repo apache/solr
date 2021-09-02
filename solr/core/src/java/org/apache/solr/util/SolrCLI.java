@@ -401,7 +401,7 @@ public class SolrCLI implements CLIO {
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
 
-    for (Class<Tool> next : findToolClassesInPackage("org.apache.solr.util")) {
+    for (Class<? extends Tool> next : findToolClassesInPackage("org.apache.solr.util")) {
       Tool tool = next.getConstructor().newInstance();
       if (toolType.equals(tool.getName()))
         return tool;
@@ -430,8 +430,8 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("export", getToolOptions(new ExportTool()));
     formatter.printHelp("package", getToolOptions(new PackageTool()));
 
-    List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
-    for (Class<Tool> next : toolClasses) {
+    List<Class<? extends Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
+    for (Class<? extends Tool> next : toolClasses) {
       Tool tool = next.getConstructor().newInstance();
       formatter.printHelp(tool.getName(), getToolOptions(tool));
     }
@@ -515,9 +515,8 @@ public class SolrCLI implements CLIO {
   /**
    * Scans Jar files on the classpath for Tool implementations to activate.
    */
-  @SuppressWarnings("unchecked")
-  private static List<Class<Tool>> findToolClassesInPackage(String packageName) {
-    List<Class<Tool>> toolClasses = new ArrayList<Class<Tool>>();
+  private static List<Class<? extends Tool>> findToolClassesInPackage(String packageName) {
+    List<Class<? extends Tool>> toolClasses = new ArrayList<>();
     try {
       ClassLoader classLoader = SolrCLI.class.getClassLoader();
       String path = packageName.replace('.', '/');
@@ -531,7 +530,7 @@ public class SolrCLI implements CLIO {
       for (String classInPackage : classes) {
         Class<?> theClass = Class.forName(classInPackage);
         if (Tool.class.isAssignableFrom(theClass))
-          toolClasses.add((Class<Tool>) theClass);
+          toolClasses.add(theClass.asSubclass(Tool.class));
       }
     } catch (Exception e) {
       // safe to squelch this as it's just looking for tools to run
@@ -798,7 +797,7 @@ public class SolrCLI implements CLIO {
    * you must escape the slash. For instance /config/requestHandler/\/query/defaults/echoParams
    * would get the echoParams value for the "/query" request handler.
    */
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings("unchecked")
   public static Object atPath(String jsonPath, Map<String,Object> json) {
     if ("/".equals(jsonPath))
       return json;
@@ -827,7 +826,7 @@ public class SolrCLI implements CLIO {
       } else {
         if (child instanceof Map) {
           // keep walking the path down to the desired node
-          parent = (Map)child;
+          parent = (Map<String, Object>) child;
         } else {
           // early termination - hit a leaf before the requested node
           break;
@@ -3978,8 +3977,15 @@ public class SolrCLI implements CLIO {
             password = credentials.split(":")[1];
           } else {
             Console console = System.console();
-            username = console.readLine("Enter username: ");
-            password = new String(console.readPassword("Enter password: "));
+            // keep prompting until they've entered a non-empty username & password
+            do {
+              username = console.readLine("Enter username: ");
+            } while (username == null || username.trim().length() == 0);
+            username = username.trim();
+
+            do {
+              password = new String(console.readPassword("Enter password: "));
+            } while (password.length() == 0);
           }
 
           boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "true"));
@@ -3994,6 +4000,8 @@ public class SolrCLI implements CLIO {
               "\n   \"class\":\"solr.RuleBasedAuthorizationPlugin\"," +
               "\n   \"permissions\":[" +
               "\n {\"name\":\"security-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"security-read\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"config-edit\", \"role\":\"admin\"}," +
               "\n {\"name\":\"collection-admin-edit\", \"role\":\"admin\"}," +
               "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}" +
               "\n   ]," +

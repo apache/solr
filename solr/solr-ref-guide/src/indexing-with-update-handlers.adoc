@@ -78,10 +78,21 @@ For example:
 The add command supports some optional attributes which may be specified.
 
 `commitWithin`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Add the document within the specified number of milliseconds.
 
 `overwrite`::
-Default is `true`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Indicates if the unique key constraints should be checked to overwrite previous versions of the same document (see below).
 
 If the document schema defines a unique key, then by default an `/update` operation to add a document will overwrite (i.e., replace) any document in the index with the same unique key.
@@ -109,18 +120,38 @@ Applications requiring NRT functionality should not use optimize.
 The `<commit>` and `<optimize>` elements accept these optional attributes:
 
 `waitSearcher`::
-Default is `true`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
 
-`expungeDeletes`:: (commit only) Default is `false`.
+`expungeDeletes`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 Merges segments that have more than 10% deleted docs, expunging the deleted documents in the process.
 Resulting segments will respect `maxMergedSegmentMB`.
+This option only applies in a `<commit> operation`.
 +
-WARNING: expungeDeletes is "less expensive" than optimize, but the same warnings apply.
+WARNING: `expungeDeletes` is less expensive than optimize, but the same warnings apply.
 
-`maxSegments`:: (optimize only) Default is unlimited, resulting segments respect the `maxMergedSegmentMB` setting.
+`maxSegments`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Makes a best effort attempt to merge the segments down to no more than this number of segments but does not guarantee that the goal will be achieved.
 Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
+This option only applies in a `<optimize` operation.
+Default is unlimited, resulting segments respect the `maxMergedSegmentMB` setting.
 
 Here are examples of `<commit>` and `<optimize>` using optional attributes:
 
@@ -243,7 +274,8 @@ The status field will be non-zero in case of failure.
 
 === Using XSLT to Transform XML Index Updates
 
-The Scripting contrib module provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
+The Scripting contrib module provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation].
+You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
 Learn more about adding the `dist/solr-scripting-*.jar` file into Solr's <<libs.adoc#lib-directories,Lib Directories>>.
 
@@ -321,17 +353,17 @@ One example usage would be to copy a Solr 1.3 index (which does not have CSV res
 
 [source,bash]
 ----
-curl -o standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml"
-curl -X POST -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl"
+$ curl -o standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml"
 
+$ curl -X POST -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl"
 ----
 
-NOTE: You can see the opposite export/import cycle using the `tr` parameter in   <<response-writers.adoc#xslt-writer-example,Response Writer XSLT example>>.
+NOTE: You can see the opposite export/import cycle using the `tr` parameter in <<response-writers.adoc#xslt-writer-example,Response Writer XSLT example>>.
 
 == JSON Formatted Index Updates
 
 Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents.
-If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described below in the section <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>.
+If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described in the section <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>.
 
 === Solr-Style JSON
 
@@ -339,14 +371,14 @@ JSON formatted update requests may be sent to Solr's `/update` handler using `Co
 
 JSON formatted updates can take 3 basic forms, described in depth below:
 
-* <<Adding a Single JSON Document,A single document to add>>, expressed as a top level JSON Object.
+* <<Adding a Single JSON Document,A single document>>, expressed as a top level JSON Object.
 To differentiate this from a set of commands, the `json.command=false` request parameter is required.
-* <<Adding Multiple JSON Documents,A list of documents to add>>, expressed as a top level JSON Array containing a JSON Object per document.
-* <<Sending JSON Update Commands,A sequence of update commands>>, expressed as a top level JSON Object (aka: Map).
+* <<Adding Multiple JSON Documents,A list of documents>>, expressed as a top level JSON Array containing a JSON Object per document.
+* <<Sending JSON Update Commands,A sequence of update commands>>, expressed as a top level JSON Object (a Map).
 
 ==== Adding a Single JSON Document
 
-The simplest way to add Documents via JSON is to send each document individually as a JSON Object, using the `/update/json/docs` path:
+The simplest way to add documents via JSON is to send each document individually as a JSON Object, using the `/update/json/docs` path:
 
 [source,bash]
 ----
@@ -376,7 +408,7 @@ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_
 ]'
 ----
 
-A sample JSON file is provided at `example/exampledocs/books.json` and contains an array of objects that you can add to the Solr `techproducts` example:
+A sample JSON file is provided at `example/exampledocs/books.json` and contains an array of objects that you can add to the Solr "techproducts" example:
 
 [source,bash]
 ----
@@ -482,7 +514,7 @@ This is covered in the section <<transforming-and-indexing-custom-json.adoc#,Tra
 
 CSV formatted update requests may be sent to Solr's `/update` handler using `Content-Type: application/csv` or `Content-Type: text/csv`.
 
-A sample CSV file is provided at `example/exampledocs/books.csv` that you can use to add some documents to the Solr `techproducts` example:
+A sample CSV file is provided at `example/exampledocs/books.csv` that you can use to add some documents to the Solr "techproducts" example:
 
 [source,bash]
 ----
@@ -496,101 +528,203 @@ The CSV handler allows the specification of many parameters in the URL in the fo
 The table below describes the parameters for the update handler.
 
 `separator`::
-Character used as field separator; default is ",". This parameter is global; for per-field usage, see the `split` parameter.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `,`
+|===
++
+Character used as field separator.
+This parameter is global; for per-field usage, see the `split` parameter.
 +
 Example:  `separator=%09`
 
 `trim`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, remove leading and trailing whitespace from values.
-The default is `false`.
 This parameter can be either global or per-field.
 +
 Examples: `f.isbn.trim=true` or `trim=false`
 
 `header`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Set to `true` if first line of input contains field names.
 These will be used if the `fieldnames` parameter is absent.
 This parameter is global.
 
 `fieldnames`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Comma-separated list of field names to use when adding documents.
 This parameter is global.
 +
 Example: `fieldnames=isbn,price,title`
 
 `literal._field_name_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 A literal value for a specified field name.
 This parameter is global.
 +
 Example: `literal.color=red`
 
 `skip`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Comma separated list of field names to skip.
 This parameter is global.
 +
 Example: `skip=uninteresting,shoesize`
 
 `skipLines`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
 Number of lines to discard in the input stream before the CSV data starts, including the header, if present.
-Default=`0`.
 This parameter is global.
 +
 Example: `skipLines=5`
 
-`encapsulator`:: The character optionally used to surround values to preserve characters such as the CSV separator or whitespace.
+`encapsulator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The character optionally used to surround values to preserve characters such as the CSV separator or whitespace.
 This standard CSV format handles the encapsulator itself appearing in an encapsulated value by doubling the encapsulator.
 +
 This parameter is global; for per-field usage, see `split`.
 +
 Example: `encapsulator="`
 
-`escape`:: The character used for escaping CSV separators or other reserved characte
+`escape`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The character used for escaping CSV separators or other reserved character.
 If an escape is specified, the encapsulator is not used unless also explicitly specified since most formats use either encapsulation or escaping, not both.
 +
 Example: `escape=\`
 
 `keepEmpty`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 Keep and index zero length (empty) fields.
-The default is `false`.
 This parameter can be global or per-field.
 +
 Example: `f.price.keepEmpty=true`
 
-`map`:: Map one value to another.
-Format is value:replacement (which can be empty).
+`map`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Map one value to another.
+Format is `map=value:replacement` (which can be empty).
 This parameter can be global or per-field.
 +
 Example: `map=left:right` or `f.subject.map=history:bunk`
 
 `split`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 If `true`, split a field into multiple values by a separate parser.
 This parameter is used on a per-field basis.
 
 `overwrite`::
-If `true` (the default), check for and overwrite duplicate documents, based on the uniqueKey field declared in the Solr schema.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, check for and overwrite duplicate documents, based on the uniqueKey field declared in the Solr schema.
 If you know the documents you are indexing do not contain any duplicates then you may see a considerable speed up setting this to `false`.
 +
 This parameter is global.
 
 `commit`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Issues a commit after the data has been ingested.
 This parameter is global.
 
 `commitWithin`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Add the document within the specified number of milliseconds.
 This parameter is global.
 +
 Example: `commitWithin=10000`
 
 `rowid`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Map the `rowid` (line number) to a field specified by the value of the parameter, for instance if your CSV doesn't have a unique key and you want to use the row id as such.
 This parameter is global.
 +
 Example: `rowid=id`
 
 `rowidOffset`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
 Add the given offset (as an integer) to the `rowid` before adding it to the document.
-Default is `0`.
 This parameter is global.
 +
 Example: `rowidOffset=10`

@@ -63,7 +63,7 @@ An Analytics request is passed to Solr with the parameter `analytics` in a reque
 <<requesthandlers-searchcomponents.adoc#search-handlers,Search Handler>>.
 Since the analytics request is sent inside of a search handler request, it will compute results based on the result set determined by the search handler.
 
-For example, this curl command encodes and POSTs a simple analytics request to the the search handler:
+For example, this curl command encodes and POSTs a simple analytics request to the search handler:
 
 [source,bash]
 ----
@@ -497,28 +497,65 @@ The two current sortable facets are <<value-facets, Analytic Value Facets>> and 
 ==== Parameters
 
 `criteria`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The list of criteria to sort the facet by.
 +
 It takes the following parameters:
 
-`type`::: The type of sort.
+`type`:::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The type of sort.
 There are two possible values:
 * `expression`: Sort by the value of an expression defined in the same grouping.
 * `facetvalue`: Sort by the string-representation of the facet value.
 
 `Direction`:::
-_(Optional)_ The direction to sort.
-* `ascending` _(Default)_
-* `descending`
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `ascending`
+|===
++
+The direction to sort.
+The options are `ascending` or `descending`.
 
 `expression`:::
-When `type = expression`, the name of an expression defined in the same grouping.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+When `type` is `expression`, the name of an expression defined in the same grouping.
 
 `limit`::
-Limit the number of returned facet values to the top _N_.  _(Optional)_
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `-1`
+|===
++
+Limit the number of returned facet values to the top _N_.
+The default means there is no limit.
 
 `offset`::
- When a limit is set, skip the top _N_ facet values. _(Optional)_
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+When a limit is set, skip the top _N_ facet values.
 
 [source,json]
 .Example Sort Request
@@ -542,24 +579,36 @@ Limit the number of returned facet values to the top _N_.  _(Optional)_
 
 === Value Facets
 
-Value Facets are used to group documents by the value of a mapping expression applied to each document.
+Value facets are used to group documents by the value of a mapping expression applied to each document.
 Mapping expressions are expressions that do not include a reduction function.
 
 For more information, refer to the <<expression-components, Expressions section>>.
+For example:
 
-* `mult(quantity, sum(price, tax))`: breakup documents by the revenue generated
-* `fillmissing(state, "N/A")`: breakup documents by state, where N/A is used when the document doesn't contain a state
+* `mult(quantity, sum(price, tax))`: breakup documents by the revenue generated.
+* `fillmissing(state, "N/A")`: breakup documents by state, where N/A is used when the document doesn't contain a state.
 
-Value Facets can be sorted.
+Value facets can be sorted.
 
 ==== Parameters
 
-`expression`:: The expression to choose a facet bucket for each document.
-`sort`:: A <<Facet Sorting,sort>> for the results of the pivot.
+`expression`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The expression to choose a facet bucket for each document.
 
-[NOTE]
-.Optional Parameters
-The `sort` parameter is optional.
+`sort`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A <<Facet Sorting,sort>> for the results of the pivot.
 
 [source,json]
 .Example Value Facet Request
@@ -595,15 +644,14 @@ The `sort` parameter is optional.
 ----
 
 [NOTE]
-.Field Facets
-This is a replacement for Field Facets in the original Analytics Component.
-Field Facet functionality is maintained in Value Facets by using the name of a field as the expression.
+This is a replacement for field facets that existed in the original Analytics Component.
+Field facet functionality is maintained in value facets by using the name of a field as the expression.
 
 === Analytic Pivot Facets
 
 Pivot Facets are used to group documents by the value of multiple mapping expressions applied to each document.
 
-Pivot Facets work much like layers of <<value-facets,Analytic Value Facets>>.
+Pivot Facets work much like layers of <<Value Facets>>.
 A list of pivots is required, and the order of the list directly impacts the results returned.
 The first pivot given will be treated like a normal value facet.
 The second pivot given will be treated like one value facet for each value of the first pivot.
@@ -616,15 +664,42 @@ Sorting in each pivot is independent of the other pivots.
 
 ==== Parameters
 
-`pivots`:: The list of pivots to calculate a drill-down facet for.
+`pivots`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The list of pivots to calculate a drill-down facet for.
 The list is ordered by top-most to bottom-most level.
-`name`::: The name of the pivot.
-`expression`::: The expression to choose a facet bucket for each document.
-`sort`::: A <<Facet Sorting,sort>> for the results of the pivot.
 
-[NOTE]
-.Optional Parameters
-The `sort` parameter within the pivot object is optional, and can be given in any, none or all of the provided pivots.
+`name`:::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the pivot.
+
+`expression`:::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The expression to choose a facet bucket for each document.
+
+`sort`:::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A <<Facet Sorting,sort>> for the results of the pivot.
 
 [source,json]
 .Example Pivot Facet Request
@@ -700,32 +775,79 @@ Refer to the <<faceting.adoc#range-faceting,Range Facet documentation>> for addi
 
 ==== Parameters
 
-`field`:: Field to be faceted over
-`start`:: The bottom end of the range
-`end`:: The top end of the range
-`gap`:: A list of range gaps to generate facet buckets.
-If the buckets do not add up to fit the `start` to `end` range,
-then the last `gap` value will repeated as many times as needed to fill any unused range.
-`hardend`:: Whether to cutoff the last facet bucket range at the `end` value if it spills over.
-Defaults to `false`.
-`include`:: The boundaries to include in the facet buckets.
-Defaults to `lower`.
+`field`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Field to be faceted over.
+
+`start`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The bottom end of the range.
+
+`end`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The top end of the range.
+
+`gap`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+A list of range gaps to generate facet buckets.
+If the buckets do not add up to fit the `start` to `end` range, then the last `gap` value will repeated as many times as needed to fill any unused range.
+
+`hardend`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Whether to cutoff the last facet bucket range at the `end` value if it spills over.
+
+`include`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `lower`
+|===
++
+The boundaries to include in the facet buckets.
 * `lower` - All gap-based ranges include their lower bound.
 * `upper` - All gap-based ranges include their upper bound.
-* `edge` - The first and last gap ranges include their edge bounds (lower for the first one, upper for the last one) even if the corresponding upper/lower option is not specified.
+* `edge` - The first and last gap ranges include their edge bounds (lower for the first one, upper for the last one), even if the corresponding upper/lower option is not specified.
 * `outer` - The `before` and `after` ranges will be inclusive of their bounds, even if the first or last ranges already include those boundaries.
-* `all` - Includes all options: `lower`, `upper`, `edge`, and `outer`
-`others`:: Additional ranges to include in the facet.
-Defaults to `none`.
+* `all` - Includes all options: `lower`, `upper`, `edge`, and `outer`.
+
+`others`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Additional ranges to include in the facet.
 * `before` - All records with field values lower then lower bound of the first range.
 * `after` - All records with field values greater then the upper bound of the last range.
 * `between` - All records with field values between the lower bound of the first range and the upper bound of the last range.
 * `none` - Include facet buckets for none of the above.
 * `all` - Include facet buckets for `before`, `after` and `between`.
-
-[NOTE]
-.Optional Parameters
-The `hardend`, `include` and `others` parameters are all optional.
 
 [source,json]
 .Example Range Facet Request
@@ -798,11 +920,18 @@ The `hardend`, `include` and `others` parameters are all optional.
 
 === Query Facets
 
-Query Facets are used to group documents by given set of queries.
+Query facets are used to group documents by given set of queries.
 
 ==== Parameters
 
-`queries`:: The list of queries to facet by.
+`queries`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The list of queries to facet by.
 
 [source,json]
 .Example Query Facet Request

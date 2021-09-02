@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -202,8 +203,7 @@ public class DebugComponent extends SearchComponent
       NamedList<Object> info = rb.getDebugInfo();
       NamedList<Object> explain = new SimpleOrderedMap<>();
 
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry<String, Object>[]  arr =  new NamedList.NamedListEntry[rb.resultIds.size()];
+      Map.Entry<String, Object>[]  arr = (Map.Entry<String, Object>[]) Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
       // Will be set to true if there is at least one response with PURPOSE_GET_DEBUG
       boolean hasGetDebugResponses = false;
 
@@ -279,7 +279,7 @@ public class DebugComponent extends SearchComponent
     return namedList;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   protected Object merge(Object source, Object dest, Set<String> exclude) {
     if (source == null) return dest;
     if (dest == null) {
@@ -296,9 +296,9 @@ public class DebugComponent extends SearchComponent
           dest = new LinkedHashSet<>((Collection<?>) dest);
         }
         if (source instanceof Collection) {
-          ((Collection)dest).addAll((Collection<?>)source);
+          ((Collection<Object>) dest).addAll((Collection<?>)source);
         } else {
-          ((Collection)dest).add(source);
+          ((Collection<Object>) dest).add(source);
         }
         return dest;
       } else if (source instanceof Number) {

@@ -35,13 +35,9 @@ New Features
 * SOLR-15130: Support for per-collection replica placement node sets, a.k.a "node type"
   placements. (ab, ilan)
 
-* SOLR-15208: Add the countDist aggregation to the stats, facet and timeseries Streaming Expressions (Joel Bernstein)
-
 * SOLR-15164: Implement Task Management Interface (Atri Sharma, with extensive review and perf testing by Anshum Gupta, Mike Drob and Houston Putman)
 
 * SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
-
-* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
 
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
@@ -146,17 +142,6 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15044: When indexing nested docs via JSON, it is no longer necessary to provide child doc IDs.
   This was already working for XML & "javabin"/SolrJ.  Previously, omitting the ID would be confused
   for a partial/atomic update.  (David Smiley)
-
-* SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)
-
-* SOLR-15456: Get field type info from luke for custom fields instead of defaulting to String in Parallel SQL (Timothy Potter)
-
-* SOLR-15489: Implement OFFSET & FETCH for LIMIT SQL queries (Timothy Potter)
-
-* SOLR-15475: Implement COUNT and APPROX_COUNT_DISTINCT aggregation functions for Parallel SQL (Timothy Potter)
-
-* SOLR-15499: StatsStream implement ParallelMetricsRollup to allow for tiered computation of SQL metrics
-  over collection aliases backed by many collections, potentially with many shards in each (Timothy Potter)
 
 Other Changes
 ----------------------
@@ -330,19 +315,26 @@ Other Changes
 
 * SOLR-15439: Upgrade jose4j library used for JWT authentication processing, to v0.7.7 (janhoy)
 
-* SOLR-15385: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley, Christine Poerschke)
+* SOLR-15385, SOLR-15535: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley, Christine Poerschke)
 
 * SOLR-15470: The binary distribution no longer contains test-framework jars (janhoy)
 
 * SOLR-15471: Rename lang id whitelist parameter to allowlist (Mike Drob)
 
-* SOLR-15451: SolrSchema (for Parallel SQL) should use PKI principal for internal request to /admin/luke to get table metadata (Timothy Potter)
-
 * SOLR-14341: SolrCloud: move the reference a collection has to a configSet in ZooKeeper from the
   collections/collectionName into its state.json.  For many-collection clusters, this is an
   optimization when the cluster status is fetched.  (Nazerke Seidan, David Smiley)
 
-* SOLR-15461: SOLR-15461: Upgrade Apache Calcite to 1.27.0. (Mark Miller, Timothy Potter)
+* SOLR-15517: Remove unnecessary no-op implementation of SolrCoreAware in ExpandComponent and TermVectorComponent. (Christine Poerschke)
+
+* SOLR-14857: Add optional gradle property to run docker tests in parallel (hossman, Houston Putman)
+
+* SOLR-15309: Add missing IntelliJ IDEA entries to the .gitignore file (Pushkar Raste via Anshum Gupta)
+
+* SOLR-15428: Integrate the OpenJDK JMH micro benchmark framework for micro benchmarks and performance comparisons and investigation.
+  (Mark Miller)
+
+* SOLR-15111: Use JDK8 Base64 instead of own implementation (Andras Salamon via janhoy)
 
 Bug Fixes
 ---------------------
@@ -368,22 +360,97 @@ New Features
 * SOLR-15472: New shards.preference option for preferring replicas based on their leader status, i.e.
   `shards.preference=replica.leader:false` would prefer non-leader replicas. (wei wang via Timothy Potter)
 
+* SOLR-15208: Add the countDist aggregation to the stats, facet and timeseries Streaming Expressions (Joel Bernstein)
+
+* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
+
+* SOLR-15527: Security screen in Admin UI for managing users, roles, and permissions (Timothy Potter)
+
+* SOLR-15089: Allow backup/restoration to Amazon's S3 blobstore (Andy Throgmorton, Houston Putman, Jason Gerlowski, Pierre Salagnac, Mike Drob)
+
 Improvements
 ---------------------
-(No changes)
+* SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)
+
+* SOLR-15451: SolrSchema (for Parallel SQL) should use PKI principal for internal request to /admin/luke to get table metadata (Timothy Potter)
+
+* SOLR-15456: Get field type info from luke for custom fields instead of defaulting to String in Parallel SQL (Timothy Potter)
+
+* SOLR-15461: Upgrade Apache Calcite to 1.27.0. (Mark Miller, Timothy Potter)
+
+* SOLR-15489: Implement OFFSET & FETCH for LIMIT SQL queries (Timothy Potter)
+
+* SOLR-15475: Implement COUNT and APPROX_COUNT_DISTINCT aggregation functions for Parallel SQL (Timothy Potter)
+
+* SOLR-15499: StatsStream implement ParallelMetricsRollup to allow for tiered computation of SQL metrics
+  over collection aliases backed by many collections, potentially with many shards in each (Timothy Potter)
+
+* SOLR-15525: Read ZK credentials from a file specified using a system property instead of exposing plain-text
+  credentials as system properties (Timothy Potter)
+
+* SOLR-15549: ZkStateReader now supports connecting to 9.0 Solr Clouds (Houston Putman)
+
+* SOLR-15570: Include fields declared in the schema in table metadata (SQL) even if they are empty (Timothy Potter)
+
+* SOLR-15564: Improve filtering expressions in /admin/metrics. (ab)
+
+* SOLR-15576: Allow filtering on ISO-8601 formatted timestamp literals in SQL WHERE clause (Timothy Potter)
+
+* SOLR-9853: Project multi-valued fields in SQL query results (Timothy Potter)
+
+* SOLR-15599: Upgrade AWS SDK from v1 to v2 for S3 Repository (Houston Putman)
+
+* SOLR-15609: Upgrade log4j to 2.14.1 (hossman)
+
+* SOLR-11752: Support "Accept-Encoding" header to enable response gzip compression
+  (Matthew Sporleder, Houston Putman, Shawn Heisey, Jan Høydahl)
 
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
+
+* SOLR-15496: Reuse comparator objects in contrib/ltr rescorer classes. (marcosfpr via Christine Poerschke)
 
 Bug Fixes
 ---------------------
 * SOLR-15311: Support async parameter in MODIFYCOLLECTION
   (Nazerke Seidan, Christine Poerschke, David Smiley)
 
+* SOLR-15531: SignificantTerms streaming function should not fail on empty collections (Benedikt Arnold via Mike Drob)
+
+* SOLR-15482: Cross-collection join fixed to ignore documents that do not contain value in "from" field (hossman)
+
+* SOLR-14506: Fix NPE in COLSTATUS for collections using implicit routing. (Austin Weidler, ab)
+
+* SOLR-15575: Propagate request level basic auth creds from the top-level async CollectionAdminRequest to internally
+  used async requests, such as async status checking (Timothy Potter)
+
+* SOLR-14758: Fix NPE in QueryComponent.mergeIds when using timeAllowed and sorting
+  (Bram Van Dam, Uwe Schindler)
+
+* SOLR-15579: Allow for many values in a SQL IN clause; previously using more than 19 would result in
+  the IN clause being ignored, now users are only limited by the `maxBooleanClauses` configured for a collection (Timothy Potter)
+
+* SOLR-8889: Fixed various problems in Solr and SolrJ that could cause deleteById commands with "_route_" information to processed
+  by the wrong shard, and/or fail when forwarded to replicas from the shard leader. (Dan Fox, Yuki Yano, hossman)
+
+* SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda via Mike Drob)
+
+* SOLR-6156: Fix NullPointerException if group.field grouping is used with rows=0 and timeAllowed. (Modassar Ather, Christine Poerschke)
+
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
+
+* SOLR-15573: bin/solr auth utility should provide role bindings for `security-read` and `config-edit` by default
+  to protect the security and schema designer screens in the Admin UI (Timothy Potter)
+
+* SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
+  before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
+
+* SOLR-15324: Upgrade Jaeger dependency from 1.1.0 to 1.6.0 and thus also libthrift to 0.14.1 (janhoy)
+
+* SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
 
 ==================  8.9.0 ==================
 

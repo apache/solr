@@ -416,7 +416,8 @@ public class ZkStateReader implements SolrCloseable {
       });
     } catch (KeeperException.NoNodeException nne) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
+          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready." +
+              " Expected node '" + nne.getPath() + "' does not exist.");
     }
   }
 

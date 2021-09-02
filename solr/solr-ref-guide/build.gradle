@@ -28,7 +28,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.jruby-gradle.base' version '2.0.0'
+    id 'com.github.jruby-gradle.base' version '2.0.1'
 }
 
 // This project does not contribute anything to main dependencies.
@@ -67,8 +67,10 @@ dependencies {
     depVer('org.apache.tika:tika-core')
     depVer('org.apache.zookeeper:zookeeper')
 
-    // jekyll dependencies
-    gems 'rubygems:jekyll:4.2.0'
+    // jekyll dependencies: we cannot use jekyll >=4, as this version uses native lib
+    // ("sassc" instead of deprecated "sass") which fails to compile on some platforms.
+    // See https://issues.apache.org/jira/browse/SOLR-15520 for more details.
+    gems 'rubygems:jekyll:3.9.1'
     gems 'rubygems:jekyll-asciidoc:3.0.0'
 
     // don't know why we have to explicitly add these deps but it doesn't resolve them
@@ -165,7 +167,7 @@ ext {
 
         props.putAll([
             htmlOutDir: "../${details.path}",
-            javadocLink : "https://docs.oracle.com/en/java/javase/11/docs/api/",
+            javadocLink : "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
             solrGuideDraftStatus : propertyOrDefault('solrGuideDraft', "true").toBoolean() ? "DRAFT" : "",
             solrRootPath : project(':solr').projectDir.toString() + File.separator,
             solrDocsVersion : project.ext['solrDocsVersion'],
@@ -213,20 +215,20 @@ check.dependsOn checkLocalJavadocLinksSite, checkSite
 // Hook site building to assemble.
 assemble.dependsOn buildSite
 
-abstract class PrepareSources extends DefaultTask {
+class PrepareSources extends DefaultTask {
     // Original Source files we'll be syncing <b>FROM</b>
     @InputDirectory
-    public DirectoryProperty srcDir = project.objects.directoryProperty()
+    final DirectoryProperty srcDir = project.objects.directoryProperty()
 
     // Destination folder.
     @OutputDirectory
-    public DirectoryProperty outDir = project.objects.directoryProperty()
+    final DirectoryProperty outDir = project.objects.directoryProperty()
 
     /**
      * Task specific props (lazy provider)
      */
     @Input
-    public MapProperty<String, String> props = project.objects.mapProperty(String, String)
+    final MapProperty<String, String> props = project.objects.mapProperty(String, String)
 
     public PrepareSources() {
         // setup 'dependsOn classes, configurations.depVer' here

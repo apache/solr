@@ -14,7 +14,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<div id="designer">
+<div ng-show="!isSchemaDesignerEnabled">
+  <p class="error-msg"><img src="img/ico/prohibition.png"/>&nbsp;Current user not authorized to use the Schema Designer!</p>
+</div>
+<div id="designer" ng-show="isSchemaDesignerEnabled">
   <div class="clearfix">
     <div id="designer-top">
     <div id="actions" class="actions">
@@ -443,7 +446,7 @@ limitations under the License.
             <select id="copy_schema"
                     ng-model="copyFrom"
                     chosen
-                    ng-options="schema for schema in schemasWithDefault"></select><a ng-click="showHelp('copyFromHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                    ng-options="schema for schema in publishedSchemas"></select><a ng-click="showHelp('copyFromHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
             <div id="copyFromHelp" class="help" ng-show="helpId === 'copyFromHelp'" escape-pressed="hideAll()">
               <div class="help">
               <p>Copy an existing Configset (schema, solrconfig.xml, and supporting files) as the starting point for your new schema. The <b>_default</b> Configset includes a schema with field guessing enabled, dynamic fields for common field types, and field types for analyzing text data for a number of common languages supported by Lucene. For more information about Configsets, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/config-sets.html">Configsets</a></div></p>

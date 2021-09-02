@@ -254,8 +254,7 @@ public class RealTimeGetComponent extends SearchComponent
          Object o = ulog.lookup(idBytes.get());
          if (o != null) {
            // should currently be a List<Oper,Ver,Doc/Id>
-           @SuppressWarnings({"rawtypes"})
-           List entry = (List)o;
+           List<?> entry = (List<?>)o;
            assert entry.size() >= 3;
            int oper = (Integer)entry.get(UpdateLog.FLAGS_IDX) & UpdateLog.OPERATION_MASK;
            switch (oper) {
@@ -426,7 +425,7 @@ public class RealTimeGetComponent extends SearchComponent
    */
   private static SolrDocument resolveFullDocument(SolrCore core, BytesRef idBytes,
                                                   ReturnFields returnFields, SolrInputDocument partialDoc,
-                                                  @SuppressWarnings({"rawtypes"}) List logEntry) throws IOException {
+                                                  List<?> logEntry) throws IOException {
     Set<String> onlyTheseFields = returnFields.getExplicitlyRequestedFieldNames();
     if (idBytes == null || (logEntry.size() != 5 && logEntry.size() != 6)) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Either Id field not present in partial document or log entry doesn't have previous version.");
@@ -646,8 +645,7 @@ public class RealTimeGetComponent extends SearchComponent
       Object o = ulog.lookup(idBytes);
       if (o != null) {
         // should currently be a List<Oper,Ver,Doc/Id>
-        @SuppressWarnings({"rawtypes"})
-        List entry = (List)o;
+        List<?> entry = (List<?>)o;
         assert entry.size() >= 3;
         int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
         if (versionReturned != null) {
@@ -1082,8 +1080,7 @@ public class RealTimeGetComponent extends SearchComponent
       // can get more than one response
       for (ShardResponse srsp : sreq.responses) {
         SolrResponse sr = srsp.getSolrResponse();
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = sr.getResponse();
+        NamedList<?> nl = sr.getResponse();
         SolrDocumentList subList = (SolrDocumentList)nl.get("response");
         docList.addAll(subList);
       }

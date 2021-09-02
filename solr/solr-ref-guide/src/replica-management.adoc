@@ -104,41 +104,87 @@ curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Conte
 === ADDREPLICA Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the collection where the replica should be created.
-This parameter is required.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the shard to which replica is to be added.
 +
 If `shard` is not specified, then `\_route_` must be.
 
 `\_route_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 If the exact shard name is not known, users may pass the `\_route_` value and the system would identify the name of the shard.
 +
 Ignored if the `shard` parameter is also specified.
 
 `node`::
-The name of the node where the replica should be created (optional).
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the node where the replica should be created.
 
 `createNodeSet`::
-A comma-separated list of nodes among which the best ones will be chosen to place the replicas (optional)
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A comma-separated list of nodes among which the best ones will be chosen to place the replicas.
 +
 The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 
 NOTE: If neither `node` nor `createNodeSet` are specified then the best node(s) from among all the live nodes in the cluster are chosen.
 
 `instanceDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The instanceDir for the core that will be created.
 
 `dataDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The directory in which the core should be created.
 
 `type`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `nrt`
+|===
++
 The type of replica to create.
 These possible values are allowed:
 +
 * `nrt`: The NRT type maintains a transaction log and updates its index locally.
-This is the default and the most commonly used.
 * `tlog`: The TLOG type maintains a transaction log but only updates its index via replication.
 * `pull`: The PULL type does not maintain a transaction log and only updates its index via replication.
 This type is not eligible to become a leader.
@@ -146,16 +192,44 @@ This type is not eligible to become a leader.
 See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
 
 `nrtReplicas`::
-The number of `nrt` replicas that should be created (optional, defaults to 1 if `type` is `nrt` otherwise 0).
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `nrt` replicas that should be created.
+Defaults to `1` if `type` is `nrt` otherwise `0`.
 
 `tlogReplicas`::
-The number of `tlog` replicas that should be created (optional, defaults to 1 if `type` is `tlog` otherwise 0).
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `tlog` replicas that should be created.
+Defaults to `1` if `type` is `tlog` otherwise `0`.
 
 `pullReplicas`::
-The number of `pull` replicas that should be created (optional, defaults to 1 if `type` is `pull` otherwise 0).
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `pull` replicas that should be created.
+Defaults to `1` if `type` is `pull` otherwise `0`.
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See <<core-discovery.adoc#,Core Discovery>> for details about supported properties and values.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Set core property _name_ to _value_.
+See <<core-discovery.adoc#,Core Discovery>> for details about supported properties and values.
 
 [WARNING]
 ====
@@ -165,10 +239,22 @@ Altering these entries by specifying `property._name_=_value_` is an expert-leve
 ====
 
 `waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, the request will complete only when all affected replicas become active.
-The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
 
 === Additional Examples using ADDREPLICA
@@ -282,40 +368,84 @@ curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Conte
 === MOVEREPLICA Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the collection.
-This parameter is required.
 
 `targetNode`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the destination node.
-This parameter is required.
 
 `sourceNode`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the node that contains the replica to move.
 This parameter is required unless `replica` is specified.
 If `replica` is specified this parameter is ignored.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the shard for which a replica should be moved.
 This parameter is required unless `replica` is specified.
 If `replica` is specified, this parameter is ignored.
 
 `replica`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the replica to move.
 This parameter is required unless `shard` and `sourceNode` are specified, however this parameter has precedence over those two parameters.
 
 `timeout`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `600` seconds
+|===
++
 The number of seconds to wait for the replica to be live in the new location before deleting the replica in the old location.
-Defaults to 600 seconds.
 Deletion will not occur and creation will not be rolled back in the event of a timeout, potentially leaving an extra replica.
 Presently, this parameter is ignored if the replica is an hdfs replica.
 
 `inPlaceMove`::
-For replicas that use shared filesystems allow 'in-place' move that reuses shared data.
-Defaults to true, but is ignored if the replica does not have the property `shared_storage` with a value of `true`
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+For replicas that use shared filesystems, allow an "in-place" move that reuses shared data.
+Defaults to `true`, but is ignored if the replica does not have the property `shared_storage` with a value of `true`.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
-
 
 
 [[deletereplica]]
@@ -360,20 +490,42 @@ curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/
 === DELETEREPLICA Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the collection.
-This parameter is required.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the shard that includes the replica to be removed.
-This parameter is required.
 
 `replica`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the replica to remove.
 +
 If `count` is used instead, this parameter is not required.
 Otherwise, this parameter must be supplied.
 
 `count`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The number of replicas to remove.
 If the requested number exceeds the number of replicas, no replicas will be deleted.
 If there is only one replica, it will not be removed.
@@ -382,22 +534,51 @@ If `replica` is used instead, this parameter is not required.
 Otherwise, this parameter must be supplied.
 
 `deleteInstanceDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 By default Solr will delete the entire instanceDir of the replica that is deleted.
 Set this to `false` to prevent the instance directory from being deleted.
 
 `deleteDataDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 By default Solr will delete the dataDir of the replica that is deleted.
 Set this to `false` to prevent the data directory from being deleted.
 
 `deleteIndex`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 By default Solr will delete the index of the replica that is deleted.
 Set this to `false` to prevent the index directory from being deleted.
 
 `onlyIfDown`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 When set to `true`, no action will be taken if the replica is active.
-Default `false`.
 
 `async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 [[addreplicaprop]]
@@ -446,20 +627,40 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
 === ADDREPLICAPROP Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the collection the replica belongs to.
-This parameter is required.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the shard the replica belongs to.
-This parameter is required.
 
 `replica`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The replica, e.g., `core_node1`.
-This parameter is required.
 
 `property`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the property to add.
-This property is required.
 +
 This will have the literal `property.` prepended to distinguish it from system-maintained properties.
 So these two forms are equivalent:
@@ -471,10 +672,21 @@ and
 `property=property.special`
 
 `property.value`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The value to assign to the property.
-This parameter is required.
 
 `shardUnique`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, then setting this property in one replica will remove the property from all other replicas in that shard.
 The default is `false`.
 +
@@ -556,27 +768,40 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
 === DELETEREPLICAPROP Parameters
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the collection the replica belongs to.
-This parameter is required.
 
 `shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The name of the shard the replica belongs to.
-This parameter is required.
 
 `replica`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The replica, e.g., `core_node1`.
-This parameter is required.
 
 `property`::
-The property to add.
-This will have the literal `property.` prepended to distinguish it from system-maintained properties.
-So these two forms are equivalent:
 +
-`property=special`
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
 +
-and
-+
-`property=property.special`
+The property to delete.
 
 === DELETEREPLICAPROP Response
 
