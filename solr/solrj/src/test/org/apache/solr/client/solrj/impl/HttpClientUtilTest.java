@@ -18,10 +18,16 @@ package org.apache.solr.client.solrj.impl;
 
 import javax.net.ssl.HostnameVerifier;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipException;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.solr.SolrTestCase;
@@ -114,9 +120,23 @@ public class HttpClientUtilTest extends SolrTestCase {
 
   @Test
   public void testNonRepeatableMalformedGzipEntityAutoClosed() throws IOException {
-    HttpEntity baseEntity = new InputStreamEntity(new ByteArrayInputStream("this is not compressed".getBytes(StandardCharsets.UTF_8)));
+    HttpEntity baseEntity = new InputStreamEntity(IOUtils.toInputStream("this is not compressed", StandardCharsets.UTF_8));
     HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
-    expectThrows(IOException.class, "An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
+    try (InputStream ignored = gzipDecompressingEntity.getContent()){
+      fail("An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content, content-length: " + ignored.available());
+    } catch (IOException ioException) {
+      Throwable cause = ioException.getCause();
+      if (!(cause instanceof ZipException)) {
+        AssertionError assertionError = new AssertionError("IOException should be caused by a ZipException, but instead it was caused by:  "
+            + (cause == null ? "null" : cause.getClass().getName()));
+        assertionError.initCause(cause);
+        throw assertionError;
+      }
+    } catch (Throwable throwable) {
+      AssertionError assertionError = new AssertionError("Expecting an IOException, but received: "+throwable.getClass().getName());
+      assertionError.initCause(throwable);
+      throw assertionError;
+    }
     assertNull("The second time getContent is called, null should be returned since the underlying entity is non-repeatable", gzipDecompressingEntity.getContent());
     assertEquals("No more content should be available after the GZIP Entity failed to load", 0, baseEntity.getContent().available());
   }
@@ -127,5 +147,41 @@ public class HttpClientUtilTest extends SolrTestCase {
     HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
     expectThrows(IOException.class, "An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
     expectThrows(IOException.class, "An IOException should be thrown again when re-loading a repeatable malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
+  }
+
+  @Test
+  public void testRepeatableGzipEntity() throws IOException {
+    String testString = "this is compressed";
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(baos)) {
+      IOUtils.write(testString, gzipOutputStream, StandardCharsets.UTF_8);
+    }
+    // Use an ByteArrayEntity because it is repeatable
+    HttpEntity baseEntity = new ByteArrayEntity(baos.toByteArray());
+    HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
+    try (InputStream stream = gzipDecompressingEntity.getContent()){
+      assertEquals("Entity incorrect after decompression", testString, IOUtils.toString(stream, StandardCharsets.UTF_8));
+    }
+    try (InputStream stream = gzipDecompressingEntity.getContent()){
+      assertEquals("Entity incorrect after decompression after repeating", testString, IOUtils.toString(stream, StandardCharsets.UTF_8));
+    }
+  }
+
+  @Test
+  public void testNonRepeatableGzipEntity() throws IOException {
+    String testString = "this is compressed";
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(baos)) {
+      IOUtils.write(testString, gzipOutputStream, StandardCharsets.UTF_8);
+    }
+    // Use an InputStreamEntity because it is non-repeatable
+    HttpEntity baseEntity = new InputStreamEntity(new ByteArrayInputStream(baos.toByteArray()));
+    HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
+    try (InputStream stream = gzipDecompressingEntity.getContent()){
+      assertEquals("Entity incorrect after decompression", testString, IOUtils.toString(stream, StandardCharsets.UTF_8));
+    }
+    try (InputStream stream = gzipDecompressingEntity.getContent()){
+      expectThrows(IOException.class, "Entity Content should already be closed since the input is non-repeatable", stream::available);
+    }
   }
 }
