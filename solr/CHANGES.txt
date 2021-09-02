@@ -405,6 +405,9 @@ Improvements
 * SOLR-11752: Support "Accept-Encoding" header to enable response gzip compression
   (Matthew Sporleder, Houston Putman, Shawn Heisey, Jan Høydahl)
 
+* SOLR-15376: Accept "Long" values for CollectionAdminRequest.CreateTimeRoutedAlias.setMaxFutureMs
+  to support durations greater than ~ 25 days. (Nahian-Al Hasan, Gus Heck, Christine Poerschke)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
