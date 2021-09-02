@@ -17,8 +17,12 @@
 package org.apache.solr.client.solrj.impl;
 
 import javax.net.ssl.HostnameVerifier;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
 
@@ -46,8 +50,7 @@ public class HttpClientUtilTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testSSLSystemProperties() throws IOException {
+  public void testSSLSystemProperties() {
 
     assertNotNull("HTTPS scheme could not be created using system defaults",
                   HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry().lookup("https"));
@@ -85,7 +88,6 @@ public class HttpClientUtilTest extends SolrTestCase {
   }
   
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testToBooleanDefaultIfNull() throws Exception {
     assertFalse(HttpClientUtil.toBooleanDefaultIfNull(Boolean.FALSE, true));
     assertTrue(HttpClientUtil.toBooleanDefaultIfNull(Boolean.TRUE, false));
@@ -94,8 +96,7 @@ public class HttpClientUtilTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testToBooleanObject() throws Exception {
+  public void testToBooleanObject() {
     assertEquals(Boolean.TRUE, HttpClientUtil.toBooleanObject("true"));
     assertEquals(Boolean.TRUE, HttpClientUtil.toBooleanObject("TRUE"));
     assertEquals(Boolean.TRUE, HttpClientUtil.toBooleanObject("tRuE"));
@@ -108,5 +109,13 @@ public class HttpClientUtilTest extends SolrTestCase {
     assertEquals(null, HttpClientUtil.toBooleanObject("f"));
     assertEquals(null, HttpClientUtil.toBooleanObject("foo"));
     assertEquals(null, HttpClientUtil.toBooleanObject(null));
+  }
+
+  @Test
+  public void testMalformedGzipEntityAutoClosed() throws IOException {
+    HttpEntity baseEntity = new InputStreamEntity(new ByteArrayInputStream("this is not compressed".getBytes(StandardCharsets.UTF_8)));
+    HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
+    expectThrows(IOException.class, gzipDecompressingEntity::getContent);
+    assertEquals("No more content should be available after the GZIP Entity failed to load", 0, baseEntity.getContent().available());
   }
 }

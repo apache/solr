@@ -448,7 +448,7 @@ public class HttpClientUtil {
     }
   }
   
-  private static class GzipDecompressingEntity extends HttpEntityWrapper {
+  protected static class GzipDecompressingEntity extends HttpEntityWrapper {
     private boolean gzipInputStreamCreated = false;
     private InputStream gzipInputStream = null;
 
