@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.entity.StringEntity;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
 
@@ -112,10 +113,19 @@ public class HttpClientUtilTest extends SolrTestCase {
   }
 
   @Test
-  public void testMalformedGzipEntityAutoClosed() throws IOException {
+  public void testNonRepeatableMalformedGzipEntityAutoClosed() throws IOException {
     HttpEntity baseEntity = new InputStreamEntity(new ByteArrayInputStream("this is not compressed".getBytes(StandardCharsets.UTF_8)));
     HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
-    expectThrows(IOException.class, gzipDecompressingEntity::getContent);
+    expectThrows(IOException.class, "An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
+    assertNull("The second time getContent is called, null should be returned since the underlying entity is non-repeatable", gzipDecompressingEntity.getContent());
     assertEquals("No more content should be available after the GZIP Entity failed to load", 0, baseEntity.getContent().available());
+  }
+
+  @Test
+  public void testRepeatableMalformedGzipEntity() throws IOException {
+    HttpEntity baseEntity = new StringEntity("this is not compressed");
+    HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
+    expectThrows(IOException.class, "An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
+    expectThrows(IOException.class, "An IOException should be thrown again when re-loading a repeatable malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
   }
 }

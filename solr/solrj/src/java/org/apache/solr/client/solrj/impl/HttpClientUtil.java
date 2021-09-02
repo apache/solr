@@ -460,10 +460,13 @@ public class HttpClientUtil {
      * Return a InputStream of uncompressed data.
      * If there is an issue with the compression of the data, a null InputStream will be returned,
      * and the underlying compressed InputStream will be closed.
+     *
+     * The same input stream will be returned if the underlying entity is not repeatable.
+     * If the underlying entity is repeatable, then a new input stream will be created.
      */
     @Override
     public InputStream getContent() throws IOException, IllegalStateException {
-      if (!gzipInputStreamCreated) {
+      if (!gzipInputStreamCreated || wrappedEntity.isRepeatable()) {
         gzipInputStreamCreated = true;
         InputStream wrappedContent = wrappedEntity.getContent();
         if (wrappedContent != null) {
