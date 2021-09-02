@@ -400,6 +400,8 @@ Improvements
 
 * SOLR-15599: Upgrade AWS SDK from v1 to v2 for S3 Repository (Houston Putman)
 
+* SOLR-15609: Upgrade log4j to 2.14.1 (hossman)
+
 * SOLR-11752: Support "Accept-Encoding" header to enable response gzip compression
   (Matthew Sporleder, Houston Putman, Shawn Heisey, Jan Høydahl)
 
@@ -433,6 +435,8 @@ Bug Fixes
   by the wrong shard, and/or fail when forwarded to replicas from the shard leader. (Dan Fox, Yuki Yano, hossman)
 
 * SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda via Mike Drob)
+
+* SOLR-6156: Fix NullPointerException if group.field grouping is used with rows=0 and timeAllowed. (Modassar Ather, Christine Poerschke)
 
 Other Changes
 ---------------------
