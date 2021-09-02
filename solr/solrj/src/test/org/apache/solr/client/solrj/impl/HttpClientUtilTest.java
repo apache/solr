@@ -122,21 +122,8 @@ public class HttpClientUtilTest extends SolrTestCase {
   public void testNonRepeatableMalformedGzipEntityAutoClosed() throws IOException {
     HttpEntity baseEntity = new InputStreamEntity(IOUtils.toInputStream("this is not compressed", StandardCharsets.UTF_8));
     HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
-    try (InputStream ignored = gzipDecompressingEntity.getContent()){
-      fail("An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content, content-length: " + ignored.available());
-    } catch (IOException ioException) {
-      Throwable cause = ioException.getCause();
-      if (!(cause instanceof ZipException)) {
-        AssertionError assertionError = new AssertionError("IOException should be caused by a ZipException, but instead it was caused by:  "
-            + (cause == null ? "null" : cause.getClass().getName()));
-        assertionError.initCause(cause);
-        throw assertionError;
-      }
-    } catch (Throwable throwable) {
-      AssertionError assertionError = new AssertionError("Expecting an IOException, but received: "+throwable.getClass().getName());
-      assertionError.initCause(throwable);
-      throw assertionError;
-    }
+    Throwable error = expectThrows(IOException.class, "An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
+    assertEquals("IOException should be caused by a ZipException", ZipException.class, error.getCause() == null ? null : error.getCause().getClass());
     assertNull("The second time getContent is called, null should be returned since the underlying entity is non-repeatable", gzipDecompressingEntity.getContent());
     assertEquals("No more content should be available after the GZIP Entity failed to load", 0, baseEntity.getContent().available());
   }
@@ -145,8 +132,10 @@ public class HttpClientUtilTest extends SolrTestCase {
   public void testRepeatableMalformedGzipEntity() throws IOException {
     HttpEntity baseEntity = new StringEntity("this is not compressed");
     HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity = new HttpClientUtil.GzipDecompressingEntity(baseEntity);
-    expectThrows(IOException.class, "An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
-    expectThrows(IOException.class, "An IOException should be thrown again when re-loading a repeatable malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
+    Throwable error = expectThrows(IOException.class, "An IOException wrapping a ZIPException should be thrown when loading a malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
+    assertEquals("IOException should be caused by a ZipException", ZipException.class, error.getCause() == null ? null : error.getCause().getClass());
+    error = expectThrows(IOException.class, "An IOException should be thrown again when re-loading a repeatable malformed GZIP Entity Content", gzipDecompressingEntity::getContent);
+    assertEquals("IOException should be caused by a ZipException", ZipException.class, error.getCause() == null ? null : error.getCause().getClass());
   }
 
   @Test
