@@ -1812,13 +1812,18 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    /** Sets how long into the future (millis) that we will allow a document to pass. */
+    /**
+     * Sets how long into the future (millis) that we will allow a document to pass.
+     *
+     * @deprecated Please use {@link #setMaxFutureMs(Long)} instead.
+     * */
+    @Deprecated
     public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
       this.maxFutureMs = Long.valueOf(maxFutureMs);
       return this;
     }
 
-    /** Overloading setMaxFutureMs with Long type for backwards compatibility  */
+    /** Sets how long into the future (millis) that we will allow a document to pass. */
     public CreateTimeRoutedAlias setMaxFutureMs(Long maxFutureMs) {
       this.maxFutureMs = maxFutureMs;
       return this;
