@@ -396,6 +396,8 @@ Improvements
 
 * SOLR-9853: Project multi-valued fields in SQL query results (Timothy Potter)
 
+* SOLR-15607: Explicitly indent results in Admin Query UI by default (Olvia Falk via Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
