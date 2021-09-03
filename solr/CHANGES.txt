@@ -405,6 +405,8 @@ Improvements
 * SOLR-11752: Support "Accept-Encoding" header to enable response gzip compression
   (Matthew Sporleder, Houston Putman, Shawn Heisey, Jan Høydahl)
 
+* SOLR-15610: log4j-layout-template-json is now included in solr server, allowing JSON formatted logs to be configurable. (hossman)
+
 * SOLR-15376: Accept "Long" values for CollectionAdminRequest.CreateTimeRoutedAlias.setMaxFutureMs
   to support durations greater than ~ 25 days. (Nahian-Al Hasan, Gus Heck, Christine Poerschke)
 
