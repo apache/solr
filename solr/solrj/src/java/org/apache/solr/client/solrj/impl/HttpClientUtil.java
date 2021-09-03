@@ -61,6 +61,7 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -447,14 +448,39 @@ public class HttpClientUtil {
     }
   }
   
-  private static class GzipDecompressingEntity extends HttpEntityWrapper {
+  protected static class GzipDecompressingEntity extends HttpEntityWrapper {
+    private boolean gzipInputStreamCreated = false;
+    private InputStream gzipInputStream = null;
+
     public GzipDecompressingEntity(final HttpEntity entity) {
       super(entity);
     }
-    
+
+    /**
+     * Return a InputStream of uncompressed data.
+     * If there is an issue with the compression of the data, a null InputStream will be returned,
+     * and the underlying compressed InputStream will be closed.
+     *
+     * The same input stream will be returned if the underlying entity is not repeatable.
+     * If the underlying entity is repeatable, then a new input stream will be created.
+     */
     @Override
     public InputStream getContent() throws IOException, IllegalStateException {
-      return new GZIPInputStream(wrappedEntity.getContent());
+      if (!gzipInputStreamCreated || wrappedEntity.isRepeatable()) {
+        gzipInputStreamCreated = true;
+        InputStream wrappedContent = wrappedEntity.getContent();
+        if (wrappedContent != null) {
+          try {
+            gzipInputStream = new GZIPInputStream(wrappedContent);
+          } catch (IOException ioException) {
+            try (wrappedContent) {
+              Utils.readFully(wrappedContent);
+            } catch (IOException ignored) {}
+            throw new IOException("Cannot open GZipInputStream for response", ioException);
+          }
+        }
+      }
+      return gzipInputStream;
     }
     
     @Override
@@ -468,9 +494,11 @@ public class HttpClientUtil {
     public DeflateDecompressingEntity(final HttpEntity entity) {
       super(entity);
     }
-    
+
     @Override
     public InputStream getContent() throws IOException, IllegalStateException {
+      // InflaterInputStream does not throw a ZipException in the constructor,
+      // so it does not need the same checks as the GZIPInputStream.
       return new InflaterInputStream(wrappedEntity.getContent());
     }
   }
