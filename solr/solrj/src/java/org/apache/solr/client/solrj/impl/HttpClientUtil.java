@@ -495,12 +495,10 @@ public class HttpClientUtil {
       super(entity);
     }
 
-    /**
-     * InflaterInputStream does not throw a ZipException in the constructor,
-     * so it does not need the same checks as the GZIPInputStream.
-     */
     @Override
     public InputStream getContent() throws IOException, IllegalStateException {
+      // InflaterInputStream does not throw a ZipException in the constructor,
+      // so it does not need the same checks as the GZIPInputStream.
       return new InflaterInputStream(wrappedEntity.getContent());
     }
   }
