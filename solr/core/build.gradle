@@ -96,9 +96,7 @@ dependencies {
   implementation 'org.codehaus.janino:janino'
 
   // For faster XML processing than the JDK
-  implementation ('org.codehaus.woodstox:woodstox-core-asl', {
-    exclude group: "javax.xml.stream", module: "stax-api"
-  })
+  implementation (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
 
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-core') { transitive = false }
