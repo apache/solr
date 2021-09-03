@@ -723,7 +723,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     ZonedDateTime a = ZonedDateTime.now(ZoneId.from(ZoneOffset.UTC));
     ZonedDateTime b = a.plusMonths(2);
     ZonedDateTime c = a.plusYears(1);
-    DateTimeFormatter SOLR_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneId.from(ZoneOffset.UTC));
+    DateTimeFormatter SOLR_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT).withZone(ZoneId.from(ZoneOffset.UTC));
 
 
     final String YYYY_MM_DD_a = SOLR_DATE_TIME_FORMATTER.format(a);
