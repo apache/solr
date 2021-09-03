@@ -16,7 +16,7 @@
   limitations under the License.
   -->
 <!-- Configuration for asynchronous logging -->
-<Configuration>
+<!--Configuration>
   <Appenders>
     <Console name="STDERR" target="SYSTEM_ERR">
       <PatternLayout>
@@ -38,32 +38,32 @@
       <AppenderRef ref="STDERR"/>
     </AsyncRoot>
   </Loggers>
-</Configuration>
+</Configuration-->
 
 <!-- Configuration for synchronous logging
      there _may_ be a very small window where log messages will not be flushed
      to the log file on abnormal shutdown. If even this risk is unacceptable, use
      the configuration below
 -->
-<!--Configuration>
-<Appenders>
-  <Console name="STDERR" target="SYSTEM_ERR">
-    <PatternLayout>
-      <Pattern>
-        %-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
-      </Pattern>
-    </PatternLayout>
-  </Console>
-</Appenders>
-<Loggers>
-  <Logger name="org.apache.zookeeper" level="WARN"/>
-  <Logger name="org.apache.hadoop" level="WARN"/>
-  <Logger name="org.apache.directory" level="WARN"/>
-  <Logger name="org.apache.solr.hadoop" level="INFO"/>
-  <Logger name="org.eclipse.jetty" level="INFO"/>
+<Configuration>
+  <Appenders>
+    <Console name="STDERR" target="SYSTEM_ERR">
+      <PatternLayout>
+        <Pattern>
+          %-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+        </Pattern>
+      </PatternLayout>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="org.apache.zookeeper" level="WARN"/>
+    <Logger name="org.apache.hadoop" level="WARN"/>
+    <Logger name="org.apache.directory" level="WARN"/>
+    <Logger name="org.apache.solr.hadoop" level="INFO"/>
+    <Logger name="org.eclipse.jetty" level="INFO"/>
 
-  <Root level="INFO">
-    <AppenderRef ref="STDERR"/>
-  </Root>
-</Loggers>
-</Configuration-->
+    <Root level="INFO">
+      <AppenderRef ref="STDERR"/>
+    </Root>
+  </Loggers>
+</Configuration>

@@ -315,7 +315,7 @@ Other Changes
 
 * SOLR-15439: Upgrade jose4j library used for JWT authentication processing, to v0.7.7 (janhoy)
 
-* SOLR-15385: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley, Christine Poerschke)
+* SOLR-15385, SOLR-15535: Address many rawtypes warnings, resulting in several modified signatures in the public API. (Mike Drob, David Smiley, Christine Poerschke)
 
 * SOLR-15470: The binary distribution no longer contains test-framework jars (janhoy)
 
@@ -333,6 +333,10 @@ Other Changes
 
 * SOLR-15428: Integrate the OpenJDK JMH micro benchmark framework for micro benchmarks and performance comparisons and investigation.
   (Mark Miller)
+
+* SOLR-15111: Use JDK8 Base64 instead of own implementation (Andras Salamon via janhoy)
+
+* SOLR-15612: Remove unecessary https8 jetty module (Houston Putman)
 
 Bug Fixes
 ---------------------
@@ -396,6 +400,17 @@ Improvements
 
 * SOLR-9853: Project multi-valued fields in SQL query results (Timothy Potter)
 
+* SOLR-15599: Upgrade AWS SDK from v1 to v2 for S3 Repository (Houston Putman)
+
+* SOLR-15609: Upgrade log4j to 2.14.1 (hossman)
+
+* SOLR-11752: Support "Accept-Encoding" header to enable response gzip compression
+  (Matthew Sporleder, Houston Putman, Shawn Heisey, Jan Høydahl)
+
+* SOLR-15610: log4j-layout-template-json is now included in solr server, allowing JSON formatted logs to be configurable. (hossman)
+
+* SOLR-15607: Explicitly indent results in Admin Query UI by default (Olvia Falk via Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
@@ -425,8 +440,13 @@ Bug Fixes
 * SOLR-8889: Fixed various problems in Solr and SolrJ that could cause deleteById commands with "_route_" information to processed
   by the wrong shard, and/or fail when forwarded to replicas from the shard leader. (Dan Fox, Yuki Yano, hossman)
 
-* SOLR-15595: Partial results from shard queries needlessly discarded for queries without sort field (Michael Kosten via Mike Drob, Eric Pugh)
+* SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda via Mike Drob)
 
+* SOLR-6156: Fix NullPointerException if group.field grouping is used with rows=0 and timeAllowed. (Modassar Ather, Christine Poerschke)
+
+* SOLR-14457: SolrClient leaks connections on compressed responses if the response is malformed (Houston Putman)
+
+* SOLR-15595: Partial results from shard queries needlessly discarded for queries without sort field (Michael Kosten via Mike Drob, Eric Pugh)
 
 Other Changes
 ---------------------
@@ -437,6 +457,10 @@ Other Changes
 
 * SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
+
+* SOLR-15324: Upgrade Jaeger dependency from 1.1.0 to 1.6.0 and thus also libthrift to 0.14.1 (janhoy)
+
+* SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
 
 ==================  8.9.0 ==================
 

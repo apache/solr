@@ -55,7 +55,7 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Control;
 
-/** The base class for Solr JMH benchmarks that operate against a {@link MiniSolrCloudCluster}. */
+/** The base class for Solr JMH benchmarks that operate against a {@code MiniSolrCloudCluster}. */
 public class MiniClusterState {
 
   public static final boolean DEBUG_OUTPUT = false;

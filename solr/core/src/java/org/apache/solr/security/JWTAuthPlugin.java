@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -61,6 +60,7 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -625,7 +625,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);
     String headerJson = Utils.toJSONString(data);
-    return Base64.byteArrayToBase64(headerJson.getBytes(StandardCharsets.UTF_8));
+    return Base64.getEncoder().encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
   }
 
   /**
