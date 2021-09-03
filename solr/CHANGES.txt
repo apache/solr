@@ -446,6 +446,8 @@ Bug Fixes
 
 * SOLR-14457: SolrClient leaks connections on compressed responses if the response is malformed (Houston Putman)
 
+* SOLR-15595: Partial results from shard queries needlessly discarded for queries without sort field (Michael Kosten via Mike Drob, Eric Pugh)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
