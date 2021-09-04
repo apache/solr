@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj.io;
 
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.StreamParams;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -25,9 +28,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.params.StreamParams;
+import java.util.stream.Collectors;
 
 /**
  *  A simple abstraction of a record containing key/value pairs.
@@ -298,13 +299,20 @@ public class Tuple implements Cloneable, MapWriter {
     Tuple clone = new Tuple(this);
     return clone;
   }
-  
+
+  /**
+   * The other tuples fields and fieldLabels will be putAll'd directly to this's fields and fieldLabels while
+   * other's fieldNames will be added such that duplicates aren't present.
+   * @param other Tuple to be merged into this.
+   */
   public void merge(Tuple other) {
     this.putAll(other.getFields());
     if (other.fieldNames != null) {
       if (this.fieldNames != null) {
-        this.fieldNames.addAll(other.fieldNames);
-      } else {
+        this.fieldNames.addAll(other.fieldNames.stream()
+                                       .filter(otherFieldName -> !this.fieldNames.contains(otherFieldName))
+                                       .collect(Collectors.toList()));
+     } else {
         this.fieldNames = new ArrayList<>(other.fieldNames);
       }
     }
