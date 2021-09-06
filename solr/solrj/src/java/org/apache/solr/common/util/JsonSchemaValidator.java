@@ -107,6 +107,19 @@ enum Type {
       }
     }
   },
+  LONG(Long.class){
+    @Override
+    boolean isValid(Object o) {
+      if(super.isValid(o)) return true;
+      try {
+        Long.parseLong(String.valueOf(o));
+        return true;
+      } catch (NumberFormatException e) {
+        return false;
+
+      }
+    }
+  },
   BOOLEAN(Boolean.class){
     @Override
     boolean isValid(Object o) {
