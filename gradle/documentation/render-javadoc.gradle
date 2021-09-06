@@ -188,11 +188,13 @@ configure(subprojects) {
   }
 }
 
+@CacheableTask
 class RenderJavadocTask extends DefaultTask {
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   @SkipWhenEmpty
   SourceDirectorySet srcDirSet;
-  
+
   @OutputDirectory
   File outputDir
 
@@ -258,10 +260,10 @@ class RenderJavadocTask extends DefaultTask {
   public void render() {
     def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
-    
+
     // create the directory, so relative link calculation knows that it's a directory:
     outputDir.mkdirs();
-    
+
     def opts = []
     opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
     opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
@@ -336,7 +338,7 @@ class RenderJavadocTask extends DefaultTask {
             }
           }
     }
-    
+
     // Add offline links.
     allOfflineLinks.each { url, dir ->
       // Some sanity check/ validation here to ensure dir/package-list or dir/element-list is present.

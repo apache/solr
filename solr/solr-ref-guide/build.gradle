@@ -184,6 +184,7 @@ ext {
         group "Documentation"
         description "Builds the ${details.desc}"
 
+        outputs.cacheIf { true }
         inputs.dir contentDir
         outputs.dir htmlDir
 
@@ -215,20 +216,22 @@ check.dependsOn checkLocalJavadocLinksSite, checkSite
 // Hook site building to assemble.
 assemble.dependsOn buildSite
 
-class PrepareSources extends DefaultTask {
+@CacheableTask
+abstract class PrepareSources extends DefaultTask {
     // Original Source files we'll be syncing <b>FROM</b>
     @InputDirectory
-    final DirectoryProperty srcDir = project.objects.directoryProperty()
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract DirectoryProperty getSrcDir()
 
     // Destination folder.
     @OutputDirectory
-    final DirectoryProperty outDir = project.objects.directoryProperty()
+    abstract DirectoryProperty getOutDir()
 
     /**
      * Task specific props (lazy provider)
      */
     @Input
-    final MapProperty<String, String> props = project.objects.mapProperty(String, String)
+    abstract MapProperty<String, String> getProps()
 
     public PrepareSources() {
         // setup 'dependsOn classes, configurations.depVer' here
