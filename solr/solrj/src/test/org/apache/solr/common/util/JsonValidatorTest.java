@@ -121,6 +121,23 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     assertEquals(1, errs.size());
     assertTrue(errs.get(0).contains("Value of enum"));
 
+    {
+      final JsonSchemaValidator durationValidator = new JsonSchemaValidator("{" +
+          "  type:object," +
+          "  properties: {" +
+          "   i : {type: integer}," +
+          "   l : {type: long}," +
+          "   name: {type: string}}}");
+      for (Long val : new Long[] { 30L, 30L*24, 30L*24*60, 30L*24*60*60, 30L*24*60*60*1000 }) { // month: days, hours, minutes, seconds, milliseconds
+        if (val <= Integer.MAX_VALUE) {
+          errs = durationValidator.validateJson(Utils.fromJSONString("{name: 'val', i:"+Integer.toString(val.intValue())+"}"));
+          assertNull("errs are " + errs, errs);
+        }
+        errs = durationValidator.validateJson(Utils.fromJSONString("{name: 'val', l:"+val.toString()+"}"));
+        assertNull("errs are " + errs, errs);
+      }
+    }
+
     String schema = "{\n" +
         "  'type': 'object',\n" +
         "  'properties': {\n" +
