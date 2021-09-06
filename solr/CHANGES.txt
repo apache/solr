@@ -145,6 +145,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 Other Changes
 ----------------------
+* SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
+
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
 
 * SOLR-14616: CDCR support removed (Ishan Chattopadhyaya)
