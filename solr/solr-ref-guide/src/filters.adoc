@@ -2670,6 +2670,15 @@ If `true`, then individual tokens will be output if no shingles are possible.
 +
 The string to use when joining adjacent tokens to form a shingle.
 
+`fillerToken`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `_` (underscore)
+|===
++
+The character used to fill in for removed stop words in order to preserve position increments.
+
 *Example:*
 
 Default behavior.
