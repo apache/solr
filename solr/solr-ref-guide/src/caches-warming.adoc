@@ -187,7 +187,7 @@ Ideally, this number should be as close to 1 as possible.
 
 If you find that you have a low hit ratio but you've set your cache size high, you can optimize by reducing the cache size - there's no need to keep those objects in memory when they are not being used.
 
-Another useful metric is the cache evictions, which measures the ojects removed from the cache.
+Another useful metric is the cache evictions, which measures the objects removed from the cache.
 A high rate of evictions can indicate that your cache is too small and increasing it may show a higher hit ratio.
 Alternatively, if your hit ratio is high but your evictions are low, your cache might be too large and you may benefit from reducing the size.
 

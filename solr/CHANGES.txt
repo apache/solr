@@ -145,6 +145,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 Other Changes
 ----------------------
+* SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
+
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
 
 * SOLR-14616: CDCR support removed (Ishan Chattopadhyaya)
@@ -336,6 +338,8 @@ Other Changes
 
 * SOLR-15111: Use JDK8 Base64 instead of own implementation (Andras Salamon via janhoy)
 
+* SOLR-15612: Remove unecessary https8 jetty module (Houston Putman)
+
 * SOLR-15606: Rename (deprecated) Insanity.java to NumericHidingLeafReader.java adjusting callers to match. (Christine Poerschke)
 
 Bug Fixes
@@ -402,6 +406,15 @@ Improvements
 
 * SOLR-15599: Upgrade AWS SDK from v1 to v2 for S3 Repository (Houston Putman)
 
+* SOLR-15609: Upgrade log4j to 2.14.1 (hossman)
+
+* SOLR-11752: Support "Accept-Encoding" header to enable response gzip compression
+  (Matthew Sporleder, Houston Putman, Shawn Heisey, Jan Høydahl)
+
+* SOLR-15610: log4j-layout-template-json is now included in solr server, allowing JSON formatted logs to be configurable. (hossman)
+
+* SOLR-15607: Explicitly indent results in Admin Query UI by default (Olvia Falk via Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
@@ -432,6 +445,12 @@ Bug Fixes
   by the wrong shard, and/or fail when forwarded to replicas from the shard leader. (Dan Fox, Yuki Yano, hossman)
 
 * SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda via Mike Drob)
+
+* SOLR-6156: Fix NullPointerException if group.field grouping is used with rows=0 and timeAllowed. (Modassar Ather, Christine Poerschke)
+
+* SOLR-14457: SolrClient leaks connections on compressed responses if the response is malformed (Houston Putman)
+
+* SOLR-15595: Partial results from shard queries needlessly discarded for queries without sort field (Michael Kosten via Mike Drob, Eric Pugh)
 
 Other Changes
 ---------------------

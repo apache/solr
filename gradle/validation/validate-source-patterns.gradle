@@ -66,9 +66,6 @@ subprojects {
     group = 'Verification'
     description = 'Validate Source Patterns'
 
-    // This task has no proper outputs.
-    setupDummyOutputs(task)
-
     sourceFiles = fileTree(projectDir) {
       extensions.each{
         include "**/*.${it}"
@@ -99,9 +96,6 @@ configure(rootProject) {
   task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
-
-    // This task has no proper outputs.
-    setupDummyOutputs(task)
 
     sourceFiles = fileTree(projectDir) {
       extensions.each{
