@@ -1,9 +1,11 @@
 package org.apache.solr.client.solrj.io;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.params.StreamParams;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -97,5 +99,84 @@ public class TupleTest extends SolrTestCase {
         assertEquals("new field two", tupleOne.getFieldLabels().get("field-two"));
         assertTrue(tupleOne.EOF);
         assertTrue(tupleOne.EXCEPTION);
+    }
+
+    @Test
+    public void writeMapTest() throws IOException {
+      final Map<String, Object> commonFields = new HashMap<>();
+      commonFields.put("field a", "1");
+      commonFields.put("field b", "2");
+      commonFields.put("field c", "3");
+
+      final Tuple tupleOne = new Tuple(commonFields);
+      // label all fields
+      tupleOne.setFieldLabels(new HashMap<>(Map.ofEntries(
+              Map.entry("field-one", "field a"),
+              Map.entry("field-two", "field b"),
+              Map.entry("field-three", "field c")
+      )));
+      // then choose a subset for serialisation
+      tupleOne.setFieldNames(new ArrayList<>(Arrays.asList("field-two", "field-three")));
+      {
+        final TupleEntryWriter writer = new TupleEntryWriter();
+        tupleOne.writeMap(writer);
+        assertEquals(2, writer.tuple.getFields().size());
+        assertEquals("2", writer.tuple.get("field b")); // field-two
+        assertEquals("3", writer.tuple.get("field c")); // field-three
+      }
+
+      final Tuple tupleTwo = new Tuple(commonFields);
+      tupleTwo.put("field d", "4");
+      // label all fields
+      tupleTwo.setFieldLabels(new HashMap<>(Map.ofEntries(
+              Map.entry("field-one", "field b"),
+              Map.entry("field-two", "field a"),
+              Map.entry("field-four", "field d")
+      )));
+      // then choose a subset for serialisation
+      tupleTwo.setFieldNames(new ArrayList<>(Arrays.asList("field-two", "field-four")));
+      {
+        final TupleEntryWriter writer = new TupleEntryWriter();
+        tupleTwo.writeMap(writer);
+        assertEquals(2, writer.tuple.getFields().size());
+        assertEquals("1", writer.tuple.get("field a")); // field-two
+        assertEquals("4", writer.tuple.get("field d")); // field-four
+      }
+
+      // clone and merge
+      final Tuple tupleThree = tupleOne.clone();
+      tupleThree.merge(tupleTwo);
+      assertEquals(4, tupleThree.getFieldLabels().size());
+      assertEquals(3, tupleThree.getFieldNames().size());
+      // serialise merged tuples
+      {
+        final TupleEntryWriter writer = new TupleEntryWriter();
+        tupleThree.writeMap(writer);
+        assertEquals(3, writer.tuple.getFields().size());
+        assertEquals("1", writer.tuple.get("field a")); // field-two label in tupleTwo replaced field-two label from tupleOne
+        assertEquals("3", writer.tuple.get("field c")); // field-three label from tupleOne
+        assertEquals("4", writer.tuple.get("field d")); // field-four label from tupleTwo
+      }
+
+      tupleThree.setFieldNames(null);
+      // full serialisation
+      {
+        final TupleEntryWriter writer = new TupleEntryWriter();
+        tupleThree.writeMap(writer);
+        assertEquals(4, writer.tuple.getFields().size());
+        assertEquals("1", writer.tuple.get("field a"));
+        assertEquals("2", writer.tuple.get("field b"));
+        assertEquals("3", writer.tuple.get("field c"));
+        assertEquals("4", writer.tuple.get("field d"));
+      }
+    }
+
+    private static final class TupleEntryWriter implements EntryWriter {
+      final Tuple tuple = new Tuple();
+      @Override
+      public EntryWriter put(CharSequence k, Object v) throws IOException {
+        tuple.put(k.toString(), v);
+        return this;
+      }
     }
 }
