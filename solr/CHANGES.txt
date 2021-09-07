@@ -340,6 +340,8 @@ Other Changes
 
 * SOLR-15612: Remove unecessary https8 jetty module (Houston Putman)
 
+* SOLR-15606: Rename (deprecated) Insanity.java to NumericHidingLeafReader.java adjusting callers to match. (Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
