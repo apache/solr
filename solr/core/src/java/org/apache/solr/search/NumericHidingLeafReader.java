@@ -32,39 +32,34 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.solr.uninverting.UninvertingReader;
 
 /** 
- * Lucene 5.0 removes "accidental" insanity, so you must explicitly
- * create it.
- * <p>
- * This class creates insanity for two specific situations:
+ * This class is useful in two specific situations:
  * <ul>
  *   <li>calling {@code ord} or {@code rord} functions on a single-valued numeric field.
  *   <li>doing grouped faceting ({@code group.facet}) on a single-valued numeric field.
  * </ul>
  */
 @Deprecated
-public class Insanity {
-  
-  /** 
-   * Returns a view over {@code sane} where {@code insaneField} is a string
-   * instead of a numeric.
-   */
-  public static LeafReader wrapInsanity(LeafReader sane, String insaneField) {
-    return UninvertingReader.wrap(
-        new InsaneReader(sane, insaneField),
-        Collections.singletonMap(insaneField, UninvertingReader.Type.SORTED)::get);
-  }
-  
-  /** Hides the proper numeric dv type for the field */
-  private static class InsaneReader extends FilterLeafReader {
-    final String insaneField;
-    final FieldInfos fieldInfos;
+public class NumericHidingLeafReader extends FilterLeafReader {
     
-    InsaneReader(LeafReader in, String insaneField) {
+    /** 
+     * Returns a view over {@code leafReader} where {@code field} is a string
+     * instead of a numeric.
+     */
+    public static LeafReader wrap(LeafReader leafReader, String field) {
+      return UninvertingReader.wrap(
+          new NumericHidingLeafReader(leafReader, field),
+          Collections.singletonMap(field, UninvertingReader.Type.SORTED)::get);
+    }
+    
+    private final String field;
+    private final FieldInfos fieldInfos;
+    
+    private NumericHidingLeafReader(LeafReader in, String field) {
       super(in);
-      this.insaneField = insaneField;
+      this.field = field;
       ArrayList<FieldInfo> filteredInfos = new ArrayList<>();
       for (FieldInfo fi : in.getFieldInfos()) {
-        if (fi.name.equals(insaneField)) {
+        if (fi.name.equals(field)) {
           filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
                                           fi.hasPayloads(), fi.getIndexOptions(), DocValuesType.NONE, -1, Collections.emptyMap(),
                                           fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
@@ -78,7 +73,7 @@ public class Insanity {
 
     @Override
     public NumericDocValues getNumericDocValues(String field) throws IOException {
-      if (insaneField.equals(field)) {
+      if (this.field.equals(field)) {
         return null;
       } else {
         return in.getNumericDocValues(field);
@@ -87,7 +82,7 @@ public class Insanity {
 
     @Override
     public BinaryDocValues getBinaryDocValues(String field) throws IOException {
-      if (insaneField.equals(field)) {
+      if (this.field.equals(field)) {
         return null;
       } else {
         return in.getBinaryDocValues(field);
@@ -96,7 +91,7 @@ public class Insanity {
 
     @Override
     public SortedDocValues getSortedDocValues(String field) throws IOException {
-      if (insaneField.equals(field)) {
+      if (this.field.equals(field)) {
         return null;
       } else {
         return in.getSortedDocValues(field);
@@ -105,7 +100,7 @@ public class Insanity {
 
     @Override
     public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
-      if (insaneField.equals(field)) {
+      if (this.field.equals(field)) {
         return null;
       } else {
         return in.getSortedSetDocValues(field);
@@ -129,5 +124,4 @@ public class Insanity {
       return in.getReaderCacheHelper();
     }
 
-  }
 }
