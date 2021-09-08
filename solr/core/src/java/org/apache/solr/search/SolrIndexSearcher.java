@@ -818,11 +818,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
   private volatile BitDocSet liveDocs;
 
-  @Deprecated // TODO remove for 8.0
-  public BitDocSet getLiveDocs() throws IOException {
-    return getLiveDocSet();
-  }
-
   /**
    * Returns an efficient random-access {@link DocSet} of the live docs.  It's cached.  Never null.
    * @lucene.internal the type of DocSet returned may change in the future
