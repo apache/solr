@@ -24,13 +24,13 @@
   <dataDir>${solr.data.dir:}</dataDir>
 
   <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+                    class="${directoryFactory:solr.NRTCachingDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <indexConfig>
-    <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
+    <mergePolicyFactory class="${mergePolicyFactory:org.apache.solr.index.TieredMergePolicyFactory}">
       <int name="maxMergeAtOnce">${maxMergeAtOnce:10}</int>
       <int name="segmentsPerTier">${segmentsPerTier:10}</int>
       <double name="noCFSRatio">${noCFSRatio:.1}</double>
@@ -38,7 +38,7 @@
 
     <useCompoundFile>${useCompoundFile:true}</useCompoundFile>
 
-    <ramBufferSizeMB>${solr.ramBufferSizeMB:100}</ramBufferSizeMB>
+    <ramBufferSizeMB>${ramBufferSizeMB:100}</ramBufferSizeMB>
     <!-- <ramPerThreadHardLimitMB>60</ramPerThreadHardLimitMB> -->
 
     <!-- <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">
@@ -54,20 +54,20 @@
          use the single process lockType for speed - but tests that explicitly need
          to vary the lockType canset it as needed.
     -->
-    <lockType>${solr.lockType:single}</lockType>
+    <lockType>${lockType:single}</lockType>
 
-    <infoStream>${solr.tests.infostream:false}</infoStream>
+    <infoStream>${infostream:false}</infoStream>
 
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <commitWithin>
-      <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
+      <softCommit>${commitwithin.softcommit:true}</softCommit>
     </commitWithin>
     <autoCommit>
-      <maxTime>${solr.autoCommit.maxTime:60000}</maxTime>
+      <maxTime>${autoCommit.maxTime:60000}</maxTime>
     </autoCommit>
-    <updateLog class="${solr.ulog:solr.UpdateLog}" enable="${enable.update.log:true}"/>
+    <updateLog class="${ulog:solr.UpdateLog}" enable="${enable.update.log:true}"/>
   </updateHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler">
@@ -81,25 +81,25 @@
 
   <query>
     <queryResultCache
-            enabled ="${queryResultCache.enabled:false}"
+            enabled="${queryResultCache.enabled:false}"
             class="${queryResultCache.class:solr.LRUCache}"
             size="${queryResultCache.size:0}"
             initialSize="${queryResultCache.initialSize:0}"
             autowarmCount="${queryResultCache.autowarmCount:0}"/>
-    <documentCache
-            enabled ="${documentCache.enabled:false}"
-            class="${documentCache.class:solr.LRUCache}"
-            size="${documentCache.size:0}"
-            initialSize="${documentCache.initialSize:0}"
-            autowarmCount="${documentCache.autowarmCount:0}"/>
-    <filterCache
-            enabled ="${filterCache.enabled:false}"
-            class="${filterCache.class:solr.LRUCache}"
-            size="${filterCache.size:0}"
-            initialSize="${filterCache.initialSize:0}"
-            autowarmCount="${filterCache.autowarmCount:0}"/>
+      <documentCache
+              enabled="${documentCache.enabled:false}"
+              class="${documentCache.class:solr.LRUCache}"
+              size="${documentCache.size:0}"
+              initialSize="${documentCache.initialSize:0}"
+              autowarmCount="${documentCache.autowarmCount:0}"/>
+      <filterCache
+              enabled="${filterCache.enabled:false}"
+              class="${filterCache.class:solr.LRUCache}"
+              size="${filterCache.size:0}"
+              initialSize="${filterCache.initialSize:0}"
+              autowarmCount="${filterCache.autowarmCount:0}"/>
     <cache name="myPerSegmentCache"
-           enabled ="${myPerSegmentCache.enabled:false}"
+           enabled="${myPerSegmentCache.enabled:false}"
            class="${myPerSegmentCache.class:solr.LRUCache}"
            size="${myPerSegmentCache.size:0}"
            initialSize="${myPerSegmentCache.initialSize:0}"
