@@ -78,6 +78,7 @@ subprojects {
 
       // default excludes.
       exclude 'build/**'
+      exclude '**/.idea/**'
     }
   }
 
@@ -113,6 +114,7 @@ configure(rootProject) {
 
       // default excludes.
       exclude '**/build/**'
+      exclude '**/.idea/**'
       exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
 
       // ourselves :-)
@@ -211,11 +213,12 @@ class ValidateSourcePatternsTask extends DefaultTask {
     progress.start(this.name, this.name)
 
     sourceFiles.each{ f ->
+
       progress.progress("Scanning ${f.name}")
       logger.debug('Scanning source file: {}', f);
 
       def text = f.getText('UTF-8');
-      invalidPatterns.each{ pattern,name ->
+      invalidPatterns.each { pattern, name ->
         if (pattern.matcher(text).find()) {
           reportViolation(f, name);
         }
@@ -231,9 +234,15 @@ class ValidateSourcePatternsTask extends DefaultTask {
       if (f.name.endsWith('.java')) {
         if (text.contains('org.slf4j.LoggerFactory')) {
           if (!validLoggerPattern.matcher(text).find()) {
+            if (text.contains("// nowarn_valid_logger")) {
+              return
+            }
             reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
           }
           if (!validLoggerNamePattern.matcher(text).find()) {
+            if (text.contains("// nowarn_valid_logger")) {
+              return
+            }
             reportViolation(f, 'invalid logger name [log, uses static class name, not specialized logger]')
           }
         }
