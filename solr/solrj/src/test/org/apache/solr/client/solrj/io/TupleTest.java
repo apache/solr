@@ -90,29 +90,30 @@ public class TupleTest extends SolrTestCase {
 
         final Tuple tupleOne = new Tuple();
         tupleOne.putAll(commonFields);
-        tupleOne.setFieldNames(new ArrayList<>(Arrays.asList("field-one", "field-two", "field-three")));
+        tupleOne.setFieldNames(new ArrayList<>(Arrays.asList("field-one-name", "field-two-name", "field-three-name")));
         tupleOne.setFieldLabels(new HashMap<>(Map.ofEntries(
-                Map.entry("field-one", "field one"),
-                Map.entry("field-two", "field two"),
-                Map.entry("field-three", "field three")
+                Map.entry("field-one-name", "field-one"),
+                Map.entry("field-two-nam", "field-two"),
+                Map.entry("field-three-name", "field-three")
         )));
 
         final Tuple tupleTwo = new Tuple();
         tupleTwo.putAll(commonFields);
         tupleTwo.put("field-four", new Object());
-        tupleTwo.setFieldNames(new ArrayList<>(Arrays.asList("field-one", "field-two", "field-four")));
+        tupleTwo.put("new-field-two", new Object());
+        tupleTwo.setFieldNames(new ArrayList<>(Arrays.asList("field-one-name", "field-two-name", "field-four-name")));
         tupleTwo.setFieldLabels(new HashMap<>(Map.ofEntries(
-                Map.entry("field-one", "field one"),
-                Map.entry("field-two", "new field two"),
-                Map.entry("field-four", "field four")
+                Map.entry("field-one-name", "field-one"),
+                Map.entry("field-two-name", "new-field-two"),
+                Map.entry("field-four-name", "field-four")
         )));
 
         tupleOne.merge(tupleTwo);
 
+        assertEquals(7, tupleOne.getFields().size());
         assertEquals(4, tupleOne.getFieldNames().size());
-        assertEquals(4, tupleOne.getFieldNames().size());
-        assertEquals(4, tupleOne.getFieldLabels().size());
-        assertEquals("new field two", tupleOne.getFieldLabels().get("field-two"));
+        assertEquals(5, tupleOne.getFieldLabels().size());
+        assertEquals("new-field-two", tupleOne.getFieldLabels().get("field-two-name"));
         assertTrue(tupleOne.EOF);
         assertTrue(tupleOne.EXCEPTION);
     }
