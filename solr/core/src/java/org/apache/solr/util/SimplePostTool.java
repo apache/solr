@@ -36,6 +36,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.BufferOverflowException;
@@ -118,8 +120,8 @@ public class SimplePostTool {
   static HashMap<String,String> mimeMap;
   FileFilter fileFilter;
   // Backlog for crawling
-  List<LinkedHashSet<URL>> backlog = new ArrayList<>();
-  Set<URL> visited = new HashSet<>();
+  List<LinkedHashSet<URI>> backlog = new ArrayList<>();
+  Set<URI> visited = new HashSet<>();                                                                       //URL -> URI
 
   static final Set<String> DATA_MODES = new HashSet<>();
   static final String USAGE_STRING_SHORT =
@@ -565,17 +567,18 @@ public class SimplePostTool {
    */
   public int postWebPages(String[] args, int startIndexInArgs, OutputStream out) {
     reset();
-    LinkedHashSet<URL> s = new LinkedHashSet<>();
+    LinkedHashSet<URI> s = new LinkedHashSet<>();                                              //URL -> URI hashSet
     for (int j = startIndexInArgs; j < args.length; j++) {
       try {
         URL u = new URL(normalizeUrlEnding(args[j]));
-        s.add(u);
-      } catch(MalformedURLException e) {
+        URI uri = new URI(u.toString());                                                      //convert URL u to URI uri
+        s.add(uri);                                                                           //add uri to s
+      } catch(MalformedURLException | URISyntaxException e) {                                 //add second catch for URI
         warn("Skipping malformed input URL: "+args[j]);
       }
     }
-    // Add URLs to level 0 of the backlog and start recursive crawling
-    backlog.add(s);
+    // Add URLs to level 0 of the backlog and start recursive crawling                       //change this to "Add URIs"?
+    backlog.add(s);                                                                          //add URIs s to backlog ArrayList?
     return webCrawl(0, out);
   }
 
@@ -607,18 +610,19 @@ public class SimplePostTool {
    */
   protected int webCrawl(int level, OutputStream out) {
     int numPages = 0;
-    LinkedHashSet<URL> stack = backlog.get(level);
+    LinkedHashSet<URI> stack = backlog.get(level);                                             //change stack type from URL to URI
     int rawStackSize = stack.size();
     stack.removeAll(visited);
     int stackSize = stack.size();
-    LinkedHashSet<URL> subStack = new LinkedHashSet<>();
+    LinkedHashSet<URI> subStack = new LinkedHashSet<>();
     info("Entering crawl at level "+level+" ("+rawStackSize+" links total, "+stackSize+" new)");
-    for(URL u : stack) {
+    for(URI u : stack) {                                                                       //change URL to URI to loop through uri strings in stack
       try {
         visited.add(u);
-        PageFetcherResult result = pageFetcher.readPageFromUrl(u);
+        URL url = new URL(u.toString());                                                       //create variable url and convert URI u to URL url
+        PageFetcherResult result = pageFetcher.readPageFromUrl(url);                           //replace variable u with url
         if(result.httpStatus == 200) {
-          u = (result.redirectUrl != null) ? result.redirectUrl : u;
+          url = (result.redirectUrl != null) ? result.redirectUrl : url;                       //replace u with url in result.redirectUrl : u
           URL postUrl = new URL(appendParam(solrUrl.toString(),
               "literal.id="+URLEncoder.encode(u.toString(),"UTF-8") +
               "&literal.url="+URLEncoder.encode(u.toString(),"UTF-8")));
@@ -630,8 +634,8 @@ public class SimplePostTool {
             numPages++;
             // Pull links from HTML pages only
             if(recursive > level && result.contentType.equals("text/html")) {
-              Set<URL> children = pageFetcher.getLinksFromWebPage(u, new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), result.contentType, postUrl);
-              subStack.addAll(children);
+              Set<URI> children = pageFetcher.getLinksFromWebPage(url, new ByteArrayInputStream(result.content.array(), result.content.arrayOffset(), result.content.limit()), result.contentType, postUrl);
+              subStack.addAll(children);                                                         //URL -> URI for children set
             }
           } else {
             warn("An error occurred while posting "+u);
@@ -1133,7 +1137,8 @@ public class SimplePostTool {
         if (isDisallowedByRobots(u)) {
           warn("The URL "+u+" is disallowed by robots.txt and will not be crawled.");
           res.httpStatus = 403;
-          visited.add(u);
+          URI uri = new URI(u.toString());                                                 //convert URL u to URI uri to add to visited
+          visited.add(uri);
           return res;
         }
         res.httpStatus = 404;
@@ -1146,7 +1151,8 @@ public class SimplePostTool {
           info("The URL "+u+" caused a redirect to "+conn.getURL());
           u = conn.getURL();
           res.redirectUrl = u;
-          visited.add(u);
+          URI uri = new URI(u.toString());                                                  //convert URL u to URI uri to add to visited
+          visited.add(uri);
         }
         if(res.httpStatus == 200) {
           // Raw content type of form "text/html; encoding=utf-8"
@@ -1171,7 +1177,7 @@ public class SimplePostTool {
             res.httpStatus = 415;
           }
         }
-      } catch(IOException e) {
+      } catch(IOException | URISyntaxException e) {                               //add URISyntaxException to catch
         warn("IOException when reading page from url "+u+": "+e.getMessage());
       }
       return res;
@@ -1237,8 +1243,8 @@ public class SimplePostTool {
      * @param postUrl the URL (typically /solr/extract) in order to pull out links
      * @return a set of URLs parsed from the page
      */
-    protected Set<URL> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
-      Set<URL> l = new HashSet<>();
+    protected Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {               //URL -> URI
+      Set<URI> l = new HashSet<>();                                                                         //URL -> URI
       URL url = null;
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -1257,7 +1263,8 @@ public class SimplePostTool {
             url = new URL(link);
             if(url.getAuthority() == null || !url.getAuthority().equals(u.getAuthority()))
               continue;
-            l.add(url);
+            URI newUri = new URI(url.toString());                                     //Create "newUri" to convert URL to URI
+            l.add(newUri);                                                            //add "newUri" to l (replaced "u" with "newUri"
           }
         }
       } catch (MalformedURLException e) {
@@ -1267,6 +1274,7 @@ public class SimplePostTool {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
+
       return l;
     }
   }

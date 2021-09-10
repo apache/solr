@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -187,9 +189,9 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
 
   static class MockPageFetcher extends PageFetcher {
     HashMap<String,String> htmlMap = new HashMap<>();
-    HashMap<String,Set<URL>> linkMap = new HashMap<>();
+    HashMap<String,Set<URI>> linkMap = new HashMap<>();                                        //change linkMap type to URI
     
-    public MockPageFetcher() throws IOException {
+    public MockPageFetcher() throws IOException, URISyntaxException {
       (new SimplePostTool()).super();
       htmlMap.put("http://[ff01::114]", "<html><body><a href=\"http://[ff01::114]/page1\">page1</a><a href=\"http://[ff01::114]/page2\">page2</a></body></html>");
       htmlMap.put("http://[ff01::114]/index.html", "<html><body><a href=\"http://[ff01::114]/page1\">page1</a><a href=\"http://[ff01::114]/page2\">page2</a></body></html>");
@@ -199,20 +201,22 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       htmlMap.put("http://[ff01::114]/page2", "<html><body><a href=\"http://[ff01::114]/\"><a href=\"http://[ff01::114]/disallowed\"/></body></html>");
       htmlMap.put("http://[ff01::114]/disallowed", "<html><body><a href=\"http://[ff01::114]/\"></body></html>");
 
-      Set<URL> s = new HashSet<>();
-      s.add(new URL("http://[ff01::114]/page1"));
-      s.add(new URL("http://[ff01::114]/page2"));
+      Set<URI> s = new HashSet<>();
+      s.add(new URI("http://[ff01::114]/page1"));
+      s.add(new URI("http://[ff01::114]/page2"));
       linkMap.put("http://[ff01::114]", s);
       linkMap.put("http://[ff01::114]/index.html", s);
       s = new HashSet<>();
-      s.add(new URL("http://[ff01::114]/page1/foo"));
+      s.add(new URI("http://[ff01::114]/page1/foo"));
       linkMap.put("http://[ff01::114]/page1", s);
       s = new HashSet<>();
-      s.add(new URL("http://[ff01::114]/page1/foo/bar"));
+      s.add(new URI("http://[ff01::114]/page1/foo/bar"));
       linkMap.put("http://[ff01::114]/page1/foo", s);
       s = new HashSet<>();
-      s.add(new URL("http://[ff01::114]/disallowed"));
+      s.add(new URI("http://[ff01::114]/disallowed"));
       linkMap.put("http://[ff01::114]/page2", s);
+
+
       
       // Simulate a robots.txt file with comments and a few disallows
       StringBuilder sb = new StringBuilder();
@@ -239,11 +243,18 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     }
     
     @Override
-    public Set<URL> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
-      Set<URL> s = linkMap.get(SimplePostTool.normalizeUrlEnding(u.toString()));
+    public Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {                              //Change type URL to URL
+      Set<URI> s = linkMap.get(SimplePostTool.normalizeUrlEnding(u.toString()));
+      URI sUri = null;
       if(s == null)
         s = new HashSet<>();
       return s;
     }
   }
 }
+
+
+//    Set<URL> s = linkMap.get(SimplePostTool.normalizeUrlEnding(u.toString()));
+//    if(s == null)
+//      s = new HashSet<>();
+//    return s;
