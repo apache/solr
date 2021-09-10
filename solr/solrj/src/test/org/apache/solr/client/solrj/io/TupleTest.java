@@ -56,7 +56,7 @@ public class TupleTest extends SolrTestCase {
     }
 
     @Test
-    public void cloneTest() {
+    public void copyTest() {
         final Map<String, Object> fields = new HashMap<>();
         fields.put("field-one", new Object());
         fields.put("field-two", new Object());
@@ -80,6 +80,30 @@ public class TupleTest extends SolrTestCase {
     }
 
     @Test
+    public void cloneTest() {
+        final Map<String, Object> fields = new HashMap<>();
+        fields.put("field-one", new Object());
+        fields.put("field-two", new Object());
+        fields.put(StreamParams.EXCEPTION, "exception");
+        fields.put(StreamParams.EOF, true);
+        final Tuple original = new Tuple();
+        original.putAll(fields);
+        original.setFieldNames(new ArrayList<>(Arrays.asList("field-one", "field-two")));
+        original.setFieldLabels(new HashMap<>(Map.ofEntries(
+                Map.entry("field-one", "field one"),
+                Map.entry("field-two", "field two")
+        )));
+
+        final Tuple clone = original.clone();
+
+        assertEquals(original.getFields().entrySet().size(), clone.getFields().entrySet().size());
+        assertEquals(original.getFieldNames().size(), clone.getFieldNames().size());
+        assertEquals(original.getFieldLabels().entrySet().size(), clone.getFieldLabels().entrySet().size());
+        assertEquals(original.EOF, clone.EOF);
+        assertEquals(original.EXCEPTION, clone.EXCEPTION);
+    }
+
+    @Test
     public void mergeTest() {
         final Map<String, Object> commonFields = new HashMap<>();
         commonFields.put("field-one", new Object());
@@ -93,7 +117,7 @@ public class TupleTest extends SolrTestCase {
         tupleOne.setFieldNames(new ArrayList<>(Arrays.asList("field-one-name", "field-two-name", "field-three-name")));
         tupleOne.setFieldLabels(new HashMap<>(Map.ofEntries(
                 Map.entry("field-one-name", "field-one"),
-                Map.entry("field-two-nam", "field-two"),
+                Map.entry("field-two-name", "field-two"),
                 Map.entry("field-three-name", "field-three")
         )));
 
@@ -111,8 +135,8 @@ public class TupleTest extends SolrTestCase {
         tupleOne.merge(tupleTwo);
 
         assertEquals(7, tupleOne.getFields().size());
-        assertEquals(4, tupleOne.getFieldNames().size());
-        assertEquals(5, tupleOne.getFieldLabels().size());
+        assertEquals(4, tupleOne.getFieldNames().size()); // fieldNames should contain no duplicates
+        assertEquals(4, tupleOne.getFieldLabels().size());
         assertEquals("new-field-two", tupleOne.getFieldLabels().get("field-two-name"));
         assertTrue(tupleOne.EOF);
         assertTrue(tupleOne.EXCEPTION);
