@@ -28,34 +28,34 @@ import org.junit.Before;
 import org.locationtech.spatial4j.shape.Shape;
 
 public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
-  
+
   private static File tmpSolrHome;
   private static File tmpConfDir;
-  
+
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
-  
+
   @Before
   private void initManagedSchemaCore() throws Exception {
     tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
+    //FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-one-field-no-dynamic-field.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-one-field-no-dynamic-field-unique-key.xml"), tmpConfDir);
+    //FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-one-field-no-dynamic-field-unique-key.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-minimal.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema_codec.xml"), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-bm25.xml"), tmpConfDir);
-    
+    //FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema_codec.xml"), tmpConfDir);
+    //FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-bm25.xml"), tmpConfDir);
+
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "false");
     System.setProperty("enable.update.log", "false");
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.getPath());
   }
-  
+
   @After
   private void afterClass() throws Exception {
     deleteCore();
@@ -68,47 +68,47 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   static final String DISTANCE_DEGREES = "1.3520328";
   static final String DISTANCE_KILOMETERS = "150.33939";
   static final String DISTANCE_MILES = "93.416565";
-  
+
   public void testDistanceUnitsDegrees() throws Exception {
     setupRPTField("degrees", "true");
-    
+
     assertU(adoc("str", "X", "geo", INDEXED_COORDINATES));
     assertU(commit());
     String q;
-    
+
     q = "geo:{!geofilt score=distance filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_DEGREES+"']");
-    
+
     q = "geo:{!geofilt score=degrees filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_DEGREES+"']");
-    
+
     q = "geo:{!geofilt score=kilometers filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_KILOMETERS+"']");
-    
+
     q = "geo:{!geofilt score=miles filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_MILES+"']");
   }
-  
+
   public void testDistanceUnitsKilometers() throws Exception {
     setupRPTField("kilometers", "true");
-    
+
     assertU(adoc("str", "X", "geo", INDEXED_COORDINATES));
     assertU(commit());
     String q;
-    
+
     q = "geo:{!geofilt score=distance filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_KILOMETERS+"']");
-    
+
     q = "geo:{!geofilt score=degrees filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_DEGREES+"']");
-    
+
     q = "geo:{!geofilt score=kilometers filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_KILOMETERS+"']");
-    
+
     q = "geo:{!geofilt score=miles filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_MILES+"']");
   }
-  
+
   public void testJunkValuesForDistanceUnits() throws Exception {
     Exception ex = expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
     assertTrue(ex.getMessage().startsWith("Must specify distanceUnits as one of"));
@@ -120,13 +120,13 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     Files.delete(managedSchemaFile.toPath()); // Delete managed-schema.xml so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
-    
+
     String fieldName = "new_text_field";
     assertNull("Field '" + fieldName + "' is present in the schema",
         h.getCore().getLatestSchema().getFieldOrNull(fieldName));
-    
+
     IndexSchema oldSchema = h.getCore().getLatestSchema();
-    
+
     SpatialRecursivePrefixTreeFieldType rptFieldType = new SpatialRecursivePrefixTreeFieldType();
     Map<String, String> rptMap = new HashMap<String,String>();
 
@@ -240,7 +240,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     String fieldName = "new_text_field";
     assertNull("Field '" + fieldName + "' is present in the schema",
         h.getCore().getLatestSchema().getFieldOrNull(fieldName));
-    
+
     IndexSchema oldSchema = h.getCore().getLatestSchema();
 
     if (fieldType == null) {

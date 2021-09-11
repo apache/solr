@@ -198,7 +198,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       // force update now as the schema may have changed while our zk session was expired
       updateSchema(null, -1);
     } catch (Exception exc) {
-      log.error("Failed to update managed-schema watcher after session expiration due to: {}", exc);
+      log.error("Failed to update managed schema watcher after session expiration due to: {}", exc);
     }
   }
 

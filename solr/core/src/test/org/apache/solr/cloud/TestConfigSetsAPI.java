@@ -829,7 +829,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     // try to create a collection with the uploaded configset
     CollectionAdminResponse resp = createCollection("newcollection3", "with-lib-directive" + trustedSuffix,
         1, 1, cluster.getSolrClient());
-    
+
     SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
     cluster.getSolrClient().add("newcollection3", doc);
     cluster.getSolrClient().commit("newcollection3");
@@ -858,11 +858,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
   }
   private void assertConfigsetFiles(String configSetName, String suffix, SolrZkClient zkClient) throws KeeperException, InterruptedException, IOException {
-    assertTrue("managed-schema file should have been uploaded",
-        zkClient.exists("/configs/"+configSetName+suffix+"/managed-schema", true));
-    assertTrue("managed-schema file contents on zookeeper are not exactly same as that of the file uploaded in config",
-        Arrays.equals(zkClient.getData("/configs/"+configSetName+suffix+"/managed-schema", null, null, true),
-            readFile("solr/configsets/upload/"+configSetName+"/managed-schema")));
+    assertTrue("managed-schema.xml file should have been uploaded",
+        zkClient.exists("/configs/"+configSetName+suffix+"/managed-schema.xml", true));
+    assertTrue("managed-schema.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
+        Arrays.equals(zkClient.getData("/configs/"+configSetName+suffix+"/managed-schema.xml", null, null, true),
+            readFile("solr/configsets/upload/"+configSetName+"/managed-schema.xml")));
 
     assertTrue("solrconfig.xml file should have been uploaded",
         zkClient.exists("/configs/"+configSetName+suffix+"/solrconfig.xml", true));
@@ -1001,7 +1001,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       zout.close();
     }
   }
-  
+
   public void scriptRequest(String collection) throws SolrServerException, IOException {
     SolrClient client = cluster.getSolrClient();
     SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
@@ -1026,21 +1026,21 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     res.setResponse(client.request(request));
     return res;
   }
-  
+
   public static Map<?, ?> postDataAndGetResponse(CloudSolrClient cloudClient,
       String uri, ByteBuffer bytarr, String username, boolean usePut) throws IOException {
     HttpEntityEnclosingRequestBase httpRequest = null;
     HttpEntity entity;
     String response = null;
     Map<?, ?> m = null;
-    
+
     try {
       if (usePut) {
         httpRequest = new HttpPut(uri);
       } else {
         httpRequest = new HttpPost(uri);
       }
-      
+
       if (username != null) {
         httpRequest.addHeader(new BasicHeader("user", username));
       }
@@ -1093,7 +1093,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
     return buf;
   }
-  
+
   @Test
   public void testDeleteErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
@@ -1188,15 +1188,15 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   /**
-   * A simple sanity check that the test-framework hueristic logic for setting 
-   * {@link ExternalPaths#DEFAULT_CONFIGSET} is working as it should 
+   * A simple sanity check that the test-framework hueristic logic for setting
+   * {@link ExternalPaths#DEFAULT_CONFIGSET} is working as it should
    * in the current test env, and finding the real directory which matches what {@link ZkController}
    * finds and uses to bootstrap ZK in cloud based tests.
    *
    * <p>
-   * This assumes the {@link SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE} system property 
-   * has not been externally set in the environment where this test is being run -- which should 
-   * <b>never</b> be the case, since it would prevent the test-framework from using 
+   * This assumes the {@link SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE} system property
+   * has not been externally set in the environment where this test is being run -- which should
+   * <b>never</b> be the case, since it would prevent the test-framework from using
    * {@link ExternalPaths#DEFAULT_CONFIGSET}
    *
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
@@ -1208,7 +1208,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
     assertTrue("_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.exists());
     assertTrue("_default dir isn't a dir: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.isDirectory());
-    
+
     final String zkBootStrap = ConfigSetService.getDefaultConfigDirPath();
     assertEquals("extPath _default configset dir vs zk bootstrap path",
                  ExternalPaths.DEFAULT_CONFIGSET, zkBootStrap);
