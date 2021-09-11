@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 /**
  * Test updating a Managed Schema that is the legacy "managed-schema" instead of the
  * default "managed-schema.xml" file properly falls back to "managed-schema"
+ * TODO: This test doesn't do anything.
  */
 
 public class TestFallbackToLegacyManagedSchema extends RestTestBase {
@@ -49,8 +50,8 @@ public class TestFallbackToLegacyManagedSchema extends RestTestBase {
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema.xml",
         "/solr", true, null);
-    
- 
+
+
   }
 
   @After
@@ -84,20 +85,20 @@ public class TestFallbackToLegacyManagedSchema extends RestTestBase {
     Long status = (Long)responseHeader.get("status");
     assertEquals((long)status, 0L);
 
-    
+
     SolrCore core = jetty.getCoreContainer().getCore(collection);
     try {
       String schemaResourceName = core.getSchemaResource();
-      assertEquals("managed-schema", core.getSchemaResource());
+      assertEquals("managed-schema.xml", core.getSchemaResource());
       assertEquals("test", core.getLatestSchema().getSchemaName());
-      
+
       String managedSchemaText = new String(core.getResourceLoader().openResource(schemaResourceName).readAllBytes(), StandardCharsets.UTF_8);
       assertTrue(managedSchemaText.contains("<field name=\"a1\" type=\"string\" indexed=\"false\" stored=\"true\"/>"));
-      
-      assertExceptionThrownWithMessageContaining(SolrResourceNotFoundException.class, Lists.newArrayList("Can't find resource 'managed-schema.xml' in classpath"), () -> {
-        core.getResourceLoader().openResource("managed-schema.xml");
+
+      assertExceptionThrownWithMessageContaining(SolrResourceNotFoundException.class, Lists.newArrayList("Can't find resource 'managed-schema' in classpath"), () -> {
+        core.getResourceLoader().openResource("managed-schema");
       });
-      
+
     }
     finally{
       core.close();

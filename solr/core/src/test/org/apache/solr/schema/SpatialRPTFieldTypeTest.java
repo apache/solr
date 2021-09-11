@@ -116,8 +116,8 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
 
   public void testMaxDistErrConversion() throws Exception {
     deleteCore();
-    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema.xml so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
     
@@ -232,8 +232,8 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
 
   private void setupRPTField(String distanceUnits, String geo, String format, FieldType fieldType) throws Exception {
     deleteCore();
-    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema.xml so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
 
