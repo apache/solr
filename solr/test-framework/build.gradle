@@ -31,5 +31,16 @@ dependencies {
 
   implementation 'io.dropwizard.metrics:metrics-jetty9'
   implementation 'com.lmax:disruptor'
+
+  // used by the hadoop-specific test framework classes
+  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
+  implementation ('org.apache.commons:commons-compress') { transitive = false }
+  implementation ('com.sun.jersey:jersey-servlet') { transitive = false }
+  implementation ('commons-logging:commons-logging') { transitive = false }
+
+
 }
 

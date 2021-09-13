@@ -17,7 +17,6 @@
 
 
 apply plugin: 'java-library'
-apply plugin: 'java-test-fixtures'
 
 description = 'Apache Solr Core'
 
@@ -157,7 +156,5 @@ dependencies {
     exclude group: "org.slf4j", module: "slf4j-api"
   })
 
-  testFixturesApi("org.apache.lucene:lucene-test-framework")
-  testFixturesImplementation("org.apache.hadoop:hadoop-common")
 }
 

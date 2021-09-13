@@ -154,7 +154,11 @@ configure(project(":solr:test-framework")) {
         "org.apache.solr.handler",
         "org.apache.solr.handler.component",
         "org.apache.solr.update.processor",
-        "org.apache.solr.util"
+        "org.apache.solr.util",
+        "org.apache.solr.search.similarities",
+        "org.apache.solr.search.function",
+        "org.apache.solr.search.facet",
+        "org.apache.solr.schema"
     ]
   }
 }

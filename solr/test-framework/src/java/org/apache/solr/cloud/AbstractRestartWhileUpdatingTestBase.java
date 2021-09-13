@@ -86,7 +86,7 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
 
     threads = new ArrayList<>(numThreads);
 
-    Thread expireThread = new Thread() {
+    Thread expireThread = new Thread("expireThread") {
       public void run() {
         while (!stopExpire) {
           try {

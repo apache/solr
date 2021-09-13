@@ -97,6 +97,12 @@ configure(project(':solr:core')) {
   }
 }
 
+configure(project(':solr:test-framework')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'src/**/org/apache/hadoop/**'
+  }
+}
+
 configure(project(':solr:contrib:hdfs')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
     sourceFiles.exclude 'src/**/org/apache/hadoop/**'

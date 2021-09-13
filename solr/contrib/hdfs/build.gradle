@@ -36,9 +36,6 @@ dependencies {
   // Many HDFS tests are using/subclassing test framework classes
   testImplementation project(':solr:test-framework')
 
-  // HDFS tests depend on core fixture classes
-  testImplementation(testFixtures(project(":solr:core")))
-
   // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
