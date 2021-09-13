@@ -46,6 +46,8 @@ task echoCp {
 dependencies {
   implementation project(':solr:test-framework')
 
+  implementation "org.quicktheories:quicktheories"
+  implementation 'org.jctools:jctools-core'
   implementation 'org.openjdk.jmh:jmh-core'
   annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess'
 }

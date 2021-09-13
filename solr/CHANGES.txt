@@ -452,6 +452,8 @@ Bug Fixes
 
 * SOLR-15595: Partial results from shard queries needlessly discarded for queries without sort field (Michael Kosten via Mike Drob, Eric Pugh)
 
+* SOLR-15620: Download Config button in Schema Designer screen should not require user to re-login when already authenticated (Timothy Potter)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
@@ -465,6 +467,8 @@ Other Changes
 * SOLR-15324: Upgrade Jaeger dependency from 1.1.0 to 1.6.0 and thus also libthrift to 0.14.1 (janhoy)
 
 * SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
+
+* SOLR-15621: index.html for Admin UI should send Solr version in the request for JavaScript files (Timothy Potter)
 
 ==================  8.9.0 ==================
 

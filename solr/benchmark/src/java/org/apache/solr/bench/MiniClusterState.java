@@ -17,16 +17,19 @@
 package org.apache.solr.bench;
 
 import static org.apache.commons.io.file.PathUtils.deleteDirectory;
+import static org.apache.solr.bench.BaseBenchState.log;
 
 import com.codahale.metrics.Meter;
+import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.SplittableRandom;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,55 +57,72 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Control;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** The base class for Solr JMH benchmarks that operate against a {@code MiniSolrCloudCluster}. */
 public class MiniClusterState {
 
+  /** The constant DEBUG_OUTPUT. */
   public static final boolean DEBUG_OUTPUT = false;
 
-  private static final long RANDOM_SEED = 6624420638116043983L;
-
+  /** The constant PROC_COUNT. */
   public static final int PROC_COUNT =
       ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
-  private static boolean quietLog = Boolean.getBoolean("quietLog");
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @SuppressForbidden(reason = "JMH uses std out for user output")
-  public static void log(String value) {
-    if (!quietLog) {
-      System.out.println((value.equals("") ? "" : "--> ") + value);
-    }
-  }
-
+  /** The type Mini cluster bench state. */
   @State(Scope.Benchmark)
   public static class MiniClusterBenchState {
 
+    /** The Metrics enabled. */
     boolean metricsEnabled = true;
 
+    /** The Nodes. */
     public List<String> nodes;
+
+    /** The Cluster. */
     MiniSolrCloudCluster cluster;
+
+    /** The Client. */
     public SolrClient client;
 
+    /** The Run cnt. */
     int runCnt = 0;
 
+    /** The Create collection and index. */
     boolean createCollectionAndIndex = true;
 
+    /** The Delete mini cluster. */
     boolean deleteMiniCluster = true;
 
-    Path baseDir;
+    /** The Mini cluster base dir. */
+    Path miniClusterBaseDir;
+
+    /** The Allow cluster reuse. */
     boolean allowClusterReuse = false;
 
+    /** The Is warmup. */
     boolean isWarmup;
 
     private SplittableRandom random;
+    private String workDir;
 
+    /**
+     * Tear down.
+     *
+     * @param benchmarkParams the benchmark params
+     * @throws Exception the exception
+     */
     @TearDown(Level.Iteration)
     public void tearDown(BenchmarkParams benchmarkParams) throws Exception {
 
       // dump Solr metrics
       Path metricsResults =
           Paths.get(
-              "work/metrics-results",
+              workDir,
+              "metrics-results",
               benchmarkParams.id(),
               String.valueOf(runCnt++),
               benchmarkParams.getBenchmark() + ".txt");
@@ -110,49 +130,67 @@ public class MiniClusterState {
         Files.createDirectories(metricsResults.getParent());
       }
 
-      cluster.outputMetrics(
+      cluster.dumpMetrics(
           metricsResults.getParent().toFile(), metricsResults.getFileName().toString());
     }
 
+    /**
+     * Check warm up.
+     *
+     * @param control the control
+     * @throws Exception the exception
+     */
     @Setup(Level.Iteration)
     public void checkWarmUp(Control control) throws Exception {
       isWarmup = control.stopMeasurement;
     }
 
+    /**
+     * Shutdown mini cluster.
+     *
+     * @param benchmarkParams the benchmark params
+     * @throws Exception the exception
+     */
     @TearDown(Level.Trial)
-    public void shutdownMiniCluster() throws Exception {
+    public void shutdownMiniCluster(BenchmarkParams benchmarkParams, BaseBenchState baseBenchState)
+        throws Exception {
+
+      log.info("MiniClusterState tear down - baseBenchState is {}", baseBenchState);
+
+      BaseBenchState.dumpHeap(benchmarkParams);
+
       if (DEBUG_OUTPUT) log("closing client and shutting down minicluster");
       IOUtils.closeQuietly(client);
       cluster.shutdown();
     }
 
+    /**
+     * Do setup.
+     *
+     * @param benchmarkParams the benchmark params
+     * @param baseBenchState the base bench state
+     * @throws Exception the exception
+     */
     @Setup(Level.Trial)
-    public void doSetup(BenchmarkParams benchmarkParams) throws Exception {
+    public void doSetup(BenchmarkParams benchmarkParams, BaseBenchState baseBenchState)
+        throws Exception {
 
-      MiniClusterState.log("");
+      workDir = System.getProperty("workBaseDir", "build/work");
+
+      log("");
       Path currentRelativePath = Paths.get("");
       String s = currentRelativePath.toAbsolutePath().toString();
       log("current relative path is: " + s);
+      log("work path is: " + workDir);
 
-      Long seed = Long.getLong("solr.bench.seed");
-
-      if (seed == null) {
-        seed = RANDOM_SEED;
-      }
-
-      log("benchmark random seed: " + seed);
-
-      // set the seed used by ThreadLocalRandom
-      System.setProperty("randomSeed", Long.toString(new Random(seed).nextLong()));
-
-      this.random = new SplittableRandom(seed);
+      System.setProperty("doNotWaitForMergesOnIWClose", "true");
 
       System.setProperty("pkiHandlerPrivateKeyPath", "");
       System.setProperty("pkiHandlerPublicKeyPath", "");
 
-      System.setProperty("solr.log.name", benchmarkParams.id());
-
       System.setProperty("solr.default.confdir", "../server/solr/configsets/_default");
+
+      this.random = new SplittableRandom(BaseBenchState.getRandomSeed());
 
       // not currently usable, but would enable JettySolrRunner's ill-conceived jetty.testMode and
       // allow using SSL
@@ -163,48 +201,58 @@ public class MiniClusterState {
       String baseDirSysProp = System.getProperty("miniClusterBaseDir");
       if (baseDirSysProp != null) {
         deleteMiniCluster = false;
-        baseDir = Paths.get(baseDirSysProp);
-        if (Files.exists(baseDir)) {
+        miniClusterBaseDir = Paths.get(baseDirSysProp);
+        if (Files.exists(miniClusterBaseDir)) {
           createCollectionAndIndex = false;
           allowClusterReuse = true;
         }
       } else {
-        baseDir = Paths.get("work/mini-cluster");
+        miniClusterBaseDir = Paths.get(workDir, "mini-cluster");
       }
 
       System.setProperty("metricsEnabled", String.valueOf(metricsEnabled));
     }
 
+    /**
+     * Metrics enabled.
+     *
+     * @param metricsEnabled the metrics enabled
+     */
     public void metricsEnabled(boolean metricsEnabled) {
       this.metricsEnabled = metricsEnabled;
     }
 
+    /**
+     * Start mini cluster.
+     *
+     * @param nodeCount the node count
+     */
     public void startMiniCluster(int nodeCount) {
-      log("starting mini cluster at base directory: " + baseDir.toAbsolutePath());
+      log("starting mini cluster at base directory: " + miniClusterBaseDir.toAbsolutePath());
 
-      if (!allowClusterReuse && Files.exists(baseDir)) {
+      if (!allowClusterReuse && Files.exists(miniClusterBaseDir)) {
         log("mini cluster base directory exists, removing ...");
         try {
-          deleteDirectory(baseDir);
+          deleteDirectory(miniClusterBaseDir);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
         createCollectionAndIndex = true;
-      } else if (Files.exists(baseDir)) {
+      } else if (Files.exists(miniClusterBaseDir)) {
         createCollectionAndIndex = false;
         deleteMiniCluster = false;
       }
 
       try {
         cluster =
-            new MiniSolrCloudCluster.Builder(nodeCount, baseDir)
+            new MiniSolrCloudCluster.Builder(nodeCount, miniClusterBaseDir)
                 .formatZkServer(false)
-                .addConfig("conf", Paths.get("src/resources/configs/cloud-minimal/conf"))
+                .addConfig("conf", getFile("src/resources/configs/cloud-minimal/conf").toPath())
                 .configure();
       } catch (Exception e) {
-        if (Files.exists(baseDir)) {
+        if (Files.exists(miniClusterBaseDir)) {
           try {
-            deleteDirectory(baseDir);
+            deleteDirectory(miniClusterBaseDir);
           } catch (IOException ex) {
             e.addSuppressed(ex);
           }
@@ -224,10 +272,23 @@ public class MiniClusterState {
       log("");
     }
 
+    /**
+     * Gets random.
+     *
+     * @return the random
+     */
     public SplittableRandom getRandom() {
       return random;
     }
 
+    /**
+     * Create collection.
+     *
+     * @param collection the collection
+     * @param numShards the num shards
+     * @param numReplicas the num replicas
+     * @throws Exception the exception
+     */
     public void createCollection(String collection, int numShards, int numReplicas)
         throws Exception {
       if (createCollectionAndIndex) {
@@ -242,16 +303,24 @@ public class MiniClusterState {
           cluster.waitForActiveCollection(
               collection, 15, TimeUnit.SECONDS, numShards, numShards * numReplicas);
         } catch (Exception e) {
-          if (Files.exists(baseDir)) {
-            deleteDirectory(baseDir);
+          if (Files.exists(miniClusterBaseDir)) {
+            deleteDirectory(miniClusterBaseDir);
           }
           throw e;
         }
       }
     }
 
+    /**
+     * Index.
+     *
+     * @param collection the collection
+     * @param docs the docs
+     * @param docCount the doc count
+     * @throws Exception the exception
+     */
     @SuppressForbidden(reason = "This module does not need to deal with logging context")
-    public void index(String collection, DocMaker docMaker, int docCount) throws Exception {
+    public void index(String collection, Docs docs, int docCount) throws Exception {
       if (createCollectionAndIndex) {
 
         log("indexing data for benchmark...");
@@ -259,10 +328,10 @@ public class MiniClusterState {
         ExecutorService executorService =
             Executors.newFixedThreadPool(
                 Runtime.getRuntime().availableProcessors(),
-                new SolrNamedThreadFactory("SolrJMH Indexer Progress"));
+                new SolrNamedThreadFactory("SolrJMH Indexer"));
         ScheduledExecutorService scheduledExecutor =
             Executors.newSingleThreadScheduledExecutor(
-                new SolrNamedThreadFactory("SolrJMH Indexer"));
+                new SolrNamedThreadFactory("SolrJMH Indexer Progress"));
         scheduledExecutor.scheduleAtFixedRate(
             () -> {
               if (meter.getCount() == docCount) {
@@ -277,14 +346,14 @@ public class MiniClusterState {
         for (int i = 0; i < docCount; i++) {
           executorService.submit(
               new Runnable() {
-                SplittableRandom threadRandom = random.split();
+                final SplittableRandom threadRandom = random.split();
 
                 @Override
                 public void run() {
                   UpdateRequest updateRequest = new UpdateRequest();
                   updateRequest.setBasePath(
                       nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size())));
-                  SolrInputDocument doc = docMaker.getDocument(threadRandom);
+                  SolrInputDocument doc = docs.inputDocument();
                   // log("add doc " + doc);
                   updateRequest.add(doc);
                   meter.mark();
@@ -301,13 +370,13 @@ public class MiniClusterState {
         log("done adding docs, waiting for executor to terminate...");
 
         executorService.shutdown();
-        boolean result = executorService.awaitTermination(600, TimeUnit.MINUTES);
+        boolean result = false;
+        while (!result) {
+          result = executorService.awaitTermination(600, TimeUnit.MINUTES);
+        }
 
         scheduledExecutor.shutdown();
 
-        if (!result) {
-          throw new RuntimeException("Timeout waiting for doc adds to finish");
-        }
         log("done indexing data for benchmark");
 
         log("committing data ...");
@@ -325,18 +394,31 @@ public class MiniClusterState {
 
       NamedList<Object> result = client.request(queryRequest, collection);
 
-      if (DEBUG_OUTPUT) MiniClusterState.log("result: " + result);
+      if (DEBUG_OUTPUT) log("result: " + result);
 
-      MiniClusterState.log("");
+      log("");
 
-      MiniClusterState.log("Dump Core Info");
+      log("Dump Core Info");
       dumpCoreInfo();
     }
 
+    /**
+     * Wait for merges.
+     *
+     * @param collection the collection
+     * @throws Exception the exception
+     */
     public void waitForMerges(String collection) throws Exception {
       forceMerge(collection, Integer.MAX_VALUE);
     }
 
+    /**
+     * Force merge.
+     *
+     * @param collection the collection
+     * @param maxMergeSegments the max merge segments
+     * @throws Exception the exception
+     */
     public void forceMerge(String collection, int maxMergeSegments) throws Exception {
       if (createCollectionAndIndex) {
         // we control segment count for a more informative benchmark *and* because background
@@ -356,16 +438,77 @@ public class MiniClusterState {
       }
     }
 
+    /**
+     * Dump core info.
+     *
+     * @throws IOException the io exception
+     */
     @SuppressForbidden(reason = "JMH uses std out for user output")
     public void dumpCoreInfo() throws IOException {
-      cluster.dumpCoreInfo(!quietLog ? System.out : new NullPrintStream());
+      cluster.dumpCoreInfo(!BaseBenchState.QUIET_LOG ? System.out : new NullPrintStream());
     }
   }
 
+  /**
+   * Params modifiable solr params.
+   *
+   * @param moreParams the more params
+   * @return the modifiable solr params
+   */
+  public static ModifiableSolrParams params(String... moreParams) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    for (int i = 0; i < moreParams.length; i += 2) {
+      params.add(moreParams[i], moreParams[i + 1]);
+    }
+    return params;
+  }
+
+  /**
+   * Params modifiable solr params.
+   *
+   * @param params the params
+   * @param moreParams the more params
+   * @return the modifiable solr params
+   */
   public static ModifiableSolrParams params(ModifiableSolrParams params, String... moreParams) {
     for (int i = 0; i < moreParams.length; i += 2) {
       params.add(moreParams[i], moreParams[i + 1]);
     }
     return params;
+  }
+
+  /**
+   * Gets file.
+   *
+   * @param name the name
+   * @return the file
+   */
+  public static File getFile(String name) {
+    final URL url =
+        MiniClusterState.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
+    if (url != null) {
+      try {
+        return new File(url.toURI());
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Resource was found on classpath, but cannot be resolved to a "
+                + "normal file (maybe it is part of a JAR file): "
+                + name);
+      }
+    }
+    File file = new File(name);
+    if (file.exists()) {
+      return file;
+    } else {
+      file = new File("../../../", name);
+      if (file.exists()) {
+        return file;
+      }
+    }
+    throw new RuntimeException(
+        "Cannot find resource in classpath or in file-system (relative to CWD): "
+            + name
+            + " CWD="
+            + Paths.get("").toAbsolutePath());
   }
 }
