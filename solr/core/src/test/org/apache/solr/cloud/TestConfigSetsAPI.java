@@ -32,6 +32,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
@@ -401,6 +402,42 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       }
       unIgnoreException("Configset upload feature is disabled");
     }
+  }
+
+  public void testUploadLegacyManagedSchemaFile() throws Exception {
+    String configSetName = "legacy-managed-schema";
+    SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
+            AbstractZkTestCase.TIMEOUT, 45000, null);
+    try {
+      long statusCode = uploadConfigSet(configSetName, "", null, zkClient, true);
+      assertEquals(0l, statusCode);
+
+      assertTrue("managed-schema file should have been uploaded",
+              zkClient.exists("/configs/"+configSetName+"/managed-schema", true));
+    } finally {
+      zkClient.close();
+    }
+
+    // try to create a collection with the uploaded configset
+    createCollection("newcollection", configSetName, 1, 1, cluster.getSolrClient());
+
+    String payload = "{\n" +
+            "    'add-field' : {\n" +
+            "                 'name':'a1',\n" +
+            "                 'type': 'string',\n" +
+            "                 'stored':true,\n" +
+            "                 'indexed':false\n" +
+            "                 },\n" +
+            "    }";
+
+    ByteBuffer buff = Charset.forName("UTF-8").encode(payload);
+    Map<?, ?> map = postDataAndGetResponse(cluster.getSolrClient(),
+            cluster.getJettySolrRunners().get(0).getBaseUrl().toString()
+                    + "/newcollection/schema?wt=js" +
+                    "on", buff, null, false);
+    Map<?, ?> responseHeader = (Map<?, ?>)map.get("responseHeader");
+    Long status = (Long)responseHeader.get("status");
+    assertEquals((long)status, 0L);
   }
 
   @Test
