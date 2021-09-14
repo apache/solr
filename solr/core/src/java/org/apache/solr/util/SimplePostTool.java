@@ -634,7 +634,7 @@ public class SimplePostTool {
             numPages++;
             // Pull links from HTML pages only
             if(recursive > level && result.contentType.equals("text/html")) {
-              Set<URI> children = pageFetcher.getLinksFromWebPage(url, new ByteArrayInputStream(result.content.array(), result.content.arrayOffset(), result.content.limit()), result.contentType, postUrl);
+              Set<URI> children = pageFetcher.getLinksFromWebPage(url, new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), result.contentType, postUrl);
               subStack.addAll(children);
             }
           } else {
