@@ -361,6 +361,8 @@ Bug Fixes
 
 * SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
 
+* SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
+
 ==================  8.10.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
