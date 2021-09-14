@@ -79,6 +79,9 @@ Reasonable values, depending on the query volume and patterns, may lie somewhere
 The `maxRamMB` attribute limits the maximum amount of memory a cache may consume.
 When both `size` and `maxRamMB` limits are specified the `maxRamMB` limit will take precedence and the `size` limit will be ignored.
 
+The `async` attribute determines whether the cache stores direct results (`async=false`, the default) or whether it will store indirect references to the computation (`async=true`). Enabling `async` will use more slightly more memory per cache entry, but may result in reduced CPU cycles generating results or doing garbage collection. The most noticable improvements will be seen when there are many queries racing to compute the same results before they are inserted into the cache. In some use cases, increasing autowarming may be a better alternative to enabling an async cache. Additionally, an async cache will not prevent a data race for time-limited queries, as those may return differing sets of partial results.
+This value is most effective on a filter cache, and likely less relevant on the other cache usages.
+
 All caches can be disabled using the parameter `enabled` with a value of `false`.
 Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section <<common-query-parameters.adoc#cache-local-parameter,cache Local Parameter>>.
 
@@ -117,6 +120,17 @@ Therefore, the `size` parameter is ignored if `maxRamMB` is specified.
              maxRamMB="1000"
              autowarmCount="128"/>
 ----
+
+The filter cache is a good candidate for enabling `async` computation.
+
+[source,xml]
+----
+<filterCache class="solr.CaffeineCache"
+             size="1024"
+             autowarmCount="0"
+             async="true"/>
+----
+
 
 === Query Result Cache
 

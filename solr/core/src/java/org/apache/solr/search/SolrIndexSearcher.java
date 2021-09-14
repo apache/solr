@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
@@ -81,6 +82,7 @@ import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -804,15 +806,52 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   // only handle positive (non negative) queries
-  DocSet getPositiveDocSet(Query q) throws IOException {
-    DocSet answer;
-    if (filterCache != null) {
-      answer = filterCache.get(q);
-      if (answer != null) return answer;
+  DocSet getPositiveDocSet(Query query) throws IOException {
+    // TODO duplicated code with getDocSet?
+    boolean doCache = filterCache != null;
+    if (query instanceof ExtendedQuery) {
+      if (!((ExtendedQuery) query).getCache()) {
+        doCache = false;
+      }
+      if (query instanceof WrappedQuery) {
+        query = ((WrappedQuery) query).getWrappedQuery();
+      }
     }
-    answer = getDocSetNC(q, null);
-    if (filterCache != null) filterCache.put(q, answer);
-    return answer;
+
+    if (doCache) {
+      return getAndCacheDocSet(query);
+    }
+
+    return getDocSetNC(query, null);
+  }
+
+  /**
+   * Attempt to read the query from the filter cache, if not will compute the result and insert back into the cache
+   * <p>Callers must ensure that:
+   * <ul><li>The query is unwrapped
+   * <li>The query has caching enabled
+   * <li>The filter cache exists
+   * @param query the query to compute.
+   * @return the DocSet answer
+   */
+  private DocSet getAndCacheDocSet(Query query) throws IOException {
+    assert !(query instanceof WrappedQuery) : "should have unwrapped";
+    assert filterCache != null : "must check for caching before calling this method";
+
+    if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
+      // If there is a possibility of timeout for this query, then don't reserve a computation slot. Further, we can't
+      // naively wait for an in progress computation to finish, because if we time out before it does then we won't
+      // even have partial results to provide. We could possibly wait for the query to finish in parallel with our own
+      // results and if they complete first use that instead, but we'll leave that to implement later.
+      DocSet answer = filterCache.get(query);
+      if (answer != null) {
+        return answer;
+      }
+      answer = getDocSetNC(query, null);
+      filterCache.put(query, answer);
+      return answer;
+    }
+    return filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
   }
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
@@ -1054,14 +1093,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public DocSet getDocSet(DocsEnumState deState) throws IOException {
     int largestPossible = deState.termsEnum.docFreq();
     boolean useCache = filterCache != null && largestPossible >= deState.minSetSizeCached;
-    TermQuery key = null;
 
     if (useCache) {
-      key = new TermQuery(new Term(deState.fieldName, deState.termsEnum.term()));
-      DocSet result = filterCache.get(key);
-      if (result != null) return result;
+      TermQuery key = new TermQuery(new Term(deState.fieldName, deState.termsEnum.term()));
+      return filterCache.computeIfAbsent(key,
+              (IOFunction<? super Query, ? extends DocSet>) k -> getResult(deState, largestPossible));
     }
 
+    return getResult(deState, largestPossible);
+  }
+
+  private DocSet getResult(DocsEnumState deState, int largestPossible) throws IOException {
     int smallSetSize = DocSetUtil.smallSetSize(maxDoc());
     int scratchSize = Math.min(smallSetSize, largestPossible);
     if (deState.scratch == null || deState.scratch.length < scratchSize) deState.scratch = new int[scratchSize];
@@ -1123,11 +1165,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     } else {
       result = upto == 0 ? DocSet.empty() : new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }
-
-    if (useCache) {
-      filterCache.put(key, result);
-    }
-
     return result;
   }
 
@@ -1177,12 +1214,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     Query absQ = QueryUtils.getAbs(query);
     boolean positive = absQ == query;
 
-    // note: can't use computeIfAbsent because can be recursive
-    DocSet absAnswer = filterCache.get(absQ);
-    if (absAnswer == null) {
-      absAnswer = getDocSetNC(absQ, null);
-      filterCache.put(absQ, absAnswer);
-    }
+    DocSet absAnswer = getAndCacheDocSet(absQ);
 
     if (filter == null) {
       return positive ? absAnswer : getLiveDocSet().andNot(absAnswer);
