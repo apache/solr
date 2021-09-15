@@ -59,14 +59,15 @@ public interface Utf8CharSequence extends CharSequence , Comparable<Utf8CharSequ
    * @param os The sink
    */
   default void write(OutputStream os) throws IOException {
-    byte[] buf = new byte[1024];
+    byte[] buf = new byte[8192];
     int start = 0;
     int totalWritten = 0;
-    for (; ; ) {
-      if (totalWritten >= size()) break;
+    int size = size();
+    while (totalWritten < size) {
       int sz = write(start, buf, 0);
       totalWritten += sz;
-      if (sz > 0) os.write(buf, 0, sz);
+      if (sz > 0)
+        os.write(buf, 0, sz);
       start += sz;
     }
   }

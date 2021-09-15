@@ -16,18 +16,17 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.ContentStream;
-
-import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
 
 /**
  * A RequestWriter which writes requests in the javabin format
@@ -59,6 +58,7 @@ public class BinaryRequestWriter extends RequestWriter {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
     if (req instanceof UpdateRequest) {

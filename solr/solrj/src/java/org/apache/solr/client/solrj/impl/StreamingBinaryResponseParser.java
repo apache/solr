@@ -159,7 +159,7 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
         if ((tagByte >>> 5) != (ARR >>> 5)) {
           throw new RuntimeException("doclist must have an array");
         }
-        int sz = readSize(dis);
+        int sz = readSize(this, dis);
         for (int i = 0; i < sz; i++) {
           // must be a SolrDocument
           readVal(dis);

@@ -17,6 +17,13 @@
 
 package org.apache.solr.util;
 
+import static org.apache.solr.common.params.CommonParams.FL;
+import static org.apache.solr.common.params.CommonParams.JAVABIN;
+import static org.apache.solr.common.params.CommonParams.Q;
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
+
+import com.google.common.collect.ImmutableSet;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,8 +53,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
-
-import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.lucene.util.SuppressForbidden;
@@ -76,12 +81,6 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
-
-import static org.apache.solr.common.params.CommonParams.FL;
-import static org.apache.solr.common.params.CommonParams.JAVABIN;
-import static org.apache.solr.common.params.CommonParams.Q;
-import static org.apache.solr.common.params.CommonParams.SORT;
-import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
 
 public class ExportTool extends SolrCLI.ToolBase {
   @Override
@@ -333,42 +332,44 @@ public class ExportTool extends SolrCLI.ToolBase {
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
-      codec = new JavaBinCodec(fos, null);
-      codec.writeTag(JavaBinCodec.NAMED_LST, 2);
-      codec.writeStr("params");
-      codec.writeNamedList(new NamedList<>());
-      codec.writeStr("docs");
-      codec.writeTag(JavaBinCodec.ITERATOR);
+      codec = new JavaBinCodec(fos, null, false);
+      JavaBinCodec.writeTag(codec, JavaBinCodec.NAMED_LST, 2);
+      JavaBinCodec.writeStr(codec, "params");
+      JavaBinCodec.writeNamedList(codec, new NamedList<>());
+      JavaBinCodec.writeStr(codec, "docs");
+      JavaBinCodec.writeTag(codec, JavaBinCodec.ITERATOR);
 
     }
 
     @Override
     public void end() throws IOException {
-      codec.writeTag(JavaBinCodec.END);
+      JavaBinCodec.writeTag(codec, JavaBinCodec.END);
       codec.close();
       fos.flush();
       fos.close();
 
     }
-    private BiConsumer<String, Object> bic= new BiConsumer<>() {
-      @Override
-      public void accept(String s, Object o) {
-        try {
-          if (s.equals("_version_") || s.equals("_root_")) return;
-          codec.writeExternString(s);
-          codec.writeVal(o);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
+
+    private final BiConsumer<String, Object> bic =
+        new BiConsumer<>() {
+          @Override
+          public void accept(String s, Object o) {
+            try {
+              if (s.equals("_version_") || s.equals("_root_")) return;
+              codec.writeExternString(s);
+              codec.writeVal(o);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
 
     @Override
     public synchronized void accept(SolrDocument doc) throws IOException {
       int sz = doc.size();
       if(doc.containsKey("_version_")) sz--;
       if(doc.containsKey("_root_")) sz--;
-      codec.writeTag(SOLRINPUTDOC, sz);
+      JavaBinCodec.writeTag(codec, SOLRINPUTDOC, sz);
       codec.writeFloat(1f); // document boost
       doc.forEach(bic);
       super.accept(doc);

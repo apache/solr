@@ -39,7 +39,7 @@ public class WriteableGeoJSON extends WriteableValue {
 
   @Override
   public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-    codec.writeStr(jsonWriter.toString(shape));
+    JavaBinCodec.writeStr(codec, jsonWriter.toString(shape));
     return null; // this means we wrote it
   }
 

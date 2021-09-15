@@ -229,7 +229,7 @@ public class JavaBinUpdateRequestCodec {
 
     @Override
     public NamedList<Object> readNamedList(DataInputInputStream dis) throws IOException {
-      int sz = readSize(dis);
+      int sz = readSize(this, dis);
       NamedList<Object> nl = new NamedList<>();
       if (namedList[0] == null) {
         namedList[0] = nl;

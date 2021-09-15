@@ -29,6 +29,8 @@
             <Item>
               <New class="org.eclipse.jetty.server.HttpConnectionFactory">
                 <Arg name="config"><Ref refid="httpConfig" /></Arg>
+                <Set name="maxConcurrentStreams">512</Set>
+                <Set name="inputBufferSize">16393</Set>  <!--  Jetty 10/11 default - max frame len + head len -->
               </New>
             </Item>
             <Item>

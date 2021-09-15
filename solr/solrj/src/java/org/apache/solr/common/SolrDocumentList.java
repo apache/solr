@@ -32,6 +32,14 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   private long start = 0;
   private Float maxScore = null;
   private Boolean numFoundExact = true;
+
+  public SolrDocumentList() {
+    super();
+  }
+
+  public SolrDocumentList(int size) {
+    super(size);
+  }
   
   public Boolean getNumFoundExact() {
     return numFoundExact;

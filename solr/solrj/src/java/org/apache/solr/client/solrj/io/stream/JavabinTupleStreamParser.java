@@ -51,7 +51,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
       if (tagByte == SOLRDOCLST) {
         readVal(fis);// this is the metadata, throw it away
         tagByte = fis.readByte();
-        arraySize = readSize(fis);
+        arraySize = readSize(this, fis);
         return true;
       }
       for (int i = objectSize; i > 0; i--) {
@@ -61,7 +61,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
           tagByte = fis.readByte();
           if (tagByte == ITERATOR) return true;//docs must be an iterator or
           if (tagByte >>> 5 == ARR >>> 5) {// an array
-            arraySize = readSize(fis);
+            arraySize = readSize(this, fis);
             return true;
           }
           return false;
@@ -82,7 +82,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     tagByte = dis.readByte();
     if (tagByte >>> 5 == ORDERED_MAP >>> 5 ||
         tagByte >>> 5 == NAMED_LST >>> 5) {
-      objectSize = readSize(dis);
+      objectSize = readSize(this, dis);
       return true;
     }
     if (tagByte == MAP) {
@@ -97,7 +97,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
   }
 
   private Map<?,?> readAsMap(DataInputInputStream dis) throws IOException {
-    int sz = readSize(dis);
+    int sz = readSize(this, dis);
     Map<String, Object> m = new LinkedHashMap<>();
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
@@ -109,7 +109,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
 
   private Map<?,?> readSolrDocumentAsMap(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
-    int size = readSize(dis);
+    int size = readSize(this, dis);
     Map<String, Object> doc = new LinkedHashMap<>();
     for (int i = 0; i < size; i++) {
       String fieldName;
@@ -137,7 +137,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     if (onlyJsonTypes) {
       switch (tagByte >>> 5) {
         case SINT >>> 5:
-          int i = readSmallInt(dis);
+          int i = readSmallInt(this, dis);
           return (long) i;
         case ORDERED_MAP >>> 5:
         case NAMED_LST >>> 5:

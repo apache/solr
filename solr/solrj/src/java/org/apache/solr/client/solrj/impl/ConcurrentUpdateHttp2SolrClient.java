@@ -26,10 +26,9 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -70,6 +69,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private final boolean streamDeletes;
   private volatile boolean closed;
   private volatile CountDownLatch lock = null; // used to block everything
+  private volatile boolean waitingForFinish;
 
   private static class CustomBlockingQueue<E> implements Iterable<E>{
     private final BlockingQueue<E> queue;
@@ -78,7 +78,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     private final E backdoorE;
 
     public CustomBlockingQueue(int queueSize, int maxConsumers, E backdoorE) {
-      queue = new LinkedBlockingQueue<>();
+      queue = new LinkedTransferQueue<E>();
       available = new Semaphore(queueSize);
       this.queueSize = queueSize;
       this.backdoorE = backdoorE;
@@ -174,6 +174,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     @Override
     public void run() {
       log.debug("starting runner: {}", this);
+      waitingForFinish = false;
       // This loop is so we can continue if an element was added to the queue after the last runner exited.
       for (;;) {
         try {
@@ -225,8 +226,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             }
 
             InputStreamResponseListener responseListener = null;
+
             try (Http2SolrClient.OutStream out = client.initOutStream(basePath, update.getRequest(),
-                update.getCollection())) {
+            update.getCollection())) {
               Update upd = update;
               while (upd != null) {
                 UpdateRequest req = upd.getRequest();
@@ -235,13 +237,22 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                   break;
                 }
                 client.send(out, upd.getRequest(), upd.getCollection());
-                out.flush();
 
-                notifyQueueAndRunnersIfEmptyQueue();
-                upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                upd = queue.poll(0, TimeUnit.MILLISECONDS);
+
+                if (upd == null) {
+                  out.flush();
+                  if (waitingForFinish) {
+                    notifyQueueAndRunnersIfEmptyQueue();
+                    break;
+                  }
+                  notifyQueueAndRunnersIfEmptyQueue();
+                  upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                }
               }
               responseListener = out.getResponseListener();
             }
+
 
             Response response = responseListener.get(client.getIdleTimeout(), TimeUnit.MILLISECONDS);
             rspBody = responseListener.getInputStream();
@@ -348,6 +359,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
+    waitingForFinish = false;
     if (!(request instanceof UpdateRequest)) {
       request.setBasePath(basePath);
       return client.request(request, collection);
@@ -367,6 +379,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     } else {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())) {
         blockUntilFinished();
+        waitingForFinish = false;
         return client.request(request, collection);
       }
     }
@@ -468,7 +481,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       int lastQueueSize = -1;
 
       synchronized (runners) {
-
+        waitingForFinish = true;
         // NOTE: if the executor is shut down, runners may never become empty (a scheduled task may never be run,
         // which means it would never remove itself from the runners list. This is why we don't wait forever
         // and periodically check if the scheduler is shutting down.
@@ -538,6 +551,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     long lastStallTime = -1;
     int lastQueueSize = -1;
     while (!queue.isEmpty()) {
+      
       if (scheduler.isTerminated()) {
         log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}"
             , scheduler, queue.size(), runners.size(), threadInterrupted);

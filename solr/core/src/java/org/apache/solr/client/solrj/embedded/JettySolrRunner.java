@@ -270,7 +270,7 @@ public class JettySolrRunner {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
-      setProxyPort(proxy.getListenPort());
+      proxyPort = proxy.getListenPort();
     }
 
     this.init(this.config.port);
@@ -299,6 +299,7 @@ public class JettySolrRunner {
       final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
       HttpConfiguration configuration = new HttpConfiguration();
+      configuration.setOutputBufferSize(32 * 1024); // jetty 10/11 default
       ServerConnector connector;
       if (sslcontext != null) {
         configuration.setSecureScheme("https");
@@ -318,6 +319,8 @@ public class JettySolrRunner {
           connector.setDefaultProtocol(sslConnectionFactory.getProtocol());
 
           HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
+          http2ConnectionFactory.setInputBufferSize(16384 + 9); // Jetty 10/11 default - max frame len + head len
+          http2ConnectionFactory.setMaxConcurrentStreams(512);
 
           ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
               http2ConnectionFactory.getProtocol(),
@@ -340,11 +343,17 @@ public class JettySolrRunner {
       connector.setHost("127.0.0.1");
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
 
+
       server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
-      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration), new HTTP2CServerConnectionFactory(configuration));
+      configuration.setOutputBufferSize(32 * 1024); // jetty 10/11 default
+      HTTP2CServerConnectionFactory http2ConnectionFactory = new HTTP2CServerConnectionFactory(configuration);
+      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration), http2ConnectionFactory);
+      http2ConnectionFactory.setInputBufferSize(16384 + 9); // Jetty 10/11 default - max frame len + head len
+      http2ConnectionFactory.setMaxConcurrentStreams(512);
+
       connector.setReuseAddress(true);
       connector.setPort(port);
       connector.setHost("127.0.0.1");

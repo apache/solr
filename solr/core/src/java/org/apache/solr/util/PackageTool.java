@@ -16,11 +16,13 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.packagemanager.PackageUtils.print;
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
+
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.Map;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.io.FileUtils;
@@ -43,9 +45,6 @@ import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.packagemanager.PackageUtils.print;
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-
 public class PackageTool extends SolrCLI.ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -55,7 +54,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     // Need a logging free, clean output going through to the user.
     Configurator.setRootLevel(Level.OFF);
   }
-
+  
   @Override
   public String getName() {
     return "package";
