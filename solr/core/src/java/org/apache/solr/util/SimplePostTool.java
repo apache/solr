@@ -559,7 +559,8 @@ public class SimplePostTool {
 
   /**
    * This method takes as input a list of start URL strings for crawling,
-   * adds each one to a backlog and then starts crawling
+   * converts the URL strings to URI strings
+   * and adds each one to a backlog and then starts crawling
    * @param args the raw input args from main()
    * @param startIndexInArgs offset for where to start
    * @param out outputStream to write results to
@@ -570,14 +571,13 @@ public class SimplePostTool {
     LinkedHashSet<URI> s = new LinkedHashSet<>();
     for (int j = startIndexInArgs; j < args.length; j++) {
       try {
-        URL u = new URL((args[j]));
-        URI uri = new URI(u.toString());
-        s.add(uri);
-      } catch(MalformedURLException | URISyntaxException e) {
+        URI uri = new URI(normalizeUrlEnding(args[j]));
+        s.add(URL.fromURI(uri));
+      } catch(URISyntaxException e) {
         warn("Skipping malformed input URL: "+args[j]);
       }
     }
-    // Add URLs to level 0 of the backlog and start recursive crawling
+    // Add URIs to level 0 of the backlog and start recursive crawling
     backlog.add(s);
     return webCrawl(0, out);
   }
@@ -1241,10 +1241,10 @@ public class SimplePostTool {
      * @param is the input stream of the page
      * @param type the content-type
      * @param postUrl the URL (typically /solr/extract) in order to pull out links
-     * @return a set of URLs parsed from the page
+     * @return a set of URIs parsed from the page
      */
-    protected Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {               //URL -> URI
-      Set<URI> l = new HashSet<>();                                                                         //URL -> URI
+    protected Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
+      Set<URI> l = new HashSet<>();
       URL url = null;
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -1260,11 +1260,8 @@ public class SimplePostTool {
             link = computeFullUrl(u, link);
             if(link == null)
               continue;
-            url = new URL(link);
-            if(url.getAuthority() == null || !url.getAuthority().equals(u.getAuthority()))
-              continue;
-            URI newUri = new URI(url.toString());                                     //Create "newUri" to convert URL to URI
-            l.add(newUri);                                                            //add "newUri" to l (replaced "u" with "newUri"
+            URI newUri = new URI(link.toString());
+            l.add(newUri);
           }
         }
       } catch (MalformedURLException e) {
