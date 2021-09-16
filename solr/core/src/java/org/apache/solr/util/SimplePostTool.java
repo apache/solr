@@ -572,7 +572,7 @@ public class SimplePostTool {
     for (int j = startIndexInArgs; j < args.length; j++) {
       try {
         URI uri = new URI(normalizeUrlEnding(args[j]));
-        s.add(URL.fromURI(uri));
+        s.add(uri);
       } catch(URISyntaxException e) {
         warn("Skipping malformed input URL: "+args[j]);
       }
