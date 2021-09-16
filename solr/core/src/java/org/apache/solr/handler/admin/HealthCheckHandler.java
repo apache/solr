@@ -104,11 +104,11 @@ public class HealthCheckHandler extends RequestHandlerBase {
     rsp.setHttpCaching(false);
 
     // Core container should not be null and active (redundant check)
-    if(coreContainer == null || coreContainer.isShutDown()) {
+    if (coreContainer == null || coreContainer.isShutDown()) {
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CoreContainer is either not initialized or shutting down"));
       return;
     }
-    if(!coreContainer.isZooKeeperAware()) {
+    if (!coreContainer.isZooKeeperAware()) {
       if (log.isDebugEnabled()) {
         log.debug("Invoked HealthCheckHandler in legacy mode.");
       }
@@ -125,7 +125,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     // Check for isConnected and isClosed
-    if(zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isConnected()) {
+    if (zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isConnected()) {
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not connected to zk"));
       return;
@@ -162,30 +162,42 @@ public class HealthCheckHandler extends RequestHandlerBase {
     List<String> laggingCoresInfo = new ArrayList<>();
     boolean allCoresAreInSync = true;
 
-    // check only if max generation lag is specified
-    if(maxGenerationLag != null) {
-      for(SolrCore core : coreContainer.getCores()) {
-        ReplicationHandler replicationHandler =
-          (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
-        if(replicationHandler.isFollower()) {
-          boolean isCoreInSync =
-            isWithinGenerationLag(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
+    // check only if max generation lag is specified 
+    if (maxGenerationLag != null) {
+      // if is not negative
+      if (maxGenerationLag < 0) {
+        log.error("Invalid value for maxGenerationLag:[{}]", maxGenerationLag);
+        rsp.add("message",
+                String.format(Locale.ROOT, "Invalid value of maxGenerationLag:%s",
+                        maxGenerationLag));
+        rsp.add(STATUS, FAILURE);
+      } else {
+        for (SolrCore core : coreContainer.getCores()) {
+          ReplicationHandler replicationHandler =
+                  (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
+          if (replicationHandler.isFollower()) {
+            boolean isCoreInSync =
+                    isWithinGenerationLag(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
 
-          allCoresAreInSync &= isCoreInSync;
+            allCoresAreInSync &= isCoreInSync;
+          }
         }
       }
-    }
-
-    if(allCoresAreInSync) {
-      rsp.add("message",
-        String.format(Locale.ROOT, "All the followers are in sync with leader (within maxGenerationLag: %d) " +
-          "or all the cores are acting as leader", maxGenerationLag));
+      if (allCoresAreInSync) {
+        rsp.add("message",
+                String.format(Locale.ROOT, "All the followers are in sync with leader (within maxGenerationLag: %d) " +
+                        "or the cores are acting as leader", maxGenerationLag));
+        rsp.add(STATUS, OK);
+      } else {
+        rsp.add("message",
+                String.format(Locale.ROOT, "Cores violating maxGenerationLag:%d.%n%s", maxGenerationLag,
+                        String.join(",\n", laggingCoresInfo)));
+        rsp.add(STATUS, FAILURE);
+      }
+    } else {  // if maxGeneration lag is not specified (is null) we aren't checking for lag
+      rsp.add("message", "maxGenerationLag isn't specified. Followers aren't " +
+                      "checking for the generation lag from the leaders");
       rsp.add(STATUS, OK);
-    } else {
-      rsp.add("message",
-        String.format(Locale.ROOT,"Cores violating maxGenerationLag:%d.%n%s", maxGenerationLag,
-          String.join(",\n", laggingCoresInfo)));
-      rsp.add(STATUS, FAILURE);
     }
   }
 
@@ -204,13 +216,18 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
       // Get our own commit and generation from the commit
       IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
-      if(commit != null) {
+      if (commit != null) {
         long followerGeneration = commit.getGeneration();
         long generationDiff = leaderGeneration - followerGeneration;
 
-        // generationDiff should be within the threshold and generationDiff shouldn't be negative
-        if(generationDiff < maxGenerationLag && generationDiff >= 0) {
-          log.info("For core:[{}] generation lag is above acceptable threshold:[{}], " +
+        // generationDiff shouldn't be negative except for some edge cases, log it. Some scenarios are
+        // 1) commit generation rolls over Long.MAX_VALUE (really unlikely)
+        // 2) Leader's index is wiped clean and the follower is still showing commit generation 
+        // from the the old index  
+        if (generationDiff < 0) {
+          log.warn("core:[{}], generation lag:[{}] is negative.");
+        } else if (generationDiff < maxGenerationLag) {
+          log.info("core:[{}] generation lag is above acceptable threshold:[{}], " +
                     "generation lag:[{}], leader generation:[{}], follower generation:[{}]",
                     core, maxGenerationLag, generationDiff, leaderGeneration, followerGeneration);
 
@@ -221,7 +238,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
     } catch (Exception e) {
       log.error("Failed to check if the follower is in sync with the leader", e);
     } finally {
-      if(indexFetcher != null) {
+      if (indexFetcher != null) {
         indexFetcher.destroy();
       }
     }

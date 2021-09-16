@@ -51,8 +51,6 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
 
     private static final String context = "/solr";
 
-    int nDocs = 500;
-
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -119,13 +117,13 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
     @Test
     // keep this
     public void doTestHealthCheckWithReplication() throws Exception {
+        int nDocs = 500;
 
         TestInjection.delayBeforeFollowerCommitRefresh = random().nextInt(10);
 
         // stop replication so that the follower doesn't pull the index
         invokeReplicationCommand(buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
 
-        nDocs--;
         // create multiple commits
         int docsAdded = 0;
         for (int i = 0; docsAdded < nDocs / 2; i++, docsAdded++) {
