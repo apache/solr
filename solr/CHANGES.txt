@@ -369,6 +369,8 @@ Bug Fixes
 
 * SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
 
+* SOLR-15626: The "config-read" permission has been fixed to properly allow access to `/solr/admin/configs?action=LIST` (Jon Senchyna)
+
 ==================  8.10.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
