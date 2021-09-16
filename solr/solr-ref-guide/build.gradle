@@ -28,7 +28,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.jruby-gradle.base' version '2.0.0'
+    id 'com.github.jruby-gradle.base' version '2.0.1'
     id 'io.github.rwinch.antora' version '0.0.2'
 }
 
@@ -185,6 +185,7 @@ ext {
         group "Documentation"
         description "Builds the ${details.desc}"
 
+        outputs.cacheIf { true }
         inputs.dir contentDir
         outputs.dir htmlDir
 
@@ -216,20 +217,22 @@ check.dependsOn checkLocalJavadocLinksSite, checkSite
 // Hook site building to assemble.
 assemble.dependsOn buildSite
 
+@CacheableTask
 abstract class PrepareSources extends DefaultTask {
     // Original Source files we'll be syncing <b>FROM</b>
     @InputDirectory
-    public DirectoryProperty srcDir = project.objects.directoryProperty()
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract DirectoryProperty getSrcDir()
 
     // Destination folder.
     @OutputDirectory
-    public DirectoryProperty outDir = project.objects.directoryProperty()
+    abstract DirectoryProperty getOutDir()
 
     /**
      * Task specific props (lazy provider)
      */
     @Input
-    public MapProperty<String, String> props = project.objects.mapProperty(String, String)
+    abstract MapProperty<String, String> getProps()
 
     public PrepareSources() {
         // setup 'dependsOn classes, configurations.depVer' here

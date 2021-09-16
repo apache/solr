@@ -23,14 +23,17 @@ description = 'S3 Repository'
 dependencies {
     api project(':solr:core')
 
-    implementation platform('com.amazonaws:aws-java-sdk-bom')
-
-    implementation ('com.amazonaws:aws-java-sdk-core') { exclude group: 'commons-codec', module: 'commons-codec' }
-    implementation ('com.amazonaws:aws-java-sdk-s3') { exclude group: 'commons-codec', module: 'commons-codec' }
-
-    // Not strictly needed, but provides better performance according to AWS SDK
-    // Can remove this when we upgrade to AWS SDK v2
-    implementation ('javax.xml.bind:jaxb-api') { transitive = false }
+    implementation platform(group: 'software.amazon.awssdk', name: 'bom')
+    implementation (group: 'software.amazon.awssdk', name: 'auth')
+    implementation (group: 'software.amazon.awssdk', name: 'apache-client')
+    implementation (group: 'software.amazon.awssdk', name: 'aws-core')
+    implementation (group: 'software.amazon.awssdk', name: 's3') {
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
+    implementation (group: 'software.amazon.awssdk', name: 'sdk-core')
+    implementation (group: 'software.amazon.awssdk', name: 'protocol-core')
+    runtimeOnly (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
+    runtimeOnly (group: 'org.codehaus.woodstox', name: 'stax2-api')
 
     testImplementation('com.adobe.testing:s3mock-junit4') {
         // Don't pull in separate versions of these libs, just use what Solr already has
@@ -41,6 +44,8 @@ dependencies {
         exclude group: 'commons-io', module: 'commons-io'
         exclude group: 'commons-codec', module: 'commons-codec'
         exclude group: 'org.apache.commons', module: 'commons-lang3'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+        exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
     }
 
     testImplementation project(':solr:test-framework')
@@ -52,5 +57,9 @@ test {
     environment "spring.jmx.enabled", "false"
 
     // Without this, randomizedtesting will think our tests leak threads (b/c S3Mock's Jetty hasn't bothered to clean up yet)
-    environment "server.jetty.threads.idle-timeout", "3s"
+    environment "server.jetty.threads.idle-timeout", "1s"
+
+    // Reduce logging noise during the tests
+    environment "aws.accessKeyId", "foo"
+    environment "aws.secretAccessKey", "bar"
 }

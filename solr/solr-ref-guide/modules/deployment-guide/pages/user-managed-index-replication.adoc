@@ -124,7 +124,7 @@ A line like the following would ensure that the local configuration `solrconfig_
 +
 [source,xml]
 ----
-<str name="confFiles">solrconfig_follower.xml:solrconfig.xml,managed-schema,stopwords.txt</str>
+<str name="confFiles">solrconfig_follower.xml:solrconfig.xml,managed-schema.xml,stopwords.txt</str>
 ----
 +
 On the leader server, the file name of the follower configuration file can be anything, as long as the name is correctly identified in the `confFiles` string; then it will be saved as whatever file name appears after the colon ':'.

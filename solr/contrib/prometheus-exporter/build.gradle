@@ -81,6 +81,8 @@ assemblePackaging {
     into "lib"
   })
 
+  // TODO: SOLR-15605 this copy spec has duplicate jars and this fails by default in gradle7
+  duplicatesStrategy = 'warn'
 
   into deps
 }
