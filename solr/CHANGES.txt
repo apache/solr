@@ -145,6 +145,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-10887: Migrate "managed-schema" file naming to "managed-schema.xml" file name, with a fallback to the legacy "managed-schema".  (Eric Pugh, David Smiley)
 
+* SOLR-15630: Logging MDC values no longer include a hardcoded prefix, allowing custom logging configurations access to the plain values.
+  The default log4j2.xml PatternLayout has been updated to ensure the values are formatted with the existing prefixes. (hossman)
+
 Build
 ---------------------
 

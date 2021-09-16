@@ -23,7 +23,7 @@
     <Console name="STDOUT" target="SYSTEM_OUT">
       <PatternLayout>
         <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.}
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
           %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
@@ -35,7 +35,7 @@
         filePattern="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}.log.%i">
       <PatternLayout>
         <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.}
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
           %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
@@ -52,7 +52,7 @@
         filePattern="${sys:solr.log.dir}/${sys:solr.log.name}_slow_requests.log.%i">
       <PatternLayout>
         <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.}
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
           %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
@@ -69,7 +69,7 @@
         fileName="${sys:solr.log.dir:-build/work/solr-logs}/${sys:solr.log.name:-solr}_random_counts.log">
       <PatternLayout>
         <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.}
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
           %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
