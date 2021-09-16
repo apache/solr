@@ -143,6 +143,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   This was already working for XML & "javabin"/SolrJ.  Previously, omitting the ID would be confused
   for a partial/atomic update.  (David Smiley)
 
+* SOLR-10887: Migrate "managed-schema" file naming to "managed-schema.xml" file name, with a fallback to the legacy "managed-schema".  (Eric Pugh, David Smiley)
+
 Build
 ---------------------
 
