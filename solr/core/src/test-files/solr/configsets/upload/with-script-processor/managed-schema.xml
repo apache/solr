@@ -15,17 +15,11 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
-<!--
- This is a stripped down config file used for a simple example...
- It is *not* a good example to work from.
--->
-<config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-
-  <schemaFactory class="ManagedIndexSchemaFactory">
-    <bool name="mutable">true</bool>
-    <str name="managedSchemaResourceName">managed-schema.xml</str>
-  </schemaFactory>
-
-</config>
+<schema name="minimal" version="1.1">
+ <types>
+  <fieldType name="string" class="solr.StrField"/>
+ </types>
+ <fields>
+   <dynamicField name="*" type="string" indexed="true" stored="true" />
+ </fields>
+</schema>
