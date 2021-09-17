@@ -62,6 +62,4 @@ test {
     // Reduce logging noise during the tests
     environment "aws.accessKeyId", "foo"
     environment "aws.secretAccessKey", "bar"
-    environment "aws.sharedCredentialsFile", "conf/credentials"
-    environment "aws.configFile", "conf/config"
 }

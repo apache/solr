@@ -163,7 +163,7 @@ That said, if you're running SolrCloud, you should *NOT* use the CoreAdmin API a
 Instead, use the <<collections-api.adoc#,Collections API>>.
 
 With a user-managed cluster, if you have <<config-sets.adoc#,Configsets>> defined, you can use the `configSet` parameter as documented below.
-If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
+If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema.xml` or `schema.xml`), and any files referenced by those configs.
 
 The config and schema filenames can be specified with the `config` and `schema` parameters, but these are expert options.
 One thing you could do to avoid creating the `conf` directory is use `config` and `schema` parameters that point at absolute paths, but this can lead to confusing configurations unless you fully understand what you are doing.
