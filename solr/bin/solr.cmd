@@ -319,6 +319,10 @@ goto done
 @echo.
 @echo   Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.cmd.
 @echo.
+@echo   Add -DcreateZkRoot=true if your ZK host has a path, and you want it be created automatically:
+@echo.
+@echo     solr start -c -z localhost:2181/solr-cloud -DcreateZkRoot=true
+@echo.
 @echo Pass -help after any COMMAND to see command-specific usage information,
 @echo   such as:    solr start -help or solr stop -help
 @echo.
@@ -347,6 +351,7 @@ goto done
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
 @echo                   If neither ZK_HOST is defined in solr.in.cmd nor the -z parameter is specified,
 @echo                   an embedded ZooKeeper instance will be launched.
+@echo                   Add -DcreateZkRoot=true if your ZK host has a path, and you want to create it automatically.
 @echo.
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m

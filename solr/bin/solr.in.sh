@@ -68,6 +68,7 @@
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 # e.g. host1:2181,host2:2181/chroot
 # Leave empty if not using SolrCloud
+# If the ZK root does not exist, it will be created if the parameter -DcreateZkRoot=true is added to the start command
 #ZK_HOST=""
 
 # Set the ZooKeeper client timeout (for SolrCloud mode)
