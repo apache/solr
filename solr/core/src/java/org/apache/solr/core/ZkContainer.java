@@ -122,7 +122,7 @@ public class ZkContainer {
         }
         String confDir = System.getProperty("bootstrap_confdir");
         boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
-        boolean createRoot = Boolean.getBoolean("createZkRoot");
+        boolean createRoot = Boolean.getBoolean("createZkChroot");
 
         // We may have already loaded NodeConfig from zookeeper with same connect string, so no need to recheck chroot
         boolean alreadyUsedChroot = (cc.getConfig().isFromZookeeper()
