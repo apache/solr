@@ -629,7 +629,7 @@ public class SimplePostTool {
           ByteBuffer content = result.content;
           boolean success = postData(new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), null, out, result.contentType, postUrl);
           if (success) {
-            info("POSTed web resource "+uri+" (depth: "+level+")");
+            info("POSTed web resource "+url+" (depth: "+level+")");
             Thread.sleep(delay * 1000);
             numPages++;
             // Pull links from HTML pages only
@@ -1137,7 +1137,7 @@ public class SimplePostTool {
         if (isDisallowedByRobots(u)) {
           warn("The URL "+u+" is disallowed by robots.txt and will not be crawled.");
           res.httpStatus = 403;
-          URI uri = new URI(u.toString());
+          URI uri = u.toURI();
           visited.add(uri);
           return res;
         }
