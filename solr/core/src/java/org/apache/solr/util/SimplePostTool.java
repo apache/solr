@@ -616,20 +616,20 @@ public class SimplePostTool {
     int stackSize = stack.size();
     LinkedHashSet<URI> subStack = new LinkedHashSet<>();
     info("Entering crawl at level "+level+" ("+rawStackSize+" links total, "+stackSize+" new)");
-    for(URI u : stack) {
+    for(URI uri : stack) {
       try {
-        visited.add(u);
-        URL url = new URL(u.toString());
+        visited.add(uri);
+        URL url = uri.toURL();
         PageFetcherResult result = pageFetcher.readPageFromUrl(url);
         if(result.httpStatus == 200) {
           url = (result.redirectUrl != null) ? result.redirectUrl : url;
           URL postUrl = new URL(appendParam(solrUrl.toString(),
-              "literal.id="+URLEncoder.encode(u.toString(),"UTF-8") +
-              "&literal.url="+URLEncoder.encode(u.toString(),"UTF-8")));
+              "literal.id="+URLEncoder.encode(uri.toString(),"UTF-8") +
+              "&literal.url="+URLEncoder.encode(uri.toString(),"UTF-8")));
           ByteBuffer content = result.content;
           boolean success = postData(new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), null, out, result.contentType, postUrl);
           if (success) {
-            info("POSTed web resource "+u+" (depth: "+level+")");
+            info("POSTed web resource "+uri+" (depth: "+level+")");
             Thread.sleep(delay * 1000);
             numPages++;
             // Pull links from HTML pages only
@@ -638,13 +638,13 @@ public class SimplePostTool {
               subStack.addAll(children);
             }
           } else {
-            warn("An error occurred while posting "+u);
+            warn("An error occurred while posting "+uri);
           }
         } else {
-          warn("The URL "+u+" returned a HTTP result status of "+result.httpStatus);
+          warn("The URL "+uri+" returned a HTTP result status of "+result.httpStatus);
         }
       } catch (IOException | URISyntaxException e) {
-        warn("Caught exception when trying to open connection to "+u+": "+e.getMessage());
+        warn("Caught exception when trying to open connection to "+uri+": "+e.getMessage());
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -1260,8 +1260,10 @@ public class SimplePostTool {
             link = computeFullUrl(u, link);
             if(link == null)
               continue;
-            URI newUri = new URI(link.toString());
-            l.add(newUri);
+            URI newUri = new URI(link);
+            if(newUri.getAuthority() == null || !newUri.getAuthority().equals(u.getAuthority())){
+              l.add(newUri);
+            }
           }
         }
       } catch (MalformedURLException e) {
