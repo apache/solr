@@ -319,10 +319,6 @@ goto done
 @echo.
 @echo   Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.cmd.
 @echo.
-@echo   Add -DcreateZkChroot=true if your ZK host has a path, and you want it be created automatically:
-@echo.
-@echo     solr start -c -z localhost:2181/solr-cloud -DcreateZkChroot=true
-@echo.
 @echo Pass -help after any COMMAND to see command-specific usage information,
 @echo   such as:    solr start -help or solr stop -help
 @echo.
@@ -351,7 +347,7 @@ goto done
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
 @echo                   If neither ZK_HOST is defined in solr.in.cmd nor the -z parameter is specified,
 @echo                   an embedded ZooKeeper instance will be launched.
-@echo                   Add -DcreateZkChroot=true if your ZK host has a path, and you want to create it automatically.
+@echo                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
 @echo.
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
@@ -1169,6 +1165,11 @@ IF "%SOLR_MODE%"=="solrcloud" (
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
   )
+
+  IF NOT "%ZK_CREATE_CHROOT%"=="" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DcreateZkChroot=%ZK_CREATE_CHROOT%"
+  )
+
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=

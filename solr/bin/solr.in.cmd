@@ -53,8 +53,10 @@ REM set GC_TUNE=%GC_TUNE% -XX:+ParallelRefProcEnabled      etc.
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot
 REM Leave empty if not using SolrCloud
-REM If the ZK chroot does not exist, it will be created if the parameter -DcreateZkChroot=true is added to the start command
 REM set ZK_HOST=
+
+REM Set to true if your ZK host has a chroot path, and you want to create it automatically.
+REM set ZK_CREATE_CHROOT=true
 
 REM Set the ZooKeeper client timeout (for SolrCloud mode)
 REM set ZK_CLIENT_TIMEOUT=30000
