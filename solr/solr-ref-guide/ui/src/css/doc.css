@@ -234,6 +234,66 @@ h1.page + nav.toc.embedded {
   border-bottom: 1px solid var(--table-border-color);
 }
 
+.doc table.grid-all > * > tr > * {
+  border: 1px solid var(--table-border-color);
+}
+
+.doc table.grid-none > * > tr > * {
+  border: 0;
+}
+
+.doc table.grid-cols > * > tr > * {
+  border-right: 1px solid var(--table-border-color);
+}
+
+.doc table.grid-rows > * > tr > * {
+  border-top: 1px solid var(--table-border-color);
+}
+
+.doc table.grid-all > thead th,
+.doc table.grid-rows > thead th {
+  border-bottom-width: 2.5px;
+}
+
+.doc table.frame-all {
+  border: 1px solid var(--table-border-color);
+}
+
+.doc table.frame-ends {
+  border-top: 1px solid var(--table-border-color);
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.doc table.frame-sides {
+  border-left: 1px solid var(--table-border-color);
+  border-right: 1px solid var(--table-border-color);
+}
+
+.doc table.frame-none > colgroup + * > :first-child > *,
+.doc table.frame-sides > colgroup + * > :first-child > * {
+  border-top-width: 0;
+}
+
+.doc table.frame-none > colgroup + * > :only-child > *,
+.doc table.frame-sides > colgroup + * > :only-child > * {
+  border-bottom-width: 0;
+}
+
+/* NOTE let the grid win in case of frame-none */
+.doc table.frame-sides > :last-child > :last-child > * {
+  border-bottom-width: 0;
+}
+
+.doc table.frame-none > * > tr > :first-child,
+.doc table.frame-ends > * > tr > :first-child {
+  border-left-width: 0;
+}
+
+.doc table.frame-none > * > tr > :last-child,
+.doc table.frame-ends > * > tr > :last-child {
+  border-right-width: 0;
+}
+
 .doc table.stripes-all > tbody > tr,
 .doc table.stripes-odd > tbody > tr:nth-of-type(odd),
 .doc table.stripes-even > tbody > tr:nth-of-type(even),
