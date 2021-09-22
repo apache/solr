@@ -16,9 +16,9 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
-
 import com.carrotsearch.randomizedtesting.ThreadFilter;
+import java.lang.Thread.State;
+import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
 
 /**
@@ -36,6 +36,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
      * test-dependent information.
      */
 
+    if (t.getState().equals(State.TERMINATED)) {
+      return true;
+    }
+
     String threadName = t.getName();
     if (threadName.equals(TimerThread.THREAD_NAME)) {
       return true;
@@ -52,7 +56,23 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     }
     
     // These is a java pool for the collection stream api
-    if (threadName.startsWith("ForkJoinPool.")) {
+    if (threadName.startsWith("ForkJoinPool.") || threadName.startsWith("pool-")) {
+      return true;
+    }
+
+    // load balancer is leaky
+    if (threadName.startsWith("aliveCheckExecutor")) {
+      return true;
+    }
+
+
+    // we don't handle zk shutdown well, but these threads are harmless and will shortly go away
+    if (threadName.startsWith("SessionTracker")) {
+      return true;
+    }
+
+    // tools
+    if (threadName.startsWith("Reference Handler") && threadName.startsWith("Signal Dispatcher") && threadName.startsWith("Monitor") && threadName.startsWith("YJPAgent-RequestListener")) {
       return true;
     }
     
