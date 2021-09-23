@@ -22,12 +22,42 @@ allprojects {
 
   def lucenePrereleaseBuild = '5'
 
+  // We parse this early because it has to run before the configure phase. There
+  // may well be a better way to do this. At a minimum, this parsing should
+  // probably be made less brittle ...
+  def luceneVersionProp = rootProject.file("versions.props").filterLine { line ->
+    line.startsWith('org.apache.lucene:*=')
+  }.toString().trim()
+
+  def luceneVersionLockProp = rootProject.file("versions.lock").filterLine { line ->
+    line.startsWith('org.apache.lucene:lucene-core')
+  }.toString().trim()
+
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
-    maven {
-      name "LucenePrerelease${lucenePrereleaseBuild}"
-      url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
+    // Lucene dependencies should be fetched from mavenLocal() or nightlies prerelease
+    // repo, mutually exclusive.
+    if (System.properties.containsKey('luceneSnapshot')) {
+      assert luceneVersionProp.endsWith('=9.0.0-SNAPSHOT') : "found version.props spec: ${luceneVersionProp}; change to 9.0.0-SNAPSHOT or run without -DluceneSnapshot property"
+      if (!luceneVersionLockProp.contains('lucene-core:9.0.0-SNAPSHOT ')) {
+        // NOTE: we can't assert/fail hard here, because the `--update-locks` command
+        // prescribed below wouldn't be able to run. One consequence of this is that
+        // the below message will get printed a lot (once for each module that's configured)
+        // ... but the verbosity is harmless, and this is an edge case that's probably
+        // not worth dancing around.
+        // TODO: perhaps we could detect whether `--update-locks` is specified; ignore if
+        // so, assert/fail hard otherwise?
+        logger.warn("found versions.lock spec: ${luceneVersionLockProp}; to use 9.0.0-SNAPSHOT version, run `gradlew -DluceneSnapshot --update-locks 'org.apache.lucene:*'`")
+      }
+      mavenLocal()
+    } else {
+      assert !luceneVersionProp.endsWith("=9.0.0-SNAPSHOT") : "found versions.props spec: ${luceneVersionProp}; run with -DluceneSnapshot property?"
+      assert !luceneVersionLockProp.contains("lucene-core:9.0.0-SNAPSHOT ") : "versions.props specifies ${luceneVersionProp}; conflicts with versions.lock ${luceneVersionLockProp}"
+      maven {
+        name "LucenePrerelease${lucenePrereleaseBuild}"
+        url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
+      }
     }
   }
 
