@@ -22,32 +22,12 @@ allprojects {
   
   def lucenePrereleaseBuild = '5'
 
-  // We hack-parse this early because it has to run before the configure phase. There
-  // may well be a better way to do this.
-  def luceneVersionProp = rootProject.file("versions.props").filterLine { line ->
-    line.startsWith('org.apache.lucene:*=')
-  }.toString().trim()
-
-  def luceneVersionLockProp = rootProject.file("versions.lock").filterLine { line ->
-    line.startsWith('org.apache.lucene:lucene-core')
-  }.toString().trim()
-
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
-    // Lucene dependencies should be fetched from mavenLocal() or nightlies prerelease,
-    // mutually exclusive.
-    if (System.properties.containsKey('luceneSnapshot')) {
-      assert luceneVersionProp.endsWith('9.0.0-SNAPSHOT') : "change version.props lucene version to 9.0.0-SNAPSHOT or run without -DluceneSnapshot property!"
-      assert luceneVersionLockProp.contains('9.0.0-SNAPSHOT') : "run `gradlew -DluceneSnapshot --update-locks 'org.apache.lucene:*'`"
-      mavenLocal()
-    } else {
-      assert luceneVersionProp.endsWith("9.0.0-prerelease${lucenePrereleaseBuild}") : "run with -DluceneSnapshot property!"
-      assert luceneVersionLockProp.contains("9.0.0-prerelease${lucenePrereleaseBuild}") : "version conflict between versions.props and versions.lock"
-      maven {
-        name "LucenePrerelease${lucenePrereleaseBuild}"
-        url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
-      }
+    maven {
+      name "LucenePrerelease${lucenePrereleaseBuild}"
+      url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
     }
   }
 
