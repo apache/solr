@@ -21,7 +21,7 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * An advanced multi-field query parser based on the DisMax parser.
- * See Wiki page http://wiki.apache.org/solr/ExtendedDisMax
+ * See Wiki page https://solr.apache.org/guide/the-extended-dismax-query-parser.html
  */
 public class ExtendedDismaxQParserPlugin extends QParserPlugin {
   public static final String NAME = "edismax";
