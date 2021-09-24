@@ -18,7 +18,7 @@
 
 <!--
      For more details about configurations options that may appear in
-     this file, see http://wiki.apache.org/solr/SolrConfigXml.
+     this file, see https://solr.apache.org/guide/configuring-solrconfig-xml.html.
 -->
 <config>
   <!-- In all configuration below, a prefix of "solr." for class names
@@ -214,7 +214,7 @@
                    'simple' is the default
 
          More details on the nuances of each LockFactory...
-         http://wiki.apache.org/lucene-java/AvailableLockFactories
+         https://cwiki.apache.org/confluence/display/lucene/AvailableLockFactories
     -->
     <lockType>${solr.lock.type:native}</lockType>
 
@@ -268,7 +268,7 @@
        parameters. Remove this to disable exposing Solr configuration
        and statistics to JMX.
 
-       For more details see http://wiki.apache.org/solr/SolrJmx
+       For more details see https://solr.apache.org/guide/using-jmx-with-solr.html
     -->
   <jmx />
   <!-- If you want to connect to a particular server, specify the
@@ -306,7 +306,7 @@
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents.
 
-         http://wiki.apache.org/solr/UpdateXmlMessages
+         https://solr.apache.org/guide/uploading-data-with-index-handlers.html
 
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
@@ -1305,7 +1305,7 @@
 
   <!-- Response Writers
 
-       http://wiki.apache.org/solr/QueryResponseWriter
+       https://solr.apache.org/guide/response-writers.html
 
        Request responses will be written using the writer specified by
        the 'wt' request parameter matching the name of a registered
@@ -1357,7 +1357,7 @@
 
   <!-- Function Parsers
 
-       http://wiki.apache.org/solr/FunctionQuery
+       https://solr.apache.org/guide/function-queries.html
 
        Multiple ValueSourceParsers can be registered by name, and then
        used as function names when using the "func" QParser.
@@ -1381,7 +1381,7 @@
   <queryParser enable="${solr.ltr.enabled:false}" name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"/>
 
   <!-- Document Transformers
-       http://wiki.apache.org/solr/DocTransformers
+       https://solr.apache.org/guide/transforming-result-documents.html
     -->
   <!--
      Could be something like:
