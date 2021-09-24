@@ -17,7 +17,7 @@
 
 rootProject.name = "solr-root"
 
-includeBuild("dev-tools/missing-doclet")
+includeBuild("dev-tools/solr-missing-doclet")
 
 include "solr:solrj"
 include "solr:core"
