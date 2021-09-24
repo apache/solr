@@ -37,20 +37,20 @@ import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
 
 /**
- * Identifies the language of a set of input fields using 
+ * Identifies the language of a set of input fields using
  * http://code.google.com/p/language-detection
  * <p>
  * The UpdateProcessorChain config entry can take a number of parameters
  * which may also be passed as HTTP parameters on the update request
  * and override the defaults. Here is the simplest processor config possible:
- * 
+ *
  * <pre class="prettyprint" >
  * &lt;processor class=&quot;org.apache.solr.update.processor.LangDetectLanguageIdentifierUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;langid.fl&quot;&gt;title,text&lt;/str&gt;
  *   &lt;str name=&quot;langid.langField&quot;&gt;language_s&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ * See <a href="https://solr.apache.org/guide/detecting-languages-during-indexing.html">https://solr.apache.org/guide/detecting-languages-during-indexing.html</a>
  * @since 3.5
  */
 public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
@@ -105,11 +105,11 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
     }
     return new LangDetectLanguageIdentifierUpdateProcessor(req, rsp, next);
   }
-  
-  
+
+
   // DetectorFactory is totally global, so we only want to do this once... ever!!!
   static boolean loaded;
-  
+
   // profiles we will load from classpath
   static final String languages[] = {
     "af", "ar", "bg", "bn", "cs", "da", "de", "el", "en", "es", "et", "fa", "fi", "fr", "gu",

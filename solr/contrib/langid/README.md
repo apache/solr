@@ -13,7 +13,8 @@ Language detector implementations are pluggable.
 
 Getting Started
 ---------------
-Please refer to the module documentation at http://wiki.apache.org/solr/LanguageDetection
+Please refer to the Solr Ref Guide at https://solr.apache.org/guide/detecting-languages-during-indexing.html
+for more information.
 
 Dependencies
 ------------
