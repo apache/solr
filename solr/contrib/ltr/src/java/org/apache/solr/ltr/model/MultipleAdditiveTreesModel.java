@@ -32,6 +32,10 @@ import org.apache.solr.util.SolrPluginUtils;
  * A scoring model that computes scores based on the summation of multiple weighted trees.
  * Example models are LambdaMART and Gradient Boosted Regression Trees (GBRT) .
  * <p>
+ * - Note:
+ *    - "splitToRight" can be used to specify where to split when the feature value equals the split threshold.
+ *    - This depends on the model, eg. XGBoost models split to the right subtree
+ * <p>
  * Example configuration:
 <pre>{
    "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
@@ -41,6 +45,7 @@ import org.apache.solr.util.SolrPluginUtils;
        { "name" : "originalScore"}
    ],
    "params" : {
+       "splitToRight": false,
        "trees" : [
            {
                "weight" : "1",
@@ -104,6 +109,8 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
    * influence the class hashCode, equals, etc.
    */
   private List<RegressionTree> trees;
+
+  private boolean splitToRight = false;
 
   private RegressionTree createRegressionTree(Map<String,Object> map) {
     final RegressionTree rt = new RegressionTree();
@@ -208,11 +215,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public float score(float[] featureVector) {
-      return weight.floatValue() * scoreNode(featureVector, root);
+      return weight.floatValue() * scoreNode(featureVector, root, splitToRight);
     }
 
     public String explain(float[] featureVector) {
-      return explainNode(featureVector, root);
+      return explainNode(featureVector, root, splitToRight);
     }
 
     @Override
@@ -248,6 +255,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
   }
 
+  public void setSplitToRight(boolean splitToRight) {
+    this.splitToRight = splitToRight;
+  }
+
   public MultipleAdditiveTreesModel(String name, List<Feature> features,
       List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
@@ -281,7 +292,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     return score;
   }
 
-  private static float scoreNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
+  private static float scoreNode(float[] featureVector, RegressionTreeNode regressionTreeNode, boolean splitToRight) {
     while (true) {
       if (regressionTreeNode.isLeaf()) {
         return regressionTreeNode.value;
@@ -291,10 +302,13 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         return 0f;
       }
 
-      if (featureVector[regressionTreeNode.featureIndex] >= regressionTreeNode.threshold) {
+      if (featureVector[regressionTreeNode.featureIndex] > regressionTreeNode.threshold) {
         regressionTreeNode = regressionTreeNode.right;
-      } else {
+      } else if (featureVector[regressionTreeNode.featureIndex] < regressionTreeNode.threshold) {
         regressionTreeNode = regressionTreeNode.left;
+      } else {
+        // use 'splitToRight' flag to decide where to split when feature == threshold
+        regressionTreeNode = splitToRight ? regressionTreeNode.right : regressionTreeNode.left;
       }
     }
   }
@@ -330,7 +344,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
   }
 
-  private static String explainNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
+  private static String explainNode(float[] featureVector, RegressionTreeNode regressionTreeNode, boolean splitToRight) {
     final StringBuilder returnValueBuilder = new StringBuilder();
     while (true) {
       if (regressionTreeNode.isLeaf()) {
@@ -348,14 +362,19 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       // each branch and report
       // that here
 
-      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
-        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " <= "
+      if (featureVector[regressionTreeNode.featureIndex] < regressionTreeNode.threshold) {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " < "
                 + regressionTreeNode.threshold + ", Go Left | ");
         regressionTreeNode = regressionTreeNode.left;
-      } else {
+      } else if (featureVector[regressionTreeNode.featureIndex] > regressionTreeNode.threshold) {
         returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " > "
                 + regressionTreeNode.threshold + ", Go Right | ");
         regressionTreeNode = regressionTreeNode.right;
+      } else {
+        String splitDirection = splitToRight ? "Right" : "Left";
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " = "
+                + regressionTreeNode.threshold + ", Go " + splitDirection + " | ");
+        regressionTreeNode = splitToRight ? regressionTreeNode.right : regressionTreeNode.left;
       }
     }
 

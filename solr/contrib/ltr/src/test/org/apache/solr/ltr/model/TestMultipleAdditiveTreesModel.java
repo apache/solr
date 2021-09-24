@@ -112,26 +112,37 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertThat(qryResult, containsString("50.0 = tree 0"));
     assertThat(qryResult, containsString("-20.0 = tree 1"));
     assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
-    assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
+    assertThat(qryResult, containsString("'matchedTitle':0.0 < 0.5"));
 
     assertThat(qryResult, containsString(" Go Right "));
     assertThat(qryResult, containsString(" Go Left "));
   }
 
   @Test
-  public void testMultipleAdditiveTreesSplitAtThreshold() throws Exception {
+  public void testMultipleAdditiveTreesSplitLeftAtThreshold() throws Exception {
     loadFeatures("multipleadditivetreesmodel_features.json");
-    loadModels("multipleadditivetreesmodel_split_at_threshold.json");
+    loadModels("multipleadditivetreesmodel_split_left_at_threshold.json");
 
-    doTestSplitsRightAtIntegerThresholdValues();
+    doTestSplitsLeftAtThresholdValues();
   }
 
-  private void doTestSplitsRightAtIntegerThresholdValues() throws Exception {
+  @Test
+  public void testMultipleAdditiveTreesSplitRightAtThreshold() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features.json");
+    loadModels("multipleadditivetreesmodel_split_right_at_threshold.json");
+
+    doTestSplitsRightAtThresholdValues();
+  }
+
+
+  private void doTestSplitsRightAtThresholdValues() throws Exception {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("rows", "3");
     query.add("fl", "*,score");
+
+    query.setParam("debugQuery", "on");
 
     // Regular scores
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==1.0");
@@ -141,6 +152,25 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel_split_at_threshold efi.user_query=dsjkafljjk}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==100.0");
+  }
+
+  private void doTestSplitsLeftAtThresholdValues() throws Exception {
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("rows", "3");
+    query.add("fl", "*,score");
+
+    // Regular scores
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==1.0");
+
+    query.setParam("debugQuery", "on");
+
+    // No match scores since user_query not passed in to external feature info
+    // and feature depended on it.
+    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel_split_at_threshold efi.user_query=dsjkafljjk}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-100.0");
   }
 
   @Test
