@@ -45,7 +45,53 @@ include "solr:benchmark"
 include "solr:test-framework"
 include "solr:solr-ref-guide"
 include "solr:example"
-
 include "solr:documentation"
 include "solr:packaging"
 include "solr:docker"
+
+if (file("lucene/main").exists()) {
+  includeBuild("lucene/main") {
+      dependencySubstitution {
+          def substitutionMap = [
+            "org.apache.lucene:lucene-analysis-common" : ":lucene:analysis:common",
+            "org.apache.lucene:lucene-analysis-icu" : ":lucene:analysis:icu",
+            "org.apache.lucene:lucene-analysis-kuromoji" : ":lucene:analysis:kuromoji",
+            "org.apache.lucene:lucene-analysis-morfologik" : ":lucene:analysis:morfologik",
+            "org.apache.lucene:lucene-analysis-nori" : ":lucene:analysis:nori",
+            "org.apache.lucene:lucene-analysis-opennlp" : ":lucene:analysis:opennlp",
+            "org.apache.lucene:lucene-analysis-phonetic" : ":lucene:analysis:phonetic",
+            "org.apache.lucene:lucene-analysis-smartcn" : ":lucene:analysis:smartcn",
+            "org.apache.lucene:lucene-analysis-stempel" : ":lucene:analysis:stempel",
+            "org.apache.lucene:lucene-backward-codecs" : ":lucene:backward-codecs",
+            "org.apache.lucene:lucene-benchmark" : ":lucene:benchmark",
+            "org.apache.lucene:lucene-classification" : ":lucene:classification",
+            "org.apache.lucene:lucene-codecs" : ":lucene:codecs",
+            "org.apache.lucene:lucene-core" : ":lucene:core",
+            "org.apache.lucene:lucene-demo" : ":lucene:demo",
+            "org.apache.lucene:lucene-expressions" : ":lucene:expressions",
+            "org.apache.lucene:lucene-facet" : ":lucene:facet",
+            "org.apache.lucene:lucene-grouping" : ":lucene:grouping",
+            "org.apache.lucene:lucene-highlighter" : ":lucene:highlighter",
+            "org.apache.lucene:lucene-join" : ":lucene:join",
+            "org.apache.lucene:lucene-memory" : ":lucene:memory",
+            "org.apache.lucene:lucene-misc" : ":lucene:misc",
+            "org.apache.lucene:lucene-monitor" : ":lucene:monitor",
+            "org.apache.lucene:lucene-queries" : ":lucene:queries",
+            "org.apache.lucene:lucene-queryparser" : ":lucene:queryparser",
+            "org.apache.lucene:lucene-replicator" : ":lucene:replicator",
+            "org.apache.lucene:lucene-sandbox" : ":lucene:sandbox",
+            "org.apache.lucene:lucene-spatial-extras" : ":lucene:spatial-extras",
+            "org.apache.lucene:lucene-spatial3d" : ":lucene:spatial3d",
+            "org.apache.lucene:lucene-suggest" : ":lucene:suggest",
+            "org.apache.lucene:lucene-test-framework" : ":lucene:test-framework"
+          ]
+
+          // We have to provide an explicit version to substitute because otherwise
+          // all dependencies (including plugin dependencies?!) get substituted.
+          String luceneVersion = "9.0.0-prerelease5"
+          substitutionMap.each { depName, moduleName ->
+            substitute(module("${depName}:${luceneVersion}")).using(project(moduleName))
+          }
+      }
+  }
+}
