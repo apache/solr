@@ -22,7 +22,7 @@
     <Console name="STDOUT" target="SYSTEM_OUT">
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n
         </Pattern>
       </PatternLayout>
     </Console>
@@ -33,7 +33,7 @@
         filePattern="${sys:solr.log.dir}/solr.log.%i" >
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n
         </Pattern>
       </PatternLayout>
       <Policies>
@@ -61,7 +61,7 @@
         filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n
         </Pattern>
       </PatternLayout>
       <Policies>
