@@ -17,14 +17,24 @@
 
 package org.apache.solr;
 
+import com.carrotsearch.randomizedtesting.TraceFormatting;
 import java.lang.invoke.MethodHandles;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.VerifyTestClassNamingConvention;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -80,6 +90,14 @@ public class SolrTestCase extends LuceneTestCase {
   private static final Pattern NAMING_CONVENTION_TEST_SUFFIX = Pattern.compile("(.+\\.)([^.]+)(Test)");
 
   private static final Pattern NAMING_CONVENTION_TEST_PREFIX = Pattern.compile("(.+\\.)(Test)([^.]+)");
+
+  private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
+      "org.junit.",
+      "junit.framework.",
+      "sun.",
+      "java.lang.reflect.",
+      "com.carrotsearch.randomizedtesting.",
+  });
 
   @ClassRule
   public static TestRule solrClassRules = 
@@ -150,6 +168,163 @@ public class SolrTestCase extends LuceneTestCase {
   
   @AfterClass
   public static void shutdownLogger() throws Exception {
-    StartupLoggingUtils.shutdown();
+    try {
+      if (suiteFailureMarker.wasSuccessful()) {
+        // if the tests passed, make sure everything was closed / released
+        String orr = clearObjectTrackerAndCheckEmpty(0, false);
+        assertNull(orr, orr);
+      } else {
+        ObjectReleaseTracker.tryClose();
+      }
+    } finally {
+      ObjectReleaseTracker.clear();
+      StartupLoggingUtils.shutdown();
+    }
+  }
+
+
+  /**
+   * @return null if ok else error message
+   */
+  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds) {
+    return clearObjectTrackerAndCheckEmpty(waitSeconds, false);
+  }
+
+  /**
+   * @return null if ok else error message
+   */
+  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds, boolean tryClose) {
+    int retries = 0;
+    String result;
+    do {
+      result = ObjectReleaseTracker.checkEmpty();
+      if (result == null)
+        break;
+      try {
+        if (retries % 10 == 0) {
+          log.info("Waiting for all tracked resources to be released");
+          if (retries > 10) {
+            TraceFormatting tf = new TraceFormatting(DEFAULT_STACK_FILTERS);
+            Map<Thread,StackTraceElement[]> stacksMap = Thread.getAllStackTraces();
+            Set<Entry<Thread,StackTraceElement[]>> entries = stacksMap.entrySet();
+            for (Entry<Thread,StackTraceElement[]> entry : entries) {
+              String stack = tf.formatStackTrace(entry.getValue());
+              System.err.println(entry.getKey().getName() + ":\n" + stack);
+            }
+          }
+        }
+        TimeUnit.SECONDS.sleep(1);
+      } catch (InterruptedException e) { break; }
+    }
+    while (retries++ < waitSeconds);
+
+
+    log.info("------------------------------------------------------- Done waiting for tracked resources to be released");
+
+    ObjectReleaseTracker.clear();
+
+    return result;
+  }
+
+  public static void interruptThreadsOnTearDown() {
+
+    log.info("Checking leaked threads after test");
+
+    ThreadGroup tg = Thread.currentThread().getThreadGroup();
+
+    Set<Map.Entry<Thread, StackTraceElement[]>> threadSet = Thread.getAllStackTraces().entrySet();
+    if (log.isInfoEnabled()) {
+      log.info("thread count={}", threadSet.size());
+    }
+    Collection<Thread> waitThreads = new ArrayList<>();
+    for (Map.Entry<Thread, StackTraceElement[]> threadEntry : threadSet) {
+      Thread thread = threadEntry.getKey();
+      ThreadGroup threadGroup = thread.getThreadGroup();
+      if (threadGroup != null
+          && !(thread.getName().startsWith("SUITE")
+          && thread.getName().charAt(thread.getName().length() - 1) == ']')
+          && !"main".equals(thread.getName())) {
+        if (log.isTraceEnabled()) {
+          log.trace("thread is {} state={}", thread.getName(), thread.getState());
+        }
+        if (threadGroup.getName().equals(tg.getName()) && interrupt(thread)) {
+          waitThreads.add(thread);
+        }
+      }
+
+      while (true) {
+        boolean cont =
+            threadGroup != null && threadGroup.getParent() != null && !(
+                thread.getName().startsWith("SUITE")
+                    && thread.getName().charAt(thread.getName().length() - 1) == ']')
+                && !"main".equals(thread.getName());
+        if (!cont) break;
+        threadGroup = threadGroup.getParent();
+
+        if (threadGroup.getName().equals(tg.getName())) {
+          if (log.isTraceEnabled()) {
+            log.trace("thread is {} state={}", thread.getName(), thread.getState());
+          }
+          if (interrupt(thread)) {
+            waitThreads.add(thread);
+          }
+        }
+      }
+    }
+
+    for (Thread thread : waitThreads) {
+      int cnt = 0;
+      do {
+        if (log.isDebugEnabled()) {
+          log.debug("waiting on {} {}", thread.getName(), thread.getState());
+        }
+        thread.interrupt();
+        try {
+          thread.join(5);
+        } catch (InterruptedException e) {
+          // ignore
+        }
+      } while (cnt++ < 20);
+    }
+
+    waitThreads.clear();
+  }
+
+  private static boolean interrupt(Thread thread) {
+
+    if (thread.getName().startsWith("Reference Handler")
+        || thread.getName().startsWith("Signal Dispatcher")
+        || thread.getName().startsWith("Monitor")
+        || thread.getName().startsWith("YJPAgent-RequestListener") || thread.getName().startsWith("TimeLimitedCollector")) {
+      return false;
+    }
+
+    if (thread.getName().startsWith("ForkJoinPool.")
+        || thread.getName().startsWith("Log4j2-")) {
+      return false;
+    }
+
+
+    if (thread.getName().startsWith("SessionTracker")) {
+      thread.interrupt();
+      return false;
+    }
+
+    // pool is forkjoin
+    if (thread.getName().contains("pool-")) {
+      thread.interrupt();
+      return false;
+    }
+
+    Thread.State state = thread.getState();
+
+    if (state == Thread.State.TERMINATED) {
+      return false;
+    }
+    if (log.isDebugEnabled()) {
+      log.debug("Interrupt on {} state={}", thread.getName(), thread.getState());
+    }
+    thread.interrupt();
+    return true;
   }
 }

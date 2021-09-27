@@ -184,14 +184,6 @@ import static org.hamcrest.core.StringContains.containsString;
 public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
-      "org.junit.",
-      "junit.framework.",
-      "sun.",
-      "java.lang.reflect.",
-      "com.carrotsearch.randomizedtesting.",
-  });
   
   public static final String DEFAULT_TEST_COLLECTION_NAME = "collection1";
   public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
@@ -373,17 +365,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       resetExceptionIgnores();
 
-      if (suiteFailureMarker.wasSuccessful()) {
-        // if the tests passed, make sure everything was closed / released
-        String orr = clearObjectTrackerAndCheckEmpty(60, false);
-        assertNull(orr, orr);
-      } else {
-        ObjectReleaseTracker.tryClose();
-      }
+
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
-      ObjectReleaseTracker.clear();
       TestInjection.reset();
       initCoreDataDir = null;
       System.clearProperty("solr.v2RealPath");
@@ -441,49 +426,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (ReflectiveOperationException e) {
       fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
     }
-  }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds) {
-    return clearObjectTrackerAndCheckEmpty(waitSeconds, false);
-  }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds, boolean tryClose) {
-    int retries = 0;
-    String result;
-    do {
-      result = ObjectReleaseTracker.checkEmpty();
-      if (result == null)
-        break;
-      try {
-        if (retries % 10 == 0) {
-          log.info("Waiting for all tracked resources to be released");
-          if (retries > 10) {
-            TraceFormatting tf = new TraceFormatting(DEFAULT_STACK_FILTERS);
-            Map<Thread,StackTraceElement[]> stacksMap = Thread.getAllStackTraces();
-            Set<Entry<Thread,StackTraceElement[]>> entries = stacksMap.entrySet();
-            for (Entry<Thread,StackTraceElement[]> entry : entries) {
-              String stack = tf.formatStackTrace(entry.getValue());
-              System.err.println(entry.getKey().getName() + ":\n" + stack);
-            }
-          }
-        }
-        TimeUnit.SECONDS.sleep(1);
-      } catch (InterruptedException e) { break; }
-    }
-    while (retries++ < waitSeconds);
-    
-    
-    log.info("------------------------------------------------------- Done waiting for tracked resources to be released");
-    
-    ObjectReleaseTracker.clear();
-    
-    return result;
   }
 
   @SuppressForbidden(reason = "Using the Level class from log4j2 directly")

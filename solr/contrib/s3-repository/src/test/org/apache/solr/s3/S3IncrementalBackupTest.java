@@ -21,6 +21,7 @@ import com.adobe.testing.s3mock.junit4.S3MockRule;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.slf4j.Logger;
@@ -35,9 +36,8 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
 
-  @ClassRule
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+  public static final S3Mock S3_MOCK_RULE =
+      S3Mock.builder().silent().withInitialBuckets(BUCKET_NAME).build();
 
   public static final String SOLR_XML =
       "<solr>\n"
@@ -84,10 +84,10 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   }
 
   @BeforeClass
-  public static void setupClass() throws Exception {
+  public static void beforeS3IncrementalBackupTest() throws Exception {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
-
+    S3_MOCK_RULE.start();
     configureCluster(NUM_SHARDS) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
         .withSolrXml(
@@ -97,6 +97,14 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
                 .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()))
         .configure();
   }
+
+  @AfterClass
+  public static void afterS3IncrementalBackupTest() throws Exception {
+    S3_MOCK_RULE.stop();
+    cluster.shutdown();
+    interruptThreadsOnTearDown();
+  }
+
 
   @Override
   public String getCollectionNamePrefix() {
