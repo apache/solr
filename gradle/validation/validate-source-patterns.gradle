@@ -115,7 +115,7 @@ configure(rootProject) {
       // default excludes.
       exclude '**/build/**'
       exclude '**/.idea/**'
-      exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
+      exclude 'dev-tools/solr-missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
 
       // ourselves :-)
       exclude 'gradle/validation/validate-source-patterns.gradle'
