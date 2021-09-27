@@ -35,6 +35,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,12 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int TIMEOUT = 10000;
+
+  @BeforeClass
+  public static void beforeTestAuthorizationFramework() {
+    System.clearProperty("solr.useTestInsecureRandom");
+  }
+
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),

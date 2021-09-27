@@ -16,17 +16,13 @@
  */
 package org.apache.solr.util;
 
-import java.security.SecureRandomParameters;
-import java.util.concurrent.ThreadLocalRandom;
 import javax.net.ssl.SSLContext;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
-import java.util.Random;
 import java.util.regex.Pattern;
 
 import org.apache.http.config.Registry;
@@ -166,7 +162,7 @@ public class SSLTestConfig {
     assert isSSLMode();
 
     SSLContextBuilder builder = SSLContexts.custom();
-    builder.setSecureRandom(NotSecurePseudoRandom.INSTANCE);
+    builder.setSecureRandom(NotSecurePseudoRandom.getInstance());
     
     // NOTE: KeyStore & TrustStore are swapped because they are from configured from server perspective...
     // we are a client - our keystore contains the keys the server trusts, and vice versa
@@ -218,7 +214,7 @@ public class SSLTestConfig {
         SslContextFactory.Server factory = new SslContextFactory.Server();
         try {
           SSLContextBuilder builder = SSLContexts.custom();
-          builder.setSecureRandom(NotSecurePseudoRandom.INSTANCE);
+          builder.setSecureRandom(NotSecurePseudoRandom.getInstance());
 
           builder.loadKeyMaterial(buildKeyStore(keyStore, TEST_PASSWORD), TEST_PASSWORD.toCharArray());
 
@@ -291,68 +287,6 @@ public class SSLTestConfig {
           .register("http", PlainConnectionSocketFactory.getSocketFactory()).build();
     }
   };
-
-  /**
-   * A mocked up instance of SecureRandom that just uses {@link Random} under the covers.
-   * This is to prevent blocking issues that arise in platform default
-   * SecureRandom instances due to too many instances / not enough random entropy.
-   * Tests do not need secure SSL.
-   */
-  private static class NotSecurePseudoRandom extends SecureRandom {
-    public static final SecureRandom INSTANCE = new NotSecurePseudoRandom();
-    /**
-     * Helper method that can be used to fill an array with non-zero data.
-     * (Attempted workarround of Solaris SSL Padding bug: SOLR-9068)
-     */
-    private static final byte[] fillData(byte[] data) {
-      ThreadLocalRandom.current().nextBytes(data);
-      return data;
-    }
-
-    /** SPI Used to init all instances */
-    private static final SecureRandomSpi NOT_SECURE_SPI = new SecureRandomSpi() {
-      /** returns a new byte[] filled with static data */
-      public byte[] engineGenerateSeed(int numBytes) {
-        return fillData(new byte[numBytes]);
-      }
-      /** fills the byte[] with static data */
-      public void engineNextBytes(byte[] bytes) {
-        fillData(bytes);
-      }
-      /** NOOP */
-      public void engineSetSeed(byte[] seed) { /* NOOP */ }
-    };
-
-    private NotSecurePseudoRandom() {
-      super(NOT_SECURE_SPI, null);
-    }
-
-    /** returns a new byte[] filled with static data */
-    public byte[] generateSeed(int numBytes) {
-      return fillData(new byte[numBytes]);
-    }
-    /** fills the byte[] with static data */
-    public void nextBytes(byte[] bytes) {
-      fillData(bytes);
-    }
-
-    public void nextBytes(byte[] bytes, SecureRandomParameters params) {
-      fillData(bytes);
-    }
-    /** NOOP */
-    public void setSeed(byte[] seed) { /* NOOP */ }
-    /** NOOP */
-    public void setSeed(long seed) { /* NOOP */ }
-
-    public void reseed() {
-      /* NOOP */
-    }
-
-    public void reseed(SecureRandomParameters params) {
-      /* NOOP */
-    }
-
-  }
 
   /**
    * Helper method for sanity checking if it's safe to use SSL on this JVM

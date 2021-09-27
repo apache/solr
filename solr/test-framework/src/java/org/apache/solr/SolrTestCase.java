@@ -92,6 +92,11 @@ public class SolrTestCase extends LuceneTestCase {
                      "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
              .around(new RevertDefaultThreadHandlerRule());
 
+  @BeforeClass
+  public static void beforeSolrTestCase() {
+    System.setProperty("solr.useTestInsecureRandom", "true");
+  }
+
   /**
    * Sets the <code>solr.default.confdir</code> system property to the value of 
    * {@link ExternalPaths#DEFAULT_CONFIGSET} if and only if the system property is not already set, 

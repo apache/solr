@@ -17,7 +17,11 @@
 package org.apache.solr.util;
 
 import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.security.SecureRandom;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,10 +244,23 @@ public final class CryptoKeys {
       KeyPairGenerator keyGen;
       try {
         keyGen = KeyPairGenerator.getInstance("RSA");
+        if (Boolean.getBoolean("solr.useTestInsecureRandom")) {
+          try {
+            Method method = Class.forName(
+                    "org.apache.solr.util.NotSecurePseudoRandom")
+                .getDeclaredMethod("getInstance");
+            SecureRandom random = (SecureRandom) method.invoke(null);
+            keyGen.initialize(512, random);
+          } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        } else {
+          keyGen.initialize(DEFAULT_KEYPAIR_LENGTH);
+        }
+
       } catch (NoSuchAlgorithmException e) {
         throw new AssertionError("JVM spec is required to support RSA", e);
       }
-      keyGen.initialize(DEFAULT_KEYPAIR_LENGTH);
       java.security.KeyPair keyPair = keyGen.genKeyPair();
       privateKey = keyPair.getPrivate();
       publicKey = keyPair.getPublic();
@@ -309,4 +326,5 @@ public final class CryptoKeys {
     }
 
   }
+
 }
