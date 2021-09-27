@@ -463,7 +463,7 @@ To use Kerberos authentication in a SolrJ application, you need the following tw
 [source,java]
 ----
 System.setProperty("java.security.auth.login.config", "/home/foo/jaas-client.conf");
-HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
+HttpClientUtil.setHttpClientBuilder(new Krb5HttpClientBuilder().getBuilder());
 ----
 
 You need to specify a Kerberos service principal for the client and a corresponding keytab in the JAAS client configuration file above.
