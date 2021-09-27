@@ -166,6 +166,7 @@ apply from: file('gradle/help.gradle')
 
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
+apply from: file('gradle/lucene-dev/lucene-explicit-dev-version.gradle')
 
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
 // here so that we can coexist with current ant build but they are indicative
@@ -193,3 +194,5 @@ apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
+
+

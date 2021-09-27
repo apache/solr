@@ -1,0 +1,23 @@
+// This script allows passing an explicit Lucene version and adds the local Maven repository
+// as a source of artifacts.
+
+def forcedLuceneVersion = propertyOrDefault("lucene.version", null)
+if (forcedLuceneVersion != null) {
+  logger.lifecycle("Forcing Lucene version to: ${forcedLuceneVersion}")
+
+  allprojects {
+    repositories {
+      mavenLocal()
+    }
+
+    configurations.all {
+      resolutionStrategy.eachDependency {
+        if (requested.group == "org.apache.lucene") {
+          useVersion(forcedLuceneVersion)
+          because("Lucene version forced manually by 'lucene.version' property.")
+        }
+      }
+    }
+  }
+}
+
