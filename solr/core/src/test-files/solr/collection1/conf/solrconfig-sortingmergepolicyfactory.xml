@@ -29,6 +29,7 @@
       <str name="sort">timestamp_i_dvo desc</str>
     </mergePolicyFactory>
     <lockType>${solr.tests.lockType:single}</lockType>
+    <indexSort>timestamp_i_dvo desc</indexSort>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler" />

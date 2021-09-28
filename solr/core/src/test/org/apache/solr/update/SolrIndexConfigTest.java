@@ -140,6 +140,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     final Sort expected = new Sort(new SortField(expectedFieldName, expectedFieldType, expectedFieldSortDescending));
     final Sort actual = sortingMergePolicy.getSort();
     assertEquals("SortingMergePolicy.getSort", expected, actual);
+    assertEquals("indexSort", expected, iwc.getIndexSort());
   }
 
   public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {

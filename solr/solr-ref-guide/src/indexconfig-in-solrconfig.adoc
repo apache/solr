@@ -67,6 +67,17 @@ Sets the maximum memory (defined in megabytes) consumption per thread triggering
 
 NOTE: This is an expert level parameter as it triggers forced flush even if <<ramBufferSizeMB>> has not been exceeded.
 
+=== indexSort
+
+TODO
+
+[source,xml]
+----
+<indexSort>timestamp desc</indexSort>
+----
+
+TODO
+
 == Merging Index Segments
 
 === mergePolicyFactory

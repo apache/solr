@@ -44,6 +44,8 @@ import org.apache.solr.index.MergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactoryArgs;
 import org.apache.solr.index.SortingMergePolicy;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +73,7 @@ public class SolrIndexConfig implements MapSerializable {
 
   public final int writeLockTimeout;
   public final String lockType;
+  public final String indexSort;
   public final PluginInfo mergePolicyFactoryInfo;
   public final PluginInfo mergeSchedulerInfo;
   public final PluginInfo metricsInfo;
@@ -89,6 +92,7 @@ public class SolrIndexConfig implements MapSerializable {
     ramPerThreadHardLimitMB = -1;
     writeLockTimeout = -1;
     lockType = DirectoryFactory.LOCK_TYPE_NATIVE;
+    indexSort = null;
     mergePolicyFactoryInfo = null;
     mergeSchedulerInfo = null;
     mergedSegmentWarmerInfo = null;
@@ -137,6 +141,7 @@ public class SolrIndexConfig implements MapSerializable {
 
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
+    indexSort=solrConfig.get(prefix+"/indexSort", def.indexSort);
 
     List<PluginInfo> infos = solrConfig.readPluginInfos(prefix + "/metrics", false, false);
     if (infos.isEmpty()) {
@@ -192,6 +197,9 @@ public class SolrIndexConfig implements MapSerializable {
     if (metricsInfo != null) {
       m.put("metrics", metricsInfo);
     }
+    if (indexSort != null) {
+      m.put("indexSort", indexSort);
+    }
     if (mergePolicyFactoryInfo != null) {
       m.put("mergePolicyFactory", mergePolicyFactoryInfo);
     }
@@ -238,9 +246,19 @@ public class SolrIndexConfig implements MapSerializable {
     iwc.setMergeScheduler(mergeScheduler);
     iwc.setInfoStream(infoStream);
 
+    if (indexSort != null) {
+      SortSpec indexSortSpec = SortSpecParsing.parseSortSpec(indexSort, schema);
+      iwc.setIndexSort(indexSortSpec.getSort());
+    }
+
     if (mergePolicy instanceof SortingMergePolicy) {
-      Sort indexSort = ((SortingMergePolicy) mergePolicy).getSort();
-      iwc.setIndexSort(indexSort);
+      Sort mergeSort = ((SortingMergePolicy) mergePolicy).getSort();
+      Sort indexSort = iwc.getIndexSort();
+      if (indexSort != null && !indexSort.equals(mergeSort)) {
+        log.warn("indexSort={} differs from mergePolicySort={}", indexSort, mergeSort);
+      } else {
+        iwc.setIndexSort(mergeSort);
+      }
     }
 
     iwc.setUseCompoundFile(useCompoundFile);
