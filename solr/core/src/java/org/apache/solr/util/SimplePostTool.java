@@ -624,8 +624,8 @@ public class SimplePostTool {
         if(result.httpStatus == 200) {
           url = (result.redirectUrl != null) ? result.redirectUrl : url;
           URL postUrl = new URL(appendParam(solrUrl.toString(),
-              "literal.id="+URLEncoder.encode(uri.toString(),"UTF-8") +
-              "&literal.url="+URLEncoder.encode(uri.toString(),"UTF-8")));
+              "literal.id="+URLEncoder.encode(url.toString(),"UTF-8") +
+              "&literal.url="+URLEncoder.encode(url.toString(),"UTF-8")));
           ByteBuffer content = result.content;
           boolean success = postData(new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), null, out, result.contentType, postUrl);
           if (success) {
@@ -1151,7 +1151,7 @@ public class SimplePostTool {
           info("The URL "+u+" caused a redirect to "+conn.getURL());
           u = conn.getURL();
           res.redirectUrl = u;
-          URI uri = new URI(u.toString());
+          URI uri = u.toURI();
           visited.add(uri);
         }
         if(res.httpStatus == 200) {
