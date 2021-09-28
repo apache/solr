@@ -19,23 +19,53 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
+
+import io.findify.s3mock.S3Mock;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /** Abstract class for test with S3Mock. */
 public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
   private static final String BUCKET_NAME = "test-bucket";
 
-  @ClassRule
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
-
   S3StorageClient client;
+
+  private static S3Mock s3Mock;
+  private static int s3MockPort;
+
+  @BeforeClass
+  public static void setUpS3Mock() {
+    s3Mock = S3Mock.create(0);
+    s3MockPort = s3Mock.start().localAddress().getPort();
+
+    try (S3Client s3 = S3Client.builder()
+        .endpointOverride(URI.create("http://localhost:" + s3MockPort))
+        .region(Region.of("us-west-2"))
+        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("foo", "bar")))
+        .serviceConfiguration(builder -> builder.pathStyleAccessEnabled(true))
+        .httpClientBuilder(UrlConnectionHttpClient.builder())
+        .build()) {
+      s3.createBucket(r -> r.bucket(BUCKET_NAME));
+    }
+  }
+
+  @AfterClass
+  public static void tearDownS3Mock() {
+    s3Mock.shutdown();
+  }
 
   @Before
   public void setUpClient() {
@@ -44,7 +74,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
     client =
         new S3StorageClient(
-            BUCKET_NAME, "us-east-1", "", false, "http://localhost:" + S3_MOCK_RULE.getHttpPort());
+            BUCKET_NAME, "us-east-1", "", false, "http://localhost:" + s3MockPort);
   }
 
   @After

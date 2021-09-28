@@ -78,8 +78,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     public void testCanDetermineWhetherFilesAndDirectoriesExist() throws Exception {
         try (BackupRepository repo = getRepository()) {
             // Create 'emptyDir/', 'nonEmptyDir/', and 'nonEmptyDir/file.txt'
-            final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
-            final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
+            final URI emptyDirUri = repo.resolveDirectory(getBaseUri(), "emptyDir");
+            final URI nonEmptyDirUri = repo.resolveDirectory(getBaseUri(), "nonEmptyDir");
             final URI nestedFileUri = repo.resolve(nonEmptyDirUri, "file.txt");
             repo.createDirectory(emptyDirUri);
             repo.createDirectory(nonEmptyDirUri);
@@ -96,8 +96,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     @Test
     public void testCanDistinguishBetweenFilesAndDirectories() throws Exception {
         try (BackupRepository repo = getRepository()) {
-            final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
-            final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
+            final URI emptyDirUri = repo.resolveDirectory(getBaseUri(), "emptyDir");
+            final URI nonEmptyDirUri = repo.resolveDirectory(getBaseUri(), "nonEmptyDir");
             final URI nestedFileUri = repo.resolve(nonEmptyDirUri, "file.txt");
             repo.createDirectory(emptyDirUri);
             repo.createDirectory(nonEmptyDirUri);
@@ -150,10 +150,10 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
             assertFalse(repo.exists(fileUri));
 
             // Delete the middle directory in a deeply nested structure (/nest1/nest2/nest3/nest4)
-            final URI level1DeeplyNestedUri = repo.resolve(getBaseUri(), "nest1");
-            final URI level2DeeplyNestedUri = repo.resolve(level1DeeplyNestedUri, "nest2");
-            final URI level3DeeplyNestedUri = repo.resolve(level2DeeplyNestedUri, "nest3");
-            final URI level4DeeplyNestedUri = repo.resolve(level3DeeplyNestedUri, "nest4");
+            final URI level1DeeplyNestedUri = repo.resolveDirectory(getBaseUri(), "nest1");
+            final URI level2DeeplyNestedUri = repo.resolveDirectory(level1DeeplyNestedUri, "nest2");
+            final URI level3DeeplyNestedUri = repo.resolveDirectory(level2DeeplyNestedUri, "nest3");
+            final URI level4DeeplyNestedUri = repo.resolveDirectory(level3DeeplyNestedUri, "nest4");
             repo.createDirectory(level1DeeplyNestedUri);
             repo.createDirectory(level2DeeplyNestedUri);
             repo.createDirectory(level3DeeplyNestedUri);
@@ -206,10 +206,10 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     @Test
     public void testCanListFullOrEmptyDirectories() throws Exception {
         try (BackupRepository repo = getRepository()) {
-            final URI rootUri = repo.resolve(getBaseUri(), "containsOtherDirs");
-            final URI otherDir1Uri = repo.resolve(rootUri, "otherDir1");
-            final URI otherDir2Uri = repo.resolve(rootUri, "otherDir2");
-            final URI otherDir3Uri = repo.resolve(rootUri, "otherDir3");
+            final URI rootUri = repo.resolveDirectory(getBaseUri(), "containsOtherDirs");
+            final URI otherDir1Uri = repo.resolveDirectory(rootUri, "otherDir1");
+            final URI otherDir2Uri = repo.resolveDirectory(rootUri, "otherDir2");
+            final URI otherDir3Uri = repo.resolveDirectory(rootUri, "otherDir3");
             final URI file1Uri = repo.resolve(otherDir3Uri, "file1.txt");
             final URI file2Uri = repo.resolve(otherDir3Uri, "file2.txt");
             repo.createDirectory(rootUri);
@@ -218,20 +218,14 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
             repo.createDirectory(otherDir3Uri);
             addFile(repo, file1Uri);
             addFile(repo, file2Uri);
+            addFile(repo, repo.resolve(otherDir1Uri, "file1.txt"));
+            addFile(repo, repo.resolve(otherDir2Uri, "file1.txt"));
 
-            final List<String> rootChildren = Lists.newArrayList(repo.listAll(rootUri));
-            assertEquals(3, rootChildren.size());
-            assertTrue(rootChildren.contains("otherDir1"));
-            assertTrue(rootChildren.contains("otherDir2"));
-            assertTrue(rootChildren.contains("otherDir3"));
+            assertArrayEquals(new String[]{"otherDir1", "otherDir2", "otherDir3"}, repo.listAll(rootUri));
 
-            final String[] otherDir2Children = repo.listAll(otherDir2Uri);
-            assertEquals(0, otherDir2Children.length);
+            assertEquals(0, repo.listAll(otherDir2Uri).length);
 
-            final List<String> otherDir3Children = Lists.newArrayList(repo.listAll(otherDir3Uri));
-            assertEquals(2, otherDir3Children.size());
-            assertTrue(otherDir3Children.contains("file1.txt"));
-            assertTrue(otherDir3Children.contains("file2.txt"));
+            assertArrayEquals(new String[]{"file1.txt", "file2.txt"}, repo.listAll(otherDir3Uri));
         }
     }
 

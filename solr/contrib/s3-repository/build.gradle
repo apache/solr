@@ -48,6 +48,8 @@ dependencies {
         exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
     }
 
+    testImplementation('io.findify:s3mock_2.13:0.2.6')
+
     testImplementation project(':solr:test-framework')
 }
 

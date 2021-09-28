@@ -46,9 +46,11 @@ public class S3PathsTest extends AbstractS3ClientTest {
   public void testDirectory() throws S3Exception {
 
     client.createDirectory("/simple-directory");
-    assertTrue(client.pathExists("/simple-directory"));
     assertTrue("Dir should exist without a leading slash", client.pathExists("simple-directory/"));
     assertTrue("Dir should exist with a leading slash", client.pathExists("/simple-directory/"));
+    assertTrue(
+        "Ending slash should be irrelevant for determining if dir is a dir",
+        client.isDirectory("simple-directory"));
     assertTrue(
         "Leading slash should be irrelevant for determining if dir is a dir",
         client.isDirectory("simple-directory/"));

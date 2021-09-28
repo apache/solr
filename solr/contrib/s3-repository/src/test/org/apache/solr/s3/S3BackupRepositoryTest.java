@@ -27,6 +27,9 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+
+import io.findify.s3mock.S3Mock;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -39,23 +42,48 @@ import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
-  private static final String BUCKET_NAME = S3BackupRepositoryTest.class.getSimpleName();
+  private static final String BUCKET_NAME = S3BackupRepositoryTest.class.getSimpleName().toLowerCase(Locale.ROOT);
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @ClassRule
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+  private static S3Mock s3Mock;
+  private static int s3MockPort;
+
+  @BeforeClass
+  public static void setUpS3Mock() {
+    s3Mock = S3Mock.create(0);
+    s3MockPort = s3Mock.start().localAddress().getPort();
+
+    try (S3Client s3 = S3Client.builder()
+        .endpointOverride(URI.create("http://localhost:" + s3MockPort))
+        .region(Region.of("us-west-2"))
+        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("foo", "bar")))
+        .serviceConfiguration(builder -> builder.pathStyleAccessEnabled(true))
+        .httpClientBuilder(UrlConnectionHttpClient.builder())
+        .build()) {
+      s3.createBucket(r -> r.bucket(BUCKET_NAME));
+    }
+  }
+
+  @AfterClass
+  public static void tearDownS3Mock() {
+    s3Mock.shutdown();
+  }
 
   /**
    * Sent by {@link org.apache.solr.handler.ReplicationHandler}, ensure we don't choke on the bare
@@ -103,13 +131,13 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
       URI path = new URI("/test");
       repo.createDirectory(path);
-      assertTrue(repo.exists(path));
+      assertTrue(repo.exists(URI.create(path + "/")));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(path));
       assertEquals("No files should exist in dir yet", repo.listAll(path).length, 0);
 
       URI subDir = new URI("/test/dir");
       repo.createDirectory(subDir);
-      assertTrue(repo.exists(subDir));
+      assertTrue(repo.exists(URI.create(subDir + "/")));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(subDir));
       assertEquals("No files should exist in subdir yet", repo.listAll(subDir).length, 0);
 
@@ -119,8 +147,8 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
           1);
 
       repo.deleteDirectory(path);
-      assertFalse(repo.exists(path));
-      assertFalse(repo.exists(subDir));
+      assertFalse(repo.exists(URI.create(path + "/")));
+      assertFalse(repo.exists(URI.create(subDir + "/")));
     }
   }
 
@@ -249,7 +277,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       File tmp = temporaryFolder.newFolder();
 
       // Open an index input on a file
-      pushObject("/my-repo/content", content);
+      pushObject("my-repo/content", content);
       IndexInput input = repo.openInput(new URI("s3://my-repo"), "content", IOContext.DEFAULT);
 
       byte[] buffer = new byte[100];
@@ -274,14 +302,13 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   /** Check we gracefully fail when seeking before current position of the stream. */
   @Test
   public void testBackwardRandomAccess() throws Exception {
-
     try (S3BackupRepository repo = getRepository()) {
 
       // Open an index input on a file
       String blank = Strings.repeat(" ", 5 * BufferedIndexInput.BUFFER_SIZE);
       String content = "This is the file " + blank + "content";
 
-      pushObject("/content", content);
+      pushObject("content", content);
       IndexInput input = repo.openInput(new URI("s3:///"), "content", IOContext.DEFAULT);
 
       // Read twice the size of the internal buffer, so first bytes are not in the buffer anymore
@@ -316,20 +343,30 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   @Override
   protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
     NamedList<Object> args = new NamedList<>();
-    args.add(S3BackupRepositoryConfig.REGION, Region.US_EAST_1.id());
+    args.add(S3BackupRepositoryConfig.REGION, "us-west-2");
     args.add(S3BackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
-    args.add(S3BackupRepositoryConfig.ENDPOINT, "http://localhost:" + S3_MOCK_RULE.getHttpPort());
+    args.add(S3BackupRepositoryConfig.ENDPOINT, "http://localhost:" + s3MockPort);
     return args;
   }
 
+  private S3Client createS3Client() {
+    return S3Client.builder()
+        .endpointOverride(URI.create("http://localhost:" + s3MockPort))
+        .region(Region.of("us-west-2"))
+        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("foo", "bar")))
+        .serviceConfiguration(builder -> builder.pathStyleAccessEnabled(true))
+        .httpClientBuilder(UrlConnectionHttpClient.builder())
+        .build();
+  }
+
   private void pushObject(String path, String content) {
-    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+    try (S3Client s3 = createS3Client()) {
       s3.putObject(b -> b.bucket(BUCKET_NAME).key(path), RequestBody.fromString(content));
     }
   }
 
   private File pullObject(String path) throws IOException {
-    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+    try (S3Client s3 = createS3Client()) {
       File file = temporaryFolder.newFile();
       InputStream input = s3.getObject(b -> b.bucket(BUCKET_NAME).key(path));
       FileUtils.copyInputStreamToFile(input, file);

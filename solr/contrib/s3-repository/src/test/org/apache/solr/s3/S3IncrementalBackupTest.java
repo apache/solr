@@ -19,13 +19,22 @@ package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.Locale;
+
+import io.findify.s3mock.S3Mock;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @LuceneTestCase.SuppressCodecs({
   "SimpleText"
@@ -33,11 +42,43 @@ import software.amazon.awssdk.regions.Region;
 public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
+  private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName().toLowerCase(Locale.ROOT);
 
-  @ClassRule
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+  private static S3Mock s3Mock;
+  private static int s3MockPort;
+
+  @BeforeClass
+  public static void setUpS3Mock() throws Exception {
+    s3Mock = S3Mock.create(0);
+    s3MockPort = s3Mock.start().localAddress().getPort();
+
+    try (S3Client s3 = S3Client.builder()
+        .endpointOverride(URI.create("http://localhost:" + s3MockPort))
+        .region(Region.of("us-west-2"))
+        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("foo", "bar")))
+        .serviceConfiguration(builder -> builder.pathStyleAccessEnabled(true))
+        .httpClientBuilder(UrlConnectionHttpClient.builder())
+        .build()) {
+      s3.createBucket(r -> r.bucket(BUCKET_NAME));
+    }
+
+    System.setProperty("aws.accessKeyId", "foo");
+    System.setProperty("aws.secretAccessKey", "bar");
+
+    configureCluster(NUM_SHARDS) // nodes
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
+        .withSolrXml(
+            SOLR_XML
+                .replace("BUCKET", BUCKET_NAME)
+                .replace("REGION", Region.US_EAST_1.id())
+                .replace("ENDPOINT", "http://localhost:" + s3MockPort))
+        .configure();
+  }
+
+  @AfterClass
+  public static void tearDownS3Mock() {
+    s3Mock.shutdown();
+  }
 
   public static final String SOLR_XML =
       "<solr>\n"
@@ -85,17 +126,6 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("aws.accessKeyId", "foo");
-    System.setProperty("aws.secretAccessKey", "bar");
-
-    configureCluster(NUM_SHARDS) // nodes
-        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
-        .withSolrXml(
-            SOLR_XML
-                .replace("BUCKET", BUCKET_NAME)
-                .replace("REGION", Region.US_EAST_1.id())
-                .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()))
-        .configure();
   }
 
   @Override

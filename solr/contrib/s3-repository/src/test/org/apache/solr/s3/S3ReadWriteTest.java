@@ -90,8 +90,8 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
         assertThrows(
             "Getting length on a dir should throw exception",
             S3Exception.class,
-            () -> client.length("/directory"));
-    assertEquals("Path is Directory", exception.getMessage());
+            () -> client.length("/directory/"));
+    assertEquals("Invalid Path. Path for file can't end with '/'", exception.getMessage());
   }
 
   /** Check various method throws the expected exception of a missing S3 key. */

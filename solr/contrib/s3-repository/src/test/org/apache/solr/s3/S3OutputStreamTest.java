@@ -16,30 +16,62 @@
  */
 package org.apache.solr.s3;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.Locale;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import io.findify.s3mock.S3Mock;
 
 public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
-  private static final String BUCKET = S3OutputStreamTest.class.getSimpleName();
+  private static final String BUCKET = S3OutputStreamTest.class.getSimpleName().toLowerCase(Locale.ROOT);
 
-  @ClassRule
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET).build();
+  private static S3Client s3;
 
-  private S3Client s3;
+  private static S3Mock s3Mock;
 
-  @Before
+  @BeforeClass
+  public static void setUpS3Mock() {
+    s3Mock = S3Mock.create(0);
+    int s3MockPort = s3Mock.start().localAddress().getPort();
+
+    /* AWS S3 client setup.
+     *  withPathStyleAccessEnabled(true) trick is required to overcome S3 default
+     *  DNS-based bucket access scheme
+     *  resulting in attempts to connect to addresses like "bucketname.localhost"
+     *  which requires specific DNS setup.
+     */
+    s3 = S3Client.builder()
+        .endpointOverride(URI.create("http://localhost:" + s3MockPort))
+        .region(Region.of("us-west-2"))
+        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("foo", "bar")))
+        .serviceConfiguration(builder -> builder.pathStyleAccessEnabled(true))
+        .httpClientBuilder(UrlConnectionHttpClient.builder())
+        .build();
+
+    s3.createBucket(r -> r.bucket(BUCKET));
+  }
+
+  @AfterClass
+  public static void tearDownS3Mock() {
+    s3Mock.shutdown();
+    s3.close();
+  }
+
+  /*@Before
   public void setUpClient() {
     s3 = S3_MOCK_RULE.createS3ClientV2();
   }
@@ -47,7 +79,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
   @After
   public void tearDownClient() {
     s3.close();
-  }
+  }*/
 
   /**
    * Basic check writing content byte-by-byte. They should be kept in the internal buffer and

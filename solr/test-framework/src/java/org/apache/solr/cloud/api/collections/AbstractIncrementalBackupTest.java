@@ -533,7 +533,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             BackupId prevBackupId = new BackupId(Math.max(0, numBackup - 1));
 
             URI backupPropertiesFile = repository.resolve(backupURI, "backup_"+numBackup+".properties");
-            URI zkBackupFolder = repository.resolve(backupURI, "zk_backup_"+numBackup);
+            URI zkBackupFolder = repository.resolveDirectory(backupURI, "zk_backup_"+numBackup);
             assertTrue(repository.exists(backupPropertiesFile));
             assertTrue(repository.exists(zkBackupFolder));
             assertFolderAreSame(repository.resolveDirectory(backupURI, BackupFilePaths.getZkStateDir(prevBackupId)), zkBackupFolder);

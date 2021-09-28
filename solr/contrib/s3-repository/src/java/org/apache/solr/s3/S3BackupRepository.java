@@ -254,7 +254,11 @@ public class S3BackupRepository implements BackupRepository {
       log.debug("getPathType for '{}'", s3Path);
     }
 
-    return client.isDirectory(s3Path) ? PathType.DIRECTORY : PathType.FILE;
+    try {
+      return client.isDirectory(s3Path) ? PathType.DIRECTORY : PathType.FILE;
+    } catch (S3NotFoundException nfe) {
+      return PathType.FILE;
+    }
   }
 
   /**
