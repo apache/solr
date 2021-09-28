@@ -148,6 +148,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15630: Logging MDC values no longer include a hardcoded prefix, allowing custom logging configurations access to the plain values.
   The default log4j2.xml PatternLayout has been updated to ensure the values are formatted with the existing prefixes. (hossman)
 
+* SOLR-15650: Choosing lucene defType in Solr Admin now is passed explicitly through UI, not relying on default solrconfig.xml behavior.  (Eric Pugh)
+
+
 Build
 ---------------------
 
