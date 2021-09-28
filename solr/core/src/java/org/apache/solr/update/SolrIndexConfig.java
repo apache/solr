@@ -215,7 +215,7 @@ public class SolrIndexConfig implements MapSerializable {
       map.put("metrics", metricsInfo);
     }
     if (indexSort != null) {
-      m.put("indexSort", indexSort);
+      map.put("indexSort", indexSort);
     }
     if (mergePolicyFactoryInfo != null) {
       map.put("mergePolicyFactory", mergePolicyFactoryInfo);
