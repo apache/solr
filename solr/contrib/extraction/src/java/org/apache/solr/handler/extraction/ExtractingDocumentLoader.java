@@ -190,7 +190,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           if (xpathExpr != null) {
             Matcher matcher =
                     PARSER.parse(xpathExpr);
-            serializer.startDocument();//The MatchingContentHandler does not invoke startDocument.  See http://tika.markmail.org/message/kknu3hw7argwiqin
+            serializer.startDocument();//The MatchingContentHandler does not invoke startDocument.  See https://lists.apache.org/thread.html/5ec63e104e564a2363e45f74d5aced6520b7d32b4b625762ef56cb86%401226775505%40%3Cdev.tika.apache.org%3E
             parsingHandler = new MatchingContentHandler(serializer, matcher);
           } else {
             parsingHandler = serializer;
@@ -215,7 +215,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           if(pwMapFile != null && pwMapFile.length() > 0) {
             InputStream is = req.getCore().getResourceLoader().openResource(pwMapFile);
             if(is != null) {
-              log.debug("Password file supplied: "+pwMapFile);
+              log.debug("Password file supplied: {}", pwMapFile);
               epp.parse(is);
             }
           }
@@ -223,13 +223,13 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           String resourcePassword = params.get(ExtractingParams.RESOURCE_PASSWORD);
           if(resourcePassword != null) {
             epp.setExplicitPassword(resourcePassword);
-            log.debug("Literal password supplied for file "+resourceName);
+            log.debug("Literal password supplied for file {}", resourceName);
           }
           parser.parse(inputStream, parsingHandler, metadata, context);
         } catch (TikaException e) {
           if(ignoreTikaException)
             log.warn(new StringBuilder("skip extracting text due to ").append(e.getLocalizedMessage())
-                .append(". metadata=").append(metadata.toString()).toString());
+                .append(". metadata=").append(metadata.toString()).toString()); // nowarn
           else
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
@@ -243,7 +243,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           rsp.add(stream.getName(), writer.toString());
           writer.close();
           String[] names = metadata.names();
-          NamedList metadataNL = new NamedList();
+          NamedList<String[]> metadataNL = new NamedList<>();
           for (int i = 0; i < names.length; i++) {
             String[] vals = metadata.getValues(names[i]);
             metadataNL.add(names[i], vals);

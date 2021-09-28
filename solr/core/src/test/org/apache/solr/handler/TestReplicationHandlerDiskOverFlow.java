@@ -47,8 +47,8 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.handler.ReplicationHandler.CMD_FETCH_INDEX;
 import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
 import static org.apache.solr.handler.TestReplicationHandler.createAndStartJetty;
-import static org.apache.solr.handler.TestReplicationHandler.createNewSolrClient;
-import static org.apache.solr.handler.TestReplicationHandler.invokeReplicationCommand;
+import static org.apache.solr.handler.ReplicationTestHelper.invokeReplicationCommand;
+
 
 @LogLevel("org.apache.solr.handler.IndexFetcher=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
@@ -59,9 +59,9 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   Function<String, Long> originalDiskSpaceprovider = null;
   BooleanSupplier originalTestWait = null;
   
-  JettySolrRunner masterJetty, slaveJetty;
-  SolrClient masterClient, slaveClient;
-  TestReplicationHandler.SolrInstance master = null, slave = null;
+  JettySolrRunner leaderJetty, followerJetty;
+  SolrClient leaderClient, followerClient;
+  ReplicationTestHelper.SolrInstance leader = null, follower = null;
 
   static String context = "/solr";
 
@@ -74,15 +74,16 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     String factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
     System.setProperty("solr.directoryFactory", factory);
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
-    masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader.setUp();
+    leaderJetty = createAndStartJetty(leader);
+    leaderClient = ReplicationTestHelper.createNewSolrClient( TestReplicationHandler.buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+    System.setProperty(TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl().toString());
 
-    slave = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "slave", masterJetty.getLocalPort());
-    slave.setUp();
-    slaveJetty = createAndStartJetty(slave);
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    follower = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+    follower.setUp();
+    followerJetty = createAndStartJetty(follower);
+    followerClient = ReplicationTestHelper.createNewSolrClient( TestReplicationHandler.buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
@@ -91,23 +92,24 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    if (null != masterJetty) {
-      masterJetty.stop();
-      masterJetty = null;
+    if (null != leaderJetty) {
+      leaderJetty.stop();
+      leaderJetty = null;
     }
-    if (null != slaveJetty) {
-      slaveJetty.stop();
-       slaveJetty = null;
+    if (null != followerJetty) {
+      followerJetty.stop();
+       followerJetty = null;
     }
-    master = slave = null;
-    if (null != masterClient) {
-      masterClient.close();
-      masterClient = null;
+    leader = follower = null;
+    if (null != leaderClient) {
+      leaderClient.close();
+      leaderClient = null;
     }
-    if (null != slaveClient) {
-      slaveClient.close();
-      slaveClient = null;
+    if (null != followerClient) {
+      followerClient.close();
+      followerClient = null;
     }
+    System.clearProperty(TEST_URL_ALLOW_LIST);
     System.clearProperty("solr.indexfetcher.sotimeout");
     
     IndexFetcher.usableDiskSpaceProvider = originalDiskSpaceprovider;
@@ -116,18 +118,18 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
   @Test
   public void testDiskOverFlow() throws Exception {
-    invokeReplicationCommand(slaveJetty.getLocalPort(), "disablepoll");
+    invokeReplicationCommand(TestReplicationHandler.buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
     //index docs
-    log.info("Indexing to MASTER");
-    int docsInMaster = 1000;
-    long szMaster = indexDocs(masterClient, docsInMaster, 0);
-    log.info("Indexing to SLAVE");
-    long szSlave = indexDocs(slaveClient, 1200, 1000);
+    log.info("Indexing to LEADER");
+    int docsInLeader = 1000;
+    long szLeader = indexDocs(leaderClient, docsInLeader, 0);
+    log.info("Indexing to FOLLOWER");
+    long szFollower = indexDocs(followerClient, 1200, 1000);
 
     IndexFetcher.usableDiskSpaceProvider = new Function<String, Long>() {
       @Override
       public Long apply(String s) {
-        return szMaster;
+        return szLeader;
       }
     };
 
@@ -161,7 +163,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
             assertNotNull("why is query thread still looping if barrier has already been cleared?",
                           barrier);
             try {
-              QueryResponse rsp = slaveClient.query(new SolrQuery()
+              QueryResponse rsp = followerClient.query(new SolrQuery()
                                                     .setQuery("*:*")
                                                     .setRows(0));
               Thread.sleep(200);
@@ -187,7 +189,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
         }
       }).start();
 
-    QueryResponse response = slaveClient.query(new SolrQuery()
+    QueryResponse response = followerClient.query(new SolrQuery()
                                                .add("qt", "/replication")
                                                .add("command", CMD_FETCH_INDEX)
                                                .add("wait", "true")
@@ -196,23 +198,26 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                  "OK", response._getStr("status", null));
     
     assertEquals("threads encountered failures (see logs for when)",
-                 Collections.EMPTY_LIST, threadFailures);
+                 Collections.emptyList(), threadFailures);
 
-    response = slaveClient.query(new SolrQuery().setQuery("*:*").setRows(0));
-    assertEquals("docs in slave", docsInMaster, response.getResults().getNumFound());
+    response = followerClient.query(new SolrQuery().setQuery("*:*").setRows(0));
+    assertEquals("docs in follower", docsInLeader, response.getResults().getNumFound());
 
-    response = slaveClient.query(new SolrQuery()
+    response = followerClient.query(new SolrQuery()
         .add("qt", "/replication")
         .add("command", ReplicationHandler.CMD_DETAILS)
     );
-    log.info("DETAILS" + Utils.writeJson(response, new StringWriter(), true).toString());
-    assertEquals("slave's clearedLocalIndexFirst (from rep details)",
-                 "true", response._getStr("details/slave/clearedLocalIndexFirst", null));
+    if (log.isInfoEnabled()) {
+      log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true).toString());
+    }
+    assertEquals("follower's clearedLocalIndexFirst (from rep details)",
+                 "true", response._getStr("details/follower/clearedLocalIndexFirst", null));
   }
 
+  @SuppressWarnings("unchecked")
   private long indexDocs(SolrClient client, int totalDocs, int start) throws Exception {
     for (int i = 0; i < totalDocs; i++)
-      TestReplicationHandler.index(client, "id", i + start, "name", TestUtil.randomSimpleString(random(), 1000, 5000));
+      ReplicationTestHelper.index(client, "id", i + start, "name", TestUtil.randomSimpleString(random(), 1000, 5000));
     client.commit(true, true);
     QueryResponse response = client.query(new SolrQuery()
         .add("qt", "/replication")
@@ -220,7 +225,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
         .add("generation", "-1"));
 
     long totalSize = 0;
-    for (Map map : (List<Map>) response.getResponse().get(CMD_GET_FILE_LIST)) {
+    for (Map<?, ?> map : (List<Map<?, ?>>) response.getResponse().get(CMD_GET_FILE_LIST)) {
       Long sz = (Long) map.get(ReplicationHandler.SIZE);
       totalSize += sz;
     }

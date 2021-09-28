@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.apache.http.client.HttpClient;
@@ -60,7 +61,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     MockAuthorizationPlugin.denyUsers.add("user1");
 
     try {
-      waitForThingsToLevelOut(10);
+      waitForThingsToLevelOut(10, TimeUnit.SECONDS);
       String baseUrl = jettys.get(0).getBaseUrl().toString();
       verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
       log.info("Starting test");
@@ -72,10 +73,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
       // This user is blacklisted in the mock. The request should return a 403.
       params.add("uname", "user1");
-      try {
-        cloudClient.query(params);
-        fail("This should have failed");
-      } catch (Exception e) {}
+      expectThrows(Exception.class, () -> cloudClient.query(params));
       log.info("Ending test");
     } finally {
       MockAuthorizationPlugin.denyUsers.clear();
@@ -98,11 +96,12 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     for (int i = 0; i < count; i++) {
       HttpGet get = new HttpGet(url);
       s = EntityUtils.toString(cl.execute(get, HttpClientUtil.createNewHttpClientRequestContext()).getEntity());
-      Map m = (Map) Utils.fromJSONString(s);
+      Map<?, ?> m = (Map<?, ?>) Utils.fromJSONString(s);
 
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected instanceof Predicate) {
-        Predicate predicate = (Predicate) expected;
+        @SuppressWarnings("unchecked")
+        Predicate<Object> predicate = (Predicate<Object>) expected;
         if (predicate.test(actual)) {
           success = true;
           break;

@@ -70,18 +70,22 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
     }
 
 
-    KMeansPlusPlusClusterer<ClusterPoint> kmeans = new KMeansPlusPlusClusterer(k, maxIterations);
-    List<ClusterPoint> points = new ArrayList();
+    KMeansPlusPlusClusterer<ClusterPoint> kmeans = new KMeansPlusPlusClusterer<>(k, maxIterations);
+    List<ClusterPoint> points = new ArrayList<>();
     double[][] data = matrix.getData();
 
     List<String> ids = matrix.getRowLabels();
 
     for(int i=0; i<data.length; i++) {
       double[] vec = data[i];
-      points.add(new ClusterPoint(ids.get(i), vec));
+      if(ids != null) {
+        points.add(new ClusterPoint(ids.get(i), vec));
+      } else {
+        points.add(new ClusterPoint(Integer.toString(i), vec));
+      }
     }
 
-    Map fields = new HashMap();
+    Map<String, Object> fields = new HashMap<>();
 
     fields.put("k", k);
     fields.put("distance", "euclidean");
@@ -115,7 +119,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
     private List<CentroidCluster<ClusterPoint>> clusters;
     private Matrix membershipMatrix;
 
-    public ClusterTuple(Map fields,
+    public ClusterTuple(Map<String, ?> fields,
                         List<CentroidCluster<ClusterPoint>> clusters,
                         List<String> columnLabels) {
       super(fields);
@@ -123,7 +127,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
       this.columnLabels = columnLabels;
     }
 
-    public ClusterTuple(Map fields,
+    public ClusterTuple(Map<String, ?> fields,
                         List<CentroidCluster<ClusterPoint>> clusters,
                         List<String> columnLabels,
                         Matrix membershipMatrix) {

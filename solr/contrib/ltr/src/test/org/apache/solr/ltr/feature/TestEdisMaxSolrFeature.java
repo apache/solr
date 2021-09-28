@@ -19,14 +19,14 @@ package org.apache.solr.ltr.feature;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestEdisMaxSolrFeature extends TestRerankBase {
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void before() throws Exception {
     setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
@@ -48,8 +48,8 @@ public class TestEdisMaxSolrFeature extends TestRerankBase {
     assertU(commit());
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void after() throws Exception {
     aftertest();
   }
 
@@ -70,6 +70,25 @@ public class TestEdisMaxSolrFeature extends TestRerankBase {
 
     query.add("rq", "{!ltr model=EdisMax-model reRankDocs=4}");
     query.set("debugQuery", "on");
+    restTestHarness.query("/query" + query.toQueryString());
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
+  }
+
+  @Test
+  public void testEdisMaxSolrFeatureCustomMM() throws Exception {
+    loadFeature(
+        "SomeEdisMaxMM1",
+        SolrFeature.class.getName(),
+        "{\"q\":\"{!edismax qf='title' mm=1}${term}\"}");
+    loadFeature(
+        "SomeEdisMaxMM5",
+        SolrFeature.class.getName(),
+        "{\"q\":\"{!edismax qf='title' mm=5}${term}\"}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:w1 w2 w3 w4 w5 w6 w7 w8");
+    query.add("fl", "*,features:[fv store=test efi.term=\"w1 w2 w3 w4 w5 w6 w7 w8\"]");
+
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
   }

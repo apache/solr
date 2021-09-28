@@ -85,32 +85,28 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[0]=='brwn'"
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-    try {
-      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6")
-          ,"/spellcheck/suggestions/[1]/numFound==1"
-       );
-      fail("there should have been no suggestions (6<7)");
-    } catch(Exception e) {
-      //correctly threw exception
-    }
+
+   expectThrows(Exception.class, () -> {
+     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
+         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6")
+         ,"/spellcheck/suggestions/[1]/numFound==1"
+     );
+   });
+
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".90")
         ,"/spellcheck/suggestions/[0]=='brwn'"
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-    try {
+
+    expectThrows(Exception.class, () -> {
       assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
           "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
           SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".80")
           ,"/spellcheck/suggestions/[1]/numFound==1"
-       );
-      fail("there should have been no suggestions ((.8 * 8)<7)");
-    } catch(Exception e) {
-      //correctly threw exception
-    }
-    
+      );
+    });
     
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "id:[0 TO 9]", 
@@ -118,16 +114,14 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[0]=='brwn'"
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-    try {
+
+    expectThrows(Exception.class, () -> {
       assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-          "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*", 
+          "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*",
           SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".64")
           ,"/spellcheck/suggestions/[1]/numFound==1"
-       );
-      fail("there should have been no suggestions ((.64 * 10)<7)");
-    } catch(Exception e) {
-      //correctly threw exception
-    }
+      );
+    });
   } 
   
   @Test
@@ -236,7 +230,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     );
   }
   
-  @SuppressWarnings("unchecked")
   @Test
   public void testRelativeIndexDirLocation() throws Exception {
     SolrCore core = h.getCore();
@@ -259,8 +252,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         "default", "spellcheck.build", "true");
     assertQ(request, "//arr[@name='suggestion'][.='title']");
 
-    NamedList args = new NamedList();
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> args = new NamedList<>();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "default");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "lowerfilt");
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, "spellchecker1");
@@ -288,9 +281,9 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     }
 
     rb.req.close();
+    checker.close();
   }
   
-    @SuppressWarnings("unchecked")
     @Test
   public void testRebuildOnCommit() throws Exception {
     SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "/spellCheckCompRH", "spellcheck", "true");
@@ -332,26 +325,26 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
         SolrRequestHandler handler = core.getRequestHandler("/spellCheckCompRH");
         SolrQueryResponse rsp = new SolrQueryResponse();
-        rsp.addResponseHeader(new SimpleOrderedMap());
+        rsp.addResponseHeader(new SimpleOrderedMap<>());
         SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
         handler.handleRequest(req, rsp);
         req.close();
-        NamedList values = rsp.getValues();
-        NamedList spellCheck = (NamedList) values.get("spellcheck");
-        NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+        NamedList<?> values = rsp.getValues();
+        NamedList<?> spellCheck = (NamedList<?>) values.get("spellcheck");
+        NamedList<?> suggestions = (NamedList<?>) spellCheck.get("suggestions");
         assertTrue(suggestions.get("suggestion")==null);
         assertTrue((Boolean) spellCheck.get("correctlySpelled")==false);
 
         params.remove(SpellingParams.SPELLCHECK_DICT);
         params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
         rsp = new SolrQueryResponse();
-        rsp.addResponseHeader(new SimpleOrderedMap());
+        rsp.addResponseHeader(new SimpleOrderedMap<>());
         req = new LocalSolrQueryRequest(core, params);
         handler.handleRequest(req, rsp);
         req.close();
         values = rsp.getValues();
-        spellCheck = (NamedList) values.get("spellcheck");
-        suggestions = (NamedList) spellCheck.get("suggestions");
+        spellCheck = (NamedList<?>) values.get("spellcheck");
+                suggestions = (NamedList<?>) spellCheck.get("suggestions");
         assertTrue(suggestions.get("suggestion")==null);
         assertTrue((Boolean) spellCheck.get("correctlySpelled")==false);
     }

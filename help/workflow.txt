@@ -1,0 +1,41 @@
+Typical workflow and tasks
+==========================
+
+This shows some typical workflow gradle commands.
+
+Run tests on a module:
+gradlew -p solr/core test
+
+Run test of a single-class (run "gradlew :helpTests" for more):
+gradlew -p solr/core test --tests "*Demo*"
+
+Run all tests and validation checks on a module:
+gradlew -p solr/core check
+
+Run all tests and validation checks on everything:
+gradlew check
+
+Run all validation checks but skip all tests:
+gradlew check -x test
+
+Assemble a single module's JAR (here for solr-core):
+gradlew -p solr/core assemble
+ls solr/core/build/libs
+
+Create all distributable packages, POMs, etc. and create a
+local maven repository for inspection:
+gradlew mavenLocal
+ls -R build/maven-local/
+
+Put together Solr distribution:
+gradlew -p solr/packaging assemble
+ls solr/packaging/build/distributions/solr-* # release archives
+ls solr/packaging/build/solr-*               # expanded directory
+
+
+Other validation and checks
+===========================
+
+Generate a report of dependencies with known OWASP vulnerabilities:
+gradlew :dependencyCheckAnalyze
+open ./build/reports/dependency-check-report.html

@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import org.apache.lucene.mockfile.FilterPath;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
@@ -37,7 +38,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
 
   @BeforeClass
   public static void setupLoader() throws Exception {
-    solrHome = Paths.get(createTempDir().toAbsolutePath().toString());
+    solrHome = FilterPath.unwrap(createTempDir()); // FilterPath can interfere
     loader = new SolrResourceLoader(solrHome);
   }
 
@@ -82,13 +83,13 @@ public class DirectoryFactoryTest extends SolrTestCase {
     Properties cp = cc.getContainerProperties();
     DirectoryFactory df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
-    df.init(new NamedList());
+    df.init(new NamedList<>());
 
     // No solr.data.home property set. Absolute instanceDir
     assertDataHome("/tmp/inst1/data", "/tmp/inst1", df, cc);
 
     // Simulate solr.data.home set in solrconfig.xml <directoryFactory> tag
-    NamedList args = new NamedList();
+    NamedList<String> args = new NamedList<>();
     args.add("solr.data.home", "/solrdata/");
     df.init(args);
     assertDataHome("/solrdata/inst_dir/data", "inst_dir", df, cc);
@@ -99,7 +100,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     cc = new CoreContainer(config);
     df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
-    df.init(new NamedList());
+    df.init(new NamedList<>());
     assertDataHome(solrHome.resolve("solrdata/inst_dir/data").toAbsolutePath().toString(), "inst_dir", df, cc);
     // Test parsing last component of instanceDir, and using custom dataDir
     assertDataHome(solrHome.resolve("solrdata/myinst/mydata").toAbsolutePath().toString(), "/path/to/myinst", df, cc, "dataDir", "mydata");
@@ -109,18 +110,19 @@ public class DirectoryFactoryTest extends SolrTestCase {
     cc = new CoreContainer(config);
     df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
-    df.init(new NamedList());
+    df.init(new NamedList<>());
     assertDataHome("/foo/inst_dir/data", "inst_dir", df, cc);
   }
 
   private void assertDataHome(String expected, String instanceDir, DirectoryFactory df, CoreContainer cc, String... properties) throws IOException {
-    String dataHome = df.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
+    String dataHome = df.getDataHome(
+            new CoreDescriptor("core_name", Paths.get(instanceDir).toAbsolutePath(), cc, properties));
     assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 
 
   private NodeConfig loadNodeConfig(String config) throws Exception {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
-    return SolrXmlConfig.fromInputStream(loader, is);
+    return SolrXmlConfig.fromInputStream(solrHome, is, new Properties());
   }
 }

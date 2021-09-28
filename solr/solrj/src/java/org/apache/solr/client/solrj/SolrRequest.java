@@ -19,11 +19,9 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.Principal;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -31,8 +29,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-
-import static java.util.Collections.unmodifiableSet;
 
 /**
  * 
@@ -58,11 +54,25 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
-  public static final Set<String> SUPPORTED_METHODS = unmodifiableSet(new HashSet<>(Arrays.<String>asList(
+  public enum SolrRequestType {
+    QUERY,
+    UPDATE,
+    SECURITY,
+    ADMIN,
+    STREAMING,
+    UNSPECIFIED
+  };
+
+  public enum SolrClientContext {
+    CLIENT,
+    SERVER
+  };
+
+  public static final Set<String> SUPPORTED_METHODS = Set.of(
       METHOD.GET.toString(),
       METHOD.POST.toString(),
       METHOD.PUT.toString(),
-      METHOD.DELETE.toString())));
+      METHOD.DELETE.toString());
 
   private METHOD method = METHOD.GET;
   private String path = null;
@@ -78,14 +88,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   /**If set to true, every request that implements {@link V2RequestSupport} will be converted
    * to a V2 API call
    */
-  public SolrRequest setUseV2(boolean flag){
+  public SolrRequest<T> setUseV2(boolean flag){
     this.usev2 = flag;
     return this;
   }
 
   /**If set to true use javabin instead of json (default)
    */
-  public SolrRequest setUseBinaryV2(boolean flag){
+  public SolrRequest<T> setUseBinaryV2(boolean flag){
     this.useBinaryV2 = flag;
     return this;
   }
@@ -94,7 +104,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private String basePath;
 
-  public SolrRequest setBasicAuthCredentials(String user, String password) {
+  public SolrRequest<T> setBasicAuthCredentials(String user, String password) {
     this.basicAuthUser = user;
     this.basicAuthPwd = password;
     return this;
@@ -168,6 +178,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public void setQueryParams(Set<String> queryParams) {
     this.queryParams = queryParams;
   }
+
+  /**
+   * This method defines the type of this Solr request.
+   */
+  public abstract String getRequestType();
 
   public abstract SolrParams getParams();
 

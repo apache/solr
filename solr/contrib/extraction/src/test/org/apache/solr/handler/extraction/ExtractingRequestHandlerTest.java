@@ -227,20 +227,20 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultField() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
+
     try {
       ignoreException("unknown field 'a'");
       ignoreException("unknown field 'meta'");  // TODO: should this exception be happening?
-      loadLocal("extraction/simple.html",
-      "literal.id","simple2",
-      "lowernames", "true",
-        "captureAttr", "true",
-        //"fmap.content_type", "abcxyz",
-        "commit", "true"  // test immediate commit
-      );
-      fail("Should throw SolrException");
-    } catch (SolrException e) {
-      //do nothing
+      expectThrows(SolrException.class, () -> {
+        loadLocal("extraction/simple.html",
+            "literal.id", "simple2",
+            "lowernames", "true",
+            "captureAttr", "true",
+            //"fmap.content_type", "abcxyz",
+            "commit", "true"  // test immediate commit
+        );
+      });
     } finally {
       resetExceptionIgnores();
     }
@@ -296,16 +296,17 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("extractionLiteralMV:two"), "//*[@numFound='1']");
 
     try {
+      // TODO: original author did not specify why an exception should be thrown... how to fix?
       loadLocal("extraction/version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
-              "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
-              "fmap.Author", "extractedAuthor",
-              "fmap.content", "extractedContent",
-              "literal.id", "two",
-              "fmap.language", "extractedLanguage",
-              "literal.extractionLiteral", "one",
-              "literal.extractionLiteral", "two",
-              "fmap.X-Parsed-By", "ignored_parser",
-              "fmap.Last-Modified", "extractedDate"
+          "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+          "fmap.Author", "extractedAuthor",
+          "fmap.content", "extractedContent",
+          "literal.id", "two",
+          "fmap.language", "extractedLanguage",
+          "literal.extractionLiteral", "one",
+          "literal.extractionLiteral", "two",
+          "fmap.X-Parsed-By", "ignored_parser",
+          "fmap.Last-Modified", "extractedDate"
       );
       // TODO: original author did not specify why an exception should be thrown... how to fix?
       // assertTrue("Exception should have been thrown", false);
@@ -466,13 +467,13 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue("handler is null and it shouldn't be", handler != null);
     SolrQueryResponse rsp = loadLocal("extraction/solr-word.pdf", ExtractingParams.EXTRACT_ONLY, "true");
     assertTrue("rsp is null and it shouldn't be", rsp != null);
-    NamedList list = rsp.getValues();
+    NamedList<?> list = rsp.getValues();
 
     String extraction = (String) list.get("solr-word.pdf");
     assertTrue("extraction is null and it shouldn't be", extraction != null);
     assertTrue(extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
 
-    NamedList nl = (NamedList) list.get("solr-word.pdf_metadata");
+    NamedList<?> nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertTrue("nl is null and it shouldn't be", nl != null);
     Object title = nl.get("title");
     assertTrue("title is null and it shouldn't be", title != null);
@@ -488,7 +489,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
     assertTrue(extraction.indexOf("<?xml") == -1);
 
-    nl = (NamedList) list.get("solr-word.pdf_metadata");
+    nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertTrue("nl is null and it shouldn't be", nl != null);
     title = nl.get("title");
     assertTrue("title is null and it shouldn't be", title != null);
@@ -506,7 +507,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             ExtractingParams.EXTRACT_ONLY, "true"
     );
     assertTrue("rsp is null and it shouldn't be", rsp != null);
-    NamedList list = rsp.getValues();
+    NamedList<?> list = rsp.getValues();
     String val = (String) list.get("example.html");
     assertEquals("News", val.trim()); //there is only one matching <a> tag
 
@@ -549,12 +550,9 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
 
-    try{
-      loadLocal("extraction/password-is-solrcell.docx",
-          "literal.id", "one");
-      fail("TikaException is expected because of trying to extract text from password protected word file without supplying a password.");
-    }
-    catch(Exception expected){}
+    expectThrows(Exception.class, () -> {
+      loadLocal("extraction/password-is-solrcell.docx", "literal.id", "one");
+    });
     assertU(commit());
     assertQ(req("*:*"), "//result[@numFound=0]");
 
@@ -581,25 +579,21 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
 
-    try{
+    expectThrows(Exception.class, () -> {
       // Load plain text specifying another mime type, should fail
-      loadLocal("extraction/version_control.txt", 
-              "literal.id", "one",
-              ExtractingParams.STREAM_TYPE, "application/pdf"
+      loadLocal("extraction/version_control.txt",
+          "literal.id", "one",
+          ExtractingParams.STREAM_TYPE, "application/pdf"
       );
-      fail("SolrException is expected because wrong parser specified for the file type");
-    }
-    catch(Exception expected){}
+    });
 
-    try{
+    expectThrows(Exception.class, () -> {
       // Load plain text specifying non existing mimetype, should fail
-      loadLocal("extraction/version_control.txt", 
-              "literal.id", "one",
-              ExtractingParams.STREAM_TYPE, "foo/bar"
+      loadLocal("extraction/version_control.txt",
+          "literal.id", "one",
+          ExtractingParams.STREAM_TYPE, "foo/bar"
       );
-      fail("SolrException is expected because nonexsisting parser specified");
-    }
-    catch(Exception expected){}
+    });
   }
 
   public void testLiteralsOverride() throws Exception {

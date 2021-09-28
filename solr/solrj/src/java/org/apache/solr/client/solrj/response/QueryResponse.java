@@ -43,6 +43,7 @@ public class QueryResponse extends SolrResponseBase
   // Direct pointers to known types
   private NamedList<Object> _header = null;
   private SolrDocumentList _results = null;
+  @SuppressWarnings({"rawtypes"})
   private NamedList<ArrayList> _sortvalues = null;
   private NamedList<Object> _facetInfo = null;
   private NamedList<Object> _debugInfo = null;
@@ -50,10 +51,13 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _spellInfo = null;
   private List<NamedList<Object>> _clusterInfo = null;
   private NamedList<Object> _jsonFacetingInfo = null;
-  private Map<String,NamedList<Object>> _suggestInfo = null;
+  private NamedList<NamedList<Object>> _suggestInfo = null;
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Object>> _termsInfo = null;
   private NamedList<SolrDocumentList> _moreLikeThisInfo = null;
+  private NamedList<String> _tasksInfo = null;
+  private String _cancellationInfo = null;
+  private String _taskStatusCheckInfo = null;
   private String _cursorMarkNext = null;
 
   // Grouping response
@@ -68,6 +72,7 @@ public class QueryResponse extends SolrResponseBase
   private List<FacetField> _facetFields = null;
   private List<FacetField> _limitingFacets = null;
   private List<FacetField> _facetDates = null;
+  @SuppressWarnings({"rawtypes"})
   private List<RangeFacet> _facetRanges = null;
   private NamedList<List<PivotField>> _facetPivot = null;
   private List<IntervalFacet> _intervalFacets = null;
@@ -95,7 +100,7 @@ public class QueryResponse extends SolrResponseBase
   
   // Debug Info
   private Map<String,Object> _debugMap = null;
-  private Map<String,String> _explainMap = null;
+  private Map<String,Object> _explainMap = null;
 
   // utility variable used for automatic binding -- it should not be serialized
   private transient final SolrClient solrClient;
@@ -117,6 +122,7 @@ public class QueryResponse extends SolrResponseBase
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void setResponse( NamedList<Object> res )
   {
     super.setResponse( res );
@@ -167,7 +173,7 @@ public class QueryResponse extends SolrResponseBase
         // Don't call extractJsonFacetingInfo(_jsonFacetingInfo) here in an effort to do it lazily
       }
       else if ( "suggest".equals( n ) )  {
-        _suggestInfo = (Map<String,NamedList<Object>>) res.getVal( i );
+        _suggestInfo = (NamedList<NamedList<Object>>) res.getVal( i );
         extractSuggesterInfo(_suggestInfo);
       }
       else if ( "stats".equals( n ) )  {
@@ -180,6 +186,15 @@ public class QueryResponse extends SolrResponseBase
       }
       else if ( "moreLikeThis".equals( n ) ) {
         _moreLikeThisInfo = (NamedList<SolrDocumentList>) res.getVal( i );
+      }
+      else if ("taskList".equals( n )) {
+        _tasksInfo = (NamedList<String>) res.getVal( i );
+      }
+      else if ("cancellationResult".equals (n)) {
+        _cancellationInfo = (String) res.getVal( i );
+      }
+      else if ("taskResult".equals (n)) {
+        _taskStatusCheckInfo = (String) res.getVal( i );
       }
       else if ( CursorMarkParams.CURSOR_MARK_NEXT.equals( n ) ) {
         _cursorMarkNext = (String) res.getVal( i );
@@ -200,7 +215,7 @@ public class QueryResponse extends SolrResponseBase
     _jsonFacetingResponse = new NestableJsonFacet(facetInfo);
   }
 
-  private void extractSuggesterInfo(Map<String, NamedList<Object>> suggestInfo) {
+  private void extractSuggesterInfo(NamedList<NamedList<Object>> suggestInfo) {
     _suggestResponse = new SuggesterResponse(suggestInfo);
   }
 
@@ -239,9 +254,9 @@ public class QueryResponse extends SolrResponseBase
 
     // Parse out interesting bits from the debug info
     _explainMap = new HashMap<>();
-    NamedList<String> explain = (NamedList<String>)_debugMap.get( "explain" );
+    NamedList<Object> explain = (NamedList<Object>)_debugMap.get( "explain" );
     if( explain != null ) {
-      for( Map.Entry<String, String> info : explain ) {
+      for( Map.Entry<String, Object> info : explain ) {
         String key = info.getKey();
         _explainMap.put( key, info.getValue() );
       }
@@ -277,6 +292,7 @@ public class QueryResponse extends SolrResponseBase
           }
 
           for (Object oGrp : groupsArr) {
+            @SuppressWarnings({"rawtypes"})
             SimpleOrderedMap grpMap = (SimpleOrderedMap) oGrp;
             Object sGroupValue = grpMap.get( "groupValue");
             SolrDocumentList doclist = (SolrDocumentList) grpMap.get( "doclist");
@@ -316,6 +332,7 @@ public class QueryResponse extends SolrResponseBase
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void extractFacetInfo( NamedList<Object> info )
   {
     // Parse the queries
@@ -379,6 +396,7 @@ public class QueryResponse extends SolrResponseBase
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<RangeFacet> extractRangeFacets(NamedList<NamedList<Object>> rf) {
     List<RangeFacet> facetRanges = new ArrayList<>( rf.size() );
 
@@ -429,6 +447,7 @@ public class QueryResponse extends SolrResponseBase
     return facetRanges;
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected List<PivotField> readPivots( List<NamedList> list )
   {
     ArrayList<PivotField> values = new ArrayList<>( list.size() );
@@ -456,7 +475,7 @@ public class QueryResponse extends SolrResponseBase
             assert null != val : "Server sent back 'null' for sub pivots?";
             assert val instanceof List : "Server sent non-List for sub pivots?";
 
-            subPivots = readPivots( (List<NamedList>) val );
+                    subPivots = readPivots( (List<NamedList>) val );
             break;
           }
           case "stats": {
@@ -514,6 +533,7 @@ public class QueryResponse extends SolrResponseBase
     return _results;
   }
  
+  @SuppressWarnings({"rawtypes"})
   public NamedList<ArrayList> getSortValues(){
     return _sortvalues;
   }
@@ -522,7 +542,7 @@ public class QueryResponse extends SolrResponseBase
     return _debugMap;
   }
 
-  public Map<String, String> getExplainMap() {
+  public Map<String, Object> getExplainMap() {
     return _explainMap;
   }
 
@@ -583,6 +603,18 @@ public class QueryResponse extends SolrResponseBase
   public NamedList<SolrDocumentList> getMoreLikeThis() {
     return _moreLikeThisInfo;
   }
+
+  public NamedList<String> getTasksInfo() {
+    return _tasksInfo;
+  }
+
+  public String getCancellationInfo() {
+    return _cancellationInfo;
+  }
+
+  public String getTaskStatusCheckInfo() {
+    return _taskStatusCheckInfo;
+  }
   
   /**
    * See also: {@link #getLimitingFacets()}
@@ -595,6 +627,7 @@ public class QueryResponse extends SolrResponseBase
     return _facetDates;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public List<RangeFacet> getFacetRanges() {
     return _facetRanges;
   }

@@ -35,6 +35,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -57,12 +58,15 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
   }
+  @AfterClass
+  public static void releaseMBeanServer() {
+    mBeanServer = null;
+  }
+  
 
   @Test
-  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testJmxReporter() throws Exception {
     CollectionAdminRequest.reloadCollection(COLLECTION).processAndWait(cluster.getSolrClient(), 60);
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -94,7 +98,9 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
           QueryExp exp = Query.eq(Query.attr(JmxMetricsReporter.INSTANCE_TAG), Query.value(Integer.toHexString(v.hashCode())));
           Set<ObjectInstance> beans = mBeanServer.queryMBeans(null, exp);
           if (((SolrJmxReporter) v).isStarted() && beans.isEmpty() && jmxReporters < 2) {
-            log.info("DocCollection: " + getCollectionState(COLLECTION));
+            if (log.isInfoEnabled()) {
+              log.info("DocCollection: {}", getCollectionState(COLLECTION));
+            }
             fail("JMX reporter " + k + " for registry " + registry + " failed to register any beans!");
           } else {
             Set<String> categories = new HashSet<>();
@@ -104,7 +110,7 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
                 categories.add(cat);
               }
             });
-            log.info("Registered categories: " + categories);
+            log.info("Registered categories: {}", categories);
             assertTrue("Too few categories: " + categories, categories.size() > 5);
           }
         });

@@ -25,7 +25,7 @@ public class SimpleTextCodecFactory extends CodecFactory {
   private Codec codec;
 
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     assert codec == null;
     codec = new SimpleTextCodec();

@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CollectionsController',
-    function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants){
+    function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants, ConfigSets){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
 
       $scope.refresh = function() {
@@ -26,8 +26,12 @@ solrAdminApp.controller('CollectionsController',
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {
+                  if (name.startsWith("._designer_")) {
+                      continue;
+                  }
                   var collection = data.cluster.collections[name];
                   collection.name = name;
+                  collection.type = 'collection';
                   var shards = collection.shards;
                   collection.shards = [];
                   for (var shardName in shards) {
@@ -50,17 +54,35 @@ solrAdminApp.controller('CollectionsController',
                       $scope.collection = collection;
                   }
               }
-              if ($routeParams.collection && !$scope.collection) {
-                  alert("No collection called " + $routeParams.collection)
-                  $location.path("/~collections");
-              }
+              // Fetch aliases using LISTALIASES to get properties
+              Collections.listaliases(function (adata) {
+                  // TODO: Population of aliases array duplicated in app.js
+                  $scope.aliases = [];
+                  for (var key in adata.aliases) {
+                      props = {};
+                      if (key in adata.properties) {
+                          props = adata.properties[key];
+                      }
+                      var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                      $scope.aliases.push(alias);
+                      if ($routeParams.collection == 'alias_' + key) {
+                          $scope.collection = alias;
+                      }
+                  }
+                  // Decide what is selected in list
+                  if ($routeParams.collection && !$scope.collection) {
+                      alert("No collection or alias called " + $routeParams.collection);
+                      $location.path("/~collections");
+                  }
+              });
+
               $scope.liveNodes = data.cluster.liveNodes;
           });
-          Zookeeper.configs(function(data) {
+          ConfigSets.configs(function(data) {
               $scope.configs = [];
-              var items = data.tree[0].children;
+              var items = data.configSets;
               for (var i in items) {
-                  $scope.configs.push({name: items[i].data.title});
+                  $scope.configs.push({name: items[i]});
               }
           });
       };
@@ -82,9 +104,7 @@ solrAdminApp.controller('CollectionsController',
           routerName: "compositeId",
           numShards: 1,
           configName: "",
-          replicationFactor: 1,
-          maxShardsPerNode: 1,
-          autoAddReplicas: 'false'
+          replicationFactor: 1
         };
       };
 
@@ -96,14 +116,6 @@ solrAdminApp.controller('CollectionsController',
       $scope.toggleDeleteAlias = function() {
         $scope.hideAll();
         $scope.showDeleteAlias = true;
-        Zookeeper.aliases({}, function(data){
-          if (Object.keys(data.aliases).length == 0) {
-            delete $scope.aliases;
-          } else {
-            $scope.aliases = data.aliases;
-          }
-        });
-
       }
 
       $scope.cancelCreateAlias = $scope.cancelDeleteAlias = function() {
@@ -116,12 +128,16 @@ solrAdminApp.controller('CollectionsController',
           collections.push($scope.aliasCollections[i].name);
         }
         Collections.createAlias({name: $scope.aliasToCreate, collections: collections.join(",")}, function(data) {
-          $scope.hideAll();
+          $scope.cancelCreateAlias();
+          $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+          $location.path("/~collections/alias_" + $scope.aliasToCreate);
         });
       }
       $scope.deleteAlias = function() {
-        Collections.deleteAlias({name: $scope.aliasToDelete}, function(data) {
+        Collections.deleteAlias({name: $scope.collection.name}, function(data) {
           $scope.hideAll();
+          $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+          $location.path("/~collections/");
         });
 
       };
@@ -137,9 +153,7 @@ solrAdminApp.controller('CollectionsController',
                 "router.name": coll.routerName,
                 numShards: coll.numShards,
                 "collection.configName": coll.configName,
-                replicationFactor: coll.replicationFactor,
-                maxShardsPerNode: coll.maxShardsPerNode,
-                autoAddReplicas: coll.autoAddReplicas
+                replicationFactor: coll.replicationFactor
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;
@@ -201,7 +215,7 @@ solrAdminApp.controller('CollectionsController',
             $scope.nodes = [];
             var children = data.tree[0].children;
             for (var child in children) {
-              $scope.nodes.push(children[child].data.title);
+              $scope.nodes.push(children[child].text);
             }
           });
       };
@@ -210,7 +224,7 @@ solrAdminApp.controller('CollectionsController',
           $scope.hideAll();
           replica.showRemove = !replica.showRemove;
       };
-      
+
       $scope.toggleRemoveShard = function(shard) {
           $scope.hideAll();
           shard.showRemove = !shard.showRemove;
@@ -237,6 +251,7 @@ solrAdminApp.controller('CollectionsController',
         var params = {
           collection: shard.collection,
           shard: shard.name,
+          type: shard.replicaType
         }
         if (shard.replicaNodeName && shard.replicaNodeName != "") {
           params.node = shard.replicaNodeName;
@@ -246,7 +261,7 @@ solrAdminApp.controller('CollectionsController',
           $timeout(function () {
             shard.replicaAdded = false;
             shard.showAdd = false;
-            $$scope.refresh();
+            $scope.refresh();
           }, 2000);
         });
       };

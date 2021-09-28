@@ -43,7 +43,7 @@ public class StringDistanceFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues str1DV = str1.getValues(context, readerContext);
     final FunctionValues str2DV = str2.getValues(context, readerContext);
     return new FloatDocValues(this) {

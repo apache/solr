@@ -49,8 +49,8 @@ public class ChebyshevDistanceEvaluator extends RecursiveNumericEvaluator implem
 
     ChebyshevDistance distance = new ChebyshevDistance();
     return distance.compute(
-        ((List)first).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray(),
-        ((List)second).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray()
+        ((List<?>)first).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray(),
+        ((List<?>)second).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray()
     );
   }
 }

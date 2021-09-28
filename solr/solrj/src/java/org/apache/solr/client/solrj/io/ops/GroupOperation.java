@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -47,7 +46,7 @@ public class GroupOperation implements ReduceOperation {
   private UUID operationNodeId = UUID.randomUUID();
   
   private PriorityQueue<Tuple> priorityQueue;
-  private Comparator comp;
+  private Comparator<Tuple> comp;
   private StreamComparator streamComparator;
   private int size;
 
@@ -80,7 +79,7 @@ public class GroupOperation implements ReduceOperation {
     this.size = size;
     this.streamComparator = streamComparator;
     this.comp = new ReverseComp(streamComparator);
-    this.priorityQueue = new PriorityQueue(size, this.comp);
+    this.priorityQueue = new PriorityQueue<>(size, this.comp);
   }
 
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
@@ -106,19 +105,17 @@ public class GroupOperation implements ReduceOperation {
   }
 
   public Tuple reduce() {
-    Map map = new HashMap();
-    List<Map> list = new ArrayList();
-    LinkedList ll = new LinkedList();
+    LinkedList<Map<String,Object>> ll = new LinkedList<>();
     while(priorityQueue.size() > 0) {
-      ll.addFirst(priorityQueue.poll().getMap());
+      ll.addFirst(priorityQueue.poll().getFields());
       //This will clear priority queue and so it will be ready for the next group.
     }
 
-    list.addAll(ll);
-    Map groupHead = list.get(0);
-    map.putAll(groupHead);
-    map.put("group", list);
-    return new Tuple(map);
+    List<Map<String,Object>> list = new ArrayList<>(ll);
+    Map<String,Object> groupHead = list.get(0);
+    Tuple tuple = new Tuple(groupHead);
+    tuple.put("group", list);
+    return tuple;
   }
 
   public void operate(Tuple tuple) {

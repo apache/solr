@@ -17,9 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.cloud.Overseer;
@@ -28,15 +25,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
@@ -48,15 +41,20 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * means, given the current state of the alias and some information from a routed field in a document that
  * may imply a need for changes, create, delete or otherwise modify collections as required.
  */
-abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
+abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected final CollectionCommandContext ccc;
+
+  protected AliasCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
+  }
+
   /**
    * Creates a collection (for use in a routed alias), waiting for it to be ready before returning.
    * If the collection already exists then this is not an error.<p>
    */
-  static NamedList createCollectionAndWait(ClusterState clusterState, String aliasName, Map<String, String> aliasMetadata,
-                                    String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
+  static NamedList<Object> createCollectionAndWait(ClusterState clusterState, String aliasName, Map<String, String> aliasMetadata,
+                                    String createCollName, CollectionCommandContext ccc) throws Exception {
     // Map alias metadata starting with a prefix to a create-collection API request
     final ModifiableSolrParams createReqParams = new ModifiableSolrParams();
     for (Map.Entry<String, String> e : aliasMetadata.entrySet()) {
@@ -74,15 +72,15 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
     final Map<String, Object> createMsgMap = CollectionsHandler.CollectionOperation.CREATE_OP.execute(
         new LocalSolrQueryRequest(null, createReqParams),
         null,
-        ocmh.overseer.getCoreContainer().getCollectionsHandler());
-    createMsgMap.put(Overseer.QUEUE_OPERATION, "create");
+        ccc.getCoreContainer().getCollectionsHandler());
+    createMsgMap.put(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower());
 
-    NamedList results = new NamedList();
+    NamedList<Object> results = new NamedList<>();
     try {
       // Since we are running in the Overseer here, send the message directly to the Overseer CreateCollectionCmd.
       // note: there's doesn't seem to be any point in locking on the collection name, so we don't. We currently should
       //   already have a lock on the alias name which should be sufficient.
-      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, new ZkNodeProps(createMsgMap), results);
+      new CreateCollectionCmd(ccc).call(clusterState, new ZkNodeProps(createMsgMap), results);
     } catch (SolrException e) {
       // The collection might already exist, and that's okay -- we can adopt it.
       if (!e.getMessage().contains("collection already exists")) {
@@ -90,28 +88,14 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    CollectionsHandler.waitForActiveCollection(createCollName, ocmh.overseer.getCoreContainer(),
-        new OverseerSolrResponse(results));
-    CollectionProperties collectionProperties = new CollectionProperties(ocmh.zkStateReader.getZkClient());
+    CollectionsHandler.waitForActiveCollection(createCollName, ccc.getCoreContainer(), new OverseerSolrResponse(results));
+    CollectionProperties collectionProperties = new CollectionProperties(ccc.getZkStateReader().getZkClient());
     collectionProperties.setCollectionProperty(createCollName,ROUTED_ALIAS_NAME_CORE_PROP,aliasName);
-    while (!ocmh.zkStateReader.getCollectionProperties(createCollName,1000).containsKey(ROUTED_ALIAS_NAME_CORE_PROP)) {
+    while (!ccc.getZkStateReader().getCollectionProperties(createCollName,1000).containsKey(ROUTED_ALIAS_NAME_CORE_PROP)) {
       Thread.sleep(50);
     }
     return results;
   }
 
-  void updateAlias(String aliasName, ZkStateReader.AliasesManager aliasesManager, String createCollName) {
-    aliasesManager.applyModificationAndExportToZk(curAliases -> {
-      final List<String> curTargetCollections = curAliases.getCollectionAliasListMap().get(aliasName);
-      if (curTargetCollections.contains(createCollName)) {
-        return curAliases;
-      } else {
-        List<String> newTargetCollections = new ArrayList<>(curTargetCollections.size() + 1);
-        // prepend it on purpose (thus reverse sorted). Solr alias resolution defaults to the first collection in a list
-        newTargetCollections.add(createCollName);
-        newTargetCollections.addAll(curTargetCollections);
-        return curAliases.cloneWithCollectionAlias(aliasName, StrUtils.join(newTargetCollections, ','));
-      }
-    });
-  }
+
 }

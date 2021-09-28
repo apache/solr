@@ -25,6 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.TestUtil;
@@ -40,12 +43,17 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.BeforeClass;
 
+import org.apache.commons.lang3.StringUtils;
+
+import static org.apache.solr.common.params.SolrParams.wrapDefaults;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+import static org.apache.solr.common.params.CommonParams.TIME_ALLOWED;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
@@ -54,6 +62,7 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
 public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
+
   public final static String TEST_SOLRCONFIG_NAME = "solrconfig-deeppaging.xml";
   /** schema.xml file name, shared with other cursor related tests */
   public final static String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
@@ -83,7 +92,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     } else {
       assertU(commit());
     }
-      assertU(commit());
+    assertU(commit());
 
     // empty, blank, or bogus cursor
     for (String c : new String[] { "", "   ", "all the docs please!"}) {
@@ -104,13 +113,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                       CURSOR_MARK_PARAM, CURSOR_MARK_START),
                ErrorCode.BAD_REQUEST, "_docid_");
 
-    // using cursor w/ timeAllowed
-    assertFail(params("q", "*:*", 
-                      "sort", "id desc", 
-                      CommonParams.TIME_ALLOWED, "1000",
-                      CURSOR_MARK_PARAM, CURSOR_MARK_START),
-               ErrorCode.BAD_REQUEST, CommonParams.TIME_ALLOWED);
-
     // using cursor w/ grouping
     assertFail(params("q", "*:*", 
                       "sort", "id desc", 
@@ -118,6 +120,30 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                       GroupParams.GROUP_FIELD, "str",
                       CURSOR_MARK_PARAM, CURSOR_MARK_START),
                ErrorCode.BAD_REQUEST, "Grouping");
+
+    // if a user specifies a 'bogus' cursorMark param, this should error *only* if some other component
+    // cares about (and parses) a SortSpec in it's prepare() method.
+    // (the existence of a 'sort' param shouldn't make a diff ... unless it makes a diff to a component being used,
+    // which it doesn't for RTG)
+    assertU(adoc("id", "yyy", "str", "y", "float", "3", "int", "-3"));
+    if (random().nextBoolean()) {
+      assertU(commit());
+    }
+    for (SolrParams p : Arrays.asList(params(),
+                                      params(CURSOR_MARK_PARAM, "gibberish"),
+                                      params(CURSOR_MARK_PARAM, "gibberish",
+                                             "sort", "id asc"))) {
+      assertJQ(req(p,
+                   "qt","/get",
+                   "fl", "id",
+                   "id","yyy") 
+               , "=={'doc':{'id':'yyy'}}");
+      assertJQ(req(p,
+                   "qt","/get",
+                   "fl", "id",
+                   "id","xxx") // doesn't exist in our collection
+               , "=={'doc':null}");
+    }
   }
 
 
@@ -143,7 +169,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     assertEquals(CURSOR_MARK_START, cursorMark);
 
 
-    // don't add in order of any field to ensure we aren't inadvertantly 
+    // don't add in order of any field to ensure we aren't inadvertently
     // counting on internal docid ordering
     assertU(adoc("id", "9", "str", "c", "float", "-3.2", "int", "42"));
     assertU(adoc("id", "7", "str", "c", "float", "-3.2", "int", "-1976"));
@@ -500,13 +526,88 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   /**
+   * test that timeAllowed parameter can be used with cursors
+   * uses DelayingSearchComponent in solrconfig-deeppaging.xml
+   */
+  @LogLevel("org.apache.solr.search.SolrIndexSearcher=ERROR;org.apache.solr.handler.component.SearchHandler=ERROR")
+  public void testTimeAllowed() throws Exception {
+    String wontExceedTimeout = "10000";
+    int numDocs = 1000;
+    List<String> ids = IntStream.range(0, 1000).mapToObj(String::valueOf).collect(Collectors.toList());
+    // Shuffle to test ordering
+    Collections.shuffle(ids, random());
+    for (String id : ids) {
+      assertU(adoc("id", id, "name", "a" + id));
+      if (random().nextInt(numDocs) == 0) {
+        assertU(commit());  // sometimes make multiple segments
+      }
+    }
+    assertU(commit());
+
+    Collections.sort(ids);
+
+    String cursorMark, nextCursorMark = CURSOR_MARK_START;
+
+    SolrParams params = params("q", "name:a*",
+        "fl", "id",
+        "sort", "id asc",
+        "rows", "50",
+        "qt", "/delayed",
+        "sleep", "10");
+
+    List<String> foundDocIds = new ArrayList<>();
+    String[] timeAllowedVariants = {"1", "50", wontExceedTimeout};
+    int partialCount = 0;
+    do {
+      cursorMark = nextCursorMark;
+      for (String timeAllowed : timeAllowedVariants) {
+
+        // execute the query
+        String json = assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark, TIME_ALLOWED, timeAllowed));
+
+        Map<?, ?> response = (Map<?, ?>) fromJSONString(json);
+        Map<?, ?> responseHeader = (Map<?, ?>) response.get("responseHeader");
+        Map<?, ?> responseBody = (Map<?, ?>) response.get("response");
+        nextCursorMark = (String) response.get(CURSOR_MARK_NEXT);
+
+        // count occurrence of partialResults (confirm at the end at least one)
+        if (responseHeader.containsKey("partialResults")) {
+          partialCount++;
+        }
+
+        // add the ids found (confirm we found all at the end in correct order)
+        @SuppressWarnings({"unchecked"})
+        List<Map<Object, Object>> docs = (List<Map<Object, Object>>) (responseBody.get("docs"));
+        for (Map<Object, Object> doc : docs) {
+          foundDocIds.add(doc.get("id").toString());
+        }
+
+        // break out of the timeAllowed variants as soon as we progress
+        if (!cursorMark.equals(nextCursorMark)) {
+          break;
+        }
+      }
+    } while (!cursorMark.equals(nextCursorMark));
+
+    ArrayList<String> sortedFoundDocIds = new ArrayList<>(foundDocIds);
+    sortedFoundDocIds.sort(null);
+    // Note: it is not guaranteed that all docs will be found, because a query may time out
+    // before reaching all segments, this causes documents in the skipped segments to be skipped
+    // in the overall result set as the cursor pages through.
+    assertEquals("Should have found last doc id eventually", ids.get(ids.size() -1), foundDocIds.get(foundDocIds.size() -1));
+    assertEquals("Documents arrived in sorted order within and between pages", sortedFoundDocIds, foundDocIds);
+    assertTrue("Should have experienced at least one partialResult", partialCount > 0);
+  }
+
+
+  /**
    * test that our assumptions about how caches are affected hold true
    */
   public void testCacheImpacts() throws Exception {
-    // cursor queryies can't live in the queryResultCache, but independent filters
+    // cursor queries can't live in the queryResultCache, but independent filters
     // should still be cached & reused
 
-    // don't add in order of any field to ensure we aren't inadvertantly 
+    // don't add in order of any field to ensure we aren't inadvertently
     // counting on internal docid ordering
     assertU(adoc("id", "9", "str", "c", "float", "-3.2", "int", "42"));
     assertU(adoc("id", "7", "str", "c", "float", "-3.2", "int", "-1976"));
@@ -548,7 +649,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final long postFcHits = (Long) filterCacheStats.getValue().get("hits");
     
     assertEquals("query cache inserts changed", preQcIn, postQcIn);
-    // NOTE: use of pure negative filters causees "*:* to be tracked in filterCache
+    // NOTE: use of pure negative filters clauses "*:* to be tracked in filterCache
     assertEquals("filter cache did not grow correctly", 3, postFcIn-preFcIn);
     assertTrue("filter cache did not have any new cache hits", 0 < postFcHits-preFcHits);
 
@@ -575,12 +676,24 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       for (String order : new String[] {" asc", " desc"}) {
         String sort = f + order + ("id".equals(f) ? "" : ", id" + order);
         String rows = "" + TestUtil.nextInt(random(), 13, 50);
-        SentinelIntSet ids = assertFullWalkNoDups(totalDocs, 
-                                                  params("q", "*:*",
-                                                         "fl","id",
-                                                         "rows",rows,
-                                                         "sort",sort));
+        final SolrParams main = params("q", "*:*",
+                                       "fl","id",
+                                       "rows",rows,
+                                       "sort",sort);
+        final SentinelIntSet ids = assertFullWalkNoDups(totalDocs, main);
         assertEquals(initialDocs, ids.size());
+
+        // same query, now with QEC ... verify we get all the same docs, but the (expected) elevated docs are first...
+        final SentinelIntSet elevated = assertFullWalkNoDupsElevated(wrapDefaults(params("qt", "/elevate",
+                                                                                         "fl","id,[elevated]",
+                                                                                         "forceElevation","true",
+                                                                                         "elevateIds", "50,20,80"),
+                                                                                  main),
+                                                                     ids);
+        assertTrue(elevated.exists(50));
+        assertTrue(elevated.exists(20));
+        assertTrue(elevated.exists(80));
+        assertEquals(3, elevated.size());
       }
     }
 
@@ -598,16 +711,32 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       final String fl = random().nextBoolean() ? "id" : "id,score";
       final boolean matchAll = random().nextBoolean();
       final String q = matchAll ? "*:*" : buildRandomQuery();
-
-      SentinelIntSet ids = assertFullWalkNoDups(totalDocs, 
-                                                params("q", q,
-                                                       "fl",fl,
-                                                       "rows",rows,
-                                                       "sort",sort));
+      final SolrParams main = params("q", q,
+                                     "fl",fl,
+                                     "rows",rows,
+                                     "sort",sort);
+      final SentinelIntSet ids = assertFullWalkNoDups(totalDocs, main);
       if (matchAll) {
         assertEquals(totalDocs, ids.size());
       }
 
+      // same query, now with QEC ... verify we get all the same docs, but the (expected) elevated docs are first...
+      // first we have to build a set of ids to elevate, from the set of ids known to match query...
+      final int[] expectedElevated = pickElevations(TestUtil.nextInt(random(), 3, 33), ids);
+      final SentinelIntSet elevated = assertFullWalkNoDupsElevated
+        (wrapDefaults(params("qt", "/elevate",
+                             "fl", fl + ",[elevated]",
+                             // HACK: work around SOLR-15307... same results should match, just not same order
+                             "sort", (sort.startsWith("score asc") ? "score desc, " + sort : sort),
+                             "forceElevation","true",
+                             "elevateIds", StringUtils.join(expectedElevated,',')),
+                      main),
+         ids);
+      for (int expected : expectedElevated) {
+        assertTrue(expected + " wasn't elevated even though it should have been",
+                   elevated.exists(expected));
+      }
+      assertEquals(expectedElevated.length, elevated.size());
     }
   }
 
@@ -657,23 +786,86 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long
    * as a non-0 number of docs ar returned.  This method records the the set of all id's
    * (must be positive ints) encountered and throws an assertion failure if any id is
+   * encountered more than once, or if an id is encountered which is not expected, 
+   * or if an id is <code>[elevated]</code> and comes "after" any ids which were not <code>[elevated]</code>
+   * 
+   *
+   * @returns set of all elevated ids encountered in the walk
+   * @see #assertFullWalkNoDups(SolrParams,Consumer)
+   */
+  public SentinelIntSet assertFullWalkNoDupsElevated(final SolrParams params, final SentinelIntSet allExpected)
+    throws Exception {
+
+    final SentinelIntSet ids = new SentinelIntSet(allExpected.size(), -1);
+    final SentinelIntSet idsElevated = new SentinelIntSet(32, -1);
+
+    assertFullWalkNoDups(params, (doc) -> {
+        final int id = Integer.parseInt(doc.get("id").toString());
+        final boolean elevated = Boolean.parseBoolean(doc.getOrDefault("[elevated]","false").toString());
+        assertTrue(id + " is not expected to match query",
+                   allExpected.exists(id));
+        assertFalse("walk already seen: " + id,
+                    ids.exists(id));
+        if (elevated) {
+          assertEquals("id is elevated, but we've already seen non elevated ids: " + id,
+                       idsElevated.size(), ids.size());
+          idsElevated.put(id);
+        }
+        ids.put(id);
+      });
+    assertEquals("total number of ids seen did not match expected",
+                 allExpected.size(), ids.size());
+    
+    return idsElevated;
+  }
+
+  
+  /**
+   * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
+   * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long
+   * as a non-0 number of docs ar returned.  This method records the the set of all id's
+   * (must be positive ints) encountered and throws an assertion failure if any id is
    * encountered more than once, or if the set grows above maxSize
+   *
+   * @returns set of all ids encountered in the walk
+   * @see #assertFullWalkNoDups(SolrParams,Consumer)
    */
   public SentinelIntSet assertFullWalkNoDups(int maxSize, SolrParams params) 
     throws Exception {
-
-    SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
+    final SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
+    assertFullWalkNoDups(params, (doc) -> {
+        int id = Integer.parseInt(doc.get("id").toString());
+        assertFalse("walk already seen: " + id, ids.exists(id));
+        ids.put(id);
+        assertFalse("id set bigger then max allowed ("+maxSize+"): " + ids.size(),
+                    maxSize < ids.size());
+        
+      });
+    return ids;
+  }
+  
+  /**
+   * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
+   * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long
+   * as a non-0 number of docs ar returned.  This method does some basic validation of each response, and then 
+   * passes each doc encountered (in order returned) to the specified Consumer, which may throw an assertion if 
+   * there is a problem. 
+   */
+  public void assertFullWalkNoDups(SolrParams params, Consumer<Map<Object,Object>> consumer)
+    throws Exception {
+    
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
       String json = assertJQ(req(params,
                                  CURSOR_MARK_PARAM, cursorMark));
-      Map rsp = (Map) fromJSONString(json);
+      Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
       assertTrue("response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
                  rsp.containsKey(CURSOR_MARK_NEXT));
       String nextCursorMark = (String)rsp.get(CURSOR_MARK_NEXT);
       assertNotNull(CURSOR_MARK_NEXT + " is null", nextCursorMark);
-      List<Map<Object,Object>> docs = (List) (((Map)rsp.get("response")).get("docs"));
+      @SuppressWarnings("unchecked")
+      List<Map<Object,Object>> docs = (List<Map<Object, Object>>) (((Map<?, ?>)rsp.get("response")).get("docs"));
       docsOnThisPage = docs.size();
       if (null != params.getInt(CommonParams.ROWS)) {
         int rows = params.getInt(CommonParams.ROWS);
@@ -685,15 +877,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                      cursorMark, nextCursorMark);
       }
       for (Map<Object,Object> doc : docs) {
-        int id = Integer.parseInt(doc.get("id").toString());
-        assertFalse("walk already seen: " + id, ids.exists(id));
-        ids.put(id);
-        assertFalse("id set bigger then max allowed ("+maxSize+"): " + ids.size(),
-                    maxSize < ids.size());
+        consumer.accept(doc);
       }
       cursorMark = nextCursorMark;
     }
-    return ids;
   }
 
   /**
@@ -754,15 +941,16 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
-    List previousFacets = null;
+    List<?> previousFacets = null;
     while (0 < docsOnThisPage) {
       String json = assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark));
-      Map rsp = (Map) fromJSONString(json);
+      Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
       assertTrue("response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
                  rsp.containsKey(CURSOR_MARK_NEXT));
       String nextCursorMark = (String)rsp.get(CURSOR_MARK_NEXT);
       assertNotNull(CURSOR_MARK_NEXT + " is null", nextCursorMark);
-      List<Map<Object,Object>> docs = (List)(((Map)rsp.get("response")).get("docs"));
+      @SuppressWarnings({"unchecked"})
+      List<Map<Object,Object>> docs = (List<Map<Object, Object>>)(((Map<?, ?>)rsp.get("response")).get("docs"));
       docsOnThisPage = docs.size();
       if (null != params.getInt(CommonParams.ROWS)) {
         int rows = params.getInt(CommonParams.ROWS);
@@ -790,8 +978,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       }
       cursorMark = nextCursorMark;
 
-      Map facetFields = (Map)((Map)rsp.get("facet_counts")).get("facet_fields");
-      List facets = (List)facetFields.get(facetField);
+      Map<?, ?> facetFields = (Map<?, ?>)((Map<?, ?>)rsp.get("facet_counts")).get("facet_fields");
+      List<?> facets = (List<?>)facetFields.get(facetField);
       if (null != previousFacets) {
         assertEquals("Facets not the same as on previous page:\nprevious page facets: "
             + Arrays.toString(facets.toArray(new Object[facets.size()]))
@@ -825,7 +1013,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    */
   public String assertCursor(SolrQueryRequest req, String... tests) throws Exception {
     String json = assertJQ(req, tests);
-    Map rsp = (Map) fromJSONString(json);
+    Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
     assertTrue("response doesn't contain "+CURSOR_MARK_NEXT + ": " + json,
                rsp.containsKey(CURSOR_MARK_NEXT));
     String next = (String)rsp.get(CURSOR_MARK_NEXT);
@@ -974,4 +1162,31 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     return result.toString();
   }
 
+  /** 
+   * Given a set of id, picks some, semi-randomly, to use for elevation
+   */
+  public static int[] pickElevations(final int numToElevate, final SentinelIntSet ids) {
+    assert numToElevate < ids.size();
+    final int[] results = new int[numToElevate];
+    int slot = 0;
+    for (int key : ids.keys) {
+      if (key != ids.emptyVal) {
+        if (slot < results.length) {
+          // until results is full, take any value we can get in the 'next' slot...
+          results[slot] = key;
+        } else if (numToElevate * 2 < slot) {
+          // once we've done enough (extra) iters, break out with what we've got
+          break;
+        } else {
+          // otherwise, pick a random slot to overwrite .. maybe
+          if (random().nextBoolean()) {
+            results[random().nextInt(results.length)] = key;
+          }
+        }
+        slot++;
+      }
+    }
+    return results;
+  }
+  
 }

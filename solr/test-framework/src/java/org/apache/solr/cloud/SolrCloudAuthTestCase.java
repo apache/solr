@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,11 +40,14 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.common.util.Base64;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,11 +66,22 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final List<String> AUTH_METRICS_TIMER_KEYS = Collections.singletonList("requestTimes");
   private static final String METRICS_PREFIX_PKI = "SECURITY./authentication/pki.";
   private static final String METRICS_PREFIX = "SECURITY./authentication.";
+  @SuppressWarnings({"rawtypes"})
   public static final Predicate NOT_NULL_PREDICATE = o -> o != null;
   private static final List<String> AUDIT_METRICS_KEYS = Arrays.asList("count");
   private static final List<String> AUTH_METRICS_TO_COMPARE = Arrays.asList("requests", "authenticated", "passThrough", "failWrongCredentials", "failMissingCredentials", "errors");
   private static final List<String> AUDIT_METRICS_TO_COMPARE = Arrays.asList("count");
 
+  @BeforeClass
+  public static void enableMetrics() {
+    System.setProperty("metricsEnabled", "true");
+  }
+
+  @AfterClass
+  public static void disableMetrics() {
+    System.clearProperty("metricsEnabled");
+
+  }
   /**
    * Used to check metric counts for PKI auth
    */
@@ -117,16 +132,13 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     expectedCounts.put("failMissingCredentials", (long) failMissingCredentials);
     expectedCounts.put("errors", (long) errors);
 
-    Map<String, Long> counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
-    boolean success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
-    if (!success) {
-      log.info("First metrics count assert failed, pausing 2s before re-attempt");
-      Thread.sleep(2000);
-      counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
-      success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
-    }
+    final Map<String, Long> counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
+    final boolean success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
     
-    assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts + ", but got: " + counts, success);
+    assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts +
+               ", but got: " + counts + "(Possible cause is delay in loading modified " +
+               "security.json; see SOLR-13464 for test work around)",
+               success);
     
     if (counts.get("requests") > 0) {
       assertTrue("requestTimes count not > 1", counts.get("requestTimes") > 1);
@@ -189,6 +201,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   private static void verifySecurityStatus(HttpClient cl, String url, String objPath,
                                             Object expected, int count, String authHeader) throws IOException, InterruptedException {
     boolean success = false;
@@ -199,6 +212,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       if (authHeader != null) setAuthorizationHeader(get, authHeader);
       HttpResponse rsp = cl.execute(get);
       s = EntityUtils.toString(rsp.getEntity());
+      @SuppressWarnings({"rawtypes"})
       Map m = null;
       try {
         m = (Map) Utils.fromJSONString(s);
@@ -208,6 +222,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       Utils.consumeFully(rsp.getEntity());
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected instanceof Predicate) {
+        @SuppressWarnings({"rawtypes"})
         Predicate predicate = (Predicate) expected;
         if (predicate.test(actual)) {
           success = true;
@@ -224,7 +239,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
 
   protected static String makeBasicAuthHeader(String user, String pwd) {
     String userPass = user + ":" + pwd;
-    return "Basic " + Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+    return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(UTF_8));
   }
 
   static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
@@ -234,5 +249,38 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   public static void setAuthorizationHeader(AbstractHttpMessage httpMsg, String headerString) {
     httpMsg.setHeader(new BasicHeader("Authorization", headerString));
     log.info("Added Authorization Header {}", headerString);
+  }
+
+  /**
+   * This helper method can be used by tests to monitor the current state of either 
+   * <code>"authentication"</code> or <code>"authorization"</code> plugins in use each
+   * node of the current cluster.
+   * <p>
+   * This can be useful in a {@link TimeOut#waitFor} loop to monitor a cluster and "wait for"
+   * A change in security settings to affect all nodes by comparing the objects in the current 
+   * Map with the one in use prior to executing some test command. (providing a work around 
+   * for the security user experienence limitations identified in
+   * <a href="https://issues.apache.org/jira/browse/SOLR-13464">SOLR-13464</a> )
+   * </p>
+   * 
+   * @param url A REST url (or any arbitrary String) ending in 
+   *    <code>"authentication"</code> or <code>"authorization"</code> used to specify the type of
+   *    plugins to introspect
+   * @return A Map from <code>nodeName</code> to auth plugin
+   */
+  public static Map<String,Object> getAuthPluginsInUseForCluster(String url) {
+    Map<String,Object> plugins = new HashMap<>();
+    if (url.endsWith("authentication")) {
+      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
+        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthenticationPlugin());
+      }
+    } else if (url.endsWith("authorization")) {
+      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
+        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthorizationPlugin());
+      }
+    } else {
+      fail("Test helper method assumptions broken: " + url);
+    }
+    return plugins;
   }
 }

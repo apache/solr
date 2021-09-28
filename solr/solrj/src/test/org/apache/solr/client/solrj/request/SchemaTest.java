@@ -29,7 +29,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -45,7 +45,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
 
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -62,12 +61,12 @@ public class SchemaTest extends RestTestBase {
   }
   
   private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
-    HttpSolrClient.RemoteExecutionException e = expectThrows(HttpSolrClient.RemoteExecutionException.class, runnable);
-    SimpleOrderedMap errorMap = (SimpleOrderedMap)e.getMetaData().get("error");
+    BaseHttpSolrClient.RemoteExecutionException e = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, runnable);
+    SimpleOrderedMap<?> errorMap = (SimpleOrderedMap<?>)e.getMetaData().get("error");
     assertEquals("org.apache.solr.api.ApiBag$ExceptionWithErrObject",
         ((NamedList)errorMap.get("metadata")).get("error-class"));
-    List details = (List)errorMap.get("details");
-    assertTrue(((List)((Map)details.get(0)).get("errorMessages")).get(0).toString().contains(expectedErrorMessage));
+    List<?> details = (List<?>)errorMap.get("details");
+    assertTrue(((List<?>)((Map<?,?>)details.get(0)).get("errorMessages")).get(0).toString().contains(expectedErrorMessage));
   }
 
   private static void createStoredStringField(String fieldName, SolrClient solrClient) throws Exception {
@@ -105,9 +104,6 @@ public class SchemaTest extends RestTestBase {
     FileUtils.copyDirectory(new File(getFile("solrj/solr/collection1").getParent()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
@@ -329,12 +325,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.UpdateResponse deleteFieldResponse = deleteFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteFieldResponse);
 
-    try {
-      fieldSchemaRequest.process(getSolrClient());
-      fail(String.format(Locale.ROOT, "after removal, the field %s shouldn't be anymore available over Schema API", fieldName));
-    } catch (SolrException e) {
-      //success
-    }
+    expectThrows(SolrException.class, () -> fieldSchemaRequest.process(getSolrClient()));
   }
 
   @Test
@@ -454,13 +445,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.UpdateResponse deleteDynamicFieldResponse = deleteFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteDynamicFieldResponse);
 
-    try {
-      dynamicFieldSchemaRequest.process(getSolrClient());
-      fail(String.format(Locale.ROOT, "after removal, the dynamic field %s shouldn't be anymore available over Schema API",
-          dynamicFieldName));
-    } catch (SolrException e) {
-      //success
-    }
+    expectThrows(SolrException.class, () -> dynamicFieldSchemaRequest.process(getSolrClient()));
   }
 
   @Test

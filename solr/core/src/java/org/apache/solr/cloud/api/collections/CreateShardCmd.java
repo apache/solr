@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -39,18 +40,19 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
-public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
+public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public CreateShardCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public CreateShardCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -59,7 +61,13 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     if (extCollectionName == null || sliceName == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'collection' and 'shard' are required parameters");
 
-    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collectionName;
+    if (followAliases) {
+      collectionName = ccc.getSolrCloudManager().getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    } else {
+      collectionName = extCollectionName;
+    }
     DocCollection collection = clusterState.getCollection(collectionName);
 
     int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
@@ -70,10 +78,20 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
     }
 
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
-    ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
-    // wait for a while until we see the shard
-    ocmh.waitForNewShard(collectionName, sliceName);
+    if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      // The message has been crafted by CollectionsHandler.CollectionOperation.CREATESHARD_OP and defines the QUEUE_OPERATION
+      // to be CollectionParams.CollectionAction.CREATESHARD.
+      // Likely a bug here (distributed or Overseer based) as we use the collection alias name and not the real name?
+      ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionCreateShard, message,
+          ccc.getSolrCloudManager(), ccc.getZkStateReader());
+    } else {
+      // message contains extCollectionName that might be an alias. Unclear (to me) how this works in that case.
+      ccc.offerStateUpdate(Utils.toJSON(message));
+    }
+
+    // wait for a while until we see the shard and update the local view of the cluster state
+    clusterState = CollectionHandlingUtils.waitForNewShard(collectionName, sliceName, ccc.getZkStateReader());
+
     String async = message.getStr(ASYNC);
     ZkNodeProps addReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, collectionName,
@@ -81,41 +99,46 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ZkStateReader.NRT_REPLICAS, String.valueOf(numNrtReplicas),
         ZkStateReader.TLOG_REPLICAS, String.valueOf(numTlogReplicas),
         ZkStateReader.PULL_REPLICAS, String.valueOf(numPullReplicas),
-        OverseerCollectionMessageHandler.CREATE_NODE_SET, message.getStr(OverseerCollectionMessageHandler.CREATE_NODE_SET),
+        CollectionHandlingUtils.CREATE_NODE_SET, message.getStr(CollectionHandlingUtils.CREATE_NODE_SET),
         CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
 
     Map<String, Object> propertyParams = new HashMap<>();
-    ocmh.addPropertyParams(message, propertyParams);
+    CollectionHandlingUtils.addPropertyParams(message, propertyParams);
     addReplicasProps = addReplicasProps.plus(propertyParams);
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
-    final NamedList addResult = new NamedList();
+    final NamedList<Object> addResult = new NamedList<>();
     try {
-      ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
-        Object addResultFailure = addResult.get("failure");
+      new AddReplicaCmd(ccc).addReplica(clusterState, addReplicasProps, addResult, () -> {
+        @SuppressWarnings("unchecked")
+        NamedList<Object> addResultFailure = (NamedList<Object>) addResult.get("failure");
         if (addResultFailure != null) {
-          SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+          @SuppressWarnings("unchecked")
+          SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
           if (failure == null) {
-            failure = new SimpleOrderedMap();
+            failure = new SimpleOrderedMap<>();
             results.add("failure", failure);
           }
-          failure.addAll((NamedList) addResultFailure);
+          failure.addAll(addResultFailure);
         } else {
-          SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+          @SuppressWarnings("unchecked")
+          SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
           if (success == null) {
-            success = new SimpleOrderedMap();
+            success = new SimpleOrderedMap<>();
             results.add("success", success);
           }
-          success.addAll((NamedList) addResult.get("success"));
+          @SuppressWarnings("unchecked")
+          NamedList<Object> addResultSuccess = (NamedList<Object>) addResult.get("success");
+          success.addAll(addResultSuccess);
         }
       });
     } catch (Assign.AssignmentException e) {
       // clean up the slice that we created
       ZkNodeProps deleteShard = new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName, ASYNC, async);
-      new DeleteShardCmd(ocmh).call(clusterState, deleteShard, results);
+      new DeleteShardCmd(ccc).call(clusterState, deleteShard, results);
       throw e;
     }
 
-    log.info("Finished create command on all shards for collection: " + collectionName);
+    log.info("Finished create command on all shards for collection: {}", collectionName);
   }
 
 }

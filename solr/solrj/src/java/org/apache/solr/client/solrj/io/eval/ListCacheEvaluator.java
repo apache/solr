@@ -18,13 +18,12 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 
-import java.util.Enumeration;
+import java.util.Collections;
 import java.util.Locale;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -42,29 +41,18 @@ public class ListCacheEvaluator extends RecursiveObjectEvaluator implements Many
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    ConcurrentMap objectCache = this.streamContext.getObjectCache();
-    List list = new ArrayList();
+    Map<String, ConcurrentMap<String, Object>> objectCache = this.streamContext.getObjectCache();
 
     if(values.length == 0) {
-      ConcurrentHashMap m = (ConcurrentHashMap)objectCache;
-      Enumeration en = m.keys();
-      while(en.hasMoreElements()) {
-        list.add(en.nextElement());
-      }
-      return list;
+      return new ArrayList<>(objectCache.keySet());
     } else if(values.length == 1) {
       String space = (String)values[0];
       space = space.replace("\"", "");
-      ConcurrentMap spaceCache = (ConcurrentMap)objectCache.get(space);
+      Map<String,Object> spaceCache = objectCache.get(space);
       if(spaceCache != null) {
-        ConcurrentHashMap spaceMap = (ConcurrentHashMap)objectCache.get(space);
-        Enumeration en = spaceMap.keys();
-        while(en.hasMoreElements()) {
-          list.add(en.nextElement());
-        }
-        return list;
+        return new ArrayList<>(spaceCache.keySet());
       } else {
-        return list;
+        return Collections.emptyList();
       }
     } else {
       throw new IOException("The listCache function requires two parameters: workspace and key");

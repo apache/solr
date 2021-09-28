@@ -52,10 +52,8 @@ public class DefaultValueUpdateProcessorFactory
 
   protected Object defaultValue = null;
 
-  @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
-
+  public void init(NamedList<?> args) {
     Object obj = args.remove("value");
     if (null == obj) {
       throw new SolrException

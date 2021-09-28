@@ -17,8 +17,12 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PostingsEnum;
@@ -40,9 +43,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermVectorParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
@@ -52,7 +53,6 @@ import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Return term vectors for the documents in a query result set.
@@ -76,7 +76,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *
  *
  */
-public class TermVectorComponent extends SearchComponent implements SolrCoreAware {
+public class TermVectorComponent extends SearchComponent {
 
 
   public static final String COMPONENT_NAME = "tv";
@@ -85,7 +85,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   private static final String TV_KEY_WARNINGS = "warnings";
 
-  protected NamedList initParams;
+  protected NamedList<?> initParams;
 
   /**
    * Helper method for determining the list of fields that we should 
@@ -122,7 +122,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       return (null != fieldNames) ?
         fieldNames :
         // return empty set indicating no fields should be used
-        Collections.<String>emptySet();
+        Collections.emptySet();
     }
 
     // otherwise us the raw fldList as is, no special parsing or globs
@@ -272,16 +272,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       if (keyField != null) {
         // guaranteed to be one and only one since this is uniqueKey!
         SolrDocument solrDoc = docFetcher.solrDoc(docId, srf);
-
-        String uKey = null;
-        Object val = solrDoc.getFieldValue(uniqFieldName);
-        if (val != null) {
-          if (val instanceof StoredField) {
-            uKey = ((StoredField) val).stringValue();
-          } else {
-            uKey = val.toString();
-          }
-        }
+        String uKey = schema.printableUniqueKey(solrDoc);
         assert null != uKey;
         docNL.add("uniqueKey", uKey);
         termVectors.add(uKey, docNL);
@@ -375,7 +366,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
               thePayloads = new NamedList<>();
               termInfo.add("payloads", thePayloads);
             }
-            thePayloads.add("payload", Base64.byteArrayToBase64(payload.bytes, payload.offset, payload.length));
+            thePayloads.add("payload", new String(Base64.getEncoder().encode(ByteBuffer.wrap(payload.bytes, payload.offset, payload.length)).array(), StandardCharsets.ISO_8859_1));
           }
         }
       }
@@ -422,13 +413,16 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
       
       NamedList<Object> termVectorsNL = new NamedList<>();
-      Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
+
+      @SuppressWarnings("unchecked")
+      Map.Entry<String, Object>[] arr = (NamedList.NamedListEntry<Object>[]) Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
 
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0 || !sreq.params.getBool(COMPONENT_NAME, false)) {
           continue;
         }
         for (ShardResponse srsp : sreq.responses) {
+          @SuppressWarnings({"unchecked"})
           NamedList<Object> nl = (NamedList<Object>)srsp.getSolrResponse().getResponse().get(TERM_VECTORS);
 
           // Add metadata (that which isn't a uniqueKey value):
@@ -460,14 +454,9 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
 
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-
   }
 
   @Override

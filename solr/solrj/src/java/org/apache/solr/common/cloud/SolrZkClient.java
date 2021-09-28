@@ -16,24 +16,17 @@
  */
 package org.apache.solr.common.cloud;
 
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -45,7 +38,7 @@ import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -55,6 +48,7 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -82,9 +76,9 @@ public class SolrZkClient implements Closeable {
   private ZkCmdExecutor zkCmdExecutor;
 
   private final ExecutorService zkCallbackExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("zkCallback"));
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
   private final ExecutorService zkConnManagerCallbackExecutor =
-      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("zkConnectionManagerCallback"));
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
@@ -221,7 +215,7 @@ public class SolrZkClient implements Closeable {
     String zkCredentialsProviderClassName = System.getProperty(ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
     if (!StringUtils.isEmpty(zkCredentialsProviderClassName)) {
       try {
-        log.info("Using ZkCredentialsProvider: " + zkCredentialsProviderClassName);
+        log.info("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
         return (ZkCredentialsProvider)Class.forName(zkCredentialsProviderClassName).getConstructor().newInstance();
       } catch (Throwable t) {
         // just ignore - go default
@@ -237,7 +231,7 @@ public class SolrZkClient implements Closeable {
     String zkACLProviderClassName = System.getProperty(ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
     if (!StringUtils.isEmpty(zkACLProviderClassName)) {
       try {
-        log.info("Using ZkACLProvider: " + zkACLProviderClassName);
+        log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
         return (ZkACLProvider)Class.forName(zkACLProviderClassName).getConstructor().newInstance();
       } catch (Throwable t) {
         // just ignore - go default
@@ -329,6 +323,18 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
+   * Returns children of the node at the path
+   */
+  public List<String> getChildren(final String path, final Watcher watcher,Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher) , stat));
+    } else {
+      return keeper.getChildren(path, wrapWatcher(watcher), stat);
+    }
+  }
+
+  /**
    * Returns node's data
    */
   public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
@@ -353,6 +359,10 @@ public class SolrZkClient implements Closeable {
   }
 
   public void atomicUpdate(String path, Function<byte[], byte[]> editor) throws KeeperException, InterruptedException {
+   atomicUpdate(path, (stat, bytes) -> editor.apply(bytes));
+  }
+
+  public void atomicUpdate(String path, BiFunction<Stat , byte[], byte[]> editor) throws KeeperException, InterruptedException {
     for (; ; ) {
       byte[] modified = null;
       byte[] zkData = null;
@@ -360,7 +370,7 @@ public class SolrZkClient implements Closeable {
       try {
         if (exists(path, true)) {
           zkData = getData(path, null, s, true);
-          modified = editor.apply(zkData);
+          modified = editor.apply(s, zkData);
           if (modified == null) {
             //no change , no need to persist
             return;
@@ -368,7 +378,7 @@ public class SolrZkClient implements Closeable {
           setData(path, modified, s.getVersion(), true);
           break;
         } else {
-          modified = editor.apply(null);
+          modified = editor.apply(s,null);
           if (modified == null) {
             //no change , no need to persist
             return;
@@ -573,7 +583,9 @@ public class SolrZkClient implements Closeable {
    */
   public Stat setData(String path, File file, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
+    if (log.isDebugEnabled()) {
+      log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
+    }
     byte[] data = FileUtils.readFileToByteArray(file);
     return setData(path, data, retryOnConnLoss);
   }
@@ -600,12 +612,7 @@ public class SolrZkClient implements Closeable {
     string.append(dent).append(path).append(" (").append(children.size()).append(")").append(NEWL);
     if (data != null) {
       String dataString = new String(data, StandardCharsets.UTF_8);
-      if ((!path.endsWith(".txt") && !path.endsWith(".xml")) || path.endsWith(ZkStateReader.CLUSTER_STATE)) {
-        if (path.endsWith(".xml")) {
-          // this is the cluster state in xml format - lets pretty print
-          dataString = prettyPrint(dataString);
-        }
-
+      if (!path.endsWith(".txt") && !path.endsWith(".xml")) {
         string.append(dent).append("DATA:\n").append(dent).append("    ").append(dataString.replaceAll("\n", "\n" + dent + "    ")).append(NEWL);
       } else {
         string.append(dent).append("DATA: ...supressed...").append(NEWL);
@@ -630,26 +637,6 @@ public class SolrZkClient implements Closeable {
     StringBuilder sb = new StringBuilder();
     printLayout("/", 0, sb);
     out.println(sb.toString());
-  }
-
-  public static String prettyPrint(String input, int indent) {
-    try {
-      Source xmlInput = new StreamSource(new StringReader(input));
-      StringWriter stringWriter = new StringWriter();
-      StreamResult xmlOutput = new StreamResult(stringWriter);
-      TransformerFactory transformerFactory = TransformerFactory.newInstance();
-      transformerFactory.setAttribute("indent-number", indent);
-      Transformer transformer = transformerFactory.newTransformer();
-      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-      transformer.transform(xmlInput, xmlOutput);
-      return xmlOutput.getWriter().toString();
-    } catch (Exception e) {
-      throw new RuntimeException("Problem pretty printing XML", e);
-    }
-  }
-
-  private static String prettyPrint(String input) {
-    return prettyPrint(input, 2);
   }
 
   public void close() {
@@ -739,8 +726,46 @@ public class SolrZkClient implements Closeable {
     return zkServerAddress;
   }
 
+  /**
+   * Gets the raw config node /zookeeper/config as returned by server. Response may look like
+   * <pre>
+   * server.1=localhost:2780:2783:participant;localhost:2791
+   * server.2=localhost:2781:2784:participant;localhost:2792
+   * server.3=localhost:2782:2785:participant;localhost:2793
+   * version=400000003
+   * </pre>
+   * @return Multi line string representing the config. For standalone ZK this will return empty string
+   */
+  public String getConfig() {
+    try {
+      Stat stat = new Stat();
+      keeper.sync(ZooDefs.CONFIG_NODE, null, null);
+      byte[] data = keeper.getConfig(false, stat);
+      if (data == null || data.length == 0) {
+        return "";
+      }
+      return new String(data, StandardCharsets.UTF_8);
+    } catch (NoNodeException nne) {
+      log.debug("Zookeeper does not have the /zookeeper/config znode, assuming old ZK version");
+      return "";
+    } catch (KeeperException|InterruptedException ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to get config from zookeeper", ex);
+    }
+  }
+
   public ZkACLProvider getZkACLProvider() {
     return zkACLProvider;
+  }
+
+  /**
+   * @return the ACLs on a single node in ZooKeeper.
+   */
+  public List<ACL> getACL(String path, Stat stat, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(() -> keeper.getACL(path, stat));
+    } else {
+      return keeper.getACL(path, stat);
+    }
   }
 
   /**
@@ -749,6 +774,7 @@ public class SolrZkClient implements Closeable {
    * @param path path to set ACL on e.g. /solr/conf/solrconfig.xml
    * @param acls a list of {@link ACL}s to be applied
    * @param retryOnConnLoss true if the command should be retried on connection loss
+   * @return the stat of the node
    */
   public Stat setACL(String path, List<ACL> acls, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
     if (retryOnConnLoss) {
@@ -767,9 +793,8 @@ public class SolrZkClient implements Closeable {
       try {
         setACL(path, getZkACLProvider().getACLsToAdd(path), true);
         log.debug("Updated ACL on {}", path);
-      } catch (NoNodeException e) {
+      } catch (NoNodeException ignored) {
         // If a node was deleted, don't bother trying to set ACLs on it.
-        return;
       }
     });
   }
@@ -784,7 +809,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void upConfig(Path confPath, String confName) throws IOException {
-    ZkMaintenanceUtils.upConfig(this, confPath, confName);
+    ZkMaintenanceUtils.uploadToZK(this, confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   public String listZnode(String path, Boolean recurse) throws KeeperException, InterruptedException, SolrServerException {
@@ -792,7 +817,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void downConfig(String confName, Path confPath) throws IOException {
-    ZkMaintenanceUtils.downConfig(this, confName, confPath);
+    ZkMaintenanceUtils.downloadFromZK(this, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, confPath);
   }
 
   public void zkTransfer(String src, Boolean srcIsZk,

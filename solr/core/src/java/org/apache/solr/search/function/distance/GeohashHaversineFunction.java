@@ -35,7 +35,6 @@ import java.util.Map;
  *
  * <p>
  * Ex: ghhsin(ValueSource, ValueSource, radius)
- * <p>
  *
  * @see org.apache.solr.search.function.distance.HaversineFunction for more details on the implementation
  *
@@ -59,7 +58,8 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context,
+                                  LeafReaderContext readerContext) throws IOException {
     final FunctionValues gh1DV = geoHash1.getValues(context, readerContext);
     final FunctionValues gh2DV = geoHash2.getValues(context, readerContext);
 
@@ -96,7 +96,7 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     geoHash1.createWeight(context, searcher);
     geoHash2.createWeight(context, searcher);
   }

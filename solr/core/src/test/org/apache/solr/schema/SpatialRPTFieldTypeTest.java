@@ -28,13 +28,13 @@ import org.junit.Before;
 import org.locationtech.spatial4j.shape.Shape;
 
 public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
-  
+
   private static File tmpSolrHome;
   private static File tmpConfDir;
-  
+
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
-  
+
   @Before
   private void initManagedSchemaCore() throws Exception {
     tmpSolrHome = createTempDir().toFile();
@@ -48,14 +48,14 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-minimal.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema_codec.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-bm25.xml"), tmpConfDir);
-    
+
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "false");
     System.setProperty("enable.update.log", "false");
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.getPath());
   }
-  
+
   @After
   private void afterClass() throws Exception {
     deleteCore();
@@ -68,70 +68,65 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   static final String DISTANCE_DEGREES = "1.3520328";
   static final String DISTANCE_KILOMETERS = "150.33939";
   static final String DISTANCE_MILES = "93.416565";
-  
+
   public void testDistanceUnitsDegrees() throws Exception {
     setupRPTField("degrees", "true");
-    
+
     assertU(adoc("str", "X", "geo", INDEXED_COORDINATES));
     assertU(commit());
     String q;
-    
+
     q = "geo:{!geofilt score=distance filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_DEGREES+"']");
-    
+
     q = "geo:{!geofilt score=degrees filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_DEGREES+"']");
-    
+
     q = "geo:{!geofilt score=kilometers filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_KILOMETERS+"']");
-    
+
     q = "geo:{!geofilt score=miles filter=false sfield=geo pt="+QUERY_COORDINATES+" d=180}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_MILES+"']");
   }
-  
+
   public void testDistanceUnitsKilometers() throws Exception {
     setupRPTField("kilometers", "true");
-    
+
     assertU(adoc("str", "X", "geo", INDEXED_COORDINATES));
     assertU(commit());
     String q;
-    
+
     q = "geo:{!geofilt score=distance filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_KILOMETERS+"']");
-    
+
     q = "geo:{!geofilt score=degrees filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_DEGREES+"']");
-    
+
     q = "geo:{!geofilt score=kilometers filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_KILOMETERS+"']");
-    
+
     q = "geo:{!geofilt score=miles filter=false sfield=geo pt="+QUERY_COORDINATES+" d=1000}";
     assertQ(req("q", q, "fl", "*,score"), "//result/doc/float[@name='score'][.='"+DISTANCE_MILES+"']");
   }
-  
+
   public void testJunkValuesForDistanceUnits() throws Exception {
-    try {
-      setupRPTField("rose", "true");
-      fail("Expected exception for bad value of distanceUnits.");
-    } catch (Exception ex) {
-      if(!ex.getMessage().startsWith("Must specify distanceUnits as one of"))
-        throw ex;
-    }
+    Exception ex = expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
+    assertTrue(ex.getMessage().startsWith("Must specify distanceUnits as one of"));
   }
 
   public void testMaxDistErrConversion() throws Exception {
     deleteCore();
-    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema.xml so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
-    
+
     String fieldName = "new_text_field";
     assertNull("Field '" + fieldName + "' is present in the schema",
         h.getCore().getLatestSchema().getFieldOrNull(fieldName));
-    
+
     IndexSchema oldSchema = h.getCore().getLatestSchema();
-    
+
     SpatialRecursivePrefixTreeFieldType rptFieldType = new SpatialRecursivePrefixTreeFieldType();
     Map<String, String> rptMap = new HashMap<String,String>();
 
@@ -207,7 +202,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     setupRPTField("miles", "true", "WKT", random().nextBoolean()
         ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
 
-    AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
+    AbstractSpatialFieldType<?> ftype = (AbstractSpatialFieldType<?>)
         h.getCore().getLatestSchema().getField("geo").getType();
 
     String wkt = "POINT (1 2)";
@@ -217,12 +212,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     assertEquals(wkt, out);
 
     //assert fails GeoJSON
-    try {
-      ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}");
-      fail("Should not parse GeoJSON if told format is WKT");
-    } catch (SolrException e) {// expected
-      System.out.println(e);
-    }
+    expectThrows(SolrException.class, () -> ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}"));
 
   }
 
@@ -230,7 +220,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     setupRPTField("miles", "true", "GeoJSON", random().nextBoolean()
         ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
 
-    AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
+    AbstractSpatialFieldType<?> ftype = (AbstractSpatialFieldType<?>)
         h.getCore().getLatestSchema().getField("geo").getType();
 
     String json = "{\"type\":\"Point\",\"coordinates\":[1,2]}";
@@ -242,15 +232,15 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
 
   private void setupRPTField(String distanceUnits, String geo, String format, FieldType fieldType) throws Exception {
     deleteCore();
-    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
-    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
+    Files.delete(managedSchemaFile.toPath()); // Delete managed-schema.xml so it won't block parsing a new schema
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
 
     String fieldName = "new_text_field";
     assertNull("Field '" + fieldName + "' is present in the schema",
         h.getCore().getLatestSchema().getFieldOrNull(fieldName));
-    
+
     IndexSchema oldSchema = h.getCore().getLatestSchema();
 
     if (fieldType == null) {
@@ -270,7 +260,8 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     }
     fieldType.init(oldSchema, rptMap);
     fieldType.setTypeName("location_rpt");
-    SchemaField newField = new SchemaField("geo", fieldType, SchemaField.STORED | SchemaField.INDEXED, null);
+    SchemaField newField = new SchemaField("geo", fieldType, SchemaField.STORED | SchemaField.INDEXED | SchemaField.OMIT_NORMS | SchemaField.OMIT_TF_POSITIONS,
+            null);
     IndexSchema newSchema = oldSchema.addField(newField);
 
     h.getCore().setLatestSchema(newSchema);

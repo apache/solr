@@ -38,9 +38,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -78,7 +78,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    log.info("####SETUP_START " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_START {}", getTestName());
+    }
 
     String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
 
@@ -86,7 +88,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     solrHome = exampleHome;
 
     zkDir = tmpDir.resolve("zookeeper/server1/data");
-    log.info("ZooKeeper dataDir:" + zkDir);
+    log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
@@ -98,7 +100,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     this.zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT);
 
-    log.info("####SETUP_END " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_END {}", getTestName());
+    }
   }
 
   @Test
@@ -106,7 +110,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals("upconfig", ZkCLI.UPCONFIG);
     assertEquals("x", ZkCLI.EXCLUDE_REGEX_SHORT);
     assertEquals("excluderegex", ZkCLI.EXCLUDE_REGEX);
-    assertEquals(ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
+    assertEquals(ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
   }
 
   @Test
@@ -119,7 +123,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     ZkCLI.main(args);
 
-    assertTrue(zkClient.exists(chroot + ZkConfigManager.CONFIGS_ZKNODE
+    assertTrue(zkClient.exists(chroot + ZkConfigSetService.CONFIGS_ZKNODE
         + "/collection1", true));
   }
 
@@ -241,7 +245,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     }
     ZkCLI.main(upconfigArgs);
 
-    assertTrue(zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + confsetname, true));
+    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
 
     // print help
     // ZkCLI.main(new String[0]);
@@ -265,7 +269,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
 
     File[] files = confDir.listFiles();
-    List<String> zkFiles = zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE + "/" + confsetname, null, true);
+    List<String> zkFiles = zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
     assertEquals(files.length, zkFiles.size());
 
     File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
@@ -275,7 +279,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
         String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
         File downloadedFile = new File(confDir,relativePathofFile);
-        if (ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
+        if (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
           assertFalse(sourceFile.getAbsolutePath() + " exists in ZK, downloaded:" + downloadedFile.getAbsolutePath(), downloadedFile.exists());
         } else {
           assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
@@ -382,8 +386,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    zkClient.close();
-    zkServer.shutdown();
+    if (zkClient != null) {
+      zkClient.close();
+    }
+    if (zkServer != null) {
+      zkServer.shutdown();
+    }
     super.tearDown();
   }
 

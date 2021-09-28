@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
@@ -36,22 +38,24 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class StreamContext implements Serializable {
 
-  private Map entries = new HashMap();
-  private Map tupleContext = new HashMap();
-  private Map<String, Object> lets = new HashMap();
-  private ConcurrentMap objectCache;
+  private Map<String, Object> entries = new HashMap<String, Object>();
+  private Map<String, String> tupleContext = new HashMap<>();
+  private Map<String, Object> lets = new HashMap<>();
+  private ConcurrentMap<String, ConcurrentMap<String,Object>> objectCache;
   public int workerID;
   public int numWorkers;
   private SolrClientCache clientCache;
   private ModelCache modelCache;
   private StreamFactory streamFactory;
   private boolean local;
+  private SolrParams requestParams;
+  private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
 
-  public ConcurrentMap getObjectCache() {
+  public ConcurrentMap<String, ConcurrentMap<String,Object>> getObjectCache() {
     return this.objectCache;
   }
 
-  public void setObjectCache(ConcurrentMap objectCache) {
+  public void setObjectCache(ConcurrentMap<String, ConcurrentMap<String,Object>> objectCache) {
     this.objectCache = objectCache;
   }
 
@@ -63,7 +67,7 @@ public class StreamContext implements Serializable {
     return entries.get(key);
   }
 
-  public void put(Object key, Object value) {
+  public void put(String key, Object value) {
     this.entries.put(key, value);
   }
 
@@ -71,7 +75,7 @@ public class StreamContext implements Serializable {
     return entries.containsKey(key);
   }
 
-  public Map getEntries() {
+  public Map<String, Object> getEntries() {
     return this.entries;
   }
 
@@ -95,7 +99,8 @@ public class StreamContext implements Serializable {
     this.streamFactory = streamFactory;
   }
 
-  public Map getTupleContext() {
+  // TODO: This could probably be replaced with an Optional, since the only key ever used is "null"
+  public Map<String, String> getTupleContext() {
     return tupleContext;
   }
 
@@ -109,5 +114,21 @@ public class StreamContext implements Serializable {
 
   public boolean isLocal() {
     return local;
+  }
+
+  public void setRequestParams(SolrParams requestParams) {
+    this.requestParams = requestParams;
+  }
+
+  public SolrParams getRequestParams() {
+    return requestParams;
+  }
+
+  public void setRequestReplicaListTransformerGenerator(RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator) {
+    this.requestReplicaListTransformerGenerator = requestReplicaListTransformerGenerator;
+  }
+
+  public RequestReplicaListTransformerGenerator getRequestReplicaListTransformerGenerator() {
+    return requestReplicaListTransformerGenerator;
   }
 }

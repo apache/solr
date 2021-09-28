@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Jaeger Tracer Configurator.
- */
+/** Jaeger Tracer Configurator. */
 package org.apache.solr.jaeger;

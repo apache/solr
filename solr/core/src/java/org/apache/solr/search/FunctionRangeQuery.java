@@ -41,18 +41,18 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
 
   @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
-    Map fcontext = ValueSource.newContext(searcher);
+    Map<Object,Object> fcontext = ValueSource.newContext(searcher);
     Weight weight = rangeFilt.createWeight(searcher, ScoreMode.COMPLETE, 1);
     return new FunctionRangeCollector(fcontext, weight);
   }
 
   class FunctionRangeCollector extends DelegatingCollector {
-    final Map fcontext;
+    final Map<Object,Object> fcontext;
     final Weight weight;
     ValueSourceScorer scorer;
     int maxdoc;
 
-    public FunctionRangeCollector(Map fcontext, Weight weight) {
+    public FunctionRangeCollector(Map<Object,Object> fcontext, Weight weight) {
       this.fcontext = fcontext;
       this.weight = weight;
     }

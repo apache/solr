@@ -42,6 +42,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.InvalidPathException;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -434,6 +435,15 @@ public class SimplePostTool {
      "The web mode is a simple crawler following links within domain, default delay=10s.");
   }
 
+  private boolean checkIsValidPath(File srcFile) {
+    try {
+      srcFile.toPath();
+      return true;
+    } catch (InvalidPathException e) {
+      return false;
+    }
+  }
+
   /** Post all filenames provided in args
    * @param args array of file names
    * @param startIndexInArgs offset to start
@@ -446,21 +456,13 @@ public class SimplePostTool {
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
       File srcFile = new File(args[j]);
-      if(srcFile.isDirectory() && srcFile.canRead()) {
+      boolean isValidPath = checkIsValidPath(srcFile);
+      if(isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
         filesPosted += postDirectory(srcFile, out, type);
-      } else if (srcFile.isFile() && srcFile.canRead()) {
+      } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
         filesPosted += postFiles(new File[] {srcFile}, out, type);
       } else {
-        File parent = srcFile.getParentFile();
-        if(parent == null) parent = new File(".");
-        String fileGlob = srcFile.getName();
-        GlobFileFilter ff = new GlobFileFilter(fileGlob, false);
-        File[] files = parent.listFiles(ff);
-        if(files == null || files.length == 0) {
-          warn("No files or directories matching "+srcFile);
-          continue;
-        }
-        filesPosted += postFiles(parent.listFiles(ff), out, type);
+        filesPosted += handleGlob(srcFile, out, type);
       }
     }
     return filesPosted;
@@ -477,21 +479,13 @@ public class SimplePostTool {
     reset();
     int filesPosted = 0;
     for (File srcFile : files) {
-      if(srcFile.isDirectory() && srcFile.canRead()) {
+      boolean isValidPath = checkIsValidPath(srcFile);
+      if(isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
         filesPosted += postDirectory(srcFile, out, type);
-      } else if (srcFile.isFile() && srcFile.canRead()) {
+      } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
         filesPosted += postFiles(new File[] {srcFile}, out, type);
       } else {
-        File parent = srcFile.getParentFile();
-        if(parent == null) parent = new File(".");
-        String fileGlob = srcFile.getName();
-        GlobFileFilter ff = new GlobFileFilter(fileGlob, false);
-        File[] fileList = parent.listFiles(ff);
-        if(fileList == null || fileList.length == 0) {
-          warn("No files or directories matching "+srcFile);
-          continue;
-        }
-        filesPosted += postFiles(fileList, out, type);
+        filesPosted += handleGlob(srcFile, out, type);
       }
     }
     return filesPosted;
@@ -535,6 +529,28 @@ public class SimplePostTool {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
+    }
+    return filesPosted;
+  }
+
+  /**
+   * This only handles file globs not full path globbing.
+   * @param globFile file holding glob path
+   * @param out outputStream to write results to
+   * @param type default content-type to use when posting (may be overridden in auto mode)
+   * @return number of files posted
+   */
+  int handleGlob(File globFile, OutputStream out, String type) {
+    int filesPosted = 0;
+    File parent = globFile.getParentFile();
+    if (parent == null) parent = new File(".");
+    String fileGlob = globFile.getName();
+    GlobFileFilter ff = new GlobFileFilter(fileGlob, false);
+    File[] fileList = parent.listFiles(ff);
+    if (fileList == null || fileList.length == 0) {
+      warn("No files or directories matching " + globFile);
+    } else {
+      filesPosted = postFiles(fileList, out, type);
     }
     return filesPosted;
   }
@@ -606,14 +622,15 @@ public class SimplePostTool {
           URL postUrl = new URL(appendParam(solrUrl.toString(),
               "literal.id="+URLEncoder.encode(u.toString(),"UTF-8") +
               "&literal.url="+URLEncoder.encode(u.toString(),"UTF-8")));
-          boolean success = postData(new ByteArrayInputStream(result.content.array(), result.content.arrayOffset(),result.content.limit() ), null, out, result.contentType, postUrl);
+          ByteBuffer content = result.content;
+          boolean success = postData(new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), null, out, result.contentType, postUrl);
           if (success) {
             info("POSTed web resource "+u+" (depth: "+level+")");
             Thread.sleep(delay * 1000);
             numPages++;
             // Pull links from HTML pages only
             if(recursive > level && result.contentType.equals("text/html")) {
-              Set<URL> children = pageFetcher.getLinksFromWebPage(u, new ByteArrayInputStream(result.content.array(), result.content.arrayOffset(), result.content.limit()), result.contentType, postUrl);
+              Set<URL> children = pageFetcher.getLinksFromWebPage(u, new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), result.contentType, postUrl);
               subStack.addAll(children);
             }
           } else {
@@ -709,9 +726,9 @@ public class SimplePostTool {
    * @return true if this is a supported content type
    */
   protected boolean typeSupported(String type) {
-    for(String key : mimeMap.keySet()) {
-      if(mimeMap.get(key).equals(type)) {
-        if(fileTypes.contains(key))
+    for(Map.Entry<String, String> entry : mimeMap.entrySet()) {
+      if(entry.getValue().equals(type)) {
+        if(fileTypes.contains(entry.getKey()))
           return true;
       }
     }
@@ -1121,7 +1138,7 @@ public class SimplePostTool {
         }
         res.httpStatus = 404;
         HttpURLConnection conn = (HttpURLConnection) u.openConnection();
-        conn.setRequestProperty("User-Agent", "SimplePostTool-crawler/"+VERSION_OF_THIS_TOOL+" (http://lucene.apache.org/solr/)");
+        conn.setRequestProperty("User-Agent", "SimplePostTool-crawler/"+VERSION_OF_THIS_TOOL+" (https://solr.apache.org/)");
         conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
         conn.connect();
         res.httpStatus = conn.getResponseCode();

@@ -93,7 +93,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     // 
     add = p.addCommands.get(1);
     assertEquals("SolrInputDocument(fields: [f1=[v1, v2], f2=null])", add.solrDoc.toString());
-    assertEquals(false, add.overwrite);
+    assertFalse(add.overwrite);
 
     // parse the commit commands
     assertEquals( 2, p.commitCommands.size() );
@@ -112,21 +112,21 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals( 4, p.deleteCommands.size() );
     DeleteUpdateCommand delete = p.deleteCommands.get( 0 );
     assertEquals( delete.id, "ID" );
-    assertEquals( delete.query, null );
+    assertNull( delete.query );
     assertEquals( delete.commitWithin, -1);
     
     delete = p.deleteCommands.get( 1 );
     assertEquals( delete.id, "ID" );
-    assertEquals( delete.query, null );
+    assertNull( delete.query );
     assertEquals( delete.commitWithin, 500);
     
     delete = p.deleteCommands.get( 2 );
-    assertEquals( delete.id, null );
+    assertNull( delete.id );
     assertEquals( delete.query, "QUERY" );
     assertEquals( delete.commitWithin, -1);
     
     delete = p.deleteCommands.get( 3 );
-    assertEquals( delete.id, null );
+    assertNull( delete.id );
     assertEquals( delete.query, "QUERY" );
     assertEquals( delete.commitWithin, 500);
 
@@ -153,36 +153,31 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputField f = d.getField( "id" );
     assertEquals("1", f.getValue());
     assertEquals(add.commitWithin, 100);
-    assertEquals(add.overwrite, false);
+    assertFalse(add.overwrite);
 
     add = p.addCommands.get(1);
     d = add.solrDoc;
     f = d.getField( "id" );
     assertEquals("2", f.getValue());
     assertEquals(add.commitWithin, 100);
-    assertEquals(add.overwrite, false);
+    assertFalse(add.overwrite);
 
     req.close();
   }
 
   @Test
-  public void testInvalidJsonProducesBadRequestSolrException() throws Exception
-  {
+  public void testInvalidJsonProducesBadRequestSolrException() throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader();
     String invalidJsonString = "}{";
-    
-    try(SolrQueryRequest req = req()) {
-      try {
-        loader.load(req, rsp, new ContentStreamBase.StringStream(invalidJsonString), p);
-        fail("Expected invalid JSON to produce a SolrException.");
-      } catch (SolrException expectedException) {
-        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, expectedException.code());
-        assertTrue(expectedException.getMessage().contains("Cannot parse"));
-        assertTrue(expectedException.getMessage().contains("JSON"));
-      }
-    }
+
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      loader.load(req(), rsp, new ContentStreamBase.StringStream(invalidJsonString), p);
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Cannot parse"));
+    assertTrue(ex.getMessage().contains("JSON"));
   }
 
   public void testSimpleFormatInAdd() throws Exception
@@ -201,14 +196,14 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputField f = d.getField( "id" );
     assertEquals("1", f.getValue());
     assertEquals(add.commitWithin, -1);
-    assertEquals(add.overwrite, true);
+    assertTrue(add.overwrite);
 
     add = p.addCommands.get(1);
     d = add.solrDoc;
     f = d.getField( "id" );
     assertEquals("2", f.getValue());
     assertEquals(add.commitWithin, -1);
-    assertEquals(add.overwrite, true);
+    assertTrue(add.overwrite);
 
     req.close();
   }
@@ -299,7 +294,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     String content = (String) p.addCommands.get(0).solrDoc.getFieldValue("_src_");
     assertNotNull(content);
-    Map obj = (Map) Utils.fromJSONString(content);
+    Map<?, ?> obj = (Map<?, ?>) Utils.fromJSONString(content);
     assertEquals(Boolean.TRUE, obj.get("bool"));
     assertEquals("v0", obj.get("f0"));
     assertNotNull(obj.get("f0"));
@@ -308,7 +303,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     content = (String) p.addCommands.get(1).solrDoc.getFieldValue("_src_");
     assertNotNull(content);
-    obj = (Map) Utils.fromJSONString(content);
+    obj = (Map<?, ?>) Utils.fromJSONString(content);
     assertEquals("v1", obj.get("f1"));
     assertEquals("v2", obj.get("f2"));
     assertTrue(obj.containsKey("f3"));
@@ -423,6 +418,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       assertOnlyValue("i am the parent", parent, "name");
       assertOnlyValue("parent", parent, "cat");
 
+      @SuppressWarnings({"unchecked"})
       List<SolrInputDocument> childDocs1 = (List) ((parent.getField("children")).getValue());
 
       assertEquals(2, childDocs1.size());
@@ -439,6 +435,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         assertOnlyValue("test-new-label", child2, "test_s");
         assertOnlyValue("child", child2, "cat");
 
+        @SuppressWarnings({"unchecked"})
         List<SolrInputDocument> childDocs2 = (List) ((child2.getField("grandchildren")).getValue());
 
         assertEquals(1, childDocs2.size());
@@ -636,25 +633,17 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     ignoreException("big_integer_t");
 
-    try {
+    SolrException ex = expectThrows(SolrException.class, () -> {
       updateJ(json( "[{'id':'1','big_integer_tl':12345678901234567890}]" ), null);
-      fail("A BigInteger value should overflow a long field");
-    } catch (SolrException e) {
-      if ( ! (e.getCause() instanceof NumberFormatException)) {
-        throw e;
-      }
-    }
+    });
+    assertTrue(ex.getCause() instanceof NumberFormatException);
 
     // Adding a BigInteger to an integer field should fail
     // BigInteger.intValue() returns only the low-order 32 bits.
-    try {
+    ex = expectThrows(SolrException.class, () -> {
       updateJ(json( "[{'id':'1','big_integer_ti':12345678901234567890}]" ), null);
-      fail("A BigInteger value should overflow an integer field");
-    } catch (SolrException e) {
-      if ( ! (e.getCause() instanceof NumberFormatException)) {
-        throw e;
-      }
-    }
+    });
+    assertTrue(ex.getCause() instanceof NumberFormatException);
 
     unIgnoreException("big_integer_t");
   }
@@ -801,6 +790,14 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     checkTwoAnonymousChildDocs(DUP_KEYS_ANON_CHILD_DOCS_JSON, false);
   }
 
+  @Test
+  public void testChildDocWithoutId() throws Exception {
+    final String json = DUP_KEYS_ANON_CHILD_DOCS_JSON.replace("\"id\": \"3\",\n", "");
+    assert !json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON);
+    checkTwoAnonymousChildDocs(
+        json, false);
+  }
+
   // rawJsonStr has "_childDocuments_" key.  if anonChildDocs then we want to test with something else.
   private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs) throws Exception {
     if (!anonChildDocs) {
@@ -834,7 +831,11 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       cd = (SolrInputDocument)((List)(d.getField("childLabel")).getValue()).get(1);
     }
     cf = cd.getField( "id" );
-    assertEquals("3", cf.getValue());
+    if (rawJsonStr.contains("\"3\"")) {
+      assertEquals("3", cf.getValue());
+    } else { // ID 3 was removed previously to test we don't need an ID to have a child doc
+      assertNull("child doc should have no ID", cf);
+    }
     cf = cd.getField( "foo_i" );
     assertEquals(2, cf.getValueCount());
 
@@ -957,6 +958,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputDocument one = add.solrDoc;
     assertEquals("1", one.getFieldValue("id"));
 
+    @SuppressWarnings({"unchecked"})
     List<SolrInputDocument> children = (List) one.getFieldValues("children");
     SolrInputDocument two = children.get(0);
     assertEquals("2", two.getFieldValue("id"));
@@ -1006,6 +1008,5 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req.close();
 
   }
-
 
 }

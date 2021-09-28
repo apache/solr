@@ -109,7 +109,7 @@ public class IndexFingerprint implements MapSerializable {
       throws IOException {
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
-    Map funcContext = ValueSource.newContext(searcher);
+    Map<Object, Object> funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
     
     IndexFingerprint f = new IndexFingerprint();
@@ -184,7 +184,7 @@ public class IndexFingerprint implements MapSerializable {
     return map;
   }
 
-  private static long getLong(Map m, String key, long def) {
+  private static long getLong(Map<String, Object> m, String key, long def) {
     Object oval = m.get(key);
     return oval != null ? ((Number)oval).longValue() : def;
   }
@@ -192,13 +192,14 @@ public class IndexFingerprint implements MapSerializable {
   /**
    * Create an IndexFingerprint object from a deserialized generic object (Map or NamedList)
    */
+  @SuppressWarnings("unchecked")
   public static IndexFingerprint fromObject(Object o) {
     if (o instanceof IndexFingerprint) return (IndexFingerprint) o;
-    Map map = null;
+    Map<String, Object> map = null;
     if (o instanceof Map) {
-      map = (Map) o;
+      map = (Map<String,Object>) o;
     } else if (o instanceof NamedList) {
-      map = ((NamedList) o).asShallowMap();
+      map = ((NamedList<Object>) o).asShallowMap();
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type " + o);
     }

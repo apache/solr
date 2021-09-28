@@ -37,7 +37,7 @@ public interface ShardResultTransformer<T, R> {
    * @return {@link NamedList} structure
    * @throws IOException If I/O related errors occur during transforming
    */
-  NamedList transform(T data) throws IOException;
+  NamedList<NamedList<Object>> transform(T data) throws IOException;
 
   /**
    * Transforms the specified shard response into native structures.
@@ -48,6 +48,6 @@ public interface ShardResultTransformer<T, R> {
    * @param shard The shard address where the response originated from
    * @return native structure of the data
    */
-  R transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard);
+  R transformToNative(NamedList<NamedList<?>> shardResponse, Sort groupSort, Sort withinGroupSort, String shard);
 
 }

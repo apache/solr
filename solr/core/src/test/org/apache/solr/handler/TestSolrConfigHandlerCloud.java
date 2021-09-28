@@ -85,7 +85,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add(""+replica.getBaseUrl() + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
     }
     return urls.get(random().nextInt(urls.size()));
   }
@@ -95,7 +95,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add(""+replica.getBaseUrl() + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
     }
 
     RestTestHarness writeHarness = randomRestTestHarness();
@@ -109,7 +109,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     TestSolrConfigHandler.runConfigCommand(writeHarness,"/config/params", payload);
 
-    Map result = TestSolrConfigHandler.testForResponseElement(null,
+    Map<?, ?> result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
         "/config/params",
         cloudClient,
@@ -262,14 +262,24 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         null,
         TIMEOUT_S);
 
+    payload = " {'unset' : 'y'}";
+    TestSolrConfigHandler.runConfigCommandExpectFailure(
+        writeHarness,"/config/params", payload, "Unknown operation 'unset'");
+
+    // deleting already deleted one should fail
+    // error message should contain parameter set name
+    payload = " {'delete' : 'y'}";
+    TestSolrConfigHandler.runConfigCommandExpectFailure(
+        writeHarness,"/config/params", payload, "Could not delete. No such params 'y' exist");
 
   }
 
-  public static void compareValues(Map result, Object expected, List<String> jsonPath) {
+  @SuppressWarnings({"unchecked"})
+  public static void compareValues(Map<?,?> result, Object expected, List<String> jsonPath) {
     Object val = Utils.getObjectByPath(result, false, jsonPath);
     assertTrue(StrUtils.formatString("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, result.toString()),
         expected instanceof Predicate ?
-            ((Predicate)expected ).test(val) :
+            ((Predicate<Object>)expected ).test(val) :
             Objects.equals(expected, val)
         );
   }

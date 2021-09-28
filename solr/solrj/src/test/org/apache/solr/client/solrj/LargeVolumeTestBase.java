@@ -16,7 +16,12 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.SolrJettyTestBase;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -25,16 +30,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  *
  * @since solr 1.3
  */
-public abstract class LargeVolumeTestBase extends SolrJettyTestBase
+public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -52,7 +52,7 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
       threads[i] = new DocThread( "T"+i+":" );
       threads[i].setName("DocThread-" + i);
       threads[i].start();
-      log.info("Started thread: " + i);
+      log.info("Started thread: {}", i);
     }
     for (int i=0; i<threadCount; i++) {
       threads[i].join();
@@ -98,7 +98,9 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
             docs = new ArrayList<>();
           }
           if (i > 0 && i % 5000 == 0) {
-            log.info(getName() + " - Committing " + i);
+            if (log.isInfoEnabled()) {
+              log.info("{} - Committing {}", getName(), i);
+            }
             resp = client.commit();
             assertEquals(0, resp.getStatus());
           }
@@ -117,7 +119,9 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
         assertEquals(0, resp.getStatus());
         } catch (Exception e) {
           // a commit/optimize can fail with a too many warming searchers exception
-          log.info("Caught benign exception during commit: " + e.getMessage());
+          if (log.isInfoEnabled()) {
+            log.info("Caught benign exception during commit: ", e);
+          }
         }
         if (!(client instanceof EmbeddedSolrServer)) {
           client.close();

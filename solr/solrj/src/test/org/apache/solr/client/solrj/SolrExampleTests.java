@@ -17,11 +17,8 @@
 package org.apache.solr.client.solrj;
 
 
-import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.core.StringContains.containsString;
-
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
+import com.google.common.collect.Maps;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -44,7 +42,7 @@ import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -75,6 +73,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.util.RTimer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,7 +81,9 @@ import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
+import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * This should include tests against the example solr config
@@ -109,10 +110,51 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     client.commit();
   }
 
+  @Test
+  @Monster("Only useful to verify the performance of serialization+ deserialization")
+  // ant -Dtestcase=SolrExampleBinaryTest -Dtests.method=testQueryPerf -Dtests.monster=true test
+  public void testQueryPerf() throws Exception {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
+    ArrayList<SolrInputDocument> docs = new ArrayList<>();
+    int id = 0;
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "apple", "cat", "a", "inStock", true, "popularity", 12, "price", .017));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "lg", "cat", "a", "inStock", false, "popularity", 13, "price", 16.04));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "samsung", "cat", "a", "inStock", true, "popularity", 14, "price", 12.34));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "lg", "cat", "b", "inStock", false, "popularity", 24, "price", 51.39));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "nokia", "cat", "b", "inStock", true, "popularity", 28, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "a", "inStock", false, "popularity", 32));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "htc", "cat", "a", "inStock", true, "popularity", 31, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "apple", "cat", "b", "inStock", false, "popularity", 36));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "lg", "cat", "b", "inStock", true, "popularity", 37, "price", 1.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "b", "inStock", false, "popularity", 38, "price", 47.98));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "b", "inStock", true, "popularity", -38));
+    docs.add(makeTestDoc("id", id++, "cat", "b")); // something not matching all fields
+    client.add(docs);
+    client.commit();
+    //this sets the cache
+    QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
+
+    RTimer timer = new RTimer();
+    int count = 10000;
+    log.info("Started perf test....");
+    for(int i=0;i< count; i++){
+      rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
+    }
+
+    if (log.isInfoEnabled()) {
+      log.info("time taken to execute {} queries is {} ms", count, timer.getTime());
+    }
+
+  }
+
+
   /**
    * query the example
    */
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testExampleConfig() throws Exception
   {    
     SolrClient client = getSolrClient();
@@ -225,7 +267,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertTrue("echoed params are not a NamedList: " +
                response.getResponseHeader().get("params").getClass(),
                response.getResponseHeader().get("params") instanceof NamedList);
-    NamedList echo = (NamedList) response.getResponseHeader().get("params");
+    NamedList<?> echo = (NamedList<?>) response.getResponseHeader().get("params");
     List values = null;
     assertEquals("foo", echo.get("q"));
     assertTrue("echoed fq is not a List: " + echo.get("fq").getClass(),
@@ -480,50 +522,25 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.set(CommonParams.QT, "/analysis/field");
     query.set(AnalysisParams.FIELD_TYPE, "pint");
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
-    try {
-      client.query( query );
-      Assert.fail("should have a number format exception");
-    }
-    catch(SolrException ex) {
-      assertEquals(400, ex.code());
-      assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
-    }
-    catch(Throwable t) {
-      t.printStackTrace();
-      Assert.fail("should have thrown a SolrException! not: "+t);
-    }
-    
-    try {
-      //the df=text here is a kluge for the test to supply a default field in case there is none in schema.xml
-      // alternatively, the resulting assertion could be modified to assert that no default field is specified.
-      client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ); // query syntax error
-      Assert.fail("should have a number format exception");
-    }
-    catch(SolrException ex) {
-      assertEquals(400, ex.code());
-      assertTrue(ex.getMessage().indexOf("??::?? ignore_exception")>0);  // The reason should get passed through
-    }
-    catch(Throwable t) {
-      t.printStackTrace();
-      Assert.fail("should have thrown a SolrException! not: "+t);
+    SolrException ex = expectThrows(SolrException.class, () -> client.query(query));
+    assertEquals(400, ex.code());
+    assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 
-    }
+    //the df=text here is a kluge for the test to supply a default field in case there is none in schema.xml
+    // alternatively, the resulting assertion could be modified to assert that no default field is specified.
+    ex = expectThrows(SolrException.class, () -> client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ));
+    assertTrue(ex.getMessage().indexOf("??::?? ignore_exception")>0);  // The reason should get passed through
+    assertEquals(400, ex.code());
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "DOCID");
     doc.addField("id", "DOCID2");
     doc.addField("name", "hello");
 
     if (client instanceof HttpSolrClient) {
-      try {
-        client.add(doc);
-        fail("Should throw exception!");
-      } catch (SolrException ex) {
-        assertEquals(400, ex.code());
-        assertTrue(ex.getMessage().indexOf(
-            "contains multiple values for uniqueKey") > 0); // The reason should get passed through
-      } catch (Throwable t) {
-        Assert.fail("should have thrown a SolrException! not: " + t);
-      }
+      ex = expectThrows(SolrException.class, () -> client.add(doc));
+      assertEquals(400, ex.code());
+      assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
     } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
       //XXX concurrentupdatesolrserver reports errors differently
       ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (ErrorTrackingConcurrentUpdateSolrClient) client;
@@ -536,7 +553,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       assertTrue("Unexpected exception message: " + concurrentClient.lastError.getMessage(), 
           concurrentClient.lastError.getMessage().contains("Remote error message: Document contains multiple values for uniqueKey"));
     } else {
-      log.info("Ignoring update test for client:" + client.getClass().getName());
+      if (log.isInfoEnabled()) {
+        log.info("Ignoring update test for client: {}", client.getClass().getName());
+      }
     }
   }
   
@@ -584,7 +603,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertTrue( "should be bigger ["+id1+","+id2+"]", id2 > id1 );
     
     // The score from explain should be the same as the score
-    NamedList explain = (NamedList)out1.getFieldValue( "[explain]" );
+    NamedList<?> explain = (NamedList<?>)out1.getFieldValue( "[explain]" );
     assertEquals( out1.get( "score"), explain.get( "value" ) );
     
     // Augmented _value_ with alias
@@ -714,15 +733,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    var file = getFile("solrj/books.csv");
+    File file = getFile("solrj/books.csv");
     final int opened[] =  new int[] {0};
     final int closed[] =  new int[] {0};
 
-    var assertClosed = random().nextBoolean();
+    boolean assertClosed = random().nextBoolean();
     if (assertClosed) {
-      var allBytes = Files.readAllBytes(file.toPath());
-      
-      var contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
+      byte[] allBytes = Files.readAllBytes(file.toPath());
+
+      ContentStreamBase.ByteArrayStream contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
         @Override
         public InputStream getStream() throws IOException {
           opened [0]++;
@@ -776,13 +795,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
-    List<Pair<NamedList, Object>> docs = new ArrayList<>();
-    NamedList params = new NamedList();
-    docs.add(new Pair(params, getFileContent(params, "solrj/docs1.xml")));
+    List<Pair<NamedList<String>, Object>> docs = new ArrayList<>();
+    NamedList<String> params = new NamedList<>();
+    docs.add(new Pair<>(params, getFileContent(params, "solrj/docs1.xml")));
 
-    params = new NamedList();
+    params = new NamedList<>();
     params.add(ASSUME_CONTENT_TYPE, "application/csv");
-    docs.add(new Pair(params, getFileContent(params, "solrj/books.csv")));
+    docs.add(new Pair<>(params, getFileContent(params, "solrj/books.csv")));
 
     MultiContentWriterRequest up = new MultiContentWriterRequest(SolrRequest.METHOD.POST, "/update", docs.iterator());
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -793,7 +812,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   }
 
-  private ByteBuffer getFileContent(NamedList nl, String name) throws IOException {
+  private ByteBuffer getFileContent(NamedList<?> nl, String name) throws IOException {
     try (InputStream is = new FileInputStream(getFile(name))) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }
@@ -1197,47 +1216,35 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetPivotField("{!stats=s1}features,manu");
     query.addGetFieldStatistics("{!key=inStock_val tag=s1}inStock");
-    try {
-      client.query(query);
-      fail("SolrException should be thrown on query");
-    } catch (SolrException e) {
-      assertEquals("Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
-      assertTrue(e.getMessage().contains("is not currently supported"));
-      assertTrue(e.getMessage().contains("boolean"));
-    }
+
+    SolrException e = expectThrows(SolrException.class, () -> client.query(query));
+    assertEquals("Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
+    assertTrue(e.getMessage().contains("is not currently supported"));
+    assertTrue(e.getMessage().contains("boolean"));
 
     // asking for multiple stat tags -- see SOLR-6663
-    query = new SolrQuery("*:*");
-    query.addFacetPivotField("{!stats=tag1,tag2}features,manu");
-    query.addGetFieldStatistics("{!tag=tag1}price", "{!tag=tag2}popularity");
-    query.setFacetMinCount(0);
-    query.setRows(0);
-    try {
-      client.query(query);
-      fail("SolrException should be thrown on query");
-    } catch (SolrException e) {
-      assertEquals(400, e.code());
-      assertTrue(e.getMessage().contains("stats"));
-      assertTrue(e.getMessage().contains("comma"));
-      assertTrue(e.getMessage().contains("tag"));
-    }
+    SolrQuery query2 = new SolrQuery("*:*");
+    query2.addFacetPivotField("{!stats=tag1,tag2}features,manu");
+    query2.addGetFieldStatistics("{!tag=tag1}price", "{!tag=tag2}popularity");
+    query2.setFacetMinCount(0);
+    query2.setRows(0);
+
+    e = expectThrows(SolrException.class, () -> client.query(query2));
+    assertEquals(400, e.code());
+    assertTrue(e.getMessage().contains("stats"));
+    assertTrue(e.getMessage().contains("comma"));
+    assertTrue(e.getMessage().contains("tag"));
 
     // text field
-    query = new SolrQuery("*:*");
-    query.addFacetPivotField("{!stats=s1}features,manu");
-    query.addGetFieldStatistics("{!tag=s1}features");
-    query.setFacetMinCount(0);
-    query.setRows(0);
-    try {
-      client.query(query);
-      fail("SolrException should be thrown on query");
-    } catch (SolrException e) {
-      assertEquals("Pivot facet on string is not currently supported, bad request returned", 400, e.code());
-      assertTrue(e.getMessage().contains("is not currently supported"));
-      assertTrue(e.getMessage().contains("text_general"));
-    }
-    
-
+    SolrQuery query3 = new SolrQuery("*:*");
+    query3.addFacetPivotField("{!stats=s1}features,manu");
+    query3.addGetFieldStatistics("{!tag=s1}features");
+    query3.setFacetMinCount(0);
+    query3.setRows(0);
+    e = expectThrows(SolrException.class, () -> client.query(query3));
+    assertEquals("Pivot facet on string is not currently supported, bad request returned", 400, e.code());
+    assertTrue(e.getMessage().contains("is not currently supported"));
+    assertTrue(e.getMessage().contains("text_general"));
   }
 
   @Test
@@ -1299,6 +1306,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   @Test
+  @SuppressWarnings({"rawtypes"})
   public void testPivotFacetsRanges() throws Exception {
     SolrClient client = getSolrClient();
 
@@ -1385,6 +1393,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals(0, ((Float)range.getStart()).intValue());
         assertEquals(200, ((Float)range.getEnd()).intValue());
         assertEquals(50, ((Float)range.getGap()).intValue());
+        @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
         for (Count count : counts) {
@@ -1400,6 +1409,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals(0, ((Float) range.getStart()).intValue());
         assertEquals(200, ((Float) range.getEnd()).intValue());
         assertEquals(50, ((Float) range.getGap()).intValue());
+        @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
         for (Count count : counts) {
@@ -1423,6 +1433,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals(0, ((Float)range.getStart()).intValue());
         assertEquals(200, ((Float)range.getEnd()).intValue());
         assertEquals(50, ((Float)range.getGap()).intValue());
+        @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
         for (Count count : counts) {
@@ -1438,6 +1449,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals(0, ((Float)range.getStart()).intValue());
         assertEquals(200, ((Float)range.getEnd()).intValue());
         assertEquals(50, ((Float)range.getGap()).intValue());
+        @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
         for (Count count : counts) {
@@ -1751,22 +1763,24 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testUpdateField() throws Exception {
     //no versions
+    // Use a simple float field.  "price"->"price_c" has problems: SOLR-15357 & SOLR-15358
+    final String field = "price_f";
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("name", "gadget");
-    doc.addField("price", 1);
+    doc.addField(field, 1);
     client.add(doc);
     client.commit();
     SolrQuery q = new SolrQuery("*:*");
-    q.setFields("id","price","name", "_version_");
+    q.setFields("id", field,"name", "_version_");
     QueryResponse resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     Long version = (Long)resp.getResults().get(0).getFirstValue("_version_");
     assertNotNull("no version returned", version);
-    assertEquals(1.0f, resp.getResults().get(0).getFirstValue("price"));
+    assertEquals(1.0f, resp.getResults().get(0).getFirstValue(field));
 
     //update "price" with incorrect version (optimistic locking)
     HashMap<String, Object> oper = new HashMap<>();  //need better api for this???
@@ -1775,7 +1789,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("_version_", version+1);
-    doc.addField("price", oper);
+    doc.addField(field, oper);
     try {
       client.add(doc);
       if(client instanceof HttpSolrClient) { //XXX concurrent client reports exceptions differently
@@ -1799,28 +1813,29 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("_version_", version);
-    doc.addField("price", oper);
+    doc.addField(field, oper);
     client.add(doc);
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue("price"));
+    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue(field));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
 
     //update "price", no version
     oper.put("set", 200);
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
-    doc.addField("price", oper);
+    doc.addField(field, oper);
     client.add(doc);
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price"));
+    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue(field));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testUpdateMultiValuedField() throws Exception {
     SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
@@ -1948,8 +1963,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       if (outDoc.hasChildDocuments()) {
         for (SolrDocument kid : outDoc.getChildDocuments()) {
           String kidId = (String)kid.getFieldValue("id");
-          SolrInputDocument origChild = findDecendent(origDoc, kidId);
-          assertNotNull(docId + " doesn't have decendent " + kidId,
+          SolrInputDocument origChild = findDescendant(origDoc, kidId);
+          assertNotNull(docId + " doesn't have descendant " + kidId,
                         origChild);
         }
       }
@@ -1989,8 +2004,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
             String kidId = (String)kid.getFieldValue("id");
             assertEquals("kid is the wrong level",
                          kidLevel, (int)kid.getFieldValue("level_i"));
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
         }
@@ -2016,8 +2031,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         if (outDoc.hasChildDocuments()) {
           for (SolrDocument kid : outDoc.getChildDocuments()) {
             String kidId = (String)kid.getFieldValue("id");
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
           // the total number of kids should be our direct kids and our grandkids
@@ -2071,8 +2086,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
                        kidLevel <= kidLevelMax);
             assertTrue("kid level to low: " + kidLevelMin + ">" + kidLevel,
                        kidLevelMin <= kidLevel);
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
         }
@@ -2226,10 +2241,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   /** 
-   * Depth first search of a SolrInputDocument looking for a decendent by id, 
-   * returns null if it's not a decendent 
+   * Depth first search of a SolrInputDocument looking for a descendant by id,
+   * returns null if it's not a descendant
    */
-  private SolrInputDocument findDecendent(SolrInputDocument parent, String childId) {
+  private SolrInputDocument findDescendant(SolrInputDocument parent, String childId) {
     if (childId.equals(parent.getFieldValue("id"))) {
       return parent;
     }
@@ -2237,7 +2252,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       return null;
     }
     for (SolrInputDocument kid : parent.getChildDocuments()) {
-      SolrInputDocument result = findDecendent(kid, childId);
+      SolrInputDocument result = findDescendant(kid, childId);
       if (null != result) {
         return result;
       }
@@ -2253,7 +2268,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   /**
    * recursive method for generating a document, which may also have child documents;
-   * adds all documents constructed (including decendents) to allDocs via their id 
+   * adds all documents constructed (including descendants) to allDocs via their id
    */
   private SolrInputDocument genNestedDocuments(Map<String,SolrInputDocument> allDocs, 
                                                int thisLevel,

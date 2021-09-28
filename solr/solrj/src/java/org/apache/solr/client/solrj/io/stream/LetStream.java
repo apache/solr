@@ -47,7 +47,7 @@ public class LetStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
   private TupleStream stream;
   private StreamContext streamContext;
-  private Map letParams = new LinkedHashMap();
+  private Map<String, Object> letParams = new LinkedHashMap<>();
 
   public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
@@ -57,13 +57,13 @@ public class LetStream extends TupleStream implements Expressible {
     Set<String> echo = null;
     boolean echoAll = false;
     String currentName = null;
-    for(StreamExpressionParameter np : namedParams) {
-      String name = ((StreamExpressionNamedParameter)np).getName();
+    for(StreamExpressionNamedParameter np : namedParams) {
+      String name = np.getName();
       currentName = name;
 
       if(name.equals("echo")) {
-        echo = new HashSet();
-        String echoString = ((StreamExpressionNamedParameter) np).getParameter().toString().trim();
+        echo = new HashSet<>();
+        String echoString = np.getParameter().toString().trim();
         if(echoString.equalsIgnoreCase("true")) {
           echoAll = true;
         } else {
@@ -76,7 +76,7 @@ public class LetStream extends TupleStream implements Expressible {
         continue;
       }
 
-      StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
+      StreamExpressionParameter param = np.getParameter();
 
       if(param instanceof StreamExpressionValue) {
         String paramValue = ((StreamExpressionValue) param).getValue();
@@ -169,7 +169,7 @@ public class LetStream extends TupleStream implements Expressible {
       String name = entry.getKey();
       Object o = entry.getValue();
       if(o instanceof TupleStream) {
-        List<Tuple> tuples = new ArrayList();
+        List<Tuple> tuples = new ArrayList<>();
         TupleStream tStream = (TupleStream)o;
         tStream.setStreamContext(streamContext);
         try {
@@ -196,7 +196,8 @@ public class LetStream extends TupleStream implements Expressible {
         evaluator.setStreamContext(streamContext);
         Object eo = evaluator.evaluate(eTuple);
         if(evaluator instanceof MemsetEvaluator) {
-          Map mem = (Map)eo;
+          @SuppressWarnings({"unchecked"})
+          Map<String,Object> mem = (Map<String,Object>)eo;
           lets.putAll(mem);
         } else {
           lets.put(name, eo);

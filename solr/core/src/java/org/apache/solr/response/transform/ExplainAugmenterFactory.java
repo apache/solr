@@ -33,27 +33,23 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class ExplainAugmenterFactory extends TransformerFactory
 {
-  public static enum Style {
+  public enum Style {
     nl,
     text,
     html
-  };
+  }
 
-  protected Style defaultStyle = null;
+  protected Style defaultStyle = Style.text;
 
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     if( defaultUserArgs != null ) {
       defaultStyle = getStyle( defaultUserArgs );
     }
-    else {
-      defaultStyle = Style.nl;
-    }
   }
 
-  public static Style getStyle( String str )
-  {
+  public static Style getStyle( String str ) {
     try {
       return Style.valueOf( str );
     }
@@ -66,7 +62,7 @@ public class ExplainAugmenterFactory extends TransformerFactory
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     String s = params.get("style");
-    Style style = (s==null)?defaultStyle:getStyle(s);
+    Style style = (s == null) ? defaultStyle : getStyle(s);
     return new ExplainAugmenter( field, style );
   }
 
@@ -123,6 +119,3 @@ public class ExplainAugmenterFactory extends TransformerFactory
     }
   }
 }
-
-
-

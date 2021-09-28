@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 public class MapWriterMap implements MapWriter {
-  private final Map delegate;
+  private final Map<String, Object> delegate;
 
-  public MapWriterMap(Map delegate) {
+  public MapWriterMap(Map<String,Object> delegate) {
     this.delegate = delegate;
   }
 
@@ -47,7 +47,12 @@ public class MapWriterMap implements MapWriter {
 
 
   @Override
-  public Map toMap(Map<String, Object> map) {
+  public int _size() {
+    return delegate.size();
+  }
+
+  @Override
+  public Map<String,Object> toMap(Map<String, Object> map) {
     return delegate;
   }
 }

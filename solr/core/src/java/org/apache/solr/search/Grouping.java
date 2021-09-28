@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -26,17 +27,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -84,7 +84,7 @@ public class Grouping {
   private final SolrIndexSearcher searcher;
   private final QueryResult qr;
   private final QueryCommand cmd;
-  private final List<Command> commands = new ArrayList<>();
+  private final List<Command<?>> commands = new ArrayList<>();
   private final boolean main;
   private final boolean cacheSecondPassSearch;
   private final int maxDocsPercentageToCache;
@@ -103,9 +103,7 @@ public class Grouping {
   private boolean getGroupedDocSet;
   private boolean getDocList; // doclist needed for debugging or highlighting
   private Query query;
-  private DocSet filter;
-  private Filter luceneFilter;
-  private NamedList grouped = new SimpleOrderedMap();
+  private NamedList<Object> grouped = new SimpleOrderedMap<>();
   private Set<Integer> idSet = new LinkedHashSet<>();  // used for tracking unique docs when we need a doclist
   private int maxMatches;  // max number of matches from any grouping command
   private float maxScore = Float.NaN;  // max score seen in any doclist
@@ -136,7 +134,7 @@ public class Grouping {
     this.main = main;
   }
 
-  public void add(Grouping.Command groupingCommand) {
+  public void add(Grouping.Command<?> groupingCommand) {
     commands.add(groupingCommand);
   }
 
@@ -182,7 +180,7 @@ public class Grouping {
   public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, FunctionQParserPlugin.NAME, request);
     Query q = parser.getQuery();
-    final Grouping.Command gc;
+    final Grouping.Command<?> gc;
     if (q instanceof FunctionQuery) {
       ValueSource valueSource = ((FunctionQuery) q).getValueSource();
       if (valueSource instanceof StrFieldSource) {
@@ -225,6 +223,11 @@ public class Grouping {
   public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, request);
     Query gq = parser.getQuery();
+
+    if (gq == null) {
+      // normalize a null query to a query that matches nothing
+      gq = new MatchNoDocsQuery();
+    }
     Grouping.CommandQuery gc = new CommandQuery();
     gc.query = gq;
     gc.withinGroupSort = withinGroupSort;
@@ -246,7 +249,6 @@ public class Grouping {
       gc.docsPerGroup = gc.numGroups;  // doesn't make sense to limit to one
       gc.groupOffset = gc.offset;
     }
-
     commands.add(gc);
   }
 
@@ -290,7 +292,7 @@ public class Grouping {
     return this;
   }
 
-  public List<Command> getCommands() {
+  public List<Command<?>> getCommands() {
     return commands;
   }
 
@@ -303,7 +305,7 @@ public class Grouping {
     qr.setDocListAndSet(out);
 
     SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    final Filter luceneFilter = pf.filter;
+    final Query filterQuery = pf.filter;
     maxDoc = searcher.maxDoc();
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
@@ -319,13 +321,13 @@ public class Grouping {
     getDocList = (cmd.getFlags() & SolrIndexSearcher.GET_DOCLIST) != 0;
     query = QueryUtils.makeQueryable(cmd.getQuery());
 
-    for (Command cmd : commands) {
+    for (Command<?> cmd : commands) {
       cmd.prepare();
     }
 
     AllGroupHeadsCollector<?> allGroupHeadsCollector = null;
     List<Collector> collectors = new ArrayList<>(commands.size());
-    for (Command cmd : commands) {
+    for (Command<?> cmd : commands) {
       Collector collector = cmd.createFirstPassCollector();
       if (collector != null) {
         collectors.add(collector);
@@ -358,7 +360,7 @@ public class Grouping {
     }
 
     if (allCollectors != null) {
-      searchWithTimeLimiter(luceneFilter, allCollectors);
+      searchWithTimeLimiter(filterQuery, allCollectors);
 
       if(allCollectors instanceof DelegatingCollector) {
         ((DelegatingCollector) allCollectors).finish();
@@ -372,7 +374,7 @@ public class Grouping {
     }
 
     collectors.clear();
-    for (Command cmd : commands) {
+    for (Command<?> cmd : commands) {
       Collector collector = cmd.createSecondPassCollector();
       if (collector != null)
         collectors.add(collector);
@@ -388,14 +390,14 @@ public class Grouping {
             signalCacheWarning = true;
             log.warn(String.format(Locale.ROOT, "The grouping cache is active, but not used because it exceeded the max cache limit of %d percent", maxDocsPercentageToCache));
             log.warn("Please increase cache size or disable group caching.");
-            searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
+            searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
           }
         } else {
           if (pf.postFilter != null) {
             pf.postFilter.setLastDelegate(secondPhaseCollectors);
             secondPhaseCollectors = pf.postFilter;
           }
-          searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
+          searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
         }
         if (secondPhaseCollectors instanceof DelegatingCollector) {
           ((DelegatingCollector) secondPhaseCollectors).finish();
@@ -403,7 +405,7 @@ public class Grouping {
       }
     }
 
-    for (Command cmd : commands) {
+    for (Command<?> cmd : commands) {
       cmd.finish();
     }
 
@@ -416,7 +418,7 @@ public class Grouping {
       for (int val : idSet) {
         ids[idx++] = val;
       }
-      qr.setDocList(new DocSlice(0, sz, ids, null, maxMatches, maxScore));
+      qr.setDocList(new DocSlice(0, sz, ids, null, maxMatches, maxScore, TotalHits.Relation.EQUAL_TO));
     }
   }
 
@@ -424,7 +426,7 @@ public class Grouping {
    * Invokes search with the specified filter and collector.  
    * If a time limit has been specified, wrap the collector in a TimeLimitingCollector
    */
-  private void searchWithTimeLimiter(final Filter luceneFilter, Collector collector) throws IOException {
+  private void searchWithTimeLimiter(final Query filterQuery, Collector collector) throws IOException {
     if (cmd.getTimeAllowed() > 0) {
       if (timeLimitingCollector == null) {
         timeLimitingCollector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), cmd.getTimeAllowed());
@@ -440,16 +442,9 @@ public class Grouping {
       collector = timeLimitingCollector;
     }
     try {
-      Query q = query;
-      if (luceneFilter != null) {
-        q = new BooleanQuery.Builder()
-            .add(q, Occur.MUST)
-            .add(luceneFilter, Occur.FILTER)
-            .build();
-      }
-      searcher.search(q, collector);
+      searcher.search(QueryUtils.combineQueryAndFilter(query, filterQuery), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn( "Query: " + query + "; " + x.getMessage() );
+      log.warn("Query: {}; ", query, x);
       qr.setPartialResults(true);
     }
   }
@@ -601,8 +596,8 @@ public class Grouping {
       }
     }
 
-    protected NamedList commonResponse() {
-      NamedList groupResult = new SimpleOrderedMap();
+    protected NamedList<Object> commonResponse() {
+      NamedList<Object> groupResult = new SimpleOrderedMap<>();
       grouped.add(key, groupResult);  // grouped={ key={
 
       int matches = getMatches();
@@ -615,7 +610,7 @@ public class Grouping {
       return groupResult;
     }
 
-    protected DocList getDocList(GroupDocs groups) {
+    protected DocList getDocList(GroupDocs<?> groups) {
       assert groups.totalHits.relation == TotalHits.Relation.EQUAL_TO;
       int max = Math.toIntExact(groups.totalHits.value);
       int off = groupOffset;
@@ -639,7 +634,7 @@ public class Grouping {
 
       float score = groups.maxScore;
       maxScore = maxAvoidNaN(score, maxScore);
-      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits.value, score);
+      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, groups.totalHits.value, score, TotalHits.Relation.EQUAL_TO);
 
       if (getDocList) {
         DocIterator iter = docs.iterator();
@@ -649,13 +644,14 @@ public class Grouping {
       return docs;
     }
 
-    protected void addDocList(NamedList rsp, GroupDocs groups) {
+    protected void addDocList(NamedList<? super DocList> rsp, GroupDocs<?> groups) {
       rsp.add("doclist", getDocList(groups));
     }
 
     // Flatten the groups and get up offset + rows documents
     protected DocList createSimpleResponse() {
-      GroupDocs[] groups = result != null ? result.groups : new GroupDocs[0];
+      @SuppressWarnings("unchecked")
+      GroupDocs<T>[] groups = result != null ? result.groups : (GroupDocs<T>[]) Array.newInstance(GroupDocs.class, 0);
 
       List<Integer> ids = new ArrayList<>();
       List<Float> scores = new ArrayList<>();
@@ -664,7 +660,7 @@ public class Grouping {
       float maxScore = Float.NaN;
 
       outer:
-      for (GroupDocs group : groups) {
+      for (GroupDocs<T> group : groups) {
         maxScore = maxAvoidNaN(maxScore, group.maxScore);
 
         for (ScoreDoc scoreDoc : group.scoreDocs) {
@@ -681,7 +677,7 @@ public class Grouping {
       int len = docsGathered > offset ? docsGathered - offset : 0;
       int[] docs = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
       float[] docScores = ArrayUtils.toPrimitive(scores.toArray(new Float[scores.size()]));
-      DocSlice docSlice = new DocSlice(offset, len, docs, docScores, getMatches(), maxScore);
+      DocSlice docSlice = new DocSlice(offset, len, docs, docScores, getMatches(), maxScore, TotalHits.Relation.EQUAL_TO);
 
       if (getDocList) {
         for (int i = offset; i < docs.length; i++) {
@@ -777,6 +773,7 @@ public class Grouping {
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     protected void finish() throws IOException {
       if (secondPass != null) {
         result = secondPass.getTopGroups(0);
@@ -787,14 +784,14 @@ public class Grouping {
         return;
       }
 
-      NamedList groupResult = commonResponse();
+      NamedList<Object> groupResult = commonResponse();
 
       if (format == Format.simple) {
         groupResult.add("doclist", createSimpleResponse());
         return;
       }
 
-      List groupList = new ArrayList();
+      List<NamedList<Object>> groupList = new ArrayList<>();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
 
       if (result == null) {
@@ -805,7 +802,7 @@ public class Grouping {
       if (numGroups == 0) return;
 
       for (GroupDocs<BytesRef> group : result.groups) {
-        NamedList nl = new SimpleOrderedMap();
+        NamedList<Object> nl = new SimpleOrderedMap<>();
         groupList.add(nl);                         // grouped={ key={ groups=[ {
 
 
@@ -853,10 +850,10 @@ public class Grouping {
    * A group command for grouping on a query.
    */
   //NOTE: doesn't need to be generic. Maybe Command interface --> First / Second pass abstract impl.
-  public class CommandQuery extends Command {
+  public class CommandQuery extends Command<Object> {
 
     public Query query;
-    TopDocsCollector topCollector;
+    TopDocsCollector<? extends ScoreDoc> topCollector;
     MaxScoreCollector maxScoreCollector;
     FilterCollector collector;
 
@@ -887,12 +884,13 @@ public class Grouping {
 
     @Override
     protected void finish() throws IOException {
-      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
-      TopDocs topDocs = topDocsCollector.topDocs();
+      TopDocs topDocs = topCollector.topDocs();
       float maxScore;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
       } else if (needScores) {
+        // use top-level query to populate the scores
+        TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, Grouping.this.query);
         maxScore = maxScoreCollector.getMaxScore();
       } else {
         maxScore = Float.NaN;
@@ -902,7 +900,7 @@ public class Grouping {
       if (main) {
         mainResult = getDocList(groupDocs);
       } else {
-        NamedList rsp = commonResponse();
+        NamedList<Object> rsp = commonResponse();
         addDocList(rsp, groupDocs);
       }
     }
@@ -919,7 +917,7 @@ public class Grouping {
   public class CommandFunc extends Command<MutableValue> {
 
     public ValueSource groupBy;
-    Map context;
+    Map<Object,Object> context;
 
     private ValueSourceGroupSelector newSelector() {
       return new ValueSourceGroupSelector(groupBy, context);
@@ -933,6 +931,7 @@ public class Grouping {
     Collection<SearchGroup<MutableValue>> topGroups;
 
     @Override
+    @SuppressWarnings({"unchecked"})
     protected void prepare() throws IOException {
       context = ValueSource.newContext(searcher);
       groupBy.createWeight(context, searcher);
@@ -1003,14 +1002,14 @@ public class Grouping {
         return;
       }
 
-      NamedList groupResult = commonResponse();
+      NamedList<Object> groupResult = commonResponse();
 
       if (format == Format.simple) {
         groupResult.add("doclist", createSimpleResponse());
         return;
       }
 
-      List groupList = new ArrayList();
+      List<NamedList<Object>> groupList = new ArrayList<>();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
 
       if (result == null) {
@@ -1021,7 +1020,7 @@ public class Grouping {
       if (numGroups == 0) return;
 
       for (GroupDocs<MutableValue> group : result.groups) {
-        NamedList nl = new SimpleOrderedMap();
+        NamedList<Object> nl = new SimpleOrderedMap<>();
         groupList.add(nl);                         // grouped={ key={ groups=[ {
         nl.add("groupValue", group.groupValue.toObject());
         addDocList(nl, group);

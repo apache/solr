@@ -25,6 +25,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
@@ -33,7 +34,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
@@ -41,7 +41,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.CLIO;
 import org.apache.zookeeper.CreateMode;
@@ -71,7 +72,7 @@ public class ZkCLI implements CLIO {
   static final String UPCONFIG = "upconfig";
   static final String EXCLUDE_REGEX_SHORT = "x";
   static final String EXCLUDE_REGEX = "excluderegex";
-  static final String EXCLUDE_REGEX_DEFAULT = ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX;
+  static final String EXCLUDE_REGEX_DEFAULT = ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX;
   private static final String COLLECTION = "collection";
   private static final String CLEAR = "clear";
   private static final String LIST = "list";
@@ -107,14 +108,13 @@ public class ZkCLI implements CLIO {
 
     CommandLineParser parser = new PosixParser();
     Options options = new Options();
-
-    options.addOption(OptionBuilder
+    options.addOption(Option.builder(CMD)
         .hasArg(true)
-        .withDescription(
+        .desc(
             "cmd to run: " + BOOTSTRAP + ", " + UPCONFIG + ", " + DOWNCONFIG
                 + ", " + LINKCONFIG + ", " + MAKEPATH + ", " + PUT + ", " + PUT_FILE + ","
                 + GET + "," + GET_FILE + ", " + LIST + ", " + CLEAR
-                + ", " + UPDATEACLS + ", " + LS).create(CMD));
+                + ", " + UPDATEACLS + ", " + LS).build());
 
     Option zkHostOption = new Option("z", ZKHOST, true,
         "ZooKeeper host address");
@@ -206,14 +206,15 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
 
-          CoreContainer cc = new CoreContainer(solrHome);
+          CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+          cc.setCoreConfigService(new ZkConfigSetService(zkClient));
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
 
-          ZkController.bootstrapConf(zkClient, cc, solrHome);
+          ConfigSetService.bootstrapConf(cc);
 
           // No need to close the CoreContainer, as it wasn't started
           // up in the first place...
@@ -232,9 +233,8 @@ public class ZkCLI implements CLIO {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
-          ZkConfigManager configManager = new ZkConfigManager(zkClient);
           final Pattern excludePattern = Pattern.compile(excludeExpr);
-          configManager.uploadConfigDir(Paths.get(confDir), confName, excludePattern);
+          ZkMaintenanceUtils.uploadToZK(zkClient, Paths.get(confDir), ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, excludePattern);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(DOWNCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
             stdout.println("-" + CONFDIR + " and -" + CONFNAME
@@ -243,8 +243,7 @@ public class ZkCLI implements CLIO {
           }
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
-          ZkConfigManager configManager = new ZkConfigManager(zkClient);
-          configManager.downloadConfigDir(confName, Paths.get(confDir));
+          ZkMaintenanceUtils.downloadFromZK(zkClient, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, Paths.get(confDir));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(LINKCONFIG)) {
           if (!line.hasOption(COLLECTION) || !line.hasOption(CONFNAME)) {
             stdout.println("-" + COLLECTION + " and -" + CONFNAME
@@ -259,7 +258,7 @@ public class ZkCLI implements CLIO {
           zkClient.printLayoutToStream(stdout);
         } else if (line.getOptionValue(CMD).equals(LS)) {
 
-          List argList = line.getArgList();
+          List<String> argList = line.getArgList();
           if (argList.size() != 1) {
             stdout.println("-" + LS + " requires one arg - the path to list");
             System.exit(1);
@@ -271,21 +270,21 @@ public class ZkCLI implements CLIO {
           stdout.println(sb.toString());
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLEAR)) {
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + CLEAR + " requires one arg - the path to clear");
             System.exit(1);
           }
           zkClient.clean(arglist.get(0).toString());
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(MAKEPATH)) {
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
           zkClient.makePath(arglist.get(0).toString(), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
             stdout.println("-" + PUT + " requires two args - the path to create and the data string");
             System.exit(1);
@@ -297,7 +296,7 @@ public class ZkCLI implements CLIO {
             zkClient.create(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
             stdout.println("-" + PUT_FILE + " requires two args - the path to create in ZK and the path to the local file");
             System.exit(1);
@@ -316,7 +315,7 @@ public class ZkCLI implements CLIO {
           }
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + GET + " requires one arg - the path to get");
             System.exit(1);
@@ -324,7 +323,7 @@ public class ZkCLI implements CLIO {
           byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           stdout.println(new String(data, StandardCharsets.UTF_8));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
             stdout.println("-" + GET_FILE + "requires two args - the path to get and the file to save it to");
             System.exit(1);
@@ -332,7 +331,7 @@ public class ZkCLI implements CLIO {
           byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
         } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + UPDATEACLS + " requires one arg - the path to update");
             System.exit(1);

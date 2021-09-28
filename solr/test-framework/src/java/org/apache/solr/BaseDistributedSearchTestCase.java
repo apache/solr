@@ -64,8 +64,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -104,7 +103,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       Integer.MAX_VALUE,
       15, TimeUnit.SECONDS, // terminate idle threads after 15 sec
       new SynchronousQueue<>(),  // directly hand off tasks
-      new DefaultSolrThreadFactory("BaseDistributedSearchTestCase"),
+      new SolrNamedThreadFactory("BaseDistributedSearchTestCase"),
       false
   );
   
@@ -161,7 +160,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     // paranoia, we *really* don't want to ever get "//" in a path...
     final String hc = hostContext.toString().replaceAll("\\/+","/");
 
-    log.info("Setting hostContext system property: " + hc);
+    log.info("Setting hostContext system property: {}", hc);
     System.setProperty("hostContext", hc);
   }
   
@@ -177,13 +176,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void setSolrDisableShardsWhitelist() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
   }
 
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void clearSolrDisableShardsWhitelist() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
 
   private static String getHostContextSuitableForServletContext() {
@@ -223,9 +222,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    */
   protected BaseDistributedSearchTestCase(final String context) {
     this.context = context;
-    this.deadServers = new String[] {"[ff01::114]:33332" + context, 
-                                     "[ff01::083]:33332" + context, 
-                                     "[ff01::213]:33332" + context};
+    this.deadServers = new String[] {DEAD_HOST_1 + context,
+                                     DEAD_HOST_2 + context,
+                                     DEAD_HOST_3 + context};
   }
 
   private final static int DEFAULT_MAX_SHARD_COUNT = 3;
@@ -413,11 +412,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void destroyServers() throws Exception {
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
     
-    customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
 
     customThreadPool.submit(() -> {
       try {
@@ -476,7 +473,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (explicitCoreNodeName) {
       props.setProperty("coreNodeName", Integer.toString(nodeCnt.incrementAndGet()));
     }
-    props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
+    props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toString());
 
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), props, JettyConfig.builder()
         .stopAtShutdown(true)
@@ -648,11 +645,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    */
   protected QueryResponse query(boolean setDistribParams, Object[] q) throws Exception {
     
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-
-    for (int i = 0; i < q.length; i += 2) {
-      params.add(q[i].toString(), q[i + 1].toString());
-    }
+    final ModifiableSolrParams params = createParams(q);
     return query(setDistribParams, params);
   }
 
@@ -683,23 +676,20 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       log.info("starting stress...");
       Thread[] threads = new Thread[nThreads];
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Thread() {
-          @Override
-          public void run() {
-            for (int j = 0; j < stress; j++) {
-              int which = r.nextInt(clients.size());
-              SolrClient client = clients.get(which);
-              try {
-                QueryResponse rsp = client.query(new ModifiableSolrParams(params));
-                if (verifyStress) {
-                  compareResponses(rsp, controlRsp);
-                }
-              } catch (SolrServerException | IOException e) {
-                throw new RuntimeException(e);
+        threads[i] = new Thread(() -> {
+          for (int j = 0; j < stress; j++) {
+            int which = r.nextInt(clients.size());
+            SolrClient client = clients.get(which);
+            try {
+              QueryResponse rsp1 = client.query(new ModifiableSolrParams(params));
+              if (verifyStress) {
+                compareResponses(rsp1, controlRsp);
               }
+            } catch (SolrServerException | IOException e) {
+              throw new RuntimeException(e);
             }
           }
-        };
+        }, "StressRunner");
         threads[i].start();
       }
 
@@ -738,17 +728,21 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return f == null ? 0 : f;
   }
 
-  public static String compare(NamedList a, NamedList b, int flags, Map<String, Integer> handle) {
+  @SuppressWarnings({"unchecked"})
+  public static String compare(@SuppressWarnings({"rawtypes"})NamedList a,
+                               @SuppressWarnings({"rawtypes"})NamedList b, int flags, Map<String, Integer> handle) {
 //    System.out.println("resp a:" + a);
 //    System.out.println("resp b:" + b);
     boolean ordered = (flags & UNORDERED) == 0;
 
     if (!ordered) {
+      @SuppressWarnings({"rawtypes"})
       Map mapA = new HashMap(a.size());
       for (int i=0; i<a.size(); i++) {
         Object prev = mapA.put(a.getName(i), a.getVal(i));
       }
 
+      @SuppressWarnings({"rawtypes"})
       Map mapB = new HashMap(b.size());
       for (int i=0; i<b.size(); i++) {
         Object prev = mapB.put(b.getName(i), b.getVal(i));
@@ -815,7 +809,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
-  public static String compare1(Map a, Map b, int flags, Map<String, Integer> handle) {
+  public static String compare1(@SuppressWarnings({"rawtypes"})Map a,
+                                @SuppressWarnings({"rawtypes"})Map b,
+                                int flags, Map<String, Integer> handle) {
     String cmp;
 
     for (Object keya : a.keySet()) {
@@ -833,7 +829,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
-  public static String compare(Map a, Map b, int flags, Map<String, Integer> handle) {
+  public static String compare(@SuppressWarnings({"rawtypes"})Map a,
+                               @SuppressWarnings({"rawtypes"})Map b,
+                               int flags, Map<String, Integer> handle) {
     String cmp;
     cmp = compare1(a, b, flags, handle);
     if (cmp != null) return cmp;
@@ -995,7 +993,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     handle.put("rf", SKIPVAL);
     String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      log.error("Mismatched responses:\n" + a + "\n" + b);
+      log.error("Mismatched responses:\n{}\n{}", a, b);
       Assert.fail(cmp);
     }
   }
@@ -1072,6 +1070,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       }
 
       @Override
+      @SuppressWarnings({"rawtypes"})
       public void callStatement() throws Throwable {
         RandVal.uniqueValues = new HashSet(); // reset random values
         fixShardCount(numShards);
@@ -1099,6 +1098,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       }
 
       @Override
+      @SuppressWarnings({"rawtypes"})
       public void callStatement() throws Throwable {
         
         for (shardCount = min; shardCount <= max; shardCount++) {
@@ -1156,7 +1156,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     /* no-op */
   }
 
+  @SuppressWarnings({"unchecked"})
   public static abstract class RandVal {
+    @SuppressWarnings({"rawtypes"})
     public static Set uniqueValues = new HashSet();
 
     public abstract Object val();
@@ -1218,4 +1220,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     Files.createDirectories(jettyHome.toPath().resolve("cores").resolve("collection1"));
   }
 
+  protected ModifiableSolrParams createParams(Object ... q) {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+
+    for (int i = 0; i < q.length; i += 2) {
+      params.add(q[i].toString(), q[i + 1].toString());
+    }
+    return params;
+  }
 }

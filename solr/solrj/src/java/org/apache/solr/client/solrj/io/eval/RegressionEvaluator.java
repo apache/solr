@@ -49,7 +49,9 @@ public class RegressionEvaluator extends RecursiveNumericEvaluator implements Tw
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
     
+    @SuppressWarnings({"unchecked"})
     List<Number> l1 = (List<Number>)first;
+    @SuppressWarnings({"unchecked"})
     List<Number> l2 = (List<Number>)second;
     
     if(l2.size() < l1.size()){
@@ -80,7 +82,7 @@ public class RegressionEvaluator extends RecursiveNumericEvaluator implements Tw
   public static class RegressionTuple extends Tuple {
     private SimpleRegression simpleRegression;
 
-    public RegressionTuple(SimpleRegression simpleRegression, Map<?,?> map) {
+    public RegressionTuple(SimpleRegression simpleRegression, Map<String,Object> map) {
       super(map);
       this.simpleRegression = simpleRegression;
     }

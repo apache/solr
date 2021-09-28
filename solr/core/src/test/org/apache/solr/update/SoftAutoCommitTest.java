@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -552,9 +551,6 @@ class MockEventListener implements SolrEventListener {
   private StringBuffer fail = new StringBuffer();
 
   public MockEventListener() { /* NOOP */ }
-  
-  @Override
-  public void init(NamedList args) {}
   
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher,

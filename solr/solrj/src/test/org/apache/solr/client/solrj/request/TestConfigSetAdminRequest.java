@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -29,7 +28,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoAction() {
-    ConfigSetAdminRequest request = new MyConfigSetAdminRequest();
+    MyConfigSetAdminRequest request = new MyConfigSetAdminRequest();
     verifyException(request, "action");
   }
 
@@ -47,14 +46,10 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     verifyException(delete, "ConfigSet");
   }
 
-  private void verifyException(ConfigSetAdminRequest request, String errorContains) {
-    try {
-      request.getParams();
-      Assert.fail("Expected exception");
-    } catch (Exception e) {
-      assertTrue("Expected exception message to contain: " + errorContains,
-          e.getMessage().contains(errorContains));
-    }
+  private void verifyException(ConfigSetAdminRequest<?,?> request, String errorContains) {
+    Exception e = expectThrows(Exception.class, request::getParams);
+    assertTrue("Expected exception message to contain: " + errorContains,
+        e.getMessage().contains(errorContains));
   }
 
   private static class MyConfigSetAdminRequest extends ConfigSetAdminRequest<MyConfigSetAdminRequest, ConfigSetAdminResponse> {

@@ -74,7 +74,7 @@ public interface IteratorWriter {
       return this;
     }
   }
-  default List toList( List l)  {
+  default List<Object> toList(List<Object> l)  {
     try {
       writeIter(new ItemWriter() {
         @Override

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +38,10 @@ public class InitParams {
   public static final String TYPE = "initParams";
   public final String name;
   public final Set<String> paths;
-  public final NamedList defaults, invariants, appends;
-  private PluginInfo pluginInfo;
+  public final NamedList<?> defaults;
+  public final NamedList<?> invariants;
+  public final NamedList<?>  appends;
+  final private PluginInfo pluginInfo;
   private final Set<String> KNOWN_KEYS = ImmutableSet.of(DEFAULTS, INVARIANTS, APPENDS);
 
   public InitParams(PluginInfo p) {
@@ -49,14 +50,14 @@ public class InitParams {
     Set<String> paths = null;
     String pathStr = p.attributes.get(PATH);
     if (pathStr != null) {
-      paths = Collections.unmodifiableSet(new HashSet<>(StrUtils.splitSmart(pathStr, ',')));
+      paths = Set.copyOf(StrUtils.splitSmart(pathStr, ','));
     }
     this.paths = paths;
-    NamedList nl = (NamedList) p.initArgs.get(DEFAULTS);
+    NamedList<?> nl = (NamedList<?>) p.initArgs.get(DEFAULTS);
     defaults = nl == null ? null : nl.getImmutableCopy();
-    nl = (NamedList) p.initArgs.get(INVARIANTS);
+    nl = (NamedList<?>) p.initArgs.get(INVARIANTS);
     invariants = nl == null ? null : nl.getImmutableCopy();
-    nl = (NamedList) p.initArgs.get(APPENDS);
+    nl = (NamedList<?>) p.initArgs.get(APPENDS);
     appends = nl == null ? null : nl.getImmutableCopy();
   }
 
@@ -92,13 +93,13 @@ public class InitParams {
   public void apply(PluginInfo info) {
     if (!info.isFromSolrConfig()) {
       //if this is a component implicitly defined in code it should be overridden by initPrams
-      merge(defaults, (NamedList) info.initArgs.get(DEFAULTS), info.initArgs, DEFAULTS, false);
+      merge(defaults, (NamedList<?>) info.initArgs.get(DEFAULTS), info.initArgs, DEFAULTS, false);
     } else {
       //if the args is initialized from solrconfig.xml inside the requestHandler it should be taking precedence over  initParams
-      merge((NamedList) info.initArgs.get(DEFAULTS), defaults, info.initArgs, DEFAULTS, false);
+      merge((NamedList<?>) info.initArgs.get(DEFAULTS), defaults, info.initArgs, DEFAULTS, false);
     }
-    merge((NamedList) info.initArgs.get(INVARIANTS), invariants, info.initArgs, INVARIANTS, false);
-    merge((NamedList) info.initArgs.get(APPENDS), appends, info.initArgs, APPENDS, true);
+    merge((NamedList<?>) info.initArgs.get(INVARIANTS), invariants, info.initArgs, INVARIANTS, false);
+    merge((NamedList<?>) info.initArgs.get(APPENDS), appends, info.initArgs, APPENDS, true);
 
     if (pluginInfo.initArgs != null) {
       for (int i = 0; i < pluginInfo.initArgs.size(); i++) {
@@ -111,22 +112,21 @@ public class InitParams {
     }
   }
 
-  private static void merge(NamedList first, NamedList second, NamedList sink, String name, boolean appends) {
+  @SuppressWarnings("unchecked")
+  private static void merge(NamedList<?> first, NamedList<?> second, NamedList<Object> sink, String name, boolean appends) {
     if (first == null && second == null) return;
-    if (first == null) first = new NamedList();
-    NamedList nl = first.clone();
+    if (first == null) first = new NamedList<>();
+    NamedList<Object> nl = (NamedList<Object>) first.clone();
     if (appends) {
-      if (second != null) nl.addAll(second);
+      if (second != null) nl.addAll((NamedList<Object>) second);
     } else {
       Set<String> a = new HashSet<>();
       Set<String> b = new HashSet<>();
-      for (Object o : first) {
-        Map.Entry<String, Object> e = (Map.Entry) o;
+      for (Map.Entry<String, ?> e : first) {
         a.add(e.getKey());
       }
       if (second != null) {
-        for (Object o : second) {
-          Map.Entry<String, Object> e = (Map.Entry) o;
+        for (Map.Entry<String, ?> e : second) {
           b.add(e.getKey());
         }
       }

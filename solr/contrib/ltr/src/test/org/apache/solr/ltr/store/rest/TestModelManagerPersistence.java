@@ -35,14 +35,19 @@ import org.apache.solr.ltr.model.DefaultWrapperModel;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestModelManagerPersistence extends TestRerankBase {
 
-  @BeforeClass
-  public static void init() throws Exception {
+  @Before
+  public void init() throws Exception {
     setupPersistenttest(true);
+  }
+  @After
+  public void cleanup() throws Exception {
+    aftertest();
   }
 
   // executed first
@@ -89,16 +94,20 @@ public class TestModelManagerPersistence extends TestRerankBase {
         .readFileToString(mstorefile, "UTF-8");
 
     //check feature/model stores on deletion
+    @SuppressWarnings({"unchecked"})
     final ArrayList<Object> fStore = (ArrayList<Object>) ((Map<String,Object>)
         Utils.fromJSONString(fstorecontent)).get("managedList");
     for (int idx = 0;idx < fStore.size(); ++ idx) {
+      @SuppressWarnings({"unchecked"})
       String store = (String) ((Map<String,Object>)fStore.get(idx)).get("store");
       assertTrue(store.equals("test") || store.equals("test2") || store.equals("test1"));
     }
 
+    @SuppressWarnings({"unchecked"})
     final ArrayList<Object> mStore = (ArrayList<Object>) ((Map<String,Object>)
         Utils.fromJSONString(mstorecontent)).get("managedList");
     for (int idx = 0;idx < mStore.size(); ++ idx) {
+      @SuppressWarnings({"unchecked"})
       String store = (String) ((Map<String,Object>)mStore.get(idx)).get("store");
       assertTrue(store.equals("test") || store.equals("test1"));
     }

@@ -39,11 +39,11 @@ public class GetSupportPointsEvaluator extends RecursiveObjectEvaluator implemen
     if(!(value instanceof EnclosingBall)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an EnclosingBall",toExpression(constructingFactory), value.getClass().getSimpleName()));
     } else {
-      EnclosingBall enclosingBall = (EnclosingBall)value;
-      Point[] points = enclosingBall.getSupport();
+      EnclosingBall<?,?> enclosingBall = (EnclosingBall<?,?>)value;
+      Point<?>[] points = enclosingBall.getSupport();
       double[][] data = new double[points.length][2];
       int i=0;
-      for(Point point : points) {
+      for(Point<?> point : points) {
         Vector2D eu = (Vector2D)point;
         data[i][0] = eu.getX();
         data[i][1] = eu.getY();

@@ -42,21 +42,21 @@ public class SplineEvaluator extends RecursiveNumericEvaluator implements ManyVa
 
     if(objects.length == 1) {
       //Only the y values passed
-      y = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      y = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       x = new double[y.length];
       for(int i=0; i<y.length; i++) {
         x[i] = i;
       }
     } else if(objects.length == 2) {
       Object second = objects[1];
-      x = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-      y = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      x = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      y = ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
     }
 
     SplineInterpolator interpolator = new SplineInterpolator();
     PolynomialSplineFunction spline = interpolator.interpolate(x, y);
 
-    List<Number> list = new ArrayList();
+    List<Number> list = new ArrayList<>();
     for(double xvalue : x) {
       list.add(spline.value(xvalue));
     }

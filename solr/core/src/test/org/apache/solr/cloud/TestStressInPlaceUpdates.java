@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.math3.primes.Primes;
@@ -133,11 +134,13 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
      int fullUpdatePercent = 20;
      **/
 
-    log.info("{}", Arrays.asList
-             ("commitPercent", commitPercent, "softCommitPercent", softCommitPercent,
+    if (log.isInfoEnabled()) {
+      log.info("{}", Arrays.asList
+          ("commitPercent", commitPercent, "softCommitPercent", softCommitPercent,
               "deletePercent", deletePercent, "deleteByQueryPercent", deleteByQueryPercent,
               "ndocs", ndocs, "nWriteThreads", nWriteThreads, "percentRealtimeQuery", percentRealtimeQuery,
               "operations", operations, "nReadThreads", nReadThreads));
+    }
 
     initModel(ndocs);
 
@@ -217,8 +220,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
                 try {
                   returnedVersion = deleteDocAndGetVersion(Integer.toString(id), params("_version_", Long.toString(info.version)), dbq);
-                  log.info(delType + ": Deleting id=" + id + ", version=" + info.version 
-                           + ".  Returned version=" + returnedVersion);
+                  log.info("{}: Deleting id={}, version={}. Returned version={}"
+                      , delType, id, info.version, returnedVersion);
                 } catch (RuntimeException e) {
                   if (e.getMessage() != null && e.getMessage().contains("version conflict")
                       || e.getMessage() != null && e.getMessage().contains("Conflict")) {
@@ -253,7 +256,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   nextVal2 = nextVal1 * 1000000000l;
                   try {
                     returnedVersion = addDocAndGetVersion("id", id, "title_s", "title" + id, "val1_i_dvo", nextVal1, "val2_l_dvo", nextVal2, "_version_", info.version);
-                    log.info("FULL: Writing id=" + id + ", val=[" + nextVal1 + "," + nextVal2 + "], version=" + info.version + ", Prev was=[" + val1 + "," + val2 + "].  Returned version=" + returnedVersion);
+                    log.info("FULL: Writing id={}, val=[{},{}], version={}, Prev was=[{},{}].  Returned version={}"
+                        ,id, nextVal1, nextVal2, info.version, val1, val2, returnedVersion);
 
                   } catch (RuntimeException e) {
                     if (e.getMessage() != null && e.getMessage().contains("version conflict")
@@ -270,7 +274,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   nextVal2 = val2 + val1;
                   try {
                     returnedVersion = addDocAndGetVersion("id", id, "val2_l_dvo", map("inc", String.valueOf(val1)), "_version_", info.version);
-                    log.info("PARTIAL: Writing id=" + id + ", val=[" + nextVal1 + "," + nextVal2 + "], version=" + info.version + ", Prev was=[" + val1 + "," + val2 + "].  Returned version=" + returnedVersion);
+                    log.info("PARTIAL: Writing id={}, val=[{},{}], version={}, Prev was=[{},{}].  Returned version={}"
+                        ,id, nextVal1, nextVal2, info.version, val1, val2,  returnedVersion);
                   } catch (RuntimeException e) {
                     if (e.getMessage() != null && e.getMessage().contains("version conflict")
                         || e.getMessage() != null && e.getMessage().contains("Conflict")) {
@@ -318,7 +323,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
       Thread thread = new Thread("READER" + i) {
         Random rand = new Random(random().nextInt());
 
-        @SuppressWarnings("unchecked")
         @Override
         public void run() {
           try {
@@ -470,7 +474,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
       // what we can do however, is commit all completed updates, and *then* compare solr search results
       // against the (new) committed model....
       
-      waitForThingsToLevelOut(30); // NOTE: this does an automatic commit for us & ensures replicas are up to date
+      waitForThingsToLevelOut(30, TimeUnit.SECONDS); // NOTE: this does an automatic commit for us & ensures replicas are up to date
       committedModel = new HashMap<>(model);
 
       // first, prune the model of any docs that have negative versions
@@ -533,7 +537,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     }
   }
 
-  @SuppressWarnings("rawtypes")
   protected long addDocAndGetVersion(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
@@ -549,13 +552,12 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     // send updates to leader, to avoid SOLR-8733
     resp = ureq.process(leaderClient);
 
-    long returnedVersion = Long.parseLong(((NamedList) resp.getResponse().get("adds")).getVal(0).toString());
+    long returnedVersion = Long.parseLong(((NamedList<?>) resp.getResponse().get("adds")).getVal(0).toString());
     assertTrue("Due to SOLR-8733, sometimes returned version is 0. Let us assert that we have successfully"
         + " worked around that problem here.", returnedVersion > 0);
     return returnedVersion;
   }
 
-  @SuppressWarnings("rawtypes")
   protected long deleteDocAndGetVersion(String id, ModifiableSolrParams params, boolean deleteByQuery) throws Exception {
     params.add("versions", "true");
    
@@ -571,7 +573,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     resp = ureq.process(leaderClient);
     
     String key = deleteByQuery? "deleteByQuery": "deletes";
-    long returnedVersion = Long.parseLong(((NamedList) resp.getResponse().get(key)).getVal(0).toString());
+    long returnedVersion = Long.parseLong(((NamedList<?>) resp.getResponse().get(key)).getVal(0).toString());
     assertTrue("Due to SOLR-8733, sometimes returned version is 0. Let us assert that we have successfully"
         + " worked around that problem here.", returnedVersion < 0);
     return returnedVersion;

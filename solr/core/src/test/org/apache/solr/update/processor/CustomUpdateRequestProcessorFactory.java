@@ -26,10 +26,10 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory 
 {
-  public NamedList args = null;
+  public NamedList<?> args = null;
   
   @Override
-  public void init( NamedList args )
+  public void init(NamedList<?> args )
   {
     this.args = args;
   }

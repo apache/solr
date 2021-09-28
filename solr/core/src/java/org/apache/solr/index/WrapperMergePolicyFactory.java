@@ -77,7 +77,7 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
         wrappedMergePolicyClassName,
         MergePolicyFactory.class,
         NO_SUB_PACKAGES,
-        new Class[] {SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class},
+        new Class<?>[] {SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class},
         new Object[] {resourceLoader, wrappedMergePolicyArgs, schema});
     return mpf.getMergePolicy();
   }

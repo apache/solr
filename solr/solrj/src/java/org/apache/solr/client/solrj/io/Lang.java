@@ -19,18 +19,24 @@ package org.apache.solr.client.solrj.io;
 import org.apache.solr.client.solrj.io.eval.*;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
-import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
-
+import org.apache.solr.client.solrj.io.stream.metrics.*;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.common.params.CommonParams;
+import java.io.IOException;
+import java.util.List;
 public class Lang {
 
   public static void register(StreamFactory streamFactory) {
@@ -40,11 +46,13 @@ public class Lang {
         .withFunctionName("facet", FacetStream.class)
         .withFunctionName("facet2D", Facet2DStream.class)
         .withFunctionName("update", UpdateStream.class)
+        .withFunctionName("delete", DeleteStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)
         .withFunctionName("random", RandomFacadeStream.class)
         .withFunctionName("knnSearch", KnnStream.class)
+
 
             // decorator streams
         .withFunctionName("merge", MergeStream.class)
@@ -102,11 +110,13 @@ public class Lang {
         .withFunctionName("max", MaxMetric.class)
         .withFunctionName("avg", MeanMetric.class)
         .withFunctionName("sum", SumMetric.class)
+        .withFunctionName("per", PercentileMetric.class)
+        .withFunctionName("std", StdMetric.class)
         .withFunctionName("count", CountMetric.class)
+        .withFunctionName("countDist", CountDistinctMetric.class)
 
             // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)
-        .withFunctionName("concat", ConcatOperation.class)
 
             // stream reduction operations
         .withFunctionName("group", GroupOperation.class)
@@ -208,7 +218,7 @@ public class Lang {
         .withFunctionName("ttest", TTestEvaluator.class)
         .withFunctionName("pairedTtest", PairedTTestEvaluator.class)
         .withFunctionName("multiVariateNormalDistribution", MultiVariateNormalDistributionEvaluator.class)
-        .withFunctionName("integrate", IntegrateEvaluator.class)
+        .withFunctionName("integral", IntegrateEvaluator.class)
         .withFunctionName("density", DensityEvaluator.class)
         .withFunctionName("mannWhitney", MannWhitneyUEvaluator.class)
         .withFunctionName("sumSq", SumSqEvaluator.class)
@@ -281,6 +291,8 @@ public class Lang {
         .withFunctionName("pairSort", PairSortEvaluator.class)
         .withFunctionName("recip", RecipEvaluator.class)
         .withFunctionName("pivot", PivotEvaluator.class)
+        .withFunctionName("drill", DrillStream.class)
+        .withFunctionName("input", LocalInputStream.class)
         .withFunctionName("ltrim", LeftShiftEvaluator.class)
         .withFunctionName("rtrim", RightShiftEvaluator.class)
         .withFunctionName("repeat", RepeatEvaluator.class)
@@ -290,7 +302,20 @@ public class Lang {
         .withFunctionName("notNull", NotNullEvaluator.class)
         .withFunctionName("isNull", IsNullEvaluator.class)
         .withFunctionName("matches", MatchesEvaluator.class)
-
+        .withFunctionName("projectToBorder", ProjectToBorderEvaluator.class)
+        .withFunctionName("parseCSV", CsvStream.class)
+        .withFunctionName("parseTSV", TsvStream.class)
+        .withFunctionName("double", DoubleEvaluator.class)
+        .withFunctionName("long", LongEvaluator.class)
+        .withFunctionName("dateTime", DateEvaluator.class)
+        .withFunctionName("concat", ConcatEvaluator.class)
+        .withFunctionName("lower", LowerEvaluator.class)
+        .withFunctionName("upper", UpperEvaluator.class)
+        .withFunctionName("split", SplitEvaluator.class)
+        .withFunctionName("trim", TrimEvaluator.class)
+        .withFunctionName("cosine", CosineDistanceEvaluator.class)
+        .withFunctionName("trunc", TruncEvaluator.class)
+        .withFunctionName("dbscan", DbscanEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
@@ -347,4 +372,89 @@ public class Lang {
         .withFunctionName("if", IfThenElseEvaluator.class)
         .withFunctionName("convert", ConversionEvaluator.class);
   }
+
+
+  public static class LocalInputStream extends TupleStream implements Expressible {
+
+    private StreamComparator streamComparator;
+    private String sort;
+
+
+    public LocalInputStream(StreamExpression expression, StreamFactory factory) throws IOException {
+      this.streamComparator = parseComp(factory.getDefaultSort());
+    }
+
+    @Override
+    public void setStreamContext(StreamContext context) {
+      sort = (String)context.get(CommonParams.SORT);
+    }
+
+    @Override
+    public List<TupleStream> children() {
+      return null;
+    }
+
+    private StreamComparator parseComp(String sort) throws IOException {
+
+      String[] sorts = sort.split(",");
+      StreamComparator[] comps = new StreamComparator[sorts.length];
+      for(int i=0; i<sorts.length; i++) {
+        String s = sorts[i];
+
+        String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+
+        if (spec.length != 2) {
+          throw new IOException("Invalid sort spec:" + s);
+        }
+
+        String fieldName = spec[0].trim();
+        String order = spec[1].trim();
+
+        comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
+      }
+
+      if(comps.length > 1) {
+        return new MultipleFieldComparator(comps);
+      } else {
+        return comps[0];
+      }
+    }
+
+    @Override
+    public void open() throws IOException {
+      streamComparator = parseComp(sort);
+    }
+
+    @Override
+    public void close() throws IOException {
+
+    }
+
+    @Override
+    public Tuple read() throws IOException {
+      return null;
+    }
+
+    @Override
+    public StreamComparator getStreamSort() {
+      return streamComparator;
+    }
+
+    @Override
+    public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+      StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+      return expression;
+    }
+
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+      return new StreamExplanation(getStreamNodeId().toString())
+          .withFunctionName("input")
+          .withImplementingClass(this.getClass().getName())
+          .withExpressionType(Explanation.ExpressionType.STREAM_SOURCE)
+          .withExpression("--non-expressible--");
+    }
+  }
+
+
 }

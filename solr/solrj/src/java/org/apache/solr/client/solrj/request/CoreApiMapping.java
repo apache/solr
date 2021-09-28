@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-import org.apache.solr.common.util.Utils;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
@@ -40,14 +39,14 @@ import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.PER_C
  */
 public class CoreApiMapping {
   public enum Meta implements CommandMeta {
-    CREATE(CORES_COMMANDS, POST, CoreAdminAction.CREATE, "create", Utils.makeMap("config", "configSet")),
+    CREATE(CORES_COMMANDS, POST, CoreAdminAction.CREATE, "create", Collections.singletonMap("config", "configSet")),
     UNLOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.UNLOAD, "unload", null),
     RELOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.RELOAD, "reload", null),
     STATUS(CORES_STATUS, GET, CoreAdminAction.STATUS, "status", null),
-    SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Utils.makeMap("other", "with")),
-    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", Utils.makeMap("other", "to")),
+    SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Collections.singletonMap("other", "with")),
+    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", Collections.singletonMap("other", "to")),
     MERGEINDEXES(PER_CORE_COMMANDS, POST, CoreAdminAction.MERGEINDEXES, "merge-indexes", null),
-    SPLIT(PER_CORE_COMMANDS, POST, CoreAdminAction.SPLIT, "split", Utils.makeMap("split.key", "splitKey")),
+    SPLIT(PER_CORE_COMMANDS, POST, CoreAdminAction.SPLIT, "split", Collections.singletonMap("split.key", "splitKey")),
     PREPRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.PREPRECOVERY, "prep-recovery", null),
     REQUESTRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTRECOVERY, "request-recovery", null),
     REQUESTSYNCSHARD(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTSYNCSHARD, "request-sync-shard", null),
@@ -65,11 +64,11 @@ public class CoreApiMapping {
     public final Map<String, String> paramstoAttr;
 
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CoreAdminAction action, String commandName,
-         Map paramstoAttr) {
+         Map<String,String> paramstoAttr) {
       this.commandName = commandName;
       this.endPoint = endPoint;
       this.method = method;
-      this.paramstoAttr = paramstoAttr == null ? Collections.EMPTY_MAP : Collections.unmodifiableMap(paramstoAttr);
+      this.paramstoAttr = paramstoAttr == null ? Collections.emptyMap() : paramstoAttr; // expect this to be immutable
       this.action = action;
     }
 

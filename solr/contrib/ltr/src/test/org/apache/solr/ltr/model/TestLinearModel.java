@@ -29,7 +29,8 @@ import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestLinearModel extends TestRerankBase {
@@ -46,10 +47,14 @@ public class TestLinearModel extends TestRerankBase {
   }
 
   public static Map<String,Object> makeFeatureWeights(List<Feature> features) {
+    return makeFeatureWeights(features, 0.1);
+  }
+
+  public static Map<String,Object> makeFeatureWeights(List<Feature> features, Number weight) {
     final Map<String,Object> nameParams = new HashMap<String,Object>();
-    final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
+    final HashMap<String,Number> modelWeights = new HashMap<String,Number>();
     for (final Feature feat : features) {
-      modelWeights.put(feat.getName(), 0.1);
+      modelWeights.put(feat.getName(), weight);
     }
     nameParams.put("weights", modelWeights);
     return nameParams;
@@ -58,15 +63,21 @@ public class TestLinearModel extends TestRerankBase {
   static ManagedModelStore store = null;
   static FeatureStore fstore = null;
 
-  @BeforeClass
-  public static void setup() throws Exception {
+  @Before
+  public void setup() throws Exception {
     setuptest(true);
     // loadFeatures("features-store-test-model.json");
     store = getManagedModelStore();
     fstore = getManagedFeatureStore().getFeatureStore("test");
 
   }
-
+  @After
+  public void cleanup() throws Exception {
+    store = null;
+    fstore = null;
+    aftertest();
+  }
+  
   @Test
   public void getInstanceTest() {
     final Map<String,Object> weights = new HashMap<>();
@@ -93,18 +104,16 @@ public class TestLinearModel extends TestRerankBase {
   public void nullFeatureWeightsTest() {
     final ModelException expectedException =
         new ModelException("Model test2 doesn't contain any weights");
-    try {
-      final List<Feature> features = getFeatures(new String[]
-          {"constant1", "constant5"});
-      final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
+
+    final List<Feature> features = getFeatures(new String[]
+        {"constant1", "constant5"});
+    final List<Normalizer> norms =
+        new ArrayList<>(Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
+    ModelException ex = expectThrows(ModelException.class, () -> {
       createLinearModel("test2",
           features, norms, "test", fstore.getFeatures(), null);
-      fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (ModelException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+    });
+    assertEquals(expectedException.toString(), ex.toString());
   }
 
   @Test
@@ -112,55 +121,48 @@ public class TestLinearModel extends TestRerankBase {
     final SolrException expectedException =
         new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             ModelException.class.getName()+": model 'test3' already exists. Please use a different name");
-    try {
-      final List<Feature> features = getFeatures(new String[]
-          {"constant1", "constant5"});
-      final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-      final Map<String,Object> weights = new HashMap<>();
-      weights.put("constant1", 1d);
-      weights.put("constant5", 1d);
 
-      Map<String,Object> params = new HashMap<String,Object>();
-      params.put("weights", weights);
+    final List<Feature> features = getFeatures(new String[]
+        {"constant1", "constant5"});
+    final List<Normalizer> norms =
+        new ArrayList<>(Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
+    final Map<String,Object> weights = new HashMap<>();
+    weights.put("constant1", 1d);
+    weights.put("constant5", 1d);
+
+    Map<String,Object> params = new HashMap<>();
+    params.put("weights", weights);
+    SolrException ex = expectThrows(SolrException.class, () -> {
       final LTRScoringModel ltrScoringModel = createLinearModel("test3",
-          features, norms, "test", fstore.getFeatures(),
-              params);
+          features, norms, "test", fstore.getFeatures(), params);
       store.addModel(ltrScoringModel);
       final LTRScoringModel m = store.getModel("test3");
       assertEquals(ltrScoringModel, m);
       store.addModel(ltrScoringModel);
-      fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (SolrException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+    });
+    assertEquals(expectedException.toString(), ex.toString());
   }
 
   @Test
   public void duplicateFeatureTest() {
     final ModelException expectedException =
         new ModelException("duplicated feature constant1 in model test4");
-    try {
-      final List<Feature> features = getFeatures(new String[]
-          {"constant1", "constant1"});
-      final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-      final Map<String,Object> weights = new HashMap<>();
-      weights.put("constant1", 1d);
-      weights.put("constant5", 1d);
+    final List<Feature> features = getFeatures(new String[]
+        {"constant1", "constant1"});
+    final List<Normalizer> norms =
+        new ArrayList<>(Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
+    final Map<String,Object> weights = new HashMap<>();
+    weights.put("constant1", 1d);
+    weights.put("constant5", 1d);
 
-      Map<String,Object> params = new HashMap<String,Object>();
-      params.put("weights", weights);
+    Map<String,Object> params = new HashMap<>();
+    params.put("weights", weights);
+    ModelException ex = expectThrows(ModelException.class, () -> {
       final LTRScoringModel ltrScoringModel = createLinearModel("test4",
-          features, norms, "test", fstore.getFeatures(),
-              params);
+          features, norms, "test", fstore.getFeatures(), params);
       store.addModel(ltrScoringModel);
-      fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (ModelException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+    });
+    assertEquals(expectedException.toString(), ex.toString());
 
   }
 
@@ -168,50 +170,91 @@ public class TestLinearModel extends TestRerankBase {
   public void missingFeatureWeightTest() {
     final ModelException expectedException =
         new ModelException("Model test5 lacks weight(s) for [constant5]");
-    try {
-      final List<Feature> features = getFeatures(new String[]
-          {"constant1", "constant5"});
-      final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-      final Map<String,Object> weights = new HashMap<>();
-      weights.put("constant1", 1d);
-      weights.put("constant5missing", 1d);
+    final List<Feature> features = getFeatures(new String[]
+        {"constant1", "constant5"});
+    final List<Normalizer> norms =
+        new ArrayList<>(Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
 
-      Map<String,Object> params = new HashMap<String,Object>();
-      params.put("weights", weights);
+    final Map<String,Object> weights = new HashMap<>();
+    weights.put("constant1", 1d);
+    weights.put("constant5missing", 1d);
+
+    Map<String,Object> params = new HashMap<>();
+    params.put("weights", weights);
+    ModelException ex = expectThrows(ModelException.class, () -> {
       createLinearModel("test5",
-          features, norms, "test", fstore.getFeatures(),
-              params);
-      fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (ModelException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+          features, norms, "test", fstore.getFeatures(), params);
+    });
+    assertEquals(expectedException.toString(), ex.toString());
+  }
+
+  @Test
+  public void integerAndLongFeatureWeights_shouldCreateModel() {
+    final List<Feature> features = getFeatures(new String[]
+        {"constant1", "constant5"});
+    final List<Normalizer> norms =
+        new ArrayList<>(Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
+
+    final Map<String,Object> weights = new HashMap<>();
+    weights.put("constant1", 100L);
+    weights.put("constant5", 1);
+
+    Map<String,Object> params = new HashMap<>();
+    params.put("weights", weights);
+
+    final LTRScoringModel ltrScoringModel = createLinearModel("test6",
+        features, norms, "test", fstore.getFeatures(),
+        params);
+
+    store.addModel(ltrScoringModel);
+    final LTRScoringModel m = store.getModel("test6");
+    assertEquals(ltrScoringModel, m);
   }
 
   @Test
   public void emptyFeaturesTest() {
     final ModelException expectedException =
         new ModelException("no features declared for model test6");
-    try {
-      final List<Feature> features = getFeatures(new String[] {});
-      final List<Normalizer> norms =
-        new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-      final Map<String,Object> weights = new HashMap<>();
-      weights.put("constant1", 1d);
-      weights.put("constant5missing", 1d);
+    final List<Feature> features = getFeatures(new String[] {});
+    final List<Normalizer> norms =
+        new ArrayList<>(Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
+    final Map<String,Object> weights = new HashMap<>();
+    weights.put("constant1", 1d);
+    weights.put("constant5missing", 1d);
 
-      Map<String,Object> params = new HashMap<String,Object>();
-      params.put("weights", weights);
+    Map<String,Object> params = new HashMap<>();
+    params.put("weights", weights);
+    ModelException ex = expectThrows(ModelException.class, () -> {
       final LTRScoringModel ltrScoringModel = createLinearModel("test6",
           features, norms, "test", fstore.getFeatures(),
           params);
       store.addModel(ltrScoringModel);
-      fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (ModelException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+    });
+    assertEquals(expectedException.toString(), ex.toString());
+  }
+
+  @Test
+  public void notExistentStore_shouldThrowMeaningFulException(){
+    final ModelException expectedException =
+        new ModelException("Missing or empty feature store: not_existent_store");
+
+    ModelException ex = expectThrows(ModelException.class, () -> {
+      createModelFromFiles("linear-model_notExistentStore.json",
+          "features-store-test-model.json");
+    });
+    assertEquals(expectedException.toString(), ex.toString());
+  }
+
+  @Test
+  public void notExistentFeature_shouldThrowMeaningFulException(){
+    final ModelException expectedException =
+        new ModelException("Feature: notExist1 not found in store: test");
+
+    ModelException ex = expectThrows(ModelException.class, () -> {
+      createModelFromFiles("linear-model_notExistentFeature.json",
+          "features-store-test-model.json");
+    });
+    assertEquals(expectedException.toString(), ex.toString());
   }
 
 }

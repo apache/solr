@@ -17,15 +17,31 @@
 package org.apache.solr.search;
 
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.util.IOFunction;
 
+import java.io.IOException;
 import java.util.Map;
 
 
 /**
  * Primary API for dealing with Solr's internal caches.
  */
-public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
+public interface SolrCache<K,V> extends SolrInfoBean {
+
+  String HIT_RATIO_PARAM = "hitratio";
+  String HITS_PARAM = "hits";
+  String INSERTS_PARAM = "inserts";
+  String EVICTIONS_PARAM = "evictions";
+  String LOOKUPS_PARAM = "lookups";
+  String SIZE_PARAM = "size";
+  String MAX_SIZE_PARAM = "maxSize";
+  String RAM_BYTES_USED_PARAM = "ramBytesUsed";
+  String MAX_RAM_MB_PARAM = "maxRamMB";
+  String MAX_IDLE_TIME_PARAM = "maxIdleTime";
+  String INITIAL_SIZE_PARAM = "initialSize";
+  String CLEANUP_THREAD_PARAM = "cleanupThread";
+  String SHOW_ITEMS_PARAM = "showItems";
+  String ASYNC_PARAM = "async";
 
   /**
    * The initialization routine. Instance specific arguments are passed in
@@ -49,7 +65,7 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
    * regenerate an item in the new cache from an entry in the old cache.
    *
    */
-  public Object init(Map args, Object persistence, CacheRegenerator regenerator);
+  public Object init(Map<String,String> args, Object persistence, CacheRegenerator regenerator);
   // I don't think we need a factory for faster creation given that these
   // will be associated with slow-to-create SolrIndexSearchers.
   // change to NamedList when other plugins do?
@@ -79,6 +95,21 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
 
   /** :TODO: copy from Map */
   public V get(K key);
+
+  public V remove(K key);
+
+  /**
+   * Get an existing element or atomically compute it if missing.
+   * @param key key
+   * @param mappingFunction function to compute the element. If the function returns a null
+   *                        result the cache mapping will not be created. NOTE: this function
+   *                        must NOT attempt to modify any mappings in the cache.
+   * @return existing or newly computed value, null if there was no existing value and
+   * it was not possible to compute a new value (in which case the new mapping won't be created).
+   * @throws IOException if and only if mappingFunction threw an IOException.
+   * A cache mapping will not be created in this case
+   */
+  V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction) throws IOException;
 
   /** :TODO: copy from Map */
   public void clear();
@@ -113,7 +144,6 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
    */
   public State getState();
 
-
   /**
    * Warm this cache associated with <code>searcher</code> using the <code>old</code>
    * cache object.  <code>this</code> and <code>old</code> will have the same concrete type.
@@ -124,6 +154,23 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
 
 
   /** Frees any non-memory resources */
-  public void close();
+  default void close() throws IOException {
+    SolrInfoBean.super.close();
+  }
 
+  /** Returns maximum size limit (number of items) if set and supported, -1 otherwise. */
+  int getMaxSize();
+
+  /** Set maximum size limit (number of items), or -1 for unlimited. Note: this has effect
+   * only on implementations that support it, it's a no-op otherwise
+   */
+  void setMaxSize(int maxSize);
+
+  /** Returns maximum size limit (in MB) if set and supported, -1 otherwise. */
+  int getMaxRamMB();
+
+  /** Set maximum size limit (in MB), or -1 for unlimited. Note: this has effect
+   * only on implementations that support it, it's a no-op otherwise.
+   */
+  void setMaxRamMB(int maxRamMB);
 }

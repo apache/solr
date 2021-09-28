@@ -16,7 +16,6 @@
  */
 package org.apache.solr.ltr;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
@@ -59,10 +58,10 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 final public class LTRThreadModule extends CloseHook implements NamedListInitializedPlugin  {
 
-  public static LTRThreadModule getInstance(NamedList args) {
+  public static LTRThreadModule getInstance(NamedList<?> args) {
 
     final LTRThreadModule threadManager;
-    final NamedList threadManagerArgs = extractThreadModuleParams(args);
+    final NamedList<Object> threadManagerArgs = extractThreadModuleParams(args);
     // if and only if there are thread module args then we want a thread module!
     if (threadManagerArgs.size() > 0) {
       // create and initialize the new instance
@@ -77,13 +76,11 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
 
   private static String CONFIG_PREFIX = "threadModule.";
 
-  private static NamedList extractThreadModuleParams(NamedList args) {
+  private static NamedList<Object> extractThreadModuleParams(NamedList<?> args) {
 
     // gather the thread module args from amongst the general args
-    final NamedList extractedArgs = new NamedList();
-    for (Iterator<Map.Entry<String,Object>> it = args.iterator();
-        it.hasNext(); ) {
-      final Map.Entry<String,Object> entry = it.next();
+    final NamedList<Object> extractedArgs = new NamedList<>();
+    for (final Map.Entry<String, ?> entry : args) {
       final String key = entry.getKey();
       if (key.startsWith(CONFIG_PREFIX)) {
         extractedArgs.add(key.substring(CONFIG_PREFIX.length()), entry.getValue());
@@ -118,7 +115,7 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     if (args != null) {
       SolrPluginUtils.invokeSetters(this, args);
     }

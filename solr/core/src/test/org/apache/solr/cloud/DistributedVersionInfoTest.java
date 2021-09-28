@@ -123,7 +123,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       req.setParams(params);
       req.add(doc);
 
-      log.info("Sending doc with out-of-date version ("+(maxOnReplica -1)+") document directly to replica");
+      log.info("Sending doc with out-of-date version ({}) document directly to replica", maxOnReplica -1);
 
       client.request(req);
       client.commit();
@@ -244,7 +244,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     cluster.getSolrClient().commit(COLLECTION);
 
-    log.info("Total of "+deletedDocs.size()+" docs deleted");
+    if (log.isInfoEnabled()) {
+      log.info("Total of {} docs deleted", deletedDocs.size());
+    }
 
     maxOnLeader = getMaxVersionFromIndex(leader);
     maxOnReplica = getMaxVersionFromIndex(replica);
@@ -335,10 +337,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    * Query the real-time get handler for a specific doc by ID to verify it
    * exists in the provided server, using distrib=false so it doesn't route to another replica.
    */
-  @SuppressWarnings("rawtypes")
   protected Long assertDocExists(HttpSolrClient solr, String coll, String docId, Long expVers) throws Exception {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
-    NamedList rsp = solr.request(qr);
+    NamedList<?> rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument)rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL() +
@@ -363,7 +364,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       Thread.sleep(1000);
 
       // send reload command for the collection
-      log.info("Sending RELOAD command for " + testCollectionName);
+      log.info("Sending RELOAD command for {}", testCollectionName);
       CollectionAdminRequest.reloadCollection(testCollectionName)
           .process(client);
       Thread.sleep(2000); // reload can take a short while

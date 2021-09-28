@@ -62,7 +62,9 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   public TestWatcher watchman = new TestWatcher() {
     @Override
     protected void starting(Description description) {
-      log.info("{} being run...", description.getDisplayName());
+      if (log.isInfoEnabled()) {
+        log.info("{} being run...", description.getDisplayName());
+      }
     }
   };
 
@@ -136,9 +138,8 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings("unchecked")
   protected TestTag[] pullTagsFromResponse(SolrQueryRequest req, SolrQueryResponse rsp ) throws IOException {
-    NamedList rspValues = rsp.getValues();
+    NamedList<?> rspValues = rsp.getValues();
     Map<String, String> matchingNames = new HashMap<>();
     SolrIndexSearcher searcher = req.getSearcher();
     DocList docList = (DocList) rspValues.get("response");
@@ -153,9 +154,11 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
 
     //build TestTag[] aTags from response ('a' is actual)
-    List<NamedList> mTagsList = (List<NamedList>) rspValues.get("tags");
+    @SuppressWarnings("unchecked")
+    List<NamedList<Object>> mTagsList = (List<NamedList<Object>>) rspValues.get("tags");
     List<TestTag> aTags = new ArrayList<>();
-    for (NamedList map : mTagsList) {
+    for (NamedList<Object> map : mTagsList) {
+      @SuppressWarnings("unchecked")
       List<String> foundIds = (List<String>) map.get("ids");
       for (String id  : foundIds) {
         aTags.add(new TestTag(
@@ -175,7 +178,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   /** REMEMBER to close() the result req object. */
   protected SolrQueryRequest reqDoc(String doc, SolrParams moreParams) {
-    log.debug("Test doc: "+doc);
+    log.debug("Test doc: {}", doc);
     SolrParams params = SolrParams.wrapDefaults(moreParams, baseParams);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), params) {};
     Iterable<ContentStream> stream = Collections.singleton((ContentStream)new ContentStreamBase.StringStream(doc));
@@ -202,7 +205,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     fail(message+": didn't expect "+actualsRemaining.first()+" (of "+actualsRemaining.size()+"); "+ error);
   }
 
-  class TestTag implements Comparable {
+  class TestTag implements Comparable<TestTag> {
     final int startOffset, endOffset;
     final String substring;
     final String docName;
@@ -239,8 +242,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
 
     @Override
-    public int compareTo(Object o) {
-      TestTag that = (TestTag) o;
+    public int compareTo(TestTag that) {
       return new CompareToBuilder()
           .append(this.startOffset, that.startOffset)
           .append(this.endOffset, that.endOffset)

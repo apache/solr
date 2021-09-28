@@ -26,14 +26,14 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestOriginalScoreFeature extends TestRerankBase {
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void before() throws Exception {
     setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1"));
@@ -47,8 +47,8 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     assertU(commit());
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void after() throws Exception {
     aftertest();
   }
 
@@ -97,14 +97,20 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='"+doc3Id+"'");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
+    @SuppressWarnings({"unchecked"})
     final Map<String,Object> jsonParse = (Map<String,Object>) Utils
         .fromJSONString (res);
+    @SuppressWarnings({"unchecked"})
     final String doc0Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score")).toString();
+
+    @SuppressWarnings({"unchecked"})
     final String doc1Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(1)).get("score")).toString();
+    @SuppressWarnings({"unchecked"})
     final String doc2Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(2)).get("score")).toString();
+    @SuppressWarnings({"unchecked"})
     final String doc3Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(3)).get("score")).toString();
 

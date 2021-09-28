@@ -19,11 +19,7 @@ package org.apache.solr.core;
 
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
-
-import org.apache.http.annotation.Experimental;
 
 /**
  * The base class for custom transient core maintenance. Any custom plugin that want's to take control of transient
@@ -66,61 +62,78 @@ import org.apache.http.annotation.Experimental;
  */
 public abstract class TransientSolrCoreCache {
 
-  // Gets the core container that encloses this cache.
+  /** Gets the core container that encloses this cache. */
   public abstract CoreContainer getContainer();
 
-  // Add the newly-opened core to the list of open cores.
+  /** Adds the newly-opened core to the list of open cores. */
   public abstract SolrCore addCore(String name, SolrCore core);
 
-  // Return the names of all possible cores, whether they are currently loaded or not.
+  /** Returns the names of all possible cores, whether they are currently loaded or not. */
   public abstract Set<String> getAllCoreNames();
   
-  // Return the names of all currently loaded cores
+  /** Returns the names of all currently loaded cores. */
   public abstract Set<String> getLoadedCoreNames();
 
-  // Remove a core from the internal structures, presumably it 
-  // being closed. If the core is re-opened, it will be readded by CoreContainer.
+  /**
+   * Removes a core from the internal structures, presumably it being closed. If the core
+   * is re-opened, it will be re-added by CoreContainer.
+   */
   public abstract SolrCore removeCore(String name);
 
-  // Get the core associated with the name. Return null if you don't want this core to be used.
+  /** Gets the core associated with the name. Returns null if there is none. */
   public abstract SolrCore getCore(String name);
 
-  // reutrn true if the cache contains the named core.
+  /** Returns whether the cache contains the named core. */
   public abstract boolean containsCore(String name);
-  
-  // This method will be called when the container is to be shut down. It should return all
-  // transient solr cores and clear any internal structures that hold them.
+
+  /**
+   * This method will be called when the container is to be shut down. It returns
+   * all transient solr cores and clear any internal structures that hold them.
+   */
   public abstract Collection<SolrCore> prepareForShutdown();
 
   // These methods allow the implementation to maintain control over the core descriptors.
-  
-  // This method will only be called during core discovery at startup.
+
+  /**
+   * Adds a new {@link CoreDescriptor}.
+   * This method will only be called during core discovery at startup.
+   */
   public abstract void addTransientDescriptor(String rawName, CoreDescriptor cd);
-  
-  // This method is used when opening cores and the like. If you want to change a core's descriptor, override this
-  // method and return the current core descriptor.
+
+  /**
+   * Gets the {@link CoreDescriptor} for a transient core (loaded or unloaded).
+   * This method is used when opening cores and the like. If you want to change a core's descriptor,
+   * override this method and return the current core descriptor.
+   */
   public abstract CoreDescriptor getTransientDescriptor(String name);
 
+  /**
+   * Gets the {@link CoreDescriptor} for all transient cores (loaded and unloaded).
+   */
+  public abstract Collection<CoreDescriptor> getTransientDescriptors();
 
-  // Remove the core descriptor from your list of transient descriptors.
+  /**
+   * Removes a {@link CoreDescriptor} from the list of transient cores descriptors.
+   */
   public abstract CoreDescriptor removeTransientDescriptor(String name);
 
-  // Find all the names a specific core is mapped to. Should not return null, return empty set instead.
-  @Experimental
-  public List<String> getNamesForCore(SolrCore core) {
-    return Collections.emptyList();
-  }
-  
   /**
-   * Must be called in order to free resources!
+   * Called in order to free resources.
    */
   public  void close(){
     // Nothing to do currently
   };
 
-
-  // These two methods allow custom implementations to communicate arbitrary information as necessary.
+  /**
+   * Gets a custom status for the given core name.
+   * Allows custom implementations to communicate arbitrary information as necessary.
+   */
   public abstract int getStatus(String coreName);
+
+  /**
+   * Sets a custom status for the given core name.
+   * Allows custom implementations to communicate arbitrary information as necessary.
+   */
   public abstract void setStatus(String coreName, int status);
 }
 

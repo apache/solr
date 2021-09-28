@@ -21,11 +21,17 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.HealthCheckResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+
+import java.util.OptionalInt;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
 public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
+  public static final String PARAM_MAX_GENERATION_LAG = "maxGenerationLag";
+
+  private OptionalInt maxLagAllowed = OptionalInt.empty();
 
   public HealthCheckRequest() {
     this(METHOD.GET, HEALTH_CHECK_HANDLER_PATH);
@@ -35,9 +41,18 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
     super(m, path);
   }
 
+  public void setMaxGenerationLag(int maxLagAllowed) {
+      this.maxLagAllowed = OptionalInt.of(maxLagAllowed);
+  }
+
   @Override
   public SolrParams getParams() {
-    return null;
+      if (maxLagAllowed.isPresent()) {
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(PARAM_MAX_GENERATION_LAG, maxLagAllowed.getAsInt());
+          return params;
+      }
+      return null;
   }
 
   @Override
@@ -48,5 +63,8 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
     return new HealthCheckResponse();
   }
 
-
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
 }

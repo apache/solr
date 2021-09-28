@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -72,12 +71,6 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  @SuppressWarnings({"static-access", "rawtypes", "null"})
-  @Override
-  public void init(final NamedList args) {
-
-  }
-
   @Override
   public void inform(SolrCore core) {
     this.vinfo = core.getUpdateHandler().getUpdateLog() == null ? null : core.getUpdateHandler().getUpdateLog().getVersionInfo();
@@ -116,7 +109,6 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
      * will be treated as conventional updates.
      * 4. retry when encounter version conflict
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void processAdd(AddUpdateCommand cmd)
         throws IOException {
@@ -172,8 +164,7 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
               "Atomic update failed after multiple attempts due to " + e.getMessage());
         }
         if (e.code() == ErrorCode.CONFLICT.code) { // version conflict
-          log.warn("Atomic update failed due to " + e.getMessage() +
-              " Retrying with new version .... (" + attempts + ")");
+          log.warn("Atomic update failed. Retrying with new version .... ({})", attempts, e);
 
           Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
           // if lastVersion is null then we put -1 to assert that document must not exist

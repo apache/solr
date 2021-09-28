@@ -18,18 +18,15 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -43,7 +40,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -54,15 +50,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
-
-@ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String tempDirProp;
 
@@ -83,7 +74,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   */
 
   protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, "core0");
+    return new EmbeddedSolrServer(cores, null);
   }
 
   @Test
@@ -91,8 +82,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     SolrClient client = getSolrAdmin();
     File testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
-
     File newCoreInstanceDir = new File(testDir, "newcore");
+    cores.getAllowPaths().add(testDir.toPath()); // Allow the test dir
 
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName("corewithconfigset");
@@ -116,6 +107,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       File dataDir = createTempDir("data").toFile();
 
       File newCoreInstanceDir = createTempDir("instance").toFile();
+      cores.getAllowPaths().add(dataDir.toPath()); // Allow the test dir
+      cores.getAllowPaths().add(newCoreInstanceDir.toPath()); // Allow the test dir
 
       File instanceDir = new File(cores.getSolrHome());
       FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,
@@ -163,43 +156,27 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     params.set("name", collectionName);
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
-    boolean gotExp = false;
-    NamedList<Object> resp = null;
-    try {
-      resp = getSolrAdmin().request(request);
-    } catch (SolrException e) {
-      gotExp = true;
-    }
-    
-    assertTrue(gotExp);
+    expectThrows(SolrException.class, () -> getSolrAdmin().request(request));
   }
   
   @Test
   public void testInvalidCoreNamesAreRejectedWhenCreatingCore() {
     final Create createRequest = new Create();
-    
-    try {
-      createRequest.setCoreName("invalid$core@name");
-      fail();
-    } catch (SolrException e) {
-      final String exceptionMessage = e.getMessage();
-      assertTrue(exceptionMessage.contains("Invalid core"));
-      assertTrue(exceptionMessage.contains("invalid$core@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
-    }
+    SolrException e = expectThrows(SolrException.class, () -> createRequest.setCoreName("invalid$core@name"));
+    final String exceptionMessage = e.getMessage();
+    assertTrue(exceptionMessage.contains("Invalid core"));
+    assertTrue(exceptionMessage.contains("invalid$core@name"));
+    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
   }
   
   @Test
   public void testInvalidCoreNamesAreRejectedWhenRenamingExistingCore() throws Exception {
-    try {
-      CoreAdminRequest.renameCore("validExistingCoreName", "invalid$core@name", null);
-      fail();
-    } catch (SolrException e) {
-      final String exceptionMessage = e.getMessage();
-      assertTrue(e.getMessage(), exceptionMessage.contains("Invalid core"));
-      assertTrue(exceptionMessage.contains("invalid$core@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
-    }
+    SolrException e = expectThrows(SolrException.class,
+        () -> CoreAdminRequest.renameCore("validExistingCoreName", "invalid$core@name", null));
+    final String exceptionMessage = e.getMessage();
+    assertTrue(e.getMessage(), exceptionMessage.contains("Invalid core"));
+    assertTrue(exceptionMessage.contains("invalid$core@name"));
+    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
   }
 
   @Test
@@ -216,6 +193,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     names = cores.getAllCoreNames();
     assertFalse(names.toString(), names.contains("coreRenamed"));
     assertTrue(names.toString(), names.contains("core1"));
+    assertEquals(names.size(), cores.getNumAllCores());
   }
 
   @Test

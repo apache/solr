@@ -122,7 +122,7 @@ public class TextField extends FieldType {
                                  // historical behavior based on how the early versions of the FieldCache
                                  // would deal with multiple indexed terms in a singled valued field...
                                  //
-                                 // Always use the 'min' value from the (Uninverted) "psuedo doc values"
+                                 // Always use the 'min' value from the (Uninverted) "pseudo doc values"
                                  SortedSetSelector.Type.MIN,
                                  reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
@@ -139,7 +139,7 @@ public class TextField extends FieldType {
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-    writer.writeStr(name, f.stringValue(), true);
+    writer.writeStr(name, toExternal(f), true);
   }
 
   @Override
@@ -158,13 +158,23 @@ public class TextField extends FieldType {
   }
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     Analyzer multiAnalyzer = getMultiTermAnalyzer();
     BytesRef lower = analyzeMultiTerm(field.getName(), part1, multiAnalyzer);
     BytesRef upper = analyzeMultiTerm(field.getName(), part2, multiAnalyzer);
     return new SolrRangeQuery(field.getName(), lower, upper, minInclusive, maxInclusive);
   }
 
+  /**
+   * Analyzes a text part using the provided {@link Analyzer} for a multi-term query.
+   * <p>
+   * Expects a single token to be used as multi-term term. This single token might also be filtered out
+   * so zero token is supported and null is returned in this case.
+   *
+   * @return The multi-term term bytes; or null if there is no multi-term terms.
+   * @throws SolrException If the {@link Analyzer} tokenizes more than one token;
+   * or if an underlying {@link IOException} occurs.
+   */
   public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {
     if (part == null || analyzerIn == null) return null;
 
@@ -173,8 +183,10 @@ public class TextField extends FieldType {
 
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
 
-      if (!source.incrementToken())
-        throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned no terms for multiTerm term: " + part);
+      if (!source.incrementToken()) {
+        // Accept no tokens because it may have been filtered out by a StopFilter for example.
+        return null;
+      }
       BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
       if (source.incrementToken())
         throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned too many terms for multiTerm term: " + part);

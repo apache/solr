@@ -43,6 +43,7 @@ import org.apache.lucene.util.mutable.MutableValueInt;
  * 
  * @see Integer
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see IntPointField
  */
 @Deprecated
 public class TrieIntField extends TrieField implements IntValueFieldType {
@@ -68,7 +69,7 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
     
     return new SortedSetFieldSource(f.getName(), choice) {
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
         
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
@@ -92,7 +93,7 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
           @Override
           public int intVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return LegacyNumericUtils.prefixCodedToInt(bytes);
             } else {
@@ -119,7 +120,7 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.binaryValue());
+                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue()));
                 } else {
                   mval.exists = false;
                   mval.value = 0;

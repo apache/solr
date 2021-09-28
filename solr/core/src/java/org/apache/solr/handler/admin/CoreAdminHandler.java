@@ -41,17 +41,19 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -72,7 +74,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   private final CoreAdminHandlerApi coreAdminHandlerApi;
 
   protected ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
-      new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
+      new SolrNamedThreadFactory("parallelCoreAdminExecutor"));
 
   protected static int MAX_TRACKED_REQUESTS = 100;
   public static String RUNNING = "running";
@@ -113,17 +115,17 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
 
   @Override
-  final public void init(NamedList args) {
+  final public void init(NamedList<?> args) {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "CoreAdminHandler should not be configured in solrconf.xml\n" +
                     "it is a special Handler configured directly by the RequestDispatcher");
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    super.initializeMetrics(manager, registryName, tag, scope);
-    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, manager.registry(registryName),
-        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, solrMetricsContext.getMetricRegistry(),
+        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
   }
   @Override
   public Boolean registerV2() {
@@ -164,18 +166,18 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
 
       // Pick the action
-      CoreAdminOperation op = opMap.get(req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT));
+      final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
+      CoreAdminOperation op = opMap.get(action);
       if (op == null) {
         handleCustomAction(req, rsp);
         return;
       }
 
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
-      String coreName = req.getParams().get(CoreAdminParams.CORE);
-      if (coreName == null) {
-        coreName = req.getParams().get(CoreAdminParams.NAME);
-      }
+      final String coreName =
+          req.getParams().get(CoreAdminParams.CORE, req.getParams().get(CoreAdminParams.NAME));
       MDCLoggingContext.setCoreName(coreName);
+      TraceUtils.setDbInstance(req, coreName);
       if (taskId == null) {
         callInfo.call();
       } else {
@@ -242,10 +244,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     Map<String, String> coreParams = new HashMap<>();
 
     // standard core create parameters
-    for (String param : paramToProp.keySet()) {
-      String value = params.get(param, null);
+    for (Map.Entry<String, String> entry : paramToProp.entrySet()) {
+      String value = params.get(entry.getKey(), null);
       if (StringUtils.isNotEmpty(value)) {
-        coreParams.put(paramToProp.get(param), value);
+        coreParams.put(entry.getValue(), value);
       }
     }
 

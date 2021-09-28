@@ -16,32 +16,44 @@
  */
 package org.apache.solr.search;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import java.util.List;
-import java.util.ArrayList;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** A hash key encapsulating a query, a list of filters, and a sort
  *
  */
-public final class QueryResultKey {
+public final class QueryResultKey implements Accountable {
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(QueryResultKey.class);
+  private static final long BASE_SF_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SortField.class);
+
   final Query query;
   final Sort sort;
   final SortField[] sfields;
   final List<Query> filters;
   final int nc_flags;  // non-comparable flags... ignored by hashCode and equals
+  final int minExactCount;
 
   private final int hc;  // cached hashCode
+  private final long ramBytesUsed; // cached
 
   private static SortField[] defaultSort = new SortField[0];
 
-
   public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) {
+    this(query, filters, sort, nc_flags, Integer.MAX_VALUE);
+  }
+
+  public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
     this.query = query;
     this.sort = sort;
     this.filters = filters;
     this.nc_flags = nc_flags;
+    this.minExactCount = minExactCount;
 
     int h = query.hashCode();
 
@@ -53,11 +65,20 @@ public final class QueryResultKey {
     }
 
     sfields = (this.sort !=null) ? this.sort.getSort() : defaultSort;
+    long ramSfields = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
     for (SortField sf : sfields) {
       h = h*29 + sf.hashCode();
+      ramSfields += BASE_SF_RAM_BYTES_USED + RamUsageEstimator.sizeOfObject(sf.getField());
     }
+    h = h*31 + minExactCount;
 
     hc = h;
+
+    ramBytesUsed =
+        BASE_RAM_BYTES_USED +
+        ramSfields +
+        RamUsageEstimator.sizeOfObject(query, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(filters, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
@@ -81,6 +102,7 @@ public final class QueryResultKey {
     if (this.sfields.length != other.sfields.length) return false;
     if (!this.query.equals(other.query)) return false;
     if (!unorderedCompare(this.filters, other.filters)) return false;
+    if (this.minExactCount != other.minExactCount) return false;
 
     for (int i=0; i<sfields.length; i++) {
       SortField sf1 = this.sfields[i];
@@ -153,4 +175,8 @@ public final class QueryResultKey {
     return set2.isEmpty();
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
+  }
 }

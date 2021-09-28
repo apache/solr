@@ -91,19 +91,11 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       "MoreLikeThis does not support multiple ContentStreams";
 
   @Override
-  public void init(NamedList args) {
-    super.init(args);
-  }
-
-  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
     SolrParams params = req.getParams();
 
-    long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
-    if(timeAllowed > 0) {
-      SolrQueryTimeoutImpl.set(timeAllowed);
-    }
+    SolrQueryTimeoutImpl.set(req);
       try {
 
         // Set field flags
@@ -262,24 +254,22 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         if (dbg == true) {
           try {
             NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.getRawMLTQuery(), mltDocs.docList, dbgQuery, dbgResults);
-            if (null != dbgInfo) {
-              if (null != filters) {
-                dbgInfo.add("filter_queries", req.getParams().getParams(CommonParams.FQ));
-                List<String> fqs = new ArrayList<>(filters.size());
-                for (Query fq : filters) {
-                  fqs.add(QueryParsing.toString(fq, req.getSchema()));
-                }
-                dbgInfo.add("parsed_filter_queries", fqs);
+            if (null != filters) {
+              dbgInfo.add("filter_queries", req.getParams().getParams(CommonParams.FQ));
+              List<String> fqs = new ArrayList<>(filters.size());
+              for (Query fq : filters) {
+                fqs.add(QueryParsing.toString(fq, req.getSchema()));
               }
-              rsp.add("debug", dbgInfo);
+              dbgInfo.add("parsed_filter_queries", fqs);
             }
+            rsp.add("debug", dbgInfo);
           } catch (Exception e) {
             SolrException.log(log, "Exception during debug", e);
             rsp.add("exception_during_debug", SolrException.toStr(e));
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
-        log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
+        log.warn( "Query: {}; ", req.getParamString(), ex);
       } finally {
         SolrQueryTimeoutImpl.reset();
       }

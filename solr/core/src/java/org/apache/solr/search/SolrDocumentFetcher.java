@@ -34,13 +34,13 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
@@ -107,6 +107,7 @@ public class SolrDocumentFetcher {
 
   private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
 
+  @SuppressWarnings({"unchecked"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
     this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
@@ -218,27 +219,24 @@ public class SolrDocumentFetcher {
   public Document doc(int i, Set<String> fields) throws IOException {
     Document d;
     if (documentCache != null) {
-      d = documentCache.get(i);
-      if (d != null) return d;
+      final Set<String> getFields = enableLazyFieldLoading ? fields : null;
+      d = documentCache.computeIfAbsent(i, docId -> docNC(docId, getFields));
+      if (d == null) {
+        // failed to retrieve due to an earlier exception, try again?
+        return docNC(i, fields);
+      } else {
+        return d;
+      }
+    } else {
+      return docNC(i, fields);
     }
+  }
 
+  private Document docNC(int i, Set<String> fields) throws IOException {
     final DirectoryReader reader = searcher.getIndexReader();
-    if (documentCache != null && !enableLazyFieldLoading) {
-      // we do not filter the fields in this case because that would return an incomplete document which would
-      // be eventually cached. The alternative would be to read the stored fields twice; once with the fields
-      // and then without for caching leading to a performance hit
-      // see SOLR-8858 for related discussion
-      fields = null;
-    }
     final SolrDocumentStoredFieldVisitor visitor = new SolrDocumentStoredFieldVisitor(fields, reader, i);
     reader.document(i, visitor);
-    d = visitor.getDocument();
-
-    if (documentCache != null) {
-      documentCache.put(i, d);
-    }
-
-    return d;
+    return visitor.getDocument();
   }
 
   /**
@@ -334,13 +332,12 @@ public class SolrDocumentFetcher {
   /** @see SolrIndexSearcher#doc(int, StoredFieldVisitor) */
   public void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     if (documentCache != null) {
-      Document cached = documentCache.get(docId);
-      if (cached != null) {
-        visitFromCached(cached, visitor);
-        return;
-      }
+      // get cached document or retrieve it including all fields (and cache it)
+      Document cached = doc(docId);
+      visitFromCached(cached, visitor);
+    } else {
+      searcher.getIndexReader().document(docId, visitor);
     }
-    searcher.getIndexReader().document(docId, visitor);
   }
 
   /** Executes a stored field visitor against a hit from the document cache */
@@ -506,7 +503,7 @@ public class SolrDocumentFetcher {
    *          The fields with docValues to populate the document with.
    *          DocValues fields which do not exist or not decodable will be ignored.
    */
-  public void decorateDocValueFields(@SuppressWarnings("rawtypes") SolrDocumentBase doc, int docid, Set<String> fields)
+  public void decorateDocValueFields(SolrDocumentBase<?,?> doc, int docid, Set<String> fields)
       throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
@@ -552,7 +549,7 @@ public class SolrDocumentFetcher {
       case SORTED:
         SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
         if (sdv != null && sdv.advanceExact(localId)) {
-          final BytesRef bRef = sdv.binaryValue();
+          final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
           if (schemaField.getType() instanceof BoolField) {
             return schemaField.getType().toObject(schemaField, bRef);

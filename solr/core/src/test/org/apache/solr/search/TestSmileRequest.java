@@ -42,7 +42,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -60,7 +60,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
 
   @Test
@@ -77,6 +77,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
           query.setPath(path);
         }
         NamedList<Object> rsp = client.request(query);
+        @SuppressWarnings({"rawtypes"})
         Map m = rsp.asMap(5);
         String jsonStr = Utils.toJSONString(m);
         SolrTestCaseHS.matchJSON(jsonStr, tests);
@@ -98,6 +99,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public NamedList<Object> processResponse(InputStream body, String encoding) {
       try {
         Map m = (Map) SmileWriterTest.decodeSmile(body);

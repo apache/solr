@@ -36,8 +36,8 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.apache.solr.util.DOMUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -104,6 +104,8 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     System.setProperty("enable.update.log", "false");
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-non-stored-docvalues.xml", tmpSolrHome.getPath());
+
+    assertQ("sanity check", req("q", "*:*"), "//*[@numFound='0']");
   }
 
   @After

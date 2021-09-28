@@ -16,6 +16,17 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,17 +43,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
@@ -62,7 +62,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
@@ -111,7 +111,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       jetty=null;
     }
     resetExceptionIgnores();
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
   
   @Test
@@ -208,7 +208,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         debug.add("true");
         all = true;
       }
-      q.set("debug", (String[])debug.toArray(new String[debug.size()]));
+      q.set("debug", debug.toArray(new String[debug.size()]));
 
       QueryResponse r = client.query(q);
       try {
@@ -388,27 +388,24 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
   
   public void testTolerantSearch() throws SolrServerException, IOException {
-    String badShard = "[ff01::0083]:3334";
+    String badShard = DEAD_HOST_1;
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.set("debug",  "true");
     query.set("distrib", "true");
     query.setFields("id", "text");
     query.set("shards", shard1 + "," + shard2 + "," + badShard);
-    try {
-      ignoreException("Server refused connection");
-      // verify that the request would fail if shards.tolerant=false
-      collection1.query(query);
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      //expected
-    }
+
+    // verify that the request would fail if shards.tolerant=false
+    ignoreException("Server refused connection");
+    expectThrows(SolrException.class, () -> collection1.query(query));
+
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
     assertTrue((Boolean)response.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
     @SuppressWarnings("unchecked")
-    NamedList<String> badShardTrack = (NamedList<String>) ((NamedList<NamedList<String>>)
-        ((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);
+    NamedList<String> badShardTrack =
+            (((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);
     assertEquals("Unexpected response size for shard", 1, badShardTrack.size());
     Entry<String, String> exception = badShardTrack.iterator().next();
     assertEquals("Expected key 'Exception' not found", "Exception", exception.getKey());
@@ -423,16 +420,15 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertEquals(section + " debug should be equal", distrib.getDebugMap().get(section), nonDistrib.getDebugMap().get(section));
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private void assertSameKeys(NamedList object, NamedList object2) {
-    Iterator<Map.Entry<String,Object>> iteratorObj2 = ((NamedList)object2).iterator();
-    for (Map.Entry<String,Object> entry:(NamedList<Object>)object) {
+  private void assertSameKeys(NamedList<?> object, NamedList<?> object2) {
+    Iterator<? extends Map.Entry<String, ?>> iteratorObj2 = object2.iterator();
+    for (Map.Entry<String, ?> entry: object) {
       assertTrue(iteratorObj2.hasNext());
-      Map.Entry<String,Object> entry2 = iteratorObj2.next();
+      Map.Entry<String, ?> entry2 = iteratorObj2.next();
       assertEquals(entry.getKey(), entry2.getKey());
       if (entry.getValue() instanceof NamedList) {
         assertTrue(entry2.getValue() instanceof NamedList);
-        assertSameKeys((NamedList)entry.getValue(), (NamedList)entry2.getValue());
+        assertSameKeys((NamedList<?>)entry.getValue(), (NamedList<?>)entry2.getValue());
       }
     }
     assertFalse(iteratorObj2.hasNext());

@@ -28,9 +28,9 @@ import org.apache.solr.client.solrj.SolrRequest;
  */
 public class SolrRequestCarrier implements TextMap {
 
-  private final SolrRequest solrRequest;
+  private final SolrRequest<?> solrRequest;
 
-  public SolrRequestCarrier(SolrRequest solrRequest) {
+  public SolrRequestCarrier(SolrRequest<?> solrRequest) {
     this.solrRequest = solrRequest;
   }
 

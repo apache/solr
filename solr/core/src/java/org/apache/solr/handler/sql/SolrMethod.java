@@ -34,11 +34,12 @@ enum SolrMethod {
                        List.class,
                        String.class,
                        String.class,
+                       String.class,
                        String.class);
 
   public final Method method;
 
-  SolrMethod(Class clazz, String methodName, Class... argumentTypes) {
+  SolrMethod(Class<?> clazz, String methodName, Class<?>... argumentTypes) {
     this.method = Types.lookupMethod(clazz, methodName, argumentTypes);
   }
 }

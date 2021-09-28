@@ -23,6 +23,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -67,7 +75,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
         .configure();
     solrClient = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
-        .setMaxShardsPerNode(2).process(solrClient);
+        .process(solrClient);
     cluster.waitForActiveCollection(collection, 2, 4);
     SolrInputDocument lastDoc = addDocs(collection, NUM_DOCS);
     HashSet<String> docFields = new HashSet<>(lastDoc.keySet());
@@ -124,6 +132,23 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
         double delta = (double) size * 0.5;
         assertEquals("sampled size of " + field + " is wildly off", (double)size, (double)sampledSize, delta);
       });
+      // verify the reader is still usable - SOLR-13694
+      IndexReader reader = searcher.getRawReader();
+      for (LeafReaderContext context : reader.leaves()) {
+        LeafReader leafReader = context.reader();
+        assertTrue("unexpected LeafReader class: " + leafReader.getClass().getName(), leafReader instanceof CodecReader);
+        Bits liveDocs = leafReader.getLiveDocs();
+        CodecReader codecReader = (CodecReader) leafReader;
+        StoredFieldsReader storedFieldsReader = codecReader.getFieldsReader();
+        StoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+        assertNotNull(storedFieldsReader);
+        for (int docId = 0; docId < leafReader.maxDoc(); docId++) {
+          if (liveDocs != null && !liveDocs.get(docId)) {
+            continue;
+          }
+          storedFieldsReader.visitDocument(docId, visitor);
+        }
+      }
     } finally {
       searcherRef.decref();
       core.close();
@@ -146,29 +171,39 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     assertEquals(0, sampledRsp.getStatus());
     for (int i : Arrays.asList(1, 2)) {
+      @SuppressWarnings({"unchecked"})
       NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "shard" + i, "leader", "segInfos");
+      @SuppressWarnings({"unchecked"})
       NamedList<Object> rawSize = (NamedList<Object>)segInfos.get("rawSize");
       assertNotNull("rawSize missing", rawSize);
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> rawSizeMap = rawSize.asMap(10);
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> fieldsBySize = (Map<String, Object>)rawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
       assertNotNull("fieldsBySize missing", fieldsBySize);
       assertEquals(fieldsBySize.toString(), fields.size(), fieldsBySize.size());
       fields.forEach(field -> assertNotNull("missing field " + field, fieldsBySize.get(field)));
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> typesBySize = (Map<String, Object>)rawSizeMap.get(IndexSizeEstimator.TYPES_BY_SIZE);
       assertNotNull("typesBySize missing", typesBySize);
       assertTrue("expected at least 8 types: " + typesBySize.toString(), typesBySize.size() >= 8);
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> summary = (Map<String, Object>)rawSizeMap.get(IndexSizeEstimator.SUMMARY);
       assertNotNull("summary missing", summary);
       assertEquals(summary.toString(), fields.size(), summary.size());
       fields.forEach(field -> assertNotNull("missing field " + field, summary.get(field)));
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> details = (Map<String, Object>)rawSizeMap.get(IndexSizeEstimator.DETAILS);
       assertNotNull("details missing", summary);
       assertEquals(details.keySet().toString(), 6, details.size());
 
       // compare with sampled
+      @SuppressWarnings({"unchecked"})
       NamedList<Object> sampledRawSize = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "shard" + i, "leader", "segInfos", "rawSize");
       assertNotNull("sampled rawSize missing", sampledRawSize);
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> sampledRawSizeMap = rawSize.asMap(10);
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> sampledFieldsBySize = (Map<String, Object>)sampledRawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
       assertNotNull("sampled fieldsBySize missing", sampledFieldsBySize);
       fieldsBySize.forEach((k, v) -> {

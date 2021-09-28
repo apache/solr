@@ -18,6 +18,7 @@
 
 package org.apache.solr.update;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,12 +43,15 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
 import org.apache.solr.util.RefCounted;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -119,6 +123,43 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   public void deleteAllAndCommit() throws Exception {
     clearIndex();
     assertU(commit("softCommit", "false"));
+  }
+
+  @Test
+  public void testUpdateBadRequest() throws Exception {
+    final long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first", "inplace_updatable_float", 41), null);
+    assertU(commit());
+
+    // invalid value with set operation
+    SolrException e = expectThrows(SolrException.class,
+        () -> addAndAssertVersion(version1, "id", "1", "inplace_updatable_float", map("set", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
+    // invalid value with inc operation
+    e = expectThrows(SolrException.class,
+        () -> addAndAssertVersion(version1, "id", "1", "inplace_updatable_float", map("inc", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
+    // inc op with null value
+    e = expectThrows(SolrException.class,
+        () -> addAndAssertVersion(version1, "id", "1", "inplace_updatable_float", map("inc", null)));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("Invalid input 'null' for field inplace_updatable_float"));
+
+    e = expectThrows(SolrException.class,
+        () -> addAndAssertVersion(version1, "id", "1", "inplace_updatable_float",
+            map("inc", new ArrayList<>(Collections.singletonList(123)))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("Invalid input '[123]' for field inplace_updatable_float"));
+
+    // regular atomic update should fail if user says they only want in-place atomic updates...
+    e = expectThrows(SolrException.class,
+                     () -> addAndGetVersion(sdoc("id", "1", "regular_l", map("inc", 1)),
+                                            params(UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE, "true")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("Unable to update doc in-place: 1"));
   }
 
   @Test
@@ -289,6 +330,205 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
         "//result/doc[2]/float[@name='inplace_updatable_float'][.='102.0']");
   }
 
+  public void testUserRequestedFailIfNotInPlace() throws Exception {
+    final SolrParams require_inplace = params(UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE, "true");
+    long v;
+    
+    // regular updates should be ok even if require_inplace params are used,
+    // that way true "adds" wil work even if require_inplace params are in in "/update" defaults or invariants...
+    long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first", "regular_l", 1, "inplace_updatable_float", 41), require_inplace);
+    long version2 = addAndGetVersion(sdoc("id", "2", "title_s", "second", "regular_l", 2, "inplace_updatable_float", 42), require_inplace);
+    long version3 = addAndGetVersion(sdoc("id", "3", "title_s", "third", "regular_l", 3, "inplace_updatable_float", 43), require_inplace);
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*"), "//*[@numFound='3']");
+
+    // the reason we're fetching these docids is to validate that the subsequent updates 
+    // are done in place and don't cause the docids to change
+    final int docid1 = getDocId("1");
+    final int docid2 = getDocId("2");
+    final int docid3 = getDocId("3");
+
+    // this atomic update should be done in place...
+    v = addAndGetVersion(sdoc("id", "2", "inplace_updatable_float", map("inc", 2)), require_inplace);
+    assertTrue(v > version2);
+    version2 = v;
+
+    // this atomic update should also be done in place, even though the user didn't insist on it...
+    v = addAndGetVersion(sdoc("id", "3", "inplace_updatable_float", map("inc", 3)), params());
+    assertTrue(v > version3);
+    version3 = v;
+
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*", "sort", "id asc", "fl", "*,[docid]")
+            , "//*[@numFound='3']"
+            , "//result/doc[1]/long[@name='regular_l'][.='1']"
+            , "//result/doc[2]/long[@name='regular_l'][.='2']"
+            , "//result/doc[3]/long[@name='regular_l'][.='3']"
+            , "//result/doc[1]/float[@name='inplace_updatable_float'][.='41.0']"
+            , "//result/doc[2]/float[@name='inplace_updatable_float'][.='44.0']"
+            , "//result/doc[3]/float[@name='inplace_updatable_float'][.='46.0']"
+            , "//result/doc[1]/long[@name='_version_'][.='"+version1+"']"
+            , "//result/doc[2]/long[@name='_version_'][.='"+version2+"']"
+            , "//result/doc[3]/long[@name='_version_'][.='"+version3+"']"
+            , "//result/doc[1]/int[@name='[docid]'][.='"+docid1+"']"
+            , "//result/doc[2]/int[@name='[docid]'][.='"+docid2+"']"
+            , "//result/doc[3]/int[@name='[docid]'][.='"+docid3+"']"
+            );
+
+    // this is an atomic update, but it can't be done in-place, so it should fail w/o affecting index...
+    SolrException e = expectThrows(SolrException.class,
+                                   () -> addAndGetVersion(sdoc("id", "1", "regular_l", map("inc", 1)),
+                                                          require_inplace));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("Unable to update doc in-place: 1"));
+
+    // data in solr should be unchanged after failed attempt at non-inplace atomic update...
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*", "sort", "id asc", "fl", "*,[docid]")
+            , "//*[@numFound='3']"
+            , "//result/doc[1]/long[@name='regular_l'][.='1']"
+            , "//result/doc[2]/long[@name='regular_l'][.='2']"
+            , "//result/doc[3]/long[@name='regular_l'][.='3']"
+            , "//result/doc[1]/float[@name='inplace_updatable_float'][.='41.0']"
+            , "//result/doc[2]/float[@name='inplace_updatable_float'][.='44.0']"
+            , "//result/doc[3]/float[@name='inplace_updatable_float'][.='46.0']"
+            , "//result/doc[1]/long[@name='_version_'][.='"+version1+"']"
+            , "//result/doc[2]/long[@name='_version_'][.='"+version2+"']"
+            , "//result/doc[3]/long[@name='_version_'][.='"+version3+"']"
+            , "//result/doc[1]/int[@name='[docid]'][.='"+docid1+"']"
+            , "//result/doc[2]/int[@name='[docid]'][.='"+docid2+"']"
+            , "//result/doc[3]/int[@name='[docid]'][.='"+docid3+"']"
+            );
+
+    
+    // the same atomic update w/o require_inplace params should proceed, and can modify the docid(s)
+    // (but we don't assert that, since it the merge policy might kick in
+    v = addAndGetVersion(sdoc("id", "1", "regular_l", map("inc", 100)), params());
+    assertTrue(v > version1);
+    version1 = v;
+
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*", "sort", "id asc", "fl", "*")
+            , "//*[@numFound='3']"
+            , "//result/doc[1]/long[@name='regular_l'][.='101']"
+            , "//result/doc[2]/long[@name='regular_l'][.='2']"
+            , "//result/doc[3]/long[@name='regular_l'][.='3']"
+            , "//result/doc[1]/float[@name='inplace_updatable_float'][.='41.0']"
+            , "//result/doc[2]/float[@name='inplace_updatable_float'][.='44.0']"
+            , "//result/doc[3]/float[@name='inplace_updatable_float'][.='46.0']"
+            , "//result/doc[1]/long[@name='_version_'][.='"+version1+"']"
+            , "//result/doc[2]/long[@name='_version_'][.='"+version2+"']"
+            , "//result/doc[3]/long[@name='_version_'][.='"+version3+"']"
+            );
+
+    // a regular old re-indexing of a document should also succeed, even w/require_inplace, since it's not ant atomic update
+    v = addAndGetVersion(sdoc("id", "1", "regular_l", "999"), require_inplace);
+    assertTrue(v > version1);
+    version1 = v;
+    
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*", "sort", "id asc", "fl", "*")
+            , "//*[@numFound='3']"
+            , "//result/doc[1]/long[@name='regular_l'][.='999']"
+            , "//result/doc[2]/long[@name='regular_l'][.='2']"
+            , "//result/doc[3]/long[@name='regular_l'][.='3']"
+            , "0=count(//result/doc[1]/float[@name='inplace_updatable_float'])" // not in new doc
+            , "//result/doc[2]/float[@name='inplace_updatable_float'][.='44.0']"
+            , "//result/doc[3]/float[@name='inplace_updatable_float'][.='46.0']"
+            , "//result/doc[1]/long[@name='_version_'][.='"+version1+"']"
+            , "//result/doc[2]/long[@name='_version_'][.='"+version2+"']"
+            , "//result/doc[3]/long[@name='_version_'][.='"+version3+"']"
+            );
+
+  }
+  
+  @Test
+  public void testUpdatingFieldNotPresentInDoc() throws Exception {
+    long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first"), null);
+    long version2 = addAndGetVersion(sdoc("id", "2", "title_s", "second"), null);
+    long version3 = addAndGetVersion(sdoc("id", "3", "title_s", "third"), null);
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*"), "//*[@numFound='3']");
+
+    // subsequent updates shouldn't cause docid changes
+    int docid1 = getDocId("1");
+    int docid2 = getDocId("2");
+    int docid3 = getDocId("3");
+
+    // updating fields which are not present in the document
+    // tests both set and inc with different fields
+    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_float", map("set", 200));
+    version2 = addAndAssertVersion(version2, "id", "2", "inplace_updatable_float", map("inc", 100));
+    version3 = addAndAssertVersion(version3, "id", "3", "inplace_updatable_float", map("set", 300));
+    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("set", 300));
+    assertU(commit("softCommit", "false"));
+
+    assertQ(req("q", "*:*", "sort", "id asc", "fl", "*,[docid]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/float[@name='inplace_updatable_float'][.='200.0']",
+        "//result/doc[1]/int[@name='inplace_updatable_int'][.='300']",
+        "//result/doc[2]/float[@name='inplace_updatable_float'][.='100.0']",
+        "//result/doc[3]/float[@name='inplace_updatable_float'][.='300.0']",
+        "//result/doc[1]/long[@name='_version_'][.='"+version1+"']",
+        "//result/doc[2]/long[@name='_version_'][.='"+version2+"']",
+        "//result/doc[3]/long[@name='_version_'][.='"+version3+"']",
+        "//result/doc[1]/int[@name='[docid]'][.='"+docid1+"']",
+        "//result/doc[2]/int[@name='[docid]'][.='"+docid2+"']",
+        "//result/doc[3]/int[@name='[docid]'][.='"+docid3+"']"
+    );
+
+    // adding new field which is not present in any docs but matches dynamic field rule
+    // and satisfies inplace condition should be treated as inplace update
+    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_i_dvo", map("set", 200));
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "id:1", "sort", "id asc", "fl", "*,[docid]"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/float[@name='inplace_updatable_float'][.='200.0']",
+        "//result/doc[1]/int[@name='inplace_updatable_int'][.='300']",
+        "//result/doc[1]/int[@name='[docid]'][.='"+docid1+"']",
+        "//result/doc[1]/int[@name='inplace_updatable_i_dvo'][.='200']"
+        );
+
+    // delete everything
+    deleteAllAndCommit();
+
+    // test for document with child documents
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("title_s", "parent");
+
+    SolrInputDocument child1 = new SolrInputDocument();
+    child1.setField("id", "1_1");
+    child1.setField("title_s", "child1");
+    SolrInputDocument child2 = new SolrInputDocument();
+    child2.setField("id", "1_2");
+    child2.setField("title_s", "child2");
+
+    doc.addChildDocument(child1);
+    doc.addChildDocument(child2);
+    long version = addAndGetVersion(doc, null);
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*"), "//*[@numFound='3']");
+
+    int parentDocId = getDocId("1");
+    int childDocid1 = getDocId("1_1");
+    int childDocid2 = getDocId("1_2");
+    version = addAndAssertVersion(version, "id", "1", "inplace_updatable_float", map("set", 200));
+    version = addAndAssertVersion(version, "id", "1", "inplace_updatable_int", map("inc", 300));
+    assertU(commit("softCommit", "false"));
+
+    // first child docs would be returned followed by parent doc
+    assertQ(req("q", "*:*", "fl", "*,[docid]"),
+        "//*[@numFound='3']",
+        "//result/doc[3]/float[@name='inplace_updatable_float'][.='200.0']",
+        "//result/doc[3]/int[@name='inplace_updatable_int'][.='300']",
+        "//result/doc[3]/int[@name='[docid]'][.='"+parentDocId+"']",
+        "//result/doc[1]/int[@name='[docid]'][.='"+childDocid1+"']",
+        "//result/doc[2]/int[@name='[docid]'][.='"+childDocid2+"']"
+    );
+  }
+
+
   @Test
   public void testUpdateTwoDifferentFields() throws Exception {
     long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first", "inplace_updatable_float", 42), null);
@@ -423,7 +663,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
    * Helper method to search for the specified (uniqueKey field) id using <code>fl=[docid]</code> 
    * and return the internal lucene docid.
    */
-  private int getDocId(String id) throws NumberFormatException, Exception {
+  private int getDocId(String id) throws Exception {
     SolrDocumentList results = client.query(params("q","id:" + id, "fl", "[docid]")).getResults();
     assertEquals(1, results.getNumFound());
     assertEquals(1, results.size());
@@ -826,6 +1066,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
    *                 (regular or containing atomic update Maps)
    *                 or one of the {@link TestInPlaceUpdatesStandalone#HARDCOMMIT} or {@link TestInPlaceUpdatesStandalone#SOFTCOMMIT} sentinal objects.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void checkReplay(final String valField, Object... commands) throws Exception {
     
     HashMap<Integer, DocInfo> model = new LinkedHashMap<>();
@@ -985,10 +1226,10 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                                                "inplace_updatable_int_with_default");
     Collections.shuffle(fieldsToCheck, random()); // ... and regardless of order checked
     for (String field : fieldsToCheck) {
-      // In-place updatable field updated before it exists SHOULD NOT BE in-place updated:
+      // In-place updatable field updated before it exists SHOULD NOW BE in-place updated (since LUCENE-8316):
       inPlaceUpdatedFields = callComputeInPlaceUpdatableFields(sdoc("id", "1", "_version_", 42L,
                                                                     field, map("set", 10)));
-      assertFalse(field, inPlaceUpdatedFields.contains(field));
+      assertTrue(field, inPlaceUpdatedFields.contains(field));
       
       // In-place updatable field updated after it exists SHOULD BE in-place updated:
       addAndGetVersion(sdoc("id", "1", field, "0"), params()); // setting up the dv
@@ -1023,7 +1264,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                callComputeInPlaceUpdatableFields(sdoc("id", "1", "_version_", 42L,
                                                       "inplace_updatable_int_with_default", "100")).isEmpty());
   
-    assertTrue("non existent dynamic dv field updated first time",
+    assertFalse("non existent dynamic dv field updated first time",
                callComputeInPlaceUpdatableFields(sdoc("id", "1", "_version_", 42L,
                                                       "new_updatable_int_i_dvo", map("set", 10))).isEmpty());
     
@@ -1036,7 +1277,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                                                                   "new_updatable_int_i_dvo", map("set", 10)));
     assertTrue(inPlaceUpdatedFields.contains("new_updatable_int_i_dvo"));
 
-    // for copy fields, regardless of wether the source & target support inplace updates,
+    // for copy fields, regardless of whether the source & target support inplace updates,
     // it won't be inplace if the DVs don't exist yet...
     assertTrue("inplace fields should be empty when doc has no copyfield src values yet",
                callComputeInPlaceUpdatableFields(sdoc("id", "1", "_version_", 42L,

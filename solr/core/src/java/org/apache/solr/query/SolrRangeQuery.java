@@ -57,8 +57,8 @@ import org.apache.solr.search.DocSetBuilder;
 import org.apache.solr.search.DocSetProducer;
 import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.ExtendedQueryBase;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.TestInjection;
 
 /** @lucene.experimental */
 public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetProducer {
@@ -79,6 +79,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   public String getField() {
     return field;
   }
+
+  public BytesRef getLower() { return lower; }
+  public BytesRef getUpper() { return upper; }
 
   public boolean includeLower() {
     return (flags & FLAG_INC_LOWER) != 0;
@@ -165,6 +168,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
   private DocSet createDocSet(SolrIndexSearcher searcher, long cost) throws IOException {
+    assert TestInjection.injectDocSetDelay(this);
     int maxDoc = searcher.maxDoc();
     BitDocSet liveDocs = searcher.getLiveDocSet();
     FixedBitSet liveBits = liveDocs.size() == maxDoc ? null : liveDocs.getBits();
@@ -330,6 +334,22 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     }
   }
 
+  private static class SegmentDocIdSet extends DocIdSet {
+    private final DocSet docs;
+    private final LeafReaderContext ctx;
+    private SegmentDocIdSet(DocSet docs, LeafReaderContext ctx) {
+      this.docs = docs;
+      this.ctx = ctx;
+    }
+    @Override
+    public long ramBytesUsed() {
+      return docs.ramBytesUsed();
+    }
+    @Override
+    public DocIdSetIterator iterator() throws IOException {
+      return docs.iterator(ctx);
+    }
+  }
   // adapted from MultiTermQueryConstantScoreWrapper
   class ConstWeight extends ConstantScoreWeight {
 
@@ -338,7 +358,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     final IndexSearcher searcher;
     final ScoreMode scoreMode;
     boolean checkedFilterCache;
-    Filter filter;
+    DocSet answer;
     final SegState[] segStates;
 
 
@@ -390,24 +410,22 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       // first time, check our filter cache
       boolean doCheck = !checkedFilterCache && context.ord == 0;
       checkedFilterCache = true;
-      SolrIndexSearcher solrSearcher = null;
+      final SolrIndexSearcher solrSearcher;
       if (doCheck && searcher instanceof SolrIndexSearcher) {
-        solrSearcher = (SolrIndexSearcher)searcher;
+        solrSearcher = (SolrIndexSearcher) searcher;
         if (solrSearcher.getFilterCache() == null) {
           doCheck = false;
         } else {
-          solrSearcher = (SolrIndexSearcher)searcher;
-          DocSet answer = solrSearcher.getFilterCache().get(SolrRangeQuery.this);
-          if (answer != null) {
-            filter = answer.getTopFilter();
-          }
+          answer = solrSearcher.getFilterCache().get(SolrRangeQuery.this);
         }
       } else {
         doCheck = false;
+        solrSearcher = null;
       }
       
-      if (filter != null) {
-        return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
+      if (answer != null) {
+        // I'm not sure this ever happens
+        return segStates[context.ord] = new SegState(new SegmentDocIdSet(answer, context));
       }
 
       final Terms terms = context.reader().terms(SolrRangeQuery.this.getField());
@@ -436,10 +454,10 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       // Too many terms for boolean query...
 
       if (doCheck) {
-        DocSet answer = createDocSet(solrSearcher, count);
+        answer = createDocSet(solrSearcher, count);
+        // This can be a naked put because the cache usually gets checked in SolrIndexSearcher
         solrSearcher.getFilterCache().put(SolrRangeQuery.this, answer);
-        filter = answer.getTopFilter();
-        return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
+        return segStates[context.ord] = new SegState(new SegmentDocIdSet(answer, context));
       }
 
       /* FUTURE: reuse term states in the future to help build DocSet, use collected count so far...

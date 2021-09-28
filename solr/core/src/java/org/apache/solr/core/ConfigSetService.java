@@ -16,69 +16,195 @@
  */
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
+import java.util.Map;
+import java.util.regex.Pattern;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import org.apache.solr.cloud.CloudConfigSetService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service class used by the CoreContainer to load ConfigSets for use in SolrCore
- * creation.
+ * Service class used by the CoreContainer to load ConfigSets for use in SolrCore creation.
  */
 public abstract class ConfigSetService {
 
+  public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+  public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
-    if (zkController != null)
-      return new CloudConfigSetService(loader, zkController);
 
-    if (nodeConfig.hasSchemaCache())
-      return new SchemaCaching(loader, nodeConfig.getConfigSetBaseDirectory());
-
-    return new Default(loader, nodeConfig.getConfigSetBaseDirectory());
+  public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
+    final ConfigSetService configSetService = instantiate(coreContainer);
+    try {
+      bootstrapDefaultConfigSet(configSetService);
+    } catch (UnsupportedOperationException e) {
+      log.info("_default config couldn't be uploaded");
+    } catch (IOException e) {
+      throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "_default config couldn't be uploaded ", e);
+    }
+    return configSetService;
   }
 
-  protected final SolrResourceLoader parentLoader;
+  private static ConfigSetService instantiate(CoreContainer coreContainer) {
+    final NodeConfig nodeConfig = coreContainer.getConfig();
+    final SolrResourceLoader loader = coreContainer.getResourceLoader();
+    final ZkController zkController = coreContainer.getZkController();
+
+    final String configSetServiceClass = nodeConfig.getConfigSetServiceClass();
+
+    if (configSetServiceClass != null) {
+      try {
+        Class<? extends ConfigSetService> clazz = loader.findClass(configSetServiceClass, ConfigSetService.class);
+        Constructor<? extends ConfigSetService> constructor = clazz.getConstructor(CoreContainer.class);
+        return constructor.newInstance(coreContainer);
+      } catch (Exception e) {
+        throw new RuntimeException("create configSetService instance failed, configSetServiceClass:" + configSetServiceClass, e);
+      }
+    } else if (zkController == null) {
+      return new FileSystemConfigSetService(coreContainer);
+    } else {
+      return new ZkConfigSetService(coreContainer);
+    }
+  }
+
+  private static void bootstrapDefaultConfigSet(ConfigSetService configSetService) throws IOException {
+    if (configSetService.checkConfigExists("_default") == false) {
+      String configDirPath = getDefaultConfigDirPath();
+      if (configDirPath == null) {
+        log.warn(
+                "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
+                "intended to be the default. Current 'solr.default.confdir' value:",
+                System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+      } else {
+        configSetService.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
+      }
+    }
+  }
 
   /**
-   * Create a new ConfigSetService
-   * @param loader the CoreContainer's resource loader
+   * Gets the absolute filesystem path of the _default configset to bootstrap from. First tries the
+   * sysprop "solr.default.confdir". If not found, tries to find the _default dir relative to the
+   * sysprop "solr.install.dir". Returns null if not found anywhere.
+   *
+   * @lucene.internal
+   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
-  public ConfigSetService(SolrResourceLoader loader) {
-    this.parentLoader = loader;
+  public static String getDefaultConfigDirPath() {
+    String configDirPath = null;
+    String serverSubPath =
+        "solr"
+            + File.separator
+            + "configsets"
+            + File.separator
+            + "_default"
+            + File.separator
+            + "conf";
+    String subPath = File.separator + "server" + File.separator + serverSubPath;
+    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null
+        && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
+            .exists()) {
+      configDirPath =
+          new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
+              .getAbsolutePath();
+    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null
+        && new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
+            .exists()) {
+      configDirPath =
+          new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
+              .getAbsolutePath();
+    }
+    return configDirPath;
+  }
+
+  // Order is important here since "confDir" may be
+  // 1> a full path to the parent of a solrconfig.xml or parent of /conf/solrconfig.xml
+  // 2> one of the canned config sets only, e.g. _default
+  // and trying to assemble a path for configsetDir/confDir is A Bad Idea. if confDir is a full path.
+  public static Path getConfigsetPath(String confDir, String configSetDir) throws IOException {
+
+    // A local path to the source, probably already includes "conf".
+    Path ret = Paths.get(confDir, "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(confDir).normalize();
+    }
+
+    // a local path to the parent of a "conf" directory
+    ret = Paths.get(confDir, "conf", "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(confDir, "conf").normalize();
+    }
+
+    // one of the canned configsets.
+    ret = Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(configSetDir, confDir, "conf").normalize();
+    }
+
+    throw new IllegalArgumentException(String.format(Locale.ROOT,
+            "Could not find solrconfig.xml at %s, %s or %s",
+            Paths.get(configSetDir, "solrconfig.xml").normalize().toAbsolutePath().toString(),
+            Paths.get(configSetDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
+            Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString()
+    ));
+  }
+
+  /** If in SolrCloud mode, upload configSets for each SolrCore in solr.xml. */
+  public static void bootstrapConf(CoreContainer cc) throws IOException {
+    // List<String> allCoreNames = cfg.getAllCoreNames();
+    List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
+
+    if (log.isInfoEnabled()) {
+      log.info(
+          "bootstrapping config for {} cores into ZooKeeper using solr.xml from {}",
+          cds.size(),
+          cc.getSolrHome());
+    }
+
+    for (CoreDescriptor cd : cds) {
+      String coreName = cd.getName();
+      String confName = cd.getCollectionName();
+      if (StringUtils.isEmpty(confName)) confName = coreName;
+      Path udir = cd.getInstanceDir().resolve("conf");
+      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
+      cc.getConfigSetService().uploadConfig(confName, udir);
+    }
   }
 
   /**
    * Load the ConfigSet for a core
+   *
    * @param dcore the core's CoreDescriptor
    * @return a ConfigSet
    */
-  public final ConfigSet getConfig(CoreDescriptor dcore) {
+  public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
 
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
 
     try {
-
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
+      NamedList<?> properties = loadConfigSetProperties(dcore, coreLoader);
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
-      NamedList properties = createConfigSetProperties(dcore, coreLoader);
-      NamedList flags = getConfigSetFlags(dcore, coreLoader);
+      NamedList<?> flags = loadConfigSetFlags(dcore, coreLoader);
 
       boolean trusted =
           (coreLoader instanceof ZkSolrResourceLoader
@@ -87,9 +213,8 @@ public abstract class ConfigSetService {
               && !flags.getBooleanArg("trusted")
               ) ? false: true;
 
-      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader);
-      IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configName(dcore), solrConfig, schema, properties, trusted);
+      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
+      return new ConfigSet(configSetName(dcore), solrConfig, force -> createIndexSchema(dcore, solrConfig, force), properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
@@ -98,46 +223,92 @@ public abstract class ConfigSetService {
 
   }
 
+  protected final SolrResourceLoader parentLoader;
+
+  /** Optional cache of schemas, key'ed by a bunch of concatenated things */
+  private final Cache<String, IndexSchema> schemaCache;
+
   /**
-   * Create a SolrConfig object for a core
-   * @param cd the core's CoreDescriptor
-   * @param loader the core's resource loader
-   * @return a SolrConfig object
+   * Create a new ConfigSetService
+   *
+   * @param loader the CoreContainer's resource loader
+   * @param shareSchema should we share the IndexSchema among cores of same config?
    */
-  protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader) {
-    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName());
+  public ConfigSetService(SolrResourceLoader loader, boolean shareSchema) {
+    this.parentLoader = loader;
+    this.schemaCache = shareSchema ? Caffeine.newBuilder().weakValues().build() : null;
   }
 
   /**
-   * Create an IndexSchema object for a core
+   * Create a SolrConfig object for a core
+   *
+   * @param cd the core's CoreDescriptor
+   * @param loader the core's resource loader
+   * @param isTrusted is the configset trusted?
+   * @return a SolrConfig object
+   */
+  protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) {
+    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName(), isTrusted, cd.getSubstitutableProperties());
+  }
+
+  /**
+   * Create an IndexSchema object for a core.  It might be a cached lookup.
+   *
    * @param cd the core's CoreDescriptor
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
    */
-  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig) {
-    return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
+  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) {
+    // This is the schema name from the core descriptor.  Sometimes users specify a custom schema file.
+    //   Important:  indexSchemaFactory.create wants this!
+    String cdSchemaName = cd.getSchemaName();
+    // This is the schema name that we think will actually be used.  In the case of a managed schema,
+    //  we don't know for sure without examining what files exists in the configSet, and we don't
+    //  want to pay the overhead of that at this juncture.  If we guess wrong, no schema sharing.
+    //  The fix is usually to name your schema managed-schema.xml instead of schema.xml.
+    IndexSchemaFactory indexSchemaFactory = IndexSchemaFactory.newIndexSchemaFactory(solrConfig);
+
+    String configSet = cd.getConfigSet();
+    if (configSet != null && schemaCache != null) {
+      String guessSchemaName = indexSchemaFactory.getSchemaResourceName(cdSchemaName);
+      Long modVersion = getCurrentSchemaModificationVersion(configSet, solrConfig, guessSchemaName);
+      if (modVersion != null) {
+        // note: luceneMatchVersion influences the schema
+        String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
+        return schemaCache.get(cacheKey,
+            (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig, ConfigSetService.this));
+      } else {
+        log.warn("Unable to get schema modification version, configSet={} schema={}", configSet, guessSchemaName);
+        // see explanation above; "guessSchema" is a guess
+      }
+    }
+
+    return indexSchemaFactory.create(cdSchemaName, solrConfig, this);
   }
 
   /**
-   * Return the ConfigSet properties
+   * Returns a modification version for the schema file.
+   * Null may be returned if not known, and if so it defeats schema caching.
+   */
+  protected abstract Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile);
+
+  /**
+   * Return the ConfigSet properties or null if none.
+   * @see ConfigSetProperties
    * @param cd the core's CoreDescriptor
    * @param loader the core's resource loader
    * @return the ConfigSet properties
    */
-  protected NamedList createConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
 
-  protected NamedList getConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
-    if (loader instanceof ZkSolrResourceLoader) {
-      try {
-        return ConfigSetProperties.readFromResourceLoader(loader, ".");
-      } catch (Exception ex) {
-        return null;
-      }
-    } else {
-      return null;
-    }
+  /**
+   * Return the ConfigSet flags or null if none.
+   */
+  // TODO should fold into configSetProps -- SOLR-14059
+  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+    return null;
   }
 
   /**
@@ -148,96 +319,116 @@ public abstract class ConfigSetService {
   protected abstract SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd);
 
   /**
-   * Return a name for the ConfigSet for a core
+   * Return a name for the ConfigSet for a core to be used for printing/diagnostic purposes.
    * @param cd the core's CoreDescriptor
    * @return a name for the core's ConfigSet
    */
-  public abstract String configName(CoreDescriptor cd);
+  public abstract String configSetName(CoreDescriptor cd);
 
   /**
-   * The default ConfigSetService.
+   * Upload files from a given path to config
    *
-   * Loads a ConfigSet defined by the core's configSet property,
-   * looking for a directory named for the configSet property value underneath
-   * a base directory.  If no configSet property is set, loads the ConfigSet
-   * instead from the core's instance directory.
+   * @param configName the config name
+   * @param dir        {@link Path} to the files
+   * @throws IOException if an I/O error occurs or the path does not exist
    */
-  public static class Default extends ConfigSetService {
-
-    private final Path configSetBase;
-
-    /**
-     * Create a new ConfigSetService.Default
-     * @param loader the CoreContainer's resource loader
-     * @param configSetBase the base directory under which to look for config set directories
-     */
-    public Default(SolrResourceLoader loader, Path configSetBase) {
-      super(loader);
-      this.configSetBase = configSetBase;
-    }
-
-    @Override
-    public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
-      Path instanceDir = locateInstanceDir(cd);
-      return new SolrResourceLoader(instanceDir, parentLoader.getClassLoader(), cd.getSubstitutableProperties());
-    }
-
-    @Override
-    public String configName(CoreDescriptor cd) {
-      return (cd.getConfigSet() == null ? "instancedir " : "configset ") + locateInstanceDir(cd);
-    }
-
-    protected Path locateInstanceDir(CoreDescriptor cd) {
-      String configSet = cd.getConfigSet();
-      if (configSet == null)
-        return cd.getInstanceDir();
-      Path configSetDirectory = configSetBase.resolve(configSet);
-      if (!Files.isDirectory(configSetDirectory))
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not load configuration from directory " + configSetDirectory);
-      return configSetDirectory;
-    }
-
-  }
+  public abstract void uploadConfig(String configName, Path dir) throws IOException;
 
   /**
-   * A ConfigSetService that shares schema objects between cores
+   * Upload a file to config
+   * If file does not exist, it will be uploaded
+   * If createNew param is set to true then file be overwritten
+   *
+   * @param configName the name to give the config
+   * @param fileName the name of the file
+   * @param data the content of the file
+   * @param overwriteOnExists if true then file will be overwritten
+   * @throws SolrException if file exists and overwriteOnExists == false
    */
-  public static class SchemaCaching extends Default {
+  public abstract void uploadFileToConfig(String configName, String fileName, byte[] data, boolean overwriteOnExists) throws IOException;
 
-    private final Cache<String, IndexSchema> schemaCache = CacheBuilder.newBuilder().build();
+  /**
+   * Download all files from this config to the filesystem at dir
+   *
+   * @param configName the config to download
+   * @param dir        the {@link Path} to write files under
+   */
+  public abstract void downloadConfig(String configName, Path dir) throws IOException;
 
-    public SchemaCaching(SolrResourceLoader loader, Path configSetBase) {
-      super(loader, configSetBase);
-    }
+  /**
+   * Download a file from config
+   * If the file does not exist, it returns null
+   *
+   * @param configName the name of the config
+   * @param filePath  the file to download
+   * @return the content of the file
+   */
+  public abstract byte[] downloadFileFromConfig(String configName, String filePath) throws IOException;
 
-    public static String cacheName(Path schemaFile) throws IOException {
-      long lastModified = Files.getLastModifiedTime(schemaFile).toMillis();
-      return String.format(Locale.ROOT, "%s:%s",
-                            schemaFile.toString(), Instant.ofEpochMilli(lastModified).toString());
-    }
+  /**
+   * Copy a config
+   *
+   * @param fromConfig the config to copy from
+   * @param toConfig   the config to copy to
+   */
+  public abstract void copyConfig(String fromConfig, String toConfig) throws IOException;
 
-    @Override
-    public IndexSchema createIndexSchema(final CoreDescriptor cd, final SolrConfig solrConfig) {
-      final String resourceNameToBeUsed = IndexSchemaFactory.getResourceNameToBeUsed(cd.getSchemaName(), solrConfig);
-      Path schemaFile = Paths.get(solrConfig.getResourceLoader().getConfigDir()).resolve(resourceNameToBeUsed);
-      if (Files.exists(schemaFile)) {
-        try {
-          String cachedName = cacheName(schemaFile);
-          return schemaCache.get(cachedName, () -> {
-            log.info("Creating new index schema for core {}", cd.getName());
-            return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
-          });
-        } catch (ExecutionException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Error creating index schema for core " + cd.getName(), e);
-        } catch (IOException e) {
-          log.warn("Couldn't get last modified time for schema file {}: {}", schemaFile, e.getMessage());
-          log.warn("Will not use schema cache");
-        }
-      }
-      return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
-    }
-  }
+  /**
+   * Check whether a config exists
+   *
+   * @param configName the config to check if it exists
+   * @return whether the config exists or not
+   */
+  public abstract boolean checkConfigExists(String configName) throws IOException ;
+
+  /**
+   * Delete a config (recursively deletes its files if not empty)
+   *
+   * @param configName the config to delete
+   */
+  public abstract void deleteConfig(String configName) throws IOException;
+
+  /**
+   * Delete files in config
+   *
+   * @param configName the name of the config
+   * @param filesToDelete a list of file paths to delete
+   */
+  public abstract void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException;
+
+  /**
+   * Set the config metadata
+   * If config does not exist, it will be created and set metadata on it
+   * Else metadata will be replaced with the provided metadata
+   *
+   * @param configName the config name
+   * @param data the metadata to be set on config
+   */
+  public abstract void setConfigMetadata(String configName, Map<String, Object> data) throws IOException;
+
+  /**
+   * Get the config metadata (mutable, non-null)
+   *
+   * @param configName the config name
+   * @return the config metadata
+   */
+  public abstract Map<String, Object> getConfigMetadata(String configName) throws IOException;
+
+  /**
+   * List the names of configs (non-null)
+   *
+   * @return list of config names
+   */
+  public abstract List<String> listConfigs() throws IOException;
+
+  /**
+   * Get the names of the files in config including dirs (mutable, non-null)
+   * sorted lexicographically
+   * e.g. solrconfig.xml, lang/, lang/stopwords_en.txt
+   *
+   * @param configName the config name
+   * @return list of file name paths in the config
+   */
+  public abstract List<String> getAllConfigFiles(String configName) throws IOException;
 
 }

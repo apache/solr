@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -77,11 +78,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return BinaryResponseParser.BINARY_CONTENT_TYPE;
-  }
-
-  @Override
-  public void init(NamedList args) {
-    /* NOOP */
   }
 
   public static class Resolver implements JavaBinCodec.ObjectResolver , JavaBinCodec.WritableDocFields {
@@ -137,7 +133,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         try {
           o = DocsStreamer.getValue(sf, f);
         } catch (Exception e) {
-          log.warn("Error reading a field : " + o, e);
+          log.warn("Error reading a field : {}", o, e);
         }
       }
       return o;
@@ -164,8 +160,8 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.SOLRDOCLST);
-      List l = new ArrayList(3);
-      l.add((long) ctx.getDocList().matches());
+      List<Object> l = new ArrayList<>(4);
+      l.add( ctx.getDocList().matches());
       l.add((long) ctx.getDocList().offset());
       
       Float maxScore = null;
@@ -173,6 +169,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         maxScore = ctx.getDocList().maxScore();
       }
       l.add(maxScore);
+      l.add(ctx.getDocList().hitCountRelation() == TotalHits.Relation.EQUAL_TO);
       codec.writeArray(l);
       
       // this is a seprate function so that streaming responses can use just that part
@@ -193,6 +190,9 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   @SuppressWarnings("unchecked")
   public static NamedList<Object> getParsedResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     try {
+      if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) {
+        rsp.removeResponseHeader();
+      }
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -237,6 +237,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       return null;
     }
 
+    @SuppressWarnings({"unchecked"})
     public Collection<Object> getRawFieldValues(String name) {
       Object v = _fields.get(name);
       if (v instanceof Collection) {
@@ -264,6 +265,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         }
 
         @Override
+        @SuppressWarnings({"unchecked"})
         public Entry<String, Object> next() {
           return convertCharSeq(it.next());
         }
@@ -282,7 +284,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public Object getFirstValue(String name) {
       Object v = _fields.get(name);
       if (v == null || !(v instanceof Collection)) return convertCharSeq(v);
-      Collection c = (Collection) v;
+      Collection<?> c = (Collection<?>) v;
       if (c.size() > 0) {
         return convertCharSeq(c.iterator().next());
       }

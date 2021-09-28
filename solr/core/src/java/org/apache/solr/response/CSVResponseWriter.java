@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastWriter;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.internal.csv.CSVPrinter;
 import org.apache.solr.internal.csv.CSVStrategy;
 import org.apache.solr.request.SolrQueryRequest;
@@ -45,10 +44,6 @@ import org.apache.solr.search.ReturnFields;
  */
 
 public class CSVResponseWriter implements QueryResponseWriter {
-
-  @Override
-  public void init(NamedList n) {
-  }
 
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
@@ -323,27 +318,27 @@ class CSVWriter extends TabularResponseWriter {
   }
 
   //NOTE: a document cannot currently contain another document
-  List tmpList;
+  List<Object> tmpList;
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
     if (tmpList == null) {
-      tmpList = new ArrayList(1);
+      tmpList = new ArrayList<>(1);
       tmpList.add(null);
     }
 
     for (CSVField csvField : csvFields.values()) {
       Object val = doc.getFieldValue(csvField.name);
-      int nVals = val instanceof Collection ? ((Collection)val).size() : (val==null ? 0 : 1);
+      int nVals = val instanceof Collection ? ((Collection<?>)val).size() : (val==null ? 0 : 1);
       if (nVals == 0) {
         writeNull(csvField.name);
         continue;
       }
 
       if ((csvField.sf != null && csvField.sf.multiValued()) || nVals > 1) {
-        Collection values;
+        Collection<?> values;
         // normalize to a collection
         if (val instanceof Collection) {
-          values = (Collection)val;
+          values = (Collection<?>)val;
         } else {
           tmpList.set(0, val);
           values = tmpList;
@@ -365,7 +360,7 @@ class CSVWriter extends TabularResponseWriter {
       } else {
         // normalize to first value
         if (val instanceof Collection) {
-          Collection values = (Collection)val;
+          Collection<?> values = (Collection<?>)val;
           val = values.iterator().next();
         }
         // if field is polyfield, use the multi-valued printer to apply appropriate escaping

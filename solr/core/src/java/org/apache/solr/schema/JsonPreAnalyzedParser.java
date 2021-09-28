@@ -19,6 +19,9 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -40,7 +43,6 @@ import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.schema.PreAnalyzedField.ParseResult;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 import org.noggit.JSONUtil;
@@ -81,7 +83,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
     if (val.length() == 0) {
       return res;
     }
-    Object o = ObjectBuilder.fromJSON(val);
+    Object o = ObjectBuilder.fromJSONStrict(val);
     if (!(o instanceof Map)) {
       throw new IOException("Invalid JSON type " + o.getClass().getName() + ", expected Map");
     }
@@ -100,7 +102,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
     res.str = (String)map.get(STRING_KEY);
     String bin = (String)map.get(BINARY_KEY);
     if (bin != null) {
-      byte[] data = Base64.base64ToByteArray(bin);
+      byte[] data = Base64.getDecoder().decode(bin);
       res.bin = data;
     }
     List<Object> tokens = (List<Object>)map.get(TOKENS_KEY);
@@ -132,7 +134,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
             try {
               tokenStart = Integer.parseInt(String.valueOf(obj));
             } catch (NumberFormatException nfe) {
-              log.warn("Invalid " + OFFSET_START_KEY + " attribute, skipped: '" + obj + "'");
+              log.warn("Invalid {} attribute, skipped: '{}'", OFFSET_START_KEY, obj);
               hasOffsetStart = false;
             }
           }
@@ -145,7 +147,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
             try {
               tokenEnd = Integer.parseInt(String.valueOf(obj));
             } catch (NumberFormatException nfe) {
-              log.warn("Invalid " + OFFSET_END_KEY + " attribute, skipped: '" + obj + "'");
+              log.warn("Invalid {} attribute, skipped: '{}'", OFFSET_END_KEY, obj);
               hasOffsetEnd = false;
             }
           }
@@ -158,7 +160,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
             try {
               posIncr = Integer.parseInt(String.valueOf(obj));
             } catch (NumberFormatException nfe) {
-              log.warn("Invalid " + POSINCR_KEY + " attribute, skipped: '" + obj + "'");
+              log.warn("Invalid {} attribute, skipped: '{}'", POSINCR_KEY, obj);
             }
           }
           PositionIncrementAttribute patt = parent.addAttribute(PositionIncrementAttribute.class);
@@ -166,7 +168,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
         } else if (key.equals(PAYLOAD_KEY)) {
           String str = String.valueOf(e.getValue());
           if (str.length() > 0) {
-            byte[] data = Base64.base64ToByteArray(str);
+            byte[] data = Base64.getDecoder().decode(str);
             PayloadAttribute p = parent.addAttribute(PayloadAttribute.class);
             if (data != null && data.length > 0) {
               p.setPayload(new BytesRef(data));
@@ -178,13 +180,13 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
             FlagsAttribute flags = parent.addAttribute(FlagsAttribute.class);
             flags.setFlags(f);
           } catch (NumberFormatException nfe) {
-            log.warn("Invalid " + FLAGS_KEY + " attribute, skipped: '" + e.getValue() + "'");
+            log.warn("Invalid {} attribute, skipped: '{}'", FLAGS_KEY, e.getValue());
           }
         } else if (key.equals(TYPE_KEY)) {
           TypeAttribute tattr = parent.addAttribute(TypeAttribute.class);
           tattr.setType(String.valueOf(e.getValue()));
         } else {
-          log.warn("Unknown attribute, skipped: " + e.getKey() + "=" + e.getValue());
+          log.warn("Unknown attribute, skipped: {} = {}", e.getKey(), e.getValue());
         }
       }
       // handle offset attr
@@ -216,7 +218,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
       }
       BytesRef binaryValue = f.binaryValue();
       if (binaryValue != null) {
-        map.put(BINARY_KEY, Base64.byteArrayToBase64(binaryValue.bytes, binaryValue.offset, binaryValue.length));
+        map.put(BINARY_KEY, new String(Base64.getEncoder().encode(ByteBuffer.wrap(binaryValue.bytes, binaryValue.offset, binaryValue.length)).array(), StandardCharsets.ISO_8859_1));
       }
     }
     TokenStream ts = f.tokenStreamValue();
@@ -248,7 +250,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
             } else if (cl.isAssignableFrom(PayloadAttribute.class)) {
               BytesRef p = ((PayloadAttribute)att).getPayload();
               if (p != null && p.length > 0) {
-                tok.put(PAYLOAD_KEY, Base64.byteArrayToBase64(p.bytes, p.offset, p.length));
+                tok.put(PAYLOAD_KEY, new String(Base64.getEncoder().encode(ByteBuffer.wrap(p.bytes, p.offset, p.length)).array(), StandardCharsets.ISO_8859_1));
               }
             } else if (cl.isAssignableFrom(PositionIncrementAttribute.class)) {
               tok.put(POSINCR_KEY, ((PositionIncrementAttribute)att).getPositionIncrement());

@@ -22,7 +22,7 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -84,6 +84,40 @@ public class JsonLoader extends ContentStreamLoader {
     new SingleThreadedJsonLoader(req, rsp, processor).load(req, rsp, stream, processor);
   }
 
+  @SuppressWarnings("unchecked")
+  public static SolrInputDocument buildDoc(Map<String, Object> m) {
+    SolrInputDocument result = new SolrInputDocument();
+    for (Map.Entry<String, Object> e : m.entrySet()) {
+      if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
+        if (e.getValue() instanceof List) {
+          List<?> value = (List<?>) e.getValue();
+          for (Object o : value) {
+            if (o instanceof Map) {
+              // retain the value as a list, even if the list contains a single value.
+              if(!result.containsKey(e.getKey())) {
+                result.setField(e.getKey(), new ArrayList<>(1));
+              }
+              result.addField(e.getKey(), buildDoc((Map<String, Object>) o));
+            }
+          }
+        } else if (e.getValue() instanceof Map) {
+          result.addField(e.getKey(), buildDoc((Map<String, Object>) e.getValue()));
+        }
+      } else {
+        result.setField(e.getKey(), e.getValue());
+      }
+    }
+    return result;
+  }
+
+  private static boolean mapEntryIsChildDoc(Object val) {
+    if(val instanceof List) {
+      List<?> listVal = (List<?>) val;
+      if (listVal.size() == 0) return false;
+      return  listVal.get(0) instanceof Map;
+    }
+    return val instanceof Map;
+  }
 
   static class SingleThreadedJsonLoader extends ContentStreamLoader {
 
@@ -114,7 +148,7 @@ public class JsonLoader extends ContentStreamLoader {
         reader = stream.getReader();
         if (log.isTraceEnabled()) {
           String body = IOUtils.toString(reader);
-          log.trace("body", body);
+          log.trace("body: {}", body);
           reader = new StringReader(body);
         }
 
@@ -183,8 +217,10 @@ public class JsonLoader extends ContentStreamLoader {
           case JSONParser.BIGNUMBER:
           case JSONParser.BOOLEAN:
           case JSONParser.NULL:
-            log.info("Can't have a value here. Unexpected "
-                + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "]");
+            if (log.isInfoEnabled()) {
+              log.info("Can't have a value here. Unexpected {} at [{}]"
+                  , JSONParser.getEventString(ev), parser.getPosition());
+            }
 
           case JSONParser.OBJECT_START:
           case JSONParser.OBJECT_END:
@@ -192,7 +228,7 @@ public class JsonLoader extends ContentStreamLoader {
             break;
 
           default:
-            log.info("Noggit UNKNOWN_EVENT_ID: " + ev);
+            log.info("Noggit UNKNOWN_EVENT_ID: {}", ev);
             break;
         }
         // read the next event
@@ -217,7 +253,7 @@ public class JsonLoader extends ContentStreamLoader {
 
       JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, Arrays.asList(fields));
       jsonRecordReader.streamRecords(parser, new JsonRecordReader.Handler() {
-        ArrayList docs = null;
+        ArrayList<Map<String, Object>> docs = null;
 
         @Override
         public void handle(Map<String, Object> record, String path) {
@@ -225,7 +261,7 @@ public class JsonLoader extends ContentStreamLoader {
 
           if (echo) {
             if (docs == null) {
-              docs = new ArrayList();
+              docs = new ArrayList<>();
               rsp.add("docs", docs);
             }
             changeChildDoc(copy);
@@ -245,36 +281,11 @@ public class JsonLoader extends ContentStreamLoader {
       });
     }
 
-    private SolrInputDocument buildDoc(Map<String, Object> m) {
-      SolrInputDocument result = new SolrInputDocument();
-      for (Map.Entry<String, Object> e : m.entrySet()) {
-        if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
-          if (e.getValue() instanceof List) {
-            List value = (List) e.getValue();
-            for (Object o : value) {
-              if (o instanceof Map) {
-                // retain the value as a list, even if the list contains a single value.
-                if(!result.containsKey(e.getKey())) {
-                  result.setField(e.getKey(), new ArrayList<>(1));
-                }
-                result.addField(e.getKey(), buildDoc((Map) o));
-              }
-            }
-          } else if (e.getValue() instanceof Map) {
-            result.addField(e.getKey(), buildDoc((Map) e.getValue()));
-          }
-        } else {
-          result.setField(e.getKey(), e.getValue());
-        }
-      }
-      return result;
-    }
-
     private Map<String, Object> getDocMap(Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
-      Map result = record;
+      Map<String, Object> result = record;
       if (srcField != null && parser instanceof RecordingJSONParser) {
         //if srcFIeld specified extract it out first
-        result = new LinkedHashMap(record);
+        result = new LinkedHashMap<>(record);
         RecordingJSONParser rjp = (RecordingJSONParser) parser;
         result.put(srcField, rjp.getBuf());
         rjp.resetBuf();
@@ -285,7 +296,7 @@ public class JsonLoader extends ContentStreamLoader {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No uniqueKey specified in schema");
         String df = req.getParams().get(CommonParams.DF);
         if (df == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No 'df' specified in request");
-        Map copy = new LinkedHashMap();
+        Map<String, Object> copy = new LinkedHashMap<>();
         String uniqueField = (String) record.get(sf.getName());
         if (uniqueField == null) uniqueField = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
         copy.put(sf.getName(), uniqueField);
@@ -416,7 +427,8 @@ public class JsonLoader extends ContentStreamLoader {
 
     void parseCommitOptions(CommitUpdateCommand cmd) throws IOException {
       assertNextEvent(JSONParser.OBJECT_START);
-      final Map<String, Object> map = (Map) ObjectBuilder.getVal(parser);
+      @SuppressWarnings({"unchecked"})
+      final Map<String, Object> map = (Map<String,Object>) ObjectBuilder.getVal(parser);
 
       // SolrParams currently expects string values...
       SolrParams p = new SolrParams() {
@@ -584,7 +596,7 @@ public class JsonLoader extends ContentStreamLoader {
     private List<Object> parseArrayFieldValue(int ev, String fieldName) throws IOException {
       assert ev == JSONParser.ARRAY_START;
 
-      ArrayList lst = new ArrayList(2);
+      ArrayList<Object> lst = new ArrayList<>(2);
       for (; ; ) {
         ev = parser.nextEvent();
         if (ev == JSONParser.ARRAY_END) {
@@ -601,41 +613,39 @@ public class JsonLoader extends ContentStreamLoader {
       assert ev == JSONParser.OBJECT_START;
 
       SolrInputDocument extendedSolrDocument = parseDoc(ev);
-      // is this a partial update or a child doc?
+      // Is this a child doc (true) or a partial update (false)
       if (isChildDoc(extendedSolrDocument)) {
         return extendedSolrDocument;
-      } else {
-        //return extendedSolrDocument.toMap(new HashMap<>(extendedSolrDocument.size()));  not quite right
-        Map<String, Object> map = new HashMap<>(extendedSolrDocument.size());
-        for (SolrInputField inputField : extendedSolrDocument) {
-          map.put(inputField.getName(), inputField.getValue());
-        }
-        return map;
+      } else { // partial update
+        assert extendedSolrDocument.size() == 1;
+        final SolrInputField pair = extendedSolrDocument.iterator().next();
+        return Collections.singletonMap(pair.getName(), pair.getValue());
       }
     }
 
+    /** Is this a child doc (true) or a partial update (false)? */
     private boolean isChildDoc(SolrInputDocument extendedFieldValue) {
-      return extendedFieldValue.containsKey(req.getSchema().getUniqueKeyField().getName());
+      if (extendedFieldValue.size() != 1) {
+        return true;
+      }
+      // if the only key is a field in the schema, assume it's a child doc
+      final String fieldName = extendedFieldValue.iterator().next().getName();
+      return req.getSchema().getFieldOrNull(fieldName) != null;
+      // otherwise, assume it's "set" or some other verb for a partial update.
+      // NOTE: it's fundamentally ambiguous with JSON; this is a best effort try.
     }
 
-    private boolean mapEntryIsChildDoc(Object val) {
-      if(val instanceof List) {
-        List listVal = (List) val;
-        if (listVal.size() == 0) return false;
-        return  listVal.get(0) instanceof Map;
-      }
-      return val instanceof Map;
-    }
   }
 
   private static Object changeChildDoc(Object o) {
     if (o instanceof List) {
-      return ((List) o)
+      return ((List<?>) o)
           .stream()
           .map(JsonLoader::changeChildDoc)
           .collect(toList());
     }
-    Map m = (Map) o;
+    @SuppressWarnings("unchecked")
+    Map<Object, Object> m = (Map<Object, Object>) o;
     if (m.containsKey(null)) m.put(CHILD_DOC_KEY, changeChildDoc(m.remove(null)));
     return m;
   }

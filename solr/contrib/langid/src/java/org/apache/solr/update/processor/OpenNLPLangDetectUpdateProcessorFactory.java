@@ -61,23 +61,23 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
   private SolrResourceLoader solrResourceLoader;
 
   @Override
-  public void init( NamedList args )
+  public void init(NamedList<?> args )
   {
     if (args != null) {
       Object o;
       o = args.get("defaults");
-      if (o != null && o instanceof NamedList) {
-        defaults = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        defaults = ((NamedList<?>) o).toSolrParams();
       } else {
         defaults = args.toSolrParams();
       }
       o = args.get("appends");
-      if (o != null && o instanceof NamedList) {
-        appends = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        appends = ((NamedList<?>) o).toSolrParams();
       }
       o = args.get("invariants");
-      if (o != null && o instanceof NamedList) {
-        invariants = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        invariants = ((NamedList<?>) o).toSolrParams();
       }
 
       // Look for model filename in invariants, then in args, then defaults
@@ -86,8 +86,8 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
       }
       if (modelFile == null) {
         o = args.get(MODEL_PARAM);
-        if (o != null && o instanceof String) {
-          modelFile = (String)o;
+        if (o instanceof String) {
+          modelFile = (String) o;
         } else {
           modelFile = defaults.get(MODEL_PARAM);
           if (modelFile == null) {

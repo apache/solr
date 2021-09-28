@@ -105,7 +105,6 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   private Object managedData;
 
-  @SuppressWarnings("unchecked")
   @Override
   protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs,
       Object managedData) throws SolrException {
@@ -123,6 +122,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     log.info("------ managed models ~ loading ------");
 
     if ((managedData != null) && (managedData instanceof List)) {
+      @SuppressWarnings({"unchecked"})
       final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
       for (final Map<String,Object> u : up) {
         addModelFromMap(u);
@@ -141,7 +141,9 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   public synchronized void addModel(LTRScoringModel ltrScoringModel) throws ModelException {
     try {
-      log.info("adding model {}", ltrScoringModel.getName());
+      if (log.isInfoEnabled()) {
+        log.info("adding model {}", ltrScoringModel.getName());
+      }
       store.addModel(ltrScoringModel);
     } catch (final ModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -291,11 +293,18 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     return modelMap;
   }
 
-  private static Feature lookupFeatureFromFeatureMap(Map<String,Object> featureMap,
-      FeatureStore featureStore) {
-    final String featureName = (String)featureMap.get(NAME_KEY);
-    return (featureName == null ? null
-        : featureStore.get(featureName));
+  private static Feature lookupFeatureFromFeatureMap(Map<String, Object> featureMap, FeatureStore featureStore)
+  {
+    final String featureName = (String) featureMap.get(NAME_KEY);
+    Feature extractedFromStore = featureName == null ? null : featureStore.get(featureName);
+    if (extractedFromStore == null) {
+      if (featureStore.getFeatures().isEmpty()) {
+        throw new ModelException("Missing or empty feature store: " + featureStore.getName());
+      } else {
+        throw new ModelException("Feature: " + featureName + " not found in store: " + featureStore.getName());
+      }
+    }
+    return extractedFromStore;
   }
 
   @SuppressWarnings("unchecked")

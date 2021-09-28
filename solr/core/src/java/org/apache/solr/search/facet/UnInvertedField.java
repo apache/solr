@@ -35,16 +35,19 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
+import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
+import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
+import org.apache.solr.search.facet.SweepDocIterator.SweepIteratorAndCounts;
 import org.apache.solr.uninverting.DocTermOrds;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -204,7 +207,7 @@ public class UnInvertedField extends DocTermOrds {
     if (tnums != null) {
       for(byte[] target : tnums) {
         if (target != null && target.length > (1<<24)*.9) {
-          log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
+          log.warn("Approaching too many values for UnInvertedField faceting on field '{}' : bucket size={}", field, target.length);
         }
       }
     }
@@ -216,7 +219,7 @@ public class UnInvertedField extends DocTermOrds {
       maxTermCounts = newMaxTermCounts;
     }
 
-    log.info("UnInverted multi-valued field " + toString());
+    log.info("UnInverted multi-valued field {}", this);
     //System.out.println("CREATED: " + toString() + " ti.index=" + ti.index);
   }
 
@@ -314,7 +317,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  private void getCounts(FacetFieldProcessorByArrayUIF processor, CountSlotAcc counts) throws IOException {
+  private void getCounts(FacetFieldProcessorByArrayUIF processor) throws IOException {
     DocSet docs = processor.fcontext.base;
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
@@ -324,9 +327,12 @@ public class UnInvertedField extends DocTermOrds {
       return;
     }
 
+    SweepCountAccStruct baseCountAccStruct = SweepingCountSlotAcc.baseStructOf(processor);
+    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(processor);
+
     final int[] index = this.index;
 
-    boolean doNegative = baseSize > maxDoc >> 1 && termInstances > 0 && docs instanceof BitDocSet;
+    boolean doNegative = baseSize > maxDoc >> 1 && termInstances > 0 && docs instanceof BitDocSet && baseCountAccStruct != null;
 
     if (doNegative) {
       FixedBitSet bs = ((BitDocSet) docs).getBits().clone();
@@ -336,21 +342,34 @@ public class UnInvertedField extends DocTermOrds {
       docs = new BitDocSet(bs, maxDoc - baseSize);
       // simply negating will mean that we have deleted docs in the set.
       // that should be OK, as their entries in our table should be empty.
+      baseCountAccStruct = new SweepCountAccStruct(baseCountAccStruct, docs);
     }
 
     // For the biggest terms, do straight set intersections
     for (TopTerm tt : bigTerms.values()) {
       // TODO: counts could be deferred if sorting by index order
-      counts.incrementCount(tt.termNum, searcher.numDocs(tt.termQuery, docs));
+      final int termOrd = tt.termNum;
+      Iterator<SweepCountAccStruct> othersIter = others.iterator();
+      SweepCountAccStruct entry = baseCountAccStruct != null ? baseCountAccStruct : othersIter.next();
+      for (;;) {
+        entry.countAcc.incrementCount(termOrd, searcher.numDocs(tt.termQuery, entry.docSet));
+        if (!othersIter.hasNext()) {
+          break;
+        }
+        entry = othersIter.next();
+      }
     }
 
     // TODO: we could short-circuit counting altogether for sorted faceting
     // where we already have enough terms from the bigTerms
 
     if (termInstances > 0) {
-      DocIterator iter = docs.iterator();
+      final SweepIteratorAndCounts iterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, others);
+      final SweepDocIterator iter = iterAndCounts.iter;
+      final SegCountGlobal counts = new SegCountGlobal(iterAndCounts.countAccs);
       while (iter.hasNext()) {
         int doc = iter.nextDoc();
+        int maxIdx = iter.registerCounts(counts);
         int code = index[doc];
 
         if ((code & 0x80000000)!=0) {
@@ -367,7 +386,7 @@ public class UnInvertedField extends DocTermOrds {
             }
             if (delta == 0) break;
             tnum += delta - TNUM_OFFSET;
-            counts.incrementCount(tnum,1);
+            counts.incrementCount(tnum, 1, maxIdx);
           }
         } else {
           int tnum = 0;
@@ -377,7 +396,7 @@ public class UnInvertedField extends DocTermOrds {
             if ((code & 0x80) == 0) {
               if (delta == 0) break;
               tnum += delta - TNUM_OFFSET;
-              counts.incrementCount(tnum,1);
+              counts.incrementCount(tnum, 1, maxIdx);
               delta = 0;
             }
             code >>>= 8;
@@ -387,9 +406,10 @@ public class UnInvertedField extends DocTermOrds {
     }
 
     if (doNegative) {
+      final CountSlotAcc baseCounts = processor.countAcc;
       for (int i=0; i<numTermsInField; i++) {
  //       counts[i] = maxTermCounts[i] - counts[i];
-        counts.incrementCount(i, maxTermCounts[i] - counts.getCount(i)*2);
+        baseCounts.incrementCount(i, maxTermCounts[i] - (int) baseCounts.getCount(i)*2);
       }
     }
 
@@ -408,7 +428,7 @@ public class UnInvertedField extends DocTermOrds {
 
   public void collectDocs(FacetFieldProcessorByArrayUIF processor) throws IOException {
     if (processor.collectAcc==null && processor.allBucketsAcc == null && processor.startTermIndex == 0 && processor.endTermIndex >= numTermsInField) {
-      getCounts(processor, processor.countAcc);
+      getCounts(processor);
       return;
     }
 
@@ -427,14 +447,21 @@ public class UnInvertedField extends DocTermOrds {
 
     int uniqueTerms = 0;
     final CountSlotAcc countAcc = processor.countAcc;
+    final SweepCountAccStruct baseCountAccStruct = SweepingCountSlotAcc.baseStructOf(processor);
+    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(processor);
 
     for (TopTerm tt : bigTerms.values()) {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
         // handle the biggest terms
-        DocSet intersection = searcher.getDocSet(tt.termQuery, docs);
+        DocSet termSet = searcher.getDocSet(tt.termQuery);
+        DocSet intersection = termSet.intersection(docs);
         int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex,
                                                     slotNum -> { return new SlotContext(tt.termQuery); });
-        countAcc.incrementCount(tt.termNum - startTermIndex, collected);
+        final int termOrd = tt.termNum - startTermIndex;
+        countAcc.incrementCount(termOrd, collected);
+        for (SweepCountAccStruct entry : others) {
+          entry.countAcc.incrementCount(termOrd, termSet.intersectionSize(entry.docSet));
+        }
         if (collected > 0) {
           uniqueTerms++;
         }
@@ -454,9 +481,14 @@ public class UnInvertedField extends DocTermOrds {
 
       // TODO: handle facet.prefix here!!!
 
-      DocIterator iter = docs.iterator();
+      SweepIteratorAndCounts sweepIterAndCounts = SweepDocIterator.newInstance(baseCountAccStruct, others);
+      final SweepDocIterator iter = sweepIterAndCounts.iter;
+      final CountSlotAcc[] countAccs = sweepIterAndCounts.countAccs;
+      final SegCountGlobal counts = new SegCountGlobal(countAccs);
       while (iter.hasNext()) {
         int doc = iter.nextDoc();
+        int maxIdx = iter.registerCounts(counts);
+        boolean collectBase = iter.collectBase();
 
         if (doc >= adjustedMax) {
           do {
@@ -494,8 +526,10 @@ public class UnInvertedField extends DocTermOrds {
             int arrIdx = tnum - startTermIndex;
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
-            countAcc.incrementCount(arrIdx, 1);
-            processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+            counts.incrementCount(arrIdx, 1, maxIdx);
+            if (collectBase) {
+              processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+            }
           }
         } else {
           int tnum = 0;
@@ -508,8 +542,10 @@ public class UnInvertedField extends DocTermOrds {
               int arrIdx = tnum - startTermIndex;
               if (arrIdx >= 0) {
                 if (arrIdx >= nTerms) break;
-                countAcc.incrementCount(arrIdx, 1);
-                processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+                counts.incrementCount(arrIdx, 1, maxIdx);
+                if (collectBase) {
+                  processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
+                }
               }
               delta = 0;
             }
@@ -562,80 +598,25 @@ public class UnInvertedField extends DocTermOrds {
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
 
-  @SuppressWarnings("unchecked")
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache cache = searcher.getFieldValueCache();
+    SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {
       return new UnInvertedField(field, searcher);
     }
-
-    Boolean doWait = false;
-    synchronized (cache) {
-      final Object val = cache.get(field);
-      if (val == null || (val instanceof Throwable)) {
-        /**
-         * We use this place holder object to pull the UninvertedField construction out of the sync
-         * so that if many fields are accessed in a short time, the UninvertedField can be
-         * built for these fields in parallel rather than sequentially.
-         */
-        cache.put(field, uifPlaceholder);
-      } else {
-        if (val != uifPlaceholder) {
-          return (UnInvertedField) val;
-        }
-        doWait = true; // Someone else has put the place holder in, wait for that to complete.
-      }
-    }
-    while (doWait) {
-      try {
-        synchronized (cache) {
-          final Object val = cache.get(field);
-          if (val != uifPlaceholder) { // OK, another thread put this in the cache we should be good.
-            if (val instanceof Throwable) {
-              rethrowAsSolrException(field, (Throwable) val);
-            } else {
-              return (UnInvertedField) val;
-            }
-          }
-          cache.wait();
-        }
-      } catch (InterruptedException e) {
-        rethrowAsSolrException(field, e);
-      }
-    }
-
-    UnInvertedField uif = null;
-    try {
-      uif = new UnInvertedField(field, searcher);
-    }catch(Throwable e) {
-      synchronized (cache) {
-        cache.put(field, e); // signaling the failure
-        cache.notifyAll();
-      }
-      rethrowAsSolrException(field, e);
-    }
-    synchronized (cache) {
-      cache.put(field, uif); // Note, this cleverly replaces the placeholder.
-      cache.notifyAll();
-    }
-    return uif;
-  }
-
-  protected static void rethrowAsSolrException(String field, Throwable e) {
-    throw new SolrException(ErrorCode.SERVER_ERROR, 
-            "Exception occurs during uninverting "+field, e);
+    return cache.computeIfAbsent(field, f -> new UnInvertedField(f, searcher));
   }
 
   // Returns null if not already populated
-  @SuppressWarnings({"rawtypes", "unchecked"})
   public static UnInvertedField checkUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache cache = searcher.getFieldValueCache();
+    SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {
       return null;
     }
     Object uif = cache.get(field);  // cache is already synchronized, so no extra sync needed
     // placeholder is an implementation detail, keep it hidden and return null if that is what we got
     return uif==uifPlaceholder || !(uif instanceof UnInvertedField)? null : (UnInvertedField) uif;
+    // TODO: SolrCache is not used safely in other places, but this might be simpligfied to:
+    //  return uif==uifPlaceholder ? null : uif;
   }
 
 }

@@ -49,8 +49,8 @@ public class EuclideanDistanceEvaluator extends RecursiveNumericEvaluator implem
 
     EuclideanDistance distance = new EuclideanDistance();
     return distance.compute(
-      ((List)first).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray(),
-      ((List)second).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray()
+      ((List<?>)first).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray(),
+      ((List<?>)second).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray()
     );
   }
 }

@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
@@ -38,7 +39,7 @@ public class SSLCredentialProviderFactory {
   public static final String DEFAULT_PROVIDER_CHAIN = "env;sysprop";
   public static final String PROVIDER_CHAIN_KEY = "solr.ssl.credential.provider.chain";
 
-  private final static ImmutableMap<String, Class> defaultProviders = ImmutableMap.of(
+  private static final Map<String, Class<? extends SSLCredentialProvider>> defaultProviders = ImmutableMap.of(
       "env", EnvSSLCredentialProvider.class,
       "sysprop", SysPropSSLCredentialProvider.class,
       "hadoop", HadoopSSLCredentialProvider.class
@@ -56,7 +57,9 @@ public class SSLCredentialProviderFactory {
 
   public List<SSLCredentialProvider> getProviders() {
     ArrayList<SSLCredentialProvider> providers = new ArrayList<>();
-    log.debug(String.format(Locale.ROOT, "Processing SSL Credential Provider chain: %s", providerChain));
+    if (log.isDebugEnabled()) {
+      log.debug(String.format(Locale.ROOT, "Processing SSL Credential Provider chain: %s", providerChain));
+    }
     String classPrefix = "class://";
     for (String provider : providerChain.split(";")) {
       if (defaultProviders.containsKey(provider)) {
@@ -72,7 +75,7 @@ public class SSLCredentialProviderFactory {
 
   private SSLCredentialProvider getProviderByClassName(String clazzName) {
     try {
-      return (SSLCredentialProvider) Class.forName(clazzName).getConstructor().newInstance();
+      return Class.forName(clazzName).asSubclass(SSLCredentialProvider.class).getConstructor().newInstance();
     } catch (InstantiationException | ClassNotFoundException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       String msg = String.format(Locale.ROOT, "Could not instantiate %s credential provider", clazzName);
       log.error(msg);
@@ -80,9 +83,9 @@ public class SSLCredentialProviderFactory {
     }
   }
 
-  private SSLCredentialProvider getDefaultProvider(Class aClass) {
+  private SSLCredentialProvider getDefaultProvider(Class<? extends SSLCredentialProvider> aClass) {
     try {
-      return (SSLCredentialProvider) aClass.getConstructor().newInstance();
+      return aClass.getConstructor().newInstance();
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       String msg = String.format(Locale.ROOT, "Could not instantiate %s credential provider", aClass.getName());
       log.error(msg);

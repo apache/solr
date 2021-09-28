@@ -32,11 +32,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -64,11 +63,13 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    log.info("####SETUP_START " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_START {}", getTestName());
+    }
     createTempDir();
     
     zkDir =createTempDir().resolve("zookeeper/server1/data");
-    log.info("ZooKeeper dataDir:" + zkDir);
+    log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run(false);
     
@@ -93,7 +94,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient.makePath("/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.close();
 
-    log.info("####SETUP_END " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_END {}", getTestName());
+    }
   }
   
   @Override
@@ -236,13 +239,10 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
           return new DefaultZkCredentialsProvider() {
             @Override
             protected Collection<ZkCredentials> createCredentials() {
-              List<ZkCredentials> result = new ArrayList<ZkCredentials>();
+              List<ZkCredentials> result = new ArrayList<>();
               if (!StringUtils.isEmpty(digestUsername) && !StringUtils.isEmpty(digestPassword)) {
-                try {
-                  result.add(new ZkCredentials("digest", (digestUsername + ":" + digestPassword).getBytes("UTF-8")));
-                } catch (UnsupportedEncodingException e) {
-                  throw new RuntimeException(e);
-                }
+                result.add(new ZkCredentials("digest",
+                    (digestUsername + ":" + digestPassword).getBytes(StandardCharsets.UTF_8)));
               }
               return result;
             }

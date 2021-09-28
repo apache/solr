@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
@@ -56,11 +55,6 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 public class UpdateRequest extends AbstractUpdateRequest {
 
   public static final String REPFACT = "rf";
-  /**
-   *   @deprecated Solr now always includes in the response the {@link #REPFACT}, this parameter
-   *   doesn't need to be explicitly set
-   */
-  public static final String MIN_REPFACT = "min_rf";
   public static final String VER = "ver";
   public static final String OVERWRITE = "ow";
   public static final String COMMIT_WITHIN = "cw";
@@ -240,7 +234,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   }
 
   private interface ReqSupplier<T extends LBSolrClient.Req> {
-    T get(SolrRequest solrRequest, List<String> servers);
+    T get(UpdateRequest request, List<String> servers);
   }
 
   private <T extends LBSolrClient.Req> Map<String, T> getRoutes(DocRouter router,
@@ -311,10 +305,12 @@ public class UpdateRequest extends AbstractUpdateRequest {
         String deleteId = entry.getKey();
         Map<String,Object> map = entry.getValue();
         Long version = null;
+        String route = null;
         if (map != null) {
           version = (Long) map.get(VER);
+          route = (String) map.get(_ROUTE_);
         }
-        Slice slice = router.getTargetSlice(deleteId, null, null, null, col);
+        Slice slice = router.getTargetSlice(deleteId, null, route, null, col);
         if (slice == null) {
           return null;
         }
@@ -326,11 +322,11 @@ public class UpdateRequest extends AbstractUpdateRequest {
         T request = routes.get(leaderUrl);
         if (request != null) {
           UpdateRequest urequest = (UpdateRequest) request.getRequest();
-          urequest.deleteById(deleteId, version);
+          urequest.deleteById(deleteId, route, version);
         } else {
           UpdateRequest urequest = new UpdateRequest();
           urequest.setParams(params);
-          urequest.deleteById(deleteId, version);
+          urequest.deleteById(deleteId, route, version);
           urequest.setCommitWithin(getCommitWithin());
           urequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           request = reqSupplier.get(urequest, urls);
@@ -417,8 +413,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
           overwrite = (Boolean) entry.getValue().get(OVERWRITE);
           commitWithin = (Integer) entry.getValue().get(COMMIT_WITHIN);
         }
-        if (overwrite != lastOverwrite || commitWithin != lastCommitWithin
-            || docLists.size() == 0) {
+        if (!Objects.equals(overwrite, lastOverwrite)
+                || !Objects.equals(commitWithin, lastCommitWithin)
+                || docLists.isEmpty()) {
           docList = new LinkedHashMap<>();
           docLists.add(docList);
         }

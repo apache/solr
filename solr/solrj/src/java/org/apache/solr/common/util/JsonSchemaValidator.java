@@ -17,15 +17,7 @@
 
 package org.apache.solr.common.util;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -36,7 +28,7 @@ import java.util.function.Function;
  */
 public class JsonSchemaValidator {
 
-  private List<Validator> validators;
+  private List<Validator<?>> validators;
   private static Set<String> KNOWN_FNAMES = new HashSet<>(Arrays.asList(
       "description","documentation","default","additionalProperties"));
 
@@ -45,27 +37,34 @@ public class JsonSchemaValidator {
     this((Map) Utils.fromJSONString(jsonString));
   }
 
-  public JsonSchemaValidator(Map jsonSchema) {
+  public JsonSchemaValidator(Map<?, ?> jsonSchema) {
     this.validators = new LinkedList<>();
-    for (Object fname : jsonSchema.keySet()) {
+    for (Map.Entry<?, ?> entry : jsonSchema.entrySet()) {
+      Object fname = entry.getKey();
       if (KNOWN_FNAMES.contains(fname.toString())) continue;
 
-      Function<Pair<Map, Object>, Validator> initializeFunction = VALIDATORS.get(fname.toString());
+      Function<Pair<Map<?,?>, ?>, Validator<?>> initializeFunction = VALIDATORS.get(fname.toString());
       if (initializeFunction == null) throw new RuntimeException("Unknown key : " + fname);
 
-      this.validators.add(initializeFunction.apply(new Pair<>(jsonSchema, jsonSchema.get(fname))));
+      this.validators.add(initializeFunction.apply(new Pair<>(jsonSchema, entry.getValue())));
     }
   }
 
-  static final Map<String, Function<Pair<Map,Object>, Validator>> VALIDATORS = new HashMap<>();
+  // This is a heterogeneous type, there's probably imrpovements to be had by using some concrete types instead
+  static final Map<String, Function<Pair<Map<?,?>, ?>, Validator<?>>> VALIDATORS = new HashMap<>();
 
   static {
-    VALIDATORS.put("items", pair -> new ItemsValidator(pair.first(), (Map) pair.second()));
-    VALIDATORS.put("enum", pair -> new EnumValidator(pair.first(), (List) pair.second()));
-    VALIDATORS.put("properties", pair -> new PropertiesValidator(pair.first(), (Map) pair.second()));
+    loadValidators();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void loadValidators() {
+    VALIDATORS.put("items", pair -> new ItemsValidator(pair.first(), (Map<?,?>) pair.second()));
+    VALIDATORS.put("enum", pair -> new EnumValidator(pair.first(), (List<String>) pair.second()));
+    VALIDATORS.put("properties", pair -> new PropertiesValidator(pair.first(), (Map<String,Map<?,?>>) pair.second()));
     VALIDATORS.put("type", pair -> new TypeValidator(pair.first(), pair.second()));
-    VALIDATORS.put("required", pair -> new RequiredValidator(pair.first(), (List)pair.second()));
-    VALIDATORS.put("oneOf", pair -> new OneOfValidator(pair.first(), (List)pair.second()));
+    VALIDATORS.put("required", pair -> new RequiredValidator(pair.first(), (List<String>) pair.second()));
+    VALIDATORS.put("oneOf", pair -> new OneOfValidator(pair.first(), (List<String>) pair.second()));
   }
 
   public List<String> validateJson(Object data) {
@@ -76,7 +75,7 @@ public class JsonSchemaValidator {
 
   boolean validate(Object data, List<String> errs) {
     if (data == null) return true;
-    for (Validator validator : validators) {
+    for (Validator<?> validator : validators) {
       if (!validator.validate(data, errs)) {
         return false;
       }
@@ -87,8 +86,7 @@ public class JsonSchemaValidator {
 }
 
 abstract class Validator<T> {
-  @SuppressWarnings("unused")
-  Validator(Map schema, T properties) {};
+  Validator(Map<?,?> schema, T properties) {};
   abstract boolean validate(Object o, List<String> errs);
 }
 
@@ -127,9 +125,9 @@ enum Type {
   NULL(null),
   UNKNOWN(Object.class);
 
-  Class type;
+  Class<?> type;
 
-  Type(Class type) {
+  Type(Class<?> type) {
     this.type = type;
   }
 
@@ -142,7 +140,7 @@ enum Type {
 class TypeValidator extends Validator<Object> {
   private Set<Type> types;
 
-  TypeValidator(Map schema, Object type) {
+  TypeValidator(Map<?,?> schema, Object type) {
     super(schema, type);
     types = new HashSet<>(1);
     if (type instanceof List) {
@@ -172,9 +170,9 @@ class TypeValidator extends Validator<Object> {
   }
 }
 
-class ItemsValidator extends Validator<Map> {
+class ItemsValidator extends Validator<Map<?,?>> {
   private JsonSchemaValidator validator;
-  ItemsValidator(Map schema, Map properties) {
+  ItemsValidator(Map<?,?> schema, Map<?,?> properties) {
     super(schema, properties);
     validator = new JsonSchemaValidator(properties);
   }
@@ -198,7 +196,7 @@ class EnumValidator extends Validator<List<String>> {
 
   private Set<String> enumVals;
 
-  EnumValidator(Map schema, List<String> properties) {
+  EnumValidator(Map<?,?> schema, List<String> properties) {
     super(schema, properties);
     enumVals = new HashSet<>(properties);
 
@@ -221,7 +219,7 @@ class RequiredValidator extends Validator<List<String>> {
 
   private Set<String> requiredProps;
 
-  RequiredValidator(Map schema, List<String> requiredProps) {
+  RequiredValidator(Map<?,?> schema, List<String> requiredProps) {
     super(schema, requiredProps);
     this.requiredProps = new HashSet<>(requiredProps);
   }
@@ -233,7 +231,7 @@ class RequiredValidator extends Validator<List<String>> {
 
   boolean validate( Object o, List<String> errs, Set<String> requiredProps) {
     if (o instanceof Map) {
-      Set fnames = ((Map) o).keySet();
+      Set<?> fnames = ((Map<?,?>) o).keySet();
       for (String requiredProp : requiredProps) {
         if (requiredProp.contains(".")) {
           if (requiredProp.endsWith(".")) {
@@ -257,15 +255,16 @@ class RequiredValidator extends Validator<List<String>> {
   }
 }
 
-class PropertiesValidator extends Validator<Map<String, Map>> {
+class PropertiesValidator extends Validator<Map<String, Map<?,?>>> {
   private Map<String, JsonSchemaValidator> jsonSchemas;
   private boolean additionalProperties;
 
-  PropertiesValidator(Map schema, Map<String, Map> properties) {
+  PropertiesValidator(Map<?,?> schema, Map<String, Map<?,?>> properties) {
     super(schema, properties);
     jsonSchemas = new HashMap<>();
-    this.additionalProperties = (boolean) schema.getOrDefault("additionalProperties", false);
-    for (Map.Entry<String, Map> entry : properties.entrySet()) {
+    Object additionalProperties = schema.get("additionalProperties"); // If not set, will return null
+    this.additionalProperties = Boolean.TRUE.equals(additionalProperties) ? true : false; // Implicit null -> false
+    for (Map.Entry<String, Map<?,?>> entry : properties.entrySet()) {
       jsonSchemas.put(entry.getKey(), new JsonSchemaValidator(entry.getValue()));
     }
   }
@@ -273,14 +272,15 @@ class PropertiesValidator extends Validator<Map<String, Map>> {
   @Override
   boolean validate(Object o, List<String> errs) {
     if (o instanceof Map) {
-      Map map = (Map) o;
-      for (Object key : map.keySet()) {
+      Map<?, ?> map = (Map) o;
+      for (Map.Entry<?,?> entry : map.entrySet()) {
+        Object key = entry.getKey();
         JsonSchemaValidator jsonSchema = jsonSchemas.get(key.toString());
         if (jsonSchema == null && !additionalProperties) {
           errs.add("Unknown field '" + key + "' in object : " + Utils.toJSONString(o));
           return false;
         }
-        if (jsonSchema != null && !jsonSchema.validate(map.get(key), errs)) {
+        if (jsonSchema != null && !jsonSchema.validate(entry.getValue(), errs)) {
           return false;
         }
       }
@@ -294,7 +294,7 @@ class OneOfValidator extends Validator<List<String>> {
 
   private Set<String> oneOfProps;
 
-  OneOfValidator(Map schema, List<String> oneOfProps) {
+  OneOfValidator(Map<?,?> schema, List<String> oneOfProps) {
     super(schema, oneOfProps);
     this.oneOfProps = new HashSet<>(oneOfProps);
   }
@@ -302,7 +302,7 @@ class OneOfValidator extends Validator<List<String>> {
   @Override
   boolean validate(Object o, List<String> errs) {
     if (o instanceof Map) {
-      Map map = (Map) o;
+      Map<?,?> map = (Map<?,?>) o;
       for (Object key : map.keySet()) {
         if (oneOfProps.contains(key.toString())) return true;
       }

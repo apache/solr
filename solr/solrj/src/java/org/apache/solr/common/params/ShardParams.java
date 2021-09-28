@@ -28,6 +28,9 @@ import org.apache.solr.common.util.StrUtils;
 public interface ShardParams {
   /** the shards to use (distributed configuration) */
   String SHARDS = "shards";
+
+  /** UUID of the query */
+  String QUERY_ID = "queryID";
   
   /** per-shard start and rows */
   String SHARDS_ROWS = "shards.rows";
@@ -41,7 +44,10 @@ public interface ShardParams {
   
   /** The requested URL for this shard */
   String SHARD_URL = "shard.url";
-  
+
+  /** The requested shard name */
+  String SHARD_NAME = "shard.name";
+
   /** The Request Handler for shard requests */
   String SHARDS_QT = "shards.qt";
   
@@ -63,11 +69,29 @@ public interface ShardParams {
   /** Replica location sort rule */
   String SHARDS_PREFERENCE_REPLICA_LOCATION = "replica.location";
 
+  /** Replica leader status sort rule, value= true/false */
+  String SHARDS_PREFERENCE_REPLICA_LEADER = "replica.leader";
+
   /** Node with same system property sort rule */
   String SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP = "node.sysprop";
 
+  /** Replica base/fallback sort rule */
+  String SHARDS_PREFERENCE_REPLICA_BASE = "replica.base";
+
   /** Value denoting local replicas */
   String REPLICA_LOCAL = "local";
+
+  /** Value denoting randomized replica sort */
+  String REPLICA_RANDOM = "random";
+
+  /** Value denoting stable replica sort */
+  String REPLICA_STABLE = "stable";
+
+  /** configure dividend param for stable replica sort */
+  String ROUTING_DIVIDEND = "dividend";
+
+  /** configure hash param for stable replica sort */
+  String ROUTING_HASH = "hash";
 
   String _ROUTE_ = "_route_";
 

@@ -18,15 +18,19 @@
 
 This page explains some of the statistics that Solr exposes.
 
-There are two approaches to retrieving metrics. First, you can use the <<metrics-reporting.adoc#metrics-api,Metrics API>>, or you can enable JMX and get metrics from the <<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>> or via an external tool such as JConsole. The below descriptions focus on retrieving the metrics using the Metrics API, but the metric names are the same if using the MBean Request Handler or an external tool.
+There are two approaches to retrieving metrics.
+First, you can use the <<metrics-reporting.adoc#metrics-api,Metrics API>>, or you can enable JMX and get metrics from the <<mbean-request-handler.adoc#,MBean Request Handler>> or via an external tool such as JConsole.
+The below descriptions focus on retrieving the metrics using the Metrics API, but the metric names are the same if using the MBean Request Handler or an external tool.
 
-These statistics are per core. When you are running in SolrCloud mode these statistics would co-relate to the performance of an individual replica.
+These statistics are per core.
+When you are running in SolrCloud mode these statistics would co-relate to the performance of an individual replica.
 
 == Request Handler Statistics
 
 === Update Request Handler
 
-The update request handler is an endpoint to send data to Solr. We can see how many update requests are being fired, how fast is it performing, and other valuable information regarding requests.
+The update request handler is an endpoint to send data to Solr.
+We can see how many update requests are being fired, how fast is it performing, and other valuable information regarding requests.
 
 *Registry & Path:* `solr.<core>:UPDATE./update`
 
@@ -34,7 +38,9 @@ You can request update request handler statistics with an API request such as `\
 
 === Search Request Handler
 
-Can be useful to measure and track number of search queries, response times, etc. If you are not using the “select” handler then the path needs to be changed appropriately. Similarly if you are using the “sql” handler or “export” handler, the realtime handler “get”, or any other handler similar statistics can be found for that as well.
+Can be useful to measure and track number of search queries, response times, etc.
+If you are not using the “select” handler then the path needs to be changed appropriately.
+Similarly if you are using the “sql” handler or “export” handler, the realtime handler “get”, or any other handler similar statistics can be found for that as well.
 
 *Registry & Path*: `solr.<core>:QUERY./select`
 
@@ -50,9 +56,7 @@ To get request times, specifically, you can send an API request such as:
 * `\http://localhost:8983/solr/admin/metrics?group=core&prefix=UPDATE./update.requestTimes`
 *  `\http://localhost:8983/solr/admin/metrics?group=core&prefix=QUERY./select.requestTimes`
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="25,75",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Attribute |Description
 |15minRate |Requests per second received over the past 15 minutes.
@@ -61,16 +65,16 @@ To get request times, specifically, you can send an API request such as:
 |p95_ms |Request processing time in milliseconds for the request which belongs to the 95^th^ Percentile. E.g., if 100 requests are received, then the 95^th^ fastest request time will be reported in this statistic.
 |p999_ms |Request processing time in milliseconds for the request which belongs to the 99.9^th^ Percentile. E.g., if 1000 requests are received, then the 999^th^ fastest request time will be reported in this statistic.
 |p99_ms |Request processing time in milliseconds for the request which belongs to the 99^th^ Percentile. E.g., if 100 requests are received, then the 99^th^ fastest request time will be reported in this statistic.
-|count |Total number of requests made since the Solr process was started.
+|count |Total number of requests made since the Solr core was first created.
 |median_ms |Median of all the request processing time.
-
-|avgRequestsPerSecond |Average number of requests received per second.
-|avgTimePerRequest |Average time taken for processing the requests. This parameter will decay over time, with a bias toward activity in the last 5 minutes.
+|meanRate |Average number of requests received per second since the Solr core was first created.
 |===
 
 *Errors and Other Times*
 
-Other types of data such as errors and timeouts are also provided. These are available under different metric names. For example:
+Other types of data such as errors and timeouts are also provided.
+These are available under different metric names.
+For example:
 
 * `\http://localhost:8983/solr/admin/metrics?group=core&prefix=UPDATE./update.errors`
 *  `\http://localhost:8983/solr/admin/metrics?group=core&prefix=QUERY./select.errors`
@@ -84,6 +88,8 @@ The table below shows the metric names and attributes to request:
 `UPDATE./update.errors` |Number of errors encountered by handler. In addition to a count of errors, mean, 1 minute, 5 minute, and 15 minute rates are also available.
 |`QUERY./select.clientErrors`
 `UPDATE./update.clientErrors` |Number of syntax or parse errors made by a client while making requests. In addition to a count of errors, mean, 1 minute, 5 minute, and 15 minute rates are also available.
+|`QUERY./select.requests`
+`UPDATE./update.requests` |Number of requests received by this handler.
 |`QUERY./select.serverErrors`
 `UPDATE./update.serverErrors` |Number of errors thrown by the server while executing the request. In addition to a count of errors, mean, 1 minute, 5 minute, and 15 minute rates are also available.
 |`QUERY./select.timeouts`
@@ -93,6 +99,16 @@ The table below shows the metric names and attributes to request:
 |`QUERY./select.handlerStart`
 `UPDATE./update.handlerStart` |Epoch time when the handler was registered.
 |===
+
+*Distributed vs. Local Request Times*
+
+Processing of a single distributed request in SolrCloud usually requires making several requests to other nodes and other replicas.
+The common statistics listed above lump these timings together, even though they are very different in nature, thus making it difficult to measure the latency of distributed and local requests separately.
+Solr 8.4 introduced additional statistics that help to do this.
+
+These metrics are structured the same as `requestTimes` and `totalTime` metrics above but they use different full names, e.g., `QUERY./select.distrib.requestTimes` and `QUERY./select.local.requestTimes`.
+The metrics under the `distrib` path correspond to the time it takes for a (potentially) distributed request to complete all remote calls plus any local processing, and return the result to the caller.
+The metrics under the `local` path correspond to the time it takes for a local call (non-distributed, i.e., being processed only by the Solr core where the handler operates) to complete.
 
 == Update Handler
 
@@ -104,9 +120,7 @@ You can get all update handler statistics shown in the table below with an API r
 
 The following describes the specific statistics you can get:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="40,60",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Attribute |Description
 |`UPDATE.updateHandler.adds` |Total number of “add” requests since last commit.
@@ -151,7 +165,8 @@ In addition to a count of rollbacks, mean, 1 minute, 5 minute, and 15 minute rat
 
 === Document Cache
 
-This cache holds Lucene Document objects (the stored fields for each document). Since Lucene internal document IDs are transient, this cache cannot be auto-warmed.
+This cache holds Lucene Document objects (the stored fields for each document).
+Since Lucene internal document IDs are transient, this cache cannot be auto-warmed.
 
 *Registry and Path:* `solr.<core>:CACHE.searcher.documentCache`
 
@@ -177,9 +192,7 @@ You can get the statistics shown in the table below with an API request such as 
 
 The following statistics are available for each of the caches mentioned above:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="25,75",options="header"]
+[%autowidth.stretch,options="header"]
 |===
 |Attribute |Description
 |cumulative_evictions |Number of cache evictions across all caches since this node has been running.
@@ -193,7 +206,7 @@ The following statistics are available for each of the caches mentioned above:
 |inserts |Number of inserts into the cache.
 |lookups |Number of lookups against the cache.
 |size |Number of entries in the cache at that particular instance.
-|warmupTime |Warm-up time for the registered index searcher. This time is taken in account for the “auto-warming” of caches.
+|warmupTime |Warm-up time for the registered index searcher in milliseconds. This time is taken in account for the “auto-warming” of caches.
 |===
 
 When eviction by heap usage is enabled, the following additional statistics are available for the Query Result Cache:
@@ -206,4 +219,4 @@ When eviction by heap usage is enabled, the following additional statistics are 
 |evictionsRamUsage| Number of cache evictions for the current index searcher because heap usage exceeded maxRamMB.
 |===
 
-More information on Solr caches is available in the section <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>>.
+More information on Solr caches is available in the section <<caches-warming.adoc#,Caches and Query Warming>>.

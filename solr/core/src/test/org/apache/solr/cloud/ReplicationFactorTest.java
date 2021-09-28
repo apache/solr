@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang3.StringUtils;
@@ -80,31 +81,32 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     log.info("replication factor test running");
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // test a 1x3 collection
     log.info("Testing replication factor handling for repfacttest_c8n_1x3");
     testRf3();
 
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // test handling when not using direct updates
     log.info("Now testing replication factor handling for repfacttest_c8n_2x2");
     testRf2NotUsingDirectUpdates();
         
-    waitForThingsToLevelOut(30000);
-    log.info("replication factor testing complete! final clusterState is: "+
-        cloudClient.getZkStateReader().getClusterState());    
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+    if (log.isInfoEnabled()) {
+      log.info("replication factor testing complete! final clusterState is: {}",
+          cloudClient.getZkStateReader().getClusterState());
+    }
   }
   
   protected void testRf2NotUsingDirectUpdates() throws Exception {
     int numShards = 2;
     int replicationFactor = 2;
-    int maxShardsPerNode = 1;
     String testCollectionName = "repfacttest_c8n_2x2";
     String shardId = "shard1";
 
-    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
+    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor);
 
     cloudClient.setDefaultCollection(testCollectionName);
     
@@ -122,7 +124,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     // send directly to the leader using HttpSolrServer instead of CloudSolrServer (to test support for non-direct updates)
     UpdateRequest up = new UpdateRequest();
-    maybeAddMinRfExplicitly(2, up);
     up.add(batch);
 
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
@@ -230,13 +231,11 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // Delete the docs by ID indicated
     UpdateRequest req = new UpdateRequest();
     req.deleteById(byIdsList);
-    maybeAddMinRfExplicitly(expectedRfByIds, req);
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfByIds, coll);
 
     //Delete the docs by query indicated.
     req = new UpdateRequest();
     req.deleteByQuery("id:(" + StringUtils.join(byQueriesSet, " OR ") + ")");
-    maybeAddMinRfExplicitly(expectedRfDBQ, req);
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfDBQ, coll);
 
   }
@@ -250,52 +249,46 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
   }
   
-  @SuppressWarnings("rawtypes")
   protected void sendNonDirectUpdateRequestReplica(Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + collection;
     try (HttpSolrClient solrServer = getHttpSolrClient(url)) {
-      NamedList resp = solrServer.request(up);
-      NamedList hdr = (NamedList) resp.get("responseHeader");
+      NamedList<?> resp = solrServer.request(up);
+      NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
       Integer batchRf = (Integer)hdr.get(UpdateRequest.REPFACT);
       // Note that this also tests if we're wonky and return an achieved rf greater than the number of live replicas.
       assertTrue("Expected rf="+expectedRf+" for batch but got "+
           batchRf + "; clusterState: " + printClusterStateInfo(), batchRf == expectedRf);
-      if (up.getParams() != null && up.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
-        // If "min_rf" was specified in the request, it must be in the response for back compatibility
-        assertNotNull("Expecting min_rf to be in the response, since it was explicitly set in the request", hdr.get(UpdateRequest.MIN_REPFACT));
-        assertEquals("Unexpected min_rf in the response",
-            Integer.parseInt(up.getParams().get(UpdateRequest.MIN_REPFACT)), hdr.get(UpdateRequest.MIN_REPFACT));
-      }
     }
   }
 
   protected void testRf3() throws Exception {
-    int numShards = 1;
-    int replicationFactor = 3;
-    int maxShardsPerNode = 1;
-    String testCollectionName = "repfacttest_c8n_1x3";
-    String shardId = "shard1";
-    int minRf = 2;
+    final int numShards = 1;
+    final int replicationFactor = 3;
+    final String testCollectionName = "repfacttest_c8n_1x3";
+    final String shardId = "shard1";
+    final int minRf = 2;
 
-    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
+    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor);
     cloudClient.setDefaultCollection(testCollectionName);
     
     List<Replica> replicas = 
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     assertTrue("Expected 2 active replicas for "+testCollectionName, replicas.size() == 2);
                 
-    int rf = sendDoc(1, minRf);
+    log.info("Indexing docId=1");
+    int rf = sendDoc(1);
     assertRf(3, "all replicas should be active", rf);
 
     // Uses cloudClient to do it's work
     doDBIdWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
     doDBQWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
 
-
+    log.info("Closing one proxy port");
     getProxyForReplica(replicas.get(0)).close();
     
-    rf = sendDoc(2, minRf);
+    log.info("Indexing docId=2");
+    rf = sendDoc(2);
     assertRf(2, "one replica should be down", rf);
 
     // Uses cloudClient to do it's work
@@ -303,15 +296,30 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doDBIdWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
 
 
+    // SOLR-13599 sanity check if problem is related to sending a batch
+    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    for (int i=30; i < 45; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(id, String.valueOf(i));
+      doc.addField("a_t", "hello" + i);
+      batch.add(doc);
+    }
+    log.info("Indexing batch of documents (30-45)");
+    int batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
+    assertRf(2, "batch should have succeded, only one replica should be down", batchRf);
+    
+    log.info("Closing second proxy port");
     getProxyForReplica(replicas.get(1)).close();    
 
-    rf = sendDoc(3, minRf);
+    log.info("Indexing docId=3");
+    rf = sendDoc(3);
     assertRf(1, "both replicas should be down", rf);
 
     doDBQWithRetry(1, 5, "deletes should have propagated to only 1 replica", 1);
     doDBIdWithRetry(1, 5, "deletes should have propagated to only 1 replica", 1);
 
     // heal the partitions
+    log.info("Re-opening closed proxy ports");
     getProxyForReplica(replicas.get(0)).reopen();    
     getProxyForReplica(replicas.get(1)).reopen();
     
@@ -319,14 +327,15 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     
-    rf = sendDoc(4, minRf);
-    assertRf(3, "partitions to replicas have been healed", rf);
+    log.info("Indexing docId=4");
+    rf = sendDoc(4);
+    assertRf(3, "all replicas have been healed", rf);
 
-    doDBQWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
-    doDBIdWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
+    doDBQWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
+    doDBIdWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
 
     // now send a batch
-    List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
+    batch = new ArrayList<SolrInputDocument>(10);
     for (int i=5; i < 15; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(id, String.valueOf(i));
@@ -334,16 +343,24 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       batch.add(doc);
     }
     
-    int batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
-    assertRf(3, "batch should have succeeded on all replicas", batchRf);
+    log.info("Indexing batch of documents (5-14)");
+    batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
+    assertRf(3, "batch add should have succeeded on all replicas", batchRf);
 
-    doDBQWithRetry(3, 5, "deletes should have propagated to only 1 replica", 15);
-    doDBIdWithRetry(3, 5, "deletes should have propagated to only 1 replica", 15);
+    doDBQWithRetry(3, 5, "batch deletes should have propagated to all 3 replica", 15);
+    doDBIdWithRetry(3, 5, "batch deletes should have propagated to all 3 replica", 15);
 
     // add some chaos to the batch
+    log.info("Closing one proxy port (again)");
     getProxyForReplica(replicas.get(0)).close();
+
+    // send a single doc (again)
+    // SOLR-13599 sanity check if problem is related to "re-closing" a port on the proxy
+    log.info("Indexing docId=5");
+    rf = sendDoc(5);
+    assertRf(2, "doc should have succeded, only one replica should be down", rf);
     
-    // now send a batch
+    // now send a batch (again)
     batch = new ArrayList<SolrInputDocument>(10);
     for (int i=15; i < 30; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -351,14 +368,15 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       doc.addField("a_t", "hello" + i);
       batch.add(doc);
     }
-
+    log.info("Indexing batch of documents (15-29)");
     batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
-    assertRf(2, "batch should have succeeded on 2 replicas (only one replica should be down)", batchRf);
+    assertRf(2, "batch should have succeded, only one replica should be down", batchRf);
 
     doDBQWithRetry(2, 5, "deletes should have propagated to only 1 replica", 15);
     doDBIdWithRetry(2, 5, "deletes should have propagated to only 1 replica", 15);
 
     // close the 2nd replica, and send a 3rd batch with expected achieved rf=1
+    log.info("Closing second proxy port (again)");
     getProxyForReplica(replicas.get(1)).close();
     
     batch = new ArrayList<SolrInputDocument>(10);
@@ -386,7 +404,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     Integer[] idList = docIds.toArray(new Integer[docIds.size()]);
     if (idList.length == 1) {
-      sendDoc(idList[0], expectedRf);
+      sendDoc(idList[0]);
       return;
     }
     List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
@@ -404,8 +422,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     addDocs(docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
     req.deleteByQuery("id:(" + StringUtils.join(docIds, " OR ") + ")");
-    boolean minRfExplicit = maybeAddMinRfExplicitly(expectedRf, req);
-    doDelete(req, msg, expectedRf, retries, minRfExplicit);
+    doDelete(req, msg, expectedRf, retries);
   }
 
   protected void doDBIdWithRetry(int expectedRf, int retries, String msg, int docsToAdd) throws Exception {
@@ -413,17 +430,13 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     addDocs(docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
     req.deleteById(StringUtils.join(docIds, ","));
-    boolean minRfExplicit = maybeAddMinRfExplicitly(expectedRf, req);
-    doDelete(req, msg, expectedRf, retries, minRfExplicit);
+    doDelete(req, msg, expectedRf, retries);
   }
 
-  protected void doDelete(UpdateRequest req, String msg, int expectedRf, int retries, boolean minRfExplicit) throws IOException, SolrServerException, InterruptedException {
+  protected void doDelete(UpdateRequest req, String msg, int expectedRf, int retries) throws IOException, SolrServerException, InterruptedException {
     int achievedRf = -1;
     for (int idx = 0; idx < retries; ++idx) {
       NamedList<Object> response = cloudClient.request(req);
-      if (minRfExplicit) {
-        assertMinRfInResponse(expectedRf, response);
-      }
       achievedRf = cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), response);
       if (achievedRf == expectedRf) return;
       Thread.sleep(1000);
@@ -431,40 +444,20 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertEquals(msg, expectedRf, achievedRf);
   }
 
-  protected int sendDoc(int docId, int minRf) throws Exception {
+  protected int sendDoc(int docId) throws Exception {
     UpdateRequest up = new UpdateRequest();
-    boolean minRfExplicit = maybeAddMinRfExplicitly(minRf, up);
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     up.add(doc);
-    return runAndGetAchievedRf(up, minRfExplicit, minRf);
+    return runAndGetAchievedRf(up);
   }
   
-  private int runAndGetAchievedRf(UpdateRequest up, boolean minRfExplicit, int minRf) throws SolrServerException, IOException {
+  private int runAndGetAchievedRf(UpdateRequest up) throws SolrServerException, IOException {
     NamedList<Object> response = cloudClient.request(up);
-    if (minRfExplicit) {
-      assertMinRfInResponse(minRf, response);
-    }
     return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), response);
   }
 
-  private void assertMinRfInResponse(int minRf, NamedList<Object> response) {
-    Object minRfFromResponse = response.findRecursive("responseHeader", UpdateRequest.MIN_REPFACT);
-    assertNotNull("Expected min_rf header in the response", minRfFromResponse);
-    assertEquals("Unexpected min_rf in response", ((Integer)minRfFromResponse).intValue(), minRf);
-  }
-
-  private boolean maybeAddMinRfExplicitly(int minRf, UpdateRequest up) {
-    boolean minRfExplicit = false;
-    if (rarely()) {
-      // test back compat behavior. Remove in Solr 9
-      up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
-      minRfExplicit = true;
-    }
-    return minRfExplicit;
-  }
-  
   protected void assertRf(int expected, String explain, int actual) throws Exception {
     if (actual != expected) {
       String assertionFailedMessage = 
@@ -473,15 +466,15 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  void createCollectionWithRetry(String testCollectionName, String config, int numShards, int replicationFactor, int maxShardsPerNode) throws IOException, SolrServerException, InterruptedException, TimeoutException {
-    CollectionAdminResponse resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
+  void createCollectionWithRetry(String testCollectionName, String config, int numShards, int replicationFactor) throws IOException, SolrServerException, InterruptedException, TimeoutException {
+    CollectionAdminResponse resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor);
 
     if (resp.getResponse().get("failure") != null) {
       Thread.sleep(5000); // let system settle down. This should be very rare.
 
       CollectionAdminRequest.deleteCollection(testCollectionName).process(cloudClient);
 
-      resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
+      resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor);
 
       if (resp.getResponse().get("failure") != null) {
         fail("Could not create " + testCollectionName);

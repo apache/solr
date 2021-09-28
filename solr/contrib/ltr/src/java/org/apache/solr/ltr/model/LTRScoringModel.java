@@ -27,6 +27,8 @@ import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
@@ -76,7 +78,8 @@ import org.apache.solr.util.SolrPluginUtils;
  * implement the {@link #score(float[])} and
  * {@link #explain(LeafReaderContext, int, float, List)} methods.
  */
-public abstract class LTRScoringModel {
+public abstract class LTRScoringModel implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(LTRScoringModel.class);
 
   protected final String name;
   private final String featureStoreName;
@@ -98,13 +101,13 @@ public abstract class LTRScoringModel {
           className,
           LTRScoringModel.class,
           new String[0], // no sub packages
-          new Class[] { String.class, List.class, List.class, String.class, List.class, Map.class },
+          new Class<?>[] { String.class, List.class, List.class, String.class, List.class, Map.class },
           new Object[] { name, features, norms, featureStoreName, allFeatures, params });
       if (params != null) {
         SolrPluginUtils.invokeSetters(model, params.entrySet());
       }
     } catch (final Exception e) {
-      throw new ModelException("Model type does not exist " + className, e);
+      throw new ModelException("Model loading failed for " + className, e);
     }
     model.validate();
     return model;
@@ -238,6 +241,17 @@ public abstract class LTRScoringModel {
 
 
     return true;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(allFeatures, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(features, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(featureStoreName) +
+        RamUsageEstimator.sizeOfObject(name) +
+        RamUsageEstimator.sizeOfObject(norms) +
+        RamUsageEstimator.sizeOfObject(params);
   }
 
   public Collection<Feature> getAllFeatures() {

@@ -35,7 +35,7 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
     this.firstTuple = this.resultSet.getFirstTuple();
   }
 
-  private Class getColumnClass(int column) throws SQLException {
+  private Class<?> getColumnClass(int column) throws SQLException {
     Object o = this.firstTuple.get(this.getColumnLabel(column));
     if(o == null) {
       return String.class; //Nulls will only be present with Strings.
@@ -90,6 +90,7 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
 
   @Override
   public String getColumnLabel(int column) throws SQLException {
+    @SuppressWarnings({"unchecked"})
     Map<String, String> aliases = (Map<String, String>) metadataTuple.get("aliases");
     return aliases.get(this.getColumnName(column));
   }

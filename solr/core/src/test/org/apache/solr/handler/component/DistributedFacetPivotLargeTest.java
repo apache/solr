@@ -91,25 +91,23 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     }
 
     // sanity check limit=0 w/ mincount=0 & missing=true
-    //
-    // SOLR-6328: doesn't work for single node, so can't work for distrib either (yet)
-    //
-    // PivotFacetField's init of needRefinementAtThisLevel as needing potential change
-    // 
-    // rsp = query( "q", "*:*",
-    //              "rows", "0",
-    //              "facet","true",
-    //              "f.company_t.facet.limit", "10",
-    //              "facet.pivot","special_s,bogus_s,company_t",
-    //              "facet.missing", "true",
-    //              FacetParams.FACET_LIMIT, "0",
-    //              FacetParams.FACET_PIVOT_MINCOUNT,"0"); 
-    // pivots = rsp.getFacetPivot().get("special_s,bogus_s,company_t");
-    // assertEquals(1, pivots.size()); // only the missing
-    // assertPivot("special_s", null, docNumber - 5, pivots.get(0)); // 5 docs w/special_s
-    // assertEquals(pivots.toString(), 1, pivots.get(0).getPivot());
-    // assertPivot("bogus_s", null, docNumber, pivots.get(0).getPivot().get(0));
-    // // TODO: some asserts on company results
+    rsp = query( "q", "*:*",
+                  "rows", "0",
+                  "facet","true",
+                  "f.company_t.facet.limit", "10",
+                  "facet.pivot","special_s,bogus_s,company_t",
+                  "facet.missing", "true",
+                  FacetParams.FACET_LIMIT, "0",
+                  FacetParams.FACET_PIVOT_MINCOUNT,"0");
+    pivots = rsp.getFacetPivot().get("special_s,bogus_s,company_t");
+    assertEquals(1, pivots.size()); // only the missing
+    assertPivot("special_s", null, docNumber - 5, pivots.get(0)); // 5 docs w/special_s
+    assertEquals(pivots.toString(), 1, pivots.get(0).getPivot().size());
+    assertPivot("bogus_s", null, docNumber - 5 , pivots.get(0).getPivot().get(0)); // 5 docs w/special_s
+    PivotField bogus = pivots.get(0).getPivot().get(0);
+    assertEquals(bogus.toString(), 11, bogus.getPivot().size());
+    // last value would always be missing docs
+    assertPivot("company_t", null, 2, bogus.getPivot().get(10)); // 2 docs w/company_t
 
     // basic check w/ default sort, limit, & mincount==0
     rsp = query( "q", "*:*",
@@ -812,7 +810,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     assertEquals(257, (long) cardiffStatsInfo.getCount());
     assertEquals(0, (long) cardiffStatsInfo.getMissing());
     assertEquals(347554.0, cardiffStatsInfo.getSum());
-    assertEquals(8.20968772E8, cardiffStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(820968772, cardiffStatsInfo.getSumOfSquares(), 0);
     assertEquals(1352.35019455253, (double) cardiffStatsInfo.getMean(), 0.1E-7);
     assertEquals(1170.86048165857, cardiffStatsInfo.getStddev(), 0.1E-7);
 
@@ -826,7 +824,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     assertEquals(101, (long) bbcCardifftPivotFieldStatsInfo.getCount());
     assertEquals(0, (long) bbcCardifftPivotFieldStatsInfo.getMissing());
     assertEquals(248742.0, bbcCardifftPivotFieldStatsInfo.getSum());
-    assertEquals(6.52422564E8, bbcCardifftPivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(652422564, bbcCardifftPivotFieldStatsInfo.getSumOfSquares(), 0);
     assertEquals(2462.792079208, (double) bbcCardifftPivotFieldStatsInfo.getMean(), 0.1E-7);
     assertEquals(631.0525860312, bbcCardifftPivotFieldStatsInfo.getStddev(), 0.1E-7);
 
@@ -842,7 +840,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     assertEquals(6, (long) placeholder0PivotFieldStatsInfo.getCount());
     assertEquals(0, (long) placeholder0PivotFieldStatsInfo.getMissing());
     assertEquals(22700.0, placeholder0PivotFieldStatsInfo.getSum());
-    assertEquals(1.0105E8, placeholder0PivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(1.0105E8, placeholder0PivotFieldStatsInfo.getSumOfSquares(), 0);
     assertEquals(3783.333333333, (double) placeholder0PivotFieldStatsInfo.getMean(), 0.1E-7);
     assertEquals(1741.742422595, placeholder0PivotFieldStatsInfo.getStddev(), 0.1E-7);
 
@@ -857,7 +855,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     assertEquals(6, (long) microsoftPlaceholder0PivotFieldStatsInfo.getCount());
     assertEquals(0, (long) microsoftPlaceholder0PivotFieldStatsInfo.getMissing());
     assertEquals(22700.0, microsoftPlaceholder0PivotFieldStatsInfo.getSum());
-    assertEquals(1.0105E8, microsoftPlaceholder0PivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(1.0105E8, microsoftPlaceholder0PivotFieldStatsInfo.getSumOfSquares(), 0);
     assertEquals(3783.333333333, (double) microsoftPlaceholder0PivotFieldStatsInfo.getMean(), 0.1E-7);
     assertEquals(1741.742422595, microsoftPlaceholder0PivotFieldStatsInfo.getStddev(), 0.1E-7);
   }
@@ -865,6 +863,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   /**
    * spot checks some pivot values and the ranges hanging on them
    */
+  @SuppressWarnings({"unchecked"})
   private void doTestPivotRanges() throws Exception {
 
     // note: 'p0' is only a top level range, not included in per-pivot ranges
@@ -973,8 +972,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   /**
    * asserts that the actual RangeFacet matches the expected criteria
    */
-  private void assertRange(String name, Object start, Object gap, Object end, int numCount,
-                           RangeFacet actual) {
+  private <B, G> void assertRange(String name, B start, G gap, B end, int numCount, RangeFacet<B, G> actual) {
     assertEquals("NAME: " + actual.toString(), name, actual.getName());
     assertEquals("START: " + actual.toString(), start, actual.getStart());
     assertEquals("GAP: " + actual.toString(), gap, actual.getGap());

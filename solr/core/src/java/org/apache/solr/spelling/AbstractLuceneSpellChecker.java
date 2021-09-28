@@ -80,18 +80,18 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   protected StringDistance sd;
 
   @Override
-  public String init(NamedList config, SolrCore core) {
+  public String init(NamedList<?> config, SolrCore core) {
     super.init(config, core);
-    indexDir = (String) config.get(INDEX_DIR);
-    String accuracy = (String) config.get(ACCURACY);
+    indexDir = (String)config.get(INDEX_DIR);
+    String accuracy = (String)config.get(ACCURACY);
     //If indexDir is relative then create index inside core.getDataDir()
     if (indexDir != null)   {
       if (!new File(indexDir).isAbsolute()) {
         indexDir = core.getDataDir() + File.separator + indexDir;
       }
     }
-    sourceLocation = (String) config.get(LOCATION);
-    String compClass = (String) config.get(COMPARATOR_CLASS);
+    sourceLocation = (String)config.get(LOCATION);
+    String compClass = (String)config.get(COMPARATOR_CLASS);
     Comparator<SuggestWord> comp = null;
     if (compClass != null){
       if (compClass.equalsIgnoreCase(SCORE_COMP)){
@@ -99,7 +99,9 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       } else if (compClass.equalsIgnoreCase(FREQ_COMP)){
         comp = new SuggestWordFrequencyComparator();
       } else{//must be a FQCN
-        comp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass, Comparator.class);
+        @SuppressWarnings("unchecked")
+        Comparator<SuggestWord> temp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass, Comparator.class);
+        comp = temp;
       }
     } else {
       comp = SuggestWordQueue.DEFAULT_COMPARATOR;

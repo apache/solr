@@ -132,7 +132,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       this.mergeStrategy = mergeStrategy;
     }
 
-    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) {
+    public TopDocsCollector<ScoreDoc> getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) {
       if(collector == 0)
         return new TestCollector(null);
       else
@@ -165,6 +165,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
     }
 
+    @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest sreq) {
 
       // id to shard mapping, to eliminate any accidental dups
@@ -183,7 +184,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       long numFound = 0;
       Float maxScore=null;
       boolean partialResults = false;
-      List<ShardDoc> shardDocs = new ArrayList();
+      List<ShardDoc> shardDocs = new ArrayList<>();
 
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
@@ -460,6 +461,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest sreq) {
 
       // id to shard mapping, to eliminate any accidental dups
@@ -478,7 +480,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       long numFound = 0;
       Float maxScore=null;
       boolean partialResults = false;
-      List<ShardDoc> shardDocs = new ArrayList();
+      List<ShardDoc> shardDocs = new ArrayList<>();
 
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
@@ -535,8 +537,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
         SortSpec ss = rb.getSortSpec();
         Sort sort = ss.getSort();
 
+        @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("merge_values"));
+        @SuppressWarnings({"rawtypes"})
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
+        @SuppressWarnings({"rawtypes"})
         List lst = (List)unmarshalledSortFieldValues.getVal(0);
 
         for (int i=0; i<docs.size(); i++) {
@@ -614,10 +619,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
       }
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private NamedList unmarshalSortValues(SortSpec sortSpec,
                                           NamedList sortFieldValues,
                                           IndexSchema schema) {
-      NamedList unmarshalledSortValsPerField = new NamedList();
+      NamedList unmarshalledSortValsPerField = new NamedList<>();
 
       if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;
 
@@ -657,11 +663,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
   }
 
 
-  static class TestCollector extends TopDocsCollector {
+  static class TestCollector extends TopDocsCollector<ScoreDoc> {
 
-    private List<ScoreDoc> list = new ArrayList();
+    private List<ScoreDoc> list = new ArrayList<>();
 
-    public TestCollector(PriorityQueue pq) {
+    public TestCollector(PriorityQueue<ScoreDoc> pq) {
       super(pq);
     }
 
@@ -691,10 +697,8 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs() {
-      Collections.sort(list, new Comparator() {
-        public int compare(Object o1, Object o2) {
-          ScoreDoc s1 = (ScoreDoc) o1;
-          ScoreDoc s2 = (ScoreDoc) o2;
+      Collections.sort(list, new Comparator<>() {
+        public int compare(ScoreDoc s1, ScoreDoc s2) {
           if (s1.score == s2.score) {
             return 0;
           } else if (s1.score < s2.score) {
@@ -722,11 +726,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
   }
 
-  static class TestCollector1 extends TopDocsCollector {
+  static class TestCollector1 extends TopDocsCollector<ScoreDoc> {
 
-    private List<ScoreDoc> list = new ArrayList();
+    private List<ScoreDoc> list = new ArrayList<>();
 
-    public TestCollector1(PriorityQueue pq) {
+    public TestCollector1(PriorityQueue<ScoreDoc> pq) {
       super(pq);
     }
 
@@ -753,10 +757,8 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     public TopDocs topDocs() {
-      Collections.sort(list, new Comparator() {
-        public int compare(Object o1, Object o2) {
-          ScoreDoc s1 = (ScoreDoc) o1;
-          ScoreDoc s2 = (ScoreDoc) o2;
+      Collections.sort(list, new Comparator<>() {
+        public int compare(ScoreDoc s1, ScoreDoc s2) {
           if (s1.score == s2.score) {
             return 0;
           } else if (s1.score > s2.score) {

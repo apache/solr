@@ -49,10 +49,6 @@
 
   <requestHandler name="/select" class="solr.SearchHandler" />
   
-  <peerSync>
-    <useRangeVersions>${solr.peerSync.useRangeVersions:true}</useRangeVersions>
-  </peerSync>
-
   <updateHandler class="solr.DirectUpdateHandler2">
     <!-- autocommit pending docs if certain criteria are met -->
     <autoCommit>
@@ -75,30 +71,6 @@
       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
     </autoSoftCommit>
   </updateHandler>
-
-  <updateRequestProcessorChain name="dedupe">
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">true</bool>
-      <bool name="overwriteDupes">true</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-  <updateRequestProcessorChain name="stored_sig">
-    <!-- this chain is valid even though the signature field is not
-         indexed, because we are not asking for dups to be overwritten
-      -->
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">true</bool>
-      <str name="signatureField">non_indexed_signature_sS</str>
-      <bool name="overwriteDupes">false</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
     <!-- explicit test using processors before and after distrib -->
@@ -140,23 +112,23 @@
 
 
   <query>
-    <filterCache class="solr.FastLRUCache"
+    <filterCache
       size="512"
       initialSize="512"
       autowarmCount="0" />
 
-    <queryResultCache class="solr.LRUCache"
+    <queryResultCache
       size="512"
       initialSize="512"
       autowarmCount="0" />
 
-    <documentCache class="solr.LRUCache"
+    <documentCache
       size="512"
       initialSize="512"
       autowarmCount="0" />
 
     <cache name="perSegFilter"
-      class="solr.search.LRUCache"
+      class="solr.CaffeineCache"
       size="10"
       initialSize="0"
       autowarmCount="10"

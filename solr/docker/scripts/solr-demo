@@ -1,0 +1,57 @@
+#!/bin/bash
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Configure a Solr demo and then run solr in the foreground
+
+set -euo pipefail
+
+if [[ "${VERBOSE:-}" == "yes" ]]; then
+    set -x
+fi
+
+# Could set env-variables for solr-fg
+source run-initdb
+
+CORE=demo
+
+coresdir=/var/solr/data
+CORE_DIR="$coresdir/demo"
+if [ -d "$CORE_DIR" ]; then
+  echo "$CORE_DIR exists; skipping demo creation"
+else
+  start-local-solr
+  echo "Creating $CORE"
+  /opt/solr/bin/solr create -c "$CORE"
+  echo "Created $CORE"
+  echo "Loading example data"
+  post_args=()
+  if [[ -n "${SOLR_PORT:-}" ]]; then
+    post_args+=(-p "$SOLR_PORT")
+  fi
+  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit no example/exampledocs/*.xml
+  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit no example/exampledocs/books.json
+  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit yes example/exampledocs/books.csv
+  echo "Loaded example data"
+  stop-local-solr
+
+    # check the core_dir exists; otherwise the detecting above will fail after stop/start
+    if [ ! -d "$CORE_DIR" ]; then
+        echo "Missing $CORE_DIR"
+        exit 1
+    fi
+fi
+
+exec solr-fg

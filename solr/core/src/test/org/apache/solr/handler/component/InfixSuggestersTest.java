@@ -101,7 +101,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
     ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("InfixSuggesterTest");
     try {
       // Build the suggester in the background with a long dictionary
-      Future job = executor.submit(() ->
+      Future<?> job = executor.submit(() ->
           expectThrows(RuntimeException.class, SolrCoreState.CoreIsClosedException.class,
               () -> assertQ(req("qt", rh_analyzing_long,
                   SuggesterParams.SUGGEST_BUILD_ALL, "true"),
@@ -110,7 +110,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
       // Stop the dictionary's input iterator
       System.clearProperty(RandomTestDictionaryFactory.RandomTestDictionary
           .getEnabledSysProp("longRandomAnalyzingInfixSuggester"));
-      job.get();
+      assertNotNull("Should have thrown exception", job.get());
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
@@ -125,7 +125,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
           (SolrCoreState.CoreIsClosedException.class, SolrException.class, IllegalStateException.class, NullPointerException.class));
       final Throwable[] outerException = new Throwable[1];
       // Build the suggester in the background with a long dictionary
-      Future job = executor.submit(() -> outerException[0] = expectThrowsAnyOf(expected,
+      Future<?> job = executor.submit(() -> outerException[0] = expectThrowsAnyOf(expected,
           () -> assertQ(req("qt", rh_analyzing_long, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
               "//str[@name='command'][.='buildAll']")));
       Thread.sleep(100); // TODO: is there a better way to ensure that the build has begun?

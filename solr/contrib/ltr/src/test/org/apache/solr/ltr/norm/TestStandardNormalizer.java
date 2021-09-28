@@ -16,19 +16,20 @@
  */
 package org.apache.solr.ltr.norm;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class TestStandardNormalizer {
 
-  private final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  private final SolrResourceLoader solrResourceLoader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
 
   private Normalizer implTestStandard(Map<String,Object> params,
       float expectedAvg, float expectedStd) {
@@ -58,14 +59,10 @@ public class TestStandardNormalizer {
     final NormalizerException expectedException =
         new NormalizerException("Standard Normalizer standard deviation must be positive "
             + "| avg = 0.0,std = 0.0");
-    try {
-        implTestStandard(params,
-              0.0f,
-              0.0f);
-        fail("testInvalidSTD failed to throw exception: "+expectedException);
-    } catch(NormalizerException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+    NormalizerException ex = SolrTestCaseJ4.expectThrows(NormalizerException.class,
+        () -> implTestStandard(params, 0.0f, 0.0f)
+    );
+    assertEquals(expectedException.toString(), ex.toString());
   }
 
   @Test
@@ -75,14 +72,11 @@ public class TestStandardNormalizer {
     final NormalizerException expectedException =
         new NormalizerException("Standard Normalizer standard deviation must be positive "
             + "| avg = 0.0,std = -1.0");
-    try {
-        implTestStandard(params,
-              0.0f,
-              -1f);
-        fail("testInvalidSTD2 failed to throw exception: "+expectedException);
-    } catch(NormalizerException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+
+    NormalizerException ex = SolrTestCaseJ4.expectThrows(NormalizerException.class,
+        () -> implTestStandard(params, 0.0f, -1f)
+    );
+    assertEquals(expectedException.toString(), ex.toString());
   }
 
   @Test
@@ -93,14 +87,11 @@ public class TestStandardNormalizer {
     final NormalizerException expectedException =
         new NormalizerException("Standard Normalizer standard deviation must be positive "
             + "| avg = 1.0,std = 0.0");
-    try {
-        implTestStandard(params,
-              1f,
-              0f);
-        fail("testInvalidSTD3 failed to throw exception: "+expectedException);
-    } catch(NormalizerException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+
+    NormalizerException ex = SolrTestCaseJ4.expectThrows(NormalizerException.class,
+        () -> implTestStandard(params, 1f, 0f)
+    );
+    assertEquals(expectedException.toString(), ex.toString());
   }
 
   @Test
@@ -139,7 +130,7 @@ public class TestStandardNormalizer {
 
     final Map<String, Object> params = n1.paramsToMap();
     final StandardNormalizer n2 = (StandardNormalizer) Normalizer.getInstance(
-        new SolrResourceLoader(),
+        new SolrResourceLoader(Paths.get("").toAbsolutePath()),
         StandardNormalizer.class.getName(),
         params);
     assertEquals(n1.getAvg(), n2.getAvg(), 1e-6);

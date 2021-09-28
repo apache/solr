@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -71,6 +73,13 @@ public class Aliases {
     this.zNodeVersion = zNodeVersion;
   }
 
+  public void forEachAlias(BiConsumer<String, List<String>> consumer) {
+    collectionAliases.forEach((s, colls) -> consumer.accept(s, Collections.unmodifiableList(colls)));
+  }
+  public int size() {
+    return collectionAliases.size();
+  }
+
   /**
    * Create an instance from the JSON bytes read from zookeeper. Generally this should
    * only be done by a ZkStateReader.
@@ -79,7 +88,7 @@ public class Aliases {
    * @param zNodeVersion the version of the data in zookeeper that this instance corresponds to
    * @return A new immutable Aliases object
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Aliases fromJSON(byte[] bytes, int zNodeVersion) {
     Map<String, Map> aliasMap;
     if (bytes == null || bytes.length == 0) {
@@ -88,6 +97,7 @@ public class Aliases {
       aliasMap = (Map<String, Map>) Utils.fromJSON(bytes);
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map colAliases = aliasMap.getOrDefault(COLLECTION, Collections.emptyMap());
     colAliases = convertMapOfCommaDelimitedToMapOfList(colAliases); // also unmodifiable
 
@@ -105,6 +115,7 @@ public class Aliases {
       assert collectionAliasProperties.isEmpty();
       return null;
     } else {
+      @SuppressWarnings({"rawtypes"})
       Map<String,Map> tmp = new LinkedHashMap<>();
       tmp.put(COLLECTION, convertMapOfListToMapOfCommaDelimited(collectionAliases));
       if (!collectionAliasProperties.isEmpty()) {
@@ -143,7 +154,6 @@ public class Aliases {
    * @return an unmodifiable Map of collection aliases mapped to a comma delimited string of the collection(s) the
    * alias maps to. Does not return null.
    */
-  @SuppressWarnings("unchecked")
   public Map<String, String> getCollectionAliasMap() {
     return Collections.unmodifiableMap(convertMapOfListToMapOfCommaDelimited(collectionAliases));
   }
@@ -207,29 +217,29 @@ public class Aliases {
    * @param aliasName alias name
    * @return original name if there's no such alias, or a resolved name. If an alias points to more than 1
    * collection (directly or indirectly) an exception is thrown
-   * @throws IllegalArgumentException if either direct or indirect alias points to more than 1 name.
+   * @throws SolrException if either direct or indirect alias points to more than 1 name.
    */
-  public String resolveSimpleAlias(String aliasName) throws IllegalArgumentException {
+  public String resolveSimpleAlias(String aliasName) throws SolrException {
     return resolveSimpleAliasGivenAliasMap(collectionAliases, aliasName);
   }
 
   /** @lucene.internal */
   @SuppressWarnings("JavaDoc")
   public static String resolveSimpleAliasGivenAliasMap(Map<String, List<String>> collectionAliasListMap,
-                                                       String aliasName) throws IllegalArgumentException {
+                                                       String aliasName) throws SolrException {
     List<String> level1 = collectionAliasListMap.get(aliasName);
     if (level1 == null || level1.isEmpty()) {
       return aliasName; // simple collection name
     }
     if (level1.size() > 1) {
-      throw new IllegalArgumentException("Simple alias '" + aliasName + "' points to more than 1 collection: " + level1);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Simple alias '" + aliasName + "' points to more than 1 collection: " + level1);
     }
     List<String> level2 = collectionAliasListMap.get(level1.get(0));
     if (level2 == null || level2.isEmpty()) {
       return level1.get(0); // simple alias
     }
     if (level2.size() > 1) {
-      throw new IllegalArgumentException("Simple alias '" + aliasName + "' resolves to '"
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Simple alias '" + aliasName + "' resolves to '"
           + level1.get(0) + "' which points to more than 1 collection: " + level2);
     }
     return level2.get(0);
@@ -318,10 +328,10 @@ public class Aliases {
    * @param after new alias name. If this is null then it's equivalent to calling {@link #cloneWithCollectionAlias(String, String)}
    *              with the second argument set to null, ie. removing an alias.
    * @return new instance with the renamed alias
-   * @throws IllegalArgumentException when either <code>before</code> or <code>after</code> is empty, or
+   * @throws SolrException when either <code>before</code> or <code>after</code> is empty, or
    * the <code>before</code> name is a routed alias
    */
-  public Aliases cloneWithRename(String before, String after) {
+  public Aliases cloneWithRename(String before, String after) throws SolrException {
     if (before == null) {
       throw new NullPointerException("'before' and 'after' cannot be null");
     }
@@ -329,7 +339,7 @@ public class Aliases {
       return cloneWithCollectionAlias(before, after);
     }
     if (before.isEmpty() || after.isEmpty()) {
-      throw new IllegalArgumentException("'before' and 'after' cannot be empty");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'before' and 'after' cannot be empty");
     }
     if (before.equals(after)) {
       return this;
@@ -337,7 +347,7 @@ public class Aliases {
     Map<String, String> props = collectionAliasProperties.get(before);
     if (props != null) {
       if (props.keySet().stream().anyMatch(k -> k.startsWith(CollectionAdminParams.ROUTER_PREFIX))) {
-        throw new IllegalArgumentException("source name '" + before + "' is a routed alias.");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "source name '" + before + "' is a routed alias.");
       }
     }
     Map<String, Map<String, String>> newColProperties = new LinkedHashMap<>(this.collectionAliasProperties);
@@ -397,12 +407,12 @@ public class Aliases {
    * @param properties the properties to add/replace, null values in the map will remove the key.
    * @return An immutable copy of the aliases with the new properties.
    */
-  public Aliases cloneWithCollectionAliasProperties(String alias, Map<String,String> properties) {
+  public Aliases cloneWithCollectionAliasProperties(String alias, Map<String,String> properties) throws SolrException {
     if (!collectionAliases.containsKey(alias)) {
-      throw new IllegalArgumentException(alias + " is not a valid alias");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, alias + " is not a valid alias");
     }
     if (properties == null) {
-      throw new IllegalArgumentException("Null is not a valid properties map");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Null is not a valid properties map");
     }
     Map<String,Map<String,String>> newColProperties = new LinkedHashMap<>(this.collectionAliasProperties);//clone to modify
     Map<String, String> newMetaMap = new LinkedHashMap<>(newColProperties.getOrDefault(alias, Collections.emptyMap()));

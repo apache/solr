@@ -20,13 +20,15 @@ Schemaless Mode is a set of Solr features that, when used together, allow users 
 
 These Solr features, all controlled via `solrconfig.xml`, are:
 
-. Managed schema: Schema modifications are made at runtime through Solr APIs, which requires the use of a `schemaFactory` that supports these changes. See the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for more details.
+. Managed schema: Schema modifications are made at runtime through Solr APIs, which requires the use of a `schemaFactory` that supports these changes.
+See the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for more details.
 . Field value class guessing: Previously unseen fields are run through a cascading set of value-based parsers, which guess the Java class of field values - parsers for Boolean, Integer, Long, Float, Double, and Date are currently available.
-. Automatic schema field addition, based on field value class(es): Previously unseen fields are added to the schema, based on field value Java classes, which are mapped to schema field types - see <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
+. Automatic schema field addition, based on field value class(es): Previously unseen fields are added to the schema, based on field value Java classes, which are mapped to schema field types - see <<field-types.adoc#,Field Types>>.
 
 == Using the Schemaless Example
 
-The three features of schemaless mode are pre-configured in the `_default` <<config-sets.adoc#config-sets,configset>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
+The three features of schemaless mode are pre-configured in the `_default` <<config-sets.adoc#,configset>> in the Solr distribution.
+To start an example instance of Solr using these configs, run the following command:
 
 [source,bash]
 ----
@@ -35,7 +37,7 @@ bin/solr start -e schemaless
 
 This will launch a single Solr server, and automatically create a collection (named "```gettingstarted```") that contains only three fields in the initial schema: `id`, `\_version_`, and `\_text_`.
 
-You can use the `/schema/fields` <<schema-api.adoc#schema-api,Schema API>> to confirm this: `curl \http://localhost:8983/solr/gettingstarted/schema/fields` will output:
+You can use the `/schema/fields` <<schema-api.adoc#,Schema API>> to confirm this: `curl \http://localhost:8983/solr/gettingstarted/schema/fields` will output:
 
 [source,json]
 ----
@@ -66,27 +68,30 @@ You can use the `/schema/fields` <<schema-api.adoc#schema-api,Schema API>> to co
 
 == Configuring Schemaless Mode
 
-As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the `_default` configset included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
+As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode.
+In the `_default` configset included with Solr these are already configured.
+If, however, you would like to implement schemaless on your own, you should make the following changes.
 
 === Enable Managed Schema
 
-As described in the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>, Managed Schema support is enabled by default, unless your configuration specifies that `ClassicIndexSchemaFactory` should be used.
+As described in the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>>, Managed Schema support is enabled by default, unless your configuration specifies that `ClassicIndexSchemaFactory` should be used.
 
-You can configure the `ManagedIndexSchemaFactory` (and control the resource file used, or disable future modifications) by adding an explicit `<schemaFactory/>` like the one below, please see <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for more details on the options available.
+You can configure the `ManagedIndexSchemaFactory` (and control the resource file used, or disable future modifications) by adding an explicit `<schemaFactory/>` like the one below, please see <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for more details on the options available.
 
 [source,xml]
 ----
 <schemaFactory class="ManagedIndexSchemaFactory">
   <bool name="mutable">true</bool>
-  <str name="managedSchemaResourceName">managed-schema</str>
+  <str name="managedSchemaResourceName">managed-schema.xml</str>
 </schemaFactory>
 ----
 
 === Enable Field Class Guessing
 
-In Solr, an <<update-request-processors.adoc#update-request-processors,UpdateRequestProcessorChain>> defines a chain of plugins that are applied to documents before or while they are indexed.
+In Solr, an <<update-request-processors.adoc#,UpdateRequestProcessorChain>> defines a chain of plugins that are applied to documents before or while they are indexed.
 
-The field guessing aspect of Solr's schemaless mode uses a specially-defined UpdateRequestProcessorChain that allows Solr to guess field types. You can also define the default field type classes to use.
+The field guessing aspect of Solr's schemaless mode uses a specially-defined UpdateRequestProcessorChain that allows Solr to guess field types.
+You can also define the default field type classes to use.
 
 To start, you should define it as follows (see the javadoc links below for update processor factory documentation):
 
@@ -151,36 +156,54 @@ To start, you should define it as follows (see the javadoc links below for updat
   </updateRequestProcessorChain>
 ----
 
-There are many things defined in this chain. Let's step through a few of them.
+There are many things defined in this chain.
+Let's step through a few of them.
 
-<1> First, we're using the FieldNameMutatingUpdateProcessorFactory to lower-case all field names. Note that this and every following `<processor>` element include a `name`. These names will be used in the final chain definition at the end of this example.
-<2> Next we add several update request processors to parse different field types. Note the ParseDateFieldUpdateProcessorFactory includes a long list of possible date formations that would be parsed into valid Solr dates. If you have a custom date, you could add it to this list (see the link to the Javadocs below to get information on how).
-<3> Once the fields have been parsed, we define the field types that will be assigned to those fields. You can modify any of these that you would like to change.
-<4> In this definition, if the parsing step decides the incoming data in a field is a string, we will put this into a field in Solr with the field type `text_general`. This field type by default allows Solr to query on this field.
-<5> After we've added the `text_general` field, we have also defined a copy field rule that will copy all data from the new `text_general` field to a field with the same name suffixed with `_str`. This is done by Solr's dynamic fields feature. By defining the target of the copy field rule as a dynamic field in this way, you can control the field type used in your schema. The default selection allows Solr to facet, highlight, and sort on these fields.
-<6> This is another example of a mapping rule. In this case we define that when either of the `Long` or `Integer` field parsers identify a field, they should both map their fields to the `plongs` field type.
-<7> Finally, we add a chain definition that calls the list of plugins. These plugins are each called by the names we gave to them when we defined them. We can also add other processors to the chain, as shown here. Note we have also given the entire chain a `name` ("add-unknown-fields-to-the-schema"). We'll use this name in the next section to specify that our update request handler should use this chain definition.
+<1> First, we're using the FieldNameMutatingUpdateProcessorFactory to lower-case all field names.
+Note that this and every following `<processor>` element include a `name`.
+These names will be used in the final chain definition at the end of this example.
+<2> Next we add several update request processors to parse different field types.
+Note the ParseDateFieldUpdateProcessorFactory includes a long list of possible date formations that would be parsed into valid Solr dates.
+If you have a custom date, you could add it to this list (see the link to the Javadocs below to get information on how).
+<3> Once the fields have been parsed, we define the field types that will be assigned to those fields.
+You can modify any of these that you would like to change.
+<4> In this definition, if the parsing step decides the incoming data in a field is a string, we will put this into a field in Solr with the field type `text_general`.
+This field type by default allows Solr to query on this field.
+<5> After we've added the `text_general` field, we have also defined a copy field rule that will copy all data from the new `text_general` field to a field with the same name suffixed with `_str`.
+This is done by Solr's dynamic fields feature.
+By defining the target of the copy field rule as a dynamic field in this way, you can control the field type used in your schema.
+The default selection allows Solr to facet, highlight, and sort on these fields.
+<6> This is another example of a mapping rule.
+In this case we define that when either of the `Long` or `Integer` field parsers identify a field, they should both map their fields to the `plongs` field type.
+<7> Finally, we add a chain definition that calls the list of plugins.
+These plugins are each called by the names we gave to them when we defined them.
+We can also add other processors to the chain, as shown here.
+Note we have also given the entire chain a `name` ("add-unknown-fields-to-the-schema").
+We'll use this name in the next section to specify that our update request handler should use this chain definition.
 
-CAUTION: This chain definition will make a number of copy field rules for string fields to be created from corresponding text fields. If your data causes you to end up with a lot of copy field rules, indexing may be slowed down noticeably, and your index size will be larger. To control for these issues, it's recommended that you review the copy field rules that are created, and remove any which you do not need for faceting, sorting, highlighting, etc.
+CAUTION: This chain definition will make a number of copy field rules for string fields to be created from corresponding text fields.
+If your data causes you to end up with a lot of copy field rules, indexing may be slowed down noticeably, and your index size will be larger.
+To control for these issues, it's recommended that you review the copy field rules that are created, and remove any which you do not need for faceting, sorting, highlighting, etc.
 
 If you're interested in more information about the classes used in this chain, here are links to the Javadocs for update processor factories mentioned above:
 
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/FieldNameMutatingUpdateProcessorFactory.html[FieldNameMutatingUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseLongFieldUpdateProcessorFactory.html[ParseLongFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDoubleFieldUpdateProcessorFactory.html[ParseDoubleFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/FieldNameMutatingUpdateProcessorFactory.html[FieldNameMutatingUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/ParseLongFieldUpdateProcessorFactory.html[ParseLongFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/ParseDoubleFieldUpdateProcessorFactory.html[ParseDoubleFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]
 
 === Set the Default UpdateRequestProcessorChain
 
 Once the UpdateRequestProcessorChain has been defined, you must instruct your UpdateRequestHandlers to use it when working with index updates (i.e., adding, removing, replacing documents).
 
-There are two ways to do this. The update chain shown above has a `default=true` attribute which will use it for any update handler.
+There are two ways to do this.
+The update chain shown above has a `default=true` attribute which will use it for any update handler.
 
-An alternative, more explicit way is to use <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams>> to set the defaults on all `/update` request handlers:
+An alternative, more explicit way is to use <<initparams.adoc#,InitParams>> to set the defaults on all `/update` request handlers:
 
 [source,xml]
 ----
@@ -195,7 +218,8 @@ IMPORTANT: After all of these changes have been made, Solr should be restarted o
 
 === Disabling Automatic Field Guessing
 
-Automatic field creation can be disabled with the `update.autoCreateFields` property. To do this, you can use <<solr-control-script-reference.adoc#set-or-unset-configuration-properties,`bin/solr config`>> with a command such as:
+Automatic field creation can be disabled with the `update.autoCreateFields` property.
+To do this, you can use <<solr-control-script-reference.adoc#set-or-unset-configuration-properties,`bin/solr config`>> with a command such as:
 
 [source,bash]
 bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false
@@ -280,14 +304,16 @@ In addition string versions of the text fields are indexed, using copyFields to 
 .You Can Still Be Explicit
 [TIP]
 ====
-Even if you want to use schemaless mode for most fields, you can still use the <<schema-api.adoc#schema-api,Schema API>> to pre-emptively create some fields, with explicit types, before you index documents that use them.
+Even if you want to use schemaless mode for most fields, you can still use the <<schema-api.adoc#,Schema API>> to pre-emptively create some fields, with explicit types, before you index documents that use them.
 
-Internally, the Schema API and the Schemaless Update Processors both use the same <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Managed Schema>> functionality.
+Internally, the Schema API and the Schemaless Update Processors both use the same <<schema-factory.adoc#,Managed Schema>> functionality.
 
 Also, if you do not need the `*_str` version of a text field, you can simply remove the `copyField` definition from the auto-generated schema and it will not be re-added since the original field is now defined.
 ====
 
-Once a field has been added to the schema, its field type is fixed. As a consequence, adding documents with field value(s) that conflict with the previously guessed field type will fail. For example, after adding the above document, the "```Sold```" field has the fieldType `plongs`, but the document below has a non-integral decimal value in this field:
+Once a field has been added to the schema, its field type is fixed.
+As a consequence, adding documents with field value(s) that conflict with the previously guessed field type will fail.
+For example, after adding the above document, the "```Sold```" field has the fieldType `plongs`, but the document below has a non-integral decimal value in this field:
 
 [source,bash]
 ----

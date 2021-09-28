@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,9 +51,8 @@ public class ImplicitSnitch extends Snitch {
   public static final String SYSPROP = "sysprop.";
   public static final String SYSLOADAVG = "sysLoadAvg";
   public static final String HEAPUSAGE = "heapUsage";
-  public static final String DISKTYPE = "diskType";
   public static final List<String> IP_SNITCHES = Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));
-  public static final Set<String> tags = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(NODE, PORT, HOST, CORES, DISK, ROLE, "ip_1", "ip_2", "ip_3", "ip_4")));
+  public static final Set<String> tags = Set.of(NODE, PORT, HOST, CORES, DISK, ROLE, HEAPUSAGE, "ip_1", "ip_2", "ip_3", "ip_4");
 
   @Override
   public void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
@@ -97,7 +95,7 @@ public class ImplicitSnitch extends Snitch {
   }
 
   private void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {
-    Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
+    Map<?,?> roles = (Map<?,?>) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
     // so cache and reuse
     try {
       if (roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
@@ -107,13 +105,13 @@ public class ImplicitSnitch extends Snitch {
     }
   }
 
-  private void cacheRoles(String solrNode, SnitchContext ctx, String key, Map roles) {
+  private void cacheRoles(String solrNode, SnitchContext ctx, String key,
+                          Map<?,?> roles) {
     ctx.store(ZkStateReader.ROLES, roles);
     if (roles != null) {
-      for (Object o : roles.entrySet()) {
-        Map.Entry e = (Map.Entry) o;
+      for (Map.Entry<?,?> e : roles.entrySet()) {
         if (e.getValue() instanceof List) {
-          if (((List) e.getValue()).contains(solrNode)) {
+          if (((List<?>) e.getValue()).contains(solrNode)) {
             ctx.getTags().put(key, e.getKey());
             break;
           }

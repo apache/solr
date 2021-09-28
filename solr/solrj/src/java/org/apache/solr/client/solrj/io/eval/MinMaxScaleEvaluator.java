@@ -57,7 +57,8 @@ public class MinMaxScaleEvaluator extends RecursiveObjectEvaluator implements Ma
       return new Matrix(scaled);
 
     } else if(values[0] instanceof List) {
-      List<Number> vec = (List)values[0];
+      @SuppressWarnings({"unchecked"})
+      List<Number> vec = (List<Number>)values[0];
       double[] data = new double[vec.size()];
 
       for(int i=0; i<vec.size(); i++) {
@@ -65,7 +66,7 @@ public class MinMaxScaleEvaluator extends RecursiveObjectEvaluator implements Ma
       }
 
       data = scale(data, min, max);
-      List<Number> scaled = new ArrayList(data.length);
+      List<Number> scaled = new ArrayList<>(data.length);
       for(double d : data) {
         scaled.add(d);
       }

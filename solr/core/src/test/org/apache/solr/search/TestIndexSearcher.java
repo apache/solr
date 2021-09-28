@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -83,9 +83,11 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU((commit()));
   }
 
+  @SuppressWarnings({"unchecked"})
   private String getStringVal(SolrQueryRequest sqr, String field, int doc) throws IOException {
     SchemaField sf = sqr.getSchema().getField(field);
     ValueSource vs = sf.getType().getValueSource(sf, null);
+    @SuppressWarnings({"rawtypes"})
     Map context = ValueSource.newContext(sqr.getSearcher());
     vs.createWeight(context, sqr.getSearcher());
     IndexReaderContext topReaderContext = sqr.getSearcher().getTopReaderContext();
@@ -138,6 +140,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertEquals(1, baseRefCount);
 
     Map<String, Metric> metrics = h.getCore().getCoreMetricManager().getRegistry().getMetrics();
+    @SuppressWarnings({"unchecked"})
     Gauge<Date> g = (Gauge<Date>)metrics.get("SEARCHER.searcher.registeredAt");
     Date sr3SearcherRegAt = g.getValue();
     assertU(commit()); // nothing has changed
@@ -247,7 +250,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       addDummyDoc(newCore);
       
       // Open a new searcher, this should call the newSearcherListeners
-      Future<?>[] future = new Future[1];
+      @SuppressWarnings("unchecked")
+      Future<Void>[] future = (Future<Void>[]) Array.newInstance(Future.class, 1);
       newCore.getSearcher(true, false, future);
       future[0].get();
       
@@ -435,9 +439,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static AtomicInteger numberOfTimesCalledFirstSearcher;
 
     @Override
-    public void init(NamedList args) {}
-
-    @Override
     public void postCommit() {}
 
     @Override
@@ -458,9 +459,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static AtomicInteger numberOfTimesCalled;
     static CountDownLatch latch;
     
-    @Override
-    public void init(NamedList args) {}
-
     @Override
     public void postCommit() {}
 

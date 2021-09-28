@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,8 +31,10 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.DocRouter.Range;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 
 public class TestHashPartitioner extends SolrTestCaseJ4 {
   
@@ -273,11 +276,11 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     Map<String,Slice> slices = new HashMap<>();
     for (int i=0; i<ranges.size(); i++) {
       Range range = ranges.get(i);
-      Slice slice = new Slice("shard"+(i+1), null, map("range",range));
+      Slice slice = new Slice("shard"+(i+1), null, map("range",range), "collections1");
       slices.put(slice.getName(), slice);
     }
 
-    DocCollection coll = new DocCollection("collection1", slices, null, router);
+    DocCollection coll = new DocCollection("collection1", slices, Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), router);
     return coll;
   }
 

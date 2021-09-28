@@ -16,9 +16,11 @@
  */
 package org.apache.solr.request;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -33,12 +35,13 @@ import org.apache.solr.core.SolrCore;
  *
  */
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {
-  public final static Map emptyArgs = new HashMap(0,1);
-
-  protected static SolrParams makeParams(String query, String qtype, int start, int limit, Map args) {
+  public String userPrincipalName = null;
+  
+  protected static SolrParams makeParams(String query, String qtype, int start, int limit,
+                                         Map<?,?> args) {
     Map<String,String[]> map = new HashMap<>();
-    for (Iterator iter = args.entrySet().iterator(); iter.hasNext();) {
-      Map.Entry e = (Map.Entry)iter.next();
+    for (Iterator<? extends Map.Entry<?, ?>> iter = args.entrySet().iterator(); iter.hasNext();) {
+      Map.Entry<?,?> e = iter.next();
       String k = e.getKey().toString();
       Object v = e.getValue();
       if (v instanceof String[]) map.put(k,(String[])v);
@@ -51,11 +54,12 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
     return new MultiMapSolrParams(map);
   }
 
-  public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit, Map args) {
+  public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit,
+                               Map<?,?> args) {
     super(core,makeParams(query,qtype,start,limit,args));
   }
 
-  public LocalSolrQueryRequest(SolrCore core, NamedList args) {
+  public LocalSolrQueryRequest(SolrCore core, NamedList<?> args) {
     super(core, args.toSolrParams());
   }
 
@@ -66,6 +70,38 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public LocalSolrQueryRequest(SolrCore core, SolrParams args) {
     super(core, args);
   }
- 
+
+  @Override public Principal getUserPrincipal() {
+    return new LocalPrincipal(this.userPrincipalName);
+  }
+  
+  /** 
+   * Allows setting the 'name' of the User Principal for the purposes of creating local requests
+   * in a solr node when security is enabled.  It is experiemental and subject to removal
+   *
+   * @see org.apache.solr.security.PKIAuthenticationPlugin#NODE_IS_USER
+   * @see #getUserPrincipal
+   * @lucene.internal
+   * @lucene.experimental
+   */
+  public void setUserPrincipalName(String s) {
+    this.userPrincipalName = s;
+  }
+  private final class LocalPrincipal implements Principal {
+    private final String user;
+    public LocalPrincipal(String user) {
+      this.user = user;
+    }
+    public String getName() {
+      return user;
+    }
+    @Override public int hashCode() {
+      return Objects.hashCode(user);
+    }
+    @Override public boolean equals(Object other) {
+      return Objects.equals(this.getClass(), other.getClass())
+        && Objects.equals(this.getName(), ((LocalPrincipal)other).getName() );
+    }
+  }
 }
 

@@ -19,6 +19,7 @@ package org.apache.solr.security;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
@@ -26,7 +27,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.junit.After;
@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
@@ -45,9 +44,14 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
   
   @BeforeClass
   public static void setupCluster() throws Exception {
+    final String SECURITY_CONF = Utils.toJSONString
+      (Map.of("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
+          "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
+    
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+      .addConfig("conf", configset("cloud-minimal"))
+      .withSecurityJson(SECURITY_CONF)
+      .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
 
@@ -56,11 +60,6 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testPkiAuth() throws Exception {
-    // TODO make a SolrJ helper class for this
-    byte[] bytes = Utils.toJSON(makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
-        "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
-    zkClient().setData(ZkStateReader.SOLR_SECURITY_CONF_PATH, bytes, true);
-
     HttpClient httpClient = cluster.getSolrClient().getHttpClient();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String baseUrl = jetty.getBaseUrl().toString();
@@ -84,7 +83,6 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
             count.incrementAndGet();
           }
         }
-        return true;
     };
 
     MockAuthenticationPlugin.predicate = servletRequest -> {

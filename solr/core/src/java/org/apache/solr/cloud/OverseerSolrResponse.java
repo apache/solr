@@ -21,11 +21,11 @@ import org.apache.solr.common.util.NamedList;
 
 public class OverseerSolrResponse extends SolrResponse {
   
-  NamedList responseList = null;
+  NamedList<Object> responseList = null;
 
   private long elapsedTime;
   
-  public OverseerSolrResponse(NamedList list) {
+  public OverseerSolrResponse(NamedList<Object> list) {
     responseList = list;
   }
   

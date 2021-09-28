@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
@@ -40,13 +39,8 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       CloudSolrClient client = cluster.getSolrClient();
       CollectionAdminRequest.List listReq = new CollectionAdminRequest.List();
 
-      try {
-        client.request(listReq);
-        fail("Requests to a non-running cluster should throw a SolrException");
-      }
-      catch (SolrException e) {
-        assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
-      }
+      SolrException e = expectThrows(SolrException.class, () -> client.request(listReq));
+      assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
 
       cluster.startJettySolrRunner();
       cluster.waitForAllNodes(30);
@@ -70,21 +64,18 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
       CloudSolrClient client = cluster.getSolrClient();
-      try {
-        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
-        fail("Requests to a non-running cluster should throw a SolrException");
-      } catch (SolrException e) {
-        assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
-      }
+      SolrException e = expectThrows(SolrException.class, () -> {
+        cluster.getZkClient().upConfig(configPath, "testconfig");
+      });
+      assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
 
       cluster.startJettySolrRunner();
       cluster.waitForAllNodes(30);
       client.connect(20, TimeUnit.SECONDS);
 
-      ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
+      cluster.getZkClient().upConfig(configPath, "testconfig");
 
-      ZkConfigManager configManager = new ZkConfigManager(client.getZkStateReader().getZkClient());
-      assertTrue("List of uploaded configs does not contain 'testconfig'", configManager.listConfigs().contains("testconfig"));
+      assertTrue("List of uploaded configs does not contain 'testconfig'", cluster.getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + "testconfig", true));
 
     } finally {
       cluster.shutdown();

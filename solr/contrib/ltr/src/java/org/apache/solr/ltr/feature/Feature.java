@@ -28,6 +28,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
@@ -56,7 +58,8 @@ import org.apache.solr.util.SolrPluginUtils;
  * the {@link #validate()} function, and must implement the {@link #paramsToMap()}
  * and createWeight() methods.
  */
-public abstract class Feature extends Query {
+public abstract class Feature extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(Feature.class);
 
   final protected String name;
   private int index = -1;
@@ -71,7 +74,7 @@ public abstract class Feature extends Query {
         className,
         Feature.class,
         new String[0], // no sub packages
-        new Class[] { String.class, Map.class },
+        new Class<?>[] { String.class, Map.class },
         new Object[] { name, params });
     if (params != null) {
       SolrPluginUtils.invokeSetters(f, params.entrySet());
@@ -145,6 +148,13 @@ public abstract class Feature extends Query {
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(name) +
+        RamUsageEstimator.sizeOfObject(params);
   }
 
   @Override
@@ -328,6 +338,45 @@ public abstract class Feature extends Query {
       public DocIdSetIterator iterator() {
         return itr;
       }
+    }
+
+    /**
+     * A <code>FeatureScorer</code> that contains a <code>Scorer</code>,
+     * which it delegates to where appropriate.
+     */
+    public abstract class FilterFeatureScorer extends FeatureScorer {
+
+      final protected Scorer in;
+
+      public FilterFeatureScorer(Feature.FeatureWeight weight, Scorer scorer) {
+        super(weight, null);
+        this.in = scorer;
+      }
+
+      @Override
+      public int docID() {
+        return in.docID();
+      }
+
+      @Override
+      public DocIdSetIterator iterator() {
+        return in.iterator();
+      }
+
+      // Currently (Q1 2021) we intentionally don't delegate twoPhaseIterator()
+      // because it doesn't always work and we don't yet know why, please see
+      // SOLR-15071 for more details.
+
+      @Override
+      public int advanceShallow(int target) throws IOException {
+        return in.advanceShallow(target);
+      }
+
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return in.getMaxScore(upTo);
+      }
+
     }
 
     /**

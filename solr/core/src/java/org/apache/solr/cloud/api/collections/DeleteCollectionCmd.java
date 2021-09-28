@@ -18,15 +18,9 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
-import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
@@ -47,43 +42,60 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.handler.admin.MetricsHistoryHandler;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final OverseerCollectionMessageHandler ocmh;
-  private final TimeSource timeSource;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
-  public DeleteCollectionCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
-    this.timeSource = ocmh.cloudManager.getTimeSource();
+public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Set<String> okayExceptions = Collections.singleton(NonExistentCoreException.class.getName());
+
+  private final CollectionCommandContext ccc;
+
+  public DeleteCollectionCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
+    Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
+    if (o != null) {
+      ((Runnable)o).run(); // this will ensure the collection is removed from the alias before it disappears.
+    }
     final String extCollection = message.getStr(NAME);
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
 
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
     }
 
-    List<String> aliasReferences = checkAliasReference(zkStateReader, extCollection);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    List<String> aliasReferences = checkAliasReference(zkStateReader, extCollection, followAliases);
 
     Aliases aliases = zkStateReader.getAliases();
-    String collection = aliases.resolveSimpleAlias(extCollection);
 
-    checkNotColocatedWith(zkStateReader, collection);
+    String collection;
+    if (followAliases) {
+      collection = aliases.resolveSimpleAlias(extCollection);
+    } else {
+      collection = extCollection;
+    }
 
-    final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
+    // verify the placement modifications caused by the deletion are allowed
+    DocCollection coll = state.getCollectionOrNull(collection);
+    if (coll != null) {
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer(), state, coll);
+      assignStrategy.verifyDeleteCollection(ccc.getSolrCloudManager(), coll);
+    }
 
     boolean removeCounterNode = true;
     try {
@@ -100,26 +112,16 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           return;
         }
       }
-      // remove collection-level metrics history
-      if (deleteHistory) {
-        MetricsHistoryHandler historyHandler = ocmh.overseer.getCoreContainer().getMetricsHistoryHandler();
-        if (historyHandler != null) {
-          String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.collection, collection);
-          historyHandler.removeHistory(registry);
-        }
-      }
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.UNLOAD.toString());
       params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
-      params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
       String asyncId = message.getStr(ASYNC);
 
-      Set<String> okayExceptions = new HashSet<>(1);
-      okayExceptions.add(NonExistentCoreException.class.getName());
+      ZkNodeProps internalMsg = message.plus(NAME, collection);
 
-      List<Replica> failedReplicas = ocmh.collectionCmd(message, params, results, null, asyncId, okayExceptions);
+      List<Replica> failedReplicas = CollectionHandlingUtils.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions, ccc, state);
       for (Replica failedReplica : failedReplicas) {
         boolean isSharedFS = failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedReplica.get("dataDir") != null;
         if (isSharedFS) {
@@ -131,19 +133,46 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.ClusterDeleteCollection, m,
+            ccc.getSolrCloudManager(), ccc.getZkStateReader());
+      } else {
+        ccc.offerStateUpdate(Utils.toJSON(m));
+      }
 
       // wait for a while until we don't see the collection
-      zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+      zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, Objects::isNull);
 
       // we can delete any remaining unique aliases
       if (!aliasReferences.isEmpty()) {
-        ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> {
+        ccc.getZkStateReader().aliasesManager.applyModificationAndExportToZk(a -> {
           for (String alias : aliasReferences) {
             a = a.cloneWithCollectionAlias(alias, null);
           }
           return a;
         });
+      }
+
+      // delete related config set iff: it is auto generated AND not related to any other collection
+      String configSetName = coll.getConfigName();
+
+      if (ConfigSetsHandler.isAutoGeneratedConfigSet(configSetName)) {
+        boolean configSetIsUsedByOtherCollection = false;
+
+        // make sure the configSet is not shared with other collections
+        // Similar to what happens in: ConfigSetCmds::deleteConfigSet
+        for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
+          String otherConfigSetName = entry.getValue().getConfigName();
+          if (configSetName.equals(otherConfigSetName)) {
+            configSetIsUsedByOtherCollection = true;
+            break;
+          }
+        }
+
+        if (!configSetIsUsedByOtherCollection) {
+          // delete the config set
+          ccc.getCoreContainer().getConfigSetService().deleteConfig(configSetName);
+        }
       }
 
 //      TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, timeSource);
@@ -185,21 +214,22 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   // This method returns the single collection aliases to delete, if present, or null
-  private List<String> checkAliasReference(ZkStateReader zkStateReader, String extCollection) throws Exception {
+  private List<String> checkAliasReference(ZkStateReader zkStateReader, String extCollection, boolean followAliases) throws Exception {
     Aliases aliases = zkStateReader.getAliases();
-    List<String> aliasesRefs = referencedByAlias(extCollection, aliases);
+    List<String> aliasesRefs = referencedByAlias(extCollection, aliases, followAliases);
     List<String> aliasesToDelete = new ArrayList<>();
     if (aliasesRefs.size() > 0) {
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
       aliases = zkStateReader.getAliases();
-      aliasesRefs = referencedByAlias(extCollection, aliases);
+      aliasesRefs = referencedByAlias(extCollection, aliases, followAliases);
+      String collection = followAliases ? aliases.resolveSimpleAlias(extCollection) : extCollection;
       if (aliasesRefs.size() > 0) {
         for (String alias : aliasesRefs) {
           // for back-compat in 8.x we don't automatically remove other
           // aliases that point only to this collection
           if (!extCollection.equals(alias)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Collection : " + extCollection + " is part of aliases: " + aliasesRefs + ", remove or modify the aliases before removing this collection.");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Collection : " + collection + " is part of aliases: " + aliasesRefs + ", remove or modify the aliases before removing this collection.");
           } else {
             aliasesToDelete.add(alias);
           }
@@ -209,30 +239,14 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     return aliasesToDelete;
   }
 
-  public static List<String> referencedByAlias(String extCollection, Aliases aliases) throws IllegalArgumentException {
+  public static List<String> referencedByAlias(String extCollection, Aliases aliases, boolean followAliases) throws IllegalArgumentException {
     Objects.requireNonNull(aliases);
     // this quickly produces error if the name is a complex alias
-    String collection = aliases.resolveSimpleAlias(extCollection);
+    String collection = followAliases ? aliases.resolveSimpleAlias(extCollection) : extCollection;
     return aliases.getCollectionAliasListMap().entrySet().stream()
+        .filter(e -> !e.getKey().equals(collection))
         .filter(e -> e.getValue().contains(collection) || e.getValue().contains(extCollection))
         .map(Map.Entry::getKey) // alias name
         .collect(Collectors.toList());
-  }
-
-  private void checkNotColocatedWith(ZkStateReader zkStateReader, String collection) throws Exception {
-    DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
-    if (docCollection != null)  {
-      String colocatedWith = docCollection.getStr(COLOCATED_WITH);
-      if (colocatedWith != null) {
-        DocCollection colocatedCollection = zkStateReader.getClusterState().getCollectionOrNull(colocatedWith);
-        if (colocatedCollection != null && collection.equals(colocatedCollection.getStr(WITH_COLLECTION))) {
-          // todo how do we clean up if reverse-link is not present?
-          // can't delete this collection because it is still co-located with another collection
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Collection: " + collection + " is co-located with collection: " + colocatedWith
-                  + " remove the link using modify collection API or delete the co-located collection: " + colocatedWith);
-        }
-      }
-    }
   }
 }

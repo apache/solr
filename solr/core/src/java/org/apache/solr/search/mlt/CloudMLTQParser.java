@@ -91,7 +91,7 @@ public class CloudMLTQParser extends QParser {
     String[] fieldNames;
 
     if (qf != null) {
-      ArrayList<String> fields = new ArrayList();
+      ArrayList<String> fields = new ArrayList<>();
       for (String fieldName : qf) {
         if (!StringUtils.isEmpty(fieldName))  {
           String[] strings = splitList.split(fieldName);
@@ -106,7 +106,7 @@ public class CloudMLTQParser extends QParser {
       boostFields = SolrPluginUtils.parseFieldBoosts(fields.toArray(new String[0]));
       fieldNames = boostFields.keySet().toArray(new String[0]);
     } else {
-      ArrayList<String> fields = new ArrayList();
+      ArrayList<String> fields = new ArrayList<>();
       for (String field : doc.getFieldNames()) {
         // Only use fields that are stored and have an explicit analyzer.
         // This makes sense as the query uses tf/idf/.. for query construction.
@@ -128,7 +128,7 @@ public class CloudMLTQParser extends QParser {
     for (String field : fieldNames) {
       Collection<Object> fieldValues = doc.getFieldValues(field);
       if (fieldValues != null) {
-        Collection<Object> values = new ArrayList();
+        Collection<Object> values = new ArrayList<>();
         for (Object val : fieldValues) {
           if (val instanceof IndexableField) {
             values.add(((IndexableField)val).stringValue());
@@ -187,7 +187,7 @@ public class CloudMLTQParser extends QParser {
     };
 
     core.getRequestHandler("/get").handleRequest(request, rsp);
-    NamedList response = rsp.getValues();
+    NamedList<?> response = rsp.getValues();
 
     return (SolrDocument) response.get("doc");
   }

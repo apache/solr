@@ -18,6 +18,7 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -53,23 +54,29 @@ import org.slf4j.LoggerFactory;
 /**
  * This class implements the functionality of deleting a collection level snapshot.
  */
-public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
+public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public DeleteSnapshotCmd (OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public DeleteSnapshotCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
-    String collectionName = ocmh.zkStateReader.getAliases().resolveSimpleAlias(extCollectionName);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collectionName;
+    if (followAliases) {
+      collectionName = ccc.getZkStateReader().getAliases().resolveSimpleAlias(extCollectionName);
+    } else {
+      collectionName = extCollectionName;
+    }
     String commitName =  message.getStr(CoreAdminParams.COMMIT_NAME);
     String asyncId = message.getStr(ASYNC);
-    NamedList shardRequestResults = new NamedList();
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
-    SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
+    NamedList<Object> shardRequestResults = new NamedList<>();
+    ShardHandler shardHandler = ccc.newShardHandler();
+    SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
 
     Optional<CollectionSnapshotMetaData> meta = SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);
     if (!meta.isPresent()) { // Snapshot not found. Nothing to do.
@@ -79,7 +86,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     log.info("Deleting a snapshot for collection={} with commitName={}", collectionName, commitName);
 
     Set<String> existingCores = new HashSet<>();
-    for (Slice s : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
+    for (Slice s : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica r : s.getReplicas()) {
         existingCores.add(r.getCoreName());
       }
@@ -92,9 +99,9 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
     log.info("Existing cores with snapshot for collection={} are {}", collectionName, existingCores);
-    for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
+    for (Slice slice : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         if (replica.getState() == State.DOWN) {
           continue; // Since replica is down - no point sending a request.
@@ -119,11 +126,12 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
-    NamedList success = (NamedList) shardRequestResults.get("success");
+    @SuppressWarnings("unchecked")
+    NamedList<Object> success = (NamedList<Object>) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for ( int i = 0 ; i < success.size() ; i++) {
-        NamedList resp = (NamedList)success.getVal(i);
+        NamedList<?> resp = (NamedList<?>)success.getVal(i);
         // Unfortunately async processing logic doesn't provide the "core" name automatically.
         String coreName = (String)resp.get("core");
         coresWithSnapshot.remove(coreName);
@@ -146,8 +154,10 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       CollectionSnapshotMetaData newResult = new CollectionSnapshotMetaData(meta.get().getName(), SnapshotStatus.Failed,
           meta.get().getCreationDate(), replicasWithSnapshot);
       SolrSnapshotManager.updateCollectionLevelSnapshot(zkClient, collectionName, newResult);
-      log.info("Saved snapshot information for collection={} with commitName={} in Zookeeper as follows", collectionName, commitName,
-          Utils.toJSON(newResult));
+      if (log.isInfoEnabled()) {
+        log.info("Saved snapshot information for collection={} with commitName={} in Zookeeper as follows: {}", collectionName, commitName,
+            Utils.toJSON(newResult));
+      }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to delete snapshot on cores " + coresWithSnapshot);
 
     } else {

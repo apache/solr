@@ -216,10 +216,10 @@ public class CartesianProductStream extends TupleStream implements Expressible {
       for(int offset = 0; offset < workingIndexes.length; ++offset){
         String fieldName = evaluators.get(offset).getName();
         Object evaluatedValue = evaluatedValues.get(fieldName);
-        if(evaluatedValue instanceof Collection){
+        if(evaluatedValue instanceof List){
           // because of the way a FieldEvaluator works we know that 
           // any collection is a list.
-          generated.put(fieldName, ((List<Object>)evaluatedValue).get(workingIndexes[offset]));
+          generated.put(fieldName, ((List<?>)evaluatedValue).get(workingIndexes[offset]));
         }
       }
       generatedTupleList.add(generated);

@@ -18,7 +18,8 @@
 
 For index updates to be visible (searchable), some kind of commit must reopen a searcher to a new point-in-time view of the index.
 
-The *realtime get* feature allows retrieval (by `unique-key`) of the latest version of any documents without the associated cost of reopening a searcher. This is primarily useful when using Solr as a NoSQL data store and not just a search index.
+The *realtime get* feature allows retrieval (by `unique-key`) of the latest version of any documents without the associated cost of reopening a searcher.
+This is primarily useful when using Solr as a NoSQL data store and not just a search index.
 
 Real Time Get relies on the update log feature, which is enabled by default and can be configured in `solrconfig.xml`:
 
@@ -29,7 +30,7 @@ Real Time Get relies on the update log feature, which is enabled by default and 
 </updateLog>
 ----
 
-Real Time Get requests can be performed using the `/get` handler which exists implicitly in Solr - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> - it's equivalent to the following configuration:
+Real Time Get requests can be performed using the `/get` handler which exists implicitly in Solr - see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>> - it's equivalent to the following configuration:
 
 [source,xml]
 ----
@@ -105,7 +106,8 @@ http://localhost:8983/api/collections/techproducts/get?id=mydoc
 ====
 --
 
-You can also specify multiple documents at once via the `ids` parameter and a comma separated list of ids, or by using multiple `id` parameters. If you specify multiple ids, or use the `ids` parameter, the response will mimic a normal query response to make it easier for existing clients to parse.
+You can also specify multiple documents at once via the `ids` parameter and a comma separated list of ids, or by using multiple `id` parameters.
+If you specify multiple ids, or use the `ids` parameter, the response will mimic a normal query response to make it easier for existing clients to parse.
 
 For example:
 
@@ -213,7 +215,8 @@ http://localhost:8983/api/collections/techproducts/get?id=mydoc&id=IW-02&fq=name
 
 [WARNING]
 ====
-Do *NOT* disable the realtime get handler at `/get` if you are using SolrCloud. Doing so will result in any leader election to cause a full sync in *ALL* replicas for the shard in question.
+Do *NOT* disable the realtime get handler at `/get` if you are using SolrCloud.
+Doing so will result in any leader election to cause a full sync in *ALL* replicas for the shard in question.
 
 Similarly, a replica recovery will also always fetch the complete index from the leader because a partial sync will not be possible in the absence of this handler.
 ====

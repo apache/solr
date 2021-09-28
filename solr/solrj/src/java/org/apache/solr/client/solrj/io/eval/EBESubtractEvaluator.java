@@ -43,11 +43,11 @@ public class EBESubtractEvaluator extends RecursiveObjectEvaluator implements Tw
     }
     if(first instanceof List && second instanceof List) {
       double[] result = MathArrays.ebeSubtract(
-          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+          ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
       );
 
-      List<Number> numbers = new ArrayList();
+      List<Number> numbers = new ArrayList<>();
       for (double d : result) {
         numbers.add(d);
       }

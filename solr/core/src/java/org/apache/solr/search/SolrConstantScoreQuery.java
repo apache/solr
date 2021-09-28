@@ -65,15 +65,6 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   }
 
   @Override
-  public void setCacheSep(boolean cacheSep) {
-  }
-
-  @Override
-  public boolean getCacheSep() {
-    return false;
-  }
-
-  @Override
   public void setCost(int cost) {
     this.cost = cost;
   }
@@ -84,7 +75,7 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   }
 
   protected class ConstantWeight extends ConstantScoreWeight {
-    private Map context;
+    private Map<Object,Object> context;
     private ScoreMode scoreMode;
 
     public ConstantWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {

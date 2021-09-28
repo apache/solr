@@ -17,17 +17,16 @@
 
 package org.apache.solr.schema;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.index.IndexableField;
@@ -123,9 +122,8 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, exceptionMessage);
         }
         if (nodesLength > 1) {
-          if (log.isWarnEnabled())
-            log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken.",
-                     ftName, enumName, enumsConfigFile);
+          log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken."
+              , ftName, enumName, enumsConfigFile);
         }
         final Node enumNode = nodes.item(nodesLength - 1);
         final NodeList valueNodes = (NodeList) xpath.evaluate("value", enumNode, XPathConstants.NODESET);
@@ -314,7 +312,7 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
   
   @Override
   public Object toNativeType(Object val) {
-    if (val instanceof CharSequence || val instanceof String) {
+    if (val instanceof CharSequence) {
       final String str = val.toString();
       final Integer entry = enumMapping.enumStringToIntMap.get(str);
       if (entry != null) {

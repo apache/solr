@@ -70,7 +70,7 @@ public class RTimerTree extends RTimer {
     return asNamedList().toString();
   }
 
-  public NamedList asNamedList() {
+  public NamedList<Object> asNamedList() {
     NamedList<Object> m = new SimpleOrderedMap<>();
     m.add( "time", getTime() );
     if( children.size() > 0 ) {

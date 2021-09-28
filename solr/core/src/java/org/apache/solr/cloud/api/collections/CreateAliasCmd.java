@@ -41,22 +41,21 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class CreateAliasCmd extends AliasCmd {
 
-  private final OverseerCollectionMessageHandler ocmh;
 
   private static boolean anyRoutingParams(ZkNodeProps message) {
     return message.keySet().stream().anyMatch(k -> k.startsWith(CollectionAdminParams.ROUTER_PREFIX));
   }
 
   @SuppressWarnings("WeakerAccess")
-  public CreateAliasCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public CreateAliasCmd(CollectionCommandContext ccc) {
+    super(ccc);
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results)
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
     // make sure we have the latest version of existing aliases
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       zkStateReader.aliasesManager.update();
@@ -108,7 +107,6 @@ public class CreateAliasCmd extends AliasCmd {
         .collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
   private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
     // Validate we got a basic minimum
     if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
@@ -143,7 +141,7 @@ public class CreateAliasCmd extends AliasCmd {
 
   private void ensureAliasCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
     // Create the collection
-    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
+    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ccc);
     validateAllCollectionsExistAndNoDuplicates(Collections.singletonList(initialCollectionName), zkStateReader);
   }
 

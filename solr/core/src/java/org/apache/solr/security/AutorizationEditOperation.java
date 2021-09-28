@@ -30,6 +30,7 @@ import static org.apache.solr.common.util.Utils.getDeepCopy;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
+// TODO is this a typo - should be Authorization?
 enum AutorizationEditOperation {
   SET_USER_ROLE("set-user-role") {
     @Override
@@ -54,6 +55,7 @@ enum AutorizationEditOperation {
   },
   SET_PERMISSION("set-permission") {
     @Override
+    @SuppressWarnings({"unchecked"})
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
       Integer index = op.getInt("index", null);
       Integer beforeIdx = op.getInt("before",null);
@@ -76,12 +78,15 @@ enum AutorizationEditOperation {
         return null;
       }
       if(op.hasError()) return null;
+      @SuppressWarnings({"rawtypes"})
       List<Map> permissions = getListValue(latestConf, "permissions");
       setIndex(permissions);
+      @SuppressWarnings({"rawtypes"})
       List<Map> permissionsCopy = new ArrayList<>();
       boolean beforeSatisfied = beforeIdx == null;
       boolean indexSatisfied = index == null;
       for (int i = 0; i < permissions.size(); i++) {
+        @SuppressWarnings({"rawtypes"})
         Map perm = permissions.get(i);
         Integer thisIdx = (Integer) perm.get("index");
         if (thisIdx.equals(beforeIdx)) {
@@ -115,6 +120,7 @@ enum AutorizationEditOperation {
   },
   UPDATE_PERMISSION("update-permission") {
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
       Integer index = op.getInt("index");
       if (op.hasError()) return null;
@@ -134,11 +140,14 @@ enum AutorizationEditOperation {
   },
   DELETE_PERMISSION("delete-permission") {
     @Override
+    @SuppressWarnings({"unchecked"})
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
       Integer id = op.getInt("");
       if(op.hasError()) return null;
+      @SuppressWarnings({"rawtypes"})
       List<Map> p = getListValue(latestConf, "permissions");
       setIndex(p);
+      @SuppressWarnings({"rawtypes"})
       List<Map> c = p.stream().filter(map -> !id.equals(map.get("index"))).collect(Collectors.toList());
       if(c.size() == p.size()){
         op.addError("No such index :"+ id);
@@ -166,6 +175,7 @@ enum AutorizationEditOperation {
     return null;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   static void setIndex(List<Map> permissionsCopy) {
     AtomicInteger counter = new AtomicInteger(0);
     permissionsCopy.stream().forEach(map -> map.put("index", counter.incrementAndGet()));

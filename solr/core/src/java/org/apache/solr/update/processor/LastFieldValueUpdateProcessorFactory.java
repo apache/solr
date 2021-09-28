@@ -53,20 +53,20 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
 public final class LastFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
-  public Collection<Object> pickSubset(Collection<Object> values) {
+  public <T> Collection<T> pickSubset(Collection<T> values) {
 
-    Object result = null;
+    T result = null;
 
     if (values instanceof List) {
       // optimize index lookup
-      List l = (List)values;
+      List<T> l = (List<T>)values;
       result = l.get(l.size()-1);
     } else if (values instanceof SortedSet) {
       // optimize tail lookup
-      result = ((SortedSet)values).last();
+      result = ((SortedSet<T>)values).last();
     } else {
       // trust the iterator
-      for (Object o : values) { result = o; }
+      for (T o : values) { result = o; }
     }
 
     return Collections.singletonList(result);

@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -51,21 +52,19 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() throws IOException {
-    File tmpDir = initCoreDataDir;
     // by default, use relative file in dataDir
-    healthcheckFile = new File(tmpDir, fileName);
+    healthcheckFile = new File(initAndGetDataDir(), fileName);
     String fileNameParam = fileName;
 
     // sometimes randomly use an absolute File path instead 
     if (random().nextBoolean()) {
-      healthcheckFile = new File(tmpDir, fileName);
       fileNameParam = healthcheckFile.getAbsolutePath();
     } 
       
     if (healthcheckFile.exists()) FileUtils.forceDelete(healthcheckFile);
 
     handler = new PingRequestHandler();
-    NamedList initParams = new NamedList();
+    NamedList<String> initParams = new NamedList<>();
     initParams.add(PingRequestHandler.HEALTHCHECK_FILE_PARAM,
                    fileNameParam);
     handler.init(initParams);
@@ -76,7 +75,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     
     // for this test, we don't want any healthcheck file configured at all
     handler = new PingRequestHandler();
-    handler.init(new NamedList());
+    handler.init(new NamedList<>());
     handler.inform(h.getCore());
 
     SolrQueryResponse rsp = null;
@@ -164,13 +163,8 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
   
   public void testBadActionRaisesException() throws Exception {
-    
-    try {
-      SolrQueryResponse rsp = makeRequest(handler, req("action", "badaction"));
-      fail("Should have thrown a SolrException for the bad action");
-    } catch (SolrException se){
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
-    }
+    SolrException se = expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
   }
 
  public void testPingInClusterWithNoHealthCheck() throws Exception {
@@ -192,6 +186,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       String configName = "solrCloudCollectionConfig";
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
       CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(miniCluster.getSolrClient());
 
       // Send distributed and non-distributed ping query

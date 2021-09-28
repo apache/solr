@@ -231,11 +231,12 @@ class XLSXWriter extends TabularResponseWriter {
   }
 
   //NOTE: a document cannot currently contain another document
-  List tmpList;
+  List<Object> tmpList;
+
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
     if (tmpList == null) {
-      tmpList = new ArrayList(1);
+      tmpList = new ArrayList<>(1);
       tmpList.add(null);
     }
 
@@ -248,10 +249,10 @@ class XLSXWriter extends TabularResponseWriter {
       }
 
       if ((xlField.sf != null && xlField.sf.multiValued()) || nVals > 1) {
-        Collection values;
+        Collection<?> values;
         // normalize to a collection
         if (val instanceof Collection) {
-          values = (Collection)val;
+          values = (Collection<?>)val;
         } else {
           tmpList.set(0, val);
           values = tmpList;
@@ -262,7 +263,7 @@ class XLSXWriter extends TabularResponseWriter {
       } else {
         // normalize to first value
         if (val instanceof Collection) {
-          Collection values = (Collection)val;
+          Collection<?> values = (Collection<?>)val;
           val = values.iterator().next();
         }
         writeVal(xlField.name, val);
@@ -277,7 +278,7 @@ class XLSXWriter extends TabularResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator val) throws IOException {
+  public void writeArray(String name, Iterator<?> val) throws IOException {
     StringBuffer output = new StringBuffer();
     while (val.hasNext()) {
       Object v = val.next();

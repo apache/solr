@@ -28,7 +28,7 @@ limitations under the License.
       </p>
       <br/>
       <div ng-show="error" class="alert alert-danger">{{error}}</div>
-      <form name="form" ng-submit="login()" role="form">
+      <form name="form" ng-submit="login()" role="form" autocomplete="off">
         <div class="form-group">
           <label for="username">Username</label>
           <input type="text" name="username" id="username" class="form-control" ng-model="username" required />
@@ -68,6 +68,23 @@ limitations under the License.
       For more information, consult 
       <a href="https://lucene.apache.org/solr/guide/kerberos-authentication-plugin.html">
         Solr's Kerberos documentation
+      </a>.
+    </p>
+    The response from the server was:
+    <hr/>
+    <pre>HTTP 401 {{statusText}}
+WWW-Authenticate: {{wwwAuthHeader}}</pre>
+    <hr/>
+  </div>
+
+  <div ng-show="authScheme === 'Certificate'">
+    <h1>Certificate Authentication</h1>
+    <p>Your browser did not provide the required information to authenticate using PKI Certificates.
+      Please check that your computer has a valid PKI certificate for communicating with Solr,
+      and that your browser is properly configured to provide that certificate when required.
+      For more information, consult
+      <a href="https://lucene.apache.org/solr/guide/cert-authentication-plugin.html">
+        Solr's Certificate Authentication documentation
       </a>.
     </p>
     The response from the server was:

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -41,11 +42,15 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   /** The order of these fieldNames should correspond to the order of sort field values retrieved from the shard */
   protected List<String> fieldNames = new ArrayList<>();
 
+  @SuppressWarnings("unchecked")
+  private static Comparator<ShardDoc>[] newArray(int sz) {
+    return (Comparator<ShardDoc>[]) Array.newInstance(Comparator.class, sz);
+  }
+
   public ShardFieldSortedHitQueue(SortField[] fields, int size, IndexSearcher searcher) {
     super(size);
     final int n = fields.length;
-    //noinspection unchecked
-    comparators = new Comparator[n];
+    comparators = newArray(n);
     this.fields = new SortField[n];
     for (int i = 0; i < n; ++i) {
 
@@ -143,12 +148,13 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
     Object sortVal(ShardDoc shardDoc) {
       assert(shardDoc.sortFieldValues.getName(fieldNum).equals(fieldName));
-      List lst = (List)shardDoc.sortFieldValues.getVal(fieldNum);
+      List<Object> lst = shardDoc.sortFieldValues.getVal(fieldNum);
       return lst.get(shardDoc.orderInShard);
     }
   }
 
   Comparator<ShardDoc> comparatorFieldComparator(SortField sortField) {
+    @SuppressWarnings({"rawtypes"})
     final FieldComparator fieldComparator = sortField.getComparator(0, 0);
     return new ShardComparator(sortField) {
       // Since the PriorityQueue keeps the biggest elements by default,
@@ -156,8 +162,8 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       // smallest elements are kept instead of the largest... hence
       // the negative sign.
       @Override
+      @SuppressWarnings({"unchecked"})
       public int compare(final ShardDoc o1, final ShardDoc o2) {
-        //noinspection unchecked
         return -fieldComparator.compareValues(sortVal(o1), sortVal(o2));
       }
     };

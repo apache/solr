@@ -29,6 +29,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   
   @Override
   public void distribSetUp() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     super.distribSetUp();
     System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
   }
@@ -41,6 +42,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   @Test 
   public void test() throws Exception {
     del("*:*");
+    commit();
     String aDocId=null;
     for (int i = 0; i < clients.size(); i++) {
       int shard = i + 1;

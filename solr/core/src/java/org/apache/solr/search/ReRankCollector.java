@@ -42,9 +42,9 @@ import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrRequestInfo;
 
 /* A TopDocsCollector used by reranking queries. */
-public class ReRankCollector extends TopDocsCollector {
+public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
-  final private TopDocsCollector  mainCollector;
+  final private TopDocsCollector<? extends ScoreDoc> mainCollector;
   final private IndexSearcher searcher;
   final private int reRankDocs;
   final private int length;
@@ -68,11 +68,11 @@ public class ReRankCollector extends TopDocsCollector {
     Sort sort = cmd.getSort();
     if(sort == null) {
       this.sort = null;
-      this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
+      this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length), cmd.getMinExactCount());
     } else {
       this.sort = sort = sort.rewrite(searcher);
       //scores are needed for Rescorer (regardless of whether sort needs it)
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
+      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), cmd.getMinExactCount());
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -89,7 +89,7 @@ public class ReRankCollector extends TopDocsCollector {
 
   @Override
   public ScoreMode scoreMode() {
-    return sort == null || sort.needsScores() ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
+    return this.mainCollector.scoreMode();
   }
 
   public TopDocs topDocs(int start, int howMany) {
@@ -120,7 +120,7 @@ public class ReRankCollector extends TopDocsCollector {
 
       if(boostedPriority != null) {
         SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-        Map requestContext = null;
+        Map<Object,Object> requestContext = null;
         if(info != null) {
           requestContext = info.getReq().getContext();
         }
@@ -152,7 +152,7 @@ public class ReRankCollector extends TopDocsCollector {
     }
   }
 
-  public static class BoostedComp implements Comparator {
+  public static class BoostedComp implements Comparator<ScoreDoc> {
     IntFloatHashMap boostedMap;
 
     public BoostedComp(IntIntHashMap boostedDocs, ScoreDoc[] scoreDocs, float maxScore) {
@@ -168,9 +168,7 @@ public class ReRankCollector extends TopDocsCollector {
       }
     }
 
-    public int compare(Object o1, Object o2) {
-      ScoreDoc doc1 = (ScoreDoc) o1;
-      ScoreDoc doc2 = (ScoreDoc) o2;
+    public int compare(ScoreDoc doc1, ScoreDoc doc2) {
       float score1 = doc1.score;
       float score2 = doc2.score;
       int idx;

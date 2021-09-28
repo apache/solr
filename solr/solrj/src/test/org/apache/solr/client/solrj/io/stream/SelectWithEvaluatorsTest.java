@@ -68,7 +68,9 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     } else {
       collection = COLLECTIONORALIAS;
     }
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
     if (useAlias) {
@@ -154,7 +156,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     int i = 0;
     for(int val : ids) {
       Tuple t = tuples.get(i);
-      List<Map> tip = t.getMaps("group");
+      List<Map<?,?>> tip = t.getMaps("group");
       int id = (int)tip.get(0).get("id");
       if(id != val) {
         throw new Exception("Found value:"+id+" expecting:"+val);
@@ -167,7 +169,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
   protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(!tuple.fields.containsKey(field)){
+        if(!tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
         }
       }
@@ -177,7 +179,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
   protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(tuple.fields.containsKey(field)){
+        if(tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
         }
       }
@@ -228,39 +230,4 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
     return true;
   }
-  
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
-    if(maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
-    }
-
-    int i=0;
-    for(int val : ids) {
-      Map t = maps.get(i);
-      String tip = (String)t.get("id");
-      if(!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
-  private boolean assertList(List list, Object... vals) throws Exception {
-
-    if(list.size() != vals.length) {
-      throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);
-    }
-
-    for(int i=0; i<list.size(); i++) {
-      Object a = list.get(i);
-      Object b = vals[i];
-      if(!a.equals(b)) {
-        throw new Exception("List items not equals:"+a+" : "+b);
-      }
-    }
-
-    return true;
-  }
-
 }

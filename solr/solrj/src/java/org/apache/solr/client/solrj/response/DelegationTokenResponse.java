@@ -40,7 +40,7 @@ public abstract class DelegationTokenResponse extends SolrResponseBase {
      */
     public String getDelegationToken() {
       try {
-        Map map = (Map)getResponse().get("Token");
+        Map<?,?> map = (Map<?,?>)getResponse().get("Token");
         if (map != null) {
           return (String)map.get("urlString");
         }
@@ -76,7 +76,9 @@ public abstract class DelegationTokenResponse extends SolrResponseBase {
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public NamedList<Object> processResponse(InputStream body, String encoding) {
+      @SuppressWarnings({"rawtypes"})
       Map map = null;
       try {
         ObjectBuilder builder = new ObjectBuilder(

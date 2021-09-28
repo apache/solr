@@ -78,7 +78,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
 
 
   @Override
-  public DocIdSet getDocIdSet(final Map context, final LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
+  public DocIdSet getDocIdSet(final Map<Object, Object> context, final LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
     // NB the IndexSearcher parameter here can be null because Filter Weights don't
     // actually use it.
     Weight weight = createWeight(null, ScoreMode.COMPLETE, 1);
@@ -101,7 +101,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     valueSource.createWeight(context, searcher);
   }
 

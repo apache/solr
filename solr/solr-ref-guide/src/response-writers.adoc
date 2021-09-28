@@ -1,5 +1,5 @@
 = Response Writers
-:page-children: velocity-response-writer
+
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -21,7 +21,8 @@ A Response Writer generates the formatted response of a search.
 
 Solr supports a variety of Response Writers to ensure that query responses can be parsed by the appropriate language or application.
 
-The `wt` parameter selects the Response Writer to be used. The list below describe shows the most common settings for the `wt` parameter, with links to further sections that discuss them in more detail.
+The `wt` parameter selects the Response Writer to be used.
+The list below describe shows the most common settings for the `wt` parameter, with links to further sections that discuss them in more detail.
 
 * <<CSV Response Writer,csv>>
 * <<GeoJSON Response Writer,geojson>>
@@ -32,7 +33,6 @@ The `wt` parameter selects the Response Writer to be used. The list below descri
 * <<Python Response Writer,python>>
 * <<Ruby Response Writer,ruby>>
 * <<Smile Response Writer,smile>>
-* <<Velocity Response Writer,velocity>>
 * <<XLSX Response Writer,xlsx>>
 * <<Standard XML Response Writer,xml>>
 * <<XSLT Response Writer,xslt>>
@@ -74,7 +74,7 @@ Here is a sample response for a simple query like `q=id:VS1GB400C3`:
   }}
 ----
 
-The default mime type for the JSON writer is `application/json`, however this can be overridden in the `solrconfig.xml` - such as in this example from the "```techproducts```" configuration:
+The default mime type for the JSON writer is `application/json`, however this can be overridden in the `solrconfig.xml` - such as in this example from the "techproducts" configset:
 
 [source,xml]
 ----
@@ -88,21 +88,28 @@ The default mime type for the JSON writer is `application/json`, however this ca
 </queryResponseWriter>
 ----
 
+WARNING: If you using the JSON formatted response with JSONP to query across boundaries, having Solr respond with `text/plain` mime type when the
+browser expects `application/json` will trigger the browser to block the request.
+
 === JSON-Specific Parameters
 
 ==== json.nl
 
-This parameter controls the output format of NamedLists, where order is more important than access by name. NamedList is currently used for field faceting data.
+This parameter controls the output format of NamedLists, where order is more important than access by name.
+NamedList is currently used for field faceting data.
 
 The `json.nl` parameter takes the following values:
 
 `flat`::
-The default. NamedList is represented as a flat array, alternating names and values.
+The default.
+NamedList is represented as a flat array, alternating names and values.
 +
 With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output would be `["a",1, "bar","foo", null,3, null,null]`.
 
 `map`::
-NamedList is represented as a JSON object. Although this is the simplest mapping, a NamedList can have optional keys, repeated keys, and preserves order. Using a JSON object (essentially a map or hash) for a NamedList results in the loss of some information.
+NamedList is represented as a JSON object.
+Although this is the simplest mapping, a NamedList can have optional keys, repeated keys, and preserves order.
+Using a JSON object (essentially a map or hash) for a NamedList results in the loss of some information.
 +
 With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output would be `{"a":1, "bar":"foo", "":3, "":null}`.
 
@@ -131,47 +138,81 @@ With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output wou
 
 == Standard XML Response Writer
 
-The XML Response Writer is the most general purpose and reusable Response Writer currently included with Solr. It is the format used in most discussions and documentation about the response of Solr queries.
+The XML Response Writer is the most general purpose and reusable Response Writer currently included with Solr.
+It is the format used in most discussions and documentation about the response of Solr queries.
 
 Note that the XSLT Response Writer can be used to convert the XML produced by this writer to other vocabularies or text-based formats.
 
 The behavior of the XML Response Writer can be driven by the following query parameters.
 
 `version`::
-The `version` parameter determines the XML protocol used in the response. Clients are strongly encouraged to _always_ specify the protocol version, so as to ensure that the format of the response they receive does not change unexpectedly if the Solr server is upgraded and a new default format is introduced.
 +
-The only currently supported version value is `2.2`. The format of the `responseHeader` changed to use the same `<lst>` structure as the rest of the response.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2.2`
+|===
++
+The `version` parameter determines the XML protocol used in the response.
+Clients are strongly encouraged to _always_ specify the protocol version, so as to ensure that the format of the response they receive does not change unexpectedly if the Solr server is upgraded and a new default format is introduced.
++
+The only currently supported version value is `2.2`.
+The format of the `responseHeader` changed to use the same `<lst>` structure as the rest of the response.
 +
 The default value is the latest supported.
 
 `stylesheet`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The `stylesheet` parameter can be used to direct Solr to include a `<?xml-stylesheet type="text/xsl" href="..."?>` declaration in the XML response it returns.
 +
 The default behavior is not to return any stylesheet declaration at all.
 +
 [IMPORTANT]
 ====
-Use of the `stylesheet` parameter is discouraged, as there is currently no way to specify external stylesheets, and no stylesheets are provided in the Solr distributions. This is a legacy parameter, which may be developed further in a future release.
+Use of the `stylesheet` parameter is discouraged, as there is currently no way to specify external stylesheets, and no stylesheets are provided in the Solr distributions.
+This is a legacy parameter, which may be developed further in a future release.
 ====
 
 `indent`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 If the `indent` parameter is used, and has a non-blank value, then Solr will make some attempts at indenting its XML response to make it more readable by humans.
 +
 The default behavior is not to indent.
 
 == XSLT Response Writer
 
-The XSLT Response Writer applies an XML stylesheet to output. It can be used for tasks such as formatting results for an RSS feed.
+The XSLT Response Writer applies an XML stylesheet to output.
+It can be used for tasks such as formatting results for an RSS feed.
 
-=== tr Parameter
+This response writer is part of the <<script-update-processor.adoc#,scripting contrib>>.
+Since it is a contrib, it requires configuration before it can be used.
 
-The XSLT Response Writer accepts one parameter: the `tr` parameter, which identifies the XML transformation to use. The transformation must be found in the Solr `conf/xslt` directory.
+The XSLT Response Writer accepts one parameter:
 
+`tr`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Identifies the XML transformation to use.
+The transformation must be found in the Solr `conf/xslt` directory.
++
 The Content-Type of the response is set according to the `<xsl:output>` statement in the XSLT transform, for example: `<xsl:output media-type="text/html"/>`
 
 === XSLT Configuration
 
-The example below, from the `sample_techproducts_configs` <<response-writers.adoc#response-writers,configset>> in the Solr distribution, shows how the XSLT Response Writer is configured.
+The example below, from the `sample_techproducts_configs` <<config-sets.adoc#,configset>> in the Solr distribution, shows how the XSLT Response Writer is configured.
 
 [source,xml]
 ----
@@ -180,20 +221,69 @@ The example below, from the `sample_techproducts_configs` <<response-writers.ado
   every xsltCacheLifetimeSeconds at most.
 -->
 <queryResponseWriter name="xslt"
-                     class="org.apache.solr.request.XSLTResponseWriter">
+                     class="solr.scripting.xslt.XSLTResponseWriter">
   <int name="xsltCacheLifetimeSeconds">5</int>
 </queryResponseWriter>
 ----
 
-A value of 5 for `xsltCacheLifetimeSeconds` is good for development, to see XSLT changes quickly. For production you probably want a much higher value.
+A value of 5 for `xsltCacheLifetimeSeconds` is good for development, to see XSLT changes quickly.
+For production you probably want a much higher value.
+
+=== XSLT Writer Example
+
+`\http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xslt&tr=example_rss.xsl` transforms the results into a RSS feed:
+
+[source,xml]
+----
+<rss version="2.0">
+  <channel>
+    <title>Example Solr RSS 2.0 Feed</title>
+    <link>http://localhost:8983/solr</link>
+    <description>
+      This has been formatted by the sample "example_rss.xsl" transform - use your own XSLT to get a nicer RSS feed.
+    </description>
+    <language>en-us</language>
+    <docs>http://localhost:8983/solr</docs>
+    <item>
+      <title>iPod & iPod Mini USB 2.0 Cable</title>
+      <link>
+        http://localhost:8983/solr/select?q=id:IW-02
+      </link>
+      <description/>
+      <pubDate/>
+      <guid>
+        http://localhost:8983/solr/select?q=id:IW-02
+      </guid>
+    </item>
+
+----
+
+The `sample_techproducts_configs` also includes `example.xsl` which generates a simplistic HTML page
+and `example_atom.xsl` that outputs in the Atom format.
+
+`updateXml.xsl` can be used to convert the standard Solr XML output into the Solr XML add docs format!  Indeed you
+could round trip your data via:
+
+[source,bash]
+----
+curl -o docs_formatted_as_solr_add.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xslt&tr=updateXml.xsl"
+curl -X POST -H "Content-Type: text/xml" -d @docs_formatted_as_solr_add.xml "http://localhost:8983/solr/techproducts/update?commitWithin=1000&overwrite=true"
+----
+
+Lastly, the `luke.xsl` transformation demonstrates that you can apply very sophisticated transformations: `\http://localhost:8983/solr/techproducts/admin/luke?wt=xslt&tr=luke.xsl`
+
 
 == Binary Response Writer
 
-This is a custom binary format used by Solr for inter-node communication as well as client-server communication. SolrJ uses this as the default for indexing as well as querying. See <<client-apis.adoc#client-apis,Client APIs>> for more details.
+This is a custom binary format used by Solr for inter-node communication as well as client-server communication.
+SolrJ uses this as the default for indexing as well as querying.
+See <<client-apis.adoc#,Client APIs>> for more details.
 
 == GeoJSON Response Writer
 
-Returns Solr results in http://geojson.org[GeoJSON] augmented with Solr-specific JSON. To use this, set `wt=geojson` and `geojson.field` to the name of a spatial Solr field. Not all spatial fields types are supported, and you'll get an error if you use an unsupported one.
+Returns Solr results in http://geojson.org[GeoJSON] augmented with Solr-specific JSON.
+To use this, set `wt=geojson` and `geojson.field` to the name of a spatial Solr field.
+Not all spatial fields types are supported, and you'll get an error if you use an unsupported one.
 
 == Python Response Writer
 
@@ -208,7 +298,8 @@ Solr has an optional Python response format that extends its JSON output in the 
 [[php-writer]]
 == PHP Response Writer and PHP Serialized Response Writer
 
-Solr has a PHP response format that outputs an array (as PHP code) which can be evaluated. Setting the `wt` parameter to `php` invokes the PHP Response Writer.
+Solr has a PHP response format that outputs an array (as PHP code) which can be evaluated.
+Setting the `wt` parameter to `php` invokes the PHP Response Writer.
 
 Example usage:
 
@@ -219,7 +310,8 @@ eval("$result = " . $code . ";");
 print_r($result);
 ----
 
-Solr also includes a PHP Serialized Response Writer that formats output in a serialized array. Setting the `wt` parameter to `phps` invokes the PHP Serialized Response Writer.
+Solr also includes a PHP Serialized Response Writer that formats output in a serialized array.
+Setting the `wt` parameter to `phps` invokes the PHP Serialized Response Writer.
 
 Example usage:
 
@@ -236,7 +328,8 @@ Solr has an optional Ruby response format that extends its JSON output in the fo
 
 * Ruby's single quoted strings are used to prevent possible string exploits.
 * \ and ' are the only two characters escaped.
-* Unicode escapes are not used. Data is written as raw UTF-8.
+* Unicode escapes are not used.
+Data is written as raw UTF-8.
 * nil used for null.
 * \=> is used as the key/value separator in maps.
 
@@ -255,13 +348,15 @@ rsp['response']['docs'].each { |doc| puts 'name field = ' + doc['name'\] }
 
 == CSV Response Writer
 
-The CSV response writer returns a list of documents in comma-separated values (CSV) format. Other information that would normally be included in a response, such as facet information, is excluded.
+The CSV response writer returns a list of documents in comma-separated values (CSV) format.
+Other information that would normally be included in a response, such as facet information, is excluded.
 
-The CSV response writer supports multi-valued fields, as well as<<transforming-result-documents.adoc#transforming-result-documents,pseudo-fields>>, and the output of this CSV format is compatible with Solr's https://wiki.apache.org/solr/UpdateCSV[CSV update format].
+The CSV response writer supports multi-valued fields, as well as <<document-transformers.adoc#,pseudo-fields>>, and the output of this CSV format is compatible with Solr's <<indexing-with-update-handlers.adoc#csv-formatted-index-updates,CSV update format>>.
 
 === CSV Parameters
 
-These parameters specify the CSV format that will be returned. You can accept the default values or specify your own.
+These parameters specify the CSV format that will be returned.
+You can accept the default values or specify your own.
 
 [width="50%",options="header",]
 |===
@@ -271,12 +366,14 @@ These parameters specify the CSV format that will be returned. You can accept th
 |csv.separator |`,`
 |csv.header |Defaults to `true`. If `false`, Solr does not print the column headers.
 |csv.newline |`\n`
-|csv.null |Defaults to a zero length string. Use this parameter when a document has no value for a particular field.
+|csv.null |Defaults to a zero length string.
+Use this parameter when a document has no value for a particular field.
 |===
 
 === Multi-Valued Field CSV Parameters
 
-These parameters specify how multi-valued fields are encoded. Per-field overrides for these values can be done using `f.<fieldname>.csv.separator=|`.
+These parameters specify how multi-valued fields are encoded.
+Per-field overrides for these values can be done using `f.<fieldname>.csv.separator=|`.
 
 [width="50%",options="header",]
 |===
@@ -298,27 +395,24 @@ F8V7067-APL-KIT,"electronics,connector",Belkin Mobile Power Cord for iPod w/ Doc
 MA147LL/A,"electronics,music",Apple 60 GB iPod with Video Playback Black,10,399.0,0.2446348
 ----
 
-[[velocity-writer]]
-== Velocity Response Writer
-
-The `VelocityResponseWriter` processes the Solr response and request context through Apache Velocity templating.
-
-See the <<velocity-response-writer.adoc#velocity-response-writer,Velocity Response Writer>> section for details.
-
 == Smile Response Writer
 
-The Smile format is a JSON-compatible binary format, described in detail here: http://wiki.fasterxml.com/SmileFormat.
+The Smile format is a JSON-compatible binary format, described in detail here: https://en.wikipedia.org/wiki/Smile_%28data_interchange_format%29[https://en.wikipedia.org/wiki/Smile_(data_interchange_format)]
 
 == XLSX Response Writer
 
-Use this to get the response as a spreadsheet in the .xlsx (Microsoft Excel) format. It accepts parameters in the form `colwidth.<field-name>` and `colname.<field-name>` which helps you customize the column widths and column names.
+Use this to get the response as a spreadsheet in the .xlsx (Microsoft Excel) format.
+It accepts parameters in the form `colwidth.<field-name>` and `colname.<field-name>` which helps you customize the column widths and column names.
 
-This response writer has been added as part of the extraction library, and will only work if the extraction contrib is present in the server classpath. Defining the classpath with the `lib` directive is not sufficient. Instead, you will need to copy the necessary .jars to the Solr webapp's `lib` directory manually. You can run these commands from your `$SOLR_INSTALL` directory:
+This response writer has been added as part of the extraction library, and will only work if the extraction contrib is present in the server classpath.
+Defining the classpath with the `lib` directive is not sufficient.
+Instead, you will need to copy the necessary .jars to the Solr webapp's `lib` directory manually.
+You can run these commands from your `$SOLR_INSTALL` directory:
 
 [source,bash]
 ----
 cp contrib/extraction/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
-cp dist/solr-cell-6.3.0.jar server/solr-webapp/webapp/WEB-INF/lib/
+cp dist/solr-extraction-*.jar server/solr-webapp/webapp/WEB-INF/lib/
 ----
 
 Once the libraries are in place, you can add `wt=xlsx` to your request, and results will be returned as an XLSX sheet.

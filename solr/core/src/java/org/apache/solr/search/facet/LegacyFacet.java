@@ -272,7 +272,7 @@ public class LegacyFacet {
 
   private Map<String,Object> getCurrentSubs() {
     if (currentSubs == null) {
-      currentSubs = new LinkedHashMap();
+      currentSubs = new LinkedHashMap<>();
       currentCommand.put("facet", currentSubs);
     }
     return currentSubs;

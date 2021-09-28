@@ -138,9 +138,10 @@ public abstract class FieldMutatingUpdateProcessorFactory
         "selector was never initialized, inform(SolrCore) never called???");
   }
 
-  public static SelectorParams parseSelectorParams(NamedList args) {
+
+  public static SelectorParams parseSelectorParams(NamedList<?> args) {
     SelectorParams params = new SelectorParams();
-    
+
     params.fieldName = new HashSet<>(args.removeConfigArgs("fieldName"));
     params.typeName = new HashSet<>(args.removeConfigArgs("typeName"));
 
@@ -168,9 +169,9 @@ public abstract class FieldMutatingUpdateProcessorFactory
     return params;
   }
                                
-  public static Collection<SelectorParams> parseSelectorExclusionParams(NamedList args) {
+  public static Collection<SelectorParams> parseSelectorExclusionParams(NamedList<?> args) {
     Collection<SelectorParams> exclusions = new ArrayList<>();
-    List<Object> excList = args.getAll("exclude");
+    List<?> excList = args.getAll("exclude");
     for (Object excObj : excList) {
       if (null == excObj) {
         throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
@@ -180,7 +181,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
         throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
             "'exclude' init param must be <lst/>");
       }
-      NamedList exc = (NamedList) excObj;
+      NamedList<?> exc = (NamedList<?>) excObj;
       exclusions.add(parseSelectorParams(exc));
       if (0 < exc.size()) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -201,9 +202,8 @@ public abstract class FieldMutatingUpdateProcessorFactory
    * Will error if any unexpected init args are found, so subclasses should
    * remove any subclass-specific init args before calling this method.
    */
-  @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
 
     inclusions = parseSelectorParams(args);
     exclusions = parseSelectorExclusionParams(args);

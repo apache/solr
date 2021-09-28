@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import org.apache.solr.cluster.api.HashRange;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -50,6 +51,7 @@ public abstract class DocRouter {
 
   public String getRouteField(DocCollection coll) {
     if (coll == null) return null;
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) coll.get(DOC_ROUTER);
     if (m == null) return null;
     return (String) m.get("field");
@@ -85,7 +87,7 @@ public abstract class DocRouter {
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   // TODO: ranges may not be all contiguous in the future (either that or we will
   // need an extra class to model a collection of ranges)
-  public static class Range implements JSONWriter.Writable, Comparable<Range> {
+  public static class Range implements JSONWriter.Writable, Comparable<Range> , HashRange {
     public int min;  // inclusive
     public int max;  // inclusive
 
@@ -93,6 +95,16 @@ public abstract class DocRouter {
       assert min <= max;
       this.min = min;
       this.max = max;
+    }
+
+    @Override
+    public int min() {
+      return min;
+    }
+
+    @Override
+    public int max() {
+      return max;
     }
 
     public boolean includes(int hash) {
@@ -179,7 +191,7 @@ public abstract class DocRouter {
     } else if (fuzz < 0.0f) {
       fuzz = 0.0f;
     }
-    if (partitions == 0) return Collections.EMPTY_LIST;
+    if (partitions == 0) return Collections.emptyList();
     long rangeSize = (long)max - (long)min;
     long rangeStep = Math.max(1, rangeSize / partitions);
     long fuzzStep = Math.round(rangeStep * (double)fuzz / 2.0);
@@ -220,6 +232,14 @@ public abstract class DocRouter {
    *  call getSearchSlices
    **/
   public abstract Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection);
+
+  /** This method is consulted to determine what search range (the part of the hash ring) should be queried for a request when
+   *  an explicit shards parameter was not used.
+   *  This method only accepts a single shard key (or null).
+   */
+  public Range getSearchRangeSingle(String shardKey, SolrParams params, DocCollection collection) {
+    throw new UnsupportedOperationException();
+  }
 
   public abstract boolean isTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, String shardId, DocCollection collection);
 

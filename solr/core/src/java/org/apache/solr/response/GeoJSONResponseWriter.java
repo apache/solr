@@ -63,7 +63,7 @@ public class GeoJSONResponseWriter extends JSONResponseWriter {
     
     SupportedFormats formats = null;
     if(sf.getType() instanceof AbstractSpatialFieldType) {
-      SpatialContext ctx = ((AbstractSpatialFieldType)sf.getType()).getSpatialContext();
+      SpatialContext ctx = ((AbstractSpatialFieldType<?>)sf.getType()).getSpatialContext();
       formats = ctx.getFormats();
     }
 
@@ -106,6 +106,7 @@ class GeoJSONWriter extends JSONWriter {
       }
       rsp.removeResponseHeader();
 
+      @SuppressWarnings({"unchecked"})
       NamedList<Object> vals = rsp.getValues();
       Object response = vals.remove("response");
       if(vals.size()==0) {
@@ -195,7 +196,7 @@ class GeoJSONWriter extends JSONWriter {
   {
     // Support multi-valued geometries
     if(geo instanceof Iterable) {
-      Iterator iter = ((Iterable)geo).iterator();
+      Iterator<?> iter = ((Iterable<?>)geo).iterator();
       if(!iter.hasNext()) {
         return; // empty list
       }
@@ -294,9 +295,9 @@ class GeoJSONWriter extends JSONWriter {
 
   @Override
   public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore) throws IOException
+      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException
   {
-    writeMapOpener((maxScore==null) ? 3 : 4);
+    writeMapOpener(headerSize(maxScore, numFoundExact));
     incLevel();
     writeKey("type",false);
     writeStr(null, "FeatureCollection", false);
@@ -312,6 +313,13 @@ class GeoJSONWriter extends JSONWriter {
       writeKey("maxScore",false);
       writeFloat(null,maxScore);
     }
+    
+    if (numFoundExact != null) {
+      writeMapSeparator();
+      writeKey("numFoundExact",false);
+      writeBool(null, numFoundExact);
+    }
+    
     writeMapSeparator();
     
     // if can we get bbox of all results, we should write it here

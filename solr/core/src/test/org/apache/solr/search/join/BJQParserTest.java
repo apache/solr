@@ -325,9 +325,10 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     assertEquals("the first lookup gets insert", 1,
         delta("inserts", parentFilterCache.getValue(), parentsBefore));
 
-
+    assertEquals("true join query was not in fqCache", 0L,
+        delta("hits", filterCache.getValue(), filtersBefore));
     assertEquals("true join query is cached in fqCache", 1L,
-        delta("lookups", filterCache.getValue(), filtersBefore));
+        delta("inserts", filterCache.getValue(), filtersBefore));
   }
   
   private long delta(String key, Map<String,Object> a, Map<String,Object> b) {
@@ -336,8 +337,10 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   
   @Test
-  public void nullInit() {
-    new BlockJoinParentQParserPlugin().init(null);
+  public void nullInit() throws Exception {
+    final BlockJoinParentQParserPlugin blockJoinParentQParserPlugin = new BlockJoinParentQParserPlugin();
+    blockJoinParentQParserPlugin.init(null);
+    blockJoinParentQParserPlugin.close();
   }
 
   private final static String eParent[] = new String[]{"//*[@numFound='1']",

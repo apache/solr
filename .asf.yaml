@@ -1,0 +1,25 @@
+# https://cwiki.apache.org/confluence/display/INFRA/.asf.yaml+features+for+git+repositories
+
+github:
+  description: "Apache Solr open-source search software"
+  homepage: https://solr.apache.org/
+  labels:
+    - lucene
+    - solr
+    - search
+    - nosql
+    - java
+    - backend
+    - search-engine
+    - information-retrieval
+
+  enabled_merge_buttons:
+    squash: true
+    merge:  false
+    rebase: false
+
+notifications:
+  commits:      commits@solr.apache.org
+  issues:       issues@solr.apache.org
+  pullrequests: issues@solr.apache.org
+  jira_options: link label worklog

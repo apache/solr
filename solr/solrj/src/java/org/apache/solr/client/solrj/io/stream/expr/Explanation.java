@@ -128,7 +128,7 @@ public class Explanation implements MapSerializable {
   }
 
   @Override
-  public Map toMap(Map<String, Object> map) {
+  public Map<String,Object> toMap(Map<String, Object> map) {
     if(null != expressionNodeId){ map.put("expressionNodeId",expressionNodeId); }
     if(null != expressionType){ map.put("expressionType",expressionType); }
     if(null != functionName){ map.put("functionName",functionName); }

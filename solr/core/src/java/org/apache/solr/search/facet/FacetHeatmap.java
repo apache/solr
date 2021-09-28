@@ -38,7 +38,6 @@ import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -47,8 +46,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.RptWithGeometrySpatialField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType;
-import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.DistanceUnits;
@@ -97,7 +94,7 @@ public class FacetHeatmap extends FacetRequest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static class Parser extends FacetParser<FacetHeatmap> {
-    Parser(FacetParser parent, String key) {
+    Parser(FacetParser<?> parent, String key) {
       super(parent, key);
     }
 
@@ -120,8 +117,8 @@ public class FacetHeatmap extends FacetRequest {
       final DistanceUnits distanceUnits;
       // note: the two instanceof conditions is not ideal, versus one. If we start needing to add more then refactor.
       if ((type instanceof AbstractSpatialPrefixTreeFieldType)) {
-        AbstractSpatialPrefixTreeFieldType rptType = (AbstractSpatialPrefixTreeFieldType) type;
-        strategy = (PrefixTreeStrategy) rptType.getStrategy(fieldName);
+        AbstractSpatialPrefixTreeFieldType<?> rptType = (AbstractSpatialPrefixTreeFieldType<?>) type;
+        strategy = rptType.getStrategy(fieldName);
         distanceUnits = rptType.getDistanceUnits();
       } else if (type instanceof RptWithGeometrySpatialField) {
         RptWithGeometrySpatialField rptSdvType  = (RptWithGeometrySpatialField) type;
@@ -207,12 +204,12 @@ public class FacetHeatmap extends FacetRequest {
   }
 
   @Override
-  public FacetProcessor createFacetProcessor(FacetContext fcontext) {
+  public FacetProcessor<FacetHeatmap> createFacetProcessor(FacetContext fcontext) {
     return new FacetHeatmapProcessor(fcontext);
   }
 
   // don't use an anonymous class since the getSimpleName() isn't friendly in debug output
-  private class FacetHeatmapProcessor extends FacetProcessor {
+  private class FacetHeatmapProcessor extends FacetProcessor<FacetHeatmap> {
     public FacetHeatmapProcessor(FacetContext fcontext) {
       super(fcontext, FacetHeatmap.this);
     }
@@ -236,7 +233,7 @@ public class FacetHeatmap extends FacetRequest {
       }
 
       //Populate response
-      response = new SimpleOrderedMap();
+      response = new SimpleOrderedMap<>();
       response.add("gridLevel", gridLevel);
       response.add("columns", heatmap.columns);
       response.add("rows", heatmap.rows);
@@ -259,15 +256,8 @@ public class FacetHeatmap extends FacetRequest {
         return null; // means match everything (all live docs). This can speedup things a lot.
       } else if (docSet.size() == 0) {
         return new Bits.MatchNoBits(searcher.maxDoc()); // can speedup things a lot
-      } else if (docSet instanceof BitDocSet) {
-        return ((BitDocSet) docSet).getBits();
       } else {
-        // TODO DocSetBase.getBits ought to be at DocSet level?  Though it doesn't know maxDoc but it could?
-        FixedBitSet bits = new FixedBitSet(searcher.maxDoc());
-        for (DocIterator iter = docSet.iterator(); iter.hasNext();) {
-          bits.set(iter.nextDoc());
-        }
-        return bits;
+        return docSet.getBits();
       }
     }
 
@@ -411,7 +401,9 @@ public class FacetHeatmap extends FacetRequest {
     }
     byte[] bytes = PngHelper.writeImage(image);
     long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNano);
-    log.debug("heatmap nativeSize={} pngSize={} pngTime={}", (counts.length * 4), bytes.length, durationMs);
+    if (log.isDebugEnabled()) {
+      log.debug("heatmap nativeSize={} pngSize={} pngTime={}", (counts.length * 4), bytes.length, durationMs);
+    }
     if (debugInfo != null) {
       debugInfo.putInfoItem("heatmap png timing", durationMs);
     }

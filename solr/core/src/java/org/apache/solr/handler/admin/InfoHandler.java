@@ -50,15 +50,16 @@ public class InfoHandler extends RequestHandlerBase  {
     handlers.put("properties", new PropertiesRequestHandler());
     handlers.put("logging", new LoggingHandler(coreContainer));
     handlers.put("system", new SystemInfoHandler(coreContainer));
-    handlers.put("health", new HealthCheckHandler(coreContainer));
+    if (coreContainer.getHealthCheckHandler() == null) {
+      throw new IllegalStateException("HealthCheckHandler needs to be initialized before creating InfoHandler");
+    }
+    handlers.put("health", coreContainer.getHealthCheckHandler());
 
   }
 
 
   @Override
-  final public void init(NamedList args) {
-
-  }
+  final public void init(NamedList<?> args) { }
 
   /**
    * The instance of CoreContainer this handler handles. This should be the CoreContainer instance that created this

@@ -27,7 +27,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -53,9 +52,11 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-slf4jreporter.xml").toFile(), "UTF-8");
-    NodeConfig cfg = SolrXmlConfig.fromString(new SolrResourceLoader(home), solrXml);
-    CoreContainer cc = createCoreContainer(cfg,
-        new TestHarness.TestCoresLocator(DEFAULT_TEST_CORENAME, initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml"));
+    NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
+    CoreContainer cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
+                                           (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
+                                            "solrconfig.xml", "schema.xml"));
+                                           
     h.coreName = DEFAULT_TEST_CORENAME;
     SolrMetricManager metricManager = cc.getMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");
@@ -68,7 +69,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     assertTrue(reporter2 instanceof SolrSlf4jReporter);
 
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
+    LogWatcher<?> watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
     watcher.setThreshold("INFO");
 
     watcher.reset();
@@ -93,7 +94,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
       fail("No 'foobar' logs in: " + history.toString());
     }
-    if (history.stream().filter(d -> "x:collection1".equals(d.getFirstValue("core"))).count() == 0) {
+    if (history.stream().filter(d -> "collection1".equals(d.getFirstValue("core"))).count() == 0) {
       fail("No 'solr.core' or MDC context in logs: " + history.toString());
     }
   }
