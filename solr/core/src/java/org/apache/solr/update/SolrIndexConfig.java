@@ -278,7 +278,7 @@ public class SolrIndexConfig implements MapSerializable {
       Sort mergeSort = ((SortingMergePolicy) mergePolicy).getSort();
       Sort indexSort = iwc.getIndexSort();
       if (indexSort != null && !indexSort.equals(mergeSort)) {
-        log.warn("indexSort={} differs from mergePolicySort={}", indexSort, mergeSort);
+        log.warn("indexSort={} differs from mergePolicySort={} (using indexSort)", indexSort, mergeSort);
       } else {
         iwc.setIndexSort(mergeSort);
       }
