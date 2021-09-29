@@ -201,6 +201,13 @@ Users who upgrade from prior versions of Solr may find that some requests involv
 
 User's in this situation are advised to consider the complexity f their queries/configuration, and increase the value of `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` if warranted.
 
+=== Log4J configuration & Solr MDC values
+
+link:http://www.slf4j.org/apidocs/org/slf4j/MDC.html[MDC] values that Solr sets for use by Logging calls (such as the collection name, shard name, replica name, etc...) have been modified to now be "bare" values, with out the special single character prefixes that were included in past version.  For example: In 8.x Log messages for a collection named "gettingstarted" would have an MDC value with a key `collection` mapped to a value of `c:gettingstarted`, in 9.x the value will simply be `gettingstarted`.
+
+Solr's default `log4j2.xml` configuration file has been modified to prepend these same prefixes to MDC values when included in Log messages as part of the `<PatternLayout/>`.  Users who have custom logging configurations that wish to ensure Solr 9.x logs are consistently formatted after upgrading will need to make similar changes to their logging configuration files.  See  link:https://issues.apache.org/jira/browse/SOLR-15630[SOLR-15630] for more details.
+
+
 === base_url removed from stored state
 
 If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1)
@@ -219,6 +226,8 @@ What percentage of them get reported to a tracing server is up to you.
   It is now completely configured via System properties and/or Environment variables as documented by Jaeger.
 
 === Schema Changes in 9
+
+* `LegacyBM25SimilarityFactory` has been removed.
 
 === Authentication & Security Changes in Solr 9
 

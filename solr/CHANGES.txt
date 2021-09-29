@@ -143,6 +143,19 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   This was already working for XML & "javabin"/SolrJ.  Previously, omitting the ID would be confused
   for a partial/atomic update.  (David Smiley)
 
+* SOLR-10887: Migrate "managed-schema" file naming to "managed-schema.xml" file name, with a fallback to the legacy "managed-schema".  (Eric Pugh, David Smiley)
+
+* SOLR-15630: Logging MDC values no longer include a hardcoded prefix, allowing custom logging configurations access to the plain values.
+  The default log4j2.xml PatternLayout has been updated to ensure the values are formatted with the existing prefixes. (hossman)
+
+* SOLR-15650: Choosing lucene defType in Solr Admin now is passed explicitly through UI, not relying on default solrconfig.xml behavior.  (Eric Pugh)
+
+
+Build
+---------------------
+
+* LUCENE-10104, SOLR-15631: Upgrade forbiddenapis to version 3.2.  (Uwe Schindler)
+
 Other Changes
 ----------------------
 * SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
@@ -342,6 +355,8 @@ Other Changes
 
 * SOLR-15606: Rename (deprecated) Insanity.java to NumericHidingLeafReader.java adjusting callers to match. (Christine Poerschke)
 
+* SOLR-13138: Remove deprecated LegacyBM25SimilarityFactory class. (Christine Poerschke, janhoy)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -356,6 +371,8 @@ Bug Fixes
 * SOLR-15449: Edismax sow incorrectly affect mm parameter in multi field search (Alessandro Benedetti, Michael Gibney, David Smiley)
 
 * SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
+
+* SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
 
 ==================  8.10.0 ==================
 
@@ -415,6 +432,10 @@ Improvements
 
 * SOLR-15607: Explicitly indent results in Admin Query UI by default (Olvia Falk via Eric Pugh)
 
+* SOLR-15555: Identical filter queries will no longer race to record a filterCache entry. Allows for async cache computation instead of
+  all queries contending for the same set of locks on the cache. Fixed a bug with ramBytes usage reporting on filterCache.
+  Upgraded Caffeine Cache to 2.9.2 (Mike Drob)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
@@ -452,6 +473,8 @@ Bug Fixes
 
 * SOLR-15595: Partial results from shard queries needlessly discarded for queries without sort field (Michael Kosten via Mike Drob, Eric Pugh)
 
+* SOLR-15620: Download Config button in Schema Designer screen should not require user to re-login when already authenticated (Timothy Potter)
+
 Other Changes
 ---------------------
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
@@ -465,6 +488,8 @@ Other Changes
 * SOLR-15324: Upgrade Jaeger dependency from 1.1.0 to 1.6.0 and thus also libthrift to 0.14.1 (janhoy)
 
 * SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
+
+* SOLR-15621: index.html for Admin UI should send Solr version in the request for JavaScript files (Timothy Potter)
 
 * SOLR-15480: Make Tuple copy constructor, clone and merge consistent w.r.t. markers (EOF, EXCEPTION), field names and labels. (John Durham via Mike Drob, Christine Poerschke)
 
