@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValues;
@@ -479,12 +480,21 @@ public class TextField extends FieldType implements SchemaAware {
     }
   }
 
+  private static final TokenStream EMPTY_TOKEN_STREAM = new TokenStream() {
+    @Override
+    public boolean incrementToken() {
+      return false;
+    }
+  };
+
   private void addValueAccessFields(SchemaField field, List<IndexableField> fields, Object value) {
     if (field.useDocValuesAsStored()) {
       if (fields.isEmpty() && !materializesField(field)) {
         // ensure that "this" field is represented in the index before delegating "actual"
         // field creation to subfields.
-        fields.add(new BinaryDocValuesField(field.getName(), EMPTY_BYTES_REF));
+        // TODO: maybe cache the dummy schemaField to avoid recreating for every field value?
+        SchemaField dummy = new SchemaField(field.name, field.type, field.properties | FieldProperties.INDEXED, field.defaultValue);
+        fields.add(new Field(dummy.name, EMPTY_TOKEN_STREAM, dummy));
       }
       SchemaField storedDVField = getStoredDocValuesField(field);
       fields.addAll(storedDVField.createFields(value));
