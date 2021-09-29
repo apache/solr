@@ -71,8 +71,10 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     final String collectionName = testName.getMethodName();
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
     
+    final String solrConfigFileName = random().nextBoolean() ? "solrconfig-sortingmergepolicyfactory.xml" : "solrconfig-indexSort.xml";
+
     final Map<String, String> collectionProperties = new HashMap<>();
-    collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-sortingmergepolicyfactory.xml");
+    collectionProperties.put(CoreDescriptor.CORE_CONFIG, solrConfigFileName);
     
     CollectionAdminRequest.Create cmd = 
       CollectionAdminRequest.createCollection(collectionName, configName,

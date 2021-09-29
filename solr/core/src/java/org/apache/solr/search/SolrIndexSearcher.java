@@ -178,7 +178,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (cmd.getSegmentTerminateEarly()) {
       final Sort cmdSort = cmd.getSort();
       final int cmdLen = cmd.getLen();
-      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
+      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort(); // TODO: need this account for indexSort also?
 
       if (cmdSort == null || cmdLen <= 0 || mergeSort == null ||
           !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
