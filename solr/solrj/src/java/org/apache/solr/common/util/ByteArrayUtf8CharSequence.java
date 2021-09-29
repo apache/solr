@@ -17,6 +17,8 @@
 
 package org.apache.solr.common.util;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -136,8 +138,9 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   }
 
   public static boolean utf8Equals(Utf8CharSequence utf8_1, Utf8CharSequence utf8_2) {
-    if (utf8_1.size() != utf8_2.size()) return false;
-    for (int i = 0; i < utf8_1.size(); i++) {
+    final int size = utf8_1.size();
+    if (size != utf8_2.size()) return false;
+    for (int i = 0; i < size; i++) {
       if (utf8_1.byteAt(i) != utf8_2.byteAt(i)) return false;
     }
     return true;
@@ -267,6 +270,10 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     this.utf16 = str;
     this.hashCode = Integer.MIN_VALUE;
     return this;
+  }
+
+  public void write(OutputStream os) throws IOException {
+    os.write(buf, offset, length);
   }
 
   /**

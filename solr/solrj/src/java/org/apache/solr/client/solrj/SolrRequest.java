@@ -69,13 +69,13 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   };
 
   public static final Set<String> SUPPORTED_METHODS = Set.of(
-      METHOD.GET.toString(),
-      METHOD.POST.toString(),
-      METHOD.PUT.toString(),
-      METHOD.DELETE.toString());
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE");
 
-  private METHOD method = METHOD.GET;
-  private String path = null;
+  private METHOD method;
+  private String path;
   private Map<String,String> headers;
 
   private ResponseParser responseParser;
@@ -259,7 +259,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public void addHeader(String key, String value) {
     if (headers == null) {
-      headers = new HashMap<>();
+      headers = new HashMap<>(4, 0.50f);
     }
     headers.put(key, value);
   }

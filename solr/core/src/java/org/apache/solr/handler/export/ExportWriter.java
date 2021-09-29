@@ -17,6 +17,9 @@
 
 package org.apache.solr.handler.export;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -77,9 +79,6 @@ import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 
 /**
  * Prepares and writes the documents requested by /export requests
@@ -184,8 +183,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private void _write(OutputStream os) throws IOException {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
     if (rw instanceof BinaryResponseWriter) {
-      //todo add support for other writers after testing
-      writer = new JavaBinCodec(os, null);
+      // todo add support for other writers after testing
+      writer = new JavaBinCodec(os, null, false);
     } else {
       respWriter = new OutputStreamWriter(os, StandardCharsets.UTF_8);
       writer = JSONResponseWriter.getPushWriter(respWriter, req, res);
@@ -214,7 +213,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return;
     }
 
-    if (sort != null && sort.needsScores()) {
+    if (sort.needsScores()) {
       writeException((new IOException(new SyntaxError("Scoring is not currently supported with xsort."))), writer, true);
       return;
     }

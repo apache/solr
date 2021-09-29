@@ -103,7 +103,7 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
       ByteArrayUtf8CharSequence val = (ByteArrayUtf8CharSequence) nl1.get("key" + i);
       assertEquals(buf, val.getBuf());
       String s = val.toString();
-      assertTrue(s.startsWith("" + i));
+      assertTrue(s + " i=" + i, s.startsWith("" + i));
       assertTrue(s, s.endsWith(str));
     }
 

@@ -26,7 +26,7 @@ public class BytesBlock {
   private int startPos = 0;
 
   public BytesBlock(int sz) {
-    this.bufSize = sz;
+    bufSize = sz;
     create();
   }
 
@@ -52,7 +52,7 @@ public class BytesBlock {
   }
 
   private BytesBlock markPositions(int sz) {
-    this.startPos = pos;
+    startPos = pos;
     pos += sz;
     return this;
   }

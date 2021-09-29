@@ -16,11 +16,12 @@
  */
 package org.apache.solr.common.util;
 
+import static java.lang.Character.MAX_SURROGATE;
+import static java.lang.Character.MIN_SURROGATE;
+
 import java.io.IOException;
 import java.io.OutputStream;
-
 import org.noggit.CharArr;
-
 
 public class ByteUtils {
 
@@ -75,10 +76,8 @@ public class ByteUtils {
   public static String UTF8toUTF16(byte[] utf8, int offset, int len) {
     char[] out = new char[len];
     int n = UTF8toUTF16(utf8, offset, len, out, 0);
-    return new String(out,0,n);
+    return new String(out, 0, n);
   }
-
-
 
   /** Writes UTF8 into the byte array, starting at offset.  The caller should ensure that
    * there is enough space for the worst-case scenario.
@@ -222,6 +221,68 @@ public class ByteUtils {
     }
 
     return res;
+  }
+
+  /**
+   * Returns the number of bytes in the UTF-8-encoded form of {@code sequence}. For a string, this
+   * method is equivalent to {@code string.getBytes(UTF_8).length}, but is more efficient in both
+   * time and space.
+   *
+   * <p>Note: This is from Guava vs re-adding the complicated dependency, (calling for shading), for
+   * one method.
+   *
+   * @throws IllegalArgumentException if {@code sequence} contains ill-formed UTF-16 (unpaired
+   *     surrogates)
+   */
+  public static int calcUTF16toUTF8LengthGuava(CharSequence sequence) {
+    // Warning to maintainers: this implementation is highly optimized.
+    int utf16Length = sequence.length();
+    int utf8Length = utf16Length;
+
+    int i = 0;
+    // This loop optimizes for pure ASCII.
+    while (i < utf16Length && sequence.charAt(i) < 0x80) {
+      i++;
+    }
+
+    // This loop optimizes for chars less than 0x800.
+    for (; i < utf16Length; i++) {
+      char c = sequence.charAt(i);
+      if (c < 0x800) {
+        utf8Length += ((0x7f - c) >>> 31); // branch free!
+      } else {
+        utf8Length += encodedLengthGeneral(sequence, i);
+        break;
+      }
+    }
+
+    if (utf8Length < utf16Length) {
+      // Necessary and sufficient condition for overflow because of maximum 3x expansion
+      throw new IllegalArgumentException(
+          "UTF-8 length does not fit in int: " + (utf8Length + (1L << 32)));
+    }
+    return utf8Length;
+  }
+
+  private static int encodedLengthGeneral(CharSequence sequence, int start) {
+    int utf16Length = sequence.length();
+    int utf8Length = 0;
+    for (int i = start; i < utf16Length; i++) {
+      char c = sequence.charAt(i);
+      if (c < 0x800) {
+        utf8Length += (0x7f - c) >>> 31; // branch free!
+      } else {
+        utf8Length += 2;
+        if (MIN_SURROGATE <= c && c <= MAX_SURROGATE) {
+          // Check that we have a well-formed surrogate pair.
+          if (Character.codePointAt(sequence, i) == c) {
+            throw new IllegalArgumentException("Unpaired surrogate at index " + i + 1);
+          }
+          i++;
+        }
+      }
+    }
+    return utf8Length;
   }
 
 }

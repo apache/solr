@@ -17,7 +17,6 @@
 
 package org.apache.solr.common.util;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -40,9 +39,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
   private EntryImpl rootEntry = new EntryImpl();
   private InputStream stream;
 
-  private static final DataEntry.EntryListener emptylistener = e -> {
-  };
-
+  private static final DataEntry.EntryListener emptylistener = e -> {};
 
   @Override
   public FastJavaBinDecoder withInputStream(InputStream is) {
@@ -63,7 +60,6 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     return entry.ctx;
   }
 
-
   static class StreamCodec extends JavaBinCodec {
 
     final FastInputStream dis;
@@ -72,20 +68,16 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       this.dis = FastInputStream.wrap(is);
     }
 
-
     public void skip(int sz) throws IOException {
       while (sz > 0) {
         int read = dis.read(bytes, 0, Math.min(bytes.length, sz));
         sz -= read;
       }
-
     }
-
 
     void start() throws IOException {
-      _init(dis);
+      init(dis);
     }
-
 
     Tag getTag() throws IOException {
       tagByte = dis.readByte();
@@ -113,7 +105,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
     public ByteBuffer readByteBuffer(DataInputInputStream dis, int sz) throws IOException {
       ByteBuffer result = dis.readDirectByteBuffer(sz);
-      if(result != null) return result;
+      if (result != null) return result;
       byte[] arr = new byte[readVInt(dis)];
       dis.readFully(arr);
       return ByteBuffer.wrap(arr);
@@ -123,9 +115,9 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       CharSequence key = null;
       if (ktag.type == DataEntry.Type.STR) {
         if (ktag == _EXTERN_STRING) key = readExternString(dis);
-        else key = readStr(dis);
+        else key = readStr(this, dis);
       } else if (ktag.type == DataEntry.Type.NULL) {
-        //no need to do anything
+        // no need to do anything
       } else {
         throw new RuntimeException("Key must be String");
       }
@@ -141,9 +133,8 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     }
   }
 
-
   public class EntryImpl implements DataEntry {
-    //size
+    // size
     int size = -1;
     Tag tag;
     Object metadata;
@@ -162,7 +153,6 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     int depth = 0;
     CharSequence name;
 
-
     EntryImpl getChildAndReset() {
       if (child == null) {
         child = new EntryImpl();
@@ -171,7 +161,6 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       }
       child.reset();
       return child;
-
     }
 
     @Override
@@ -240,7 +229,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
     @Override
     public float floatVal() {
-      if(tag.type == Type.FLOAT) return (float) doubleVal;
+      if (tag.type == Type.FLOAT) return (float) doubleVal;
       else {
         return ((Number) val()).floatValue();
       }
@@ -285,7 +274,6 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
     public void callEnd() {
       if (entryListener != null) entryListener.end(this);
-
     }
   }
 
@@ -362,8 +350,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       public Object readObject(StreamCodec codec, EntryImpl entry) {
         return Integer.valueOf((int) entry.numericVal);
       }
-
-    },//signed integer
+    }, // signed integer
     _LONG(LONG, LOWER_5_BITS, DataEntry.Type.LONG) {
       @Override
       public void lazyRead(EntryImpl entry, StreamCodec streamCodec) throws IOException {
@@ -417,7 +404,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) throws IOException {
-        return codec.readMap(codec.dis,entry.size);
+        return JavaBinCodec.readMap(codec, codec.dis, entry.size);
       }
     },
     _SOLRDOC(SOLRDOC, LOWER_5_BITS, DataEntry.Type.KEYVAL_ITER) {
@@ -425,7 +412,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       public void stream(EntryImpl entry, StreamCodec codec) throws IOException {
         try {
           codec.getTag();
-          entry.size = codec.readSize(codec.dis);//  readObjSz(codec, entry.tag);
+          entry.size = JavaBinCodec.readSize(codec, codec.dis); //  readObjSz(codec, entry.tag);
           for (int i = 0; i < entry.size; i++) {
             Tag tag = codec.getTag();
             if (tag == _SOLRDOC) {
@@ -437,11 +424,9 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
               CharSequence key = codec.readObjKey(tag);
               callbackMapEntryListener(entry, key, codec, i);
             }
-
           }
         } finally {
           entry.callEnd();
-
         }
       }
 
@@ -454,8 +439,8 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       @Override
       public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {
         entry.metadata = codec.readVal(codec.dis);
-        codec.getTag();//ignore this
-        entry.size = codec.readSize(codec.dis);
+        codec.getTag(); // ignore this
+        entry.size = JavaBinCodec.readSize(codec, codec.dis);
       }
 
       @Override
@@ -475,17 +460,17 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       @SuppressWarnings({"unchecked"})
       public Object readObject(StreamCodec codec, EntryImpl entry) throws IOException {
         SolrDocumentList solrDocs = new SolrDocumentList();
-        if(entry.metadata != null){
+        if (entry.metadata != null) {
           @SuppressWarnings({"rawtypes"})
           List list = (List) entry.metadata;
           solrDocs.setNumFound((Long) list.get(0));
           solrDocs.setStart((Long) list.get(1));
           solrDocs.setMaxScore((Float) list.get(2));
-          if (list.size() > 3) { //needed for back compatibility
-            solrDocs.setNumFoundExact((Boolean)list.get(3));
+          if (list.size() > 3) { // needed for back compatibility
+            solrDocs.setNumFoundExact((Boolean) list.get(3));
           }
         }
-        List<SolrDocument> l =  codec.readArray(codec.dis, entry.size);
+        List<SolrDocument> l = JavaBinCodec.readArray(codec, codec.dis, entry.size);
         solrDocs.addAll(l);
         return solrDocs;
       }
@@ -561,15 +546,15 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {
-        entry.objVal =codec.readEnumFieldValue(codec.dis);
+        entry.objVal = JavaBinCodec.readEnumFieldValue(codec, codec.dis);
         entry.consumedFully = true;
       }
     },
     _MAP_ENTRY(MAP_ENTRY, LOWER_5_BITS, DataEntry.Type.JAVA_OBJ) {
-      //doesn't support streaming
+      // doesn't support streaming
       @Override
       public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {
-        entry.objVal = codec.readMapEntry(codec.dis);
+        entry.objVal = JavaBinCodec.readMapEntry(codec, codec.dis);
         entry.consumedFully = true;
       }
     },
@@ -579,12 +564,11 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       @Override
       public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {
         entry.size = readObjSz(codec, this);
-
       }
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) throws IOException {
-        return codec.readUtf8(codec.dis);
+        return JavaBinCodec.readUtf8(codec, codec.dis);
       }
 
       @Override
@@ -592,30 +576,27 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
         codec.skip(entry.size);
       }
     },
-    _SINT(SINT, UPPER_3_BITS, DataEntry.Type.INT) {//unsigned integer
+    _SINT(SINT, UPPER_3_BITS, DataEntry.Type.INT) { // unsigned integer
       @Override
       public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {
-        entry.numericVal = codec.readSmallInt(codec.dis);
+        entry.numericVal = JavaBinCodec.readSmallInt(codec, codec.dis);
       }
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
         return Integer.valueOf((int) entry.numericVal);
       }
-
     },
     _SLONG(SLONG, UPPER_3_BITS, DataEntry.Type.LONG) {
       @Override
       public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {
-        entry.numericVal = codec.readSmallLong(codec.dis);
+        entry.numericVal = JavaBinCodec.readSmallLong(codec, codec.dis);
       }
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
         return Long.valueOf((int) entry.numericVal);
       }
-
-
     },
     _ARR(ARR, UPPER_3_BITS, DataEntry.Type.ENTRY_ITER) {
       @Override
@@ -632,10 +613,9 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
         }
       }
 
-
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) throws IOException {
-        return codec.readArray(codec.dis);
+        return JavaBinCodec.readArray(codec, codec.dis);
       }
     }, //
     _ORDERED_MAP(ORDERED_MAP, UPPER_3_BITS, DataEntry.Type.KEYVAL_ITER) {
@@ -651,9 +631,8 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) throws IOException {
-        return codec.readOrderedMap(codec.dis);
+        return JavaBinCodec.readOrderedMap(codec, codec.dis);
       }
-
     }, // SimpleOrderedMap (a NamedList subclass, and more common)
     _NAMED_LST(NAMED_LST, UPPER_3_BITS, DataEntry.Type.KEYVAL_ITER) {
       @Override
@@ -680,13 +659,11 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     };
 
     private static int readObjSz(StreamCodec codec, Tag tag) throws IOException {
-      return tag.isLower5Bits ?
-          StreamCodec.readVInt(codec.dis) :
-          codec.readSize(codec.dis);
+      return tag.isLower5Bits ? StreamCodec.readVInt(codec.dis) : JavaBinCodec.readSize(codec, codec.dis);
     }
 
-    private static void callbackMapEntryListener(EntryImpl entry, CharSequence key, StreamCodec codec, long idx)
-        throws IOException {
+    private static void callbackMapEntryListener(
+        EntryImpl entry, CharSequence key, StreamCodec codec, long idx) throws IOException {
       EntryImpl newEntry = codec.beginRead(entry);
       newEntry.name = key;
       newEntry.mapEntry = true;
@@ -699,11 +676,11 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
       }
     }
 
-    private static void callbackIterListener(EntryImpl parent, EntryImpl newEntry, StreamCodec codec)
-        throws IOException {
+    private static void callbackIterListener(
+        EntryImpl parent, EntryImpl newEntry, StreamCodec codec) throws IOException {
       try {
         newEntry.mapEntry = false;
-        if(parent.entryListener != null) parent.entryListener.entry(newEntry);
+        if (parent.entryListener != null) parent.entryListener.entry(newEntry);
       } finally {
         // the listener did not consume the entry
         postCallback(codec, newEntry);
@@ -713,7 +690,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     private static void postCallback(StreamCodec codec, EntryImpl newEntry) throws IOException {
       if (!newEntry.consumedFully) {
         if (newEntry.tag.type.isContainer) {
-          //this is a map like container object and there is a listener
+          // this is a map like container object and there is a listener
           if (newEntry.entryListener == null) newEntry.entryListener = emptylistener;
           newEntry.tag.stream(newEntry, codec);
         } else {
@@ -721,7 +698,6 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
         }
       }
     }
-
 
     final int code;
     final boolean isLower5Bits;
@@ -734,44 +710,38 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     }
 
     /**
-     * This applies to only container Objects. This is invoked only if there is a corresponding listener.
-     *
+     * This applies to only container Objects. This is invoked only if there is a corresponding
+     * listener.
      */
-    public void stream(EntryImpl currentEntry, StreamCodec codec) throws IOException {
-
-
-    }
+    public void stream(EntryImpl currentEntry, StreamCodec codec) throws IOException {}
 
     /**
-     * This should read the minimal data about the entry . if the data is a primitive type ,
-     * read the whole thing
+     * This should read the minimal data about the entry . if the data is a primitive type , read
+     * the whole thing
      */
-    public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {
-
-    }
+    public void lazyRead(EntryImpl entry, StreamCodec codec) throws IOException {}
 
     /**
-     * Read the entry as an Object. The behavior should be similar to that of {@link JavaBinCodec#readObject(DataInputInputStream)}
+     * Read the entry as an Object. The behavior should be similar to that of {@link
+     * JavaBinCodec#readObject(DataInputInputStream)}
      */
     public Object readObject(StreamCodec codec, EntryImpl entry) throws IOException {
       throw new RuntimeException("Unsupported object : " + this.name());
     }
 
-    /**
-     * Read the entry from and discard the data. Do not create any objects
-     */
+    /** Read the entry from and discard the data. Do not create any objects */
     public void skip(EntryImpl entry, StreamCodec codec) throws IOException {
-      if (entry.tag.type == DataEntry.Type.KEYVAL_ITER || entry.tag.type == DataEntry.Type.ENTRY_ITER) {
+      if (entry.tag.type == DataEntry.Type.KEYVAL_ITER
+          || entry.tag.type == DataEntry.Type.ENTRY_ITER) {
         entry.entryListener = null;
         stream(entry, codec);
       } else if (!entry.tag.type.isPrimitive) {
         readObject(codec, entry);
       }
-
     }
   }
 
-  static final private Tag[] lower5BitTags = new Tag[32];
+  private static final Tag[] lower5BitTags = new Tag[32];
 
   static {
     for (Tag tag : Tag.values()) {
@@ -784,9 +754,10 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static void addObj(DataEntry e) {
     if (e.type().isContainer) {
-      Object ctx = e.type() == DataEntry.Type.KEYVAL_ITER ?
-          new LinkedHashMap(getSize(e)) :
-          new ArrayList(getSize(e));
+      Object ctx =
+          e.type() == DataEntry.Type.KEYVAL_ITER
+              ? new LinkedHashMap(getSize(e))
+              : new ArrayList(getSize(e));
       if (e.ctx() != null) {
         if (e.isKeyValEntry()) {
           ((Map) e.ctx()).put(e.name(), ctx);
@@ -814,13 +785,9 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     return sz;
   }
 
-
   public static EntryListener getEntryListener() {
     return ENTRY_LISTENER;
   }
 
-
   static final EntryListener ENTRY_LISTENER = FastJavaBinDecoder::addObj;
-
-
 }

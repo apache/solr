@@ -16,6 +16,10 @@
  */
 package org.apache.solr.common.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,7 +60,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -86,11 +89,6 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 
 public class Utils {
 
@@ -767,13 +765,13 @@ public class Utils {
       throw new IllegalArgumentException("nodeName does not contain expected ':' separator: " + nodeName);
     }
 
-    final int _offset = nodeName.indexOf("_", colonAt);
+    final int _offset = nodeName.indexOf('_', colonAt);
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
     final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2? "api": path)));
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ('/' + (isV2 ? "api" : path)));
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {

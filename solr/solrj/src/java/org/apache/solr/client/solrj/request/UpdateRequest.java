@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -29,7 +31,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
@@ -45,8 +46,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.XML;
 
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
-
 /**
  * 
  * 
@@ -58,6 +57,10 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public static final String VER = "ver";
   public static final String OVERWRITE = "ow";
   public static final String COMMIT_WITHIN = "cw";
+  public static final String UPDATE = "/update";
+
+  public static final String CANNOT_ADD_A_NULL_SOLR_INPUT_DOCUMENT = "Cannot add a null SolrInputDocument";
+
   private Map<SolrInputDocument,Map<String,Object>> documents = null;
   private Iterator<SolrInputDocument> docIterator = null;
   private Map<String,Map<String,Object>> deleteById = null;
@@ -66,7 +69,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   private boolean isLastDocInBatch = false;
 
   public UpdateRequest() {
-    super(METHOD.POST, "/update");
+    super(METHOD.POST, UPDATE);
   }
   
   public UpdateRequest(String url) {
@@ -100,9 +103,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
    * @throws NullPointerException if the document is null
    */
   public UpdateRequest add(final SolrInputDocument doc) {
-    Objects.requireNonNull(doc, "Cannot add a null SolrInputDocument");
+    Objects.requireNonNull(doc, CANNOT_ADD_A_NULL_SOLR_INPUT_DOCUMENT);
     if (documents == null) {
-      documents = new LinkedHashMap<>();
+      documents = new LinkedHashMap<>(8);
     }
     documents.put(doc, null);
     return this;
@@ -140,9 +143,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
    * @throws NullPointerException if the document is null
    */
   public UpdateRequest add(final SolrInputDocument doc, Integer commitWithin, Boolean overwrite) {
-    Objects.requireNonNull(doc, "Cannot add a null SolrInputDocument");
+    Objects.requireNonNull(doc, CANNOT_ADD_A_NULL_SOLR_INPUT_DOCUMENT);
     if (documents == null) {
-      documents = new LinkedHashMap<>();
+      documents = new LinkedHashMap<>(8);
     }
     Map<String,Object> params = new HashMap<>(2);
     if (commitWithin != null) params.put(COMMIT_WITHIN, commitWithin);
@@ -160,10 +163,10 @@ public class UpdateRequest extends AbstractUpdateRequest {
    */
   public UpdateRequest add(final Collection<SolrInputDocument> docs) {
     if (documents == null) {
-      documents = new LinkedHashMap<>();
+      documents = new LinkedHashMap<>(8);
     }
     for (SolrInputDocument doc : docs) {
-      Objects.requireNonNull(doc, "Cannot add a null SolrInputDocument");
+      Objects.requireNonNull(doc, CANNOT_ADD_A_NULL_SOLR_INPUT_DOCUMENT);
       documents.put(doc, null);
     }
     return this;
@@ -171,7 +174,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public UpdateRequest deleteById(String id) {
     if (deleteById == null) {
-      deleteById = new LinkedHashMap<>();
+      deleteById = new LinkedHashMap<>(8);
     }
     deleteById.put(id, null);
     return this;
@@ -183,7 +186,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
 
   public UpdateRequest deleteById(String id, String route, Long version) {
     if (deleteById == null) {
-      deleteById = new LinkedHashMap<>();
+      deleteById = new LinkedHashMap<>(8);
     }
     Map<String, Object> params = (route == null && version == null) ? null : new HashMap<>(1);
     if (version != null)
@@ -197,7 +200,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
 
   public UpdateRequest deleteById(List<String> ids) {
     if (deleteById == null) {
-      deleteById = new LinkedHashMap<>();
+      deleteById = new LinkedHashMap<>(8);
     }
     
     for (String id : ids) {
@@ -213,7 +216,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public UpdateRequest deleteByQuery(String q) {
     if (deleteQuery == null) {
-      deleteQuery = new ArrayList<>();
+      deleteQuery = new ArrayList<>(2);
     }
     deleteQuery.add(q);
     return this;
@@ -246,7 +249,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
       return null;
     }
 
-    Map<String,T> routes = new HashMap<>();
+    Map<String,T> routes = new HashMap<>(4);
     if (documents != null) {
       Set<Entry<SolrInputDocument,Map<String,Object>>> entries = documents.entrySet();
       for (Entry<SolrInputDocument,Map<String,Object>> entry : entries) {
@@ -296,14 +299,10 @@ public class UpdateRequest extends AbstractUpdateRequest {
 
     if (deleteById != null) {
 
-      Iterator<Map.Entry<String,Map<String,Object>>> entries = deleteById.entrySet()
-          .iterator();
-      while (entries.hasNext()) {
-
-        Map.Entry<String,Map<String,Object>> entry = entries.next();
+      for (Entry<String, Map<String, Object>> entry : deleteById.entrySet()) {
 
         String deleteId = entry.getKey();
-        Map<String,Object> map = entry.getValue();
+        Map<String, Object> map = entry.getValue();
         Long version = null;
         String route = null;
         if (map != null) {
@@ -378,7 +377,8 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   // --------------------------------------------------------------------------
   // --------------------------------------------------------------------------
-  
+
+  @SuppressWarnings("deprecation")
   @Override
   public Collection<ContentStream> getContentStreams() throws IOException {
     return ClientUtils.toContentStreams(getXML(), ClientUtils.TEXT_XML);
@@ -395,8 +395,8 @@ public class UpdateRequest extends AbstractUpdateRequest {
     return (xml.length() > 0) ? xml : null;
   }
   
-  private List<Map<SolrInputDocument,Map<String,Object>>> getDocLists(Map<SolrInputDocument,Map<String,Object>> documents) {
-    List<Map<SolrInputDocument,Map<String,Object>>> docLists = new ArrayList<>();
+  private List<Map<SolrInputDocument,Map<String,Object>>> getDocLists() {
+    List<Map<SolrInputDocument,Map<String,Object>>> docLists = new ArrayList<>(2);
     Map<SolrInputDocument,Map<String,Object>> docList = null;
     if (this.documents != null) {
       
@@ -416,7 +416,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
         if (!Objects.equals(overwrite, lastOverwrite)
                 || !Objects.equals(commitWithin, lastCommitWithin)
                 || docLists.isEmpty()) {
-          docList = new LinkedHashMap<>();
+          docList = new LinkedHashMap<>(2);
           docLists.add(docList);
         }
         docList.put(entry.getKey(), entry.getValue());
@@ -426,7 +426,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
     }
     
     if (docIterator != null) {
-      docList = new LinkedHashMap<>();
+      docList = new LinkedHashMap<>(8);
       docLists.add(docList);
       while (docIterator.hasNext()) {
         SolrInputDocument doc = docIterator.next();
@@ -444,7 +444,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
    * @since solr 1.4
    */
   public UpdateRequest writeXML(Writer writer) throws IOException {
-    List<Map<SolrInputDocument,Map<String,Object>>> getDocLists = getDocLists(documents);
+    List<Map<SolrInputDocument,Map<String,Object>>> getDocLists = getDocLists();
     
     for (Map<SolrInputDocument,Map<String,Object>> docs : getDocLists) {
       
@@ -544,8 +544,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public List<String> getDeleteById() {
     if (deleteById == null) return null;
-    List<String> deletes = new ArrayList<>(deleteById.keySet());
-    return deletes;
+    return new ArrayList<>(deleteById.keySet());
   }
   
   public Map<String,Map<String,Object>> getDeleteByIdMap() {

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.response;
 
+import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +29,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
-
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -46,9 +47,6 @@ import org.apache.solr.search.ReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
-
-
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 //  public static boolean useUtf8CharSeq = true;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -57,12 +55,13 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) response.removeResponseHeader();
-    try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
+    try (JavaBinCodec jbc = new JavaBinCodec(resolver, false)) {
       jbc.setWritableDocFields(resolver).marshal(response.getValues(), out);
     }
   }
 
-  private static void serialize(SolrQueryResponse response,Resolver resolver, String f) throws IOException {
+  private static void serialize(SolrQueryResponse response, Resolver resolver, String f)
+      throws IOException, java.io.FileNotFoundException {
     try (JavaBinCodec jbc = new JavaBinCodec(resolver); FileOutputStream fos = new FileOutputStream(f)) {
       jbc.setWritableDocFields(resolver).marshal(response.getValues(), fos);
       fos.flush();
@@ -95,7 +94,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       if (o instanceof StoredField) {
         CharSequence val = ((StoredField) o).getCharSequenceValue();
         if (val instanceof Utf8CharSequence) {
-          codec.writeUTF8Str((Utf8CharSequence) val);
+          JavaBinCodec.writeUTF8Str(codec, (Utf8CharSequence) val);
           return null;
         }
       }
@@ -105,7 +104,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         if(res.getReturnFields()!=null) {
           returnFields = res.getReturnFields();
         }
-//        if (useUtf8CharSeq) {
+
         ResultContext.READASBYTES.set(fieldName -> {
           SchemaField fld = res.getRequest().getSchema().getFieldOrNull(fieldName);
           return fld != null && fld.getType().isUtf8Field();
@@ -150,7 +149,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     }
 
     protected void writeResultsBody( ResultContext res, JavaBinCodec codec ) throws IOException {
-      codec.writeTag(JavaBinCodec.ARR, res.getDocList().size());
+      JavaBinCodec.writeTag(codec, JavaBinCodec.ARR, res.getDocList().size());
       Iterator<SolrDocument> docStreamer = res.getProcessedDocuments();
       while (docStreamer.hasNext()) {
         SolrDocument doc = docStreamer.next();
@@ -159,7 +158,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     }
 
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
-      codec.writeTag(JavaBinCodec.SOLRDOCLST);
+      JavaBinCodec.writeTag(codec, JavaBinCodec.SOLRDOCLST);
       List<Object> l = new ArrayList<>(4);
       l.add( ctx.getDocList().matches());
       l.add((long) ctx.getDocList().offset());
@@ -170,7 +169,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       }
       l.add(maxScore);
       l.add(ctx.getDocList().hitCountRelation() == TotalHits.Relation.EQUAL_TO);
-      codec.writeArray(l);
+      JavaBinCodec.writeArray(codec, l);
       
       // this is a seprate function so that streaming responses can use just that part
       writeResultsBody( ctx, codec );
@@ -196,12 +195,12 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
-      try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
-        jbc.setWritableDocFields(resolver).marshal(rsp.getValues(), out);
+      try (JavaBinCodec jbc = new JavaBinCodec(resolver, false)) {
+        jbc.setWritableDocFields(resolver).marshal(rsp.getValues(), out, true);
       }
 
       InputStream in = out.toInputStream();
-      try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
+      try (JavaBinCodec jbc = new JavaBinCodec(resolver, false)) {
         return (NamedList<Object>) jbc.unmarshal(in);
       }
     }
@@ -258,7 +257,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     @Override
     public Iterator<Entry<String, Object>> iterator() {
       Iterator<Entry<String, Object>> it = _fields.entrySet().iterator();
-      return new Iterator<Entry<String, Object>>() {
+      return new Iterator<>() {
         @Override
         public boolean hasNext() {
           return it.hasNext();
@@ -283,7 +282,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     @Override
     public Object getFirstValue(String name) {
       Object v = _fields.get(name);
-      if (v == null || !(v instanceof Collection)) return convertCharSeq(v);
+      if (!(v instanceof Collection)) return convertCharSeq(v);
       Collection<?> c = (Collection<?>) v;
       if (c.size() > 0) {
         return convertCharSeq(c.iterator().next());

@@ -208,10 +208,10 @@ public class HdfsTransactionLog extends TransactionLog {
         }
         
         codec.init(fos);
-        codec.writeTag(JavaBinCodec.ARR, 3);
-        codec.writeInt(UpdateLog.COMMIT);  // should just take one byte
-        codec.writeLong(cmd.getVersion());
-        codec.writeStr(END_MESSAGE);  // ensure these bytes are (almost) last in the file
+        JavaBinCodec.writeTag(codec, JavaBinCodec.ARR, 3);
+        JavaBinCodec.writeInt(codec, UpdateLog.COMMIT);  // should just take one byte
+        JavaBinCodec.writeLong(codec, cmd.getVersion());
+        JavaBinCodec.writeStr(codec, END_MESSAGE);  // ensure these bytes are (almost) last in the file
 
         endRecord(pos);
         

@@ -170,7 +170,7 @@ public class JsonLoader extends ContentStreamLoader {
         handleSplitMode(split, f, reader);
         return;
       }
-      parser = new JSONParser(reader);
+      parser = new JSONParser(reader, new char[16834]);
       int ev = parser.nextEvent();
       while (ev != JSONParser.EOF) {
 
@@ -247,7 +247,7 @@ public class JsonLoader extends ContentStreamLoader {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Raw data can be stored only if split=/");
         parser = new RecordingJSONParser(reader);
       } else {
-        parser = new JSONParser(reader);
+        parser = new JSONParser(reader, new char[16834]);
 
       }
 

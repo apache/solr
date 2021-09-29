@@ -333,7 +333,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     try (InputStream is = getClass().getResourceAsStream(fileName)) {
       try (DataInputInputStream dis = new FastInputStream(is)) {
         try (JavaBinCodec javabin = new JavaBinCodec()) {
-          return javabin.readMapEntry(dis);
+          return JavaBinCodec.readMapEntry(javabin, dis);
         }
       }
     }

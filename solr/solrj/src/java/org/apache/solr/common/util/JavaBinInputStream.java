@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.util;
 
-import java.io.DataInputStream;
+import com.google.errorprone.annotations.DoNotCall;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,27 +24,25 @@ import java.io.InputStream;
 /** Single threaded buffered InputStream
  *  Internal Solr use only, subject to change.
  */
-public class FastInputStream extends DataInputInputStream {
+public final class JavaBinInputStream {
   protected final InputStream in;
   protected final byte[] buf;
   protected int pos;
   protected int end;
   protected long readFromStream; // number of bytes read from the underlying inputstream
 
-  public FastInputStream(InputStream in) {
-  // use default BUFSIZE of BufferedOutputStream so if we wrap that
-  // it won't cause double buffering.
-    this(in, new byte[8192], 0, 0);
+  public JavaBinInputStream(InputStream in) {
+    // match jetty input buffer
+    this(in, new byte[16384], 0, 0);
   }
 
-  public FastInputStream(InputStream in, byte[] tempBuffer, int start, int end) {
+  public JavaBinInputStream(InputStream in, byte[] tempBuffer, int start, int end) {
     this.in = in;
     this.buf = tempBuffer;
     this.pos = start;
     this.end = end;
   }
 
-  @Override
   boolean readDirectUtf8(ByteArrayUtf8CharSequence utf8, int len) {
     if (in != null || end < pos + len) return false;
     utf8.reset(buf, pos, len, null);
@@ -52,26 +50,33 @@ public class FastInputStream extends DataInputInputStream {
     return true;
   }
 
-  public static FastInputStream wrap(InputStream in) {
-    return (in instanceof FastInputStream) ? (FastInputStream)in : new FastInputStream(in);
+  public static JavaBinInputStream wrap(InputStream in) {
+    return new JavaBinInputStream(in);
   }
 
-  @Override
   public int read() throws IOException {
     if (pos >= end) {
       // this will set end to -1 at EOF
-      end = readWrappedStream(buf, 0, buf.length);
+      int result;
+      if(in == null) {
+        result = -1;
+      } else {result = in.read(buf, 0, buf.length);}
+      end = result;
       if (end > 0) readFromStream += end;
       pos = 0;
       if (pos >= end) return -1;
     }
-    return buf[pos++] & 0xff;     
+    return buf[pos++]; //& 0xff;
   }
 
   public int peek() throws IOException {
     if (pos >= end) {
       // this will set end to -1 at EOF
-      end = readWrappedStream(buf, 0, buf.length);
+      int result;
+      if(in == null) {
+        result = -1;
+      } else {result = in.read(buf, 0, buf.length);}
+      end = result;
       if (end > 0) readFromStream += end;
       pos = 0;
       if (pos >= end) return -1;
@@ -79,12 +84,14 @@ public class FastInputStream extends DataInputInputStream {
     return buf[pos] & 0xff;
   }
 
-
-  @Override
   public int readUnsignedByte() throws IOException {
     if (pos >= end) {
       // this will set end to -1 at EOF
-      end = readWrappedStream(buf, 0, buf.length);
+      int result;
+      if(in == null) {
+        result = -1;
+      } else {result = in.read(buf, 0, buf.length);}
+      end = result;
       if (end > 0) readFromStream += end;
       pos = 0;
       if (pos >= end) {
@@ -103,14 +110,17 @@ public class FastInputStream extends DataInputInputStream {
     return readFromStream - (end - pos);
   }
 
-  protected void refill() throws IOException {
+  public void refill() throws IOException {
     // this will set end to -1 at EOF
-    end = readWrappedStream(buf, 0, buf.length);
+    int result;
+    if(in == null) {
+      result = -1;
+    } else {result = in.read(buf, 0, buf.length);}
+    end = result;
     if (end > 0) readFromStream += end;
     pos = 0;
   }
 
-  @Override
   public int available() throws IOException {
     return end - pos;
   }
@@ -130,7 +140,6 @@ public class FastInputStream extends DataInputInputStream {
     return end;
   }
 
-  @Override
   public int read(byte b[], int off, int len) throws IOException {
     int r=0;  // number of bytes we have read
 
@@ -156,6 +165,10 @@ public class FastInputStream extends DataInputInputStream {
       }
     }
 
+    return endRead(b, off, len, r);
+  }
+
+  private int endRead(byte[] b, int off, int len, int r) throws IOException {
     // this will set end to -1 at EOF
     end = readWrappedStream(buf, 0, buf.length);
     if (end > 0) readFromStream += end;
@@ -163,8 +176,8 @@ public class FastInputStream extends DataInputInputStream {
 
     // read rest from our buffer
     if (end-pos > 0) {
-      int toRead = Math.min(end-pos, len-r);
-      System.arraycopy(buf, pos, b, off+r, toRead);
+      int toRead = Math.min(end-pos, len - r);
+      System.arraycopy(buf, pos, b, off + r, toRead);
       pos += toRead;
       r += toRead;
       return r;
@@ -173,17 +186,23 @@ public class FastInputStream extends DataInputInputStream {
     return r > 0 ? r : -1;
   }
 
-  @Override
   public void close() throws IOException {
     in.close();
   }
 
-  @Override
   public void readFully(byte b[]) throws IOException {
-    readFully(b, 0, b.length);
+    int len = b.length;
+    int off = 0;
+    while (len>0) {
+      int ret = read(b, 0, len);
+      if (ret==-1) {
+        throw new EOFException();
+      }
+      off += ret;
+      len -= ret;
+    }
   }
 
-  @Override
   public void readFully(byte b[], int off, int len) throws IOException {
     while (len>0) {
       int ret = read(b, off, len);
@@ -195,7 +214,6 @@ public class FastInputStream extends DataInputInputStream {
     }
   }
 
-  @Override
   public int skipBytes(int n) throws IOException {
     if (end-pos >= n) {
       pos += n;
@@ -209,7 +227,11 @@ public class FastInputStream extends DataInputInputStream {
 
     while (r < n) {
       // this will set end to -1 at EOF
-      end = readWrappedStream(buf, 0, buf.length);
+      int result;
+      if(in == null) {
+        result = -1;
+      } else {result = in.read(buf, 0, buf.length);}
+      end = result;
       if (end > 0) readFromStream += end;
       pos = 0;
       if (end-pos <= 0) return r;
@@ -221,16 +243,18 @@ public class FastInputStream extends DataInputInputStream {
     return r;
   }
 
-  @Override
   public boolean readBoolean() throws IOException {
     return readByte()==1;
   }
 
-  @Override
   public byte readByte() throws IOException {
     if (pos >= end) {
       // this will set end to -1 at EOF
-      end = readWrappedStream(buf, 0, buf.length);
+      int result;
+      if(in == null) {
+        result = -1;
+      } else {result = in.read(buf, 0, buf.length);}
+      end = result;
       if (end > 0) readFromStream += end;
       pos = 0;
       if (pos >= end) throw new EOFException();
@@ -238,23 +262,18 @@ public class FastInputStream extends DataInputInputStream {
     return buf[pos++];
   }
 
-
-  @Override
   public short readShort() throws IOException {
     return (short)((readUnsignedByte() << 8) | readUnsignedByte());
   }
 
-  @Override
   public int readUnsignedShort() throws IOException {
     return (readUnsignedByte() << 8) | readUnsignedByte();
   }
 
-  @Override
   public char readChar() throws IOException {
     return (char)((readUnsignedByte() << 8) | readUnsignedByte());
   }
 
-  @Override
   public int readInt() throws IOException {
     return  ((readUnsignedByte() << 24)
             |(readUnsignedByte() << 16)
@@ -262,7 +281,6 @@ public class FastInputStream extends DataInputInputStream {
             | readUnsignedByte());
   }
 
-  @Override
   public long readLong() throws IOException {
     return  (((long)readUnsignedByte()) << 56)
             | (((long)readUnsignedByte()) << 48)
@@ -274,23 +292,20 @@ public class FastInputStream extends DataInputInputStream {
             | (readUnsignedByte());
   }
 
-  @Override
   public float readFloat() throws IOException {
     return Float.intBitsToFloat(readInt());    
   }
 
-  @Override
   public double readDouble() throws IOException {
     return Double.longBitsToDouble(readLong());    
   }
 
-  @Override
+  @DoNotCall
   public String readLine() throws IOException {
     throw new UnsupportedOperationException();
   }
 
-  @Override
-  public String readUTF() throws IOException {
-    return new DataInputStream(this).readUTF();
+  public InputStream getIn() {
+    return in;
   }
 }

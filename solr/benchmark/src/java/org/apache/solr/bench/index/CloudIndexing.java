@@ -37,11 +37,9 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Timeout;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.BenchmarkParams;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -70,12 +68,6 @@ public class CloudIndexing {
     @Param({"1", "3"})
     int numReplicas;
 
-    @Param({"0", "15", "30", "70", "100", "500", "1000"})
-    int useStringUtf8Over;
-
-    @Param({"true", "false"})
-    boolean directBuffer;
-
     private final org.apache.solr.bench.Docs largeDocs;
     private Iterator<SolrInputDocument> largeDocIterator;
 
@@ -101,7 +93,7 @@ public class CloudIndexing {
         smallDocs =
             docs()
                 .field("id", integers().incrementing())
-                .field("text", strings().basicLatinAlphabet().multi(2).ofLengthBetween(20, 32))
+                .field("text", strings().basicLatinAlphabet().multi(3).ofLengthBetween(20, 32))
                 .field("int1_i", integers().all())
                 .field("int2_i", integers().all())
                 .field("long1_l", longs().all());
@@ -129,20 +121,9 @@ public class CloudIndexing {
 
     @Setup(Level.Trial)
     public void doSetup(MiniClusterState.MiniClusterBenchState miniClusterState) throws Exception {
-      System.setProperty("useStringUtf8Over", Integer.toString(useStringUtf8Over));
-      System.setProperty("httpClientDirectBuffer", Boolean.toString(directBuffer));
-
       System.setProperty("mergePolicyFactory", "org.apache.solr.index.NoMergePolicyFactory");
       miniClusterState.startMiniCluster(nodeCount);
       miniClusterState.createCollection(COLLECTION, numShards, numReplicas);
-    }
-
-    @TearDown(Level.Trial)
-    public void doTearDown(
-        MiniClusterState.MiniClusterBenchState miniClusterState, BenchmarkParams benchmarkParams)
-        throws Exception {
-
-      // miniClusterState.shutdownMiniCluster(benchmarkParams);
     }
   }
 

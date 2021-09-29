@@ -54,6 +54,7 @@
             <Item>
               <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
                 <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
+                <Set name="maxConcurrentStreams">512</Set>
               </New>
             </Item>
             <Item>

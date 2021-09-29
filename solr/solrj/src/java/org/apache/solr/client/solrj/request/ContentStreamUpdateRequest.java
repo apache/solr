@@ -22,11 +22,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
-
 
 /**
  * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a Solr Cell or some
@@ -46,9 +44,10 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
    */
   public ContentStreamUpdateRequest(String url) {
     super(METHOD.POST, url);
-    contentStreams = new ArrayList<>();
+    contentStreams = new ArrayList<>(2);
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public Collection<ContentStream> getContentStreams() throws IOException {
     return contentStreams;

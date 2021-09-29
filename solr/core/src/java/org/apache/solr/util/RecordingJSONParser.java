@@ -36,7 +36,7 @@ public class RecordingJSONParser extends JSONParser {
   private boolean objectStarted = false;
   private long lastMarkedPosition = 0;
   private long lastGlobalPosition = 0;
-  private static final int BUFFER_SIZE = 8192;
+  private static final int BUFFER_SIZE = 16384;
 
 
   public RecordingJSONParser(Reader in) {

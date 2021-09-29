@@ -22,15 +22,18 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
-public class BytesOutputStream extends OutputStream {
+/**
+ * An un-synchronized byte[] OutputStream.
+ */
+public final class BytesOutputStream extends OutputStream {
   private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
-  protected byte[] buf;
+  private byte[] buf;
 
-  protected int sz;
+  private int sz;
 
   public BytesOutputStream() {
-    this(64);
+    this(32);
   }
 
   public BytesOutputStream(int size) {
@@ -44,43 +47,38 @@ public class BytesOutputStream extends OutputStream {
     return Arrays.copyOf(buf, sz);
   }
 
-  public Bytes bytes() {
-    return new Bytes(buf, 0, sz);
+  /**
+   * Access to the internal byte array. Callers need to inspect {@link #size()}
+   * for its actual length.
+   *
+   * @return the byte [ ]
+   */
+  public byte[] bytes() {
+    return buf;
   }
 
   public InputStream inputStream() {
     return new ByteArrayInputStream(buf);
   }
 
-  private void ensureCapacity(int minCapacity) {
-    if (minCapacity - buf.length > 0)
-      expandBuf(minCapacity);
-  }
-
-  /** * Write a byte to the stream. */
-  @Override
+  /**
+   * Writes the specified byte to this {@code ByteArrayOutputStream}.
+   *
+   * @param b the byte to be written.
+   */
   public void write(int b) {
-
-    try {
-      buf[sz] = (byte) b;
-      sz += 1;
-    } catch (IndexOutOfBoundsException e) {
-      ensureCapacity(sz + 1);
-      buf[sz] = (byte) b;
-      sz += 1;
-    }
+    if (sz + 1 - buf.length > 0)
+      expandBuf(sz + 1);
+    buf[sz] = (byte) b;
+    sz += 1;
   }
 
   @Override
   public void write(byte[] b, int off, int len) {
-    try {
-      System.arraycopy(b, off, buf, sz, len);
-      sz += len;
-    } catch (IndexOutOfBoundsException e) {
-      ensureCapacity(sz + len);
-      System.arraycopy(b, off, buf, sz, len);
-      sz += len;
-    }
+    if (sz + len - buf.length > 0)
+      expandBuf(sz + len);
+    System.arraycopy(b, off, buf, sz, len);
+    sz += len;
   }
 
   public void writeBytes(byte[] b) {
@@ -122,20 +120,6 @@ public class BytesOutputStream extends OutputStream {
   @Override
   public void close() {
     // noop
-  }
-
-  public static class Bytes {
-
-    public final byte[] bytes;
-    public final int offset;
-    public final int length;
-
-    public Bytes(byte[] bytes, int offset, int length) {
-      this.bytes = bytes;
-      this.offset = offset;
-      this.length = length;
-    }
-
   }
 
 }
