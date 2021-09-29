@@ -191,16 +191,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     m =  getRespMap("/config/overlay", harness);
     assertNull(m._get("overlay/props/updateHandler/autoCommit/maxDocs",null));
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime",null));
-
-    m =  getRespMap("/config", harness);
-    assertNotNull(m._get("config/indexConfig/useCompoundFile",null));
-    assertNotNull(m._get("config/indexConfig/maxBufferedDocs",null));
-    assertNotNull(m._get("config/indexConfig/ramBufferSizeMB",null));
-    assertNotNull(m._get("config/indexConfig/ramPerThreadHardLimitMB",null));
-    assertNotNull(m._get("config/indexConfig/maxCommitMergeWaitTime",null));
-    assertNotNull(m._get("config/indexConfig/writeLockTimeout",null));
-    assertNotNull(m._get("config/indexConfig/lockType",null));
-    assertNotNull(m._get("config/indexConfig/infoStreamEnabled",null));
   }
 
   public void testUserProp() throws Exception {
