@@ -70,13 +70,13 @@ public class TupleTest extends SolrTestCase {
                 Map.entry("field-two", "field two")
         )));
 
-        final Tuple clone = new Tuple(original);
+        final Tuple copy = new Tuple(original);
 
-        assertEquals(original.getFields().entrySet().size(), clone.getFields().entrySet().size());
-        assertEquals(original.getFieldNames().size(), clone.getFieldNames().size());
-        assertEquals(original.getFieldLabels().entrySet().size(), clone.getFieldLabels().entrySet().size());
-        assertEquals(original.EOF, clone.EOF);
-        assertEquals(original.EXCEPTION, clone.EXCEPTION);
+        assertEquals(original.getFields().entrySet().size(), copy.getFields().entrySet().size());
+        assertEquals(original.getFieldNames().size(), copy.getFieldNames().size());
+        assertEquals(original.getFieldLabels().entrySet().size(), copy.getFieldLabels().entrySet().size());
+        assertEquals(original.EOF, copy.EOF);
+        assertEquals(original.EXCEPTION, copy.EXCEPTION);
     }
 
     @Test
@@ -168,7 +168,7 @@ public class TupleTest extends SolrTestCase {
 
       final Tuple tupleTwo = new Tuple(commonFields);
       tupleTwo.put("field d", "4");
-      // label all fields
+      // label most fields (3 of 4)
       tupleTwo.setFieldLabels(new HashMap<>(Map.ofEntries(
               Map.entry("field-one", "field b"),
               Map.entry("field-two", "field a"),
