@@ -86,7 +86,7 @@ class MultiFieldWriter extends FieldWriter {
           });
       return true;
     } else if (fieldType.isUtf8Field()) {
-      // XXX could/should consolidate dvRefIterCache with the new `docValuesCache`? Could the latter
+      // TODO: could/should consolidate dvRefIterCache with the new `docValuesCache`? Could the latter
       // be an array, not an int hash?
       DocValuesRefIterator vals = dvRefIterCache.getDocValuesRefIterator(sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (!vals.advanceExact(sortDoc.docId)) return false;
@@ -115,7 +115,7 @@ class MultiFieldWriter extends FieldWriter {
         docValuesCache.put(readerOrd, vals);
       }
 
-      // nocommit: vals is used once; prefer advanceExact(int) rather than advance(int)?
+      // TODO: vals is used once; prefer advanceExact(int) rather than advance(int)?
       if (vals.advance(sortDoc.docId) != sortDoc.docId) return false;
 
       final SortedSetDocValues docVals = vals;
@@ -135,6 +135,7 @@ class MultiFieldWriter extends FieldWriter {
     }
 
   }
+
 
   static LongFunction<Object> bitsToValue(FieldType fieldType) {
     switch (fieldType.getNumberType()) {
