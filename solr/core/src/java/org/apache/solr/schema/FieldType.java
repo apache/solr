@@ -40,7 +40,6 @@ import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocValuesIterator;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
@@ -50,6 +49,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
@@ -604,7 +604,7 @@ public abstract class FieldType extends FieldProperties {
     }
   }
 
-  protected static abstract class WrappedDocValuesRefIterator<T extends DocValuesIterator> extends DocValuesRefIterator {
+  protected static abstract class WrappedDocValuesRefIterator<T extends DocIdSetIterator> extends DocValuesRefIterator {
 
     protected final T backing;
 
@@ -630,11 +630,6 @@ public abstract class FieldType extends FieldProperties {
     @Override
     public int advance(int target) throws IOException {
       return backing.advance(target);
-    }
-
-    @Override
-    public boolean advanceExact(int target) throws IOException {
-      return backing.advanceExact(target);
     }
   }
 
@@ -675,7 +670,7 @@ public abstract class FieldType extends FieldProperties {
     @Override
     public boolean advanceExact(int target) throws IOException {
       advanced = true;
-      return super.advanceExact(target);
+      return backing.advanceExact(target);
     }
   }
 
@@ -731,6 +726,11 @@ public abstract class FieldType extends FieldProperties {
         return backing.lookupOrd(ord);
       }
     }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      return backing.advanceExact(target);
+    }
   }
 
   protected static class SortedDocValuesRefIterator extends WrappedDocValuesRefIterator<SortedDocValues> {
@@ -742,6 +742,11 @@ public abstract class FieldType extends FieldProperties {
     @Override
     public BytesRef nextRef() throws IOException {
       return backing.lookupOrd(backing.ordValue());
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      return backing.advanceExact(target);
     }
   }
 

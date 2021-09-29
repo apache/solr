@@ -18,13 +18,15 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocValuesIterator;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
-public abstract class DocValuesRefIterator extends DocValuesIterator {
+public abstract class DocValuesRefIterator extends DocIdSetIterator {
   /**
    * Serially returns each BytesRef value represented by DocValues for the
    * current document. null return value indicates no further values.
    */
   public abstract BytesRef nextRef() throws IOException;
+
+  public abstract boolean advanceExact(int docId) throws IOException;
 }
