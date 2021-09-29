@@ -150,6 +150,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15650: Choosing lucene defType in Solr Admin now is passed explicitly through UI, not relying on default solrconfig.xml behavior.  (Eric Pugh)
 
+* SOL4-12848: SolrJ and the server can now recognize some standard Java system properties like
+  for an HTTP proxy.  This is only for the Apache HttpClient based SolrJ communication, not Jetty.
+  (Shawn Heisey, David Smiley)
 
 Build
 ---------------------
