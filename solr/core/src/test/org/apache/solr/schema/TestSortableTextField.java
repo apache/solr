@@ -342,28 +342,37 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       assertThat(field, values.get(0), instanceOf(Field.class));
       assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
     }
-    
+
+    // TODO: add a copy of `whitespace_plain_txt` that is _not_ indexed, so should have _3_ fields.
     // special cases...
     values = createIndexableFields("whitespace_plain_txt");
-    assertEquals(2, values.size());
-    assertThat(values.get(0), instanceOf(Field.class)); // we still need main field for tokenized DocValues
-    assertThat(values.get(1), instanceOf(SortedDocValuesField.class));
+    assertEquals(4, values.size());
+    assertThat(values.get(0), instanceOf(Field.class)); // main field for indexing analysis
+    assertThat(values.get(1), instanceOf(SortedDocValuesField.class)); // sort/access dv
+    assertThat(values.get(2), instanceOf(SortedSetDocValuesField.class)); // dummy
+    assertThat(values.get(3), instanceOf(SortedSetDocValuesField.class)); // value
     //
     values = createIndexableFields("whitespace_plain_txt_has_usedvs");
-    assertEquals(2, values.size());
+    assertEquals(4, values.size());
     assertThat(values.get(0), instanceOf(Field.class)); // input for analysis
     assertThat(values.get(1), instanceOf(SortedDocValuesField.class)); // sort and value-access are the same
+    assertThat(values.get(2), instanceOf(SortedSetDocValuesField.class)); // dummy
+    assertThat(values.get(3), instanceOf(SortedSetDocValuesField.class)); // value
     //
     values = createIndexableFields("whitespace_m_plain_txt");
-    assertEquals(2, values.size());
+    assertEquals(4, values.size());
     assertThat(values.get(0), instanceOf(Field.class)); // input for analysis
     assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class)); // for sort (no value-access dv because udvas==false)
+    assertThat(values.get(2), instanceOf(SortedSetDocValuesField.class)); // dummy
+    assertThat(values.get(3), instanceOf(SortedSetDocValuesField.class)); // value
     //
     values = createIndexableFields("whitespace_m_plain_txt_has_usedvs");
-    assertEquals(3, values.size());
+    assertEquals(5, values.size());
     assertThat(values.get(0), instanceOf(Field.class)); // input for analysis
     assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class)); // for value-access
     assertThat(values.get(2), instanceOf(SortedSetDocValuesField.class)); // for sort (separate from value-access because multiValued)
+    assertThat(values.get(2), instanceOf(SortedSetDocValuesField.class)); // dummy
+    assertThat(values.get(3), instanceOf(SortedSetDocValuesField.class)); // value
     //
     values = createIndexableFields("whitespace_nois_stxt");
     assertEquals(1, values.size());

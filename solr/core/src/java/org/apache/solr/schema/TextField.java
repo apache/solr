@@ -41,6 +41,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
@@ -442,7 +443,16 @@ public class TextField extends FieldType implements SchemaAware {
     return (!field.multiValued() || maxCharsForDocValues == Integer.MAX_VALUE) && maxDocValuesBytes <= DEFAULT_MAX_DOC_VALUES_BYTES;
   }
 
+  private TokenStream getTokenStream(IndexableField f, SchemaField field, Object value) {
+    if (f != null) {
+      return f.tokenStream(getIndexAnalyzer(), null);
+    } else {
+      return getIndexAnalyzer().tokenStream(field.name, toInternal(value.toString()));
+    }
+  }
+
   @Override
+  @SuppressWarnings("fallthrough")
   public List<IndexableField> createFields(SchemaField field, Object value) {
     final List<IndexableField> fields = new ArrayList<>(4);
     IndexableField f = createField( field, value);
@@ -454,7 +464,7 @@ public class TextField extends FieldType implements SchemaAware {
     } else {
       switch (dvPurpose) {
         default:
-          return fields;
+          throw new IllegalStateException();
         case SORT:
           boolean truncate = addSortFields(field, fields, value);
           if (truncate && field.useDocValuesAsStored()) {
@@ -474,6 +484,31 @@ public class TextField extends FieldType implements SchemaAware {
           addValueAccessFields(field, fields, value);
           if (maxCharsForDocValues > 0) {
             addSortFields(field, fields, value);
+          }
+          if (!analyzedDocValues) {
+            return fields;
+          }
+          // fallthrough
+        case FACET:
+          // We pre-analyze here; See LUCENE-10023 for alternative lucene-internal implementation
+          // TODO: maybe reuse components?
+          try (final TokenStream ts = getTokenStream(f, field, value)) {
+            ts.reset();
+            if (ts.incrementToken()) {
+              final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
+              final String fieldName = field.getName();
+              final BytesRefHash brs = new BytesRefHash();
+              do {
+                final BytesRef br = termAtt.getBytesRef();
+                if (brs.add(br) >= 0) {
+                  fields.add(new SortedSetDocValuesField(fieldName, BytesRef.deepCopyOf(br)));
+                }
+              } while (ts.incrementToken());
+              brs.close();
+            }
+            ts.end();
+          } catch (IOException ex) {
+            throw new SolrException(SolrException.ErrorCode.UNKNOWN, "problem pre-analyzing token docValues", ex);
           }
           return fields;
       }

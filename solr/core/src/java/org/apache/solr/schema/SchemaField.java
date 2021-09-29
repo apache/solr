@@ -439,7 +439,6 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return DocValuesType.NONE;
   }
 
-  @Override
   public DocValuesType tokenDocValuesType() {
     return tokenDocValuesType;
   }
