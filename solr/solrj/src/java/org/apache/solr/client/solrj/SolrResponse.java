@@ -55,8 +55,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
   }
 
   public Exception getException() {
-    @SuppressWarnings({"rawtypes"})
-    NamedList exp = (NamedList) getResponse().get("exception");
+    NamedList<?> exp = (NamedList<?>) getResponse().get("exception");
     if (exp == null) {
       return null;
     }

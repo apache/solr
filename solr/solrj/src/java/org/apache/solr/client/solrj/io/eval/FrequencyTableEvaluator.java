@@ -65,8 +65,7 @@ public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implement
 
     List<Tuple> histogramBins = new ArrayList<>();
 
-    @SuppressWarnings({"rawtypes"})
-    Iterator iterator = frequency.valuesIterator();
+    Iterator<Comparable<?>> iterator = frequency.valuesIterator();
 
     while(iterator.hasNext()){
       Long value = (Long)iterator.next();

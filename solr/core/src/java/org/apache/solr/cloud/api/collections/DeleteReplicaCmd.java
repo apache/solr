@@ -63,14 +63,12 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     deleteReplica(clusterState, message, results,null);
   }
 
 
-  @SuppressWarnings("unchecked")
-  void deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
+  void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results, Runnable onComplete)
           throws KeeperException, IOException, InterruptedException {
     if (log.isDebugEnabled()) {
       log.debug("deleteReplica() : {}", Utils.toJSONString(message));
@@ -111,10 +109,9 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
    * Delete replicas based on count for a given collection. If a shard is passed, uses that
    * else deletes given num replicas across all shards for the given collection.
    */
-  @SuppressWarnings({"unchecked"})
   void deleteReplicaBasedOnCount(ClusterState clusterState,
                                  ZkNodeProps message,
-                                 @SuppressWarnings({"rawtypes"})NamedList results,
+                                 NamedList<Object> results,
                                  Runnable onComplete,
                                  boolean parallel)
           throws KeeperException, IOException, InterruptedException {
@@ -133,7 +130,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
       }
     }
 
-    Map<Slice, Set<String>> shardToReplicasMapping = new HashMap<Slice, Set<String>>();
+    Map<Slice, Set<String>> shardToReplicasMapping = new HashMap<>();
     if (slice != null) {
       Set<String> replicasToBeDeleted = pickReplicasTobeDeleted(slice, shard, collectionName, count);
       shardToReplicasMapping.put(slice,replicasToBeDeleted);
@@ -223,12 +220,11 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   void deleteCore(ClusterState clusterState, DocCollection coll,
                   String shardId,
                   String replicaName,
                   ZkNodeProps message,
-                  @SuppressWarnings({"rawtypes"})NamedList results,
+                  NamedList<Object> results,
                   Runnable onComplete,
                   boolean parallel,
                   boolean verifyPlacement) throws KeeperException, IOException, InterruptedException {

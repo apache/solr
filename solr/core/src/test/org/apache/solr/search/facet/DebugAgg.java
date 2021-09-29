@@ -24,7 +24,6 @@ import java.util.function.IntFunction;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.FunctionQParser;
@@ -47,10 +46,6 @@ class DebugAgg extends AggValueSource {
         default: /* No-Op */
       }
       throw new RuntimeException("No idea what to do with " + what);
-    }
-
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     }
   }
 

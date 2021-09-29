@@ -43,8 +43,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import io.opentracing.Span;
-import io.opentracing.noop.NoopSpan;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -173,10 +171,6 @@ public class SolrRequestParsers {
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
 
-    Span span = (Span) req.getAttribute(Span.class.getName()); // not null but maybe in some tests?
-    if (span != null && !(span instanceof NoopSpan)) {
-      span.setTag("params", params.toString());
-    }
     SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 
     // Handlers and login will want to know the path. If it contains a ':'
@@ -190,6 +184,7 @@ public class SolrRequestParsers {
     return sreq;
   }
 
+  /** For embedded Solr use; not related to HTTP. */
   public SolrQueryRequest buildRequestFrom(SolrCore core, SolrParams params, Collection<ContentStream> streams) throws Exception {
     return buildRequestFrom(core, params, streams, new RTimerTree(), null);
   }

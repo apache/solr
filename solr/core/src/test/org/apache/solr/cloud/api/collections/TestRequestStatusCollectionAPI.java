@@ -59,10 +59,8 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     // Check for the request to be completed.
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList r = null;
-    @SuppressWarnings({"rawtypes"})
-    NamedList status = null;
+    NamedList<?> r = null;
+    NamedList<?> status = null;
     String message = null;
 
     params = new ModifiableSolrParams();
@@ -88,7 +86,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set(CollectionHandlingUtils.REQUESTID, "9999999");
     try {
       r = sendRequest(params);
-      status = (NamedList) r.get("status");
+      status = (NamedList<?>) r.get("status");
       message = (String) status.get("msg");
     } catch (SolrServerException | IOException e) {
       e.printStackTrace();

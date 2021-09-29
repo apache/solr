@@ -217,6 +217,7 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**
    * Create a ClusterState from Json.
+   * This method doesn't support legacy configName location and thus don't call it where that's important
    * 
    * @param bytes a byte array of a Json representation of a mapping from collection name to the Json representation of a
    *              {@link DocCollection} as written by {@link #write(JSONWriter)}. It can represent
@@ -230,6 +231,50 @@ public class ClusterState implements JSONWriter.Writable {
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    return createFromCollectionMap(version, stateMap, liveNodes);
+  }
+
+  /**
+   * Create a ClusterState from Json.
+   * This method supports legacy configName location
+   *
+   * @param bytes a byte array of a Json representation of a mapping from collection name to the Json representation of a
+   *              {@link DocCollection} as written by {@link #write(JSONWriter)}. It can represent
+   *              one or more collections.
+   * @param liveNodes list of live nodes
+   * @param coll collection name
+   * @param zkClient ZK client
+   * @return the ClusterState
+   */
+  @SuppressWarnings({"unchecked"})
+  @Deprecated
+  public static ClusterState createFromJsonSupportingLegacyConfigName(int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
+    if (bytes == null || bytes.length == 0) {
+      return new ClusterState(liveNodes, Collections.emptyMap());
+    }
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
+    if (props != null) {
+      if (!props.containsKey(ZkStateReader.CONFIGNAME_PROP)) {
+        try {
+          // read configName from collections/collection node
+          String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
+          byte[] data = zkClient.getData(path, null, null, true);
+          if (data != null && data.length > 0) {
+            ZkNodeProps configProp = ZkNodeProps.load(data);
+            String configName = configProp.getStr(ZkStateReader.CONFIGNAME_PROP);
+            if (configName != null) {
+              props.put(ZkStateReader.CONFIGNAME_PROP, configName);
+              stateMap.put(coll, props);
+            } else {
+              log.warn("configName is null, not found on {}", path);
+            }
+          }
+        } catch (KeeperException | InterruptedException e) {
+          // do nothing
+        }
+      }
+    }
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 

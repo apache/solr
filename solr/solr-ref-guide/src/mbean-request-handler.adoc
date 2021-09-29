@@ -21,26 +21,47 @@ The MBean Request Handler offers programmatic access to the information provided
 The MBean Request Handler accepts the following parameters:
 
 `key`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Restricts results by object key.
 
 `cat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Restricts results by category name.
 
 `stats`::
-Specifies whether statistics are returned with results. You can override the `stats` parameter on a per-field basis. The default is `false`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Specifies whether statistics are returned with results.
+You can override the `stats` parameter on a per-field basis.
+The default is `false`.
 
 `wt`::
-The output format. This operates the same as the <<response-writers.adoc#,`wt` parameter in a query>>. The default is `json`.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
+The output format.
+This operates the same as the <<response-writers.adoc#,`wt` parameter in a query>>.
 
 == MBeanRequestHandler Examples
 
-// TODO 7.1 - replace with link to tutorial
-The following examples assume you are running Solr's `techproducts` example configuration:
-
-[source,bash]
-----
-bin/solr start -e techproducts
-----
+All of the examples in this section assume you are running the <<tutorial-techproducts.adoc#,"techproducts" example>>.
 
 To return information about the CACHE category only:
 

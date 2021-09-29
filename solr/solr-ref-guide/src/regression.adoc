@@ -20,15 +20,13 @@ The math expressions library supports simple and multivariate linear regression.
 
 == Simple Linear Regression
 
-The `regress` function is used to build a linear regression model
-between two random variables. Sample observations are provided with two
-numeric arrays. The first numeric array is the independent variable and
-the second array is the dependent variable.
+The `regress` function is used to build a linear regression model between two random variables.
+Sample observations are provided with two numeric arrays.
+The first numeric array is the independent variable and the second array is the dependent variable.
 
-In the example below the `random` function selects 50000 random samples each containing
-the fields `filesize_d` and `response_d`. The two fields are vectorized
-and stored in variables `x` and `y`. Then the `regress` function performs a regression
-analysis on the two numeric arrays.
+In the example below the `random` function selects 50000 random samples each containing the fields `filesize_d` and `response_d`.
+The two fields are vectorized and stored in variables `x` and `y`.
+Then the `regress` function performs a regression analysis on the two numeric arrays.
 
 The `regress` function returns a single tuple with the results of the regression
 analysis.
@@ -41,8 +39,8 @@ let(a=random(logs, q="*:*", rows="50000", fl="filesize_d, response_d"),
     r=regress(x, y))
 ----
 
-Note that in this regression analysis the value of `RSquared` is `.75`. This means that changes in
-`filesize_d` explain 75% of the variability of the `response_d` variable:
+Note that in this regression analysis the value of `RSquared` is `.75`.
+This means that changes in `filesize_d` explain 75% of the variability of the `response_d` variable:
 
 [source,json]
 ----
@@ -79,11 +77,9 @@ image::images/math-expressions/diagnostics.png[]
 === Prediction
 
 The `predict` function uses the regression model to make predictions.
-Using the example above the regression model can be used to predict the value
-of `response_d` given a value for `filesize_d`.
+Using the example above the regression model can be used to predict the value of `response_d` given a value for `filesize_d`.
 
-In the example below the `predict` function uses the regression analysis to predict
-the value of `response_d` for the `filesize_d` value of `40000`.
+In the example below the `predict` function uses the regression analysis to predict the value of `response_d` for the `filesize_d` value of `40000`.
 
 [source,text]
 ----
@@ -113,11 +109,10 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-The `predict` function can also make predictions for an array of values. In this
-case it returns an array of predictions.
+The `predict` function can also make predictions for an array of values.
+In this case it returns an array of predictions.
 
-In the example below the `predict` function uses the regression analysis to
-predict values for each of the 5000 samples of `filesize_d` used to generate the model.
+In the example below the `predict` function uses the regression analysis to predict values for each of the 5000 samples of `filesize_d` used to generate the model.
 In this case 5000 predictions are returned.
 
 [source,text]
@@ -162,23 +157,19 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === Regression Plot
 
-Using `zplot` and the Zeppelin-Solr interpreter we can visualize both the observations and the predictions in
-the same scatter plot.
-In the example below `zplot` is plotting the `filesize_d` observations on the
-x-axis, the `response_d` observations on the y-axis and the predictions on the y1-axis.
+Using `zplot` and the Zeppelin-Solr interpreter we can visualize both the observations and the predictions in the same scatter plot.
+In the example below `zplot` is plotting the `filesize_d` observations on the x-axis, the `response_d` observations on the y-axis and the predictions on the y1-axis.
 
 image::images/math-expressions/linear.png[]
 
 === Residuals
 
-The difference between the observed value and the predicted value is known as the
-residual. There isn't a specific function to calculate the residuals but vector
-math can used to perform the calculation.
+The difference between the observed value and the predicted value is known as the residual.
+There isn't a specific function to calculate the residuals but vector math can used to perform the calculation.
 
-In the example below the predictions are stored in variable `p`. The `ebeSubtract`
-function is then used to subtract the predictions
-from the actual `response_d` values stored in variable `y`. Variable `e` contains
-the array of residuals.
+In the example below the predictions are stored in variable `p`.
+The `ebeSubtract` function is then used to subtract the predictions from the actual `response_d` values stored in variable `y`.
+Variable `e` contains the array of residuals.
 
 [source,text]
 ----
@@ -225,13 +216,13 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === Residual Plot
 
-Using `zplot` and Zeppelin-Solr we can visualize the residuals with
-a residuals plot. The example residual plot below plots the predicted value on the
-x-axis and the error of the prediction on the y-axis.
+Using `zplot` and Zeppelin-Solr we can visualize the residuals with a residuals plot.
+The example residual plot below plots the predicted value on the x-axis and the error of the prediction on the y-axis.
 
 image::images/math-expressions/residual-plot.png[]
 
-The residual plot can be used to interpret reliability of the model. Three things to look for are:
+The residual plot can be used to interpret reliability of the model.
+Three things to look for are:
 
 . Do the residuals appear to be normally distributed with a mean of 0?
 This makes it easier to interpret the results of the model to determine if the distribution of the errors is acceptable for predictions.
@@ -247,17 +238,16 @@ If the residuals are heteroscedastic it means that we can trust the models error
 
 == Multivariate Linear Regression
 
-The `olsRegress` function performs a multivariate linear regression analysis. Multivariate linear
-regression models the linear relationship between two or more independent variables and a dependent variable.
+The `olsRegress` function performs a multivariate linear regression analysis.
+Multivariate linear regression models the linear relationship between two or more independent variables and a dependent variable.
 
-The example below extends the simple linear regression example by introducing a new independent variable
-called `load_d`. The `load_d` variable is the load on the network while the file is being downloaded.
+The example below extends the simple linear regression example by introducing a new independent variable called `load_d`.
+The `load_d` variable is the load on the network while the file is being downloaded.
 
-Notice that the two independent variables `filesize_d` and `load_d` are vectorized and stored
-in the variables `b` and `c`. The variables `b` and `c` are then added as rows to a `matrix`. The matrix is
-then transposed so that each row in the matrix represents one observation with `filesize_d` and `service_d`.
-The `olsRegress` function then performs the multivariate regression analysis using the observation matrix as the
-independent variables and the `response_d` values, stored in variable *`d`*, as the dependent variable.
+Notice that the two independent variables `filesize_d` and `load_d` are vectorized and stored in the variables `b` and `c`.
+The variables `b` and `c` are then added as rows to a `matrix`.
+The matrix is then transposed so that each row in the matrix represents one observation with `filesize_d` and `service_d`.
+The `olsRegress` function then performs the multivariate regression analysis using the observation matrix as the independent variables and the `response_d` values, stored in variable *`d`*, as the dependent variable.
 
 [source,text]
 ----
@@ -269,8 +259,8 @@ let(a=random(testapp, q="*:*", rows="30000", fl="filesize_d, load_d, response_d"
     r=olsRegress(m, z))
 ----
 
-Notice in the response that the `RSquared` of the regression analysis is `1`. This means that linear relationship between
-`filesize_d` and `service_d` describe 100% of the variability of the `response_d` variable:
+Notice in the response that the `RSquared` of the regression analysis is `1`.
+This means that linear relationship between `filesize_d` and `service_d` describe 100% of the variability of the `response_d` variable:
 
 [source,json]
 ----
@@ -324,8 +314,8 @@ Notice in the response that the `RSquared` of the regression analysis is `1`. Th
 The `predict` function can also be used to make predictions for multivariate linear regression.
 
 Below is an example of a single prediction using the multivariate linear regression model and a single observation.
-The observation is an array that matches the structure of the observation matrix used to build the model. In this case
-the first value represents a `filesize_d` of `40000` and the second value represents a `load_d` of `4`.
+The observation is an array that matches the structure of the observation matrix used to build the model.
+In this case the first value represents a `filesize_d` of `40000` and the second value represents a `load_d` of `4`.
 
 [source,text]
 ----
@@ -357,11 +347,10 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-The `predict` function can also make predictions for more than one multivariate observation. In this scenario
-an observation matrix used.
+The `predict` function can also make predictions for more than one multivariate observation.
+In this scenario an observation matrix used.
 
-In the example below the observation matrix used to build the multivariate regression model
-is passed to the `predict` function and it returns an array of predictions.
+In the example below the observation matrix used to build the multivariate regression model is passed to the `predict` function and it returns an array of predictions.
 
 [source,text]
 ----
@@ -408,11 +397,10 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === Residuals
 
-Once the predictions are generated the residuals can be calculated using the same approach used with
-simple linear regression.
+Once the predictions are generated the residuals can be calculated using the same approach used with simple linear regression.
 
-Below is an example of the residuals calculation following a multivariate linear regression. In the example
-the predictions stored variable `g` are subtracted from observed values stored in variable `d`.
+Below is an example of the residuals calculation following a multivariate linear regression.
+In the example the predictions stored variable `g` are subtracted from observed values stored in variable `d`.
 
 [source,text]
 ----

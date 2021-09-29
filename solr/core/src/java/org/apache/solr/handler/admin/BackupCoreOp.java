@@ -56,7 +56,8 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
                 + " parameter or as a default repository property");
       }
 
-      URI locationUri = repository.createURI(location);
+      URI locationUri = repository.createDirectoryURI(location);
+      repository.createDirectory(locationUri);
 
       if (incremental) {
         if ("file".equals(locationUri.getScheme())) {
@@ -66,8 +67,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
         BackupFilePaths incBackupFiles = new BackupFilePaths(repository, locationUri);
         IncrementalShardBackup incSnapShooter = new IncrementalShardBackup(repository, core, incBackupFiles,
                 prevShardBackupId, shardBackupId, Optional.ofNullable(commitName));
-        @SuppressWarnings({"rawtypes"})
-        NamedList rsp = incSnapShooter.backup();
+        NamedList<Object> rsp = incSnapShooter.backup();
         it.rsp.addResponse(rsp);
       } else {
         SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);

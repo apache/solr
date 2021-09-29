@@ -60,11 +60,11 @@ public class GCSConfigParser {
   private static final int DEFAULT_RPC_MAX_TIMEOUT_MILLIS = 30000;
   private static final double DEFAULT_RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER = 1.0;
 
-  public GCSConfig parseConfiguration(NamedList<Object> repositoryConfig) {
+  public GCSConfig parseConfiguration(NamedList<?> repositoryConfig) {
     return parseConfiguration(repositoryConfig, System.getenv());
   }
 
-  public GCSConfig parseConfiguration(NamedList<Object> repoConfig, Map<String, String> envVars) {
+  public GCSConfig parseConfiguration(NamedList<?> repoConfig, Map<String, String> envVars) {
     final String bucketName = parseBucket(repoConfig, envVars);
     final String credentialPathStr = parseCredentialPath(repoConfig, envVars);
     final int writeBufferSizeBytes = getIntOrDefault(repoConfig, GCS_WRITE_BUFFER_SIZE_PARAM_NAME, DEFAULT_GCS_WRITE_BUFFER_SIZE_VALUE);
@@ -77,7 +77,7 @@ public class GCSConfigParser {
    * The GCS bucket name is retrieved from the NL 'bucket' key, or the 'GCS_BUCKET' env-var, or the value
    * 'solrBackupsBucket' is used (in that order).
    */
-  private String parseBucket(NamedList<Object> repoConfig, Map<String, String> envVars) {
+  private String parseBucket(NamedList<?> repoConfig, Map<String, String> envVars) {
     if (repoConfig.get(GCS_BUCKET_PARAM_NAME) != null) {
       return repoConfig.get(GCS_BUCKET_PARAM_NAME).toString();
     }
@@ -85,7 +85,7 @@ public class GCSConfigParser {
     return envVars.getOrDefault(GCS_BUCKET_ENV_VAR_NAME, DEFAULT_GCS_BUCKET_VALUE);
   }
 
-  private String parseCredentialPath(NamedList<Object> repoConfig, Map<String, String> envVars) {
+  private String parseCredentialPath(NamedList<?> repoConfig, Map<String, String> envVars) {
     if (repoConfig.get(GCS_CREDENTIAL_PARAM_NAME) != null) {
       return repoConfig.get(GCS_CREDENTIAL_PARAM_NAME).toString();
     }
@@ -100,21 +100,21 @@ public class GCSConfigParser {
             GCS_CREDENTIAL_ENV_VAR_NAME + "'";
   }
 
-  private int getIntOrDefault(NamedList<Object> config, String propName, int defaultValue) {
+  private int getIntOrDefault(NamedList<?> config, String propName, int defaultValue) {
     if (config.get(propName) != null) {
       return Integer.parseInt(config.get(propName).toString());
     }
     return defaultValue;
   }
 
-  private double getDoubleOrDefault(NamedList<Object> config, String propName, double defaultValue) {
+  private double getDoubleOrDefault(NamedList<?> config, String propName, double defaultValue) {
     if (config.get(propName) != null) {
       return Double.parseDouble(config.get(propName).toString());
     }
     return defaultValue;
   }
 
-  private StorageOptions.Builder parseStorageOptions(NamedList<Object> repoConfig) {
+  private StorageOptions.Builder parseStorageOptions(NamedList<?> repoConfig) {
     final StorageOptions.Builder builder = StorageOptions.newBuilder();
     builder.setTransportOptions(StorageOptions.getDefaultHttpTransportOptions().toBuilder()
             .setConnectTimeout(getIntOrDefault(repoConfig, HTTP_CONNECT_TIMEOUT_MILLIS_NAME, DEFAULT_HTTP_CONNECT_TIMEOUT_MILLIS))

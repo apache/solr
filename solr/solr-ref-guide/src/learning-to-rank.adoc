@@ -18,21 +18,25 @@
 
 With the *Learning To Rank* (or *LTR* for short) contrib module you can configure and run machine learned ranking models in Solr.
 
-The module also supports feature extraction inside Solr. The only thing you need to do outside Solr is train your own ranking model.
+The module also supports feature extraction inside Solr.
+The only thing you need to do outside Solr is train your own ranking model.
 
 == Learning to Rank Concepts
 
 === Re-Ranking
 
-Re-Ranking allows you to run a simple query for matching documents and then re-rank the top N documents using the scores from a different, more complex query. This page describes the use of *LTR* complex queries, information on other rank queries included in the Solr distribution can be found on the <<query-re-ranking.adoc#,Query Re-Ranking>> page.
+Re-Ranking allows you to run a simple query for matching documents and then re-rank the top N documents using the scores from a different, more complex query.
+This page describes the use of *LTR* complex queries, information on other rank queries included in the Solr distribution can be found on the <<query-re-ranking.adoc#,Query Re-Ranking>> page.
 
 === Learning To Rank Models
 
-In information retrieval systems, https://en.wikipedia.org/wiki/Learning_to_rank[Learning to Rank] is used to re-rank the top N retrieved documents using trained machine learning models. The hope is that such sophisticated models can make more nuanced ranking decisions than standard ranking functions like https://en.wikipedia.org/wiki/Tf%E2%80%93idf[TF-IDF] or https://en.wikipedia.org/wiki/Okapi_BM25[BM25].
+In information retrieval systems, https://en.wikipedia.org/wiki/Learning_to_rank[Learning to Rank] is used to re-rank the top N retrieved documents using trained machine learning models.
+The hope is that such sophisticated models can make more nuanced ranking decisions than standard ranking functions like https://en.wikipedia.org/wiki/Tf%E2%80%93idf[TF-IDF] or https://en.wikipedia.org/wiki/Okapi_BM25[BM25].
 
 ==== Ranking Model
 
-A ranking model computes the scores used to rerank documents. Irrespective of any particular algorithm or implementation, a ranking model's computation can use three types of inputs:
+A ranking model computes the scores used to rerank documents.
+Irrespective of any particular algorithm or implementation, a ranking model's computation can use three types of inputs:
 
 * parameters that represent the scoring algorithm
 * features that represent the document being scored
@@ -47,17 +51,21 @@ Interleaving is an approach to Online Search Quality evaluation that allows to c
 
 ==== Feature
 
-A feature is a value, a number, that represents some quantity or quality of the document being scored or of the query for which documents are being scored. For example documents often have a 'recency' quality and 'number of past purchases' might be a quantity that is passed to Solr as part of the search query.
+A feature is a value, a number, that represents some quantity or quality of the document being scored or of the query for which documents are being scored.
+For example documents often have a 'recency' quality and 'number of past purchases' might be a quantity that is passed to Solr as part of the search query.
 
 ==== Normalizer
 
-Some ranking models expect features on a particular scale. A normalizer can be used to translate arbitrary feature values into normalized values e.g., on a 0..1 or 0..100 scale.
+Some ranking models expect features on a particular scale.
+A normalizer can be used to translate arbitrary feature values into normalized values e.g., on a 0..1 or 0..100 scale.
 
 === Training Models
 
 ==== Feature Engineering
 
-The LTR contrib module includes several feature classes as well as support for custom features. Each feature class's javadocs contain an example to illustrate use of that class. The process of https://en.wikipedia.org/wiki/Feature_engineering[feature engineering] itself is then entirely up to your domain expertise and creativity.
+The LTR contrib module includes several feature classes as well as support for custom features.
+Each feature class's javadocs contain an example to illustrate use of that class.
+The process of https://en.wikipedia.org/wiki/Feature_engineering[feature engineering] itself is then entirely up to your domain expertise and creativity.
 
 [cols=",,,",options="header",]
 |===
@@ -83,11 +91,14 @@ The LTR contrib module includes several feature classes as well as support for c
 
 ==== Feature Extraction
 
-The ltr contrib module includes a <<transforming-result-documents.adoc#,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
+The ltr contrib module includes a <<document-transformers.adoc#,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
 
 ==== Feature Selection and Model Training
 
-Feature selection and model training take place offline and outside Solr. The ltr contrib module supports two generalized forms of models as well as custom models. Each model class's javadocs contain an example to illustrate configuration of that class. In the form of JSON files your trained model or models (e.g., different models for different customer geographies) can then be directly uploaded into Solr using provided REST APIs.
+Feature selection and model training take place offline and outside Solr.
+The ltr contrib module supports two generalized forms of models as well as custom models.
+Each model class's javadocs contain an example to illustrate configuration of that class.
+In the form of JSON files your trained model or models (e.g., different models for different customer geographies) can then be directly uploaded into Solr using provided REST APIs.
 
 [cols=",,",options="header",]
 |===
@@ -461,7 +472,8 @@ Read more about model evolution in the <<LTR Lifecycle>> section of this page.
 
 === Training Example
 
-Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/contrib/ltr/example` folder in the https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=tree;f=solr/contrib/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-docs-version}.0/solr/contrib/ltr/example[github.com]). This example folder is not shipped in the Solr binary release.
+Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/contrib/ltr/example` folder in the https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=tree;f=solr/contrib/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-docs-version}.0/solr/contrib/ltr/example[github.com]).
+This example folder is not shipped in the Solr binary release.
 
 == Installation of LTR
 
@@ -473,7 +485,8 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 
 === Minimum Requirements
 
-* Include the required contrib JARs. Note that by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`.
+* Include the required contrib JARs.
+Note that by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`.
 +
 [source,xml]
 ----
@@ -519,7 +532,8 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 
 ==== LTRThreadModule
 
-A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights. For details, please refer to the {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
+A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights.
+For details, please refer to the {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
 
 ==== Feature Vector Customization
 
@@ -543,7 +557,8 @@ How does Solr Learning-To-Rank work under the hood?::
 Please refer to the `ltr` {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
 
 How could I write additional models and/or features?::
-Contributions for further models, features, normalizers and interleaving algorithms are welcome. Related links:
+Contributions for further models, features, normalizers and interleaving algorithms are welcome.
+Related links:
 +
 * {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
 * {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
@@ -612,7 +627,8 @@ curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/feature-store/curr
 
 ==== Using Large Models
 
-With SolrCloud, large models may fail to upload due to the limitation of ZooKeeper's buffer. In this case, `DefaultWrapperModel` may help you to separate the model definition from uploaded file.
+With SolrCloud, large models may fail to upload due to the limitation of ZooKeeper's buffer.
+In this case, `DefaultWrapperModel` may help you to separate the model definition from uploaded file.
 
 Assuming that you consider to use a large model placed at `/path/to/models/myModel.json` through `DefaultWrapperModel`.
 
@@ -658,11 +674,12 @@ NOTE: No `"features"` are configured in `myWrapperModel` because the features of
 
 CAUTION: `<lib dir="/path/to/models" regex=".*\.json" />` doesn't work as expected in this case, because `SolrResourceLoader` considers given resources as JAR if `<lib />` indicates files.
 
-As an alternative to the above-described `DefaultWrapperModel`, it is possible to <<setting-up-an-external-zookeeper-ensemble#increasing-the-file-size-limit,increase ZooKeeper's file size limit>>.
+As an alternative to the above-described `DefaultWrapperModel`, it is possible to <<zookeeper-ensemble.adoc#increasing-the-file-size-limit,increase ZooKeeper's file size limit>>.
 
 === Applying Changes
 
-The feature store and the model store are both <<managed-resources.adoc#,Managed Resources>>. Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
+The feature store and the model store are both <<managed-resources.adoc#,Managed Resources>>.
+Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
 
 === LTR Examples
 

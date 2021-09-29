@@ -19,21 +19,22 @@
 Solr allows users to control their running tasks by monitoring them, specifying tasks as cancellation enabled and allowing
 cancellation of the same.
 
-This is achieved using the task management interface. Currently, this is supported for queries.
+This is achieved using the task management interface.
+Currently, this is supported for queries.
 
 == Types of Operations
 Task management interface supports the following types of operations:
 
-1. List all currently running cancellable tasks.
-2. Cancel a specific task.
-3. Query the status of a specific task.
+. List all currently running cancellable tasks.
+. Cancel a specific task.
+. Query the status of a specific task.
 
 == Listing All Active Cancellable Tasks
 To list all the active cancellable tasks currently running, please use the following syntax:
 
 `\http://localhost:8983/solr/tasks/list`
 
-==== Sample Response
+=== Sample Response
 
 `{responseHeader={status=0, QTime=11370}, taskList={0=q=*%3A*&canCancel=true&queryUUID=0&_stateVer_=collection1%3A4&wt=javabin&version=2, 5=q=*%3A*&canCancel=true&queryUUID=5&_stateVer_=collection1%3A4&wt=javabin&version=2, 7=q=*%3A*&canCancel=true&queryUUID=7&_stateVer_=collection1%3A4&wt=javabin&version=2}`
 
@@ -42,12 +43,12 @@ To cancel an active task, please use the following syntax:
 
 `\http://localhost:8983/solr/tasks/cancel?queryUUID=foobar`
 
-==== Sample Response
-===== If the task UUID was found and successfully cancelled:
+=== Sample Response
+==== If the task UUID was found and successfully cancelled:
 
 `{responseHeader={status=0, QTime=39}, status=Query with queryID 85 cancelled successfully}`
 
-===== If the task UUID was not found
+==== If the task UUID was not found
 
 `{responseHeader={status=0, QTime=39}, status=Query with queryID 85 not found}`
 
@@ -56,11 +57,8 @@ To check the status of a specific task, please use the following syntax:
 
 `\http://localhost:8983/solr/tasks/list?taskUUID=foobar`
 
-==== taskUUID Parameter
+=== taskUUID Parameter
 `taskUUID` parameter can be used to specify a task UUID whose status can be checked.
 
-==== Sample Response
+=== Sample Response
 `{responseHeader={status=0, QTime=6128}, taskStatus=foobar:true}`
-
-
-

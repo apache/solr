@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -222,18 +221,7 @@ public class SolrDocumentFetcher {
     Document d;
     if (documentCache != null) {
       final Set<String> getFields = enableLazyFieldLoading ? fields : null;
-      AtomicReference<IOException> exceptionRef = new AtomicReference<>();
-      d = documentCache.computeIfAbsent(i, docId -> {
-        try {
-          return docNC(docId, getFields);
-        } catch (IOException e) {
-          exceptionRef.set(e);
-          return null;
-        }
-      });
-      if (exceptionRef.get() != null) {
-        throw exceptionRef.get();
-      }
+      d = documentCache.computeIfAbsent(i, docId -> docNC(docId, getFields));
       if (d == null) {
         // failed to retrieve due to an earlier exception, try again?
         return docNC(i, fields);
@@ -516,7 +504,7 @@ public class SolrDocumentFetcher {
    *          The fields with docValues to populate the document with.
    *          DocValues fields which do not exist or not decodable will be ignored.
    */
-  public void decorateDocValueFields(@SuppressWarnings("rawtypes") SolrDocumentBase doc, int docid, Set<String> fields)
+  public void decorateDocValueFields(SolrDocumentBase<?,?> doc, int docid, Set<String> fields)
       throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);

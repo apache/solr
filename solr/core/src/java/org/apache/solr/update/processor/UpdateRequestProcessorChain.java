@@ -25,13 +25,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -121,7 +119,6 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
    * @see DistributedUpdateProcessorFactory
    */
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void init(PluginInfo info) {
     final String infomsg = "updateRequestProcessorChain \"" + 
       (null != info.name ? info.name : "") + "\"" + 
@@ -160,7 +157,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       // by default, add distrib processor immediately before run
       DistributedUpdateProcessorFactory distrib
         = new DistributedUpdateProcessorFactory();
-      distrib.init(new NamedList());
+      distrib.init(new NamedList<>());
       list.add(runIndex, distrib);
 
       log.debug("inserting DistributedUpdateProcessorFactory into {}", infomsg);
@@ -174,7 +171,6 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 
   }
 
-  @SuppressWarnings({"rawtypes"})
   private List<UpdateRequestProcessorFactory> createProcessors(PluginInfo info) {
     List<PluginInfo> processors = info.getChildren("processor");
     return processors.stream().map(it -> {
@@ -183,7 +179,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
             UpdateRequestProcessorFactory.class.getSimpleName(), null);
 
       } else {
-        return new LazyUpdateRequestProcessorFactory(new PackagePluginHolder(
+        return new LazyUpdateRequestProcessorFactory(new PackagePluginHolder<>(
             it,
             solrCore,
             SolrConfig.classVsSolrPluginInfo.get(UpdateRequestProcessorFactory.class.getName())));
@@ -278,7 +274,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   }
 
   private static void insertBefore(LinkedList<UpdateRequestProcessorFactory> urps, List<UpdateRequestProcessorFactory> newFactories,
-                                   @SuppressWarnings({"rawtypes"})Class klas, int idx) {
+                                   Class<?> klas, int idx) {
     if (newFactories.isEmpty()) return;
     for (int i = 0; i < urps.size(); i++) {
       if (klas.isInstance(urps.get(i))) {
@@ -309,11 +305,10 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
         p = core.getUpdateProcessors().get(s);
       }
       if (p == null) {
-        @SuppressWarnings({"unchecked"})
-        Class<UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
+        Class<? extends UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
         if(factoryClass != null) {
           PluginInfo pluginInfo = new PluginInfo("updateProcessor",
-              Utils.makeMap("name", s,
+              Map.of("name", s,
                   "class", factoryClass.getName()));
           UpdateRequestProcessorFactory plugin = p = core.getUpdateProcessors().createPlugin(pluginInfo).get();
           if (plugin instanceof SolrCoreAware) ((SolrCoreAware) plugin).inform(core);
@@ -360,7 +355,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   public static class LazyUpdateProcessorFactoryHolder extends PluginBag.PluginHolder<UpdateRequestProcessorFactory> {
     private volatile UpdateRequestProcessorFactory lazyFactory;
 
-    public LazyUpdateProcessorFactoryHolder(@SuppressWarnings({"rawtypes"})final PluginBag.PluginHolder holder) {
+    public LazyUpdateProcessorFactoryHolder(final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder) {
       super(holder.getPluginInfo());
       lazyFactory = new LazyUpdateRequestProcessorFactory(holder);
     }
@@ -374,8 +369,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     public static class LazyUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
       private final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder;
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder holder) {
+      public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder) {
         this.holder = holder;
       }
 
@@ -389,11 +383,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       }
     }
   }
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static final Map<String, Class> implicits = new ImmutableMap.Builder()
-      .put(TemplateUpdateProcessorFactory.NAME, TemplateUpdateProcessorFactory.class)
-      .put(AtomicUpdateProcessorFactory.NAME, AtomicUpdateProcessorFactory.class)
-      .put(UUIDUpdateProcessorFactory.NAME, UUIDUpdateProcessorFactory.class)
-      .build();
-
+  public static final Map<String, Class<? extends UpdateRequestProcessorFactory>> implicits = Map.of(
+      TemplateUpdateProcessorFactory.NAME, TemplateUpdateProcessorFactory.class,
+      AtomicUpdateProcessorFactory.NAME, AtomicUpdateProcessorFactory.class,
+      UUIDUpdateProcessorFactory.NAME, UUIDUpdateProcessorFactory.class);
 }

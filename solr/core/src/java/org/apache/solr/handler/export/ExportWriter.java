@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.FieldInfo;
@@ -81,7 +82,6 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * Prepares and writes the documents requested by /export requests
@@ -166,7 +166,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   protected void writeException(Exception e, PushWriter w, boolean logException) throws IOException {
     w.writeMap(mw -> {
       mw.put("responseHeader", singletonMap("status", 400))
-          .put("response", makeMap(
+          .put("response", Map.of(
               "numFound", 0,
               "docs", singletonList(singletonMap("EXCEPTION", e.getMessage()))));
     });

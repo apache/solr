@@ -321,8 +321,7 @@ public class PackageStoreAPI {
           int idx = path.lastIndexOf('/');
           String fileName = path.substring(idx + 1);
           String parentPath = path.substring(0, path.lastIndexOf('/'));
-          @SuppressWarnings({"rawtypes"})
-          List l = packageStore.list(parentPath, s -> s.equals(fileName));
+          List<PackageStore.FileDetails> l = packageStore.list(parentPath, s -> s.equals(fileName));
           rsp.add("files", Collections.singletonMap(path, l.isEmpty() ? null : l.get(0)));
           return;
         }
@@ -355,9 +354,9 @@ public class PackageStoreAPI {
     List<String> signatures;
     Map<String, Object> otherAttribs;
 
-    @SuppressWarnings({"unchecked"})
-    public MetaData(@SuppressWarnings({"rawtypes"})Map m) {
-      m = Utils.getDeepCopy(m, 3);
+    @SuppressWarnings("unchecked")
+    public MetaData(Map<String,Object> m) {
+      m = (Map<String, Object>) Utils.getDeepCopy(m, 3);
       this.sha512 = (String) m.remove(SHA512);
       this.signatures = (List<String>) m.remove("sig");
       this.otherAttribs = m;

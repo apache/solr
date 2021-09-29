@@ -53,8 +53,7 @@ public class TestV2Request extends SolrCloudTestCase {
         .forceV2(true)
         .withMethod(SolrRequest.METHOD.GET).build()
         .process(cluster.getSolrClient());
-    @SuppressWarnings({"rawtypes"})
-    List l = (List) rsp._get("nodes",null);
+    List<?> l = (List<?>) rsp._get("nodes",null);
     assertNotNull(l);
     assertFalse(l.isEmpty());
     rsp = new V2Request.Builder("/cluster/aliases")

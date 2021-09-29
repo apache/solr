@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 
 import net.thisptr.jackson.jq.JsonQuery;
@@ -89,24 +88,26 @@ public class MetricsQuery {
     return jsonQueries;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static List<MetricsQuery> from(Node node, Map<String,MetricsQueryTemplate> jqTemplates) throws JsonQueryException {
     List<MetricsQuery> metricsQueries = new ArrayList<>();
 
-    NamedList config = DOMUtil.childNodesToNamedList(node);
-    List<NamedList> requests = config.getAll("request");
+    NamedList<?> config = DOMUtil.childNodesToNamedList(node);
+    @SuppressWarnings("unchecked")
+    List<NamedList<?>> requests = (List<NamedList<?>>) config.getAll("request");
 
-    for (NamedList request : requests) {
-      NamedList query = (NamedList) request.get("query");
-      NamedList queryParameters = (NamedList) query.get("params");
+    for (NamedList<?> request : requests) {
+      NamedList<?> query = (NamedList<?>) request.get("query");
+      @SuppressWarnings("unchecked")
+      NamedList<String> queryParameters = (NamedList<String>) query.get("params");
       String path = (String) query.get("path");
       String core = (String) query.get("core");
       String collection = (String) query.get("collection");
+      @SuppressWarnings("unchecked")
       List<String> jsonQueries = (ArrayList<String>) request.get("jsonQueries");
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       if (queryParameters != null) {
-        for (Map.Entry<String, String> entrySet : (Set<Map.Entry<String, String>>) queryParameters.asShallowMap().entrySet()) {
+        for (Map.Entry<String, String> entrySet : queryParameters.asShallowMap().entrySet()) {
           params.add(entrySet.getKey(), entrySet.getValue());
         }
       }

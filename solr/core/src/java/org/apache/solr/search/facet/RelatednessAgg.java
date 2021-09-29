@@ -115,7 +115,7 @@ public class RelatednessAgg extends AggValueSource {
     RelatednessAgg that = (RelatednessAgg) o;
     return Objects.equals(fgQ, that.fgQ)
       && Objects.equals(bgQ, that.bgQ)
-      && Objects.equals(min_pop, that.min_pop);
+      && min_pop == that.min_pop;
   }
   
   @Override
@@ -124,7 +124,7 @@ public class RelatednessAgg extends AggValueSource {
   }
 
   @Override
-  public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
@@ -419,9 +419,7 @@ public class RelatednessAgg extends AggValueSource {
         slotVal.incSizes(fgSize, bgSize);
       }
 
-      @SuppressWarnings({"rawtypes"})
-      SimpleOrderedMap res = slotVal.externalize(fcontext.isShard());
-      return res;
+      return slotVal.externalize(fcontext.isShard());
     }
 
     @Override
@@ -527,11 +525,11 @@ public class RelatednessAgg extends AggValueSource {
       }
       BucketData that = (BucketData)other;
       // we will most certainly be compared to other buckets of the same Agg instance, so compare counts first
-      return Objects.equals(this.implied, that.implied)
-        && Objects.equals(this.fg_count, that.fg_count)
-        && Objects.equals(this.bg_count, that.bg_count)
-        && Objects.equals(this.fg_size, that.fg_size)
-        && Objects.equals(this.bg_size, that.bg_size)
+      return this.implied == that.implied
+        && this.fg_count == that.fg_count
+        && this.bg_count == that.bg_count
+        && this.fg_size == that.fg_size
+        && this.bg_size == that.bg_size
         && Objects.equals(this.agg, that.agg);
     }
 
@@ -594,9 +592,8 @@ public class RelatednessAgg extends AggValueSource {
      * @see Merger#getMergedResult
      */
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public SimpleOrderedMap externalize(final boolean isShardRequest) {
-      SimpleOrderedMap result = new SimpleOrderedMap<Number>();
+    public SimpleOrderedMap<Object> externalize(final boolean isShardRequest) {
+      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
 
       // if counts are non-zero, then this bucket must not be implied
       assert 0 == fg_count || ! implied : "Implied bucket has non-zero fg_count";

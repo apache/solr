@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
@@ -84,8 +85,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     SolrClient client = cluster.getJettySolrRunner(0).newClient();
 
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest req = new QueryRequest(new SolrQuery("*:*").setRows(0)).setBasicAuthCredentials(USERNAME, PASSWORD);
+    SolrRequest<QueryResponse> req = new QueryRequest(new SolrQuery("*:*").setRows(0)).setBasicAuthCredentials(USERNAME, PASSWORD);
 
     // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the nodes run out 
     // of serviceable threads and they crash, even for other collections hosted on the nodes).

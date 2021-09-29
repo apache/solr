@@ -29,7 +29,7 @@ public class ShufflingReplicaListTransformer implements ReplicaListTransformer {
     this.r = r;
   }
 
-  public void transform(List<?> choices)
+  public <T> void transform(List<T> choices)
   {
     if (choices.size() > 1) {
       Collections.shuffle(choices, r);

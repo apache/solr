@@ -34,7 +34,6 @@ public class PairSortEvaluator extends RecursiveNumericEvaluator implements TwoV
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object first, Object second) throws IOException{
     if(null == first){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
@@ -49,7 +48,9 @@ public class PairSortEvaluator extends RecursiveNumericEvaluator implements TwoV
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
+    @SuppressWarnings({"unchecked"})
     List<Number> l1 = (List<Number>)first;
+    @SuppressWarnings({"unchecked"})
     List<Number> l2 = (List<Number>)second;
 
     if(l2.size() != l1.size()){

@@ -83,7 +83,12 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       }
     }
   }
-  private static final ReplicaListTransformer NOOP_RLT = (List<?> choices) -> { /* noop */ };
+  private static final ReplicaListTransformer NOOP_RLT = new ReplicaListTransformer() {
+    @Override
+    public <T> void transform(List<T> choices) {
+      // Cannot use a method reference because of generic types!
+    }
+  };
   private static final ReplicaListTransformerFactory NOOP_RLTF =
       (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) -> NOOP_RLT;
   /**
@@ -111,6 +116,10 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
           case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
             lhs = hasCoreUrlPrefix(left, preferenceRule.value);
             rhs = hasCoreUrlPrefix(right, preferenceRule.value);
+            break;
+          case ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER:
+            lhs = hasLeaderStatus(left, preferenceRule.value);
+            rhs = hasLeaderStatus(right, preferenceRule.value);
             break;
           case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
             if (sysPropsCache == null) {
@@ -161,12 +170,21 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       return s.startsWith(prefix);
     }
   }
+
   private static boolean hasReplicaType(Object o, String preferred) {
     if (!(o instanceof Replica)) {
       return false;
     }
     final String s = ((Replica)o).getType().toString();
     return s.equalsIgnoreCase(preferred);
+  }
+
+  private static boolean hasLeaderStatus(Object o, String status) {
+    if (!(o instanceof Replica)) {
+      return false;
+    }
+    final boolean leaderStatus = ((Replica) o).isLeader();
+    return leaderStatus == Boolean.parseBoolean(status);
   }
 
   public List<PreferenceRule> getSortRules() {

@@ -39,14 +39,12 @@ public class V2StandaloneTest extends SolrTestCaseJ4{
     jetty.start();
 
     try (HttpSolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort(),"/solr/"))) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList res = client.request(new V2Request.Builder("/").build());
-      @SuppressWarnings({"rawtypes"})
-      NamedList header = (NamedList) res.get("responseHeader");
+      NamedList<?> res = client.request(new V2Request.Builder("/").build());
+      NamedList<?> header = (NamedList<?>) res.get("responseHeader");
       assertEquals(0, header.get("status"));
 
       res = client.request(new V2Request.Builder("/_introspect").build());
-      header = (NamedList) res.get("responseHeader");
+      header = (NamedList<?>) res.get("responseHeader");
       assertEquals(0, header.get("status"));
     }
 

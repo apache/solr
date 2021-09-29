@@ -332,8 +332,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
-      @SuppressWarnings({"rawtypes"})
-      NamedList response = cloudSolrClient.request(request, collection);
+      NamedList<?> response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);
     } catch (Exception e) {
       throw new IOException(e);
@@ -444,32 +443,29 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     buf.append("}}");
   }
 
-  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response,
+  private void getTuples(NamedList<?> response,
                          String field,
                          Metric[] metrics) {
 
     Tuple tuple = new Tuple();
-    @SuppressWarnings({"rawtypes"})
-    NamedList facets = (NamedList)response.get("facets");
+    NamedList<?> facets = (NamedList<?>)response.get("facets");
     fillTuples(tuples, tuple, facets, field, metrics);
   }
 
   private void fillTuples(List<Tuple> tuples,
                           Tuple currentTuple,
-                          @SuppressWarnings({"rawtypes"})NamedList facets,
+                          NamedList<?> facets,
                           String field,
                           Metric[] _metrics) {
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList)facets.get("timeseries");
+    NamedList<?> nl = (NamedList<?>)facets.get("timeseries");
     if(nl == null) {
       return;
     }
-    @SuppressWarnings({"rawtypes"})
-    List allBuckets = (List)nl.get("buckets");
+    @SuppressWarnings("unchecked")
+    List<NamedList<?>> allBuckets = (List<NamedList<?>>)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList bucket = (NamedList)allBuckets.get(b);
+      NamedList<?> bucket = allBuckets.get(b);
       Object val = bucket.get("val");
       Tuple tx = currentTuple.clone();
 
@@ -481,16 +477,14 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
       tx.put(field, val);
 
       if(split != null) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList splitBuckets = (NamedList) bucket.get("split");
+        NamedList<?> splitBuckets = (NamedList<?>) bucket.get("split");
         if(splitBuckets == null) {
           continue;
         }
-        @SuppressWarnings({"rawtypes"})
-        List sbuckets = (List)splitBuckets.get("buckets");
+        @SuppressWarnings({"unchecked"})
+        List<NamedList<?>> sbuckets = (List<NamedList<?>>)splitBuckets.get("buckets");
         for (int d = 0; d < sbuckets.size(); d++) {
-          @SuppressWarnings({"rawtypes"})
-          NamedList bucketS = (NamedList) sbuckets.get(d);
+          NamedList<?> bucketS = sbuckets.get(d);
           Object valS = bucketS.get("val");
           if (valS instanceof Integer) {
             valS = ((Integer) valS).longValue();

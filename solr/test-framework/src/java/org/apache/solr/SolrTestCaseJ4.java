@@ -170,6 +170,7 @@ import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase.
@@ -227,6 +228,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  protected void assertExceptionThrownWithMessageContaining(Class<? extends Throwable> expectedType,
+                                                            List<String> expectedStrings, ThrowingRunnable runnable) {
+    Throwable thrown = expectThrows(expectedType, runnable);
+
+    if (expectedStrings != null) {
+      for (String expectedString : expectedStrings) {
+        assertThat(thrown.getMessage(), containsString(expectedString));
+      }
+    }
+  }
+
   /**
    * Annotation for test classes that want to disable SSL
    */
@@ -254,7 +266,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
-  protected static volatile SSLTestConfig sslConfig;
+  public static volatile SSLTestConfig sslConfig;
 
   @Rule
   public TestRule solrTestRules = 
@@ -288,10 +300,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
-    System.setProperty("enable.update.log", usually() ? "true" : "false");
+    System.setProperty("enable.update.log", Boolean.toString(usually()));
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
+    System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
     System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
@@ -477,10 +490,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   private static Map<String, Level> savedClassLogLevels = new HashMap<>();
 
   public static void initClassLogLevels() {
-    @SuppressWarnings({"rawtypes"})
-    Class currentClass = RandomizedContext.current().getTargetClass();
-    @SuppressWarnings({"unchecked"})
-    LogLevel annotation = (LogLevel) currentClass.getAnnotation(LogLevel.class);
+    Class<?> currentClass = RandomizedContext.current().getTargetClass();
+    LogLevel annotation = currentClass.getAnnotation(LogLevel.class);
     if (annotation == null) {
       return;
     }
@@ -1325,14 +1336,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return msp;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Map map(Object... params) {
-    LinkedHashMap ret = new LinkedHashMap();
-    for (int i=0; i<params.length; i+=2) {
-      Object o = ret.put(params[i], params[i+1]);
-      // TODO: handle multi-valued map?
-    }
-    return ret;
+  public static Map<String, String> map(String... params) {
+    return Utils.makeMap(params);
+  }
+
+  public static Map<String, Object> map(Object... params) {
+    return Utils.makeMap(params);
   }
 
   /**
@@ -2982,8 +2991,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.clearProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST);
   }
 
-  @SuppressWarnings({"unchecked"})
-  protected <T> T pickRandom(T... options) {
+  @SafeVarargs
+  protected static <T> T pickRandom(T... options) {
     return options[random().nextInt(options.length)];
   }
   
@@ -3033,7 +3042,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @lucene.experimental
    * @lucene.internal
    */
-  @SuppressWarnings({"rawtypes"})
   private static void randomizeNumericTypesProperties() {
 
     final boolean useDV = random().nextBoolean();
@@ -3071,7 +3079,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     }
-    for (Map.Entry<Class,String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
+    for (Map.Entry<Class<?>,String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
       System.setProperty("solr.tests." + entry.getKey().getSimpleName() + "FieldType",
                          entry.getValue());
 
@@ -3097,7 +3105,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
     System.clearProperty("solr.tests.numeric.points");
     System.clearProperty("solr.tests.numeric.points.dv");
-    for (@SuppressWarnings({"rawtypes"})Class c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
+    for (Class<?> c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
       System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
     }
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
@@ -3113,8 +3121,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static boolean isChildDoc(Object o) {
     if(o instanceof Collection) {
-      @SuppressWarnings({"rawtypes"})
-      Collection col = (Collection) o;
+      Collection<?> col = (Collection<?>) o;
       if(col.size() == 0) {
         return false;
       }
@@ -3123,8 +3130,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return o instanceof SolrInputDocument;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
+  private static final Map<Class<?>,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
   
   /**
    * A Map of "primitive" java "numeric" types and the string name of the <code>class</code> used in the
@@ -3135,8 +3141,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #randomizeNumericTypesProperties
    */
-  @SuppressWarnings({"rawtypes"})
-  protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
+  protected static final Map<Class<?>,String> RANDOMIZED_NUMERIC_FIELDTYPES
     = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
 
 }

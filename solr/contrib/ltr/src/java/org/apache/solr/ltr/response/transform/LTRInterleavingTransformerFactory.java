@@ -32,8 +32,7 @@ import org.apache.solr.util.SolrPluginUtils;
 public class LTRInterleavingTransformerFactory extends TransformerFactory {
   
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     SolrPluginUtils.invokeSetters(this, args);
   }

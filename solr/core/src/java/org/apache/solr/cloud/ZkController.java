@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
@@ -2191,11 +2192,9 @@ public class ZkController implements Closeable {
     try {
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if (data == null) return;
-      @SuppressWarnings({"rawtypes"})
-      Map roles = (Map) Utils.fromJSON(data);
+      Map<?,?> roles = (Map<?,?>) Utils.fromJSON(data);
       if (roles == null) return;
-      @SuppressWarnings({"rawtypes"})
-      List nodeList = (List) roles.get("overseer");
+      List<?> nodeList = (List<?>) roles.get("overseer");
       if (nodeList == null) return;
       if (nodeList.contains(getNodeName())) {
         ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.ADDROLE.toString().toLowerCase(Locale.ROOT),
@@ -2628,8 +2627,8 @@ public class ZkController implements Closeable {
         }
         registeredSearcher.decref();
       } else  {
-        @SuppressWarnings({"rawtypes"})
-        Future[] waitSearcher = new Future[1];
+        @SuppressWarnings("unchecked")
+        Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
         if (log.isInfoEnabled()) {
           log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
         }

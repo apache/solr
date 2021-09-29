@@ -415,19 +415,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType","edismax", "mm","0", "q","Terminator: 100", "qf","movies_t foo_i"),
             twor);
 
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","true"),
-            nor);
-    // When sow=false, the per-field query structures differ (no "Terminator" query on integer field foo_i),
-    // so a dismax-per-field is constructed.  As a result, mm=100% is applied per-field instead of per-term;
-    // since there is only one term (100) required in the foo_i field's dismax, the query can match docs that
-    // only have the 100 term in the foo_i field, and don't necessarily have "Terminator" in any field.
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i", "sow","false"),
-            oner);
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i"), // default sow=false
-        oner);
-
-    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i"),
-            oner);
+    
 
     assertQ(req("defType","edismax", "mm","0", "q","movies_t:Terminator 100", "qf","movies_t foo_i"),
             twor);
@@ -1775,7 +1763,34 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     String resp = h.query(request);
     return (String) BaseTestHarness.evaluateXPath(resp, "//str[@name='parsedquery']/text()", XPathConstants.STRING);
   }
-  
+
+  public void testSplitOnWhitespace_shouldRespectMinimumShouldMatch() {
+    String oner = "*[count(//doc)=1]";
+    String nor = "*[count(//doc)=0]";
+    /*
+     * in multi-field search with different analysis per field
+     * sow=true causes the minimum should match to be "per document"
+     * i.e a document to be a match must contain all the mm query terms anywhere at least once
+     * sow=false causes the minimum should match to be "per field"
+     * i.e a document to be a match must contain all the mm query terms in a single field at least once
+     * See  https://issues.apache.org/jira/browse/SOLR-12779 for additional details
+     */
+    assertQ(req("defType", "edismax", "mm", "100%", "q", "Terminator: 100", "qf", "movies_t foo_i", "sow", "true"),
+        nor); //no document contains both terms, in a field or in multiple field
+    assertQ(req("defType", "edismax", "mm", "100%", "q", "Terminator: 100", "qf", "movies_t foo_i", "sow", "false"),
+        nor); //no document contains both terms in a field
+
+    assertQ(req("defType", "edismax", "mm", "100%", "q", "Terminator: 8", "qf", "movies_t foo_i", "sow", "true"),
+        oner); //document 46 contains both terms, Terminator in movies_t and 8 in foo_i
+    assertQ(req("defType", "edismax", "mm", "100%", "q", "Terminator: 8", "qf", "movies_t foo_i", "sow", "false"),
+        nor); //no document contains both terms in a field
+
+    assertQ(req("defType", "edismax", "mm", "100%", "q", "mission impossible Terminator: 8", "qf", "movies_t foo_i", "sow", "true"),
+        oner); //document 46 contains all terms, mission, impossible, Terminator in movies_t and 8 in foo_i
+    assertQ(req("defType", "edismax", "mm", "100%", "q", "mission impossible Terminator: 8", "qf", "movies_t foo_i", "sow", "false"),
+        nor); //no document contains all terms, in a field
+  }
+    
   public void testSplitOnWhitespace_Different_Field_Analysis() throws Exception {
     // When the *structure* of produced queries is different in each field, 
     // sow=true produces boolean-of-dismax query structure,

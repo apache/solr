@@ -29,14 +29,13 @@ import org.junit.Test;
 public class TokenizerChainTest extends SolrTestCaseJ4 {
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testNormalization() throws Exception {
     String fieldName = "f";
     TokenFilterFactory[] tff = new TokenFilterFactory[2];
-    tff[0] = new LowerCaseFilterFactory(Collections.EMPTY_MAP);
-    tff[1] = new ASCIIFoldingFilterFactory(Collections.EMPTY_MAP);
+    tff[0] = new LowerCaseFilterFactory(Collections.emptyMap());
+    tff[1] = new ASCIIFoldingFilterFactory(Collections.emptyMap());
     TokenizerChain tokenizerChain = new TokenizerChain(
-        new MockTokenizerFactory(Collections.EMPTY_MAP),
+        new MockTokenizerFactory(Collections.emptyMap()),
         tff);
     assertEquals(new BytesRef("fooba"),
         tokenizerChain.normalize(fieldName, "FOOB\u00c4"));

@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.facet.FacetModule;
@@ -87,14 +86,6 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
    */
   public void setName(String name) {
     this.name = name;
-  }
-
-
-  //////////////////////// NamedListInitializedPlugin methods //////////////////////
-  @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
-  {
-    // By default do nothing
   }
 
   //////////////////////// SolrInfoBean methods //////////////////////

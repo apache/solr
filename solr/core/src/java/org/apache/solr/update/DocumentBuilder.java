@@ -172,8 +172,7 @@ public class DocumentBuilder {
       // load each field value
       boolean hasField = false;
       try {
-        @SuppressWarnings({"rawtypes"})
-        Iterator it = field.iterator();
+        Iterator<?> it = field.iterator();
         while (it.hasNext()) {
           Object v = it.next();
           if( v == null ) {

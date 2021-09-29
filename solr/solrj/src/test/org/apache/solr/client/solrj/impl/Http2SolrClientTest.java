@@ -29,7 +29,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -41,6 +40,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -554,7 +554,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   private void verifyServletState(Http2SolrClient client,
-                                  @SuppressWarnings({"rawtypes"})SolrRequest request) {
+                                  SolrRequest<?> request) {
     // check query String
     Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
     while (paramNames.hasNext()) {
@@ -674,7 +674,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertTrue(DebugServlet.headers.size() > 0);
       String authorizationHeader = DebugServlet.headers.get("authorization");
       assertNotNull("No authorization information in headers found. Headers: " + DebugServlet.headers, authorizationHeader);
-      assertEquals("Basic " + Base64.byteArrayToBase64("foo:explicit".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
+      assertEquals("Basic " + Base64.getEncoder().encodeToString("foo:explicit".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
     }
   }
 
@@ -696,7 +696,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertTrue(DebugServlet.headers.size() > 0);
       String authorizationHeader = DebugServlet.headers.get("authorization");
       assertNotNull("No authorization information in headers found. Headers: " + DebugServlet.headers, authorizationHeader);
-      assertEquals("Basic " + Base64.byteArrayToBase64("foo:bar".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
+      assertEquals("Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
     } finally {
       System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
       System.clearProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
@@ -720,7 +720,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertTrue(DebugServlet.headers.size() > 0);
       String authorizationHeader = DebugServlet.headers.get("authorization");
       assertNotNull("No authorization information in headers found. Headers: " + DebugServlet.headers, authorizationHeader);
-      assertEquals("Basic " + Base64.byteArrayToBase64("foo3:per-request".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
+      assertEquals("Basic " + Base64.getEncoder().encodeToString("foo3:per-request".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
     } finally {
       System.clearProperty("basicauth");
     }

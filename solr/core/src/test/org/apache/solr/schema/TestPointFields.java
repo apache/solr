@@ -3859,8 +3859,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   public void testWhiteboxCreateFields() throws Exception {
     String[] typeNames = new String[]{"i", "l", "f", "d", "dt"};
-    @SuppressWarnings({"rawtypes"})
-    Class<?>[] expectedClasses = new Class[]{IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class, LongPoint.class};
+    Class<?>[] expectedClasses = new Class<?>[]{IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class, LongPoint.class};
     
     Date dateToTest = new Date();
     Object[][] values = new Object[][] {
