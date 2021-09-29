@@ -103,6 +103,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
     assertEquals("ms.isAutoIOThrottle", true, ms.getAutoIOThrottle());
 
+    assertNull("indexSort", iwc.getIndexSort());
   }
 
   @Test
@@ -125,6 +126,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
     assertEquals("ms.isAutoIOThrottle", false, ms.getAutoIOThrottle());
 
+    assertNull("indexSort", iwc.getIndexSort());
   }
 
   public void testSortingMPSolrIndexConfigCreation() throws Exception {
@@ -178,6 +180,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     h.getCore().setLatestSchema(indexSchema);
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(SimpleMergedSegmentWarmer.class, iwc.getMergedSegmentWarmer().getClass());
+
+    assertNull("indexSort", iwc.getIndexSort());
   }
 
   public void testToMap() throws Exception {
