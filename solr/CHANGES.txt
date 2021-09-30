@@ -41,6 +41,9 @@ New Features
 
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
+* SOLR-7642: opt-in support to create ZK chroot on startup (Timothy Potter, Shawn Heisey, Mark Miller, Tomas Eduardo Fernandez Lobbe,
+  Jan Høydahl, Steve Molloy, Isabelle Giguere, David Eric Pugh, Gus Heck, Christine Poerschke, Houston Putman)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
