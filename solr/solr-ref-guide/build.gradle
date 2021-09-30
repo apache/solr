@@ -38,6 +38,17 @@ versionsLock {
 
 description = 'Solr reference guide'
 
+def dockerImageRepo = propertyOrEnvOrDefault("solr.ref-guide.skip", "SOLR_REF_GUIDE_SKIP", "false")
+if (dockerImageRepo.toLowerCase().startsWith("t")) {
+    gradle.taskGraph.whenReady {
+        gradle.taskGraph.allTasks.each {
+            if(it.project == project) {
+                it.setEnabled(false)
+            }
+        }
+    }
+}
+
 // Use an internal proxy to ruby gems.
 repositories {
     ruby.gems()

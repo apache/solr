@@ -39,3 +39,10 @@ Other validation and checks
 Generate a report of dependencies with known OWASP vulnerabilities:
 gradlew :dependencyCheckAnalyze
 open ./build/reports/dependency-check-report.html
+
+Additional General Options
+==========================
+
+Use the following environment variable or gradle property to ignore all ref-guide steps when running gradle tasks.
+`-Psolr.ref-guide.skip=true`
+`SOLR_REF_GUIDE_SKIP=true`
