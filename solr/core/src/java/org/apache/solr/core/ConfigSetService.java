@@ -54,6 +54,28 @@ public abstract class ConfigSetService {
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
     final ConfigSetService configSetService = instantiate(coreContainer);
+
+    // bootstrap conf if provided
+    String confDir = System.getProperty("bootstrap_confdir");
+    boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+    try {
+      if(confDir != null) {
+        Path configPath = Paths.get(confDir);
+        if (!Files.isDirectory(configPath))
+          throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
+
+        String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
+        configSetService.uploadConfig(confName, configPath);
+      }
+
+      if(boostrapConf) {
+        ConfigSetService.bootstrapConf(coreContainer);
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "bootstrap_conf couldn't be uploaded ", e);
+    }
+
+    // bootstrap _default conf
     try {
       bootstrapDefaultConfigSet(configSetService);
     } catch (UnsupportedOperationException e) {
