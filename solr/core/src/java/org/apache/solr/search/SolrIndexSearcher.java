@@ -178,11 +178,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (cmd.getSegmentTerminateEarly()) {
       final Sort cmdSort = cmd.getSort();
       final int cmdLen = cmd.getLen();
-      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort(); // TODO: need this account for indexSort also?
 
-      if (cmdSort == null || cmdLen <= 0 || mergeSort == null ||
-          !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
-        log.warn("unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}", cmdSort, cmdLen, mergeSort);
+      final Sort indexOrMergeSort;
+      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
+      final Sort indexSort;
+      {
+        final String indexSortStr = core.getSolrConfig().indexConfig.indexSort;
+        if (indexSortStr != null) {
+          indexSort = SortSpecParsing.parseSortSpec(indexSortStr, core.getLatestSchema()).getSort();
+          indexOrMergeSort = indexSort;
+        } else {
+          indexSort = null;
+          indexOrMergeSort = mergeSort;
+        }
+      }
+
+      if (cmdSort == null || cmdLen <= 0 || indexOrMergeSort == null ||
+          !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, indexOrMergeSort)) {
+        log.warn("unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} indexOrMergeSort={}", cmdSort, cmdLen, indexOrMergeSort);
       } else {
         collector = earlyTerminatingSortingCollector = new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen());
       }
