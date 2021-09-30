@@ -227,6 +227,8 @@ What percentage of them get reported to a tracing server is up to you.
 
 === Schema Changes in 9
 
+* `LegacyBM25SimilarityFactory` has been removed.
+
 === Authentication & Security Changes in Solr 9
 
 * BasicAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.

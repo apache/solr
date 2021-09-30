@@ -41,6 +41,9 @@ New Features
 
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
+* SOLR-7642: opt-in support to create ZK chroot on startup (Timothy Potter, Shawn Heisey, Mark Miller, Tomas Eduardo Fernandez Lobbe,
+  Jan Høydahl, Steve Molloy, Isabelle Giguere, David Eric Pugh, Gus Heck, Christine Poerschke, Houston Putman)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -150,6 +153,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15650: Choosing lucene defType in Solr Admin now is passed explicitly through UI, not relying on default solrconfig.xml behavior.  (Eric Pugh)
 
+* SOL4-12848: SolrJ and the server can now recognize some standard Java system properties like
+  for an HTTP proxy.  This is only for the Apache HttpClient based SolrJ communication, not Jetty.
+  (Shawn Heisey, David Smiley)
 
 Build
 ---------------------
@@ -354,6 +360,8 @@ Other Changes
 * SOLR-15612: Remove unecessary https8 jetty module (Houston Putman)
 
 * SOLR-15606: Rename (deprecated) Insanity.java to NumericHidingLeafReader.java adjusting callers to match. (Christine Poerschke)
+
+* SOLR-13138: Remove deprecated LegacyBM25SimilarityFactory class. (Christine Poerschke, janhoy)
 
 Bug Fixes
 ---------------------
