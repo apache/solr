@@ -62,7 +62,7 @@ public abstract class ConfigSetService {
       if(confDir != null) {
         Path configPath = Paths.get(confDir);
         if (!Files.isDirectory(configPath))
-          throw new IllegalArgumentException(String.format("bootstrap_confdir must be a directory of configuration files, configPath: %s", configPath));
+          throw new IllegalArgumentException(String.format(Locale.ROOT,"bootstrap_confdir must be a directory of configuration files, configPath: %s", configPath));
 
         String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
         configSetService.uploadConfig(confName, configPath);
