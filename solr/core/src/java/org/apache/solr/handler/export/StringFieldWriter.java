@@ -104,7 +104,7 @@ class StringFieldWriter extends FieldWriter {
       }
 
       this.lastOrd = stringValue.currentOrd;
-    } else {
+    } else if (fieldType.isUtf8Field()) {
       // field is not part of 'sort' param, but part of 'fl' param
       DocValuesRefIterator vals = dvRefIterCache.getDocValuesRefIterator(sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (!vals.advanceExact(sortDoc.docId)) {
@@ -114,7 +114,6 @@ class StringFieldWriter extends FieldWriter {
     }
 
     if (ref == null) {
-      // TODO: can/should we move this into `if` block above (where we already know `ref==null`, and reorder?
       //Reuse the last DocValues object if possible
       int readerOrd = readerContext.ord;
       SortedDocValues vals = null;
