@@ -157,6 +157,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   for an HTTP proxy.  This is only for the Apache HttpClient based SolrJ communication, not Jetty.
   (Shawn Heisey, David Smiley)
 
+* SOLR-15301: Eliminate repetitive index size calculation for Solr metrics (Andras Salamon)
+
 Build
 ---------------------
 

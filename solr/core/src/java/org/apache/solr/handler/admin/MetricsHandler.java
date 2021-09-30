@@ -117,6 +117,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
+    cc.getCores().forEach((core) -> core.clearIndexSizeCache());
     boolean compact = params.getBool(COMPACT_PARAM, true);
     String[] keys = params.getParams(KEY_PARAM);
     if (keys != null && keys.length > 0) {
