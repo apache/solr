@@ -55,6 +55,7 @@ def extensions = [
     'py',
     'sh',
     'template',
+    'txt',
     'vm',
     'xml',
     'xsl',
@@ -79,6 +80,9 @@ subprojects {
       // default excludes.
       exclude 'build/**'
       exclude '**/.idea/**'
+
+      // ignore txt files in source resources and tests.
+      exclude 'src/**/*.txt'
     }
   }
 
@@ -93,6 +97,12 @@ configure(project(':solr:core')) {
   }
 }
 
+configure(project(':solr:server')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude '**/configsets/**'
+  }
+}
+
 configure(rootProject) {
   task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'
@@ -103,10 +113,6 @@ configure(rootProject) {
         include "**/*.${it}"
       }
 
-      // We do not scan for *.txt by default (broken files in subprojects),
-      // but in root we can do this).
-      include '**/*.txt'
-
       // Don't go into child projects (scanned separately).
       childProjects.keySet().each{
         exclude "${it}/**"
@@ -114,7 +120,6 @@ configure(rootProject) {
 
       // default excludes.
       exclude '**/build/**'
-      exclude '**/.idea/**'
       exclude 'dev-tools/solr-missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
 
       // ourselves :-)
@@ -182,8 +187,8 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
 
     def isLicense = { matcher, ratDocument ->
-      licenseMatcher.reset();
-      return lineSplitter.split(matcher.group(1)).any{ licenseMatcher.match(ratDocument, it) };
+      licenseMatcher.reset()
+      return lineSplitter.split(matcher.group(1)).any { licenseMatcher.match(ratDocument, it) }
     }
 
     def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
@@ -205,7 +210,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
 
     def checkMockitoAssume = { f, text ->
       if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
-        reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call');
+        reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call')
       }
     }
 
@@ -213,7 +218,6 @@ class ValidateSourcePatternsTask extends DefaultTask {
     progress.start(this.name, this.name)
 
     sourceFiles.each{ f ->
-
       progress.progress("Scanning ${f.name}")
       logger.debug('Scanning source file: {}', f);
 
@@ -261,8 +265,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
           checkMockitoAssume(f, text);
         }
 
-        if (project.path.startsWith(':solr:')
-            && f.name.equals("SolrTestCase.java") == false
+        if (f.name.equals("SolrTestCase.java") == false
             && f.name.equals("TestXmlQParser.java") == false) {
           if (extendsLuceneTestCasePattern.matcher(text).find()) {
             reportViolation(f, "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
