@@ -230,8 +230,6 @@ grant {
   permission java.io.FilePermission "${gradle.worker.jar}", "read";
   // Allow reading from classpath JARs (resources).
   permission java.io.FilePermission "${gradle.user.home}${/}-", "read";
-  // Allow reading from local Lucene development repository, if used.
-  permission java.io.FilePermission "${lucene-dev-repo.dir}${/}-", "read";
-  // Allow reading Lucene jars from mavenLocal repository, if `-Dlucene.version` explicitly specified
-  permission java.io.FilePermission "${lucene-maven-local.dir}${/}-", "read";
+  // Allow read access to Lucene jars if "-Plucene.dev.version=" or "-Plucene.dev.path=" is used
+  permission java.io.FilePermission "${lucene-dev-path.dir}${/}-", "read";
 };
