@@ -231,8 +231,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String nodeName = replicaPosition.node;
 
-        String coreName = Assign.buildSolrCoreName(ccc.getSolrCloudManager().getDistribStateManager(),
-            ccc.getSolrCloudManager().getClusterStateProvider().getClusterState().getCollection(collectionName),
+        String coreName = Assign.buildSolrCoreName(ccc.getSolrCloudManager().getDistribStateManager(), collectionName,
+            ccc.getSolrCloudManager().getClusterStateProvider().getClusterState().getCollectionOrNull(collectionName),
             replicaPosition.shard, replicaPosition.type, true);
         if (log.isDebugEnabled()) {
           log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
