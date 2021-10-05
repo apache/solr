@@ -362,7 +362,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     testHandleVersionsWithRangesMissingOneOfTwo(false /* highestMissing */);
     testHandleVersionsWithRangesMissingOneOfTwo(true /* highestMissing */);
     testHandleVersionsWithRangesMissingMiddleOfThree();
-    testHandleVersionsWithRangesMissingOneRange();
+    testHandleVersionsWithRangesMissingOneRange(false /* duplicateMiddle */);
+    testHandleVersionsWithRangesMissingOneRange(true /* duplicateMiddle */);
     testHandleVersionsWithRangesMissingTwoRanges();
   }
 
@@ -464,16 +465,19 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
   }
 
-  private static void testHandleVersionsWithRangesMissingOneRange() throws Exception {
+  private static void testHandleVersionsWithRangesMissingOneRange(boolean duplicateMiddle) throws Exception {
     for (boolean completeList : new boolean[] { false , true }) {
-      List<Long> otherVersions = List.of(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L);
+      List<Long> otherVersions = duplicateMiddle
+          ? List.of(9L, 8L, 7L, 6L, 5L, 5L, 4L, 3L, 2L, 1L)
+              : List.of(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L);
       LinkedList<Long> ourUpdates = new LinkedList<>(List.of(9L, 8L, 7L, 3L, 2L, 1L));
+      long expectedTotalRequestedUpdates = duplicateMiddle ? 4L : 3L;
       {
         long ourLowThreshold = ourUpdates.getLast(); // lowest in descending list
         MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
             otherVersions, completeList, ourUpdates, ourLowThreshold);
         // request all we are missing
-        assertEquals(3L, mur.totalRequestedUpdates);
+        assertEquals(expectedTotalRequestedUpdates, mur.totalRequestedUpdates);
         assertEquals("4...6", mur.versionsAndRanges);
       }
       {
@@ -482,7 +486,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
             otherVersions, completeList, ourUpdates, ourLowThreshold);
         if (completeList) {
           // request all we are missing since we want a complete list
-          assertEquals(3L, mur.totalRequestedUpdates);
+          assertEquals(expectedTotalRequestedUpdates, mur.totalRequestedUpdates);
           assertEquals("4...6", mur.versionsAndRanges);
         } else {
           // request no updates because ???
@@ -496,7 +500,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
             otherVersions, completeList, ourUpdates, ourLowThreshold);
         if (completeList) {
           // request all we are missing since we want a complete list
-          assertEquals(3L, mur.totalRequestedUpdates);
+          assertEquals(expectedTotalRequestedUpdates, mur.totalRequestedUpdates);
           assertEquals("4...6", mur.versionsAndRanges);
         } else {
           // request no updates because ???
@@ -510,7 +514,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
             otherVersions, completeList, ourUpdates, ourLowThreshold);
         if (completeList) {
           // request all we are missing since we want a complete list
-          assertEquals(3L, mur.totalRequestedUpdates);
+          assertEquals(expectedTotalRequestedUpdates, mur.totalRequestedUpdates);
           assertEquals("4...6", mur.versionsAndRanges);
         } else {
           // request no updates since we don't need a complete list ...
