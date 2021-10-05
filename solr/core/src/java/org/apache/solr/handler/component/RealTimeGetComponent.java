@@ -1265,10 +1265,12 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      Set<Long> updateVersions = new HashSet<>();
       for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);
           if (o == null) continue;
+          updateVersions.add(version);
 
           if (version > 0) {
             minVersion = Math.min(minVersion, version);
@@ -1285,7 +1287,7 @@ public class RealTimeGetComponent extends SearchComponent
       // Must return all delete-by-query commands that occur after the first add requested
       // since they may apply.
       if (params.getBool("skipDbq", false)) {
-        updates.addAll(recentUpdates.getDeleteByQuery(minVersion));
+        updates.addAll(recentUpdates.getDeleteByQuery(minVersion, updateVersions));
       }
 
       rb.rsp.add("updates", updates);
