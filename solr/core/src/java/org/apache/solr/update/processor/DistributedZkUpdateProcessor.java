@@ -314,6 +314,23 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
+
+    // if using the CompositeId router and route field is missing, distribute to all shard leaders
+    if(cmd.getRoute()==null) {
+      zkCheck();
+      DocCollection coll = zkController.getClusterState().getCollection(collection);
+      DocRouter router = coll.getRouter();
+      String routeField = router.getRouteField(coll);
+      if (router instanceof CompositeIdRouter && routeField != null)  {
+        DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+        if (phase == DistribPhase.NONE) {
+          log.debug("Using compositeId router and deleteById command is with missing route value, distributing to all shard leaders");
+        }
+        doDeleteByQuery(cmd);
+        return;
+      }
+    }
+
     setupRequest(cmd);
 
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
@@ -325,24 +342,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDistribDeleteById(DeleteUpdateCommand cmd) throws IOException {
-
-    zkCheck();
-
-    // if using the CompositeId router and route field is missing, distribute to all shard leaders
-    if(cmd.getRoute()==null) {
-      DocCollection coll = zkController.getClusterState().getCollection(collection);
-      DocRouter router = coll.getRouter();
-      String routeField = router.getRouteField(coll);
-      if (router instanceof CompositeIdRouter && routeField != null)  {
-        DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
-        if (phase == DistribPhase.NONE) {
-          log.debug("Using compositeId router with the router.field defined, distributing delete command to all shard leaders");
-        }
-        doDeleteByQuery(cmd);
-        return;
-      }
-    }
-
     if (isLeader && !isSubShardLeader)  {
       DocCollection coll = clusterState.getCollection(collection);
       List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getId(), null);
