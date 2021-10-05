@@ -781,7 +781,7 @@ public class PeerSync implements SolrMetricProducer {
     public MissedUpdatesRequest find(List<Long> otherVersions, Object updateFrom) {
       otherVersions.sort(absComparator);
       if (debug) {
-        log.debug("{} sorted versions from {} = {}", logPrefix, otherVersions, updateFrom);
+        log.debug("{} sorted versions from {} = {}", logPrefix, updateFrom, otherVersions);
       }
 
       long otherHigh = percentile(otherVersions, .2f);
