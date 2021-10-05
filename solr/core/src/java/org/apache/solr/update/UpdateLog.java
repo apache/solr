@@ -1474,12 +1474,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     /** Returns the list of deleteByQueries that happened after the given version */
-    public List<Object> getDeleteByQuery(long afterVersion) {
+    public List<Object> getDeleteByQuery(long afterVersion, Set<Long> updateVersions) {
       List<Object> result = new ArrayList<>(deleteByQueryList.size());
       for (Update update : deleteByQueryList) {
         if (Math.abs(update.version) > afterVersion) {
-          Object dbq = update.log.lookup(update.pointer);
-          result.add(dbq);
+          if (updateVersions.add(update.version)) {
+            Object dbq = update.log.lookup(update.pointer);
+            result.add(dbq);
+          } else {
+            if (debug) {
+              log.debug("UpdateLog.RecentUpdates.getDeleteByQuery(afterVersion={}) not returning duplicate version = {}",
+                  afterVersion, update.version);
+            }
+          }
         }
       }
       return result;
