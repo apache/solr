@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import org.apache.logging.log4j.util.Strings;
+import com.google.common.base.Strings;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -259,14 +259,14 @@ public class ShowFileRequestHandler extends RequestHandlerBase
    * If an HTML type is requested, it is instead returned as text/plain
    */
   public static String getSafeContentType(String contentType) {
-    if (Strings.isBlank(contentType)) {
+    if (Strings.isNullOrEmpty(contentType)) {
       log.debug("No contentType specified");
       return null;
     }
     if (!MimeTypes.getKnownMimeTypes().contains(contentType)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Requested content type '" + contentType + "' is not supported.");
     }
-    if (contentType.toLowerCase().contains("html")) {
+    if (contentType.toLowerCase(Locale.ROOT).contains("html")) {
       log.info("Using text/plain instead of {}", contentType);
       return "text/plain";
     }

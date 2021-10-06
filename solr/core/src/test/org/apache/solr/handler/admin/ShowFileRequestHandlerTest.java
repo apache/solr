@@ -135,7 +135,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     handler.handleRequest(req, rsp);
     ContentStreamBase.FileStream content = (ContentStreamBase.FileStream) rsp.getValues().get("content");
     // System attempts to guess content type, but will only return XML, JSON, CSV, never HTML
-    assertEquals("text/xml", content.getContentType());
+    assertEquals("application/xml", content.getContentType());
   }
 
   public void testIllegalContentType() {
@@ -146,16 +146,20 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     expectThrows(SolrException.class, () -> client.request(request));
   }
 
-  public void testIllegalFilename() {
+  public void testAbsoluteFilename() {
     SolrClient client = getSolrClient();
     final QueryRequest request = new QueryRequest(params("file", "/etc/passwd"));
     request.setPath("/admin/file"); // absolute path not allowed
     request.setResponseParser(new NoOpResponseParser());
     expectThrows(SolrException.class, () -> client.request(request));
+  }
 
-    final QueryRequest relativeReq = new QueryRequest(params("file", "../relative"));
-    relativeReq.setResponseParser(new NoOpResponseParser());
-    expectThrows(SolrException.class, () -> client.request(relativeReq));
+  public void testPathTraversalFilename() {
+    SolrClient client = getSolrClient();
+    final QueryRequest request = new QueryRequest(params("file", "../../../../../../etc/passwd"));
+    request.setPath("/admin/file");
+    request.setResponseParser(new NoOpResponseParser());
+    expectThrows(SolrException.class, () -> client.request(request));
   }
 
   public void testGetSafeContentType() {
