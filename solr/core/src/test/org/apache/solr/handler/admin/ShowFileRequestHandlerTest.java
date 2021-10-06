@@ -126,7 +126,16 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     handler.handleRequest(req, rsp);
     ContentStreamBase.FileStream content = (ContentStreamBase.FileStream) rsp.getValues().get("content");
     assertEquals("text/plain", content.getContentType());
+  }
 
+  public void testContentTypeHtmlDefault() throws Exception {
+    SolrRequestHandler handler = h.getCore().getRequestHandler("/admin/file");
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params("file", "example.html"));
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    handler.handleRequest(req, rsp);
+    ContentStreamBase.FileStream content = (ContentStreamBase.FileStream) rsp.getValues().get("content");
+    // System attempts to guess content type, but will only return XML, JSON, CSV, never HTML
+    assertEquals("text/xml", content.getContentType());
   }
 
   public void testIllegalContentType() {
@@ -135,6 +144,18 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     request.setPath("/admin/file");
     request.setResponseParser(new NoOpResponseParser());
     expectThrows(SolrException.class, () -> client.request(request));
+  }
+
+  public void testIllegalFilename() {
+    SolrClient client = getSolrClient();
+    final QueryRequest request = new QueryRequest(params("file", "/etc/passwd"));
+    request.setPath("/admin/file"); // absolute path not allowed
+    request.setResponseParser(new NoOpResponseParser());
+    expectThrows(SolrException.class, () -> client.request(request));
+
+    final QueryRequest relativeReq = new QueryRequest(params("file", "../relative"));
+    relativeReq.setResponseParser(new NoOpResponseParser());
+    expectThrows(SolrException.class, () -> client.request(relativeReq));
   }
 
   public void testGetSafeContentType() {

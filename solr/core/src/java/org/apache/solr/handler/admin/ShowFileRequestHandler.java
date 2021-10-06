@@ -16,17 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.net.URISyntaxException;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-
 import org.apache.logging.log4j.util.Strings;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -49,6 +38,18 @@ import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * This handler uses the RawResponseWriter to give client access to
@@ -358,20 +359,16 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     String fname = req.getParams().get("file", null);
     if( fname == null ) {
       adminFile = configdir;
-    }
-    else {
+    } else {
       fname = fname.replace( '\\', '/' ); // normalize slashes
       if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
         log.error("Can not access: {}", fname);
         rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
         return null;
       }
-      if( fname.indexOf( ".." ) >= 0 ) {
-        log.error("Invalid path: {}", fname);
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Invalid path: "+fname ));
-        return null;
-      }
-      adminFile = new File( configdir, fname );
+      Path filePath = configdir.toPath().resolve(fname);
+      req.getCore().getCoreContainer().assertPathAllowed(filePath);
+      adminFile = filePath.toFile();
     }
     return adminFile;
   }
