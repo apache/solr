@@ -69,7 +69,6 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
-
     this.zkClient = new SolrZkClient(zkServer.getZkAddress(),
             AbstractZkTestCase.TIMEOUT);
 
@@ -228,7 +227,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
     cc.setCoreConfigService(new ZkConfigSetService(zkClient));
     ConfigSetService.bootstrapConf(cc);
-    assertEquals(cc.getConfigSetService().listConfigs().size(), 1);
+    assertTrue(cc.getConfigSetService().checkConfigExists("collection1"));
   }
 
   @Override

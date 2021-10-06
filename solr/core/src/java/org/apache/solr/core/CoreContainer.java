@@ -751,6 +751,7 @@ public class CoreContainer {
     warnUsersOfInsecureSettings();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
     coreConfigService = ConfigSetService.createConfigSetService(this);
+    coreConfigService.bootstrapConfigSet();
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
 
