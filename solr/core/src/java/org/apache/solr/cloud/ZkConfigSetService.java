@@ -316,5 +316,4 @@ public class ZkConfigSetService extends ConfigSetService {
   public SolrCloudManager getSolrCloudManager() {
     return zkController.getSolrCloudManager();
   }
-
 }
