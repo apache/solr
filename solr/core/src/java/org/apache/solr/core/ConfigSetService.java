@@ -53,7 +53,9 @@ public abstract class ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
-    return instantiate(coreContainer);
+    ConfigSetService configSetService = instantiate(coreContainer);
+    configSetService.bootstrapConfigSet(coreContainer);
+    return configSetService;
   }
 
   private static ConfigSetService instantiate(CoreContainer coreContainer) {
@@ -78,28 +80,30 @@ public abstract class ConfigSetService {
     }
   }
 
-  public void bootstrapConfigSet() {
+  private void bootstrapConfigSet(CoreContainer coreContainer) {
     // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
-    String confDir = System.getProperty("bootstrap_confdir");
-    boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
     try {
       // _default conf
       bootstrapDefaultConf();
+
       // bootstrap_confdir
+      String confDir = System.getProperty("bootstrap_confdir");
       if (confDir != null) {
         bootstrapConfDir(confDir);
       }
+
       // bootstrap_conf, in SolrCloud mode
+      boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
       if (boostrapConf == true) {
-        if (this instanceof ZkConfigSetService) {
-          bootstrapConf(((ZkConfigSetService) this).getZkController().getCoreContainer());
+        if (coreContainer.getZkController() != null) {
+          bootstrapConf(coreContainer);
         }
       }
     } catch (UnsupportedOperationException e) {
-      log.info("config couldn't be uploaded");
+      log.info("Not bootstrapping configSets because they are read-only");
     } catch (IOException e) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "config couldn't be uploaded ", e);
+          SolrException.ErrorCode.SERVER_ERROR, "Config couldn't be uploaded ", e);
     }
   }
 

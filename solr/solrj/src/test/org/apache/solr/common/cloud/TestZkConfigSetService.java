@@ -16,17 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Properties;
-
 import com.google.common.base.Throwables;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -40,38 +29,37 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Properties;
 
 public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
-  private ZkTestServer zkServer;
-  protected Path zkDir;
+  private static ZkTestServer zkServer;
 
-  private String solrHome;
-
-  private SolrZkClient zkClient;
-
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-
-    String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
-
-    Path tmpDir = createTempDir();
-    solrHome = exampleHome;
-
-    zkDir = tmpDir.resolve("zookeeper/server1/data");
-    zkServer = new ZkTestServer(zkDir);
+  @BeforeClass
+  public static void startZkServer() throws Exception {
+    zkServer = new ZkTestServer(createTempDir("zkData"));
     zkServer.run();
-    System.setProperty("zkHost", zkServer.getZkAddress());
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/solr", false, true);
-    zkClient.close();
+  }
 
-    this.zkClient = new SolrZkClient(zkServer.getZkAddress(),
-            AbstractZkTestCase.TIMEOUT);
-
+  @AfterClass
+  public static void shutdownZkServer() throws IOException, InterruptedException {
+    if (null != zkServer) {
+      zkServer.shutdown();
+    }
+    zkServer = null;
   }
 
   @Test
@@ -223,23 +211,22 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBootstrapConf() throws IOException {
+  public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
+
+    String solrHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+
     CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+    System.setProperty("zkHost", zkServer.getZkAddress());
+
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    zkClient.makePath("/solr", false, true);
     cc.setCoreConfigService(new ZkConfigSetService(zkClient));
     ConfigSetService.bootstrapConf(cc);
     assertTrue(cc.getConfigSetService().checkConfigExists("collection1"));
+
+    zkClient.close();
   }
 
-  @Override
-  public void tearDown() throws Exception {
-    if (zkClient != null) {
-      zkClient.close();
-    }
-    if (zkServer != null) {
-      zkServer.shutdown();
-    }
-    super.tearDown();
-  }
 
   static SolrZkClient buildZkClient(String zkAddress, final ZkACLProvider aclProvider,
                                     final ZkCredentialsProvider credentialsProvider) {
