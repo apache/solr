@@ -233,6 +233,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     this.pollListener = pollListener;
   }
 
+  public boolean isFollower() {
+    return this.isFollower;
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
@@ -327,7 +331,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
   
   @SuppressWarnings("unchecked")
-  static <T> T getObjectWithBackwardCompatibility(NamedList<?> params, String preferredKey, String alternativeKey) {
+  public static <T> T getObjectWithBackwardCompatibility(NamedList<?> params, String preferredKey, String alternativeKey) {
     Object value = params.get(preferredKey);
     if (value != null) {
       return (T) value;
@@ -882,7 +886,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : parentContext.nullString()),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getCachedIndexSize()) : parentContext.nullString()),
         true, "indexSize", getCategory().toString(), scope);
     solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().toString() : parentContext.nullString()),
          true, "indexVersion", getCategory().toString(), scope);

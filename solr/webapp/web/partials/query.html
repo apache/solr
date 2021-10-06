@@ -120,14 +120,15 @@ limitations under the License.
           <label for="defType" class="checkbox" title="Choose defType">
             defType
             <select ng-model="val['defType']" name="defType" id="defType">
-              <option ng-selected="selected" value=''>lucene</option>
-              <option>dismax</option>
-              <option>edismax</option>
+              <option ng-selected="selected" value=''>------</option>
+              <option value="lucene">lucene</option>
+              <option value="dismax">dismax</option>
+              <option value="edismax">edismax</option>
             </select>
           </label>
         </legend>
 
-        <div class="fieldset" ng-show="val['defType']!=''">
+        <div class="fieldset" ng-show="val['defType']=='dismax' || val['defType']=='edismax'">
           <label for="q_alt" title="Alternate query when 'q' is absent.">q.alt</label>
           <input type="text" ng-model="val['q.alt']" name="q.alt" id="q_alt"  title="Alternate query when 'q' is absent.">
 

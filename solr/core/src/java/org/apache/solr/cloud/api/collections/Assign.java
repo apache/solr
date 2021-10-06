@@ -177,7 +177,7 @@ public class Assign {
   }
 
   private static int defaultCounterValue(DocCollection collection, boolean newCollection, String shard) {
-    if (newCollection) return 0;
+    if (newCollection || collection == null) return 0;
 
     int defaultValue;
     if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
@@ -201,20 +201,20 @@ public class Assign {
     return defaultValue;
   }
 
-  public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
-    Slice slice = collection.getSlice(shard);
+  public static String buildSolrCoreName(DistribStateManager stateManager, String collectionName, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
+
     int defaultValue = defaultCounterValue(collection, newCollection, shard);
-    int replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
-    String coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
-    while (existCoreName(coreName, slice)) {
-      replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
-      coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
+    int replicaNum = incAndGetId(stateManager, collectionName, defaultValue);
+    String coreName = buildSolrCoreName(collectionName, shard, type, replicaNum);
+    while (collection != null && existCoreName(coreName, collection.getSlice(shard))) {
+      replicaNum = incAndGetId(stateManager, collectionName, defaultValue);
+      coreName = buildSolrCoreName(collectionName, shard, type, replicaNum);
     }
     return coreName;
   }
 
   public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type) {
-    return buildSolrCoreName(stateManager, collection, shard, type, false);
+    return buildSolrCoreName(stateManager, collection.getName(), collection, shard, type, false);
   }
 
   private static boolean existCoreName(String coreName, Slice slice) {
