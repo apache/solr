@@ -34,6 +34,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
@@ -90,7 +92,7 @@ import java.util.Set;
  *
  * @since solr 1.3
  */
-public class ShowFileRequestHandler extends RequestHandlerBase
+public class ShowFileRequestHandler extends RequestHandlerBase implements PermissionNameProvider
 {
   public static final String HIDDEN = "hidden";
   public static final String USE_CONTENT_TYPE = "contentType";
@@ -386,5 +388,10 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.CONFIG_READ_PERM;
   }
 }
