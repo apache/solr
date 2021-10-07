@@ -221,11 +221,12 @@ ext {
 // Hook in our dependency on all top level documentation in order to check local javadoc links
 checkLocalJavadocLinksSite.dependsOn ':documentation'
 
-// Hook up custom tasks with standard tasks.
-check.dependsOn checkLocalJavadocLinksSite, checkSite
-
-// Hook site building to assemble.
-assemble.dependsOn buildSite
+// Attach building the ref guide to standard convention tasks. This
+// can be optionally turned off (see SOLR-15670).
+if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "true").toBoolean()) {
+  check.dependsOn checkLocalJavadocLinksSite, checkSite
+  assemble.dependsOn buildSite
+}
 
 @CacheableTask
 abstract class PrepareSources extends DefaultTask {

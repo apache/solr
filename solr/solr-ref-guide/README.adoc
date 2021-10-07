@@ -25,4 +25,4 @@ This will build the HTML files and validate that page references and internal li
 
 See the `../../dev-docs/ref-guide` directory for information about editing and publishing the Ref Guide.
 
-To ignore the Ref Guide steps when running other gradle commands, use either `-Psolr.ref-guide.skip=true` or `SOLR_REF_GUIDE_SKIP=true`.
+To ignore the Ref Guide steps when running gradle `assemble` or `check`, use either `-Prefguide.include=false` or `SOLR_REF_GUIDE_INCLUDE=false`.
