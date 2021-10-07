@@ -54,7 +54,10 @@ public abstract class ConfigSetService {
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
     ConfigSetService configSetService = instantiate(coreContainer);
-    configSetService.bootstrapConfigSet(coreContainer);
+    // bootstrap conf in SolrCloud mode
+    if (coreContainer.getZkController() != null) {
+      configSetService.bootstrapConfigSet(coreContainer);
+    }
     return configSetService;
   }
 
@@ -92,15 +95,11 @@ public abstract class ConfigSetService {
         bootstrapConfDir(confDir);
       }
 
-      // bootstrap_conf, in SolrCloud mode
+      // bootstrap_conf
       boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
       if (boostrapConf == true) {
-        if (coreContainer.getZkController() != null) {
-          bootstrapConf(coreContainer);
-        }
+        bootstrapConf(coreContainer);
       }
-    } catch (UnsupportedOperationException e) {
-      log.info("Not bootstrapping configSets because they are read-only");
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Config couldn't be uploaded ", e);

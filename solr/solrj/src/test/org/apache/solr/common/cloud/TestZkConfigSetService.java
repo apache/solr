@@ -221,6 +221,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
     zkClient.makePath("/solr", false, true);
     cc.setCoreConfigService(new ZkConfigSetService(zkClient));
+    assertFalse(cc.getConfigSetService().checkConfigExists("collection1"));
     ConfigSetService.bootstrapConf(cc);
     assertTrue(cc.getConfigSetService().checkConfigExists("collection1"));
 
