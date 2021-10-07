@@ -25,6 +25,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.VerifyTestClassNamingConvention;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -73,7 +74,7 @@ public class SolrTestCase extends LuceneTestCase {
    * on completion of the test suite
    * </p>
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-14247">SOLR-14247</a>
-   * @see #shutdownLogger
+   * @see #afterSolrTestCase()
    */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -149,7 +150,15 @@ public class SolrTestCase extends LuceneTestCase {
   }
   
   @AfterClass
-  public static void shutdownLogger() throws Exception {
+  public static void afterSolrTestCase() throws Exception {
+    if (suiteFailureMarker.wasSuccessful()) {
+      // if the tests passed, make sure everything was closed / released
+      String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+      assertNull(orr, orr);
+    } else {
+      ObjectReleaseTracker.tryClose();
+    }
     StartupLoggingUtils.shutdown();
   }
+
 }
