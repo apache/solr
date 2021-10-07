@@ -1461,10 +1461,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         for (Update ptr : singleList) {
           if(Math.abs(ptr.version) > Math.abs(maxVersion)) continue;
           if (!set.add(ptr.version)) {
-            if (debug) {
-              log.debug("getVersions(n={}, maxVersion={}) not returning duplicate version = {}", nInput, maxVersion, ptr.version);
-            }
-            continue;
+            log.info("getVersions(n={}, maxVersion={}) returning duplicate version = {}", nInput, maxVersion, ptr.version);
           }
           ret.add(ptr.version);
           if (--n <= 0) return ret;
