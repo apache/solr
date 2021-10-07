@@ -265,7 +265,7 @@ public abstract class ConfigSetService {
     // This is the schema name that we think will actually be used.  In the case of a managed schema,
     //  we don't know for sure without examining what files exists in the configSet, and we don't
     //  want to pay the overhead of that at this juncture.  If we guess wrong, no schema sharing.
-    //  The fix is usually to name your schema managed-schema instead of schema.xml.
+    //  The fix is usually to name your schema managed-schema.xml instead of schema.xml.
     IndexSchemaFactory indexSchemaFactory = IndexSchemaFactory.newIndexSchemaFactory(solrConfig);
 
     String configSet = cd.getConfigSet();

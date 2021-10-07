@@ -16,7 +16,7 @@
  */
  
 /** 
- * Factories for {@linkplain org.apache.lucene.search.suggest.jaspell JaSpell} based {@link org.apache.solr.spelling.suggest.Suggester}s
+ * Factories for {@linkplain org.apache.solr.spelling.suggest.jaspell JaSpell} based {@link org.apache.solr.spelling.suggest.Suggester}s
  */
 package org.apache.solr.spelling.suggest.jaspell;
 

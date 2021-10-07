@@ -50,7 +50,7 @@ import org.junit.Test;
 public class TestRestoreCore extends SolrJettyTestBase {
 
   JettySolrRunner leaderJetty;
-  TestReplicationHandler.SolrInstance leader = null;
+    ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
   private static final String CONF_DIR = "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf"
@@ -59,7 +59,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   private static String context = "/solr";
   private static long docsSeed; // see indexDocs()
 
-  private static JettySolrRunner createAndStartJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
+  private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
@@ -87,7 +87,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     super.setUp();
     String configFile = "solrconfig-leader.xml";
 
-    leader = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
     leader.setUp();
     leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 

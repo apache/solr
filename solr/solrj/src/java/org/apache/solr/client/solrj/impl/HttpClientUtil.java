@@ -387,6 +387,7 @@ public class HttpClientUtil {
       retBuilder.disableContentCompression();
     }
 
+    retBuilder.useSystemProperties();
     return retBuilder;
   }
 

@@ -1042,7 +1042,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     final String prefix = configPathInZk + "/";
     final int prefixLen = prefix.length();
     Set<String> stripPrefix = files.stream().map(f -> f.startsWith(prefix) ? f.substring(prefixLen) : f).collect(Collectors.toSet());
-    stripPrefix.remove(DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
+    stripPrefix.remove(schema.getResourceName());
     stripPrefix.remove("lang");
     stripPrefix.remove(CONFIGOVERLAY_JSON); // treat this file as private
 
