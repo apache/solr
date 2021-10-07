@@ -41,6 +41,8 @@ New Features
 
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
+* SOLR-15613: Enforce error-prone checks to catch all URLEqualsHashCode violations and use java.net.URI instead (Collins Abanda)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
