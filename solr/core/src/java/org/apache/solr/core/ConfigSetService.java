@@ -123,11 +123,7 @@ public abstract class ConfigSetService {
   private void bootstrapConfDir(String confDir) throws IOException {
     Path configPath = Paths.get(confDir);
     if (!Files.isDirectory(configPath)) {
-      throw new IllegalArgumentException(
-          String.format(
-              Locale.ROOT,
-              "bootstrap_confdir must be a directory of configuration files, configPath: %s",
-              configPath));
+      throw new IllegalArgumentException ("bootstrap_confdir must be a directory of configuration files, configPath: " + configPath);
     }
     String confName = System.getProperty(
             ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, "configuration1");
