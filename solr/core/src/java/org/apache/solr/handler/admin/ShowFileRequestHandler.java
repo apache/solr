@@ -183,7 +183,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
       ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
-
       content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
       
       rsp.add(RawResponseWriter.CONTENT, content);
@@ -250,6 +249,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
       ContentStreamBase content = new ContentStreamBase.FileStream( adminFile );
       content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
+
       rsp.add(RawResponseWriter.CONTENT, content);
     }
     rsp.setHttpCaching(false);
