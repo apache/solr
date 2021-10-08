@@ -36,7 +36,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     Object obj = new Object();
     ObjectReleaseTracker.track(obj);
     ObjectReleaseTracker.release(obj);
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
 
     Object obj1 = new Object();
     ObjectReleaseTracker.track(obj1);
@@ -48,7 +48,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     ObjectReleaseTracker.release(obj3);
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
   }
 
   @Test
@@ -65,22 +65,22 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     ObjectReleaseTracker.release(obj2);
     // ObjectReleaseTracker.release(obj3);
 
-    assertNotNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNotNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
   }
 
   @Test
   public void testReleaseDifferentObject() {
     ObjectReleaseTracker.track(new Object());
     ObjectReleaseTracker.release(new Object());
-    assertNotNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
+    assertNotNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
   }
 
   @Test
   public void testAnonymousClasses() {
     ObjectReleaseTracker.track(new Object() {});
-    String message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
+    String message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
     MatcherAssert.assertThat(message, containsString("[Object]"));
   }
 
@@ -94,7 +94,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     });
 
     result.get(); // make sure that track has been called
-    String message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
+    String message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
     MatcherAssert.assertThat(message, stringContainsInOrder(
         ObjectReleaseTracker.ObjectTrackerException.class.getName(),
         "Exception: Submitter stack trace",
@@ -110,7 +110,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
 
     result.get();
     indirectResult.get().get();
-    message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
+    message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
     MatcherAssert.assertThat(message, stringContainsInOrder(
         ObjectReleaseTracker.ObjectTrackerException.class.getName(),
         "Exception: Submitter stack trace",
@@ -130,7 +130,7 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     result.get();
     indirectResult.get().get();
     indirectIndirect.get().get();
-    message = SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1);
+    message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
     MatcherAssert.assertThat(message, stringContainsInOrder(
         ObjectReleaseTracker.ObjectTrackerException.class.getName(),
         "Exception: Submitter stack trace",
