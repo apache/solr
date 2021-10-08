@@ -92,7 +92,7 @@ public class SolrTestCase extends LuceneTestCase {
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
   @BeforeClass
-  public static void setDefaultConfigDirSysPropIfNotSet() {
+  public static void beforeSolrTestCase() {
     final String existingValue = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
     if (null != existingValue) {
       log.info("Test env includes configset dir system property '{}'='{}'", SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, existingValue);
@@ -109,6 +109,14 @@ public class SolrTestCase extends LuceneTestCase {
                "does not exist or is not a readable directory, you may need to set the property yourself " +
                "for tests to run properly",
                SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+    }
+
+    if (!TEST_NIGHTLY) {
+      System.setProperty("zookeeper.nio.numSelectorThreads", "2");
+      System.setProperty("zookeeper.nio.numWorkerThreads", "3");
+      System.setProperty("zookeeper.commitProcessor.numWorkerThreads", "2");
+      System.setProperty("zookeeper.forceSync", "no");
+      System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
   }
   
