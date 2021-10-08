@@ -97,50 +97,28 @@ if (luceneDevRepo != null) {
   // Allow turning off this auto-wiring via -Dlucene.dev.repo=false (can't be a -P property because
   // at settings evaluation time we don't have project properties yet).
   if (configuringSettings) {
+    // We substitute the exact version of Lucene we currently have in versions.props across all the dependencies.
+    // We can't just substitute all references without looking at the versoin because
+    // plugin dependencies then also get substituted and everything crashes.
+    String luceneVersion = (file("${rootDir}/versions.props").getText("UTF-8") =~ /org.apache.lucene:\*=(.+)/)[0][1]
+    logger.lifecycle("Local Lucene development repository will be used substituting ${luceneVersion}: ${luceneDevRepo}")
+
     // Include Lucene repository as a composite and substitute module names.
     includeBuild(luceneDevRepo) {
       dependencySubstitution {
-        def substitutionMap = [
-            "org.apache.lucene:lucene-analysis-common"    : ":lucene:analysis:common",
-            "org.apache.lucene:lucene-analysis-icu"       : ":lucene:analysis:icu",
-            "org.apache.lucene:lucene-analysis-kuromoji"  : ":lucene:analysis:kuromoji",
-            "org.apache.lucene:lucene-analysis-morfologik": ":lucene:analysis:morfologik",
-            "org.apache.lucene:lucene-analysis-nori"      : ":lucene:analysis:nori",
-            "org.apache.lucene:lucene-analysis-opennlp"   : ":lucene:analysis:opennlp",
-            "org.apache.lucene:lucene-analysis-phonetic"  : ":lucene:analysis:phonetic",
-            "org.apache.lucene:lucene-analysis-smartcn"   : ":lucene:analysis:smartcn",
-            "org.apache.lucene:lucene-analysis-stempel"   : ":lucene:analysis:stempel",
-            "org.apache.lucene:lucene-backward-codecs"    : ":lucene:backward-codecs",
-            "org.apache.lucene:lucene-benchmark"          : ":lucene:benchmark",
-            "org.apache.lucene:lucene-classification"     : ":lucene:classification",
-            "org.apache.lucene:lucene-codecs"             : ":lucene:codecs",
-            "org.apache.lucene:lucene-core"               : ":lucene:core",
-            "org.apache.lucene:lucene-demo"               : ":lucene:demo",
-            "org.apache.lucene:lucene-expressions"        : ":lucene:expressions",
-            "org.apache.lucene:lucene-facet"              : ":lucene:facet",
-            "org.apache.lucene:lucene-grouping"           : ":lucene:grouping",
-            "org.apache.lucene:lucene-highlighter"        : ":lucene:highlighter",
-            "org.apache.lucene:lucene-join"               : ":lucene:join",
-            "org.apache.lucene:lucene-memory"             : ":lucene:memory",
-            "org.apache.lucene:lucene-misc"               : ":lucene:misc",
-            "org.apache.lucene:lucene-monitor"            : ":lucene:monitor",
-            "org.apache.lucene:lucene-queries"            : ":lucene:queries",
-            "org.apache.lucene:lucene-queryparser"        : ":lucene:queryparser",
-            "org.apache.lucene:lucene-replicator"         : ":lucene:replicator",
-            "org.apache.lucene:lucene-sandbox"            : ":lucene:sandbox",
-            "org.apache.lucene:lucene-spatial-extras"     : ":lucene:spatial-extras",
-            "org.apache.lucene:lucene-spatial3d"          : ":lucene:spatial3d",
-            "org.apache.lucene:lucene-suggest"            : ":lucene:suggest",
-            "org.apache.lucene:lucene-test-framework"     : ":lucene:test-framework"
-        ]
+        all {  DependencySubstitution dependency ->
+          if (dependency.requested instanceof ModuleComponentSelector) {
+            def moduleSelector = (ModuleComponentSelector) dependency.requested
+            if (moduleSelector.group == "org.apache.lucene" && moduleSelector.version == luceneVersion) {
+              // Map Maven artifact name to lucene module name.
+              def projectModuleName =
+                  moduleSelector.moduleIdentifier.name
+                      .replaceFirst("^lucene-analysis-", ":lucene:analysis:")
+                      .replaceFirst("^lucene-", ":lucene:")
 
-        // We have to provide an explicit version to substitute because otherwise
-        // all dependencies (including plugin dependencies?!) get substituted.
-        String luceneVersion = (file("${rootDir}/versions.props").getText("UTF-8") =~ /org.apache.lucene:\*=(.+)/)[0][1]
-        logger.lifecycle("Local Lucene development repository will be used: ${luceneDevRepo}")
-
-        substitutionMap.each { depName, moduleName ->
-          substitute(module("${depName}:${luceneVersion}")).using(project(moduleName))
+              logger.info("Substituting Lucene dependency ${moduleSelector} with an included build project: ${projectModuleName}")
+            }
+          }
         }
       }
     }
