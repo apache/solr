@@ -23,6 +23,7 @@ import org.apache.solr.schema.SimilarityFactory;
 
 /**
  * Factory for BM25Similarity. This is the default similarity since 8.x.
+ *
  * <p>
  * Parameters:
  * <ul>

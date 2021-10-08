@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
@@ -707,6 +708,12 @@ public class PeerSync implements SolrMetricProducer {
     }
 
     MissedUpdatesRequest handleVersionsWithRanges(List<Long> otherVersions, boolean completeList) {
+      return handleVersionsWithRanges(otherVersions, completeList, ourUpdates, ourLowThreshold);
+    }
+
+    @VisibleForTesting
+    static MissedUpdatesRequest handleVersionsWithRanges(List<Long> otherVersions, boolean completeList,
+        List<Long> ourUpdates, long ourLowThreshold) {
       // we may endup asking for updates for too many versions, causing 2MB post payload limit. Construct a range of
       // versions to request instead of asking individual versions
       List<String> rangesToRequest = new ArrayList<>();
@@ -774,7 +781,7 @@ public class PeerSync implements SolrMetricProducer {
     public MissedUpdatesRequest find(List<Long> otherVersions, Object updateFrom) {
       otherVersions.sort(absComparator);
       if (debug) {
-        log.debug("{} sorted versions from {} = {}", logPrefix, otherVersions, updateFrom);
+        log.debug("{} sorted versions from {} = {}", logPrefix, updateFrom, otherVersions);
       }
 
       long otherHigh = percentile(otherVersions, .2f);
