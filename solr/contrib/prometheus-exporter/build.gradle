@@ -28,7 +28,9 @@ dependencies {
   implementation ('io.prometheus:simpleclient_httpserver')
   implementation ('net.thisptr:jackson-jq', {
     exclude group: "org.jruby.joni", module: "joni"
+    exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
   })
+  implementation ('com.fasterxml.jackson.core:jackson-databind')
   implementation ('net.sourceforge.argparse4j:argparse4j')
   implementation ('com.github.ben-manes.caffeine:caffeine', {
     exclude group: "org.checkerframework", module: "checker-qual"
