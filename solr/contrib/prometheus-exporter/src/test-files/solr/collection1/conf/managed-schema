@@ -23,7 +23,7 @@
 
 
  For more information, on how to customize this file, please see
- http://lucene.apache.org/solr/guide/documents-fields-and-schema-design.html
+ http://lucene.apache.org/solr/guide/fields-and-schema-design.html
 
  PERFORMANCE NOTE: this schema includes many optional features and should not
  be used for benchmarking.  To improve performance one could
