@@ -45,7 +45,7 @@ import opennlp.tools.langdetect.LanguageDetectorModel;
  *   &lt;str name="langid.model"&gt;langdetect-183.bin&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="https://solr.apache.org/guide/detecting-languages-during-indexing.html#configuring-opennlp-language-detection">https://solr.apache.org/guide/detecting-languages-during-indexing.html#configuring-opennlp-language-detection</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection</a>
  *
  * @since 7.3.0
  */

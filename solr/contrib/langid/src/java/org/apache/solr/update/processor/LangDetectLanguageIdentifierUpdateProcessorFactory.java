@@ -50,7 +50,7 @@ import com.cybozu.labs.langdetect.LangDetectException;
  *   &lt;str name=&quot;langid.langField&quot;&gt;language_s&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="https://solr.apache.org/guide/detecting-languages-during-indexing.html">https://solr.apache.org/guide/detecting-languages-during-indexing.html</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html">https://solr.apache.org/guide/language-detection.html</a>
  * @since 3.5
  */
 public class LangDetectLanguageIdentifierUpdateProcessorFactory extends

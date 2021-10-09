@@ -68,7 +68,7 @@ import com.google.common.collect.Multimaps;
 
 /**
  * Query parser that generates DisjunctionMaxQueries based on user configuration.
- * See Wiki page https://solr.apache.org/guide/the-extended-dismax-query-parser.html
+ * See Wiki page https://solr.apache.org/guide/edismax-query-parser.html
  */
 public class ExtendedDismaxQParser extends QParser {
 

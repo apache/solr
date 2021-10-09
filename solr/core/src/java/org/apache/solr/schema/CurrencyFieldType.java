@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Field type for support of monetary values.
  * <p>
- * See <a href="https://solr.apache.org/guide/working-with-currencies-and-exchange-rates.html">https://solr.apache.org/guide/working-with-currencies-and-exchange-rates.html</a>
+ * See <a href="https://solr.apache.org/guide/currencies-exchange-rates.html">https://solr.apache.org/guide/currencies-exchange-rates.html</a>
  */
 public class CurrencyFieldType extends FieldType implements SchemaAware, ResourceLoaderAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

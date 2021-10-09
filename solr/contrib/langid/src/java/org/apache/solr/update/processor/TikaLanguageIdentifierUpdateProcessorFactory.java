@@ -38,7 +38,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *   &lt;str name=&quot;langid.langField&quot;&gt;language_s&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="https://solr.apache.org/guide/detecting-languages-during-indexing.html#configuring-tika-language-detection">https://solr.apache.org/guide/detecting-languages-during-indexing.html#configuring-tika-language-detection</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection</a>
  * @since 3.5
  */
 public class TikaLanguageIdentifierUpdateProcessorFactory extends

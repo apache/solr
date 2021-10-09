@@ -31,7 +31,7 @@ public interface QueryElevationParams {
    * The name of the field that editorial results will be written out as when using the QueryElevationComponent, which
    * automatically configures the EditorialMarkerFactory.  The default name is "elevated"
    * <br>
-   * See https://solr.apache.org/guide/the-query-elevation-component.html
+   * See https://solr.apache.org/guide/query-elevation-component.html
    */
   String EDITORIAL_MARKER_FIELD_NAME = "editorialMarkerFieldName";
 
@@ -40,7 +40,7 @@ public interface QueryElevationParams {
    * automatically configures the EditorialMarkerFactory.  The default name is "excluded".  This is only used
    * when {@link #MARK_EXCLUDES} is set to true at query time.
    * <br>
-   * See https://solr.apache.org/guide/the-query-elevation-component.html
+   * See https://solr.apache.org/guide/query-elevation-component.html
    */
   String EXCLUDE_MARKER_FIELD_NAME = "excludeMarkerFieldName";
 

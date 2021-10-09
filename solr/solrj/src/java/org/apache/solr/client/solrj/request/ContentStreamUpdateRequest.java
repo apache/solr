@@ -32,8 +32,8 @@ import org.apache.solr.common.util.ContentStreamBase;
  * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a Solr Cell or some
  * other handler that takes ContentStreams (CSV)
  * <p>
- * See https://solr.apache.org/guide/uploading-data-with-solr-cell-using-apache-tika.html<br>
- * See https://solr.apache.org/guide/uploading-data-with-index-handlers.html
+ * See https://solr.apache.org/guide/indexing-with-tika.html<br>
+ * See https://solr.apache.org/guide/indexing-with-update-handlers.html
  *
  *
  **/

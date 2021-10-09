@@ -255,7 +255,7 @@
        parameters. Remove this to disable exposing Solr configuration
        and statistics to JMX.
 
-       For more details see https://solr.apache.org/guide/using-jmx-with-solr.html
+       For more details see https://solr.apache.org/guide/jmx-with-solr.html
     -->
   <jmx />
   <!-- If you want to connect to a particular server, specify the
@@ -293,7 +293,7 @@
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents.
 
-         https://solr.apache.org/guide/uploading-data-with-index-handlers.html
+         https://solr.apache.org/guide/indexing-with-update-handlers.html
 
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
@@ -1134,7 +1134,7 @@
 
 
   <!-- Document Transformers
-       https://solr.apache.org/guide/transforming-result-documents.html
+       https://solr.apache.org/guide/document-transformers.html
     -->
   <!--
      Could be something like:
