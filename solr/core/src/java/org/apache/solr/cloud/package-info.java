@@ -16,6 +16,6 @@
  */
 
 /**
- * Classes for dealing with ZooKeeper when operating in <a href="https://solr.apache.org/guide/solrcloud.html">SolrCloud</a> mode.
+ * Classes for dealing with ZooKeeper when operating in SolrCloud mode.
  */
 package org.apache.solr.cloud;

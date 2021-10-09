@@ -16,6 +16,6 @@
  */
 
 /**
- * Classes for managing Replica placement strategy when operating in <a href="https://solr.apache.org/guide/solrcloud.html">SolrCloud</a> mode.
+ * Classes for managing Replica placement strategy when operating in SolrCloud mode.
  */
 package org.apache.solr.common.cloud.rule;

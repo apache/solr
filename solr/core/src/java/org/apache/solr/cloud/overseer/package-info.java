@@ -16,6 +16,6 @@
  */
 
 /**
- * Classes for updating cluster state in <a href="https://solr.apache.org/guide/solrcloud.html">SolrCloud</a> mode.
+ * Classes for updating cluster state in SolrCloud mode.
  */
 package org.apache.solr.cloud.overseer;
