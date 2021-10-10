@@ -15,9 +15,9 @@ out/
 /dev-tools/missing-doclet/out/
 
 # Eclipse
-/.project
-/.classpath
-/.settings/
+.project
+.classpath
+.settings/
 #    Eclipse Gradle oddity
 **/bin/default/
 
