@@ -17,7 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.File;
-
+import java.net.URL;
 
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example configuration).
@@ -58,21 +58,23 @@ public class ExternalPaths {
   static String determineSourceHome() {
     try {
       File file;
-      try {
-        file = new File("solr/conf");
-        if (!file.exists()) {
-          file = new File(ExternalPaths.class.getClassLoader().getResource("solr/conf").toURI());
+
+      file = new File("solr/conf");
+      if (!file.exists()) {
+        URL resourceUrl = ExternalPaths.class.getClassLoader().getResource("solr/conf");
+        if(resourceUrl != null) {
+          file = new File(resourceUrl.toURI());
+        } else {
+          file = new File(System.getProperty("tests.src.home", "."));
         }
-      } catch (Exception e) {
-        // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.
-        file = new File(System.getProperty("tests.src.home", "."));
       }
+
       File base = file.getAbsoluteFile();
       while (!(new File(base, "solr/CHANGES.txt").exists()) && null != base) {
         base = base.getParentFile();
       }
       return (null == base) ? null : new File(base, "solr/").getAbsolutePath();
-    } catch (RuntimeException e) {
+    } catch (Exception e) {
       // all bets are off
       return null;
     }
