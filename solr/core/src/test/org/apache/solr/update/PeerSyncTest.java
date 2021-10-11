@@ -38,7 +38,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.update.PeerSync.MissedUpdatesFinderBase;
 import org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
