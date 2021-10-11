@@ -764,7 +764,7 @@ public class PeerSync implements SolrMetricProducer {
    */
   public static class MissedUpdatesFinder extends MissedUpdatesFinderBase {
     private long ourHighThreshold; // 80th percentile
-    private long ourHighest;  // currently just used for logging/debugging purposes
+    private long ourHighest;
     private String logPrefix;
     private long nUpdates;
 
@@ -798,7 +798,7 @@ public class PeerSync implements SolrMetricProducer {
         return MissedUpdatesRequest.UNABLE_TO_SYNC;
       }
 
-      if (ourLowThreshold > otherHigh && ourHighest >= otherHighest) {
+      if (ourLowThreshold > otherHigh && Math.abs(ourHighest) >= Math.abs(otherHighest)) {
         // Small overlap between windows and ours is newer.
         // Using this list to sync would result in requesting/replaying results we don't need
         // and possibly bringing deleted docs back to life.

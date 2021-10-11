@@ -616,11 +616,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     Object updateFrom = null;
     MissedUpdatesRequest mur = finder.find(otherVersions, updateFrom);
-    if (ourHighestIsDelete) {
-      assertEquals(7L, mur.totalRequestedUpdates);
-      assertEquals("3...9", mur.versionsAndRanges);
-      return;
-    }
     assertEquals(0L, mur.totalRequestedUpdates);
     assertEquals(null, mur.versionsAndRanges);
     assertTrue(MissedUpdatesRequest.ALREADY_IN_SYNC == mur);
@@ -651,12 +646,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     Object updateFrom = null;
     MissedUpdatesRequest mur = finder.find(otherVersions, updateFrom);
 
-    if (otherHighestIsDelete) {
-      assertEquals(0L, mur.totalRequestedUpdates);
-      assertEquals(null, mur.versionsAndRanges);
-      assertTrue(MissedUpdatesRequest.ALREADY_IN_SYNC == mur);
-      return;
-    }
     assertEquals(8L, mur.totalRequestedUpdates);
     assertEquals("3...9,"+otherHighest+"..."+otherHighest, mur.versionsAndRanges);
   }
