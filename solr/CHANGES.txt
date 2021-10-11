@@ -390,6 +390,8 @@ Bug Fixes
 
 * SOLR-15653: Fix collection creation race that assumes a local clusterstate when the collection has only just been created. (Mark Miller)
 
+* SOLR-15675: Fix parsing of -zkHost flag for the bin/solr auth command (janhoy)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
