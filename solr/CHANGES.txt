@@ -371,6 +371,8 @@ Other Changes
 
 * SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
 
+* SOLR-15692: Fix parsing of -zkHost flag for the bin/solr commands (janhoy)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
