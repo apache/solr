@@ -19,7 +19,8 @@ import java.util.function.BiFunction
 
 // Local Lucene development repository resolution:
 //   1) A "-Plucene.dev.version=[version]" property, resolving Lucene artifacts from a local Maven repository.
-//   2) A non-empty property "-Plucene.dev.path=[path]" pointing to a local path.
+//   2) A non-empty property "-Plucene.dev.path=[path]" pointing to a local path. Relative paths
+//      are resolved against the root project directory.
 //   3) An auto-wired 'lucene' subfolder, if present. To skip auto-wiring, pass
 //      a blank value in step 2: "-Plucene.dev.path=".
 
@@ -82,7 +83,7 @@ if (propertyValue != null) {
       logger.lifecycle("Local Lucene development repository has been detected but won't be used.")
     }
   } else {
-    luceneDevRepo = file("${propertyValue}").absoluteFile
+    luceneDevRepo = file(rootDir).toPath().resolve(propertyValue).normalize().toFile()
     if (!luceneDevRepo.exists()) {
       throw new GradleException("Lucene repository does not exist at: -P${PROP_FORCE_PATH}=${luceneDevRepo}.")
     }
