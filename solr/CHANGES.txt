@@ -421,6 +421,10 @@ Other Changes
 
 ======================= 8.10.1 =======================
 
+Bug Fixes
+---------------------
+* SOLR-15691: Admin UI raises yellow warning even when only case of hostnames differ (janhoy)
+
 Other Changes
 ---------------------
 * SOLR-15677: Upgrade the following dependencies with vulnerabilities.
