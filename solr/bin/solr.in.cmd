@@ -30,7 +30,7 @@ REM set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 
 REM Configure verbose GC logging:
 REM For Java 8: if this is set, additional params will be added to specify the log file & rotation
-REM For Java 9 or higher: GC_LOG_OPTS is currently not supported. If you set it, the startup script will exit with failure.
+REM For Java 9 or higher: GC_LOG_OPTS is currently not supported unless you are using OpenJ9. Otherwise if you set it, the startup script will exit with failure.
 REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
@@ -54,6 +54,9 @@ REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot
 REM Leave empty if not using SolrCloud
 REM set ZK_HOST=
+
+REM Set to true if your ZK host has a chroot path, and you want to create it automatically.
+REM set ZK_CREATE_CHROOT=true
 
 REM Set the ZooKeeper client timeout (for SolrCloud mode)
 REM set ZK_CLIENT_TIMEOUT=30000
@@ -183,11 +186,14 @@ REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
 
+REM Jetty GZIP module enabled by default
+REM set SOLR_GZIP_ENABLED=true
+
 REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
-REM list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
-REM or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
-REM host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984
+REM list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
+REM in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
+REM Alternatively host checking can be disabled by using the system property "solr.disable.allowUrls"
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984
 
 REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
 REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional

@@ -51,8 +51,8 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
       this.files = files;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public CoreSnapshotMetaData(NamedList resp) {
+    @SuppressWarnings({"unchecked"})
+    public CoreSnapshotMetaData(NamedList<?> resp) {
       this.coreName = (String)resp.get(CoreAdminParams.CORE);
       this.indexDirPath = (String)resp.get(SolrSnapshotManager.INDEX_DIR_PATH);
       this.generationNumber = (Long)resp.get(SolrSnapshotManager.GENERATION_NUM);
@@ -97,9 +97,8 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
       arg0.write(info);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public NamedList toNamedList() {
-      NamedList result = new NamedList();
+    public NamedList<Object> toNamedList() {
+      NamedList<Object> result = new NamedList<>();
       result.add(CoreAdminParams.CORE, getCoreName());
       result.add(SolrSnapshotManager.INDEX_DIR_PATH, getIndexDirPath());
       result.add(SolrSnapshotManager.GENERATION_NUM, getGenerationNumber());
@@ -150,22 +149,22 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     }
   }
 
-  @SuppressWarnings("unchecked")
-  public CollectionSnapshotMetaData(NamedList<Object> data) {
+  public CollectionSnapshotMetaData(NamedList<?> data) {
     this.name = (String)data.get(CoreAdminParams.NAME);
     String statusStr = (String)data.get(SolrSnapshotManager.SNAPSHOT_STATUS);
     this.creationDate = new Date((Long)data.get(SolrSnapshotManager.CREATION_DATE));
     this.status = SnapshotStatus.valueOf(statusStr);
     this.replicaSnapshots = new ArrayList<>();
 
-    NamedList<Object> r = (NamedList<Object>) data.get(SolrSnapshotManager.SNAPSHOT_REPLICAS);
-    for (Map.Entry<String,Object> x : r) {
-      NamedList<Object> info = (NamedList<Object>)x.getValue();
+    NamedList<?> r = (NamedList<?>) data.get(SolrSnapshotManager.SNAPSHOT_REPLICAS);
+    for (Map.Entry<String,?> x : r) {
+      NamedList<?> info = (NamedList<?>)x.getValue();
       String coreName = (String)info.get(CoreAdminParams.CORE);
       String indexDirPath = (String)info.get(SolrSnapshotManager.INDEX_DIR_PATH);
       long generationNumber = (Long) info.get(SolrSnapshotManager.GENERATION_NUM);
       String shardId = (String)info.get(SolrSnapshotManager.SHARD_ID);
       boolean leader = (Boolean) info.get(SolrSnapshotManager.LEADER);
+      @SuppressWarnings("unchecked")
       Collection<String> files = (Collection<String>)info.get(SolrSnapshotManager.FILE_LIST);
       replicaSnapshots.add(new CoreSnapshotMetaData(coreName, indexDirPath, generationNumber, shardId, leader, files));
     }
@@ -224,14 +223,13 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     arg0.write(result);
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  public NamedList toNamedList() {
-    NamedList result = new NamedList();
+  public NamedList<Object> toNamedList() {
+    NamedList<Object> result = new NamedList<>();
     result.add(CoreAdminParams.NAME, this.name);
     result.add(SolrSnapshotManager.SNAPSHOT_STATUS, this.status.toString());
     result.add(SolrSnapshotManager.CREATION_DATE, this.getCreationDate().getTime());
 
-    NamedList replicas = new NamedList();
+    NamedList<NamedList<Object>> replicas = new NamedList<NamedList<Object>>();
     for (CoreSnapshotMetaData x : replicaSnapshots) {
       replicas.add(x.getCoreName(), x.toNamedList());
     }

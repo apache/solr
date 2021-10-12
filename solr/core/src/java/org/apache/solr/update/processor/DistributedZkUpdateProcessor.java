@@ -582,7 +582,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument());
     } else if (cmd instanceof DeleteUpdateCommand) {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
-      nodes = setupRequest(dcmd.getId(), null);
+      nodes = setupRequest(dcmd.getId(), null, (null != dcmd.getRoute() ? dcmd.getRoute() : req.getParams().get(ShardParams._ROUTE_)) );
     }
   }
 
@@ -943,7 +943,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                   if (ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
                     log.info("Going to expire routing rule");
                     try {
-                      Map<String, Object> map = Utils.makeMap(Overseer.QUEUE_OPERATION, OverseerAction.REMOVEROUTINGRULE.toLower(),
+                      Map<String, Object> map = Map.of(Overseer.QUEUE_OPERATION, OverseerAction.REMOVEROUTINGRULE.toLower(),
                           ZkStateReader.COLLECTION_PROP, collection,
                           ZkStateReader.SHARD_ID_PROP, myShardId,
                           "routeKey", routeKey + "!");

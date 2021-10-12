@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -73,8 +72,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
@@ -196,14 +194,14 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       lastFailMsg = "";
       ClusterState clusterState = client.getZkStateReader().getClusterState();
       for (Slice slice : clusterState.getCollection(collectionName).getSlices()) {
-        Boolean foundLeader = false;
-        Boolean foundPreferred = false;
+        boolean foundLeader = false;
+        boolean foundPreferred = false;
         for (Replica replica : slice.getReplicas()) {
-          Boolean isLeader = replica.getBool("leader", false);
-          Boolean isPreferred = replica.getBool("property.preferredleader", false);
+          boolean isLeader = replica.getBool("leader", false);
+          boolean isPreferred = replica.getBool("property.preferredleader", false);
           if (isLeader != isPreferred) {
-            lastFailMsg = "Replica should NOT have preferredLeader != leader. Preferred: " + isPreferred.toString() +
-                " leader is " + isLeader.toString();
+            lastFailMsg = "Replica should NOT have preferredLeader != leader. Preferred: " + isPreferred +
+                " leader is " + isLeader;
           }
           if (foundLeader && isLeader) {
             lastFailMsg = "There should only be a single leader in _any_ shard! Replica " + replica.getName() +

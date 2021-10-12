@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-import com.google.common.base.Preconditions
-import com.google.common.base.Strings
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+import org.apache.commons.codec.digest.DigestUtils
 
 description = 'Solr Docker image'
 
@@ -29,65 +30,99 @@ def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCK
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
 def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
 
+def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName','');
+
 // Build directory locations
-def dockerBuildDistribution = "$buildDir/distributions"
 def imageIdFile = "$buildDir/image-id"
+
+def smokeTestOfficial = "$buildDir/smoke-check-official"
+def imageIdFileOfficial = "$smokeTestOfficial/image-id"
 
 configurations {
   packaging {
     canBeResolved = true
   }
+  solrTgz {
+    canBeConsumed = false
+    canBeResolved = true
+  }
+  solrTgzSignature {
+    canBeConsumed = false
+    canBeResolved = true
+  }
   dockerImage {
+    canBeResolved = true
+  }
+  dockerOfficialSmokeCheckImage {
+    canBeConsumed = false
     canBeResolved = true
   }
 }
 
+ext {
+  packagingDir = file("${buildDir}/packaging")
+}
+
 dependencies {
-  packaging project(path: ":solr:packaging", configuration: 'archives')
+  packaging files(packagingDir) {
+    builtBy 'assemblePackaging'
+  }
+
+  solrTgz project(path: ":solr:packaging", configuration: 'solrTgz')
+  solrTgzSignature project(path: ":solr:packaging", configuration: 'solrTgzSignature')
 
   dockerImage files(imageIdFile) {
     builtBy 'dockerBuild'
   }
+  dockerOfficialSmokeCheckImage files(imageIdFileOfficial) {
+    builtBy 'testBuildDockerfileOfficial'
+  }
 }
 
-task dockerTar(type: Tar) {
-  group = 'Docker'
-  description = 'Package docker context to prepare for docker build'
-
-  dependsOn configurations.packaging
-  into('scripts') {
-    from file('scripts')
-    fileMode 755
+// We're using commons-codec for computing checksums.
+buildscript {
+  repositories {
+    mavenCentral()
   }
-  into('releases') {
-    from configurations.packaging
-    include '*.tgz'
+  dependencies {
+    classpath "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
   }
-  from file('Dockerfile')
-  destinationDirectory = file(dockerBuildDistribution)
-  extension 'tgz'
-  compression = Compression.GZIP
+}
+def checksum = { file ->
+  return new DigestUtils(DigestUtils.sha512Digest).digestAsHex(file).trim()
 }
 
-task dockerBuild(dependsOn: tasks.dockerTar) {
+
+task assemblePackaging(type: Sync) {
+  description = 'Assemble docker scripts and Dockerfile for Solr Packaging'
+
+  from(projectDir, {
+    include "scripts/**"
+  })
+  from(buildDir, {
+    include 'Dockerfile.local'
+  })
+  into packagingDir
+}
+
+task dockerBuild(dependsOn: configurations.solrTgz) {
   group = 'Docker'
   description = 'Build Solr docker image'
 
   // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
   inputs.properties([
           baseDockerImage: baseDockerImage,
-          githubUrlOrMirror: githubUrlOrMirror,
-          version: version
+          githubUrlOrMirror: githubUrlOrMirror
   ])
-  inputs.dir(dockerBuildDistribution)
+  inputs.files(configurations.solrTgz)
 
   doLast {
     exec {
-      standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
+      standardInput = configurations.solrTgz.singleFile.newDataInputStream()
       commandLine "docker", "build",
+              "-f", "solr-${version}/docker/Dockerfile.local",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
-              "--build-arg", "SOLR_VERSION=${version}",
               "--build-arg", "GITHUB_URL=${inputs.properties.githubUrlOrMirror}",
               "-"
     }
@@ -130,48 +165,16 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   }
 }
 
-task testDocker(dependsOn: tasks.dockerBuild) {
+task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
-  description = 'Test Solr docker image'
+  description = 'Test Solr docker image built from Dockerfile.local'
 
-  def inputDir = "tests/cases"
-  def outputDir = "$buildDir/tmp/tests"
+  idFile = tasks.dockerBuild.outputs.files.singleFile
+  outputDir = file("$buildDir/test-results")
 
-  // Ensure that the docker image is re-tested if the image ID changes or the test files change
-  inputs.properties([
-          includeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.include", "SOLR_DOCKER_TESTS_INCLUDE", ",").split(","))),
-          excludeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
-  ])
-  inputs.file(imageIdFile)
-  inputs.dir(inputDir)
-
-  doLast {
-    def solrImageId = tasks.dockerBuild.outputs.files.singleFile.text
-    def solrImageName = solrImageId.substring(7, 14)
-
-    // Print information on the image before it is tested
-    logger.lifecycle("Testing Solr Image:")
-    logger.lifecycle("\tID: $solrImageId\n")
-
-    // Run the tests
-    def sourceDir = file(inputDir)
-    sourceDir.eachFile  { file ->
-      def testName = file.getName()
-      def testCaseBuildDir = "${outputDir}/${testName}"
-
-      // If specific tests are specified, only run those. Otherwise run all that are not ignored.
-      def runTest = !inputs.properties.includeTests.isEmpty() ? inputs.properties.includeTests.contains(testName) : !inputs.properties.excludeTests.contains(testName)
-      if (runTest) {
-        exec {
-          environment "TEST_DIR", file
-          environment "BUILD_DIR", testCaseBuildDir
-          commandLine "bash", "$file/test.sh", solrImageName
-        }
-      }
-    }
-  }
-
-  outputs.dir(outputDir)
+  // include/exclude options are designed for people who know their customizations will break some tests
+  testCasesInclude.value(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.include", "SOLR_DOCKER_TESTS_INCLUDE", ",").split(",")))
+  testCasesExclude.value(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
 }
 
 task dockerPush(dependsOn: tasks.dockerTag) {
@@ -200,4 +203,339 @@ task dockerPush(dependsOn: tasks.dockerTag) {
 // One task to build and tag a Solr docker image
 task docker {
   dependsOn tasks.dockerBuild, tasks.dockerTag
+}
+
+
+ext {
+  // Filters/Patterns for re-use in multiple "template" related tasks
+  commentFilter = { line ->
+    if (line.startsWith('#-#')) {
+      return null;
+    }
+    return line;
+  }
+  propReplacePattern = Pattern.compile('_REPLACE_((_|\\p{Upper})+)_')
+}
+task createBodySnippetDockerfile(type: Copy) {
+  from 'templates/Dockerfile.body.template'
+  into "$buildDir/snippets/"
+  rename { name -> name.replace("template","snippet") }
+  filteringCharset 'UTF-8'
+  
+  // NOTE: The only "templating" the Dockerfile.body supports is removing comments.
+  // 
+  // Any situation where it feel appropriate to add variable substitution should be reconsidered, and probably
+  // implemented as either a build-arg or as a variable expanded in the header snippets (or both)
+  filter( commentFilter )
+}
+
+ext {
+  // NOTE: 'props' are variables that will be replaced in the respective templates,
+  // and they must consist solely of characters matching the regex '(_|\\p{Upper})+'.
+  // They may only be used in ARG and FROM lines, via the syntax: '_REPLACE_FOO_'
+  // where 'FOO' is the key used in 'props' (NOTE the leading and trailing literal '_' characters) 
+  dfLocalDetails = [
+    name: 'Local',
+    desc: 'Dockerfile used to create local Solr docker images directly from Solr release tgz file',
+
+    // NOTE: There should be no reason for Dockerfile.local to include unique values
+    // 
+    // Values identical in both Dockerfiles should use consistent names in both templates and
+    // be defined in the task creation.
+    props: [:]
+  ]
+  dfOfficialDetails = [
+    name: 'Official',
+    desc: 'Dockerfile used to create official Solr docker images published to hub.docker.io',
+    props: [
+      // NOTE: Only include values here that are distinct and unique to the Official Dockerfiles
+      //
+      // Values identical in both Dockerfiles should use consistent names in both templates and
+      // be defined in the task creation
+      
+      'SOLR_VERSION': version,
+      // NOTE: SHA is lazy computed...
+      'SOLR_TGZ_SHA': "${ -> checksum(configurations.solrTgz.singleFile) }",
+      'RELEASE_MANAGER_GPG_FINGERPRINT': "${releaseGpgFingerprint}"
+    ]
+  ]
+}
+/*
+This section creates the following gradle tasks:
+- createDockerfileOfficial
+- createDockerfileLocal
+
+Both will create a self-standing Dockerfile that can be used to build a Solr image.
+These are templated using a unique header file for each Dockerfile and the same body template for the logic on installing Solr.
+These templates can be found in the templates/ directory.
+
+The snippets of each section (header and body) are saved to build/snippets after they are templated and before they are combined.
+The final Dockerfiles are merely the snippet headers combined with the snippet body.
+ */
+[ dfLocalDetails, dfOfficialDetails ].each{ details ->
+  def fileName = "Dockerfile.${ -> details.name.toLowerCase(Locale.ROOT) }"
+  def outFile = file("$buildDir/${fileName}")
+  
+  def props = [
+    // Values defined here should be common (and consistent) across both Dockerfiles
+    'BASE_IMAGE': baseDockerImage,
+    * : details.props
+  ]
+  tasks.create("createDockerfile${details.name}", Copy) {
+    description "Creates ${details.desc}"
+    
+    dependsOn tasks.createBodySnippetDockerfile
+    inputs.properties(props)
+    inputs.file("$buildDir/snippets/Dockerfile.body.snippet")
+    outputs.file(outFile)
+    
+    from "templates/${fileName}.header.template"
+    into "$buildDir/snippets/"
+    rename { name -> name.replace("template","snippet") }
+    filteringCharset 'UTF-8'
+    filter( commentFilter )
+    filter( { line ->
+      if ( line.startsWith("FROM ") || line.startsWith("ARG ") ) {
+        Matcher matcher = project.ext.propReplacePattern.matcher(line);
+        StringBuilder sb = new StringBuilder();
+        if (matcher.find()) {
+          String key = matcher.group(1);
+          if (null == key || key.isEmpty() || ( ! props.containsKey(key) ) ) {
+            throw new GradleException("Line contains invalid REPLACE variable (" + key + "): " + line);
+          }
+          matcher.appendReplacement(sb, props.get(key) );
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+      }
+      return line;
+    })
+
+    doLast {
+      outFile.withWriter('UTF-8') { writer ->
+        files("$buildDir/snippets/${fileName}.header.snippet",
+              "$buildDir/snippets/Dockerfile.body.snippet").each { snippet ->
+          snippet.withReader('UTF-8') { reader ->
+            writer << reader
+          }
+        }
+      }
+    }
+  }
+}
+assemblePackaging.dependsOn tasks.createDockerfileLocal
+tasks.createDockerfileOfficial.dependsOn configurations.solrTgz // to lazy compute SHA
+
+// sanity check...
+if (''.equals(releaseGpgFingerprint)) {
+  gradle.taskGraph.whenReady { graph ->
+    if ( graph.hasTask(createDockerfileOfficial) ) {
+      throw new GradleException("No GPG keyName found, please see help/gpgSigning.txt (GPG key is neccessary to create Dockerfile.official)")
+    }
+  }
+}
+
+task testBuildDockerfileOfficial(type: Copy) {
+  description = 'Test "docker build" works with our generated Dockerfile.official using Mocked URLs'
+
+  dependsOn createDockerfileOfficial
+  dependsOn configurations.solrTgz
+  dependsOn configurations.solrTgzSignature
+  
+  def mockHttpdHome = file("$smokeTestOfficial/mock-httpd-home");
+  
+  inputs.file("$buildDir/Dockerfile.official")
+  outputs.dir(mockHttpdHome)
+  outputs.file(imageIdFileOfficial)
+
+  from configurations.solrTgzSignature
+  from configurations.solrTgz
+  into mockHttpdHome
+  
+  doLast {
+    // A file to record the container ID of our mock httpd
+    def mockServerIdFile = file("${buildDir}/dockerfile-mock-artifact-server-cid.txt")
+    
+    // if we encounter any problems running our test, we'll fill this in and use it to suppress any
+    // other exceptions we encounter on cleanup...
+    def mainException = null;
+    
+    // TODO: setup a little 'suppressOrThrow(Exception)' closure for reuse below....
+
+    try {
+      // run an httpd server to host our artifacts
+      logger.lifecycle('Running mock HTTPD server our testing...');
+      exec {
+        commandLine 'docker', 'run',
+          '--cidfile', mockServerIdFile,
+          '--rm',
+          '-d',
+          '-v', "${mockHttpdHome.absoluteFile}:/data",
+          '-w', '/data',
+          'python:3-alpine', 'python', '-m', 'http.server', '9876'
+      }
+      try {
+        def mockServerId = mockServerIdFile.text
+        def mockServerIpStdOut = new ByteArrayOutputStream()
+        exec{
+          commandLine 'docker', 'inspect', "--format={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", mockServerId
+          standardOutput = mockServerIpStdOut
+        }
+        def mockServerIp = mockServerIpStdOut.toString().trim()
+
+        // *NOW* we can actually run our docker build command...
+        logger.lifecycle('Running docker build on Dockerfile.official...');
+        exec {
+          standardInput = file("${buildDir}/Dockerfile.official").newDataInputStream()
+          commandLine 'docker', 'build',
+            '--add-host', "mock-solr-dl-server:${mockServerIp}",
+            '--no-cache', // force fresh downloads from our current network
+            "--iidfile", imageIdFileOfficial,
+            '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
+            '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
+            "--build-arg", "GITHUB_URL=${githubUrlOrMirror}",
+            '-'
+        }
+        
+      } finally {
+        // Try to shut down our mock httpd server....
+        if (mockServerIdFile.exists()) {
+          def mockServerId = mockServerIdFile.text
+          try {
+            exec { commandLine 'docker', 'stop', mockServerId }
+          } catch (Exception e) {
+            logger.error("Unable to stop docker container ${mockServerId}", e)
+            if (null != mainException) {
+              mainException.addSuppressed(e);
+            } else {
+              mainException = e;
+              throw e;
+            }
+          } finally {
+            project.delete(mockServerIdFile)
+          }
+        }
+      }
+    } catch (Exception e) {
+      mainException = e
+      throw e;
+    }
+  }
+}
+
+task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSmokeCheckImage) {
+  description = 'Smoke Test Solr docker image built from Dockerfile.official'
+  
+  idFile = file(imageIdFileOfficial)
+  outputDir = file("$smokeTestOfficial/test-results")
+  
+  // This test does not respect the include/exclude properties that `testDocker` does.
+  // All docker tests will be run, no matter the properties specified.
+  testCasesInclude.empty()
+  testCasesExclude.empty()
+}
+
+// Re-usable class for running tests...
+abstract class TestDockerImageTask extends DefaultTask {
+
+  // Ensure that the docker image is re-tested if the image ID changes or the test files change
+  @InputFile
+  abstract public RegularFileProperty getIdFile()
+
+  @InputDirectory
+  File sourceDir = project.file("tests/cases")
+
+  @Input
+  SetProperty<String> testCasesInclude = project.objects.setProperty(String)
+
+  @Input
+  SetProperty<String> testCasesExclude = project.objects.setProperty(String)
+  
+  @OutputDirectory
+  abstract public DirectoryProperty getOutputDir()
+
+  @Inject
+  abstract public WorkerExecutor getWorkerExecutor();
+
+  public static interface SingleTestParameters extends WorkParameters {
+    // NOTE: we explicitly don't use DirectoryProperty here because the way WorkerExecutor serializes the params
+    // causes weird "wrapped" objects to come back that don't work when you try to call `.getAsFile()` or `.getAsFile().getPath()`
+    Property<String> getTestName();
+    Property<String> getTestDir();
+    Property<String> getWorkDir();
+    Property<String> getImageId();
+  }
+
+  public abstract static class SingleTestAction implements WorkAction<SingleTestParameters> {
+    @Inject
+    abstract public ExecOperations getExec();
+
+    @Override
+    public void execute() {
+      def testCaseName = getParameters().getTestName().get()
+      def testCaseDir = getParameters().getTestDir().get()
+      def testCaseWorkDir = getParameters().getWorkDir().get()
+      def testCaseBuildDir = "${testCaseWorkDir}/build_dir"
+      System.out.println("Starting Solr Docker test: ${testCaseName}")
+
+      def res = getExec().exec {
+        // we'll handle it ourselves so we can report the details of which test failed
+        ignoreExitValue true
+
+        environment "DEBUG", "true"
+        environment "TEST_DIR", testCaseDir
+        environment "BUILD_DIR", testCaseBuildDir
+
+        standardOutput new FileOutputStream("${testCaseWorkDir}/test.std.out")
+        errorOutput new FileOutputStream("${testCaseWorkDir}/test.err.out")
+
+        commandLine "bash", "${testCaseDir}/test.sh", getParameters().getImageId().get()
+      }
+      def ev = res.getExitValue()
+      if (0 != ev) {
+        throw new GradleException("Docker test failure=${ev}: Test: ${testCaseName} Output: ${testCaseWorkDir}");
+      } else {
+        System.out.println("Completed Solr Docker test: ${testCaseName}")
+      }
+    }
+  }
+
+  @TaskAction
+  public void runTests() {
+    // no easy way to control the amount of parallelization of the work queue (independent of `org.gradle.workers.max`)
+    // so the best we can do (simply) is a boolean setting that controls if we `await()` after each `submit()`
+    def workQueue = getWorkerExecutor().noIsolation();
+    def runConcurrentTests = project.propertyOrEnvOrDefault("solr.docker.tests.concurrent", "SOLR_DOCKER_TESTS_CONCURRENT", "false").toBoolean()
+
+    def imageId = idFile.getAsFile().get().text
+    // Print information on the image before it is tested
+    logger.lifecycle("Testing Solr Image ID: $imageId ${ -> runConcurrentTests ? '(concurrently)' : '(sequentially)'}")
+
+    def includes = testCasesInclude.get()
+    def excludes = testCasesExclude.get()
+
+    // "Run" each of the test cases
+    sourceDir.eachFile  { file ->
+      def testName = file.getName()
+      def outDir = outputDir.get()
+      def testCaseWorkDir = outDir.dir(testName)
+
+      // If specific tests are specified, only run those. Otherwise run all that are not ignored.
+      def runTest = !includes.isEmpty() ? includes.contains(testName) : !excludes.contains(testName)
+      if (runTest) {
+        project.mkdir testCaseWorkDir
+
+        def paramSetup = { params ->
+          params.getTestName().set(testName)
+          params.getTestDir().set(file.getPath())
+          params.getWorkDir().set(testCaseWorkDir.getAsFile().getPath())
+          params.getImageId().set(imageId)
+        }
+        workQueue.submit(SingleTestAction.class, paramSetup);
+        if (! runConcurrentTests) {
+          workQueue.await();
+        }
+      }
+    }
+  }
 }

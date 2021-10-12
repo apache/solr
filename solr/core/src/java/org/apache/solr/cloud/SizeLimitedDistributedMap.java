@@ -17,6 +17,9 @@
 package org.apache.solr.cloud;
 
 import java.util.List;
+import java.util.Map;
+
+import com.google.common.collect.Maps;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException;
@@ -50,6 +53,17 @@ public class SizeLimitedDistributedMap extends DistributedMap {
 
   @Override
   public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
+    shrinkIfNeeded();
+    super.put(trackingId, data);
+  }
+
+  @Override
+  public boolean putIfAbsent(String trackingId, byte[] data) throws KeeperException, InterruptedException {
+    shrinkIfNeeded();
+    return super.putIfAbsent(trackingId, data);
+  }
+
+  private void shrinkIfNeeded()  throws KeeperException, InterruptedException {
     if (this.size() >= maxSize) {
       // Bring down the size
       List<String> children = zookeeper.getChildren(dir, null, true);
@@ -63,23 +77,25 @@ public class SizeLimitedDistributedMap extends DistributedMap {
         }
       };
 
+      Map<String, Long> childToModificationZxid = Maps.newHashMapWithExpectedSize(children.size());
       for (String child : children) {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
-        priorityQueue.insertWithOverflow(stat.getMzxid());
+        if (stat != null) {
+          priorityQueue.insertWithOverflow(stat.getMzxid());
+          childToModificationZxid.put(child, stat.getMzxid());
+        }
       }
 
-      long topElementMzxId = priorityQueue.top();
+      long topElementMzxId = priorityQueue.top(); // can be null, but highly unlikely
 
       for (String child : children) {
-        Stat stat = zookeeper.exists(dir + "/" + child, null, true);
-        if (stat.getMzxid() <= topElementMzxId) {
+        Long id = childToModificationZxid.get(child);
+        if (id != null &&  id <= topElementMzxId) {
           zookeeper.delete(dir + "/" + child, -1, true);
           if (onOverflowObserver != null) onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
         }
       }
     }
-
-    super.put(trackingId, data);
   }
   
   interface OnOverflowObserver {

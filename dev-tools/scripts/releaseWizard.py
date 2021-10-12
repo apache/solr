@@ -116,7 +116,7 @@ def expand_jinja(text, vars=None):
         'set_java_home': set_java_home,
         'latest_version': state.get_latest_version(),
         'latest_lts_version': state.get_latest_lts_version(),
-        'master_version': state.get_master_version(),
+        'main_version': state.get_main_version(),
         'mirrored_versions': state.get_mirrored_versions(),
         'mirrored_versions_to_delete': state.get_mirrored_versions_to_delete(),
         'home': os.path.expanduser("~")
@@ -190,6 +190,10 @@ def check_prerequisites(todo=None):
         git_ver = run("git --version").splitlines()[0]
     except:
         sys.exit("You will need git installed")
+    try:
+        svn_ver = run("svn --version").splitlines()[0]
+    except:
+        sys.exit("You will need svn installed")
     if not 'EDITOR' in os.environ:
         print("WARNING: Environment variable $EDITOR not set, using %s" % get_editor())
 
@@ -361,7 +365,7 @@ class ReleaseState:
             raise Exception("Release version %s must have same major version as current minor or lts release")
         return [ver for ver in versions if ver not in to_keep]
 
-    def get_master_version(self):
+    def get_main_version(self):
         v = Version.parse(self.get_latest_version())
         return "%s.%s.%s" % (v.major + 1, 0, 0)
 
@@ -390,10 +394,10 @@ class ReleaseState:
             if not ver.is_minor_release():
                 sys.exit("You can only release minor releases from an existing stable branch")
         elif branch_type == BranchType.unstable:
-            if not branch == 'master':
+            if not branch == 'main':
                 sys.exit("Incompatible branch and branch_type")
             if not ver.is_major_release():
-                sys.exit("You can only release a new major version from master branch")
+                sys.exit("You can only release a new major version from main branch")
         if not getScriptVersion() == release_version:
             print("WARNING: Expected release version %s when on branch %s, but got %s" % (
                 getScriptVersion(), branch, release_version))
@@ -401,7 +405,7 @@ class ReleaseState:
     def get_base_branch_name(self):
         v = Version.parse(self.release_version)
         if v.is_major_release():
-            return 'master'
+            return 'main'
         elif v.is_minor_release():
             return self.get_stable_branch_name()
         elif v.major == Version.parse(self.get_latest_version()).major:
@@ -569,7 +573,7 @@ class ReleaseState:
 
     def get_stable_branch_name(self):
         if self.release_type == 'major':
-            v = Version.parse(self.get_master_version())
+            v = Version.parse(self.get_main_version())
         else:
             v = Version.parse(self.get_latest_version())
         return "branch_%sx" % v.major
@@ -1103,8 +1107,9 @@ def configure_pgp(gpg_todo):
     id = str(input("Please enter your Apache id: (ENTER=skip) "))
     if id.strip() == '':
         return False
-    all_keys = load('https://home.apache.org/keys/group/lucene.asc')
-    lines = all_keys.splitlines()
+    key_url = "https://home.apache.org/keys/committer/%s.asc" % id.strip()
+    committer_key = load(key_url)
+    lines = committer_key.splitlines()
     keyid_linenum = None
     for idx, line in enumerate(lines):
         if line == 'ASF ID: %s' % id:
@@ -1114,7 +1119,7 @@ def configure_pgp(gpg_todo):
         keyid_line = lines[keyid_linenum]
         assert keyid_line.startswith('LDAP PGP key: ')
         gpg_id = keyid_line[14:].replace(" ", "")[-8:]
-        print("Found gpg key id %s on file at Apache (https://home.apache.org/keys/group/lucene.asc)" % gpg_id)
+        print("Found gpg key id %s on file at Apache (%s)" % (gpg_id, key_url))
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.
@@ -1154,7 +1159,7 @@ def configure_pgp(gpg_todo):
             return False
         if length < 4096:
             print("Your key length is < 4096, Please generate a stronger key.")
-            print("Alternatively, follow instructions in http://www.apache.org/dev/release-signing.html#note")
+            print("Alternatively, follow instructions in https://infra.apache.org/release-signing.html#note")
             if not ask_yes_no("Have you configured your gpg to avoid SHA-1?"):
                 print("Please either generate a strong key or reconfigure your client")
                 return False
@@ -1177,7 +1182,7 @@ def configure_pgp(gpg_todo):
         if apache_sigs < 1:
             print(textwrap.dedent("""\
                 Your key is not signed by any other committer. 
-                Please review http://www.apache.org/dev/openpgp.html#apache-wot
+                Please review https://infra.apache.org/openpgp.html#apache-wot
                 and make sure to get your key signed until next time.
                 You may want to run 'gpg --refresh-keys' to refresh your keychain."""))
         uses_apacheid = is_code_signing_key = False
@@ -1187,9 +1192,9 @@ def configure_pgp(gpg_todo):
                 if 'CODE SIGNING KEY' in line.upper():
                     is_code_signing_key = True
         if not uses_apacheid:
-            print("WARNING: Your key should use your apache-id email address, see http://www.apache.org/dev/release-signing.html#user-id")
+            print("WARNING: Your key should use your apache-id email address, see https://infra.apache.org/release-signing.html#user-id")
         if not is_code_signing_key:
-            print("WARNING: You code signing key should be labeled 'CODE SIGNING KEY', see http://www.apache.org/dev/release-signing.html#key-comment")
+            print("WARNING: You code signing key should be labeled 'CODE SIGNING KEY', see https://infra.apache.org/release-signing.html#key-comment")
     except Exception as e:
         print("Could not check signatures of your key: %s" % e)
 

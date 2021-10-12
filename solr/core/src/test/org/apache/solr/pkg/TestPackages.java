@@ -66,6 +66,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
@@ -81,14 +82,28 @@ import static org.apache.solr.filestore.TestDistribPackageStore.*;
 public class TestPackages extends SolrCloudTestCase {
 
   @Before
-  public void setup() {
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
     System.setProperty("enable.packages", "true");
+    configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
+        .addConfig("conf", configset("conf2"))
+        .addConfig("conf1", configset("schema-package"))
+        .configure();
   }
-  
+
   @After
-  public void teardown() {
+  @Override
+  public void tearDown() throws Exception {
+    if (cluster != null) {
+      cluster.shutdown();
+    }
     System.clearProperty("enable.packages");
+
+    super.tearDown();
   }
+
   public static class ConfigPlugin implements ReflectMapWriter {
     @JsonProperty
     public String name;
@@ -98,13 +113,8 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
 
+  @Test
   public void testCoreReloadingPlugin() throws Exception {
-    MiniSolrCloudCluster cluster =
-            configureCluster(4)
-                    .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("conf", configset("conf2"))
-                    .configure();
-    try {
       String FILE1 = "/mypkg/runtimelibs.jar";
       String COLLECTION_NAME = "testCoreReloadingPluginColl";
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
@@ -127,7 +137,7 @@ public class TestPackages extends SolrCloudTestCase {
               () -> new V2Request.Builder("/cluster/package").
                       withMethod(SolrRequest.METHOD.GET)
                       .build().process(cluster.getSolrClient()),
-              Utils.makeMap(
+              Map.of(
                       ":result:packages:mypkg[0]:version", "1.0",
                       ":result:packages:mypkg[0]:files[0]", FILE1
               ));
@@ -146,7 +156,7 @@ public class TestPackages extends SolrCloudTestCase {
               () -> new V2Request.Builder("/cluster/package").
                       withMethod(SolrRequest.METHOD.GET)
                       .build().process(cluster.getSolrClient()),
-              Utils.makeMap(
+              Map.of(
                       ":result:packages:mypkg[1]:version", "2.0",
                       ":result:packages:mypkg[1]:files[0]", FILE1
               ));
@@ -155,19 +165,10 @@ public class TestPackages extends SolrCloudTestCase {
       verifyComponent(cluster.getSolrClient(),
               COLLECTION_NAME, "query", "filterCache",
               "mypkg", "2.0" );
-    } finally {
-      cluster.shutdown();
-    }
   }
+
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testPluginLoading() throws Exception {
-    MiniSolrCloudCluster cluster =
-        configureCluster(4)
-            .withJettyConfig(jetty -> jetty.enableV2(true))
-            .addConfig("conf", configset("cloud-minimal"))
-            .configure();
-    try {
       String FILE1 = "/mypkg/runtimelibs.jar";
       String FILE2 = "/mypkg/runtimelibs_v2.jar";
       String FILE3 = "/mypkg/runtimelibs_v3.jar";
@@ -208,7 +209,7 @@ public class TestPackages extends SolrCloudTestCase {
           () -> new V2Request.Builder("/cluster/package").
               withMethod(SolrRequest.METHOD.GET)
               .build().process(cluster.getSolrClient()),
-          Utils.makeMap(
+          Map.of(
               ":result:packages:mypkg[0]:version", "1.0",
               ":result:packages:mypkg[0]:files[0]", FILE1
           ));
@@ -269,10 +270,10 @@ public class TestPackages extends SolrCloudTestCase {
       TestDistribPackageStore.assertResponseValues(10,
           cluster.getSolrClient() ,
           new GenericSolrRequest(SolrRequest.METHOD.GET,
-              "/stream", new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+              "/stream", new MapSolrParams(Map.of("collection", COLLECTION_NAME,
                   WT, JAVABIN,
                   "action", "plugins"
-                  ))), Utils.makeMap(
+                  ))), Map.of(
               ":plugins:mincopy", "org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric"
           ));
 
@@ -289,17 +290,16 @@ public class TestPackages extends SolrCloudTestCase {
 
       executeReq( "/" + COLLECTION_NAME + "/runtime?wt=javabin", cluster.getRandomJetty(random()),
           Utils.JAVABINCONSUMER,
-          Utils.makeMap("class", "org.apache.solr.core.RuntimeLibReqHandler"));
+          Map.of("class", "org.apache.solr.core.RuntimeLibReqHandler"));
 
       executeReq( "/" + COLLECTION_NAME + "/get?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap("class", "org.apache.solr.core.RuntimeLibSearchComponent",
-              "Version","1"));
+          Map.of("Version","1"));
 
 
       executeReq( "/" + COLLECTION_NAME + "/runtime?wt=json1", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap("wt", "org.apache.solr.core.RuntimeLibResponseWriter"));
+          Map.of("wt", "org.apache.solr.core.RuntimeLibResponseWriter"));
 
       //now upload the second jar
       postFileAndWait(cluster, "runtimecode/runtimelibs_v2.jar.bin", FILE2,
@@ -331,7 +331,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       executeReq( "/" + COLLECTION_NAME + "/get?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap(  "Version","2"));
+          Map.of(  "Version","2"));
 
 
       //now upload the third jar
@@ -357,7 +357,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       executeReq( "/" + COLLECTION_NAME + "/runtime?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap("Version","2"));
+          Map.of("Version","2"));
 
       //insert a doc with urp
       ur = new UpdateRequest();
@@ -498,21 +498,18 @@ public class TestPackages extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 5);
       checkAllNodesForFile(cluster,FILE3,
-          Utils.makeMap(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
+          Map.of(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);
-    } finally {
-      cluster.shutdown();
-    }
   }
-  @SuppressWarnings({"unchecked","rawtypes"})
-  private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
+  @SuppressWarnings("unchecked")
+  private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer<?> parser, Map<String, Object> expected) throws Exception {
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()){
       TestDistribPackageStore.assertResponseValues(10,
           () -> {
             Object o = Utils.executeGET(client.getHttpClient(),
                 jetty.getBaseUrl() + uri, parser);
             if(o instanceof NavigableObject) return (NavigableObject) o;
-            if(o instanceof Map) return new MapWriterMap((Map) o);
+            if(o instanceof Map) return new MapWriterMap((Map<String, Object>) o);
             throw new RuntimeException("Unknown response");
           }, expected);
 
@@ -521,8 +518,7 @@ public class TestPackages extends SolrCloudTestCase {
 
   private void verifyComponent(SolrClient client, String COLLECTION_NAME,
                                String componentType, String componentName, String pkg, String version) throws Exception {
-    @SuppressWarnings({"unchecked"})
-    SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+    SolrParams params = new MapSolrParams(Map.of("collection", COLLECTION_NAME,
         WT, JAVABIN,
         "componentName", componentName,
         "meta", "true"));
@@ -531,21 +527,15 @@ public class TestPackages extends SolrCloudTestCase {
         "/config/" + componentType, params);
     TestDistribPackageStore.assertResponseValues(10,
         client,
-        req1, Utils.makeMap(
+        req1, Map.of(
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:package", pkg,
             ":config:" + componentType + ":" + componentName + ":_packageinfo_:version", version
         ));
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testAPI() throws Exception {
-    System.setProperty("enable.packages", "true");
-    MiniSolrCloudCluster cluster =
-        configureCluster(4)
-            .withJettyConfig(jetty -> jetty.enableV2(true))
-            .addConfig("conf", configset("cloud-minimal"))
-            .configure();
-    try {
       String errPath = "/error/details[0]/errorMessages[0]";
       String FILE1 = "/mypkg/v.0.12/jar_a.jar";
       String FILE2 = "/mypkg/v.0.12/jar_b.jar";
@@ -554,7 +544,7 @@ public class TestPackages extends SolrCloudTestCase {
       Package.AddVersion add = new Package.AddVersion();
       add.version = "0.12";
       add.pkg = "test_pkg";
-      add.files = Arrays.asList(new String[]{FILE1, FILE2});
+      add.files = List.of(FILE1, FILE2);
       V2Request req = new V2Request.Builder("/cluster/package")
           .forceV2(true)
           .withMethod(SolrRequest.METHOD.POST)
@@ -569,7 +559,7 @@ public class TestPackages extends SolrCloudTestCase {
       postFileAndWait(cluster, "runtimecode/runtimelibs.jar.bin", FILE1, null);
 
 
-      add.files = Arrays.asList(new String[]{FILE1});
+      add.files = Collections.singletonList(FILE1);
       expectError(req, cluster.getSolrClient(), errPath,
           FILE1 + " has no signature");
       //now we upload the keys
@@ -580,7 +570,7 @@ public class TestPackages extends SolrCloudTestCase {
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
       // with correct signature
       //after uploading the file, let's delete the keys to see if we get proper error message
-      add.files = Arrays.asList(new String[]{FILE2});
+      add.files = Collections.singletonList(FILE2);
       /*expectError(req, cluster.getSolrClient(), errPath,
           "ZooKeeper does not have any public keys");*/
 
@@ -592,11 +582,11 @@ public class TestPackages extends SolrCloudTestCase {
 
       //Now verify the data in ZK
       TestDistribPackageStore.assertResponseValues(1,
-          () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
+          () -> new MapWriterMap((Map<String,Object>) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
               null, new Stat(), true))),
-          Utils.makeMap(
+          Map.of(
               ":packages:test_pkg[0]:version", "0.12",
-              ":packages:test_pkg[0]:files[0]", FILE1
+              ":packages:test_pkg[0]:files[0]", FILE2
           ));
 
       //post a new jar with a proper signature
@@ -607,15 +597,15 @@ public class TestPackages extends SolrCloudTestCase {
       //this time we are adding the second version of the package (0.13)
       add.version = "0.13";
       add.pkg = "test_pkg";
-      add.files = Arrays.asList(new String[]{FILE3});
+      add.files = Collections.singletonList(FILE3);
 
       //this request should succeed
       req.process(cluster.getSolrClient());
       //no verify the data (/packages.json) in ZK
       TestDistribPackageStore.assertResponseValues(1,
-          () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
+          () -> new MapWriterMap((Map<String,Object>) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
               null, new Stat(), true))),
-          Utils.makeMap(
+          Map.of(
               ":packages:test_pkg[1]:version", "0.13",
               ":packages:test_pkg[1]:files[0]", FILE3
           ));
@@ -637,11 +627,11 @@ public class TestPackages extends SolrCloudTestCase {
       req.process(cluster.getSolrClient());
       //Verify with ZK that the data is correct
       TestDistribPackageStore.assertResponseValues(1,
-          () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
+          () -> new MapWriterMap((Map<String,Object>) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
               null, new Stat(), true))),
-          Utils.makeMap(
+          Map.of(
               ":packages:test_pkg[0]:version", "0.13",
-              ":packages:test_pkg[0]:files[0]", FILE2
+              ":packages:test_pkg[0]:files[0]", FILE3
           ));
 
       //So far we have been verifying the details with  ZK directly
@@ -655,14 +645,11 @@ public class TestPackages extends SolrCloudTestCase {
               return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);
             }
           }
-        }, Utils.makeMap(
+        }, Map.of(
             ":result:packages:test_pkg[0]:version", "0.13",
             ":result:packages:test_pkg[0]:files[0]", FILE3
         ));
       }
-    } finally {
-      cluster.shutdown();
-    }
   }
   public static class C extends RequestHandlerBase implements SolrCoreAware   {
     static boolean informCalled = false;
@@ -700,16 +687,11 @@ public class TestPackages extends SolrCloudTestCase {
     }
   }
 
+  @Test
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");
 
-    MiniSolrCloudCluster cluster =
-            configureCluster(4)
-                    .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("conf1", configset("schema-package"))
-                    .configure();
-    try {
       String FILE1 = "/schemapkg/schema-plugins.jar";
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
       uploadKey(derFile, PackageStoreAPI.KEYS_DIR+"/pub_key512.der", cluster);
@@ -735,7 +717,7 @@ public class TestPackages extends SolrCloudTestCase {
           () -> new V2Request.Builder("/cluster/package").
               withMethod(SolrRequest.METHOD.GET)
               .build().process(cluster.getSolrClient()),
-          Utils.makeMap(
+          Map.of(
               ":result:packages:schemapkg[0]:version", "1.0",
               ":result:packages:schemapkg[0]:files[0]", FILE1
           ));
@@ -746,7 +728,7 @@ public class TestPackages extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-              Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
+              Map.of(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
                       ":fieldType:analyzer:tokenizer:_packageinfo_:version","1.0",
                       ":fieldType:_packageinfo_:version","1.0"));
 
@@ -765,25 +747,19 @@ public class TestPackages extends SolrCloudTestCase {
           () -> new V2Request.Builder("/cluster/package").
               withMethod(SolrRequest.METHOD.GET)
               .build().process(cluster.getSolrClient()),
-          Utils.makeMap(
-              ":result:packages:schemapkg[0]:version", "2.0",
-              ":result:packages:schemapkg[0]:files[0]", FILE1
+          Map.of(
+              ":result:packages:schemapkg[1]:version", "2.0",
+              ":result:packages:schemapkg[1]:files[0]", FILE1
           ));
 
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-          Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"2.0",
+          Map.of(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"2.0",
               ":fieldType:analyzer:tokenizer:_packageinfo_:version","2.0",
               ":fieldType:_packageinfo_:version","2.0"));
-
-    } finally {
-      cluster.shutdown();
-    }
-
   }
-  @SuppressWarnings({"rawtypes","unchecked"})
   private void verifySchemaComponent(SolrClient client, String COLLECTION_NAME, String path,
-                                     Map expected) throws Exception {
-    SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+                                     Map<String, Object> expected) throws Exception {
+    SolrParams params = new MapSolrParams(Map.of("collection", COLLECTION_NAME,
         WT, JAVABIN,
         "meta", "true"));
 
@@ -796,13 +772,14 @@ public class TestPackages extends SolrCloudTestCase {
 
   public static void postFileAndWait(MiniSolrCloudCluster cluster, String fname, String path, String sig) throws Exception {
     ByteBuffer fileContent = getFileContent(fname);
+    @SuppressWarnings("ByteBufferBackingArray") // this is the result of a call to wrap()
     String sha512 = DigestUtils.sha512Hex(fileContent.array());
 
     TestDistribPackageStore.postFile(cluster.getSolrClient(),
         fileContent,
         path, sig);// has file, but no signature
 
-    TestDistribPackageStore.checkAllNodesForFile(cluster, path, Utils.makeMap(
+    TestDistribPackageStore.checkAllNodesForFile(cluster, path, Map.of(
         ":files:" + path + ":sha512",
         sha512
     ), false);
@@ -840,26 +817,25 @@ public class TestPackages extends SolrCloudTestCase {
   }*/
 
 
-  public static ByteBuffer persistZip(String loc,
-                                      @SuppressWarnings({"rawtypes"}) Class... classes) throws IOException {
+  public static ByteBuffer persistZip(String loc, Class<?>... classes) throws IOException {
     ByteBuffer jar = generateZip(classes);
     try (FileOutputStream fos = new FileOutputStream(loc)) {
-      fos.write(jar.array(), 0, jar.limit());
+      fos.write(jar.array(), jar.arrayOffset(), jar.limit());
       fos.flush();
     }
     return jar;
   }
 
-  public static ByteBuffer generateZip(@SuppressWarnings({"rawtypes"}) Class... classes) throws IOException {
+  public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
     SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
-      for (@SuppressWarnings({"rawtypes"}) Class c : classes) {
+      for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
         ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
-        zipOut.write(b.array(), 0, b.limit());
+        zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();
       }
     }

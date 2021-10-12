@@ -17,11 +17,10 @@
 
 package org.apache.solr.handler;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -184,11 +183,10 @@ public class CatStream extends TupleStream implements Expressible {
     while (allFilesToCrawl.hasNext()) {
       closeCurrentFileIfSet();
       currentFilePath = allFilesToCrawl.next();
-      File currentFile = currentFilePath.absolutePath.toFile();
-      if(currentFile.getName().endsWith(".gz")) {
-        currentFileLines = new LineIterator(new InputStreamReader(new GZIPInputStream(new FileInputStream(currentFile)), "UTF-8"));
+      if(currentFilePath.absolutePath.toString().endsWith(".gz")) {
+        currentFileLines = new LineIterator(new InputStreamReader(new GZIPInputStream(Files.newInputStream(currentFilePath.absolutePath)), StandardCharsets.UTF_8));
       } else {
-        currentFileLines = FileUtils.lineIterator(currentFile, "UTF-8");
+        currentFileLines = FileUtils.lineIterator(currentFilePath.absolutePath.toFile(), "UTF-8");
       }
       if (currentFileLines.hasNext()) return true;
     }
@@ -196,7 +194,6 @@ public class CatStream extends TupleStream implements Expressible {
     return false;
   }
 
-  @SuppressWarnings({"unchecked"})
   private Tuple fetchNextLineFromCurrentFile() {
     linesReturned++;
 

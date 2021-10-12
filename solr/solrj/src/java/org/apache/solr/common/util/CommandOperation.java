@@ -100,8 +100,7 @@ public class CommandOperation {
       return commandData;
     }
     if (commandData instanceof Map) {
-      @SuppressWarnings({"rawtypes"})
-      Map metaData = (Map) commandData;
+      Map<?,?> metaData = (Map<?,?>) commandData;
       return metaData.get(key);
     } else {
       String msg = " value has to be an object for operation :" + name;
@@ -171,9 +170,8 @@ public class CommandOperation {
     return s;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private Map errorDetails() {
-    return Utils.makeMap(name, commandData, ERR_MSGS, errors);
+  private Map<String, Object> errorDetails() {
+    return Map.of(name, commandData, ERR_MSGS, errors);
   }
 
   public boolean hasError() {
@@ -209,9 +207,8 @@ public class CommandOperation {
   public static final String ERR_MSGS = "errorMessages";
   public static final String ROOT_OBJ = "";
 
-  @SuppressWarnings({"rawtypes"})
-  public static List<Map> captureErrors(List<CommandOperation> ops) {
-    List<Map> errors = new ArrayList<>();
+  public static List<Map<String, Object>> captureErrors(List<CommandOperation> ops) {
+    List<Map<String, Object>> errors = new ArrayList<>();
     for (CommandOperation op : ops) {
       if (op.hasError()) {
         errors.add(op.errorDetails());
@@ -229,16 +226,15 @@ public class CommandOperation {
    * Parse the command operations into command objects from javabin payload
    * * @param singletonCommands commands that cannot be repeated
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static List<CommandOperation> parse(InputStream in, Set<String> singletonCommands) throws IOException {
     List<CommandOperation> operations = new ArrayList<>();
 
-    final HashMap map = new HashMap(0) {
+    final HashMap<Object,Object> map = new HashMap<>(0) {
       @Override
       public Object put(Object key, Object value) {
-        List vals = null;
+        List<?> vals = null;
         if (value instanceof List && !singletonCommands.contains(key)) {
-          vals = (List) value;
+          vals = (List<?>) value;
         } else {
           vals = Collections.singletonList(value);
         }
@@ -292,8 +288,7 @@ public class CommandOperation {
       ev = parser.nextEvent();
       Object val = ob.getVal();
       if (val instanceof List && !singletonCommands.contains(key)) {
-        @SuppressWarnings({"rawtypes"})
-        List list = (List) val;
+        List<?> list = (List<?>) val;
         for (Object o : list) {
           if (!(o instanceof Map)) {
             operations.add(new CommandOperation(String.valueOf(key), list));
@@ -362,8 +357,7 @@ public class CommandOperation {
         ops.addAll(parse(stream.getReader(), singletonCommands));
       }
     }
-    @SuppressWarnings({"rawtypes"})
-    List<Map> errList = CommandOperation.captureErrors(ops);
+    List<Map<String, Object>> errList = CommandOperation.captureErrors(ops);
     if (!errList.isEmpty()) {
       resp.add(CommandOperation.ERR_MSGS, errList);
       return null;

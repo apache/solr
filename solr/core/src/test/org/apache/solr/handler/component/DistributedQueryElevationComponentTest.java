@@ -16,10 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
-
 import org.apache.lucene.util.Constants;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -28,7 +25,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -50,17 +46,6 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     // TODO: a better way to do this?
     configString = "solrconfig-elevate.xml";
     schemaString = "schema11.xml";
-  }
-
-  @BeforeClass
-  public static void beforeClass() {
-    System.setProperty("elevate.data.file", "elevate.xml");
-    File parent = new File(TEST_HOME(), "conf");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("elevate.data.file");
   }
 
   @Test

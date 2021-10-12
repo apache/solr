@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -54,15 +55,15 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void init(NamedList initArgs) {
+  public void init(NamedList<?> initArgs) {
     if (initArgs == null || initArgs.size() == 0) {
       return;
     }
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
 
-    final Iterable<Map.Entry<String,Object>> args = initArgs;
-    for (final Map.Entry<String,Object> entry : args) {
+    Iterator<? extends Map.Entry<String, ?>> it = initArgs.iterator();
+    while(it.hasNext()) {
+      Map.Entry<String, ?> entry = it.next();
       final String queryName = entry.getKey();
       final String queryBuilderClassName = (String)entry.getValue();
 
@@ -71,7 +72,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
             queryBuilderClassName,
             SolrSpanQueryBuilder.class,
             null,
-            new Class[] {String.class, Analyzer.class, SolrQueryRequest.class, SpanQueryBuilder.class},
+            new Class<?>[] {String.class, Analyzer.class, SolrQueryRequest.class, SpanQueryBuilder.class},
             new Object[] {defaultField, analyzer, req, this});
 
         this.addSpanQueryBuilder(queryName, spanQueryBuilder);
@@ -81,7 +82,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
             queryBuilderClassName,
             SolrQueryBuilder.class,
             null,
-            new Class[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class},
+            new Class<?>[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class},
             new Object[] {defaultField, analyzer, req, this});
 
         this.addQueryBuilder(queryName, queryBuilder);

@@ -62,7 +62,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
@@ -111,7 +111,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       jetty=null;
     }
     resetExceptionIgnores();
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
   
   @Test
@@ -420,16 +420,15 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertEquals(section + " debug should be equal", distrib.getDebugMap().get(section), nonDistrib.getDebugMap().get(section));
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private void assertSameKeys(NamedList object, NamedList object2) {
-    Iterator<Map.Entry<String,Object>> iteratorObj2 = (object2).iterator();
-    for (Map.Entry<String,Object> entry:(NamedList<Object>)object) {
+  private void assertSameKeys(NamedList<?> object, NamedList<?> object2) {
+    Iterator<? extends Map.Entry<String, ?>> iteratorObj2 = object2.iterator();
+    for (Map.Entry<String, ?> entry: object) {
       assertTrue(iteratorObj2.hasNext());
-      Map.Entry<String,Object> entry2 = iteratorObj2.next();
+      Map.Entry<String, ?> entry2 = iteratorObj2.next();
       assertEquals(entry.getKey(), entry2.getKey());
       if (entry.getValue() instanceof NamedList) {
         assertTrue(entry2.getValue() instanceof NamedList);
-        assertSameKeys((NamedList)entry.getValue(), (NamedList)entry2.getValue());
+        assertSameKeys((NamedList<?>)entry.getValue(), (NamedList<?>)entry2.getValue());
       }
     }
     assertFalse(iteratorObj2.hasNext());

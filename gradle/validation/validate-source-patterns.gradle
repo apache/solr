@@ -55,6 +55,7 @@ def extensions = [
     'py',
     'sh',
     'template',
+    'txt',
     'vm',
     'xml',
     'xsl',
@@ -65,9 +66,6 @@ subprojects {
   task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
-
-    // This task has no proper outputs.
-    setupDummyOutputs(task)
 
     sourceFiles = fileTree(projectDir) {
       extensions.each{
@@ -81,6 +79,10 @@ subprojects {
 
       // default excludes.
       exclude 'build/**'
+      exclude '**/.idea/**'
+
+      // ignore txt files in source resources and tests.
+      exclude 'src/**/*.txt'
     }
   }
 
@@ -88,13 +90,16 @@ subprojects {
   check.dependsOn validateSourcePatterns
 }
 
-// SOLR ONLY
-if (!skipSolr) {
-  configure(project(':solr:core')) {
-    project.tasks.withType(ValidateSourcePatternsTask) {
-      sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
-      sourceFiles.exclude 'src/test/org/apache/hadoop/**'
-    }
+configure(project(':solr:core')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
+    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
+  }
+}
+
+configure(project(':solr:server')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude '**/configsets/**'
   }
 }
 
@@ -103,30 +108,19 @@ configure(rootProject) {
     group = 'Verification'
     description = 'Validate Source Patterns'
 
-    // This task has no proper outputs.
-    setupDummyOutputs(task)
-
     sourceFiles = fileTree(projectDir) {
       extensions.each{
         include "**/*.${it}"
       }
-
-      // We do not scan for *.txt by default (broken files in subprojects),
-      // but in root we can do this).
-      include '**/*.txt'
 
       // Don't go into child projects (scanned separately).
       childProjects.keySet().each{
         exclude "${it}/**"
       }
 
-      if (skipSolr) {
-        exclude "solr/**"
-      }
-
       // default excludes.
       exclude '**/build/**'
-      exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
+      exclude 'dev-tools/solr-missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
 
       // ourselves :-)
       exclude 'gradle/validation/validate-source-patterns.gradle'
@@ -184,22 +178,17 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
     def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$;
     def lineSplitter = ~$/[\r\n]+/$;
-    def singleLineSplitter = ~$/\r?\n/$;
     def licenseMatcher = Defaults.createDefaultMatcher();
     def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
     def validLoggerNamePattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+log+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
     def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$;
     def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
-    def sourceHeaderPattern = ~$/\[source\b.*/$;
-    def blockBoundaryPattern = ~$/----\s*/$;
-    def blockTitlePattern = ~$/\..*/$;
-    def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$; // SOLR-10883
     def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
     def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
 
     def isLicense = { matcher, ratDocument ->
-      licenseMatcher.reset();
-      return lineSplitter.split(matcher.group(1)).any{ licenseMatcher.match(ratDocument, it) };
+      licenseMatcher.reset()
+      return lineSplitter.split(matcher.group(1)).any { licenseMatcher.match(ratDocument, it) }
     }
 
     def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
@@ -221,34 +210,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
 
     def checkMockitoAssume = { f, text ->
       if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
-        reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call');
-      }
-    }
-
-    def checkForUnescapedSymbolSubstitutions = { f, text ->
-      def inCodeBlock = false;
-      def underSourceHeader = false;
-      def lineNumber = 0;
-      singleLineSplitter.split(text).each {
-        ++lineNumber;
-        if (underSourceHeader) { // This line is either a single source line, or the boundary of a code block
-          inCodeBlock = blockBoundaryPattern.matcher(it).matches();
-          if ( ! blockTitlePattern.matcher(it).matches()) {
-            underSourceHeader = false;
-          }
-        } else {
-          if (inCodeBlock) {
-            inCodeBlock = ! blockBoundaryPattern.matcher(it).matches();
-          } else {
-            underSourceHeader = sourceHeaderPattern.matcher(it).lookingAt();
-            if ( ! underSourceHeader) {
-              def unescapedSymbolMatcher = unescapedSymbolPattern.matcher(it);
-              if (unescapedSymbolMatcher.find()) {
-                reportViolation(f, 'Unescaped symbol "' + unescapedSymbolMatcher.group(1) + '" on line #' + lineNumber);
-              }
-            }
-          }
-        }
+        reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call')
       }
     }
 
@@ -260,7 +222,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
       logger.debug('Scanning source file: {}', f);
 
       def text = f.getText('UTF-8');
-      invalidPatterns.each{ pattern,name ->
+      invalidPatterns.each { pattern, name ->
         if (pattern.matcher(text).find()) {
           reportViolation(f, name);
         }
@@ -276,9 +238,15 @@ class ValidateSourcePatternsTask extends DefaultTask {
       if (f.name.endsWith('.java')) {
         if (text.contains('org.slf4j.LoggerFactory')) {
           if (!validLoggerPattern.matcher(text).find()) {
+            if (text.contains("// nowarn_valid_logger")) {
+              return
+            }
             reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
           }
           if (!validLoggerNamePattern.matcher(text).find()) {
+            if (text.contains("// nowarn_valid_logger")) {
+              return
+            }
             reportViolation(f, 'invalid logger name [log, uses static class name, not specialized logger]')
           }
         }
@@ -297,8 +265,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
           checkMockitoAssume(f, text);
         }
 
-        if (project.path.startsWith(':solr:')
-            && f.name.equals("SolrTestCase.java") == false
+        if (f.name.equals("SolrTestCase.java") == false
             && f.name.equals("TestXmlQParser.java") == false) {
           if (extendsLuceneTestCasePattern.matcher(text).find()) {
             reportViolation(f, "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
@@ -312,9 +279,6 @@ class ValidateSourcePatternsTask extends DefaultTask {
       }
       if (f.name.endsWith('.xml')) {
         checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
-      }
-      if (f.name.endsWith('.adoc')) {
-        checkForUnescapedSymbolSubstitutions(f, text);
       }
     }
     progress.completed()

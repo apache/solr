@@ -53,6 +53,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -282,13 +283,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     });
 
     when(workQueueMock.getTailId()).thenAnswer(invocation -> {
-      Object result = null;
-      @SuppressWarnings({"rawtypes"})
-      Iterator iter = queue.iterator();
+      QueueEvent result = null;
+      Iterator<QueueEvent> iter = queue.iterator();
       while(iter.hasNext()) {
         result = iter.next();
       }
-      return result==null ? null : ((QueueEvent)result).getId();
+      return result==null ? null : result.getId();
     });
 
     when(workQueueMock.peek(true)).thenAnswer(invocation -> {
@@ -391,6 +391,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(distributedClusterStateUpdater.createStateChangeRecorder(any(), anyBoolean())).thenReturn(stateChangeRecorder);
     when(coreContainerMock.getUpdateShardHandler()).thenReturn(updateShardHandlerMock);
     when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactoryMock);
+    when(coreContainerMock.getConfigSetService()).thenReturn(new ZkConfigSetService(solrZkClientMock));
     when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
     
     when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
@@ -546,7 +547,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             return null;
           }}).when(distribStateManagerMock).makePath(anyString());
 
-    zkClientData.put("/configs/myconfig", new byte[1]);
+    zkClientData.put("/configs/"+CONFIG_NAME, new byte[1]);
+    zkClientData.put("/configs/"+CONFIG_NAME+"/solrconfig.xml", new byte[1]);
 
     when(solrMetricsContextMock.getChildContext(any(Object.class))).thenReturn(solrMetricsContextMock);
 
@@ -562,6 +564,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     try {
       if (CollectionParams.CollectionAction.CREATE.isEqual(props.getStr("operation"))) {
         String collName = props.getStr("name");
+        if (props.containsKey(CollectionAdminParams.COLL_CONF)) {
+          String configName = (String) props.getProperties().remove(CollectionAdminParams.COLL_CONF);
+          props.getProperties().put(ZkStateReader.CONFIGNAME_PROP, configName);
+        }
         if (collName != null) collectionsSet.put(collName, new ClusterState.CollectionRef(
             new DocCollection(collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));
       }
@@ -591,7 +597,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   protected void issueCreateJob(Integer numberOfSlices,
       Integer replicationFactor, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
     Map<String,Object> propMap = Utils.makeMap(
-        Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+        (Object) Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
         ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
         "name", COLLECTION_NAME,
         "collection.configName", CONFIG_NAME,

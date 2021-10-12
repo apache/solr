@@ -34,10 +34,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.BadVersionException;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -45,7 +41,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -58,13 +53,13 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +67,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * This class contains helper methods used by commands of the Collection API. Previously these methods were in
@@ -103,7 +97,8 @@ public class CollectionHandlingUtils {
 
   static final String SKIP_CREATE_REPLICA_IN_CLUSTER_STATE = "skipCreateReplicaInClusterState";
 
-  public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS = Collections.unmodifiableMap(makeMap(
+  // Immutable Maps are null-hostile, so build our own
+  public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS = Collections.unmodifiableMap(Utils.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
       ZkStateReader.NRT_REPLICAS, "1",
@@ -179,8 +174,7 @@ public class CollectionHandlingUtils {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
-  static void commit(@SuppressWarnings({"rawtypes"}) NamedList results, String slice, Replica parentShardLeader) {
+  static void commit(NamedList<Object> results, String slice, Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
     String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
@@ -251,9 +245,9 @@ public class CollectionHandlingUtils {
     }
   }
 
-  static void cleanupCollection(String collectionName, @SuppressWarnings({"rawtypes"})NamedList results, CollectionCommandContext ccc) throws Exception {
+  static void cleanupCollection(String collectionName, NamedList<Object> results, CollectionCommandContext ccc) throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
-    Map<String, Object> props = makeMap(
+    Map<String, Object> props = Map.of(
         Overseer.QUEUE_OPERATION, DELETE.toLower(),
         NAME, collectionName);
     new DeleteCollectionCmd(ccc).call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), results);
@@ -283,47 +277,26 @@ public class CollectionHandlingUtils {
     return results;
   }
 
-  @SuppressWarnings({"rawtypes"})
   static void cleanBackup(BackupRepository repository, URI backupUri, BackupId backupId, CollectionCommandContext ccc) throws Exception {
-    new DeleteBackupCmd(ccc).deleteBackupIds(backupUri, repository, Collections.singleton(backupId), new NamedList());
+    new DeleteBackupCmd(ccc).deleteBackupIds(backupUri, repository, Collections.singleton(backupId), new NamedList<>());
   }
 
   static void deleteBackup(BackupRepository repository, URI backupPath, int maxNumBackup,
-                    @SuppressWarnings({"rawtypes"}) NamedList results, CollectionCommandContext ccc) throws Exception {
+                    NamedList<Object> results, CollectionCommandContext ccc) throws Exception {
     new DeleteBackupCmd(ccc).keepNumberOfBackup(repository, backupPath, maxNumBackup, results);
   }
 
   static List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message,
-                                      @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete, CollectionCommandContext ccc)
+                                      NamedList<Object> results, Runnable onComplete, CollectionCommandContext ccc)
       throws Exception {
 
     return new AddReplicaCmd(ccc).addReplica(clusterState, message, results, onComplete);
   }
 
-  static void validateConfigOrThrowSolrException(SolrCloudManager cloudManager, String configName) throws IOException, KeeperException, InterruptedException {
-    boolean isValid = cloudManager.getDistribStateManager().hasData(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
+  static void validateConfigOrThrowSolrException(ConfigSetService configSetService, String configName) throws IOException {
+    boolean isValid = configSetService.checkConfigExists(configName);
     if (!isValid) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
-    }
-  }
-
-  /**
-   * This doesn't validate the config (path) itself and is just responsible for creating the confNode.
-   * That check should be done before the config node is created.
-   */
-  public static void createConfNode(DistribStateManager stateManager, String configName, String coll) throws IOException, AlreadyExistsException, BadVersionException, KeeperException, InterruptedException {
-
-    if (configName != null) {
-      String collDir = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
-      log.debug("creating collections conf node {} ", collDir);
-      byte[] data = Utils.toJSON(makeMap(ZkController.CONFIGNAME_PROP, configName));
-      if (stateManager.hasData(collDir)) {
-        stateManager.setData(collDir, data, -1);
-      } else {
-        stateManager.makePath(collDir, data, CreateMode.PERSISTENT, false);
-      }
-    } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Unable to get config name");
     }
   }
 
@@ -336,7 +309,7 @@ public class CollectionHandlingUtils {
                                      CollectionCommandContext ccc, ClusterState clusterState) {
     log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
-    ShardHandler shardHandler = ccc.getShardHandler();
+    ShardHandler shardHandler = ccc.newShardHandler();
     DocCollection coll = clusterState.getCollection(collectionName);
     List<Replica> notLivesReplicas = new ArrayList<>();
     final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker = asyncRequestTracker(asyncId, ccc);
@@ -357,7 +330,6 @@ public class CollectionHandlingUtils {
     processResponse(results, e, nodeName, solrResponse, shard, okayExceptions);
   }
 
-  @SuppressWarnings("deprecation")
   static void processResponse(NamedList<Object> results, Throwable e, String nodeName, SolrResponse solrResponse, String shard, Set<String> okayExceptions) {
     String rootThrowable = null;
     if (e instanceof BaseHttpSolrClient.RemoteSolrException) {
@@ -372,8 +344,8 @@ public class CollectionHandlingUtils {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private static void addFailure(NamedList<Object> results, String key, Object value) {
+    @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
     if (failure == null) {
       failure = new SimpleOrderedMap<>();
@@ -382,8 +354,8 @@ public class CollectionHandlingUtils {
     failure.add(key, value);
   }
 
-  @SuppressWarnings("unchecked")
   private static void addSuccess(NamedList<Object> results, String key, Object value) {
+    @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
     if (success == null) {
       success = new SimpleOrderedMap<>();
@@ -463,7 +435,7 @@ public class CollectionHandlingUtils {
   }
 
   public static ShardRequestTracker asyncRequestTracker(String asyncId, CollectionCommandContext ccc) {
-    return new ShardRequestTracker(asyncId, ccc.getAdminPath(), ccc.getZkStateReader(), ccc.getShardHandler().getShardHandlerFactory());
+    return new ShardRequestTracker(asyncId, ccc.getAdminPath(), ccc.getZkStateReader(), ccc.newShardHandler().getShardHandlerFactory());
   }
 
   public static class ShardRequestTracker {

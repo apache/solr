@@ -71,7 +71,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
     
     return new SortedSetFieldSource(f.getName(), choice) {
       @Override
-      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
         
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
@@ -95,7 +95,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
           @Override
           public double doubleVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(bytes));
             } else {
@@ -122,7 +122,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(view.binaryValue()));
+                  mval.value = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(view.lookupOrd(view.ordValue())));
                 } else {
                   mval.exists = false;
                   mval.value = 0D;

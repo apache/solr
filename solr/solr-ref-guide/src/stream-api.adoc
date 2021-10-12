@@ -22,18 +22,15 @@ The `/stream` request handler, beyond just running a streaming expression, also
 lets you find out what expressions are available to use and lets you control the
 behavior of any registered Daemon processes.
 
-NOTE: This API doesn't follow the v2 API structure. 
-
-
-
+NOTE: This API doesn't follow the v2 API structure.
 
 [[plugins]]
 == PLUGINS: List all expressions registered
 
-Lists out all the streaming expressions that have been registered and are available for use.  This includes both the default expressions registered by the StreamHandler and any that you have registered.
+Lists out all the streaming expressions that have been registered and are available for use.
+This includes both the default expressions registered by the StreamHandler and any that you have registered.
 
 `/stream?action=PLUGINS`
-
 
 === PLUGINS Response
 
@@ -60,7 +57,7 @@ http://localhost:8983/solr/gettingstarted/stream?action=PLUGINS
     "upper":"org.apache.solr.client.solrj.io.eval.UpperEvaluator",
     "commit":"org.apache.solr.client.solrj.io.stream.CommitStream",
     "echo":"org.apache.solr.client.solrj.io.stream.EchoStream"
-}
+}}
 ----
 
 [[list]]
@@ -69,20 +66,18 @@ http://localhost:8983/solr/gettingstarted/stream?action=PLUGINS
 The <<stream-decorator-reference.adoc#daemon,daemon>> function allows you to wrap a streaming expression and run it at intervals to provide both continuous push and pull streaming.
 This command lists out all the currently running daemon processes.
 
-
 `/stream?action=LIST`
 
 IMPORTANT: This command lists out all the daemon processed that are registered to a specific core that you are interacting with, not across the collection as a whole.
-If you have a collection that consists of multiple shards or multiple replicas of those shards, each LIST command will bounce between the cores, returning different lists of processes.  It's recommended that for
-managing daemon processes you create a collection with a single core and no replicas to host the daemon processes to ensure a single view.
+If you have a collection that consists of multiple shards or multiple replicas of those shards, each LIST command will bounce between the cores, returning different lists of processes.
+It's recommended that for managing daemon processes you create a collection with a single core and no replicas to host the daemon processes to ensure a single view.
 
 === LIST Response
 
 The response will describe each daemon process on that specific core.
 
 === Examples using LIST
-This assumes that you have registered a daemon process similar to the below simplistic example that reads a single
-random document from the `gettingstarted` collection and then writes it back to the same collection every 10 seconds:
+This assumes that you have registered a daemon process similar to the below simplistic example that reads a single random document from the `gettingstarted` collection and then writes it back to the same collection every 10 seconds:
 
 [source,text]
 ----
@@ -121,8 +116,8 @@ http://localhost:8983/solr/gettingstarted/stream?action=LIST
         "EOF":true}]}}
 ----
 
-This shows a single daemon process running under the id of 12345, and that it has been run 421 times.  Each process is a {java-javadocs}java/lang/Thread.html,
-and the states are those of a Thread.
+This shows a single daemon process running under the id of 12345, and that it has been run 421 times.
+Each process is a {java-javadocs}java/lang/Thread.html, and the states are those of a Thread.
 
 [[stop]]
 == STOP: Stop a Daemon processes

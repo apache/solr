@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 
@@ -240,10 +241,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     ensureOpen();
     return MultiDocValues.getNormValues(in, field); // TODO cache?
   }
-  
+
   @Override
   public Fields getTermVectors(int docID) throws IOException {
-    ensureOpen();
     return in.getTermVectors(docID);
   }
 
@@ -280,6 +280,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public VectorValues getVectorValues(String field) {
     ensureOpen();
+    return VectorValues.EMPTY;
+  }
+
+  @Override
+  public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs)
+      throws IOException {
     return null; // because not supported.  Throw UOE?
   }
 

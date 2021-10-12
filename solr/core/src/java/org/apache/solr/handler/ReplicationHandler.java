@@ -233,6 +233,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     this.pollListener = pollListener;
   }
 
+  public boolean isFollower() {
+    return this.isFollower;
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
@@ -327,7 +331,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
   
   @SuppressWarnings("unchecked")
-  static <T> T getObjectWithBackwardCompatibility(NamedList<?> params, String preferredKey, String alternativeKey) {
+  public static <T> T getObjectWithBackwardCompatibility(NamedList<?> params, String preferredKey, String alternativeKey) {
     Object value = params.get(preferredKey);
     if (value != null) {
       return (T) value;
@@ -500,7 +504,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       core.getCoreContainer().assertPathAllowed(Paths.get(location));
     }
 
-    URI locationUri = repo.createURI(location);
+    URI locationUri = repo.createDirectoryURI(location);
 
     //If name is not provided then look for the last unnamed( the ones with the snapshot.timestamp format)
     //snapshot folder since we allow snapshots to be taken without providing a name. Pick the latest timestamp.
@@ -611,7 +615,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
 
         // small race here before the commit point is saved
-      URI locationUri = repo.createURI(location);
+      URI locationUri = repo.createDirectoryURI(location);
       String commitName = params.get(CoreAdminParams.COMMIT_NAME);
       SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
       snapShooter.validateCreateSnapshot();
@@ -771,11 +775,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                                                      final Map<String, FileInfo> confFileInfoCache) {
     List<Map<String, Object>> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
-      File confDir = new File(core.getResourceLoader().getConfigDir());
       Checksum checksum = null;
       for (int i = 0; i < nameAndAlias.size(); i++) {
         String cf = nameAndAlias.getName(i);
-        File f = new File(confDir, cf);
+        File f = new File(core.getResourceLoader().getConfigDir(), cf);
         if (!f.exists() || f.isDirectory()) continue; //must not happen
         FileInfo info = confFileInfoCache.get(cf);
         if (info == null || info.lastmodified != f.lastModified() || info.size != f.length()) {
@@ -961,8 +964,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Properties props = loadReplicationProperties();
       if (showFollowerDetails) {
         try {
-          @SuppressWarnings({"rawtypes"})
-          NamedList nl = fetcher.getDetails();
+          NamedList<Object> nl = fetcher.getDetails();
           follower.add("leaderDetails", nl.get(CMD_DETAILS));
         } catch (Exception e) {
           log.warn(
@@ -1073,8 +1075,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (follower.size() > 0)
       details.add("follower", follower);
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList snapshotStats = snapShootDetails;
+    NamedList<?> snapshotStats = snapShootDetails;
     if (snapshotStats != null)
       details.add(CMD_BACKUP, snapshotStats);
 
@@ -1100,14 +1101,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     addVal(consumer, IndexFetcher.CLEARED_LOCAL_IDX, props, Boolean.class);
   }
 
-  private void addVal(BiConsumer<String, Object> consumer, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
+  private void addVal(BiConsumer<String, Object> consumer, String key, Properties props, Class<?> clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
       consumer.accept(key, val);
     }
   }
 
-  private Object formatVal(String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
+  private Object formatVal(String key, Properties props, Class<?> clzz) {
     String s = props.getProperty(key);
     if (s == null || s.trim().length() == 0) return null;
     if (clzz == Date.class) {
@@ -1209,6 +1210,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         log.info("Poll disabled");
         return;
       }
+      ExecutorUtil.setServerThreadFlag(true); // so PKI auth works
       try {
         log.debug("Polling for index modifications");
         markScheduledExecutionStart();
@@ -1216,6 +1218,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (pollListener != null) pollListener.onComplete(core, fetchResult);
       } catch (Exception e) {
         log.error("Exception in fetching index", e);
+      } finally {
+        ExecutorUtil.setServerThreadFlag(null);
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(
@@ -1239,16 +1243,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else {
       numberBackupsToKeep = 0;
     }
-    @SuppressWarnings({"rawtypes"})
-    NamedList follower = getObjectWithBackwardCompatibility(initArgs,  "follower",  "slave");
+    NamedList<?> follower = getObjectWithBackwardCompatibility(initArgs,  "follower",  "slave");
     boolean enableFollower = isEnabled( follower );
     if (enableFollower) {
       currentIndexFetcher = pollingIndexFetcher = new IndexFetcher(follower, this, core);
       setupPolling((String) follower.get(POLL_INTERVAL));
       isFollower = true;
     }
-    @SuppressWarnings({"rawtypes"})
-    NamedList leader = getObjectWithBackwardCompatibility(initArgs, "leader", "master");
+    NamedList<?> leader = getObjectWithBackwardCompatibility(initArgs, "leader", "master");
     boolean enableLeader = isEnabled( leader );
 
     if (enableLeader || (enableFollower && !currentIndexFetcher.fetchFromLeader)) {
@@ -1277,12 +1279,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
         log.info("Replication enabled for following config files: {}", includeConfFiles);
       }
-      @SuppressWarnings({"rawtypes"})
-      List backup = leader.getAll("backupAfter");
+      List<?> backup = leader.getAll("backupAfter");
       boolean backupOnCommit = backup.contains("commit");
       boolean backupOnOptimize = !backupOnCommit && backup.contains("optimize");
-      @SuppressWarnings({"rawtypes"})
-      List replicateAfter = leader.getAll(REPLICATE_AFTER);
+      List<?> replicateAfter = leader.getAll(REPLICATE_AFTER);
       replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = !replicateOnCommit && replicateAfter.contains("optimize");
 
@@ -1363,7 +1363,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   // check leader or follower is enabled
-  private boolean isEnabled( @SuppressWarnings({"rawtypes"})NamedList params ){
+  private boolean isEnabled(NamedList<?> params ){
     if( params == null ) return false;
     Object enable = params.get( "enable" );
     if( enable == null ) return true;
@@ -1433,9 +1433,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
-      @Override
-      public void init(@SuppressWarnings({"rawtypes"})NamedList args) {/*no op*/ }
-
       /**
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as well
        */
@@ -1499,7 +1496,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     protected String tlogFileName;
     protected String sOffset;
     protected String sLen;
-    protected String compress;
+    protected final boolean compress;
     protected boolean useChecksum;
 
     protected long offset = -1;
@@ -1521,7 +1518,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       
       sOffset = params.get(OFFSET);
       sLen = params.get(LEN);
-      compress = params.get(COMPRESSION);
+      compress = Boolean.parseBoolean(params.get(COMPRESSION));
       useChecksum = params.getBool(CHECKSUM, false);
       indexGen = params.getLong(GENERATION);
       if (useChecksum) {
@@ -1565,7 +1562,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     protected void createOutputStream(OutputStream out) {
       out = new CloseShieldOutputStream(out); // DeflaterOutputStream requires a close call, but don't close the request outputstream
-      if (Boolean.parseBoolean(compress)) {
+      if (compress) {
         fos = new FastOutputStream(new DeflaterOutputStream(out));
       } else {
         fos = new FastOutputStream(out);
@@ -1726,7 +1723,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     protected File initFile() {
       //if it is a conf file read from config directory
-      return new File(core.getResourceLoader().getConfigDir(), cfileName);
+      return core.getResourceLoader().getConfigPath().resolve(cfileName).toFile();
     }
 
   }

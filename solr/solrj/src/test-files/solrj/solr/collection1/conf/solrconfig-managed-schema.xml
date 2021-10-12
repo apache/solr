@@ -17,16 +17,15 @@
 -->
 
 <!--
- This is a stripped down config file used for a simple example...  
- It is *not* a good example to work from. 
+ This is a stripped down config file used for a simple example...
+ It is *not* a good example to work from.
 -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">true</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
+    <str name="managedSchemaResourceName">managed-schema.xml</str>
   </schemaFactory>
 
 </config>
-

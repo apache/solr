@@ -49,7 +49,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     assumeWorkingMockito();
   }
 
-  @SuppressWarnings({"unchecked"})
   public void testCaching() throws Exception {
     String collName = "gettingstarted";
     Set<String> livenodes = new HashSet<>();
@@ -75,10 +74,8 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
         return colls.get(c);
       }
     }
-    @SuppressWarnings({"rawtypes"})
-    Map<String, Function> responses = new HashMap<>();
-    @SuppressWarnings({"rawtypes"})
-    NamedList okResponse = new NamedList();
+    Map<String, Function<?, ?>> responses = new HashMap<>();
+    NamedList<Object> okResponse = new NamedList<>();
     okResponse.add("responseHeader", new NamedList<>(Collections.singletonMap("status", 0)));
 
     LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
@@ -109,13 +106,12 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked"})
   private LBHttpSolrClient getMockLbHttpSolrClient(
-          @SuppressWarnings({"rawtypes"})Map<String, Function> responses) throws Exception {
+          Map<String, Function<?,?>> responses) throws Exception {
     LBHttpSolrClient mockLbclient = mock(LBHttpSolrClient.class);
 
     when(mockLbclient.request(any(LBSolrClient.Req.class))).then(invocationOnMock -> {
       LBHttpSolrClient.Req req = invocationOnMock.getArgument(0);
-      @SuppressWarnings({"rawtypes"})
-      Function f = responses.get("request");
+      Function<?,?> f = responses.get("request");
       if (f == null) return null;
       Object res = f.apply(null);
       if (res instanceof Exception) throw (Throwable) res;

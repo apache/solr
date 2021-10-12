@@ -39,7 +39,9 @@ import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -234,7 +236,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     return result;
   }
 
-  private ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
+  public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCore().getCoreContainer();
@@ -281,7 +283,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
@@ -298,19 +299,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    if (req.getCore().getCircuitBreakerManager().isEnabled()) {
+    final CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+    if (circuitBreakerManager.isEnabled()) {
       List<CircuitBreaker> trippedCircuitBreakers;
 
       if (timer != null) {
         RTimerTree subt = timer.sub("circuitbreaker");
         rb.setTimer(subt);
 
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
 
         rb.getTimer().stop();
       } else {
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
       }
 
@@ -342,6 +342,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       subt.stop();
     }
 
+    { // Once all of our components have been prepared, check if this request involves a SortSpec.
+      // If it does, and if our request includes a cursorMark param, then parse & init the CursorMark state
+      // (This must happen after the prepare() of all components, because any component may have modified the SortSpec)
+      final SortSpec spec = rb.getSortSpec();
+      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+      if (null != spec && null != cursorStr) {
+        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
+        cursorMark.parseSerializedTotem(cursorStr);
+        rb.setCursorMark(cursorMark);
+      }
+    }
+    
     if (!rb.isDistrib) {
       // a normal non-distributed request
 
@@ -383,8 +395,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
           }
         }
         if(rb.isDebug()) {
-          NamedList debug = new NamedList();
-          debug.add("explain", new NamedList());
+          NamedList<Object> debug = new NamedList<>();
+          debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
         rb.rsp.getResponseHeader().asShallowMap()
@@ -435,6 +447,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
               params.set(CommonParams.OMIT_HEADER, false);
+
+              // Distributed request -- need to send queryID as a part of the distributed request
+              params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));

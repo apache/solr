@@ -76,7 +76,7 @@ public class ColStatus {
     Collection<String> collections;
     String col = props.getStr(ZkStateReader.COLLECTION_PROP);
     if (col == null) {
-      collections = new HashSet<>(clusterState.getCollectionsMap().keySet());
+      collections = new HashSet<>(clusterState.getCollectionStates().keySet());
     } else {
       collections = Collections.singleton(col);
     }
@@ -148,7 +148,9 @@ public class ColStatus {
         replicaMap.add("recovering", recoveringReplicas);
         replicaMap.add("recovery_failed", recoveryFailedReplicas);
         sliceMap.add("state", s.getState().toString());
-        sliceMap.add("range", s.getRange().toString());
+        if (s.getRange() != null) {
+          sliceMap.add("range", s.getRange().toString());
+        }
         Map<String, RoutingRule> rules = s.getRoutingRules();
         if (rules != null && !rules.isEmpty()) {
           sliceMap.add("routingRules", rules);
@@ -169,6 +171,9 @@ public class ColStatus {
           continue;
         }
         String url = ZkCoreNodeProps.getCoreUrl(leader);
+        if (url == null) {
+          continue;
+        }
         try (SolrClient client = solrClientCache.getHttpSolrClient(url)) {
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(CommonParams.QT, "/admin/segments");
@@ -185,9 +190,9 @@ public class ColStatus {
           NamedList<Object> rsp = client.request(req);
           rsp.remove("responseHeader");
           leaderMap.add("segInfos", rsp);
-          NamedList<Object> segs = (NamedList<Object>)rsp.get("segments");
+          NamedList<?> segs = (NamedList<?>)rsp.get("segments");
           if (segs != null) {
-            for (Map.Entry<String, Object> entry : segs) {
+            for (Map.Entry<String, ?> entry : segs) {
               NamedList<Object> fields = (NamedList<Object>)((NamedList<Object>)entry.getValue()).get("fields");
               if (fields != null) {
                 for (Map.Entry<String, Object> fEntry : fields) {

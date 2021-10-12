@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -33,16 +32,13 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
@@ -67,7 +63,7 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
-enum CoreAdminOperation implements CoreAdminOp {
+public enum CoreAdminOperation implements CoreAdminOp {
 
   CREATE_OP(CREATE, it -> {
     assert TestInjection.injectRandomDelayInCoreCreation();
@@ -103,27 +99,8 @@ enum CoreAdminOperation implements CoreAdminOp {
     boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
     boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
     boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
-    boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, false);
     CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
     it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-    if (deleteMetricsHistory) {
-      MetricsHistoryHandler historyHandler = it.handler.coreContainer.getMetricsHistoryHandler();
-      if (historyHandler != null) {
-        CloudDescriptor cd = cdescr != null ? cdescr.getCloudDescriptor() : null;
-        String registry;
-        if (cd == null) {
-          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, cname);
-        } else {
-          String replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), cname);
-          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core,
-              cd.getCollectionName(),
-              cd.getShardId(),
-              replicaName);
-        }
-        historyHandler.checkSystemCollection();
-        historyHandler.removeHistory(registry);
-      }
-    }
 
     assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
   }),
@@ -299,7 +276,7 @@ enum CoreAdminOperation implements CoreAdminOp {
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
+  public static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
     if (cores.isCoreLoading(cname)) {
@@ -335,7 +312,7 @@ enum CoreAdminOperation implements CoreAdminOp {
             if (cores.isZooKeeperAware()) {
               info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
               info.add("configVersion", core.getSolrConfig().getZnodeVersion());
-              SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
+              SimpleOrderedMap<String> cloudInfo = new SimpleOrderedMap<>();
               cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
               cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
               cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());

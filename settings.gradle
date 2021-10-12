@@ -15,29 +15,37 @@
  * limitations under the License.
  */
 
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = "solr-root"
 
-includeBuild("dev-tools/missing-doclet")
+includeBuild("dev-tools/solr-missing-doclet")
 
-if (!(System.getProperty("skip.solr") as Boolean)) {
-  include "solr:solrj"
-  include "solr:core"
-  include "solr:server"
-  include "solr:contrib:analysis-extras"
-  include "solr:contrib:analytics"
-  include "solr:contrib:clustering"
-  include "solr:contrib:extraction"
-  include "solr:contrib:langid"
-  include "solr:contrib:jaegertracer-configurator"
-  include "solr:contrib:prometheus-exporter"
-  include "solr:contrib:scripting"
-  include "solr:contrib:ltr"
-  include "solr:webapp"
-  include "solr:test-framework"
-  include "solr:solr-ref-guide"
-  include "solr:example"
+include "solr:solrj"
+include "solr:core"
+include "solr:server"
+include "solr:contrib:analysis-extras"
+include "solr:contrib:analytics"
+include "solr:contrib:clustering"
+include "solr:contrib:extraction"
+include "solr:contrib:langid"
+include "solr:contrib:jaegertracer-configurator"
+include "solr:contrib:prometheus-exporter"
+include "solr:contrib:s3-repository"
+include "solr:contrib:scripting"
+include "solr:contrib:ltr"
+include "solr:contrib:gcs-repository"
+include "solr:webapp"
+include "solr:benchmark"
+include "solr:test-framework"
+include "solr:solr-ref-guide"
+include "solr:example"
 
-  include "solr:documentation"
-  include "solr:packaging"
-  include "solr:docker"
-}
+include "solr:documentation"
+include "solr:packaging"
+include "solr:docker"

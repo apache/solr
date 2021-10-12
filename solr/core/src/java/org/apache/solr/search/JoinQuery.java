@@ -17,7 +17,6 @@
 
 package org.apache.solr.search;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +32,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -141,32 +139,18 @@ class JoinQuery extends Query {
 
         if (fromRef != null) {
           final RefCounted<SolrIndexSearcher> ref = fromRef;
-          info.addCloseHook(new Closeable() {
-            @Override
-            public void close() {
-              ref.decref();
-            }
-          });
+          info.addCloseHook(ref::decref);
         }
-
-        info.addCloseHook(new Closeable() {
-          @Override
-          public void close() {
-            fromCore.close();
-          }
-        });
-
+        info.addCloseHook(fromCore);
       }
       this.toSearcher = searcher;
     }
 
     DocSet resultSet;
-    Filter filter;
-
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      if (filter == null) {
+      if (resultSet == null) {
         boolean debug = rb != null && rb.isDebug();
         RTimer timer = (debug ? new RTimer() : null);
         resultSet = getDocSet();
@@ -192,16 +176,10 @@ class JoinQuery extends Query {
           // TODO: perhaps synchronize  addDebug in the future...
           rb.addDebug(dbg, "join", JoinQuery.this.toString());
         }
-
-        filter = resultSet.getTopFilter();
       }
 
       // Although this set only includes live docs, other filters can be pushed down to queries.
-      DocIdSet readerSet = filter.getDocIdSet(context, null);
-      if (readerSet == null) {
-        return null;
-      }
-      DocIdSetIterator readerSetIterator = readerSet.iterator();
+      DocIdSetIterator readerSetIterator = resultSet.iterator(context);
       if (readerSetIterator == null) {
         return null;
       }

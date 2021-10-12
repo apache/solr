@@ -26,12 +26,12 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 import static org.apache.solr.common.params.CursorMarkParams.*;
 
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.ByteArrayOutputStream;
@@ -101,10 +101,10 @@ public final class CursorMark {
     }
 
     if (sort.getSort().length != sortSpec.getSchemaFields().size()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-                                "Cursor SortSpec failure: sort length != SchemaFields: " 
-                                + sort.getSort().length + " != " + 
-                                sortSpec.getSchemaFields().size());
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+                              "Cursor SortSpec failure: sort length != SchemaFields: " 
+                              + sort.getSort().length + " != " + 
+                              sortSpec.getSchemaFields().size());
     }
 
     this.sortSpec = sortSpec;
@@ -144,7 +144,12 @@ public final class CursorMark {
     if (null == input) {
       this.values = null;
     } else {
-      assert input.size() == sortSpec.getSort().getSort().length;
+      if (input.size() != sortSpec.getSort().getSort().length) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+                                "Cursor SortSpec failure: sort values != sort length: "
+                                + input.size() + " != " + sortSpec.getSort().getSort().length);
+      }
+      
       // defensive copy
       this.values = new ArrayList<>(input);
     }
@@ -183,7 +188,7 @@ public final class CursorMark {
 
     List<Object> pieces = null;
     try {
-      final byte[] rawData = Base64.base64ToByteArray(serialized);
+      final byte[] rawData = Base64.getDecoder().decode(serialized);
       try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream in = new ByteArrayInputStream(rawData)){
         pieces = (List<Object>) jbc.unmarshal(in);
         boolean b = false;
@@ -204,7 +209,7 @@ public final class CursorMark {
                               "'"+CURSOR_MARK_NEXT+"' returned by a previous search: "
                               + serialized, ex);
     }
-    assert null != pieces : "pieces wasn't parsed?";
+    assert null != pieces : "pieces wasn't parsed, nor exception thrown?";
 
     if (sortFields.length != pieces.size()) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -260,7 +265,7 @@ public final class CursorMark {
     try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream out = new ByteArrayOutputStream(256)) {
       jbc.marshal(marshalledValues, out);
       byte[] rawData = out.toByteArray();
-      return Base64.byteArrayToBase64(rawData, 0, rawData.length);
+      return Base64.getEncoder().encodeToString(rawData);
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
                               "Unable to format search after totem", ex);

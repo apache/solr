@@ -20,7 +20,10 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -35,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.junit.Test;
@@ -306,6 +310,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, true, shardsArr[0]);
     validateDocs(docsAdded, client0, client1);
 
+    handleVersionsWithRangesTests();
   }
 
   protected void testOverlap(Set<Integer> docsAdded, SolrClient client0, SolrClient client1, long v) throws IOException, SolrServerException {
@@ -338,8 +343,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
   void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "sync", StrUtils.join(Arrays.asList(syncWith), ',')));
-    @SuppressWarnings({"rawtypes"})
-    NamedList rsp = client.request(qr);
+    NamedList<?> rsp = client.request(qr);
     assertEquals(expectedResult, (Boolean) rsp.get("sync"));
   }
   
@@ -350,6 +354,227 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
     assertEquals(docsAdded, qacDocs);
     assertEquals(docsAdded.size(), qacResponse.getResults().getNumFound());
+  }
+
+  private static void handleVersionsWithRangesTests() throws Exception {
+    testHandleVersionsWithRangesNoOther();
+    testHandleVersionsWithRangesSameOne();
+    testHandleVersionsWithRangesMissingOneOfTwo(false /* highestMissing */);
+    testHandleVersionsWithRangesMissingOneOfTwo(true /* highestMissing */);
+    testHandleVersionsWithRangesMissingMiddleOfThree();
+    testHandleVersionsWithRangesMissingOneRange();
+    testHandleVersionsWithRangesMissingTwoRanges();
+  }
+
+  private static void testHandleVersionsWithRangesNoOther() throws Exception {
+    // no other, solitary us
+    for (boolean completeList : new boolean[] { false, true }) {
+      List<Long> otherVersions = Collections.emptyList();
+      List<Long> ourUpdates = Collections.singletonList(42L);
+      assertEquals(1, ourUpdates.size());
+      long ourLowThreshold = ourUpdates.get(0);
+      MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+          otherVersions, completeList, ourUpdates, ourLowThreshold);
+      // no updates requested since other has nothing
+      assertEquals(0L, mur.totalRequestedUpdates);
+      assertEquals(null, mur.versionsAndRanges);
+    }
+  }
+
+  private static void testHandleVersionsWithRangesSameOne() throws Exception {
+    for (boolean completeList : new boolean[] { false, true }) {
+      List<Long> otherVersions = Collections.singletonList(42L);
+      List<Long> ourUpdates = Collections.singletonList(42L);
+      assertEquals(1, ourUpdates.size());
+      long ourLowThreshold = ourUpdates.get(0);
+      MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+          otherVersions, completeList, ourUpdates, ourLowThreshold);
+      // no updates requested since us and other have the same versions
+      assertEquals(0L, mur.totalRequestedUpdates);
+      assertEquals(null, mur.versionsAndRanges);
+    }
+  }
+
+  private static void testHandleVersionsWithRangesMissingOneOfTwo(boolean highestMissing) throws Exception {
+    for (boolean completeList : new boolean[] { false, true }) {
+      LinkedList<Long> otherVersions = new LinkedList<>(List.of(44L, 22L));
+      LinkedList<Long> ourUpdates = new LinkedList<>(otherVersions);
+      final Long missing;
+      if (highestMissing) {
+        missing = ourUpdates.removeFirst();
+      } else {
+        missing = ourUpdates.removeLast();
+      }
+      assertEquals(1, ourUpdates.size());
+      long ourLowThreshold = ourUpdates.get(0);
+      MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+          otherVersions, completeList, ourUpdates, ourLowThreshold);
+      if (highestMissing || completeList) {
+        /*
+         * request one update for the missing one, because
+         * the missing one is the highest (i.e. latest) or because
+         * it's not the highest/latest but we need a complete list
+         */
+        assertEquals(1L, mur.totalRequestedUpdates);
+        assertEquals(missing+"..."+missing, mur.versionsAndRanges);
+      } else {
+        /*
+         * request no updates because we already have the highest/latest and
+         * we don't need a complete list i.e. missing earlier-than-latest is okay
+         */
+        assertTrue(missing < ourLowThreshold);
+        assertEquals(0L, mur.totalRequestedUpdates);
+        assertEquals(null, mur.versionsAndRanges);
+      }
+    }
+  }
+
+  private static void testHandleVersionsWithRangesMissingMiddleOfThree() throws Exception {
+    for (boolean completeList : new boolean[] { false, true }) {
+      List<Long> otherVersions = List.of(55L, 33L, 11L);
+      LinkedList<Long> ourUpdates = new LinkedList<>(otherVersions);
+      Long missing = ourUpdates.remove(ourUpdates.size()/2);
+      assertEquals(33L, missing.longValue());
+      {
+        long ourLowThreshold = ourUpdates.getLast(); // lowest in descending list
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        // request the one update we are missing
+        assertEquals(1L, mur.totalRequestedUpdates);
+        assertEquals(missing+"..."+missing, mur.versionsAndRanges);
+      }
+      {
+        long ourLowThreshold = ourUpdates.getFirst(); // highest in descending list
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        if (completeList) {
+          // request the one update we are missing
+          assertEquals(1L, mur.totalRequestedUpdates);
+          assertEquals(missing+"..."+missing, mur.versionsAndRanges);
+        } else {
+          /*
+           * request no updates because we don't need a complete list and
+           * the one we are missing is below our chosen 'low' threshold
+           */
+          assertTrue(missing < ourLowThreshold);
+          assertEquals(0L, mur.totalRequestedUpdates);
+          assertEquals(null, mur.versionsAndRanges);
+        }
+      }
+    }
+  }
+
+  private static void testHandleVersionsWithRangesMissingOneRange() throws Exception {
+    for (boolean completeList : new boolean[] { false , true }) {
+      List<Long> otherVersions = List.of(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L);
+      LinkedList<Long> ourUpdates = new LinkedList<>(List.of(9L, 8L, 7L, 3L, 2L, 1L));
+      {
+        long ourLowThreshold = ourUpdates.getLast(); // lowest in descending list
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        // request all we are missing
+        assertEquals(3L, mur.totalRequestedUpdates);
+        assertEquals("4...6", mur.versionsAndRanges);
+      }
+      {
+        long ourLowThreshold = 3; // min of gap minus 1
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        if (completeList) {
+          // request all we are missing since we want a complete list
+          assertEquals(3L, mur.totalRequestedUpdates);
+          assertEquals("4...6", mur.versionsAndRanges);
+        } else {
+          // request no updates because ???
+          assertEquals(0L, mur.totalRequestedUpdates);
+          assertEquals(null, mur.versionsAndRanges);
+        }
+      }
+      {
+        long ourLowThreshold = 7; // max of gap plus 1
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        if (completeList) {
+          // request all we are missing since we want a complete list
+          assertEquals(3L, mur.totalRequestedUpdates);
+          assertEquals("4...6", mur.versionsAndRanges);
+        } else {
+          // request no updates because ???
+          assertEquals(0L, mur.totalRequestedUpdates);
+          assertEquals(null, mur.versionsAndRanges);
+        }
+      }
+      {
+        long ourLowThreshold = ourUpdates.getFirst(); // highest in descending list
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        if (completeList) {
+          // request all we are missing since we want a complete list
+          assertEquals(3L, mur.totalRequestedUpdates);
+          assertEquals("4...6", mur.versionsAndRanges);
+        } else {
+          // request no updates since we don't need a complete list ...
+          assertEquals(0L, mur.totalRequestedUpdates);
+          assertEquals(null, mur.versionsAndRanges);
+          // ... and all the missing versions are older/lower than our 'low' threshold
+          for (Long version : otherVersions) {
+            if (!ourUpdates.contains(version)) {
+              assertTrue(version < ourLowThreshold);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private static void testHandleVersionsWithRangesMissingTwoRanges() throws Exception {
+    for (boolean completeList : new boolean[] { false , true }) {
+      LinkedList<Long> otherVersions = new LinkedList<>(List.of(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L));
+      LinkedList<Long> ourUpdates = new LinkedList<>(List.of(
+          otherVersions.getFirst(), otherVersions.get(otherVersions.size()/2), otherVersions.getLast()));
+      {
+        long ourLowThreshold = ourUpdates.getLast(); // lowest in descending list
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        // request all we are missing
+        assertEquals(6L, mur.totalRequestedUpdates);
+        assertEquals("2...4,6...8", mur.versionsAndRanges);
+      }
+      {
+        long ourLowThreshold = ourUpdates.get(ourUpdates.size()/2); // middle in descending list
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        if (completeList) {
+          // request all we are missing
+          assertEquals(6L, mur.totalRequestedUpdates);
+          assertEquals("2...4,6...8", mur.versionsAndRanges);
+        } else {
+          // request no updates because ???
+          assertEquals(0L, mur.totalRequestedUpdates);
+          assertEquals(null, mur.versionsAndRanges);
+        }
+      }
+      {
+        long ourLowThreshold = ourUpdates.getFirst(); // highest in descending list
+        MissedUpdatesRequest mur = PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+            otherVersions, completeList, ourUpdates, ourLowThreshold);
+        if (completeList) {
+          // request all we are missing since we want a complete list
+          assertEquals(6L, mur.totalRequestedUpdates);
+          assertEquals("2...4,6...8", mur.versionsAndRanges);
+        } else {
+          // request no updates since we don't need a complete list ...
+          assertEquals(0L, mur.totalRequestedUpdates);
+          assertEquals(null, mur.versionsAndRanges);
+          // ... and all the missing versions are older/lower than our 'low' threshold
+          for (Long version : otherVersions) {
+            if (!ourUpdates.contains(version)) {
+              assertTrue(version < ourLowThreshold);
+            }
+          }
+        }
+      }
+    }
   }
 
 }

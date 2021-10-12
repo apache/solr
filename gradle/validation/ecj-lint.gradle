@@ -47,12 +47,9 @@ allprojects {
         // The inputs are all source files from the sourceSet.
         inputs.files sourceSet.allSource.asFileTree
 
-        // This task has no proper outputs.
-        setupDummyOutputs(task)
-
         // We create a task for all source sets but ignore those
         // that don't have any Java source directories.
-        enabled = enabled && !srcDirs.isEmpty()
+        enabled = !srcDirs.isEmpty()
 
         classpath = rootProject.configurations.ecjDeps
         main = "org.eclipse.jdt.internal.compiler.batch.Main"
@@ -106,13 +103,10 @@ allprojects {
   }
 }
 
-// SOLR ONLY
-if (!skipSolr) {
 // This excludes solr-ref-guide from the check (excludes are not taken into account
 // and linting of the ant-based task fails.
-  configure(project(":solr:solr-ref-guide")) {
-    afterEvaluate {
-      project.tasks.findByPath("ecjLintMain").enabled = false
-    }
+configure(project(":solr:solr-ref-guide")) {
+  afterEvaluate {
+    project.tasks.findByPath("ecjLintMain").enabled = false
   }
 }

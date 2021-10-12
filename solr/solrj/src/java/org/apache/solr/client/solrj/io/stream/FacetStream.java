@@ -66,7 +66,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private static final long serialVersionUID = 1;
 
   // allow client apps to disable the auto-plist via system property if they want to turn it off globally
-  private static final boolean defaultTieredEnabled =
+  static final boolean defaultTieredEnabled =
       Boolean.parseBoolean(System.getProperty("solr.facet.stream.tiered", "true"));
 
   static final String TIERED_PARAM = "tiered";
@@ -589,8 +589,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     }
 
     try {
-      @SuppressWarnings({"rawtypes"})
-      NamedList response = cloudSolrClient.request(request, collection);
+      NamedList<?> response = cloudSolrClient.request(request, collection);
       getTuples(response, buckets, metrics);
 
       if(resortNeeded) {
@@ -634,7 +633,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
     for(Metric metric: metrics) {
       String func = metric.getFunctionName();
-      if(!func.equals("count") && !func.equals("per") && !func.equals("std")) {
+      if(!func.equals("count") && !func.equals("per") && !func.equals("std") && !func.equals("countDist")) {
         if (!json.contains(metric.getIdentifier())) {
           return false;
         }
@@ -764,6 +763,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
             buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
           } else if (identifier.startsWith("std(")) {
             buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+          } else if (identifier.startsWith("countDist(")) {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("countDist", "unique")).append('"');
           } else {
             buf.append('"').append(facetKey).append("\":\"").append(identifier).append('"');
           }
@@ -801,13 +802,12 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     return "index";
   }
 
-  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response,
+  private void getTuples(NamedList<?> response,
                                 Bucket[] buckets,
                                 Metric[] metrics) {
 
     Tuple tuple = new Tuple();
-    @SuppressWarnings({"rawtypes"})
-    NamedList facets = (NamedList)response.get("facets");
+    NamedList<?> facets = (NamedList<?>)response.get("facets");
     fillTuples(0,
                tuples,
                tuple,
@@ -820,21 +820,18 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private void fillTuples(int level,
                           List<Tuple> tuples,
                           Tuple currentTuple,
-                          @SuppressWarnings({"rawtypes"}) NamedList facets,
+                          NamedList<?> facets,
                           Bucket[] _buckets,
                           Metric[] _metrics) {
 
     String bucketName = _buckets[level].toString();
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = (NamedList)facets.get(bucketName);
+    NamedList<?> nl = (NamedList<?>)facets.get(bucketName);
     if(nl == null) {
       return;
     }
-    @SuppressWarnings({"rawtypes"})
-    List allBuckets = (List)nl.get("buckets");
+    List<?> allBuckets = (List<?>)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList bucket = (NamedList)allBuckets.get(b);
+      NamedList<?> bucket = (NamedList<?>)allBuckets.get(b);
       Object val = bucket.get("val");
       if (val instanceof Integer) {
         val=((Integer)val).longValue();  // calcite currently expects Long values here
@@ -935,7 +932,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
    * @return A mapping of fields produced by the rollup stream to their output name.
    */
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>();
+    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
     for (Bucket b : buckets) {
       String key = b.toString();
       map.put(key, key);

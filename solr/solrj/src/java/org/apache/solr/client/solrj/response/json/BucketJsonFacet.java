@@ -39,7 +39,7 @@ import org.apache.solr.common.util.NamedList;
 public class BucketJsonFacet extends NestableJsonFacet {
   private Object val;
 
-  public BucketJsonFacet(NamedList<Object> singleBucket) {
+  public BucketJsonFacet(NamedList<?> singleBucket) {
     super(singleBucket); // sets "count", and stats or nested facets
 
     val = singleBucket.get("val");

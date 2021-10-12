@@ -175,10 +175,10 @@ ul.nav li ul {
 }
 
 .nav li > a > span:after {
-    content: '\25be';
+    content: '\002b';
 }
 .nav li.active > a > span:after {
-    content: '\25b4';
+    content: '\2212';
 }
 
 

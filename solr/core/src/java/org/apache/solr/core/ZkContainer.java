@@ -16,11 +16,14 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.common.cloud.UrlScheme.HTTP;
+import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
+import static org.apache.solr.common.cloud.UrlScheme.HTTPS_PORT_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +40,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.UrlScheme;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -46,11 +48,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.UrlScheme.HTTP;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS_PORT_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
 /**
  * Used by {@link CoreContainer} to hold ZooKeeper / SolrCloud info, especially {@link ZkController}.
@@ -120,13 +117,12 @@ public class ZkContainer {
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
-        String confDir = System.getProperty("bootstrap_confdir");
-        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
+        boolean createRoot = Boolean.getBoolean("createZkChroot");
 
         // We may have already loaded NodeConfig from zookeeper with same connect string, so no need to recheck chroot
         boolean alreadyUsedChroot = (cc.getConfig().isFromZookeeper()
                                      && zookeeperHost.equals(cc.getConfig().getDefaultZkHost()));
-        if(!alreadyUsedChroot && !ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly)) {
+        if(!alreadyUsedChroot && !ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
@@ -144,26 +140,6 @@ public class ZkContainer {
           } else {
             UrlScheme.INSTANCE.setUrlScheme(System.getProperty(URL_SCHEME, HTTP));
           }
-
-          if (zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
-            // we are part of an ensemble and we are not uploading the config - pause to give the config time
-            // to get up
-            Thread.sleep(10000);
-          }
-        }
-
-        if(confDir != null) {
-          Path configPath = Paths.get(confDir);
-          if (!Files.isDirectory(configPath))
-            throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
-
-          String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
-          ZkConfigManager configManager = new ZkConfigManager(zkController.getZkClient());
-          configManager.uploadConfigDir(configPath, confName);
-        }
-
-        if(boostrapConf) {
-          ZkController.bootstrapConf(zkController.getZkClient(), cc);
         }
 
         this.zkController = zkController;

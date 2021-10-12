@@ -52,7 +52,7 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ccc.getZkStateReader();
@@ -107,7 +107,6 @@ public class CreateAliasCmd extends AliasCmd {
         .collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
   private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
     // Validate we got a basic minimum
     if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {

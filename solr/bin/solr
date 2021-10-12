@@ -166,8 +166,9 @@ else
     exit 1
   fi
   JAVA_VENDOR="Oracle"
-  if [ "`echo $JAVA_VER | grep -i "IBM J9"`" != "" ]; then
-      JAVA_VENDOR="IBM J9"
+   # OpenJ9 was previously known as IBM J9, this will match both
+  if [ "`echo $JAVA_VER | grep -i -E "OpenJ9|IBM J9"`" != "" ]; then
+      JAVA_VENDOR="OpenJ9"
   fi
 fi
 
@@ -189,15 +190,7 @@ if [ -z "$SOLR_SSL_ENABLED" ]; then
   fi
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
-  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
-    echo >&2 "HTTP/2 + SSL is not support in Java 8. "
-    echo >&2 "Configure Solr with HTTP/1.1 + SSL"
-    SOLR_JETTY_CONFIG+=("--module=https8")
-  else
-    SOLR_JETTY_CONFIG+=("--module=https")
-  fi
-
-  SOLR_JETTY_CONFIG+=("--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
+  SOLR_JETTY_CONFIG+=("--module=https" "--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
@@ -277,6 +270,11 @@ fi
 # Requestlog options
 if [ "$SOLR_REQUESTLOG_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
+fi
+
+# Jetty gzip module enabled by default
+if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
+  SOLR_JETTY_CONFIG+=("--module=gzip")
 fi
 
 # Authentication options
@@ -372,6 +370,7 @@ function print_usage() {
     echo "  -z <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
     echo "                   If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                   an embedded ZooKeeper instance will be launched."
+    echo "                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
     echo ""
     echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
@@ -1472,17 +1471,15 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         ;;
         -prompt)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-prompt" "$2")
-            shift
+            shift 2
         ;;
         -blockUnknown)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-blockUnknown" "$2")
-            shift
-            break
+            shift 2
         ;;
         -updateIncludeFileOnly)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-updateIncludeFileOnly" "$2")
-            shift
-            break
+            shift 2
         ;;
         -V|--verbose)
             VERBOSE="-verbose"
@@ -2023,14 +2020,18 @@ fi
 
 # if verbose gc logging enabled, setup the location of the log file and rotation
 if [ "$GC_LOG_OPTS" != "" ]; then
-  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
+  if [[ "$JAVA_VER_NUM" -lt "9" ]] || [ "$JAVA_VENDOR" == "OpenJ9" ]; then
     gc_log_flag="-Xloggc"
-    if [ "$JAVA_VENDOR" == "IBM J9" ]; then
+    if [ "$JAVA_VENDOR" == "OpenJ9" ]; then
       gc_log_flag="-Xverbosegclog"
     fi
-    GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" '-XX:+UseGCLogFileRotation' '-XX:NumberOfGCLogFiles=9' '-XX:GCLogFileSize=20M')
+    if [ -z ${JAVA8_GC_LOG_FILE_OPTS+x} ]; then
+      GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" '-XX:+UseGCLogFileRotation' '-XX:NumberOfGCLogFiles=9' '-XX:GCLogFileSize=20M')
+    else
+      GC_LOG_OPTS+=($JAVA8_GC_LOG_FILE_OPTS)
+    fi
   else
-    # http://openjdk.java.net/jeps/158
+    # https://openjdk.java.net/jeps/158
     for i in "${!GC_LOG_OPTS[@]}";
     do
       # for simplicity, we only look at the prefix '-Xlog:gc'
@@ -2061,6 +2062,10 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     fi
 
     CLOUD_MODE_OPTS+=('-DzkRun')
+  fi
+
+  if [ -n "$ZK_CREATE_CHROOT" ]; then
+    CLOUD_MODE_OPTS+=("-DcreateZkChroot=$ZK_CREATE_CHROOT")
   fi
 
   # and if collection1 needs to be bootstrapped

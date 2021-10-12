@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -43,13 +44,13 @@ public class ConfigOverlay implements MapSerializable {
 
   @SuppressWarnings({"unchecked"})
   public ConfigOverlay(Map<String, Object> jsonObj, int znodeVersion) {
-    if (jsonObj == null) jsonObj = Collections.EMPTY_MAP;
+    if (jsonObj == null) jsonObj = Collections.emptyMap();
     this.znodeVersion = znodeVersion;
     data = Collections.unmodifiableMap(jsonObj);
     props = (Map<String, Object>) data.get("props");
-    if (props == null) props = Collections.EMPTY_MAP;
+    if (props == null) props = Collections.emptyMap();
     userProps = (Map<String, Object>) data.get("userProps");
-    if (userProps == null) userProps = Collections.EMPTY_MAP;
+    if (userProps == null) userProps = Collections.emptyMap();
   }
 
   public Object getXPathProperty(String xpath) {
@@ -62,10 +63,14 @@ public class ConfigOverlay implements MapSerializable {
     return Utils.getObjectByPath(props, onlyPrimitive, hierarchy);
   }
 
-  @SuppressWarnings({"unchecked"})
+  public Object getXPathProperty(List<String> path) {
+    List<String> hierarchy = new ArrayList<>();
+    if(isEditable(true, hierarchy, path) == null) return null;
+    return Utils.getObjectByPath(props, true, hierarchy);
+  }
+
   public ConfigOverlay setUserProperty(String key, Object val) {
-    @SuppressWarnings({"rawtypes"})
-    Map copy = new LinkedHashMap(userProps);
+    Map<String, Object> copy = new LinkedHashMap<>(userProps);
     copy.put(key, val);
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("userProps", copy);
@@ -74,8 +79,7 @@ public class ConfigOverlay implements MapSerializable {
 
   public ConfigOverlay unsetUserProperty(String key) {
     if (!userProps.containsKey(key)) return this;
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    Map copy = new LinkedHashMap(userProps);
+    Map<String, Object> copy = new LinkedHashMap<>(userProps);
     copy.remove(key);
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("userProps", copy);
@@ -170,17 +174,19 @@ public class ConfigOverlay implements MapSerializable {
   //The path maps to the xml xpath and value of 1 means it is a tag with a string value and value
   // of 0 means it is an attribute with string value
 
-  @SuppressWarnings({"rawtypes"})
-  private static Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
+  private static Map<?, ?> editable_prop_map = (Map<?, ?>) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
 
   public static boolean isEditableProp(String path, boolean isXpath, List<String> hierarchy) {
     return !(checkEditable(path, isXpath, hierarchy) == null);
   }
 
 
-  @SuppressWarnings({"rawtypes"})
-  public static Class checkEditable(String path, boolean isXpath, List<String> hierarchy) {
+  public static Class<?> checkEditable(String path, boolean isXpath, List<String> hierarchy) {
     List<String> parts = StrUtils.splitSmart(path, isXpath ? '/' : '.');
+    return isEditable(isXpath, hierarchy, StrUtils.splitSmart(path, isXpath ? '/' : '.'));
+  }
+
+  private static Class<?> isEditable(boolean isXpath, List<String> hierarchy, List<String> parts) {
     Object obj = editable_prop_map;
     for (int i = 0; i < parts.size(); i++) {
       String part = parts.get(i);
@@ -191,23 +197,21 @@ public class ConfigOverlay implements MapSerializable {
       if (hierarchy != null) hierarchy.add(part);
       if (obj == null) return null;
       if (i == parts.size() - 1) {
-        if (obj instanceof Map) {
-          Map map = (Map) obj;
+        if (obj instanceof Map<?,?>) {
+          Map<?,?> map = (Map<?,?>) obj;
           Object o = map.get(part);
           return checkType(o, isXpath, isAttr);
         }
         return null;
       }
-      obj = ((Map) obj).get(part);
+      obj = ((Map<?,?>) obj).get(part);
     }
     return null;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  static Class[] types = new Class[]{String.class, Boolean.class, Integer.class, Float.class};
+  static Class<?>[] types = new Class<?>[]{String.class, Boolean.class, Integer.class, Float.class};
 
-  @SuppressWarnings({"rawtypes"})
-  private static Class checkType(Object o, boolean isXpath, boolean isAttr) {
+  private static Class<?> checkType(Object o, boolean isXpath, boolean isAttr) {
     if (o instanceof Long) {
       Long aLong = (Long) o;
       int ten = aLong.intValue() / 10;
@@ -220,10 +224,10 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   @SuppressWarnings({"unchecked"})
-  public Map<String, String> getEditableSubProperties(String xpath) {
+  public Map<String, Object> getEditableSubProperties(String xpath) {
     Object o = Utils.getObjectByPath(props, false, StrUtils.splitSmart(xpath, '/'));
     if (o instanceof Map) {
-      return (Map<String,String>) o;
+      return (Map<String, Object>) o;
     } else {
       return null;
     }
@@ -240,27 +244,27 @@ public class ConfigOverlay implements MapSerializable {
     return map;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map<String, Map> getNamedPlugins(String typ) {
-    Map<String, Map> reqHandlers = (Map<String, Map>) data.get(typ);
-    if (reqHandlers == null) return Collections.EMPTY_MAP;
+  @SuppressWarnings({"unchecked"})
+  public Map<String, Map<String, Object>> getNamedPlugins(String typ) {
+    Map<String, Map<String, Object>> reqHandlers = (Map<String, Map<String, Object>>) data.get(typ);
+    if (reqHandlers == null) return Collections.emptyMap();
     return Collections.unmodifiableMap(reqHandlers);
   }
 
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public ConfigOverlay addNamedPlugin(Map<String, Object> info, String typ) {
-    Map dataCopy = Utils.getDeepCopy(data, 4);
-    Map existing = (Map) dataCopy.get(typ);
-    if (existing == null) dataCopy.put(typ, existing = new LinkedHashMap());
-    existing.put(info.get(CoreAdminParams.NAME), info);
+    Map<String, Object> dataCopy = Utils.getDeepCopy(data, 4);
+    Map<String, Object> existing = (Map<String, Object>) dataCopy.get(typ);
+    if (existing == null) dataCopy.put(typ, existing = new LinkedHashMap<>());
+    existing.put(info.get(CoreAdminParams.NAME).toString(), info);
     return new ConfigOverlay(dataCopy, this.znodeVersion);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public ConfigOverlay deleteNamedPlugin(String name, String typ) {
-    Map dataCopy = Utils.getDeepCopy(data, 4);
-    Map reqHandler = (Map) dataCopy.get(typ);
+    Map<String, Object> dataCopy = Utils.getDeepCopy(data, 4);
+    Map<?,?> reqHandler = (Map<?,?>) dataCopy.get(typ);
     if (reqHandler == null) return this;
     reqHandler.remove(name);
     return new ConfigOverlay(dataCopy, this.znodeVersion);

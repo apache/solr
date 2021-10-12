@@ -63,7 +63,7 @@ public class GeoJSONResponseWriter extends JSONResponseWriter {
     
     SupportedFormats formats = null;
     if(sf.getType() instanceof AbstractSpatialFieldType) {
-      SpatialContext ctx = ((AbstractSpatialFieldType)sf.getType()).getSpatialContext();
+      SpatialContext ctx = ((AbstractSpatialFieldType<?>)sf.getType()).getSpatialContext();
       formats = ctx.getFormats();
     }
 
@@ -196,8 +196,7 @@ class GeoJSONWriter extends JSONWriter {
   {
     // Support multi-valued geometries
     if(geo instanceof Iterable) {
-      @SuppressWarnings({"rawtypes"})
-      Iterator iter = ((Iterable)geo).iterator();
+      Iterator<?> iter = ((Iterable<?>)geo).iterator();
       if(!iter.hasNext()) {
         return; // empty list
       }

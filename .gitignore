@@ -6,6 +6,11 @@ build/
 
 # IntelliJ IDEA
 /.idea/
+.run
+**/*.iml
+**/*.ipr
+**/*.iws
+out/
 #    IntelliJ creates this folder, ignore.
 /dev-tools/missing-doclet/out/
 
@@ -15,6 +20,8 @@ build/
 /.settings/
 #    Eclipse Gradle oddity
 **/bin/default/
+
+.editorconfig
 
 # macOS
 .DS_Store

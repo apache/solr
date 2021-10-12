@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -310,10 +309,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   }
 
   public static class SleepingSolrEventListener implements SolrEventListener {
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-      // No-Op
-    }
 
     @Override
     public void postCommit() {

@@ -1,5 +1,19 @@
 #!/bin/bash
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
 #
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Shared functions for testing
 
 function container_cleanup {
@@ -25,7 +39,7 @@ function wait_for_container_and_solr {
 
   printf '\nWaiting for Solr...\n'
   local status
-  status=$(docker exec "$container_name" /opt/docker-solr/scripts/wait-for-solr.sh --max-attempts 60 --wait-seconds 1)
+  status=$(docker exec "$container_name" wait-for-solr.sh --max-attempts 60 --wait-seconds 1)
 #  echo "Got status from Solr: $status"
   if ! grep -E -i -q 'Solr is running' <<<"$status"; then
     echo "Solr did not start"
@@ -98,8 +112,12 @@ function prepare_dir_to_mount {
   # to write to it as the user will fail. To deal with that, set the ACL to allow that.
   # If you can't use setfacl (eg on macOS), you'll have to chown the directory to 8983, or apply world
   # write permissions.
-  if command -v setfacl &> /dev/null; then
-    setfacl -m "u:$userid:rwx" "$folder"
+  if ! command -v setfacl &> /dev/null; then
+    echo "Test case requires the 'setfacl' command but it can not be found"
+    exit 1
+  fi
+  if ! setfacl -m "u:$userid:rwx" "$folder"; then
+    echo "Unable to add permissions for $userid to '$folder'"
   fi
 }
 

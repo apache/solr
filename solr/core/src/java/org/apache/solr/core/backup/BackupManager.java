@@ -36,11 +36,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.backup.repository.BackupRepository.PathType;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -217,7 +216,7 @@ public class BackupManager {
    */
   public void writeCollectionState(String collectionName,
                                    DocCollection collectionState) throws IOException {
-    URI dest = getZkStateDir(COLLECTION_PROPS_FILE);
+    URI dest = repository.resolve(getZkStateDir(), COLLECTION_PROPS_FILE);
     try (OutputStream collectionStateOs = repository.createOutput(dest)) {
       collectionStateOs.write(Utils.toJSON(Collections.singletonMap(collectionName, collectionState)));
     }
@@ -228,32 +227,30 @@ public class BackupManager {
    *
    * @param sourceConfigName The name of the config to be copied
    * @param targetConfigName  The name of the config to be created.
+   * @param configSetService The name of the configset used to upload the config
    * @throws IOException in case of I/O errors.
    */
-  public void uploadConfigDir(String sourceConfigName, String targetConfigName)
+  public void uploadConfigDir(String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
           throws IOException {
-    URI source = getZkStateDir(CONFIG_STATE_DIR, sourceConfigName);
-    String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + targetConfigName;
-
+    URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
     Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
-    Preconditions.checkState(repository.getPathType(source) == PathType.DIRECTORY,
-            "Path {} is not a directory", zkPath);
-    uploadToZk(zkStateReader.getZkClient(), source, zkPath);
+    uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 
   /**
    * This method stores the contents of a specified Solr config at the specified location in repository.
    *
    * @param configName The name of the config to be saved.
+   * @param configSetService The name of the configset used to download the config
    * @throws IOException in case of I/O errors.
    */
-  public void downloadConfigDir(String configName) throws IOException {
-    URI dest = getZkStateDir(CONFIG_STATE_DIR, configName);
+  public void downloadConfigDir(String configName, ConfigSetService configSetService) throws IOException {
+    URI dest = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, configName);
     repository.createDirectory(getZkStateDir());
-    repository.createDirectory(getZkStateDir(CONFIG_STATE_DIR));
+    repository.createDirectory(repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
-    downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, dest);
+    downloadConfigToRepo(configSetService, configName, dest);
   }
 
   public void uploadCollectionProperties(String collectionName) throws IOException {
@@ -276,7 +273,7 @@ public class BackupManager {
   }
 
   public void downloadCollectionProperties(String collectionName) throws IOException {
-    URI dest = getZkStateDir(ZkStateReader.COLLECTION_PROPS_ZKNODE);
+    URI dest = repository.resolve(getZkStateDir(), ZkStateReader.COLLECTION_PROPS_ZKNODE);
     String zkPath = ZkStateReader.COLLECTIONS_ZKNODE + '/' + collectionName + '/' + ZkStateReader.COLLECTION_PROPS_ZKNODE;
 
 
@@ -296,51 +293,41 @@ public class BackupManager {
     }
   }
 
-  private void downloadFromZK(SolrZkClient zkClient, String zkPath, URI dir) throws IOException {
-    try {
-      List<String> files = zkClient.getChildren(zkPath, null, true);
-      for (String file : files) {
-        List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
-        if (children.size() == 0) {
-          log.debug("Writing file {}", file);
-          byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
-          try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
-            os.write(data);
-          }
-        } else {
-          URI uri = repository.resolve(dir, file);
-          if (!repository.exists(uri)) {
-            repository.createDirectory(uri);
-          }
-          downloadFromZK(zkClient, zkPath + "/" + file, repository.resolve(dir, file));
+  private void downloadConfigToRepo(ConfigSetService configSetService, String configName, URI dir) throws IOException {
+    List<String> filePaths = configSetService.getAllConfigFiles(configName);
+    for (String filePath : filePaths) {
+      URI uri = repository.resolve(dir, filePath);
+      if (!filePath.endsWith("/")) {
+        log.debug("Writing file {}", filePath);
+        byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
+        try (OutputStream os = repository.createOutput(uri)) {
+          os.write(data);
+        }
+      } else {
+        if (!repository.exists(uri)) {
+          repository.createDirectory(uri);
         }
       }
-    } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error downloading files from zookeeper path " + zkPath + " to " + dir.toString(),
-              SolrZkClient.checkInterrupted(e));
     }
   }
 
-  private void uploadToZk(SolrZkClient zkClient, URI sourceDir, String destZkPath) throws IOException {
+  private void uploadConfigToSolrCloud(ConfigSetService configSetService, URI sourceDir, String configName, String filePrefix) throws IOException {
     for (String file : repository.listAll(sourceDir)) {
-      String zkNodePath = destZkPath + "/" + file;
+      String filePath = filePrefix + file;
       URI path = repository.resolve(sourceDir, file);
-      PathType t = repository.getPathType(path);
+      BackupRepository.PathType t = repository.getPathType(path);
       switch (t) {
         case FILE: {
           try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
             byte[] arr = new byte[(int) is.length()]; // probably ok since the config file should be small.
             is.readBytes(arr, 0, (int) is.length());
-            zkClient.makePath(zkNodePath, arr, true);
-          } catch (KeeperException | InterruptedException e) {
-            throw new IOException(SolrZkClient.checkInterrupted(e));
+            configSetService.uploadFileToConfig(configName, filePath, arr, false);
           }
           break;
         }
-
         case DIRECTORY: {
           if (!file.startsWith(".")) {
-            uploadToZk(zkClient, path, zkNodePath);
+            uploadConfigToSolrCloud(configSetService, path, configName, filePath + "/");
           }
           break;
         }
@@ -350,18 +337,14 @@ public class BackupManager {
     }
   }
 
-  private URI getZkStateDir(String... subFolders) {
+  private URI getZkStateDir() {
     URI zkStateDir;
     if (backupId != null) {
       final String zkBackupFolder = BackupFilePaths.getZkStateDir(backupId);
-      zkStateDir = repository.resolve(backupPath, zkBackupFolder);
+      zkStateDir = repository.resolveDirectory(backupPath, zkBackupFolder);
     } else {
-      zkStateDir = repository.resolve(backupPath, ZK_STATE_DIR);
+      zkStateDir = repository.resolveDirectory(backupPath, ZK_STATE_DIR);
     }
-
-    if (subFolders.length == 0) {
-      return zkStateDir;
-    }
-    return repository.resolve(zkStateDir, subFolders);
+    return zkStateDir;
   }
 }

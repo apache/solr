@@ -61,7 +61,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Nightly
-@SuppressCodecs({"SimpleText"})
+@SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class TestStressThreadBackup extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -316,7 +316,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     final int numRealDocsExpected = Integer.parseInt(m.group());
     
     try (Directory dir = FSDirectory.open(backup.toPath())) {
-      TestUtil.checkIndex(dir, true, true, null);
+      TestUtil.checkIndex(dir, true, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals("num real docs in " + backup.toString(),
                      numRealDocsExpected, r.docFreq(new Term("type_s","real")));
