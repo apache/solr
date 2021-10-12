@@ -117,6 +117,7 @@ if (luceneDevRepo != null) {
                       .replaceFirst("^lucene-", ":lucene:")
 
               logger.info("Substituting Lucene dependency ${moduleSelector} with an included build project: ${projectModuleName}")
+              dependency.useTarget(project(projectModuleName))
             }
           }
         }
