@@ -294,7 +294,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         ShardRequest sreq = new ShardRequest();
         sreq.nodeName = nodeName;
         params.set("qt", ccc.getAdminPath());
-        sreq.purpose = 1;
+        sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
         sreq.shards = new String[]{baseUrl};
         sreq.actualShards = sreq.shards;
         sreq.params = params;
