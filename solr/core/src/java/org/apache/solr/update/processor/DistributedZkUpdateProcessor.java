@@ -324,7 +324,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (router instanceof CompositeIdRouter && routeField != null)  {
         DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
         if (phase == DistribPhase.NONE) {
-          log.debug("Using compositeId router and deleteById command is with missing route value, distributing to all shard leaders");
+          log.debug("The deleteById command is missing the required route, distributing to all shard leaders");
         }
         doDeleteByQuery(cmd);
         return;
