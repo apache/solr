@@ -79,9 +79,9 @@ public class PeerSync implements SolrMetricProducer {
   private List<SyncShardRequest> requests = new ArrayList<>();
 
   @VisibleForTesting
-  static final int SHARD_REQUEST_PURPOSE_GET_UPDATES = 0; // unspecified i.e. default purpose
+  static final int SHARD_REQUEST_PURPOSE_GET_UPDATES = 0;
   @VisibleForTesting
-  static final int SHARD_REQUEST_PURPOSE_GET_VERSIONS = 1; // ShardRequest.PURPOSE_PRIVATE
+  static final int SHARD_REQUEST_PURPOSE_GET_VERSIONS = 1;
 
   private final boolean cantReachIsSuccess;
   private final boolean doFingerprint;
