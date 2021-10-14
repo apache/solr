@@ -83,6 +83,9 @@ if (propertyValue != null) {
       logger.lifecycle("Local Lucene development repository has been detected but won't be used.")
     }
   } else {
+    // For relative path `propertyValue` spec, `file(propertyValue)` at settings configuration time
+    // resolves relative to "${rootDir}/gradle/" (as opposed to "${rootDir}/"); so we use the Java
+    // Path API here for consistent relative path resolution at configuration and build time
     luceneDevRepo = file(rootDir).toPath().resolve(propertyValue).normalize().toFile()
     if (!luceneDevRepo.exists()) {
       throw new GradleException("Lucene repository does not exist at: -P${PROP_FORCE_PATH}=${luceneDevRepo}.")
