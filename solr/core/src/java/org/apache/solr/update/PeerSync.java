@@ -78,6 +78,11 @@ public class PeerSync implements SolrMetricProducer {
   private ShardHandler shardHandler;
   private List<SyncShardRequest> requests = new ArrayList<>();
 
+  @VisibleForTesting
+  static final int SHARD_REQUEST_PURPOSE_GET_UPDATES = 0;
+  @VisibleForTesting
+  static final int SHARD_REQUEST_PURPOSE_GET_VERSIONS = 1;
+
   private final boolean cantReachIsSuccess;
   private final boolean doFingerprint;
   private final boolean onlyIfActive;
@@ -325,7 +330,7 @@ public class PeerSync implements SolrMetricProducer {
   private void requestVersions(String replica) {
     SyncShardRequest sreq = new SyncShardRequest();
     requests.add(sreq);
-    sreq.purpose = 1;
+    sreq.purpose = SHARD_REQUEST_PURPOSE_GET_VERSIONS;
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();
@@ -348,7 +353,7 @@ public class PeerSync implements SolrMetricProducer {
       // If the replica went down between asking for versions and asking for specific updates, that
       // shouldn't be treated as success since we counted on getting those updates back (and avoided
       // redundantly asking other replicas for them).
-      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrServerException) {
+      if (cantReachIsSuccess && sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS && srsp.getException() instanceof SolrServerException) {
         Throwable solrException = ((SolrServerException) srsp.getException())
             .getRootCause();
         boolean connectTimeoutExceptionInChain = connectTimeoutExceptionInChain(srsp.getException());
@@ -360,12 +365,12 @@ public class PeerSync implements SolrMetricProducer {
         }
       }
       
-      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 503) {
+      if (cantReachIsSuccess && sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 503) {
         log.warn("{} got a 503 from {}, counting as success ", msg(), srsp.getShardAddress(), srsp.getException());
         return true;
       }
       
-      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
+      if (cantReachIsSuccess && sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
         log.warn("{} got a 404 from {}, counting as success. {} Perhaps /get is not registered?"
             , msg(), srsp.getShardAddress(), srsp.getException());
         return true;
@@ -382,7 +387,7 @@ public class PeerSync implements SolrMetricProducer {
       return false;
     }
 
-    if (sreq.purpose == 1) {
+    if (sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS) {
       return handleVersions(srsp);
     } else {
       return handleUpdates(srsp);
@@ -474,7 +479,7 @@ public class PeerSync implements SolrMetricProducer {
     // reuse our original request object
     ShardRequest sreq = srsp.getShardRequest();
 
-    sreq.purpose = 0;
+    sreq.purpose = SHARD_REQUEST_PURPOSE_GET_UPDATES;
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt", "/get");
     sreq.params.set(DISTRIB, false);
