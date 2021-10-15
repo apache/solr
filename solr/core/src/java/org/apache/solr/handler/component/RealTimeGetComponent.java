@@ -1025,7 +1025,7 @@ public class RealTimeGetComponent extends SearchComponent
    */
   private ShardRequest createShardRequest(final ResponseBuilder rb, final List<String> ids) {
     final ShardRequest sreq = new ShardRequest();
-    sreq.purpose = 1;
+    sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
 
     // TODO: how to avoid hardcoding this and hit the same handler?

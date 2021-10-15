@@ -310,6 +310,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, true, shardsArr[0]);
     validateDocs(docsAdded, client0, client1);
 
+    assertNotEquals(PeerSync.SHARD_REQUEST_PURPOSE_GET_UPDATES, PeerSync.SHARD_REQUEST_PURPOSE_GET_VERSIONS);
+
     handleVersionsWithRangesTests();
   }
 
