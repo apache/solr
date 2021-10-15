@@ -35,7 +35,13 @@
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-    <updateLog></updateLog>
+    <updateLog>
+      <str name="maxNumLogsToKeep">${solr.ulog.maxNumLogsToKeep:10}</str>
+      <str name="numRecordsToKeep">${solr.ulog.numRecordsToKeep:100}</str>
+    </updateLog>
+    <autoCommit>
+      <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>
+    </autoCommit>
   </updateHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler">
