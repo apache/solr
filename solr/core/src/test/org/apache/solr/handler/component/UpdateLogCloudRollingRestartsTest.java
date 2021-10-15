@@ -147,17 +147,6 @@ public class UpdateLogCloudRollingRestartsTest extends SolrCloudTestCase {
     abstract void doStuff();
   }
 
-  private static abstract class ComplainingTestThread extends TestThread {
-    protected final ConcurrentLinkedQueue<Exception> complaints;
-    public ComplainingTestThread(AtomicBoolean start, AtomicBoolean stop, ConcurrentLinkedQueue<Exception> complaints) {
-      super(start, stop);
-      this.complaints = complaints;
-    }
-    protected void report(Exception ex) {
-      this.complaints.add(ex);
-    }
-  }
-
   private static final class IndexingTestThread extends TestThread {
     private final AtomicInteger numDocs;
     public IndexingTestThread(AtomicBoolean start, AtomicBoolean stop, AtomicInteger numDocs) {
