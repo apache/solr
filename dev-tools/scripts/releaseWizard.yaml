@@ -1638,5 +1638,5 @@ groups:
         logfile: svn-rm-lucene.log
       - !Command
         cmd: |
-          svn rm -m "Stop mirroring old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
-        logfile: svn-rm-lucene.log
+          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
+        logfile: svn-rm-solr.log
