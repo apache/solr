@@ -370,6 +370,8 @@ Other Changes
 
 * SOLR-15692: Fix parsing of -zkHost flag for the bin/solr commands (janhoy)
 
+* SOLR-15455: Facilitate joint Solr/Lucene development via local dependency substitution (Dawid Weiss, Michael Gibney)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
