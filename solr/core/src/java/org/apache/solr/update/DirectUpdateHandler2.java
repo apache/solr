@@ -682,13 +682,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         callPostOptimizeCallbacks();
       }
 
-      try {
-        log.info("cpoerschke debug: sleep(123)");
-        Thread.sleep(123);
-      } catch (InterruptedException ie) {
-        // ignore
-      }
-
       if (cmd.softCommit) {
         // ulog.preSoftCommit();
         synchronized (solrCoreState.getUpdateLock()) {
