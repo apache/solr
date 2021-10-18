@@ -68,4 +68,6 @@ dependencies {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
   testImplementation "org.hsqldb:hsqldb"
+  testImplementation 'org.apache.commons:commons-lang3'
+  testImplementation ('com.google.guava:guava') { transitive = false }
 }

@@ -21,5 +21,6 @@ description = 'Scripting Package'
 
 dependencies {
   implementation project(':solr:core')
+  compileOnly ('com.google.guava:guava') { transitive = false }
   testImplementation project(':solr:test-framework')
 }
