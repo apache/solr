@@ -50,6 +50,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.util.SolrTestNonSecureRandomProvider;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -96,6 +97,9 @@ public class MiniClusterState {
 
     /** The Delete mini cluster. */
     boolean deleteMiniCluster = true;
+
+    /** Unless overridden we ensure SecureRandoms do not block. */
+    boolean doNotWeakenSecureRandom = Boolean.getBoolean("doNotWeakenSecureRandom");
 
     /** The Mini cluster base dir. */
     Path miniClusterBaseDir;
@@ -174,6 +178,11 @@ public class MiniClusterState {
     @Setup(Level.Trial)
     public void doSetup(BenchmarkParams benchmarkParams, BaseBenchState baseBenchState)
         throws Exception {
+
+      if (!doNotWeakenSecureRandom) {
+        // remove all blocking from all secure randoms
+        SolrTestNonSecureRandomProvider.injectProvider();
+      }
 
       workDir = System.getProperty("workBaseDir", "build/work");
 

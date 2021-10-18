@@ -41,9 +41,6 @@ New Features
 
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
-* SOLR-7642: opt-in support to create ZK chroot on startup (Timothy Potter, Shawn Heisey, Mark Miller, Tomas Eduardo Fernandez Lobbe,
-  Jan Høydahl, Steve Molloy, Isabelle Giguere, David Eric Pugh, Gus Heck, Christine Poerschke, Houston Putman)
-
 * SOLR-15613: Enforce error-prone checks to catch all URLEqualsHashCode violations and use java.net.URI instead (Collins Abanda)
 
 Improvements
@@ -369,6 +366,10 @@ Other Changes
 
 * SOLR-15480: Make Tuple copy constructor, clone and merge consistent w.r.t. markers (EOF, EXCEPTION), field names and labels. (John Durham, Mike Drob, Christine Poerschke)
 
+* SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
+
+* SOLR-15692: Fix parsing of -zkHost flag for the bin/solr commands (janhoy)
+
 * SOLR-15455: Facilitate joint Solr/Lucene development via local dependency substitution (Dawid Weiss, Michael Gibney)
 
 Bug Fixes
@@ -396,7 +397,9 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-7642: opt-in support to create ZK chroot on startup (Timothy Potter, Shawn Heisey, Mark Miller, Tomas Eduardo Fernandez Lobbe,
+  Jan Høydahl, Steve Molloy, Isabelle Giguere, David Eric Pugh, Gus Heck, Christine Poerschke, Houston Putman)
 
 Improvements
 ---------------------
@@ -410,6 +413,8 @@ Bug Fixes
 ---------------------
 * SOLR-15626: The "config-read" permission has been fixed to properly allow access to `/solr/admin/configs?action=LIST` (Jon Senchyna via Eric Pugh)
 
+* SOLR-15691: Admin UI raises yellow warning even when only case of hostnames differ (janhoy)
+
 Build
 ---------------------
 
@@ -417,7 +422,21 @@ Build
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15678: Allow only known content types in ShowFileRequestHandler (janhoy, Gus Heck, Mal Aware)
+
+======================= 8.10.1 =======================
+
+Other Changes
+---------------------
+* SOLR-15677: Upgrade the following dependencies with vulnerabilities.
+  - jetty: 9.4.44.v20210927
+  - tika: 1.27
+  - commons-compress: 1.21
+  - netty: 4.1.68.Final
+  - fasterxml.jackson: 2.12.3
+  - errorprone: 2.9.0
+  - gcp-client: 1.32.1
+  (Houston Putman)
 
 ==================  8.10.0 ==================
 

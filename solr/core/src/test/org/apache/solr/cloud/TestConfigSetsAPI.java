@@ -1237,7 +1237,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * {@link ExternalPaths#DEFAULT_CONFIGSET}
    *
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
-   * @see #setDefaultConfigDirSysPropIfNotSet
+   * @see #beforeSolrTestCase
    * @see ConfigSetService#getDefaultConfigDirPath
    */
   @Test
