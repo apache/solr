@@ -149,10 +149,14 @@ public class S3StorageClient {
               .build();
       s3Client.putObject(putRequest, RequestBody.empty());
       // Wait until the object exists to continue
-      s3Client.waiter().waitUntilObjectExists(
-          builder -> builder.bucket(bucketName).key(sanitizedDirPath),
-          config -> config.waitTimeout(Duration.ofSeconds(5)).backoffStrategy(BackoffStrategy.defaultStrategy())
-      );
+      s3Client
+          .waiter()
+          .waitUntilObjectExists(
+              builder -> builder.bucket(bucketName).key(sanitizedDirPath),
+              config ->
+                  config
+                      .waitTimeout(Duration.ofSeconds(5))
+                      .backoffStrategy(BackoffStrategy.defaultStrategy()));
     } catch (SdkClientException ase) {
       throw handleAmazonException(ase);
     }
