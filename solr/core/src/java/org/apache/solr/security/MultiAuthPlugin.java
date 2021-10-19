@@ -73,6 +73,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     }
 
     List<Object> schemeList = (List<Object>) o;
+    // if you only have one scheme, then you don't need to use this class
     if (schemeList.size() < 2) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires at least two schemes!");
     }
@@ -85,15 +86,17 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     }
 
     defaultScheme = (String) pluginConfig.get(PROPERTY_DEFAULT_SCHEME);
-    if (defaultScheme == null) {
+    if (defaultScheme != null) {
+      if (!pluginMap.containsKey(defaultScheme)) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Default scheme '" + defaultScheme + "' not configured!");
+      }
+    } else {
+      // first scheme listed in the config is the default
       defaultScheme = pluginMap.keySet().iterator().next();
-    }
-    if (!pluginMap.containsKey(defaultScheme)) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Default scheme '" + defaultScheme + "' not configured!");
     }
   }
 
-  protected String initPluginForScheme(Map<String, Object> schemeMap) {
+  protected void initPluginForScheme(Map<String, Object> schemeMap) {
     Map<String, Object> schemeConfig = new HashMap<>(schemeMap);
 
     String scheme = (String) schemeConfig.remove(PROPERTY_SCHEME);
@@ -109,7 +112,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     AuthenticationPlugin pluginForScheme = loader.newInstance(clazz, AuthenticationPlugin.class);
     pluginForScheme.init(schemeConfig);
     pluginMap.put(scheme.toLowerCase(Locale.ROOT), pluginForScheme);
-    return scheme;
   }
 
   @Override
@@ -130,7 +132,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
     // if no Authorization header but is an AJAX request, forward to the default scheme so it can handle it
     if (authHeader == null) {
-      if (isAjaxRequest(request)) {
+      if (BasicAuthPlugin.isAjaxRequest(request)) {
         return pluginMap.get(defaultScheme).doAuthenticate(request, response, filterChain);
       }
 
@@ -145,16 +147,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
     pluginInRequest.set(plugin);
     return plugin.doAuthenticate(request, response, filterChain);
-  }
-
-  /**
-   * Check if the request is an AJAX request, i.e. from the Admin UI or other SPA front
-   *
-   * @param request the servlet request
-   * @return true if the request is AJAX request
-   */
-  private boolean isAjaxRequest(HttpServletRequest request) {
-    return "XMLHttpRequest".equalsIgnoreCase(request.getHeader(BasicAuthPlugin.X_REQUESTED_WITH_HEADER));
   }
 
   @Override

@@ -58,7 +58,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private AuthenticationProvider authenticationProvider;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
-  public static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
+  private static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
   private boolean blockUnknown = true;
   private boolean forwardCredentials = false;
 
@@ -263,7 +263,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
    * @param request the servlet request
    * @return true if the request is AJAX request
    */
-  private boolean isAjaxRequest(HttpServletRequest request) {
+  static boolean isAjaxRequest(HttpServletRequest request) {
     return "XMLHttpRequest".equalsIgnoreCase(request.getHeader(X_REQUESTED_WITH_HEADER));
   }
   

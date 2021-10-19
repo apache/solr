@@ -65,7 +65,7 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
     }
   }
 
-  protected String initPluginForScheme(Map<String, Object> schemeMap) {
+  protected void initPluginForScheme(Map<String, Object> schemeMap) {
     Map<String, Object> schemeConfig = new HashMap<>(schemeMap);
 
     String scheme = (String) schemeConfig.remove(MultiAuthPlugin.PROPERTY_SCHEME);
@@ -81,7 +81,6 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
     RuleBasedAuthorizationPluginBase pluginForScheme = loader.newInstance(clazz, RuleBasedAuthorizationPluginBase.class);
     pluginForScheme.init(schemeConfig);
     pluginMap.put(scheme.toLowerCase(Locale.ROOT), pluginForScheme);
-    return scheme;
   }
 
   /**
