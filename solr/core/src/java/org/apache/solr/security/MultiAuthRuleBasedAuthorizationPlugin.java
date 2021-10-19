@@ -93,7 +93,7 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
   public Set<String> getUserRoles(Principal principal) {
     for (RuleBasedAuthorizationPluginBase plugin : pluginMap.values()) {
       final Set<String> userRoles = plugin.getUserRoles(principal);
-      if (!userRoles.isEmpty()) {
+      if (userRoles != null && !userRoles.isEmpty()) {
         return userRoles; // first non-empty match wins
       }
     }

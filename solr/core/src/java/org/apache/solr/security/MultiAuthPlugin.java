@@ -20,6 +20,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -203,7 +204,72 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
   @Override
   public Map<String, Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands) {
-    // TODO: Implement an editing strategy
-    return null;
+    boolean madeChanges = false;
+
+    for (CommandOperation c : commands) {
+      String scheme = (String) c.getDataMap().get(PROPERTY_SCHEME);
+      if (scheme == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "All edit commands must include a 'scheme' attribute!");
+      }
+
+      AuthenticationPlugin plugin = pluginMap.get(scheme);
+      if (!(plugin instanceof ConfigEditablePlugin)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Plugin for scheme '" + scheme + "' is not editable!");
+      }
+
+      if (applyEditCommandToSchemePlugin(scheme, (ConfigEditablePlugin) plugin, c, latestConf)) {
+        madeChanges = true;
+      }
+    }
+
+    return madeChanges ? latestConf : null;
+  }
+
+  @SuppressWarnings({"unchecked"})
+  static boolean applyEditCommandToSchemePlugin(String scheme, ConfigEditablePlugin plugin, CommandOperation c, Map<String, Object> latestConf) {
+    boolean madeChanges = false;
+    // Send in the config for the plugin only
+    Map<String, Object> latestPluginConf = null;
+    int updateAt = -1;
+    List<Map<String, Object>> schemes = (List<Map<String, Object>>) latestConf.get(PROPERTY_SCHEMES);
+    for (int i = 0; i < schemes.size(); i++) {
+      Map<String, Object> schemeConfig = schemes.get(i);
+      if (scheme.equals(schemeConfig.get(PROPERTY_SCHEME))) {
+        latestPluginConf = withoutScheme(schemeConfig);
+        updateAt = i; // for updating
+        break;
+      }
+    }
+
+    // shouldn't happen
+    if (latestPluginConf == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Config for scheme '" + scheme + "' not found!");
+    }
+
+    CommandOperation cmdClone = new CommandOperation(c.name, withoutScheme(c.getDataMap()));
+    Map<String, Object> updated = plugin.edit(latestPluginConf, Collections.singletonList(cmdClone));
+    if (updated != null) {
+      madeChanges = true;
+      schemes.set(updateAt, withScheme(scheme, updated));
+    } else {
+      // copy the errors from the clone into the actual command
+      for (String err : cmdClone.getErrors()) {
+        c.addError(err);
+      }
+    }
+
+    return madeChanges;
+  }
+
+  private static Map<String, Object> withoutScheme(final Map<String, Object> data) {
+    Map<String, Object> updatedData = new HashMap<>(data);
+    updatedData.remove(PROPERTY_SCHEME);
+    return updatedData;
+  }
+
+  private static Map<String, Object> withScheme(final String scheme, final Map<String, Object> data) {
+    Map<String, Object> updatedData = new HashMap<>(data);
+    updatedData.put(PROPERTY_SCHEME, scheme);
+    return updatedData;
   }
 }
