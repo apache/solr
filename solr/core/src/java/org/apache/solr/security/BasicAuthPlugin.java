@@ -58,7 +58,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private AuthenticationProvider authenticationProvider;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
-  private static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
+  public static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
   private boolean blockUnknown = true;
   private boolean forwardCredentials = false;
 
