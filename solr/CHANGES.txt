@@ -406,6 +406,8 @@ Improvements
 
 * SOLR-15702: Stabilize S3 tests by using waiters after directory creation (Houston Putman)
 
+* SOLR-15707: Add the ability to set the AWS Profile per S3Repository (Houston Putman)
+
 Optimizations
 ---------------------
 (No changes)
