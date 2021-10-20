@@ -1180,7 +1180,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         new ValueSourceParser() {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-            return new HLLAgg(fp.parseArg());
+            String field = fp.parseArg();
+            if (fp.hasMoreArguments()) {
+              int log2m = fp.parseInt();
+              int regWidth = fp.parseInt();
+              return new HLLAgg(field, log2m, regWidth);
+            } else {
+              return new HLLAgg(field);
+            }
           }
         });
 
