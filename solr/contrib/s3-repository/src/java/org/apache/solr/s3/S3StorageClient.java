@@ -97,7 +97,10 @@ public class S3StorageClient {
       boolean proxyUseSystemSettings,
       String endpoint,
       boolean disableRetries) {
-    this(createInternalClient(profile, region, proxyUrl, proxyUseSystemSettings, endpoint, disableRetries), bucketName);
+    this(
+        createInternalClient(
+            profile, region, proxyUrl, proxyUseSystemSettings, endpoint, disableRetries),
+        bucketName);
   }
 
   @VisibleForTesting
@@ -107,7 +110,12 @@ public class S3StorageClient {
   }
 
   private static S3Client createInternalClient(
-      String profile, String region, String proxyUrl, boolean proxyUseSystemSettings, String endpoint, boolean disableRetries) {
+      String profile,
+      String region,
+      String proxyUrl,
+      boolean proxyUseSystemSettings,
+      String endpoint,
+      boolean disableRetries) {
     S3Configuration.Builder configBuilder = S3Configuration.builder().pathStyleAccessEnabled(true);
     if (!StringUtils.isEmpty(profile)) {
       configBuilder.profileName(profile);
@@ -149,7 +157,8 @@ public class S3StorageClient {
     /*
      * Set the default credentials provider
      */
-    DefaultCredentialsProvider.Builder credentialsProviderBuilder = DefaultCredentialsProvider.builder();
+    DefaultCredentialsProvider.Builder credentialsProviderBuilder =
+        DefaultCredentialsProvider.builder();
     if (!StringUtils.isEmpty(profile)) {
       credentialsProviderBuilder.profileName(profile);
     }
@@ -158,7 +167,8 @@ public class S3StorageClient {
      * Default s3 client builder loads credentials from disk and handles token refreshes
      */
     S3ClientBuilder clientBuilder =
-        S3Client.builder().credentialsProvider(credentialsProviderBuilder.build())
+        S3Client.builder()
+            .credentialsProvider(credentialsProviderBuilder.build())
             .overrideConfiguration(builder -> builder.retryPolicy(retryPolicy))
             .serviceConfiguration(configBuilder.build())
             .httpClient(sdkHttpClientBuilder.build());

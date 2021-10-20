@@ -17,7 +17,6 @@
 package org.apache.solr.s3;
 
 import java.util.Locale;
-
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -55,7 +54,8 @@ public class S3BackupRepositoryConfig {
 
   /** Construct a {@link S3StorageClient} from the provided config. */
   public S3StorageClient buildClient() {
-    return new S3StorageClient(bucketName, profile, region, proxyURL, proxyUseSystemSettings, endpoint, disableRetries);
+    return new S3StorageClient(
+        bucketName, profile, region, proxyURL, proxyUseSystemSettings, endpoint, disableRetries);
   }
 
   private static String getStringConfig(NamedList<?> config, String property) {
