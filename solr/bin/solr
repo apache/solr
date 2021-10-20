@@ -26,7 +26,8 @@
 # $HOME/.solr.in.sh
 # /usr/share/solr
 # /usr/local/share/solr
-# /var/solr/
+# /etc/default
+# /var/solr
 # /opt/solr
 #
 # Another option is to specify the full path to the include file in the
@@ -86,6 +87,7 @@ if [ -z "$SOLR_INCLUDE" ]; then
                /usr/share/solr/solr.in.sh \
                /usr/local/share/solr/solr.in.sh \
                /etc/default/solr.in.sh \
+               /var/solr/solr.in.sh \
                /opt/solr/solr.in.sh; do
     if [ -r "$include" ]; then
         SOLR_INCLUDE="$include"
