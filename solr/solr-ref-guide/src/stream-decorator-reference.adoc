@@ -1180,8 +1180,8 @@ This will cause the `rollup` function to be run in parallel across 20 worker nod
 ====
 The `parallel` function uses the hash query parser to split the data amongst the workers.
 It executes on all the documents and the result bitset is cached in the filterCache.
-+
-For a `parallel` stream with the same number of workers and `partitonKeys` the first query would be slower than subsequent queries.
+
+For a `parallel` stream with the same number of workers and `partitionKeys` the first query would be slower than subsequent queries.
 A trick to not pay the penalty for the first slow query would be to use a warmup query for every new searcher.
 The following is a `solrconfig.xml` snippet for 2 workers and "year_i" as the `partionKeys`.
 
