@@ -26,7 +26,7 @@ configurations.all {
   exclude group: 'org.slf4j', module: 'slf4j-log4j12'
   exclude group: 'org.apache.yetus', module: 'audience-annotations'
   exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
-  exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
+  // be conservative on what's added here.  Affects *all* configs, including internal ones.
 }
 
 dependencies {
@@ -62,11 +62,15 @@ dependencies {
   // Collections & lang utilities
   implementation ('com.google.guava:guava') { transitive = false }
   implementation 'org.apache.commons:commons-lang3'
+  implementation 'org.apache.commons:commons-math3'
+  implementation 'commons-io:commons-io'
   implementation 'com.carrotsearch:hppc'
   implementation 'org.apache.commons:commons-collections4'
   runtimeOnly 'commons-collections:commons-collections' // for Hadoop and...?
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
+
+  implementation 'org.slf4j:slf4j-api'
 
   implementation 'commons-codec:commons-codec'
 
@@ -74,6 +78,8 @@ dependencies {
 
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
+
+  implementation 'org.eclipse.jetty:jetty-client'
 
   // ZooKeeper & Curator
   implementation 'org.apache.zookeeper:zookeeper'
@@ -116,18 +122,19 @@ dependencies {
   implementation (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
 
   // SQL Parser via Calcite
-  implementation ('org.apache.calcite.avatica:avatica-core')
-  implementation ('org.apache.calcite:calcite-core') { transitive = false } // too many to ignore?
-  implementation ('org.apache.calcite:calcite-linq4j', {
+  implementation ('org.apache.calcite:calcite-core', {
+    exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
     exclude group: 'com.google.guava', module: 'guava' // TODO remove this to keep versions in sync
+    exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
+    exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
+    exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
+    exclude group: 'org.apache.commons', module: 'commons-dbcp2'
+    exclude group: 'net.minidev', module: 'json-smart'
+    exclude group: 'net.hydromatic', module: 'aggdesigner-algorithm'
   })
-  implementation ('org.checkerframework:checker-qual')
-  implementation ('org.apiguardian:apiguardian-api')
-  runtimeOnly ('com.esri.geometry:esri-geometry-api')
-  runtimeOnly 'org.codehaus.janino:commons-compiler'
-  runtimeOnly 'org.codehaus.janino:janino'
-  runtimeOnly ('net.hydromatic:eigenbase-properties')
-  runtimeOnly ('com.google.protobuf:protobuf-java')
+  // sub-deps of calcite-core that we reference directly
+  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
+  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
 
   // Hadoop; general stuff
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false } // too many to ignore
