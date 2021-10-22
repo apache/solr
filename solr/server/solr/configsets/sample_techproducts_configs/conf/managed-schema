@@ -26,7 +26,7 @@
  It should be kept correct and concise, usable out-of-the-box.
 
  For more information, on how to customize this file, please see
- http://wiki.apache.org/solr/SchemaXml
+ http://solr.apache.org/guide/fields-and-schema-design.html
 
  PERFORMANCE NOTE: this schema includes many optional features and should not
  be used for benchmarking.  To improve performance one could
@@ -368,7 +368,7 @@
          matching across fields.
 
          For more info on customizing your analyzer chain, please see
-         http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters
+         http://lucene.apache.org/solr/guide/understanding-analyzers-tokenizers-and-filters.html#understanding-analyzers-tokenizers-and-filters
      -->
 
     <!-- One can also specify an existing Analyzer class that has a
@@ -701,7 +701,7 @@
 
     <!-- An alternative geospatial field type new to Solr 4.  It supports multiValued and polygon shapes.
       For more information about this and other Spatial fields new to Solr 4, see:
-      http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4
+      http://solr.apache.org/guide/spatial-search.html
     -->
     <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
         geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
@@ -712,7 +712,7 @@
     <fieldType name="bbox" class="solr.BBoxField"
                geo="true" distanceUnits="kilometers" numberType="pdouble" />
 
-   <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
+   <!-- Money/currency field type. See https://solr.apache.org/guide/currencies-exchange-rates.html
         Parameters:
           amountLongSuffix: Required. Refers to a dynamic field for the raw amount sub-field.
                               The dynamic field must have a field type that extends LongValueFieldType.
@@ -1023,7 +1023,7 @@
 
            Punctuation characters are discarded by default.  Use discardPunctuation="false" to keep them.
 
-           See http://wiki.apache.org/solr/JapaneseLanguageSupport for more on Japanese language support.
+           See https://solr.apache.org/guide/language-analysis.html#japanese for more on Japanese language support.
         -->
         <tokenizer name="japanese" mode="search"/>
         <!--<tokenizer name="japanese" mode="search" userDictionary="lang/userdict_ja.txt"/>-->
