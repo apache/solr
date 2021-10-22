@@ -2,7 +2,7 @@
 
 This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
-https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
+https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
 
 ==================  9.0.0 ==================
 
@@ -401,10 +401,11 @@ New Features
 * SOLR-7642: opt-in support to create ZK chroot on startup (Timothy Potter, Shawn Heisey, Mark Miller, Tomas Eduardo Fernandez Lobbe,
   Jan Høydahl, Steve Molloy, Isabelle Giguere, David Eric Pugh, Gus Heck, Christine Poerschke, Houston Putman)
 
+* SOLR-15708: SolrJ support for ConfigSet uploading (ab, hossman)
+
 Improvements
 ---------------------
-
-* SOLR-15702: Stabilize S3 tests by using waiters after directory creation (Houston Putman)
+(No changes)
 
 * SOLR-15707: Add the ability to set the AWS Profile per S3Repository (Houston Putman)
 
@@ -417,6 +418,10 @@ Bug Fixes
 * SOLR-15626: The "config-read" permission has been fixed to properly allow access to `/solr/admin/configs?action=LIST` (Jon Senchyna via Eric Pugh)
 
 * SOLR-15691: Admin UI raises yellow warning even when only case of hostnames differ (janhoy)
+
+* SOLR-15702: Fix S3Repository to follow BackupRepository.createDirectory() API contract (Houston Putman)
+
+* SOLR-15696: Incremental backups no longer fail on collections that had previously seen a 'SPLITSHARD' operation. (Jason Gerlowski)
 
 Build
 ---------------------
