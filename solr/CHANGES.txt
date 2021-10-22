@@ -419,6 +419,8 @@ Bug Fixes
 
 * SOLR-15702: Fix S3Repository to follow BackupRepository.createDirectory() API contract (Houston Putman)
 
+* SOLR-15696: Incremental backups no longer fail on collections that had previously seen a 'SPLITSHARD' operation. (Jason Gerlowski)
+
 Build
 ---------------------
 
