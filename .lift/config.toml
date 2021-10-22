@@ -1,0 +1,7 @@
+# This file can configure Lift's PR static analysis.
+# Docs for adding, removing or changing checks can be found here:
+# https://help.sonatype.com/display/LIFT/Configuration+Reference
+
+jdk11 = true
+
+ignoreRules = [ "W069" ]
