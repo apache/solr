@@ -24,7 +24,7 @@ dependencies {
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
 
-  api 'commons-io:commons-io'
+  implementation 'commons-io:commons-io'
   implementation 'org.apache.commons:commons-math3'
 
   api 'org.eclipse.jetty.http2:http2-client'

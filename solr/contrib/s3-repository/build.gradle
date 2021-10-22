@@ -32,7 +32,9 @@ dependencies {
     }
     implementation (group: 'software.amazon.awssdk', name: 'sdk-core')
     implementation (group: 'software.amazon.awssdk', name: 'protocol-core')
+
     implementation ('com.google.guava:guava') { transitive = false }
+    implementation 'commons-io:commons-io'
 
     runtimeOnly (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
     runtimeOnly (group: 'org.codehaus.woodstox', name: 'stax2-api')

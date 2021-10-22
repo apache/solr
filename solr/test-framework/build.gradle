@@ -32,6 +32,7 @@ dependencies {
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
 
+  implementation 'commons-io:commons-io'
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
