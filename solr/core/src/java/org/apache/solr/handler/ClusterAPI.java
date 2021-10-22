@@ -109,7 +109,6 @@ public class ClusterAPI {
       path = "/cluster/command-status",
       permission = COLL_EDIT_PERM)
   public void flushCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    wrapParams(req, "flush", true);
     CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, collectionsHandler);
   }
 

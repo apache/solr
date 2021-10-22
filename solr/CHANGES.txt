@@ -160,6 +160,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15617: Add kerberos.name.rules.mechanism support to KerberosPlugin (Kevin Risden)
 
+* SOLR-15278: Add V2 equivalent end point for deleting aync cluster operations status settings. (Eric Pugh)
+
 Build
 ---------------------
 
