@@ -158,6 +158,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15301: Eliminate repetitive index size calculation for Solr metrics (Andras Salamon)
 
+* SOLR-15617: Add kerberos.name.rules.mechanism support to KerberosPlugin (Kevin Risden)
+
 Build
 ---------------------
 
