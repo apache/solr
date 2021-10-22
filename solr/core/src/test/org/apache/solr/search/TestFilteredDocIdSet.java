@@ -32,11 +32,15 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.solr.SolrTestCase;
 
 public class TestFilteredDocIdSet extends SolrTestCase {
@@ -79,7 +83,6 @@ public class TestFilteredDocIdSet extends SolrTestCase {
         } 
       };
 
-
     DocIdSet filteredSet = new FilteredDocIdSet(innerSet){
         @Override
         protected boolean match(int docid) {
@@ -113,7 +116,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
   }
   
   public void testNullDocIdSet() throws Exception {
-    // Tests that if a Filter produces a null DocIdSet, which is given to
+    // (historical note) Tests that if a Query produces a null DocIdSet, which is given to
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -127,22 +130,42 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     IndexSearcher searcher = newSearcher(reader);
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
     
-    // Now search w/ a Filter which returns a null DocIdSet
-    Filter f = new Filter() {
+    // Now search w/ a Query which returns a null Scorer
+    DocSetQuery f = new DocSetQuery() {
       @Override
-      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-        return null;
+      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+        return new Weight(this) {
+
+          @Override
+          public Explanation explain(LeafReaderContext context, int doc) {
+              return Explanation.match(0f, "No match on id " + doc);
+          }
+
+          @Override
+          public Scorer scorer(LeafReaderContext leafReaderContext) {
+            return null;
+          }
+
+          @Override
+          public boolean isCacheable(LeafReaderContext ctx) {
+            return false;
+          }
+        };
       }
+
       @Override
-      public String toString(String field) {
+      public String toString(String s) {
         return "nullDocIdSetFilter";
       }
-      
+
       @Override
-      public boolean equals(Object other) {
-        return other == this;
+      public void visit(QueryVisitor queryVisitor) {}
+
+      @Override
+      public boolean equals(Object o) {
+        return o == this;
       }
-      
+
       @Override
       public int hashCode() {
         return System.identityHashCode(this);
@@ -171,25 +194,25 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     IndexSearcher searcher = newSearcher(reader);
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
     
-      // Now search w/ a Filter which returns a null DocIdSet
-    Filter f = new Filter() {
+    // Now search w/ a Query which returns a null Scorer
+    Query f = new Query() {
       @Override
-      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-        final DocIdSet innerNullIteratorSet = new DocIdSet() {
-          @Override
-          public DocIdSetIterator iterator() {
-            return null;
-          } 
+      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+        return new Weight(this) {
 
           @Override
-          public long ramBytesUsed() {
-            return 0L;
+          public Explanation explain(LeafReaderContext context, int doc) {
+              return Explanation.match(0f, "No match on id " + doc);
           }
-        };
-        return new FilteredDocIdSet(innerNullIteratorSet) {
+
           @Override
-          protected boolean match(int docid) {
-            return true;
+          public Scorer scorer(LeafReaderContext leafReaderContext) {
+            return null;
+          }
+
+          @Override
+          public boolean isCacheable(LeafReaderContext ctx) {
+            return false;
           }
         };
       }
@@ -198,7 +221,10 @@ public class TestFilteredDocIdSet extends SolrTestCase {
       public String toString(String field) {
         return "nullDocIdSetFilter";
       }
-      
+
+      @Override
+      public void visit(QueryVisitor queryVisitor) {}
+
       @Override
       public boolean equals(Object other) {
         return other == this;
@@ -218,5 +244,4 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     reader.close();
     dir.close();
   }
-
 }

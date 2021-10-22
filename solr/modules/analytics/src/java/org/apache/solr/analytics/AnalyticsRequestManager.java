@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.facet.AbstractSolrQueryFacet;
 import org.apache.solr.analytics.facet.AbstractSolrQueryFacet.FacetValueQueryExecuter;
 import org.apache.solr.analytics.facet.StreamingFacet;
@@ -34,7 +35,6 @@ import org.apache.solr.analytics.stream.AnalyticsShardRequestManager;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.Filter;
 
 /**
  * The manager of an entire analytics request.
@@ -228,7 +228,7 @@ public class AnalyticsRequestManager {
    * @param queryRequest of the overall search query
    * @return an {@link Iterable} of executers
    */
-  public Iterable<FacetValueQueryExecuter> getFacetExecuters(Filter filter, SolrQueryRequest queryRequest) {
+  public Iterable<FacetValueQueryExecuter> getFacetExecuters(Query filter, SolrQueryRequest queryRequest) {
     ArrayList<FacetValueQueryExecuter> facetExecutors = new ArrayList<>();
     groupingManagers.values().forEach( grouping -> {
       grouping.getFacetExecuters(filter, queryRequest, executor -> facetExecutors.add(executor));

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -42,6 +41,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
@@ -55,6 +56,7 @@ import org.apache.solr.SolrTestCase;
  */
 public class TestDocSet extends SolrTestCase {
   Random rand;
+  private Object IndexSearcher;
 
   @Override
   public void setUp() throws Exception {
@@ -533,12 +535,12 @@ public class TestDocSet extends SolrTestCase {
     }
   }
 
+
   /**
    * Tests equivalence among {@link DocIdSetIterator} instances retrieved from {@link BitDocSet} and {@link SortedIntDocSet}
-   * implementations, via {@link DocSet#getTopFilter()}/{@link Filter#getDocIdSet(LeafReaderContext, Bits)} and directly
-   * via {@link DocSet#iterator(LeafReaderContext)}.
-   * Also tests corresponding random-access {@link Bits} instances retrieved via {@link DocSet#getTopFilter()}/
-   * {@link Filter#getDocIdSet(LeafReaderContext, Bits)}/{@link DocIdSet#bits()}.
+   * implementations, via {@link DocSet#makeQuery()} and directly via {@link DocSet#iterator(LeafReaderContext)}.
+   * Also tests corresponding random-access {@link Bits} instances retrieved via {@link DocSet#makeQuery()}/
+   * {@link DocIdSet#bits()}.
    */
   public void doFilterTest(IndexReader reader) throws IOException {
     IndexReaderContext topLevelContext = reader.getContext();
@@ -546,8 +548,8 @@ public class TestDocSet extends SolrTestCase {
     DocSet a = new BitDocSet(bs);
     DocSet b = getIntDocSet(bs);
 
-    Filter fa = a.getTopFilter();
-    Filter fb = b.getTopFilter();
+//    Query fa = a.makeQuery();
+//    Query fb = b.makeQuery();
 
     /* top level filters are no longer supported
     // test top-level
@@ -556,30 +558,18 @@ public class TestDocSet extends SolrTestCase {
     doTestIteratorEqual(da, db);
     ***/
 
-    DocIdSet da;
-    DocIdSet db;
     List<LeafReaderContext> leaves = topLevelContext.leaves();
-
     // first test in-sequence sub readers
     for (LeafReaderContext readerContext : leaves) {
-      da = fa.getDocIdSet(readerContext, null);
-      db = fb.getDocIdSet(readerContext, null);
-
       // there are various ways that disis can be retrieved for each leafReader; they should all be equivalent.
-      doTestIteratorEqual(da.bits(), disiSupplier(da), disiSupplier(db), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
-
-      // set b is SortedIntDocSet, so derivatives should not support random-access via Bits
-      assertNull(db.bits());
+         doTestIteratorEqual(getExpectedBits(a, readerContext), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
     }  
 
     int nReaders = leaves.size();
     // now test out-of-sequence sub readers
     for (int i=0; i<nReaders; i++) {
       LeafReaderContext readerContext = leaves.get(rand.nextInt(nReaders));
-      da = fa.getDocIdSet(readerContext, null);
-      db = fb.getDocIdSet(readerContext, null);
-      doTestIteratorEqual(da.bits(), disiSupplier(da), disiSupplier(db), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
-      assertNull(db.bits());
+      doTestIteratorEqual(getExpectedBits(a, readerContext), () -> a.iterator(readerContext), () -> b.iterator(readerContext));
     }
   }
 
@@ -587,10 +577,35 @@ public class TestDocSet extends SolrTestCase {
     // keeping these numbers smaller help hit more edge cases
     int maxSeg=4;
     int maxDoc=5;    // increase if future changes add more edge cases (like probing a certain distance in the bin search)
-
     for (int i=0; i<5000; i++) {
       IndexReader r = dummyMultiReader(maxSeg, maxDoc);
       doFilterTest(r);
     }
+  }
+
+  private DocIdSetIterator getDocIdSetIteratorFromQuery(DocSetQuery dsq, LeafReaderContext readerContext) throws IOException {
+    Scorer scorer = dsq.createWeight(null, ScoreMode.COMPLETE_NO_SCORES, 0).scorer(readerContext);
+    return scorer != null ? scorer.iterator() : null;
+  }
+
+  private Bits getExpectedBits(final DocSet docSet, final LeafReaderContext context) {
+    if (context.isTopLevel) {
+      return docSet.getBits();
+    }
+
+    final int base = context.docBase;
+    final int length = context.reader().maxDoc();
+    final FixedBitSet bs = docSet.getFixedBitSet();
+    return new Bits() {
+      @Override
+      public boolean get(int index) {
+        return bs.get(index + base);
+      }
+
+      @Override
+      public int length() {
+        return length;
+      }
+    };
   }
 }

@@ -85,7 +85,7 @@ public class AnalyticsComponent extends SearchComponent {
     }
     AnalyticsRequestManager reqManager = getAnalyticsRequestManager(rb);
     // Collect the data and generate a response
-    AnalyticsDriver.drive(reqManager, rb.req.getSearcher(), rb.getResults().docSet.getTopFilter(), rb.req);
+    AnalyticsDriver.drive(reqManager, rb.req.getSearcher(), rb.getResults().docSet, rb.req);
 
     if (rb.isOlapAnalytics()) {
       rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, reqManager.createOldResponse());

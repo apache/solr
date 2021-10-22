@@ -96,6 +96,6 @@ public class FilterQuery extends ExtendedQueryBase {
     DocSet docs = solrSearcher.getDocSet(q);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 
-    return new BoostQuery(new SolrConstantScoreQuery(docs.getTopFilter()), 0).createWeight(searcher, scoreMode, 1f);
+    return new BoostQuery(new SolrConstantScoreQuery(docs.makeQuery()), 0).createWeight(searcher, scoreMode, 1f);
   }
 }

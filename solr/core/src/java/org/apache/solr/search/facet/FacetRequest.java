@@ -234,7 +234,7 @@ public abstract class FacetRequest {
         // the number of classes that have to know about the number of possible settings on the join
         // (ie: if we add a score mode, or some other modifier to how the joins are done)
 
-        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.getTopFilter());
+        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.makeQuery());
         // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
         fromQuery.setCache(false);
 
@@ -288,7 +288,7 @@ public abstract class FacetRequest {
        * current base of the FacetContext.
        */
       public Query createDomainQuery(FacetContext fcontext) throws IOException {
-        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.getTopFilter());
+        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.makeQuery());
         // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
         fromQuery.setCache(false);
 

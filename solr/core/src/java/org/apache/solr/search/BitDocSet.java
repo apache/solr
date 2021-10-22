@@ -18,14 +18,10 @@ package org.apache.solr.search;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitSetIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -311,72 +307,8 @@ public class BitDocSet extends DocSet {
     };
   }
 
-  @Override
-  public Filter getTopFilter() {
-    // TODO: if cardinality isn't cached, do a quick measure of sparseness
-    // and return null from bits() if too sparse.
-
-    return new Filter() {
-      final FixedBitSet bs = bits;
-
-      @Override
-      public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) {
-        // all Solr DocSets that are used as filters only include live docs
-        final Bits acceptDocs2 = acceptDocs == null ? null : (context.reader().getLiveDocs() == acceptDocs ? null : acceptDocs);
-
-        return BitsFilteredDocIdSet.wrap(new DocIdSet() {
-          @Override
-          public DocIdSetIterator iterator() {
-            return BitDocSet.this.iterator(context);
-          }
-
-          @Override
-          public long ramBytesUsed() {
-            return BitDocSet.this.ramBytesUsed();
-          }
-
-          @Override
-          public Bits bits() {
-            if (context.isTopLevel) {
-              return bits;
-            }
-
-            final int base = context.docBase;
-            final int length = context.reader().maxDoc();
-            final FixedBitSet bs = bits;
-
-            return new Bits() {
-              @Override
-              public boolean get(int index) {
-                return bs.get(index + base);
-              }
-
-              @Override
-              public int length() {
-                return length;
-              }
-            };
-          }
-
-        }, acceptDocs2);
-      }
-
-      @Override
-      public String toString(String field) {
-        return "BitSetDocTopFilter";
-      }
-
-      @Override
-      public boolean equals(Object other) {
-        return sameClassAs(other) &&
-               Objects.equals(bs, getClass().cast(other).bs);
-      }
-      
-      @Override
-      public int hashCode() {
-        return classHash() * 31 + bs.hashCode();
-      }
-    };
+  public DocSetQuery makeQuery() {
+    return null;
   }
 
   @Override

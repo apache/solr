@@ -17,15 +17,13 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -41,17 +39,20 @@ import org.apache.lucene.search.Weight;
  * Experimental and subject to change.
  */
 public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
-  private final Filter filter;
+  private Query query;
   boolean cache = true;  // cache by default
   int cost;
 
-  public SolrConstantScoreQuery(Filter filter) {
-    this.filter = filter;
+  public SolrConstantScoreQuery(Query query) {
+    Objects.requireNonNull(query);
+    this.query = query;
   }
 
+  public SolrConstantScoreQuery() {}
+
   /** Returns the encapsulated filter */
-  public Filter getFilter() {
-    return filter;
+  public Query getQuery() {
+    return query;
   }
 
   @Override
@@ -75,35 +76,40 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   }
 
   protected class ConstantWeight extends ConstantScoreWeight {
-    private Map<Object,Object> context;
     private ScoreMode scoreMode;
+    private Weight wrappedWeight;
 
     public ConstantWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       super(SolrConstantScoreQuery.this, boost);
       this.scoreMode = scoreMode;
-      this.context = ValueSource.newContext(searcher);
-      if (filter instanceof SolrFilter)
-        ((SolrFilter)filter).createWeight(context, searcher);
+      if (query != null) // Not a DocSetQuery
+        this.wrappedWeight = query.createWeight(searcher, scoreMode, boost);
     }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(this.context, context, null) : filter.getDocIdSet(context, null);
-      if (docIdSet == null) {
-        return null;
+      Scorer scorer = wrappedWeight.scorer(context);
+      if (scorer == null) return null;
+      DocIdSetIterator disi = scorer.iterator();
+      return disi == null ? null : new ConstantScoreScorer(this, score(), scoreMode, disi);
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+      final Scorer scorer = scorer(context);
+      final boolean match = (scorer != null && scorer.iterator().advance(doc) == doc);
+      if (match) {
+        assert scorer.score() == 0f;
+        return Explanation.match(0f, "Match on id " + doc);
+      } else {
+        return Explanation.match(0f, "No match on id " + doc);
       }
-      DocIdSetIterator iterator = docIdSet.iterator();
-      if (iterator == null) {
-        return null;
-      }
-      return new ConstantScoreScorer(this, score(), scoreMode, iterator);
     }
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return false;
     }
-
   }
 
   @Override
@@ -114,25 +120,24 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
-    return ExtendedQueryBase.getOptionsString(this) + "ConstantScore(" + filter.toString() + ")";
+    return ExtendedQueryBase.getOptionsString(this) + "ConstantScore(" + query + ")";
   }
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
-           Objects.equals(filter, ((SolrConstantScoreQuery) other).filter);
+           Objects.equals(query, ((SolrConstantScoreQuery) other).query);
   }
 
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return 31 * classHash() + filter.hashCode();
+    return 31 * classHash() + query.hashCode();
   }
 
   @Override
   public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
-
 }
