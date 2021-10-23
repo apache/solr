@@ -462,9 +462,9 @@ ORDER BY SUM(fieldC) ASC
 
 == Best Practices
 
-=== Separate Collections
+=== Separate Worker Collection
 
-It makes sense to create a separate SolrCloud collection just for the `/sql` handler.
+It makes sense to create a separate SolrCloud worker collection just for the `/sql` handler.
 This collection can be created using SolrCloud's standard collection API.
 
 Since this collection only exists to handle `/sql` requests and provide a pool of worker nodes, this collection does not need to hold any data.
