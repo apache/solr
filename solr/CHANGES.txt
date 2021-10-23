@@ -160,6 +160,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15617: Add kerberos.name.rules.mechanism support to KerberosPlugin (Kevin Risden)
 
+* SOLR-15278: Add V2 equivalent to allow deleting async collection list of statuses. (Eric Pugh)
+
 Build
 ---------------------
 
