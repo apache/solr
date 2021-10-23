@@ -507,7 +507,7 @@ This means the tuples are always sorted and partitioned before they hit the netw
 The partitioned tuples are sent directly to the correct worker nodes in the proper sort order, ready to be reduced.
 
 .How Parallel SQL Queries are Distributed
-image::images/parallel-sql-interface/cluster.png[image,width=492,height=250]
+image::images/sql-interface/cluster.png[image,width=492,height=250]
 
 The image above shows the three tiers broken out into different SolrCloud collections for clarity.
 In practice the `/sql` handler and worker collection by default share the same collection.

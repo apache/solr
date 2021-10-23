@@ -242,9 +242,9 @@ Graph Traversal:: Return http://graphml.graphdrawing.org/[GraphML] formatted out
 |`solr/<collection>/graph` |{solr-javadocs}/core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH`
 |===
 
-SQL:: Front end of the Parallel SQL interface.
+SQL:: Front end of the SQL interface.
 +
-*Documentation*: <<parallel-sql-interface.adoc#sql-request-handler,SQL Request Handler>>
+*Documentation*: <<sql-interface.adoc#sql-request-handler,SQL Request Handler>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
