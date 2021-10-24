@@ -110,7 +110,6 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     assertEquals(7, tieredMP.getMaxMergeAtOnce());
     
     // mp-specific setters
-    assertEquals(19, tieredMP.getMaxMergeAtOnceExplicit());
     assertEquals(0.1D, tieredMP.getNoCFSRatio(), 0.0D);
     // make sure we overrode segmentsPerTier 
     // (split from maxMergeAtOnce out of mergeFactor)

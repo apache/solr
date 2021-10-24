@@ -48,7 +48,7 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Threads(1)
-@Warmup(time = 5, iterations = 3)
+@Warmup(time = 10, iterations = 4)
 @Measurement(time = 15, iterations = 5)
 @Fork(value = 1)
 @Timeout(time = 60)
@@ -59,7 +59,7 @@ public class JsonFaceting {
 
     public static final String collection = "testCollection";
 
-    @Param({"100000"})
+    @Param({"500000"})
     public int docCount;
 
     @Param("2")
@@ -68,7 +68,7 @@ public class JsonFaceting {
     @Param("1")
     int numReplicas;
 
-    @Param("2")
+    @Param("4")
     int numShards;
 
     // DV,  // DocValues, collect into ordinal array
@@ -86,10 +86,10 @@ public class JsonFaceting {
     @Param({"smart"})
     String fm;
 
-    @Param({"5000"})
+    @Param({"15000"})
     int facetCard;
 
-    @Param({"1000"})
+    @Param({"3000"})
     int facetCard2;
 
     private ModifiableSolrParams params;
@@ -99,8 +99,8 @@ public class JsonFaceting {
         BenchmarkParams benchmarkParams, MiniClusterState.MiniClusterBenchState miniClusterState)
         throws Exception {
 
-      System.setProperty("maxMergeAtOnce", "20");
-      System.setProperty("segmentsPerTier", "20");
+      System.setProperty("maxMergeAtOnce", "30");
+      System.setProperty("segmentsPerTier", "30");
 
       miniClusterState.startMiniCluster(nodeCount);
 
@@ -115,7 +115,7 @@ public class JsonFaceting {
                   strings().basicLatinAlphabet().maxCardinality(facetCard).ofLengthBetween(1, 64))
               .field(
                   "facet2_s",
-                  strings().basicLatinAlphabet().maxCardinality(facetCard).ofLengthBetween(1, 16))
+                  strings().basicLatinAlphabet().maxCardinality(facetCard).ofLengthBetween(1, 32))
               .field(
                   "facet3_s",
                   strings()
@@ -129,7 +129,7 @@ public class JsonFaceting {
               .field(integers().allWithMaxCardinality(facetCard2));
 
       miniClusterState.index(collection, docs, docCount);
-      miniClusterState.forceMerge(collection, 15);
+      miniClusterState.forceMerge(collection, 25);
 
       params = new ModifiableSolrParams();
 

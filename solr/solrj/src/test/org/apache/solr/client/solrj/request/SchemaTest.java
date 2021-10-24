@@ -625,8 +625,6 @@ public class SchemaTest extends RestTestBase {
     assertThat(fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
     assertThat(analyzerAttributes.get("class"),
         is(equalTo(newFieldTypeRepresentation.getAnalyzer().getAttributes().get("class"))));
-    assertThat(analyzerAttributes.get("luceneMatchVersion"),
-        is(equalTo(newFieldTypeRepresentation.getAnalyzer().getAttributes().get("luceneMatchVersion"))));
   }
 
   @Test

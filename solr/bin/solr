@@ -370,6 +370,7 @@ function print_usage() {
     echo "  -z <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
     echo "                   If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                   an embedded ZooKeeper instance will be launched."
+    echo "                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
     echo ""
     echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
@@ -949,7 +950,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               HEALTHCHECK_COLLECTION="$2"
               shift 2
           ;;
-          -z|-zkhost)
+          -z|-zkhost|-zkHost)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
                 exit 1
@@ -1291,7 +1292,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             fi
             shift 1
         ;;
-        -z|-zkhost)
+        -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
             fi
@@ -1444,7 +1445,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "$AUTH_OP")
             shift
         ;;
-        -z|-zkhost|zkHost)
+        -z|-zkhost|-zkHost)
             ZK_HOST="$2"
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-zkHost" "$ZK_HOST")
             shift 2
@@ -1712,7 +1713,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=" -p $SOLR_PORT"
             shift 2
         ;;
-        -z|-zkhost)
+        -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Zookeeper connection string is required when using the $1 option!"
               exit 1
@@ -2061,6 +2062,10 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     fi
 
     CLOUD_MODE_OPTS+=('-DzkRun')
+  fi
+
+  if [ -n "$ZK_CREATE_CHROOT" ]; then
+    CLOUD_MODE_OPTS+=("-DcreateZkChroot=$ZK_CREATE_CHROOT")
   fi
 
   # and if collection1 needs to be bootstrapped
