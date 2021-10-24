@@ -1,0 +1,19 @@
+name: solr
+version: '9_0_0'
+display_version: '9.0'
+title: Solr
+nav:
+- modules/getting-started/getting-started-nav.adoc
+- modules/deployment-guide/deployment-nav.adoc
+- modules/configuration-guide/config-nav.adoc
+- modules/indexing-guide/indexing-nav.adoc
+- modules/query-guide/querying-nav.adoc
+- modules/upgrade-notes/upgrade-nav.adoc
+asciidoc:
+  attributes:
+    solr-javadocs: https://solr.apache.org/docs/9_0_0/
+    lucene-javadocs: https://lucene.apache.org/core/9_0_0/
+    solr-root-path: /Users/cass/solr-repos/solr-fork/solr/
+    solr-docs-version: '9.0'
+    idseparator: '-'
+    idprefix: ''

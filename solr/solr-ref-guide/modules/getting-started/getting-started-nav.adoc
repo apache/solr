@@ -1,0 +1,20 @@
+.Getting Started
+* xref:getting-started.adoc[]
+** xref:introduction.adoc[]
+
+** xref:solr-concepts.adoc[]
+*** xref:documents-fields-schema-design.adoc[]
+*** xref:solr-indexing.adoc[]
+*** xref:searching-in-solr.adoc[]
+*** xref:relevance.adoc[]
+*** xref:solr-glossary.adoc[]
+
+** xref:solr-tutorial.adoc[]
+*** xref:tutorial-techproducts.adoc[]
+*** xref:tutorial-films.adoc[]
+*** xref:tutorial-diy.adoc[]
+*** xref:tutorial-solrcloud.adoc[]
+*** xref:tutorial-aws.adoc[]
+
+** xref:solr-admin-ui.adoc[]
+** xref:about-this-guide.adoc[]

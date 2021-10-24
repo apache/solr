@@ -1,0 +1,19 @@
+site:
+  title: Apache Solr Reference Guide
+  url: https://solr.apache.org/guide
+  start_page: solr::index.adoc
+content:
+  sources:
+  - url: ../../
+    branches: HEAD
+    start_path: solr/solr-ref-guide
+ui:
+  bundle:
+    url: ./ui/build/ui-bundle.zip
+    snapshot: true
+output:
+  clean: true
+  dir: ./build
+asciidoc:
+  attributes:
+    stem:

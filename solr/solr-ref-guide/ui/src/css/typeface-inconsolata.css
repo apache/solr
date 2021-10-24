@@ -1,0 +1,11 @@
+/* Load Inconsolata for monospace */
+@font-face {
+  font-family: 'Inconsolata';
+  src: url(../font/Inconsolata-Regular.ttf);
+}
+
+@font-face {
+  font-weight: bold;
+  font-family: 'Inconsolata';
+  src: url(../font/Inconsolata-Bold.ttf);
+}
