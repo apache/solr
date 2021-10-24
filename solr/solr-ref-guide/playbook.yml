@@ -9,7 +9,7 @@ content:
     start_path: solr/solr-ref-guide
 ui:
   bundle:
-    url: ./ui/build/ui-bundle.zip
+    url: https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip
     snapshot: true
 output:
   clean: true
