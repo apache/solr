@@ -55,8 +55,8 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  static final Path ROOT_DIR = Paths.get(TEST_HOME());
-  static final Path CONF_DIR = ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
+  private static final Path ROOT_DIR = Paths.get(TEST_HOME());
+  private static final Path CONF_DIR = ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
 
   SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;

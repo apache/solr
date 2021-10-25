@@ -19,6 +19,7 @@ package org.apache.solr.security;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -94,13 +95,14 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
    */
   @Override
   public Set<String> getUserRoles(Principal principal) {
+    Set<String> mergedRoles = new HashSet<>();
     for (RuleBasedAuthorizationPluginBase plugin : pluginMap.values()) {
       final Set<String> userRoles = plugin.getUserRoles(principal);
-      if (userRoles != null && !userRoles.isEmpty()) {
-        return userRoles; // first non-empty match wins
+      if (userRoles != null) {
+        mergedRoles.addAll(userRoles);
       }
     }
-    return Collections.emptySet();
+    return mergedRoles;
   }
 
   @Override
