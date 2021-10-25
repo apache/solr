@@ -393,8 +393,6 @@ Bug Fixes
 
 * SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
 
-* SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
-
 * SOLR-15653: Fix collection creation race that assumes a local clusterstate when the collection has only just been created. (Mark Miller)
 
 ==================  8.11.0 ==================
@@ -426,6 +424,8 @@ Bug Fixes
 * SOLR-15702: Fix S3Repository to follow BackupRepository.createDirectory() API contract (Houston Putman)
 
 * SOLR-15696: Incremental backups no longer fail on collections that had previously seen a 'SPLITSHARD' operation. (Jason Gerlowski)
+
+* SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
 
 Build
 ---------------------
