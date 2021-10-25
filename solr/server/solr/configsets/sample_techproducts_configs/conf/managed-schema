@@ -187,6 +187,10 @@
         results by manufacturer.  copied from "manu" via copyField -->
    <field name="manu_exact" type="string" indexed="false" stored="false" docValues="true" />
 
+   <!-- non-tokenized version of name to make it easier to sort or group
+        results by product name.  copied from "name" via copyField -->
+   <field name="name_exact" type="string" indexed="false" stored="false" docValues="true" />
+
    <field name="payloads" type="payloads" indexed="true" stored="true"/>
 
 
@@ -247,6 +251,7 @@
    <copyField source="features" dest="text"/>
    <copyField source="includes" dest="text"/>
    <copyField source="manu" dest="manu_exact"/>
+   <copyField source="name" dest="name_exact"/>
 
    <!-- Copy the price into a currency enabled field (default USD) -->
    <copyField source="price" dest="price_c"/>

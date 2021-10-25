@@ -21,10 +21,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr's Parallel SQL Interface brings the power of SQL to SolrCloud.
+Solr's SQL Query support brings the power of SQL to SolrCloud.
 
 The SQL interface seamlessly combines SQL with Solr's full-text search capabilities.
-Both MapReduce style and JSON Facet API aggregations are supported, which means the SQL interface can be used to support both *high query volume* and *high cardinality* use cases.
+Both MapReduce style and JSON Facet API aggregations are supported, which means that SQL querying can be used to support both *high query volume* and *high cardinality* use cases.
 
 == SQL Architecture
 
@@ -49,11 +49,11 @@ For example, we could index Solr's sample documents and then construct an SQL qu
 
 [source,sql]
 ----
-SELECT manu as mfr, price as retail FROM techproducts
+SELECT name_exact as name, manu as mfr, price as retail FROM techproducts ORDER BY retail DESC
 ----
 
-The collection in Solr we are using is "techproducts", and we've asked for the "manu" and "price" fields to be returned and aliased with new names.
-While this example does not use those aliases, we could build on this to ORDER BY one or more of those fields.
+The collection in Solr we are using is "techproducts", and we've asked for the "name_exact", manu" and "price" fields to be returned,
+with the aliased name "retail" being sorted upon to show most expensive to least expensive products.
 
 == Solr SQL Syntax
 
