@@ -38,9 +38,9 @@ Several new expression types have been added in Solr 6:
 * JDBC connections to pull data from other systems and join with documents in the Solr index.
 
 [[major-5-6-parallel-sql]]
-=== SQL Interface
+=== SQL Query
 
-Built on streaming expressions, new in Solr 6 is a <<sql-interface.adoc#,SQL interface>> to be able to send SQL queries to Solr. SQL statements are compiled to streaming expressions on the fly, providing the full range of aggregations available to streaming expression requests. A JDBC driver is included, which allows using SQL clients and database visualization tools to query your Solr index and import data to other systems.
+Built on streaming expressions, new in Solr 6 is a <<sql-query.adoc#,SQL support>> to be able to send SQL queries to Solr. SQL statements are compiled to streaming expressions on the fly, providing the full range of aggregations available to streaming expression requests. A JDBC driver is included, which allows using SQL clients and database visualization tools to query your Solr index and import data to other systems.
 
 
 === Cross Data Center Replication
