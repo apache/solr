@@ -135,6 +135,10 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
       if (applyEditCommandToSchemePlugin(scheme, plugin, cmdForPlugin, latestConf)) {
         madeChanges = true;
       }
+      // copy over any errors from the cloned command
+      for (String err : cmdForPlugin.getErrors()) {
+        c.addError(err);
+      }
     }
 
     return madeChanges ? latestConf : null;

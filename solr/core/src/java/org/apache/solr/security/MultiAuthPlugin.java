@@ -86,11 +86,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     if (updated != null) {
       madeChanges = true;
       schemes.set(updateAt, withScheme(scheme, updated));
-    } else {
-      // copy the errors from the clone into the actual command
-      for (String err : c.getErrors()) {
-        c.addError(err);
-      }
     }
 
     return madeChanges;
@@ -259,6 +254,10 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       CommandOperation cmdForPlugin = new CommandOperation(c.name, dataMap.get(scheme));
       if (applyEditCommandToSchemePlugin(scheme, (ConfigEditablePlugin) plugin, cmdForPlugin, latestConf)) {
         madeChanges = true;
+      }
+      // copy over any errors from the cloned command
+      for (String err : cmdForPlugin.getErrors()) {
+        c.addError(err);
       }
     }
 
