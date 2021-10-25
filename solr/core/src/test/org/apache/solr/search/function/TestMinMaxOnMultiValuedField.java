@@ -895,8 +895,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   /**
    * Given a (multivalued) field name and an (ascending) sorted list of values, this method will generate a List of Solr Documents of the same size such that:
    * <ul>
-   *  <li>For each non-null value in the original list, the corrisponding document in the result will have that value in the specified field.</li>
-   *  <li>For each null value in the original list, the corrisponding document in teh result will have <em>NO</em> values in the specified field.</li>
+   *  <li>For each non-null value in the original list, the corresponding document in the result will have that value in the specified field.</li>
+   *  <li>For each null value in the original list, the corresponding document in teh result will have <em>NO</em> values in the specified field.</li>
    *  <li>If a document has a value in the field, then some random number of values that come <em>after</em> that value in the original list may also be included in the specified field.</li>
    *  <li>Every document in the result will have a randomly asssigned 'id', unique realitive to all other documents in the result.</li>
    * </ul>

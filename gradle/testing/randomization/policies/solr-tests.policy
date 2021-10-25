@@ -40,6 +40,8 @@ grant {
 
   permission java.nio.file.LinkPermission "hard";
 
+  permission java.security.SecurityPermission "putProviderProperty.SolrTestNonSecure";
+
   // all possibilities of accepting/binding/connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
@@ -230,4 +232,6 @@ grant {
   permission java.io.FilePermission "${gradle.worker.jar}", "read";
   // Allow reading from classpath JARs (resources).
   permission java.io.FilePermission "${gradle.user.home}${/}-", "read";
+  // Allow read access to Lucene jars if "-Plucene.dev.version=" or "-Plucene.dev.path=" is used
+  permission java.io.FilePermission "${lucene-dev-path.dir}${/}-", "read";
 };

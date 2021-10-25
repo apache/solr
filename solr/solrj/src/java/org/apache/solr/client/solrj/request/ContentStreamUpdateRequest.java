@@ -32,9 +32,9 @@ import org.apache.solr.common.util.ContentStreamBase;
  * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a Solr Cell or some
  * other handler that takes ContentStreams (CSV)
  * <p>
- * See http://wiki.apache.org/solr/ExtractingRequestHandler<br>
- * See http://wiki.apache.org/solr/UpdateCSV
- * 
+ * See https://solr.apache.org/guide/indexing-with-tika.html<br>
+ * See https://solr.apache.org/guide/indexing-with-update-handlers.html
+ *
  *
  **/
 public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
@@ -94,5 +94,5 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   public void addContentStream(ContentStream contentStream){
     contentStreams.add(contentStream);
   }
-  
+
 }
