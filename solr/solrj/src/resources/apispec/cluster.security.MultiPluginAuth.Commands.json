@@ -1,6 +1,6 @@
 {
   "documentation": "https://lucene.apache.org/solr/guide/basic-authentication-plugin.html",
-  "description": "Modifies the configuration of Basic authentication, allowing you to add or remove users and their passwords.",
+  "description": "Modifies the configuration of the multi-auth plugin. Each command should be wrapped in a single key object that identifies the scheme. The embedded command is then passed to the scheme specific plugin.",
   "methods": [
     "POST"
   ],
@@ -17,7 +17,7 @@
     },
     "delete-user": {
       "description": "Delete a user or a list of users. Passwords do not need to be provided, simply list the users in a JSON array, separated by colons.",
-      "type":"string"
+      "type":"object"
     },
     "set-property": {
       "type":"object",

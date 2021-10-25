@@ -28,7 +28,10 @@ import java.util.Set;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.core.CoreContainer;
+
+import static org.apache.solr.security.MultiAuthPlugin.applyEditCommandToSchemePlugin;
 
 /**
  * Authorization plugin designed to work with the MultiAuthPlugin to support different AuthorizationPlugin per scheme.
@@ -49,12 +52,12 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
 
     Object o = initInfo.get(MultiAuthPlugin.PROPERTY_SCHEMES);
     if (!(o instanceof List)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid config: "+getClass().getName()+" requires a list of schemes!");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid config: " + getClass().getName() + " requires a list of schemes!");
     }
 
     List<Object> schemeList = (List<Object>) o;
     if (schemeList.size() < 2) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid config: "+getClass().getName()+" requires at least two schemes!");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid config: " + getClass().getName() + " requires at least two schemes!");
     }
 
     for (Object s : schemeList) {
@@ -98,5 +101,42 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
       }
     }
     return Collections.emptySet();
+  }
+
+  @Override
+  public Map<String, Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands) {
+    boolean madeChanges = false;
+    for (CommandOperation c : commands) {
+
+      // just let the base class handle permission commands
+      if (c.name.endsWith("-permission")) {
+        Map<String, Object> updated = super.edit(latestConf, Collections.singletonList(c));
+        if (updated != null) {
+          madeChanges = true;
+          latestConf = updated;
+        }
+        continue;
+      }
+
+      Map<String, Object> dataMap = c.getDataMap();
+      // expect the "scheme" wrapper map around the actual command data
+      if (dataMap == null || dataMap.size() != 1) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "All edit commands must include a 'scheme' wrapper object!");
+      }
+
+      final String scheme = dataMap.keySet().iterator().next();
+      RuleBasedAuthorizationPluginBase plugin = pluginMap.get(scheme);
+      if (plugin == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No authorization plugin configured for the '" + scheme +
+            "' scheme! Did you forget to wrap the command with a scheme object?");
+      }
+
+      CommandOperation cmdForPlugin = new CommandOperation(c.name, dataMap.get(scheme));
+      if (applyEditCommandToSchemePlugin(scheme, plugin, cmdForPlugin, latestConf)) {
+        madeChanges = true;
+      }
+    }
+
+    return madeChanges ? latestConf : null;
   }
 }
