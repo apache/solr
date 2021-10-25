@@ -1,4 +1,4 @@
-= Parallel SQL Interface
+= SQL Query Language
 :page-children: jdbc-dbvisualizer, \
     jdbc-squirrel, \
     jdbc-zeppelin, \
@@ -157,7 +157,7 @@ WHERE (fieldA = 'term1') AND NOT (fieldB = 'term2')
 
 ==== Supported WHERE Operators
 
-The parallel SQL interface supports and pushes down most common SQL operators, specifically:
+The SQL query interface supports and pushes down most common SQL operators, specifically:
 
 [width="100%",options="header",]
 |===
@@ -429,7 +429,7 @@ The `aggregationMode` and `numWorkers` parameters are optional.
 
 === HTTP Interface
 
-Solr accepts parallel SQL queries through the `/sql` handler.
+Solr accepts SQL queries through the `/sql` handler.
 
 Below is a sample curl command performing a SQL aggregate query in facet mode:
 
