@@ -49,6 +49,14 @@
     <field name="noDvStrNumField" type="string" indexed="false" docValues="false" stored="true" multiValued="false"/>
     <field name="noDvDateField" type="date" indexed="false" docValues="false" stored="true" multiValued="false"/>
 
+    <field name="storedIntField" type="int" indexed="false" docValues="false" stored="true" default="-1" multiValued="false"/>
+    <field name="storedLongField" type="long" indexed="false" docValues="false" stored="true" default="-2" multiValued="false"/>
+    <field name="storedFloatField" type="float" indexed="false" docValues="false" stored="true" default="-3" multiValued="false"/>
+    <field name="storedDoubleField" type="double" indexed="false" docValues="false" stored="true" multiValued="false"/>
+    <field name="storedStrNumField" type="string" indexed="false" docValues="false" stored="true" multiValued="false"/>
+    <field name="storedStrBoolField" type="boolean" indexed="false" docValues="false" stored="true" multiValued="false"/>
+    <field name="storedDateField" type="date" indexed="false" docValues="false" stored="true" multiValued="false"/>
+
     <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
     <field name="_version_" type="long" indexed="true" stored="true"/>
 

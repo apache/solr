@@ -68,6 +68,10 @@ public class FieldValueFeature extends Feature {
   private String field;
   private Set<String> fieldAsSet;
 
+  public Set<String> getFieldAsSet() {
+    return fieldAsSet;
+  }
+
   public String getField() {
     return field;
   }
@@ -104,7 +108,7 @@ public class FieldValueFeature extends Feature {
   }
 
   public class FieldValueFeatureWeight extends FeatureWeight {
-    private final SchemaField schemaField;
+    protected final SchemaField schemaField;
 
     public FieldValueFeatureWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
@@ -166,32 +170,35 @@ public class FieldValueFeature extends Feature {
         try {
           final Document document = context.reader().document(itr.docID(),
               fieldAsSet);
-          final IndexableField indexableField = document.getField(field);
-          if (indexableField == null) {
-            return getDefaultValue();
-          }
-          final Number number = indexableField.numericValue();
-          if (number != null) {
-            return number.floatValue();
-          } else {
-            final String string = indexableField.stringValue();
-            if (string.length() == 1) {
-              // boolean values in the index are encoded with the
-              // a single char contained in TRUE_TOKEN or FALSE_TOKEN
-              // (see BoolField)
-              if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
-                return 1;
-              }
-              if (string.charAt(0) == BoolField.FALSE_TOKEN[0]) {
-                return 0;
-              }
-            }
-          }
+          return parseStoredFieldValue(document.getField(field));
         } catch (final IOException e) {
           throw new FeatureException(
               e.toString() + ": " +
                   "Unable to extract feature for "
                   + name, e);
+        }
+      }
+
+      protected float parseStoredFieldValue(IndexableField indexableField) {
+        if (indexableField == null) {
+          return getDefaultValue();
+        }
+        final Number number = indexableField.numericValue();
+        if (number != null) {
+          return number.floatValue();
+        } else {
+          final String string = indexableField.stringValue();
+          if (string.length() == 1) {
+            // boolean values in the index are encoded with the
+            // a single char contained in TRUE_TOKEN or FALSE_TOKEN
+            // (see BoolField)
+            if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
+              return 1;
+            }
+            if (string.charAt(0) == BoolField.FALSE_TOKEN[0]) {
+              return 0;
+            }
+          }
         }
         return getDefaultValue();
       }

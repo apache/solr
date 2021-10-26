@@ -24,6 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -32,6 +35,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
+import org.apache.solr.ltr.feature.PrefetchingFieldValueFeature;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
@@ -118,13 +122,44 @@ public abstract class LTRScoringModel implements Accountable {
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) {
     this.name = name;
-    this.features = features != null ? Collections.unmodifiableList(new ArrayList<>(features)) : null;
+    this.features = copyAndConnectFeatures(features);
     this.featureStoreName = featureStoreName;
-    this.allFeatures = allFeatures != null ? Collections.unmodifiableList(new ArrayList<>(allFeatures)) : null;
+    this.allFeatures = copyAndConnectFeatures(allFeatures);
     this.params = params != null ? Collections.unmodifiableMap(new LinkedHashMap<>(params)) : null;
     this.norms = norms != null ? Collections.unmodifiableList(new ArrayList<>(norms)) : null;
   }
 
+  private static List<Feature> copyAndConnectFeatures(final List<Feature> incomingFeaturesFromStore) {
+    if (incomingFeaturesFromStore == null) {
+      return null;
+    }
+
+    final List<Feature> featuresForModel = new ArrayList<>(incomingFeaturesFromStore.size());
+    final List<PrefetchingFieldValueFeature> pfvfList = new ArrayList<>();
+
+    for (Feature feature : incomingFeaturesFromStore) {
+      if (feature instanceof PrefetchingFieldValueFeature) {
+        final PrefetchingFieldValueFeature clonedFeature = ((PrefetchingFieldValueFeature)feature).clone();
+        pfvfList.add(clonedFeature);
+        featuresForModel.add(clonedFeature);
+      } else {
+        featuresForModel.add(feature);
+      }
+    }
+
+    final Set<String> prefetchFields = new HashSet<>();
+    for (PrefetchingFieldValueFeature pfvf : pfvfList) {
+      prefetchFields.add(pfvf.getField());
+    }
+    // sort here because unsorted adding is faster but we do not want to sort in each iteration of the for loop
+    final SortedSet<String> sortedPrefetchFields = new TreeSet<>(prefetchFields);
+    for (PrefetchingFieldValueFeature pfvf : pfvfList) {
+      // set keepFinal to true because prefetchingFieldValueFeatures should not be updated when in use by a model
+      pfvf.setPrefetchFields(sortedPrefetchFields, true);
+    }
+
+    return Collections.unmodifiableList(featuresForModel);
+  }
   /**
    * Validate that settings make sense and throws
    * {@link ModelException} if they do not make sense.

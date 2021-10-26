@@ -19,15 +19,21 @@ package org.apache.solr.ltr.store.rest;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.feature.PrefetchingFieldValueFeature;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
@@ -102,6 +108,7 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
   @Override
   protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs,
       Object managedData) throws SolrException {
+    Set<String> updatedFeatureStores = new HashSet<>();
 
     stores.clear();
     log.info("------ managed feature ~ loading ------");
@@ -111,8 +118,10 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
       for (final Map<String,Object> u : up) {
         final String featureStore = (String) u.get(FEATURE_STORE_NAME_KEY);
         addFeature(u, featureStore);
+        updatedFeatureStores.add(featureStore);
       }
     }
+    preparePrefetchingFieldValueFeatures(updatedFeatureStores);
   }
 
   public synchronized void addFeature(Map<String,Object> map, String featureStore) {
@@ -125,11 +134,13 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
   @SuppressWarnings("unchecked")
   @Override
   public Object applyUpdatesToManagedData(Object updates) {
+    Set<String> updatedFeatureStores = new HashSet<>();
     if (updates instanceof List) {
-      final List<Map<String,Object>> up = (List<Map<String,Object>>) updates;
-      for (final Map<String,Object> u : up) {
-        final String featureStore = (String) u.get(FEATURE_STORE_NAME_KEY);
-        addFeature(u, featureStore);
+      final List<Map<String,Object>> updatesList = (List<Map<String,Object>>) updates;
+      for (final Map<String,Object> update : updatesList) {
+        final String featureStore = (String) update.get(FEATURE_STORE_NAME_KEY);
+        addFeature(update, featureStore);
+        updatedFeatureStores.add(featureStore);
       }
     }
 
@@ -138,13 +149,37 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
       Map<String,Object> updatesMap = (Map<String,Object>) updates;
       final String featureStore = (String) updatesMap.get(FEATURE_STORE_NAME_KEY);
       addFeature(updatesMap, featureStore);
+      updatedFeatureStores.add(featureStore);
     }
+
+    preparePrefetchingFieldValueFeatures(updatedFeatureStores);
 
     final List<Object> features = new ArrayList<>();
     for (final FeatureStore fs : stores.values()) {
       features.addAll(featuresAsManagedResources(fs));
     }
     return features;
+  }
+
+  private void preparePrefetchingFieldValueFeatures(Set<String> updatedFeatureStores) {
+    for(String featureStoreName: updatedFeatureStores) {
+      final Set<PrefetchingFieldValueFeature> prefetchingFieldValueFeatures = getFeatureStore(featureStoreName)
+          .getFeatures().stream()
+          .filter(feature -> feature instanceof PrefetchingFieldValueFeature)
+          .map(feature -> ((PrefetchingFieldValueFeature) feature))
+          .collect(Collectors.toSet());
+
+      final Set<String> prefetchFields = new HashSet<>();
+      for (PrefetchingFieldValueFeature feature : prefetchingFieldValueFeatures) {
+        prefetchFields.add(feature.getField());
+      }
+      // sort here because unsorted adding is faster but we do not want to sort in each iteration of the for loop
+      final SortedSet<String> sortedPrefetchFields = new TreeSet<>(prefetchFields);
+      for (PrefetchingFieldValueFeature feature : prefetchingFieldValueFeatures) {
+        // set keepFinal to false because features that are not connected to a model (only in store) may be updated
+        feature.setPrefetchFields(sortedPrefetchFields, false);
+      }
+    }
   }
 
   @Override
