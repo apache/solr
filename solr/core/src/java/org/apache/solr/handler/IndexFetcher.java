@@ -1302,7 +1302,6 @@ public class IndexFetcher {
 
   /**
    * Make file list
-   * TODO: return the stream directly
    */
   private List<Path> makeTmpConfDirFileList(Path dir) {
     try (Stream<Path> stream = Files.walk(dir)) {
