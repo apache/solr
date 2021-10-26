@@ -70,7 +70,8 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
       clientChroot = "/mychroot";
     }
 
-    try (CloudSolrClient client = (new CloudSolrClient.Builder(new ArrayList<>(hosts), Optional.of(clientChroot)).build())) {
+    try (CloudSolrClient client = (new CloudSolrClient.Builder(new ArrayList<>(hosts),
+        Optional.ofNullable(clientChroot)).build())) {
       assertEquals(sb.toString(), client.getZkHost());
     }
   }
