@@ -31,6 +31,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -125,5 +126,10 @@ public class DumpRequestHandler extends RequestHandlerBase
       NamedList<String> nl = (NamedList<String>) args.get(PluginInfo.DEFAULTS);
       if (nl!=null) subpaths = nl.getAll("subpath");
     }
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.CONFIG_READ_PERM;
   }
 }

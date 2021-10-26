@@ -34,6 +34,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,6 +134,12 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String HEALTHCHECK_FILE_PARAM = "healthcheckFile";
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.HEALTH_PERM;
+  }
+
   protected enum ACTIONS {STATUS, ENABLE, DISABLE, PING};
   
   private String healthFileName = null;

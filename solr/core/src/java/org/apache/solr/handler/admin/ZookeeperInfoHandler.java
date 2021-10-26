@@ -58,6 +58,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.SimplePostTool.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -101,6 +102,18 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    var params = request.getParams();
+    var path = params.get("path", "");
+    var detail = params.get("detail", "false");
+    if ("/security.json".equalsIgnoreCase(path) && "true".equalsIgnoreCase(detail)) {
+      return Name.SECURITY_READ_PERM;
+    } else {
+      return Name.CONFIG_READ_PERM;
+    }
   }
 
   /**

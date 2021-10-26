@@ -163,6 +163,8 @@ _(raw; not yet edited)_
 
 * SOLR-15471: The language identification "whitelist" configuration is now an "allowlist" to better convey the meaning of the property
 
+* SOLR-11623: Every request handler in Solr now implements PermissionNameProvider. Any custom or 3rd party request handler must also do this
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
@@ -236,3 +238,5 @@ What percentage of them get reported to a tracing server is up to you.
 * BasicAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.
 
 * The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see <<configuring-solr-xml.adoc#allow-urls, Format of solr.allowUrls>> documentation.
+
+* Every request handler in Solr now implements PermissionNameProvider to explicitly decide on what security permissions are required to access the handler. This means that you may need permission changes in `security.json` after upgrading.

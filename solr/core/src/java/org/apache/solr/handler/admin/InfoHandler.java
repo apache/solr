@@ -30,6 +30,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.api.Api;
+import org.apache.solr.security.AuthorizationContext;
 
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.util.Utils.getSpec;
@@ -156,5 +157,10 @@ public class InfoHandler extends RequestHandlerBase  {
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.CONFIG_READ_PERM;
   }
 }
