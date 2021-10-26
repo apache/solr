@@ -4264,19 +4264,20 @@ public class SolrCLI implements CLIO {
       if (!archivePath.toFile().exists()) {
         Files.createDirectories(archivePath);
       }
-      List<Path> archived = Files.find(archivePath, 1, (f, a)
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
-          .collect(Collectors.toList());
-      for (Path p : archived) {
-        Files.delete(p);
-      }
-      List<Path> files = Files.find(logsPath, 1, (f, a)
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
-          .collect(Collectors.toList());
-      if (files.size() > 0) {
-        out("Archiving " + files.size() + " old GC log files to " + archivePath);
-        for (Path p : files) {
-          Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+      try (Stream<Path>  achivedStream = Files.find(archivePath, 1, (f, a)
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"));
+          Stream<Path> filesStream = Files.find(logsPath, 1, (f, a)
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))) {
+        List<Path> archived = achivedStream.collect(Collectors.toList());
+        for (Path p : archived) {
+          Files.delete(p);
+        }
+        List<Path> files =filesStream.collect(Collectors.toList());
+        if (files.size() > 0) {
+          out("Archiving " + files.size() + " old GC log files to " + archivePath);
+          for (Path p : files) {
+            Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+          }
         }
       }
       return 0;
@@ -4293,20 +4294,22 @@ public class SolrCLI implements CLIO {
       if (!archivePath.toFile().exists()) {
         Files.createDirectories(archivePath);
       }
-      List<Path> archived = Files.find(archivePath, 1, (f, a)
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
-          .collect(Collectors.toList());
-      for (Path p : archived) {
-        Files.delete(p);
-      }
-      List<Path> files = Files.find(logsPath, 1, (f, a)
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
-          .collect(Collectors.toList());
-      if (files.size() > 0) {
-        out("Archiving " + files.size() + " console log files to " + archivePath);
-        for (Path p : files) {
-          Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-        }
+      try (Stream<Path> archivedStream = Files.find(archivePath, 1, (f, a)
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"));
+          Stream<Path> filesStream = Files.find(logsPath, 1, (f, a)
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))) {
+          List<Path> archived  = archivedStream.collect(Collectors.toList());
+          for (Path p : archived) {
+            Files.delete(p);
+          }
+
+          List<Path> files = filesStream.collect(Collectors.toList());
+          if (files.size() > 0) {
+            out("Archiving " + files.size() + " console log files to " + archivePath);
+            for (Path p : files) {
+              Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+            }
+       }
       }
       return 0;
     }
