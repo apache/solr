@@ -169,6 +169,7 @@ Here are sections throughout the Guide describing each screen of the Admin UI:
 | <<configuration-files.adoc#files-screen,Files Screen>>: Configuration file browser.
 | <<query-screen.adoc#,Query Screen>>: Form-based query builder.
 | <<stream-screen.adoc#,Stream Screen>>: Submit streaming expressions and see results and parsing explanations.
+| <<sql-screen.adoc#,SQL Screen>>: SQL query runner with tabular results.
 | <<schema-browser-screen.adoc#,Schema Browser Screen>>: Field-level schema details.
 |===
 // end::ui-collection-tools[]
