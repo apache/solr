@@ -514,6 +514,8 @@ Improvements
   all queries contending for the same set of locks on the cache. Fixed a bug with ramBytes usage reporting on filterCache.
   Upgraded Caffeine Cache to 2.9.2 (Mike Drob)
 
+* SOLR-15572: Improve the default Prometheus exporter config performance. (ab)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
