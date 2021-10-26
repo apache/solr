@@ -132,13 +132,6 @@ For un-authenticated AJAX requests from the Solr Admin UI (i.e. requests without
 the `MultiAuthPlugin` forwards the request to the first plugin listed in the `schemes` list. In the example above,
 users will need to authenticate to the OIDC provider to login to the Admin UI.
 
-It would be uncommon for the same user account to exist in both plugins.
-However, the `MultiAuthPlugin` combines the roles from all plugins together when determining the roles for a user.
-
-Users should take special care to lock down the exact set of endpoints that service accounts need access to when using Basic authentication.
-For example, if the `MultiAuthPlugin` allows a `k8s-oper` user to use Basic authentication (while all other users go through OIDC), then
-the permissions configured for the `k8s-oper` user should only allow access to specific endpoints, such as `/admin/info/system`.
-
 == Editing Basic Authentication Plugin Configuration
 
 An Authentication API allows modifying user IDs and passwords.
