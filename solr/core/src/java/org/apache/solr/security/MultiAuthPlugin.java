@@ -242,7 +242,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         throw new SolrException(ErrorCode.BAD_REQUEST, "All edit commands must include a 'scheme' wrapper object!");
       }
 
-      final String scheme = dataMap.keySet().iterator().next();
+      final String scheme = dataMap.keySet().iterator().next().toLowerCase(Locale.ROOT);
       AuthenticationPlugin plugin = pluginMap.get(scheme);
       if (plugin == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "No authentication plugin configured for the '" + scheme + "' scheme!");

@@ -126,7 +126,7 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "All edit commands must include a 'scheme' wrapper object!");
       }
 
-      final String scheme = dataMap.keySet().iterator().next();
+      final String scheme = dataMap.keySet().iterator().next().toLowerCase(Locale.ROOT);
       RuleBasedAuthorizationPluginBase plugin = pluginMap.get(scheme);
       if (plugin == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No authorization plugin configured for the '" + scheme +
