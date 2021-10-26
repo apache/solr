@@ -238,6 +238,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertEquals(2, client.query(null, paramsWithMixedCollectionAndAlias).getResults().getNumFound());
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
   public void testRouting() throws Exception {
     CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1)
@@ -256,11 +257,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       checkSingleServer(response);
     }
     CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
-    Map<String,LBHttpSolrClient.Req> routes = rr.getRoutes();
-    Iterator<Map.Entry<String,LBHttpSolrClient.Req>> it = routes.entrySet()
+    Map<String,LBSolrClient.Req> routes = rr.getRoutes();
+    Iterator<Map.Entry<String,LBSolrClient.Req>> it = routes.entrySet()
         .iterator();
     while (it.hasNext()) {
-      Map.Entry<String,LBHttpSolrClient.Req> entry = it.next();
+      Map.Entry<String,LBSolrClient.Req> entry = it.next();
       String url = entry.getKey();
       UpdateRequest updateRequest = (UpdateRequest) entry.getValue()
           .getRequest();
@@ -306,7 +307,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       it = routes.entrySet()
           .iterator();
       while (it.hasNext()) {
-        Map.Entry<String,LBHttpSolrClient.Req> entry = it.next();
+        Map.Entry<String,LBSolrClient.Req> entry = it.next();
         String url = entry.getKey();
         UpdateRequest updateRequest = (UpdateRequest) entry.getValue()
             .getRequest();
@@ -924,15 +925,15 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       
     }
   }
-  
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   private static void checkSingleServer(NamedList<Object> response) {
     final CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
-    final Map<String,LBHttpSolrClient.Req> routes = rr.getRoutes();
-    final Iterator<Map.Entry<String,LBHttpSolrClient.Req>> it =
+    final Map<String,LBSolrClient.Req> routes = rr.getRoutes();
+    final Iterator<Map.Entry<String,LBSolrClient.Req>> it =
         routes.entrySet().iterator();
     while (it.hasNext()) {
-      Map.Entry<String,LBHttpSolrClient.Req> entry = it.next();
+      Map.Entry<String,LBSolrClient.Req> entry = it.next();
         assertEquals("wrong number of servers: "+entry.getValue().getServers(),
             1, entry.getValue().getServers().size());
     }
@@ -1006,7 +1007,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Object shardsInfo = qResponse.getResponse().get(ShardParams.SHARDS_INFO);
     assertNotNull("Unable to obtain "+ShardParams.SHARDS_INFO, shardsInfo);
 
-    Map<String, String> replicaTypeMap = new HashMap<String, String>();
+    Map<String, String> replicaTypeMap = new HashMap<>();
     DocCollection collection = getCollectionState(collectionName);
     for (Slice slice : collection.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
@@ -1024,7 +1025,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
     @SuppressWarnings({"unchecked"})
     Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
-    List<String> shardAddresses = new ArrayList<String>();
+    List<String> shardAddresses = new ArrayList<>();
     while (itr.hasNext()) {
       Map.Entry<String, ?> e = itr.next();
       assertTrue("Did not find map-type value in "+ShardParams.SHARDS_INFO, e.getValue() instanceof Map);

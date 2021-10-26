@@ -162,6 +162,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15278: Add V2 equivalent to allow deleting async collection list of statuses. (Eric Pugh)
 
+* SOLR-15608: Remove deprecated methods, classes and constructors from solrj clients (janhoy)
+
 Build
 ---------------------
 

@@ -22,6 +22,9 @@ import java.util.List;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 
+/**
+ * Retrieves cluster state via from Solr REST APIs
+ */
 public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
 
   private final HttpClient httpClient;
