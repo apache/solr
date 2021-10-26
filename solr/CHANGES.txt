@@ -24,7 +24,7 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
 
 ==================  9.1.0 ==================
 
@@ -786,6 +786,8 @@ Other Changes
 
 * SOLR-15780: The v2 API is now treated as "experimental".  It may change in backwards-incompatible ways in subsequent releases
   as it expands to cover additional functionality and prepares to supplant the v1 API. (Jason Gerlowski)
+
+* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
 
 Bug Fixes
 ---------------------
