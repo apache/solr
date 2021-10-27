@@ -163,7 +163,7 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15278: Add V2 equivalent to allow deleting async collection list of statuses. (Eric Pugh)
 
 * SOLR-11623: Every request handler in Solr now implements PermissionNameProvider to explicitly decide on what security
-  permissions are required to access the handler (janhoy, Hrishikesh Gadre)
+  permissions are required to access the handler (janhoy, Hrishikesh Gadre, David Smiley)
 
 Build
 ---------------------
