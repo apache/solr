@@ -48,7 +48,7 @@ public interface PermissionNameProvider {
     SECURITY_EDIT_PERM("security-edit", null),
     SECURITY_READ_PERM("security-read", null),
     METRICS_READ_PERM("metrics-read", null),
-    HEALTH_PERM("health", "*"),
+    HEALTH_PERM("health", unmodifiableSet(new HashSet<>(asList("*", null)))),
     FILESTORE_READ_PERM("filestore-read", null),
     FILESTORE_WRITE_PERM("filestore-write", null),
     PACKAGE_EDIT_PERM("package-edit", null),
