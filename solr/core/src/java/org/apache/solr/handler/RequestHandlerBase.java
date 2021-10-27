@@ -53,7 +53,6 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /**
  * Base class for all request handlers.
- * Since v9.0 all sub classes must implement {@link PermissionNameProvider} to decide on required security permissions
  */
 public abstract class RequestHandlerBase implements
     SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport, PermissionNameProvider {
