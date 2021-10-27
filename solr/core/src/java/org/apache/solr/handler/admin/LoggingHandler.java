@@ -171,6 +171,10 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    return Name.CONFIG_READ_PERM;
+    if (request.getParams().get("set") != null) {
+      return Name.CONFIG_EDIT_PERM; // Change log level
+    } else {
+      return Name.CONFIG_READ_PERM;
+    }
   }
 }
