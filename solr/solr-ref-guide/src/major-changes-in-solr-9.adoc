@@ -39,6 +39,8 @@ _(raw; not yet edited)_
 * LUCENE-8738: Move to Java 11 as minimum Java version.
   (Adrien Grand, Uwe Schindler)
 
+* SOLR-13671: Allow 'var' keyword in Java sources
+
 * SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
   in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
   see comments in the log4j2 configuration files (log4j2.xml by default).
@@ -226,6 +228,8 @@ What percentage of them get reported to a tracing server is up to you.
   It is now completely configured via System properties and/or Environment variables as documented by Jaeger.
 
 === Schema Changes in 9
+
+* `LegacyBM25SimilarityFactory` has been removed.
 
 === Authentication & Security Changes in Solr 9
 

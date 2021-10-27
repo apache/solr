@@ -103,7 +103,7 @@ public class OverseerNodePrioritizer {
     params.set("qt", adminPath);
     params.set("electionNode", electionNode);
     ShardRequest sreq = new ShardRequest();
-    sreq.purpose = 1;
+    sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
     String replica = zkStateReader.getBaseUrlForNodeName(LeaderElector.getNodeName(electionNode));
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;

@@ -53,14 +53,10 @@ public abstract class ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
-    final ConfigSetService configSetService = instantiate(coreContainer);
-    try {
-      bootstrapDefaultConfigSet(configSetService);
-    } catch (UnsupportedOperationException e) {
-      log.info("_default config couldn't be uploaded");
-    } catch (IOException e) {
-      throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, "_default config couldn't be uploaded ", e);
+    ConfigSetService configSetService = instantiate(coreContainer);
+    // bootstrap conf in SolrCloud mode
+    if (coreContainer.getZkController() != null) {
+      configSetService.bootstrapConfigSet(coreContainer);
     }
     return configSetService;
   }
@@ -87,18 +83,51 @@ public abstract class ConfigSetService {
     }
   }
 
-  private static void bootstrapDefaultConfigSet(ConfigSetService configSetService) throws IOException {
-    if (configSetService.checkConfigExists("_default") == false) {
+  private void bootstrapConfigSet(CoreContainer coreContainer) {
+    // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
+    try {
+      // _default conf
+      bootstrapDefaultConf();
+
+      // bootstrap_confdir
+      String confDir = System.getProperty("bootstrap_confdir");
+      if (confDir != null) {
+        bootstrapConfDir(confDir);
+      }
+
+      // bootstrap_conf
+      boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+      if (boostrapConf == true) {
+        bootstrapConf(coreContainer);
+      }
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Config couldn't be uploaded ", e);
+    }
+  }
+
+  private void bootstrapDefaultConf() throws IOException {
+    if (this.checkConfigExists("_default") == false) {
       String configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
-                "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
-                "intended to be the default. Current 'solr.default.confdir' value:",
-                System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+            "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
+            "intended to be the default. Current 'solr.default.confdir' value:",
+            System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
-        configSetService.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
+        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
       }
     }
+  }
+
+  private void bootstrapConfDir(String confDir) throws IOException {
+    Path configPath = Paths.get(confDir);
+    if (!Files.isDirectory(configPath)) {
+      throw new IllegalArgumentException ("bootstrap_confdir must be a directory of configuration files, configPath: " + configPath);
+    }
+    String confName = System.getProperty(
+            ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, "configuration1");
+    this.uploadConfig(confName, configPath);
   }
 
   /**

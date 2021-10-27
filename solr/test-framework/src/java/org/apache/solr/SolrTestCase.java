@@ -25,6 +25,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.VerifyTestClassNamingConvention;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -64,17 +65,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakLingering(linger = 10000)
 public class SolrTestCase extends LuceneTestCase {
 
-  /**
-   * <b>DO NOT REMOVE THIS LOGGER</b>
-   * <p>
-   * For reasons that aren't 100% obvious, the existence of this logger is neccessary to ensure
-   * that the logging framework is properly initialized (even if concrete subclasses do not 
-   * themselves initialize any loggers) so that the async logger threads can be properly shutdown
-   * on completion of the test suite
-   * </p>
-   * @see <a href="https://issues.apache.org/jira/browse/SOLR-14247">SOLR-14247</a>
-   * @see #shutdownLogger
-   */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Pattern NAMING_CONVENTION_TEST_SUFFIX = Pattern.compile("(.+\\.)([^.]+)(Test)");
@@ -102,7 +92,7 @@ public class SolrTestCase extends LuceneTestCase {
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
   @BeforeClass
-  public static void setDefaultConfigDirSysPropIfNotSet() {
+  public static void beforeSolrTestCase() {
     final String existingValue = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
     if (null != existingValue) {
       log.info("Test env includes configset dir system property '{}'='{}'", SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, existingValue);
@@ -119,6 +109,14 @@ public class SolrTestCase extends LuceneTestCase {
                "does not exist or is not a readable directory, you may need to set the property yourself " +
                "for tests to run properly",
                SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
+    }
+
+    if (!TEST_NIGHTLY) {
+      System.setProperty("zookeeper.nio.numSelectorThreads", "2");
+      System.setProperty("zookeeper.nio.numWorkerThreads", "3");
+      System.setProperty("zookeeper.commitProcessor.numWorkerThreads", "2");
+      System.setProperty("zookeeper.forceSync", "no");
+      System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
   }
   
@@ -149,7 +147,15 @@ public class SolrTestCase extends LuceneTestCase {
   }
   
   @AfterClass
-  public static void shutdownLogger() throws Exception {
+  public static void afterSolrTestCase() throws Exception {
+    if (suiteFailureMarker.wasSuccessful()) {
+      // if the tests passed, make sure everything was closed / released
+      String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+      assertNull(orr, orr);
+    } else {
+      ObjectReleaseTracker.tryClose();
+    }
     StartupLoggingUtils.shutdown();
   }
+
 }

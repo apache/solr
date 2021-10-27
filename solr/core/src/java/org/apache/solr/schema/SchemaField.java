@@ -26,7 +26,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.VectorValues;
+import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -464,8 +464,8 @@ public final class SchemaField extends FieldProperties implements IndexableField
   }
 
   @Override
-  public VectorValues.SimilarityFunction vectorSimilarityFunction() {
-    return VectorValues.SimilarityFunction.NONE;
+  public VectorSimilarityFunction vectorSimilarityFunction() {
+    return VectorSimilarityFunction.EUCLIDEAN;
   }
 
   @Override
