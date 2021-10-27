@@ -112,7 +112,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     if ("/security.json".equalsIgnoreCase(path) && "true".equalsIgnoreCase(detail)) {
       return Name.SECURITY_READ_PERM;
     } else {
-      return Name.CONFIG_READ_PERM;
+      return Name.ZK_READ_PERM;
     }
   }
 
