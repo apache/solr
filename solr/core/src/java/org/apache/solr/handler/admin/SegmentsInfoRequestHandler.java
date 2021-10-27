@@ -438,6 +438,6 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    return Name.CONFIG_READ_PERM;
+    return Name.METRICS_READ_PERM;
   }
 }
