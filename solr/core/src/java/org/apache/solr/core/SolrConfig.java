@@ -430,7 +430,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         getInt("updateHandler/autoCommit/maxDocs", -1),
         getInt("updateHandler/autoCommit/maxTime", -1),
         convertHeapOptionStyleConfigStringToBytes(get("updateHandler/autoCommit/maxSize", "")),
-        getBool("updateHandler/indexWriter/closeWaitsForMerges", true),
         getBool("updateHandler/autoCommit/openSearcher", true),
         getInt("updateHandler/autoSoftCommit/maxDocs", -1),
         getInt("updateHandler/autoSoftCommit/maxTime", -1),
@@ -647,7 +646,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     public final int autoCommmitMaxDocs, autoCommmitMaxTime,
         autoSoftCommmitMaxDocs, autoSoftCommmitMaxTime;
     public final long autoCommitMaxSizeBytes;
-    public final boolean indexWriterCloseWaitsForMerges;
     public final boolean openSearcher;  // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
 
@@ -656,13 +654,12 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
      * @param autoCommmitMaxTime       set -1 as default
      * @param autoCommitMaxSize        set -1 as default
      */
-    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, long autoCommitMaxSize, boolean indexWriterCloseWaitsForMerges, boolean openSearcher,
+    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, long autoCommitMaxSize, boolean openSearcher,
                              int autoSoftCommmitMaxDocs, int autoSoftCommmitMaxTime, boolean commitWithinSoftCommit) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
       this.autoCommitMaxSizeBytes = autoCommitMaxSize;
-      this.indexWriterCloseWaitsForMerges = indexWriterCloseWaitsForMerges;
       this.openSearcher = openSearcher;
 
       this.autoSoftCommmitMaxDocs = autoSoftCommmitMaxDocs;
@@ -674,7 +671,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     @Override
     public Map<String, Object> toMap(Map<String, Object> map) {
-      map.put("indexWriter", Map.of("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
       map.put("commitWithin", Map.of("softCommit", commitWithinSoftCommit));
       map.put("autoCommit", Map.of(
           "maxDocs", autoCommmitMaxDocs,
