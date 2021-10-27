@@ -127,27 +127,28 @@ public class S3StorageClient {
     return clientBuilder.build();
   }
 
-  /** Create a directory in S3. */
+  /** Create a directory in S3, if it does not already exist. */
   void createDirectory(String path) throws S3Exception {
-    path = sanitizedDirPath(path);
+    String sanitizedDirPath = sanitizedDirPath(path);
 
-    if (!parentDirectoryExist(path)) {
-      createDirectory(getParentDirectory(path));
+    // Only create the directory if it does not already exist
+    if (!pathExists(sanitizedDirPath)) {
+      createDirectory(getParentDirectory(sanitizedDirPath));
       // TODO see https://issues.apache.org/jira/browse/SOLR-15359
       //            throw new S3Exception("Parent directory doesn't exist, path=" + path);
-    }
 
-    try {
-      // Create empty object with content type header
-      PutObjectRequest putRequest =
-          PutObjectRequest.builder()
-              .bucket(bucketName)
-              .contentType(S3_DIR_CONTENT_TYPE)
-              .key(path)
-              .build();
-      s3Client.putObject(putRequest, RequestBody.empty());
-    } catch (SdkClientException ase) {
-      throw handleAmazonException(ase);
+      try {
+        // Create empty object with content type header
+        PutObjectRequest putRequest =
+            PutObjectRequest.builder()
+                .bucket(bucketName)
+                .contentType(S3_DIR_CONTENT_TYPE)
+                .key(sanitizedDirPath)
+                .build();
+        s3Client.putObject(putRequest, RequestBody.empty());
+      } catch (SdkClientException ase) {
+        throw handleAmazonException(ase);
+      }
     }
   }
 
@@ -446,11 +447,7 @@ public class S3StorageClient {
     }
 
     // Check for existence twice, because s3Mock has issues in the tests
-    if (pathExists(parentDirectory)) {
-      return true;
-    } else {
-      return pathExists(parentDirectory);
-    }
+    return pathExists(parentDirectory);
   }
 
   private String getParentDirectory(String path) {

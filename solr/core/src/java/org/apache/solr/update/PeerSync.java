@@ -717,6 +717,9 @@ public class PeerSync implements SolrMetricProducer {
     }
 
     @VisibleForTesting
+    /**
+     * Implementation assumes the passed in lists are sorted and contain no duplicates.
+     */
     static MissedUpdatesRequest handleVersionsWithRanges(List<Long> otherVersions, boolean completeList,
         List<Long> ourUpdates, long ourLowThreshold) {
       // we may endup asking for updates for too many versions, causing 2MB post payload limit. Construct a range of

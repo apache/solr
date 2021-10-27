@@ -37,7 +37,7 @@ import opennlp.tools.langdetect.LanguageDetectorModel;
  * The UpdateProcessorChain config entry can take a number of parameters
  * which may also be passed as HTTP parameters on the update request
  * and override the defaults. Here is the simplest processor config possible:
- * 
+ *
  * <pre class="prettyprint" >
  * &lt;processor class=&quot;org.apache.solr.update.processor.OpenNLPLangDetectUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;langid.fl&quot;&gt;title,text&lt;/str&gt;
@@ -45,7 +45,7 @@ import opennlp.tools.langdetect.LanguageDetectorModel;
  *   &lt;str name="langid.model"&gt;langdetect-183.bin&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection</a>
  *
  * @since 7.3.0
  */

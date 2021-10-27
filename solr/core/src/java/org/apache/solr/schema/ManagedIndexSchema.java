@@ -229,7 +229,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
-      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion));
+      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController));
     if (concurrentTasks.isEmpty())
       return; // nothing to wait for ...
 
@@ -318,12 +318,14 @@ public final class ManagedIndexSchema extends IndexSchema {
 
   private static class GetZkSchemaVersionCallable extends SolrRequest<SolrResponse> implements Callable<Integer> {
 
+    private final ZkController zkController;
     private String coreUrl;
     private int expectedZkVersion;
 
-    GetZkSchemaVersionCallable(String coreUrl, int expectedZkVersion) {
+    GetZkSchemaVersionCallable(String coreUrl, int expectedZkVersion,
+        ZkController zkController) {
       super(METHOD.GET, "/schema/zkversion");
-
+      this.zkController = zkController;
       this.coreUrl = coreUrl;
       this.expectedZkVersion = expectedZkVersion;
     }
@@ -340,7 +342,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       int remoteVersion = -1;
       try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
-        while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
+        while (remoteVersion == -1 || remoteVersion < expectedZkVersion && !zkController.getCoreContainer().isShutDown()) {
           try {
             HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
             NamedList<Object> zkversionResp = mrr.future.get();
@@ -357,6 +359,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
           } catch (Exception e) {
             if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
               break; // stop looping
             } else {
               log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
