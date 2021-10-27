@@ -425,6 +425,9 @@ Bug Fixes
 
 * SOLR-15696: Incremental backups no longer fail on collections that had previously seen a 'SPLITSHARD' operation. (Jason Gerlowski)
 
+* SOLR-15635: don't close hooks twice when SolrRequestInfo is cleared twice; Or /export with classic join
+  closed fromCore is provided (Mikhail Khludnev)
+
 Build
 ---------------------
 
