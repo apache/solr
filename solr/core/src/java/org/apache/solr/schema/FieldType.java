@@ -64,7 +64,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.IteratorWriter;
@@ -1264,9 +1263,6 @@ public abstract class FieldType extends FieldProperties {
       }
     } else { // analyzer is not instanceof TokenizerChain
       analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
-      if (analyzer.getVersion() != Version.LATEST) {
-        analyzerProps.add(LUCENE_MATCH_VERSION_PARAM, analyzer.getVersion().toString());
-      }
     }
     return analyzerProps;
   }

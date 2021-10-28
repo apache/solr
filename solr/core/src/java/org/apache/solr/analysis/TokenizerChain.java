@@ -49,7 +49,6 @@ public final class TokenizerChain extends SolrAnalyzer {
         customAnalyzer.getTokenizerFactory(),
         customAnalyzer.getTokenFilterFactories().toArray(new TokenFilterFactory[0]));
     setPositionIncrementGap(customAnalyzer.getPositionIncrementGap(null));
-    setVersion(customAnalyzer.getVersion());
     assert customAnalyzer.getOffsetGap(null) == 1; // note: we don't support setting the offset gap
   }
 

@@ -221,7 +221,6 @@ public final class FieldTypePluginLoader
               "Configuration Error: Analyzer '" + clazz.getName() +
                   "' needs a '" + IndexSchema.LUCENE_MATCH_VERSION_PARAM + "' parameter");
         }
-        analyzer.setVersion(luceneMatchVersion);
         return analyzer;
       } catch (Exception e) {
         log.error("Cannot load analyzer: {}", analyzerName, e);

@@ -51,7 +51,7 @@ Although solr.xml can be configured to look for SolrCore Instance Directories
 in any path, simple sub-directories of the Solr Home Dir using relative paths
 are common for many installations.
 
-### Core Discovery 
+### Core Discovery
 
 During startup, Solr will scan sub-directories of Solr home looking for
 a specific file named core.properties. If core.properties is found in a
@@ -62,7 +62,7 @@ example/solr/collection1/core.properties
 
 For more information about core discovery, please see:
 
-https://lucene.apache.org/solr/guide/defining-core-properties.html
+https://lucene.apache.org/solr/guide/core-discovery.html
 
 ### A Shared 'lib' Directory
 

@@ -2,7 +2,7 @@
 
 This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
-https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
+https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
 
 ==================  9.0.0 ==================
 
@@ -41,8 +41,7 @@ New Features
 
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
-* SOLR-7642: opt-in support to create ZK chroot on startup (Timothy Potter, Shawn Heisey, Mark Miller, Tomas Eduardo Fernandez Lobbe,
-  Jan Høydahl, Steve Molloy, Isabelle Giguere, David Eric Pugh, Gus Heck, Christine Poerschke, Houston Putman)
+* SOLR-15613: Enforce error-prone checks to catch all URLEqualsHashCode violations and use java.net.URI instead (Collins Abanda)
 
 Improvements
 ----------------------
@@ -159,10 +158,16 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15301: Eliminate repetitive index size calculation for Solr metrics (Andras Salamon)
 
+* SOLR-15617: Add kerberos.name.rules.mechanism support to KerberosPlugin (Kevin Risden)
+
+* SOLR-15278: Add V2 equivalent to allow deleting async collection list of statuses. (Eric Pugh)
+
 Build
 ---------------------
 
 * LUCENE-10104, SOLR-15631: Upgrade forbiddenapis to version 3.2.  (Uwe Schindler)
+
+* SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
 
 Other Changes
 ----------------------
@@ -367,6 +372,16 @@ Other Changes
 
 * SOLR-15480: Make Tuple copy constructor, clone and merge consistent w.r.t. markers (EOF, EXCEPTION), field names and labels. (John Durham, Mike Drob, Christine Poerschke)
 
+* SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
+
+* SOLR-15692: Fix parsing of -zkHost flag for the bin/solr commands (janhoy)
+
+* SOLR-15455: Facilitate joint Solr/Lucene development via local dependency substitution (Dawid Weiss, Michael Gibney)
+
+* SOLR-15716: Remove deprecated SolrException.ignorePatterns and related code (hossman)
+
+* SOLR-15699: Removal of the (unused since 5.0) "updateHandler/indexWriter/closeWaitsForMerges" solrconfig.xml element. (Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -382,7 +397,64 @@ Bug Fixes
 
 * SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
 
+* SOLR-15653: Fix collection creation race that assumes a local clusterstate when the collection has only just been created. (Mark Miller)
+
+==================  8.11.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+
+* SOLR-7642: opt-in support to create ZK chroot on startup (Timothy Potter, Shawn Heisey, Mark Miller, Tomas Eduardo Fernandez Lobbe,
+  Jan Høydahl, Steve Molloy, Isabelle Giguere, David Eric Pugh, Gus Heck, Christine Poerschke, Houston Putman)
+
+* SOLR-15708: SolrJ support for ConfigSet uploading (ab, hossman)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+* SOLR-15626: The "config-read" permission has been fixed to properly allow access to `/solr/admin/configs?action=LIST` (Jon Senchyna via Eric Pugh)
+
+* SOLR-15691: Admin UI raises yellow warning even when only case of hostnames differ (janhoy)
+
+* SOLR-15702: Fix S3Repository to follow BackupRepository.createDirectory() API contract (Houston Putman)
+
+* SOLR-15696: Incremental backups no longer fail on collections that had previously seen a 'SPLITSHARD' operation. (Jason Gerlowski)
+
 * SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
+
+Build
+---------------------
+
+* LUCENE-10104, SOLR-15631: Upgrade forbiddenapis to version 3.2.  (Uwe Schindler)
+
+Other Changes
+---------------------
+* SOLR-15678: Allow only known content types in ShowFileRequestHandler (janhoy, Gus Heck, Mal Aware)
+
+* SOLR-15697: Add ErrorLogMuter to test-framework, deprecating SolrException.ignorePatterns (hossman)
+
+======================= 8.10.1 =======================
+
+Other Changes
+---------------------
+* SOLR-15677: Upgrade the following dependencies with vulnerabilities.
+  - jetty: 9.4.44.v20210927
+  - tika: 1.27
+  - commons-compress: 1.21
+  - netty: 4.1.68.Final
+  - fasterxml.jackson: 2.12.3
+  - errorprone: 2.9.0
+  - gcp-client: 1.32.1
+  (Houston Putman)
 
 ==================  8.10.0 ==================
 
@@ -445,6 +517,8 @@ Improvements
 * SOLR-15555: Identical filter queries will no longer race to record a filterCache entry. Allows for async cache computation instead of
   all queries contending for the same set of locks on the cache. Fixed a bug with ramBytes usage reporting on filterCache.
   Upgraded Caffeine Cache to 2.9.2 (Mike Drob)
+
+* SOLR-15572: Improve the default Prometheus exporter config performance. (ab)
 
 Optimizations
 ---------------------

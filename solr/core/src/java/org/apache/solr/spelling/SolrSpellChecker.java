@@ -39,10 +39,10 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * <p>
- * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * Refer to <a href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
  * for more details.
  * </p>
- * 
+ *
  * @since solr 1.3
  */
 public abstract class SolrSpellChecker {
@@ -86,26 +86,26 @@ public abstract class SolrSpellChecker {
     } catch(UnsupportedOperationException uoe) {
       //just use .5 as a default
     }
-    
+
     StringDistance sd = null;
     try {
-      sd = getStringDistance() == null ? new LevenshteinDistance() : getStringDistance();    
+      sd = getStringDistance() == null ? new LevenshteinDistance() : getStringDistance();
     } catch(UnsupportedOperationException uoe) {
       sd = new LevenshteinDistance();
     }
-    
+
     SpellingResult result = new SpellingResult();
     for (Map.Entry<String, HashSet<String>> entry : mergeData.origVsSuggested.entrySet()) {
       String original = entry.getKey();
-      
-      //Only use this suggestion if all shards reported it as misspelled, 
+
+      //Only use this suggestion if all shards reported it as misspelled,
       //unless it was not a term original to the user's query
       //(WordBreakSolrSpellChecker can add new terms to the response, and we want to keep these)
       Integer numShards = mergeData.origVsShards.get(original);
       if(numShards<mergeData.totalNumberShardResponses && mergeData.isOriginalToQuery(original)) {
         continue;
       }
-      
+
       HashSet<String> suggested = entry.getValue();
       SuggestWordQueue sugQueue = new SuggestWordQueue(numSug);
       for (String suggestion : suggested) {
@@ -145,7 +145,7 @@ public abstract class SolrSpellChecker {
     }
     return result;
   }
-  
+
   public Analyzer getQueryAnalyzer() {
     return analyzer;
   }
@@ -165,15 +165,15 @@ public abstract class SolrSpellChecker {
    * (re)Builds the spelling index.  May be a NOOP if the implementation doesn't require building, or can't be rebuilt.
    */
   public abstract void build(SolrCore core, SolrIndexSearcher searcher) throws IOException;
-  
+
   /**
-   * Get the value of {@link SpellingParams#SPELLCHECK_ACCURACY} if supported.  
+   * Get the value of {@link SpellingParams#SPELLCHECK_ACCURACY} if supported.
    * Otherwise throws UnsupportedOperationException.
    */
   protected float getAccuracy() {
     throw new UnsupportedOperationException();
   }
-  
+
   /**
    * Get the distance implementation used by this spellchecker, or NULL if not applicable.
    */
@@ -191,7 +191,7 @@ public abstract class SolrSpellChecker {
    * @throws IOException if there is an error producing suggestions
    */
   public abstract SpellingResult getSuggestions(SpellingOptions options) throws IOException;
-  
+
   public boolean isSuggestionsMayOverlap() {
     return false;
   }
