@@ -75,6 +75,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.LongSet;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -1454,7 +1455,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     public List<Long> getVersions(int n, long maxVersion) {
       List<Long> ret = new ArrayList<>(n);
-      Set<Long> set = new HashSet<>(n);
+      LongSet set = new LongSet(n);
       final int nInput = n;
 
       for (List<Update> singleList : updateList) {
