@@ -90,6 +90,7 @@ import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
+import org.apache.solr.util.LongSet;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -1265,7 +1266,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      Set<Long> updateVersions = new HashSet<>();
+      LongSet updateVersions = new LongSet(versions.size());
       for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);

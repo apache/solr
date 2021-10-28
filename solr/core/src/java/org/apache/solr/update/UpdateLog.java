@@ -75,6 +75,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.LongSet;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -1474,7 +1475,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     /** Returns the list of deleteByQueries that happened after the given version */
-    public List<Object> getDeleteByQuery(long afterVersion, Set<Long> updateVersions) {
+    public List<Object> getDeleteByQuery(long afterVersion, LongSet updateVersions) {
       List<Object> result = new ArrayList<>(deleteByQueryList.size());
       for (Update update : deleteByQueryList) {
         if (Math.abs(update.version) > afterVersion) {
