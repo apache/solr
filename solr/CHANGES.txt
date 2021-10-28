@@ -167,6 +167,8 @@ Build
 
 * LUCENE-10104, SOLR-15631: Upgrade forbiddenapis to version 3.2.  (Uwe Schindler)
 
+* SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
+
 Other Changes
 ----------------------
 * SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
@@ -376,6 +378,10 @@ Other Changes
 
 * SOLR-15455: Facilitate joint Solr/Lucene development via local dependency substitution (Dawid Weiss, Michael Gibney)
 
+* SOLR-15716: Remove deprecated SolrException.ignorePatterns and related code (hossman)
+
+* SOLR-15699: Removal of the (unused since 5.0) "updateHandler/indexWriter/closeWaitsForMerges" solrconfig.xml element. (Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -390,8 +396,6 @@ Bug Fixes
 * SOLR-15449: Edismax sow incorrectly affect mm parameter in multi field search (Alessandro Benedetti, Michael Gibney, David Smiley)
 
 * SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
-
-* SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
 
 * SOLR-15653: Fix collection creation race that assumes a local clusterstate when the collection has only just been created. (Mark Miller)
 
@@ -425,6 +429,8 @@ Bug Fixes
 
 * SOLR-15696: Incremental backups no longer fail on collections that had previously seen a 'SPLITSHARD' operation. (Jason Gerlowski)
 
+* SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
+
 Build
 ---------------------
 
@@ -433,6 +439,8 @@ Build
 Other Changes
 ---------------------
 * SOLR-15678: Allow only known content types in ShowFileRequestHandler (janhoy, Gus Heck, Mal Aware)
+
+* SOLR-15697: Add ErrorLogMuter to test-framework, deprecating SolrException.ignorePatterns (hossman)
 
 ======================= 8.10.1 =======================
 
@@ -509,6 +517,8 @@ Improvements
 * SOLR-15555: Identical filter queries will no longer race to record a filterCache entry. Allows for async cache computation instead of
   all queries contending for the same set of locks on the cache. Fixed a bug with ramBytes usage reporting on filterCache.
   Upgraded Caffeine Cache to 2.9.2 (Mike Drob)
+
+* SOLR-15572: Improve the default Prometheus exporter config performance. (ab)
 
 Optimizations
 ---------------------
