@@ -48,7 +48,7 @@ public interface ConfigNode {
    */
   SimpleMap<String> attributes();
 
-  /**N
+  /**
    * Child by name
    */
   default ConfigNode child(String name) {
@@ -76,15 +76,6 @@ public interface ConfigNode {
 
   }
 
-  default ConfigNode child(List<String> path) {
-    ConfigNode node = this;
-    for (String s : path) {
-      node = node.child(s);
-      if (node == null) break;
-    }
-    return node;
-  }
-
   default ConfigNode child(String name, Supplier<RuntimeException> err) {
     ConfigNode n = child(name);
     if(n == null) throw err.get();
@@ -103,7 +94,6 @@ public interface ConfigNode {
   default int intAttr(String name, int def) { return _int(attr(name), def); }
   default boolean boolAttr(String name, boolean def){ return _bool(attr(name), def); }
   default String txt(String def) { return txt() == null ? def : txt();}
-  default String textValue() {return txt();}
   String txt() ;
   default double doubleVal(double def){ return _double(txt(), def); }
   /**Iterate through child nodes with the name and return the first child that matches

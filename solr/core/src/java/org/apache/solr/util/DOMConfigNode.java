@@ -57,7 +57,9 @@ public class DOMConfigNode implements ConfigNode {
   public SimpleMap<String> attributes() {
     if (attrs != null) return attrs;
     Map<String, String> attrs = DOMUtil.toMap(node.getAttributes());
-    return this.attrs = attrs.size() == 0 ? EMPTY : new WrappedSimpleMap<>(attrs);
+    return this.attrs = attrs.size() == 0 ?
+            EMPTY :
+            new WrappedSimpleMap<>(attrs);
   }
 
   @Override

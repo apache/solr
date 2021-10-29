@@ -69,7 +69,7 @@ public interface SimpleMap<T> extends MapWriter {
    * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
    */
   default void abortableForEach(BiFunction<String, ? super T, Boolean> fun) {
-    forEachEntry(new BiConsumer<String, T>() {
+    forEachEntry(new BiConsumer<>() {
       boolean end = false;
       @Override
       public void accept(String k, T v) {
@@ -91,6 +91,6 @@ public interface SimpleMap<T> extends MapWriter {
   }
 
   default Map<String, T> asMap() {
-    return asMap(new LinkedHashMap<String, T>());
+    return asMap(new LinkedHashMap<>());
   }
 }

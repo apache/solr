@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core;
 
-import org.junit.Ignore;
-
 public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testUnsetSysProperty() throws Exception {
@@ -28,21 +26,6 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad-solrconfig-nrtmode.xml","schema.xml", "nrtMode");
   }
 
-  @Ignore
-  public void testMultipleDirectoryFactories() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-dirfactory.xml", "schema12.xml",
-                    "directoryFactory");
-  }
-  @Ignore
-  public void testMultipleIndexConfigs() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-indexconfigs.xml", "schema12.xml",
-                    "indexConfig");
-  }
-  @Ignore
-  public void testMultipleCFS() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-cfs.xml", "schema12.xml",
-                    "useCompoundFile");
-  }
 
   public void testUpdateLogButNoVersionField() throws Exception {
 

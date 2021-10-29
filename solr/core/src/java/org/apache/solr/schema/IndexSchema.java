@@ -560,7 +560,7 @@ public class IndexSchema {
       if (node==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
-        uniqueKeyField=getIndexedField(node.textValue().trim());
+        uniqueKeyField=getIndexedField(node.txt().trim());
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
         
@@ -650,6 +650,7 @@ public class IndexSchema {
     List<ConfigNode> nodes = n.getAll(null,  FIELD_KEYS);
     ConfigNode child = n.child(FIELDS);
     if(child != null) {
+      nodes = new ArrayList<>(nodes);
       nodes.addAll(child.getAll(null, FIELD_KEYS));
     }
 

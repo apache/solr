@@ -449,14 +449,12 @@ public class SolrConfig implements MapSerializable {
     final Function<SolrConfig, List<ConfigNode>> configReader;
 
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private SolrPluginInfo(Class clz, String tag, PluginOpts... opts) {
+    private SolrPluginInfo(Class<?> clz, String tag, PluginOpts... opts) {
       this(solrConfig -> solrConfig.root.getAll(null, tag), clz, tag, opts);
 
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private SolrPluginInfo(Function<SolrConfig, List<ConfigNode>> configReader, Class clz, String tag, PluginOpts... opts) {
+    private SolrPluginInfo(Function<SolrConfig, List<ConfigNode>> configReader, Class<?> clz, String tag, PluginOpts... opts) {
       this.configReader = configReader;
 
       this.clazz = clz;
@@ -510,14 +508,16 @@ public class SolrConfig implements MapSerializable {
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
-    return new UpdateHandlerInfo( get("updateHandler").attr("class"),
-        get("updateHandler").get("autoCommit").get("maxDocs").intVal( -1),
-        get("updateHandler").get("autoCommit").get("maxTime").intVal( -1),
-        convertHeapOptionStyleConfigStringToBytes(get("updateHandler").get("autoCommit").get("maxSize").txt()),
-        get("updateHandler").get("autoCommit").get("openSearcher").boolVal(true),
-        get("updateHandler").get("autoSoftCommit").get("maxDocs").intVal(-1),
-        get("updateHandler").get("autoSoftCommit").get("maxTime").intVal(-1),
-        get("updateHandler").get("commitWithin").get("softCommit").boolVal(true));
+    ConfigNode updateHandler = get("updateHandler");
+    ConfigNode autoCommit = updateHandler.get("autoCommit");
+    return new UpdateHandlerInfo( updateHandler.attr("class"),
+        autoCommit.get("maxDocs").intVal( -1),
+        autoCommit.get("maxTime").intVal( -1),
+        convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt()),
+        autoCommit.get("openSearcher").boolVal(true),
+        updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1),
+        updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1),
+        updateHandler.get("commitWithin").get("softCommit").boolVal(true));
   }
 
   /**
@@ -667,14 +667,15 @@ public class SolrConfig implements MapSerializable {
       configNode = conf.root;
 
       //"requestDispatcher/httpCaching/";
-      never304 = get("requestDispatcher").get("httpCaching").boolAttr("never304", false);
+      ConfigNode httpCaching = get("requestDispatcher").get("httpCaching");
+      never304 = httpCaching.boolAttr("never304", false);
 
-      etagSeed = get("requestDispatcher").get("httpCaching").attr("etagSeed", "Solr");
+      etagSeed = httpCaching.attr("etagSeed", "Solr");
 
 
-      lastModFrom = LastModFrom.parse(get("requestDispatcher").get("httpCaching").attr("lastModFrom","openTime"));
+      lastModFrom = LastModFrom.parse(httpCaching.attr("lastModFrom","openTime"));
 
-      cacheControlHeader = get("requestDispatcher").get("httpCaching").get("cacheControl").txt();
+      cacheControlHeader = httpCaching.get("cacheControl").txt();
 
       Long tmp = null; // maxAge
       if (null != cacheControlHeader) {
