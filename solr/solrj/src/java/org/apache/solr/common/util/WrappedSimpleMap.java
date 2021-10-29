@@ -53,8 +53,8 @@ public class WrappedSimpleMap<T>  implements SimpleMap<T> {
     return sink;
   }
 
-    @Override
-    public Map<String, T> asMap() {
-        return Collections.unmodifiableMap(delegate);
-    }
+  @Override
+  public Map<String, T> asMap() {
+    return Collections.unmodifiableMap(delegate);
+  }
 }
