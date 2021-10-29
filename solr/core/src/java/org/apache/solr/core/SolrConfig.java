@@ -514,7 +514,6 @@ public class SolrConfig implements MapSerializable {
         get("updateHandler").get("autoCommit").get("maxDocs").intVal( -1),
         get("updateHandler").get("autoCommit").get("maxTime").intVal( -1),
         convertHeapOptionStyleConfigStringToBytes(get("updateHandler").get("autoCommit").get("maxSize").txt()),
-        get("updateHandler").get("indexWriter").get("closeWaitsForMerges").boolVal(true),
         get("updateHandler").get("autoCommit").get("openSearcher").boolVal(true),
         get("updateHandler").get("autoSoftCommit").get("maxDocs").intVal(-1),
         get("updateHandler").get("autoSoftCommit").get("maxTime").intVal(-1),
