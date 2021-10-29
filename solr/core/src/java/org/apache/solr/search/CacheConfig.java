@@ -87,8 +87,7 @@ public class CacheConfig implements MapSerializable{
   public static Map<String, CacheConfig> getMultipleConfigs(SolrConfig solrConfig, String configPath, List<ConfigNode> nodes) {
     if (nodes == null || nodes.size() == 0) return new LinkedHashMap<>();
     Map<String, CacheConfig> result = new HashMap<>(nodes.size());
-    for (int i = 0; i < nodes.size(); i++) {
-      ConfigNode node = nodes.get(i);
+    for (ConfigNode node : nodes) {
       if (node.boolAttr("enabled", true)) {
         CacheConfig config = getConfig(solrConfig, node.name(), node.attributes().asMap(), configPath);
         result.put(config.args.get(NAME), config);
