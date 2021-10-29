@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -180,24 +181,16 @@ public class ConfigOverlay implements MapSerializable {
   }
 
 
-
-  @SuppressWarnings({"rawtypes"})
-  public static Class checkEditable(String path, boolean isXpath, List<String> hierarchy) {
+  public static Class<?> checkEditable(String path, boolean isXpath, List<String> hierarchy) {
+    List<String> parts = StrUtils.splitSmart(path, isXpath ? '/' : '.');
     return isEditable(isXpath, hierarchy, StrUtils.splitSmart(path, isXpath ? '/' : '.'));
   }
 
-  @SuppressWarnings("rawtypes")
-  private static Class isEditable(boolean isXpath, List<String> hierarchy, List<String> parts) {
-
+  private static Class<?> isEditable(boolean isXpath, List<String> hierarchy, List<String> parts) {
     Object obj = editable_prop_map;
     for (int i = 0; i < parts.size(); i++) {
       String part = parts.get(i);
-      boolean isAttr = false;
-      try {
-        isAttr = isXpath && part.startsWith("@");
-      } catch (RuntimeException e) {
-        throw e;
-      }
+      boolean isAttr = isXpath && part.startsWith("@");
       if (isAttr) {
         part = part.substring(1);
       }

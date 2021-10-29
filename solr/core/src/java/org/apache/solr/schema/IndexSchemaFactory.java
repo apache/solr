@@ -103,11 +103,11 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   }
 
   @SuppressWarnings("unchecked")
-  public static ConfigResource getConfigResource(ConfigSetService configSetService, InputStream schemaInputStream, SolrResourceLoader loader, String name) throws IOException {
+  public static ConfigSetService.ConfigResource getConfigResource(ConfigSetService configSetService, InputStream schemaInputStream, SolrResourceLoader loader, String name) throws IOException {
     if (configSetService instanceof ZkConfigSetService && schemaInputStream instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
       ZkSolrResourceLoader.ZkByteArrayInputStream is = (ZkSolrResourceLoader.ZkByteArrayInputStream) schemaInputStream;
       Map<String, VersionedConfig> configCache = (Map<String, VersionedConfig>) ((ZkConfigSetService) configSetService).getSolrCloudManager().getObjectCache()
-              .computeIfAbsent(ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
+              .computeIfAbsent(ConfigSetService.ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
       VersionedConfig cached = configCache.get(is.fileName);
       if (cached != null) {
         if (cached.version != is.getStat().getVersion()) {
@@ -132,12 +132,6 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
     schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, "/" + SCHEMA + "/", null);
     return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
-  }
-
-  public interface ConfigResource {
-
-    ConfigNode get() throws Exception;
-
   }
 
   public static class VersionedConfig {

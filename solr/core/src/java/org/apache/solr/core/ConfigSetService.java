@@ -466,5 +466,4 @@ public abstract class ConfigSetService {
     ConfigNode get() throws Exception;
 
   }
-
 }

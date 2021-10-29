@@ -98,19 +98,17 @@ public class CacheConfig implements MapSerializable{
   }
 
 
-  @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, ConfigNode node, String xpath) {
     if (!node.exists() || !"true".equals(node.attributes().get("enabled", "true"))) {
       Map<String, Object> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
       if (m == null) return null;
       List<String> parts = StrUtils.splitSmart(xpath, '/');
-      return getConfig(solrConfig, parts.get(parts.size() - 1), Collections.EMPTY_MAP, xpath);
+      return getConfig(solrConfig, parts.get(parts.size() - 1), Collections.emptyMap(), xpath);
     }
     return getConfig(solrConfig, node.name(), node.attributes().asMap(), xpath);
   }
 
 
-  @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, String nodeName, Map<String, String> attrs, String xpath) {
     CacheConfig config = new CacheConfig();
     config.nodeName = nodeName;
