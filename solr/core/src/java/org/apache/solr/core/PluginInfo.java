@@ -171,7 +171,7 @@ public class PluginInfo implements MapSerializable {
       if (pluginInfo.isEnabled()) children.add(pluginInfo);
       return null;
     });
-    return children.isEmpty() ? Collections.<PluginInfo>emptyList() : unmodifiableList(children);
+    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
   }
   private List<PluginInfo> loadSubPlugins(Node node) {
     List<PluginInfo> children = new ArrayList<>();

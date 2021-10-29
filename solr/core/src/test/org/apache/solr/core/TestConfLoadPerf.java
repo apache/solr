@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,12 +46,7 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
     File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
 
     String configSetsBaseDir = TEST_PATH().resolve("configsets").toString();
-
-
-    File file = new File(configSetDir, "solrconfig.xml");
-    byte[]  b  = new byte[(int) file.length()];
-    new FileInputStream(file).read(b);
-
+    byte[]  b  = Files.readAllBytes(new File(configSetDir, "solrconfig.xml").toPath());
     Path testDirectory = createTempDir();
 
     System.setProperty("configsets", configSetsBaseDir);
@@ -71,7 +67,7 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
         if(resource.equals("solrconfig.xml")) {
           Stat stat = new Stat();
           stat.setVersion(1);
-          return new ZkSolrResourceLoader.ZkByteArrayInputStream(b, file.getAbsolutePath(), stat);
+          return new ZkSolrResourceLoader.ZkByteArrayInputStream(b, new File(configSetDir, "solrconfig.xml").getAbsolutePath(), stat);
         } else {
           throw new FileNotFoundException(resource);
         }
