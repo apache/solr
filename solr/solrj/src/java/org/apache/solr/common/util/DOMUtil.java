@@ -133,8 +133,7 @@ public class DOMUtil {
     return nodesToNamedList(nd.getChildNodes());
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static List childNodesToList(Node nd) {
+  public static List<Object> childNodesToList(Node nd) {
     return nodesToList(nd.getChildNodes());
   }
 
@@ -150,9 +149,8 @@ public class DOMUtil {
     return clst;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static List nodesToList(NodeList nlst) {
-    List lst = new ArrayList();
+  public static List<Object> nodesToList(NodeList nlst) {
+    List<Object> lst = new ArrayList<>();
     for (int i=0; i<nlst.getLength(); i++) {
       addToNamedList(nlst.item(i), null, lst);
     }
@@ -172,10 +170,9 @@ public class DOMUtil {
    * @param arr A List to add the item to.
    *             If this param is null it will be ignored.
    */
-  @SuppressWarnings("unchecked")
   public static void addToNamedList(Node nd,
-                                    @SuppressWarnings({"rawtypes"})NamedList nlst,
-                                    @SuppressWarnings({"rawtypes"})List arr) {
+                                    NamedList<Object> nlst,
+                                    List<Object> arr) {
     // Nodes often include whitespace, etc... so just return if this
     // is not an Element.
     if (nd.getNodeType() != Node.ELEMENT_NODE) return;

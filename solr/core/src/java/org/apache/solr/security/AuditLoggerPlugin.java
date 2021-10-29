@@ -347,7 +347,6 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   /**
    * Set of rules for when audit logging should be muted.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private class MuteRules {
     private List<List<MuteRule>> rules;
 
@@ -355,12 +354,12 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       rules = new ArrayList<>();
       if (o != null) {
         if (o instanceof List) {
-          ((List)o).forEach(l -> {
+          ((List<?>)o).forEach(l -> {
             if (l instanceof String) {
               rules.add(Collections.singletonList(parseRule(l)));
             } else if (l instanceof List) {
               List<MuteRule> rl = new ArrayList<>();
-              ((List) l).forEach(r -> rl.add(parseRule(r)));
+              ((List<?>) l).forEach(r -> rl.add(parseRule(r)));
               rules.add(rl);
             }
           });

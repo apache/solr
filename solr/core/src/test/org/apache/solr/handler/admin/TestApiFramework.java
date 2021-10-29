@@ -55,6 +55,7 @@ import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -81,6 +82,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     TestCollectionAPIs.MockCollectionsHandler collectionsHandler = new TestCollectionAPIs.MockCollectionsHandler();
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
     containerHandlers.getApiBag().registerObject(new CollectionsAPI(collectionsHandler));
+    ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
     containerHandlers.put(CORES_HANDLER_PATH, new CoreAdminHandler(mockCC));
     containerHandlers.put(CONFIGSETS_HANDLER_PATH, new ConfigSetsHandler(mockCC));
     out.put("getRequestHandlers", containerHandlers);
@@ -369,23 +371,18 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
 
-  public static void assertConditions(@SuppressWarnings({"rawtypes"})Map root,
-                                      @SuppressWarnings({"rawtypes"})Map conditions) {
-    for (Object o : conditions.entrySet()) {
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry e = (Map.Entry) o;
-      String path = (String) e.getKey();
+  public static void assertConditions(Map<?, ?> root, Map<String, Object> conditions) {
+    for (Map.Entry<String, Object> e : conditions.entrySet()) {
+      String path = e.getKey();
       List<String> parts = StrUtils.splitSmart(path, path.charAt(0) == '/' ? '/' : ' ', true);
       Object val = Utils.getObjectByPath(root, false, parts);
       if (e.getValue() instanceof ValidatingJsonMap.PredicateWithErrMsg) {
-        @SuppressWarnings({"rawtypes"})
-        ValidatingJsonMap.PredicateWithErrMsg value = (ValidatingJsonMap.PredicateWithErrMsg) e.getValue();
-        @SuppressWarnings({"unchecked"})
+        @SuppressWarnings("unchecked")
+        ValidatingJsonMap.PredicateWithErrMsg<Object> value = (ValidatingJsonMap.PredicateWithErrMsg<Object>) e.getValue();
         String err = value.test(val);
         if (err != null) {
           assertEquals(err + " for " + e.getKey() + " in :" + Utils.toJSONString(root), e.getValue(), val);
         }
-
       } else {
         assertEquals("incorrect value for path " + e.getKey() + " in :" + Utils.toJSONString(root), e.getValue(), val);
       }

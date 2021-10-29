@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -78,7 +80,12 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private  SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH);
   private Set<String> windowSet;
   private int window = Integer.MIN_VALUE;
-  private int lag = 1;
+  private int lag = 0;
+  private static final int TEN_SECOND_INTERVAL = 0;
+  private static final int DAY_INTERVAL = 1;
+  private static final int WEEK_DAY_INTERVAL = 2;
+  private int interval = TEN_SECOND_INTERVAL;
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public GatherNodesStream(String zkHost,
@@ -87,7 +94,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                            String traverseFrom,
                            String traverseTo,
                            String gather,
-                           @SuppressWarnings({"rawtypes"})Map queryParams,
+                           Map<String,String> queryParams,
                            List<Metric> metrics,
                            boolean trackTraversal,
                            Set<Traversal.Scatter> scatter,
@@ -105,7 +112,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         scatter,
         maxDocFreq,
         Integer.MIN_VALUE,
-    1);
+    1,
+        TEN_SECOND_INTERVAL);
   }
 
   public GatherNodesStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -205,13 +213,24 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     StreamExpressionNamedParameter windowExpression = factory.getNamedOperand(expression, "window");
     int timeWindow = Integer.MIN_VALUE;
+    int intervalParam = -1;
 
     if(windowExpression != null) {
-      timeWindow = Integer.parseInt(((StreamExpressionValue) windowExpression.getParameter()).getValue());
+      String windowValue = ((StreamExpressionValue) windowExpression.getParameter()).getValue();
+      if(windowValue.contains("WEEKDAY")) {
+        intervalParam = WEEK_DAY_INTERVAL;
+        timeWindow = Integer.parseInt(windowValue.split("WEEKDAY")[0]);
+      } else if (windowValue.contains("DAY")) {
+        intervalParam = DAY_INTERVAL;
+        timeWindow = Integer.parseInt(windowValue.split("DAY")[0]);
+      } else {
+        intervalParam = TEN_SECOND_INTERVAL;
+        timeWindow = Integer.parseInt(windowValue);
+      }
     }
 
     StreamExpressionNamedParameter lagExpression = factory.getNamedOperand(expression, "lag");
-    int timeLag = 1;
+    int timeLag = 0;
 
     if(lagExpression != null) {
       timeLag = Integer.parseInt(((StreamExpressionValue) lagExpression.getParameter()).getValue());
@@ -268,23 +287,24 @@ public class GatherNodesStream extends TupleStream implements Expressible {
          scatter,
          docFreq,
          timeWindow,
-         timeLag);
+         timeLag,
+         intervalParam);
   }
 
-  @SuppressWarnings({"unchecked"})
   private void init(String zkHost,
                     String collection,
                     TupleStream tupleStream,
                     String traverseFrom,
                     String traverseTo,
                     String gather,
-                    @SuppressWarnings({"rawtypes"})Map queryParams,
+                    Map<String,String> queryParams,
                     List<Metric> metrics,
                     boolean trackTraversal,
                     Set<Traversal.Scatter> scatter,
                     int maxDocFreq,
                     int window,
-                    int lag) {
+                    int lag,
+                    int interval) {
     this.zkHost = zkHost;
     this.collection = collection;
     this.tupleStream = tupleStream;
@@ -297,6 +317,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     this.scatter = scatter;
     this.maxDocFreq = maxDocFreq;
     this.window = window;
+    this.interval = interval;
 
     if(window > Integer.MIN_VALUE) {
       windowSet = new HashSet<>();
@@ -331,7 +352,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     Set<Map.Entry<String,String>> entries =  queryParams.entrySet();
     // parameters
-    for(@SuppressWarnings({"rawtypes"})Map.Entry param : entries){
+    for(Map.Entry<String,String> param : entries){
+      assert param.getKey() instanceof String && param.getValue() instanceof String : "Bad types passed";
       String value = param.getValue().toString();
 
       // SOLR-8409: This is a special case where the params contain a " character
@@ -539,21 +561,76 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
   }
 
-
   private String[] getTenSecondWindow(int size, int lag, String start) {
     try {
-      String[] window = new String[size];
+      List<String> windowList = new ArrayList<>();
       Date date = this.dateFormat.parse(start);
       Instant instant = date.toInstant();
-
-      for (int i = 0; i < size; i++) {
-        Instant windowInstant = instant.minus(10 * (i + lag), ChronoUnit.SECONDS);
+      int collect = Math.abs(size)+lag;
+      int i = -1;
+      while (windowList.size() < collect) {
+        ++i;
+        Instant windowInstant = size > 0 ? instant.plus(10*i, ChronoUnit.SECONDS) : instant.minus(10*i, ChronoUnit.SECONDS);
         String windowString = windowInstant.toString();
         windowString = windowString.substring(0, 18) + "0Z";
-        window[i] = windowString;
+        windowList.add(windowString);
       }
 
-      return window;
+      List<String> laggedWindow = windowList.subList(lag, windowList.size());
+      return laggedWindow.toArray(new String[laggedWindow.size()]);
+    } catch(ParseException e) {
+      log.warn("Unparseable date:{}", String.valueOf(start));
+      return new String[0];
+    }
+  }
+
+  private String[] getDayWindow(int size, int lag, String start) {
+    try {
+      List<String> windowList = new ArrayList<>();
+      Date date = this.dateFormat.parse(start);
+      Instant instant = date.toInstant();
+      int collect = Math.abs(size)+lag;
+      int i = -1;
+      while (windowList.size() < collect) {
+        ++i;
+        Instant windowInstant = size > 0 ? instant.plus(i, ChronoUnit.DAYS) : instant.minus(i, ChronoUnit.DAYS);
+        String windowString = windowInstant.toString();
+        windowString = windowString.substring(0, 10) + "T00:00:00Z";
+        windowList.add(windowString);
+      }
+
+      List<String> laggedWindow = windowList.subList(lag, windowList.size());
+      return laggedWindow.toArray(new String[laggedWindow.size()]);
+    } catch(ParseException e) {
+      log.warn("Unparseable date:{}", String.valueOf(start));
+      return new String[0];
+    }
+  }
+
+  private String[] getWeekDayWindow(int size, int lag, String start) {
+    try {
+      List<String> windowList = new ArrayList<>();
+      Date date = this.dateFormat.parse(start);
+      Instant instant = date.toInstant();
+      int collect = Math.abs(size)+lag;
+      int i = -1;
+      while (windowList.size() < collect) {
+        ++i;
+        Instant windowInstant = size > 0 ? instant.plus(i, ChronoUnit.DAYS) : instant.minus(i, ChronoUnit.DAYS);
+        DayOfWeek dayOfWeek = windowInstant.atZone(ZoneId.of("UTC")).getDayOfWeek();
+
+        if(dayOfWeek.getValue() > 5) {
+          //Skip weekend
+          continue;
+        }
+
+        String windowString = windowInstant.toString();
+        windowString = windowString.substring(0, 10) + "T00:00:00Z";
+        windowList.add(windowString);
+      }
+
+      List<String> laggedWindow = windowList.subList(lag, windowList.size());
+      return laggedWindow.toArray(new String[laggedWindow.size()]);
     } catch(ParseException e) {
       log.warn("Unparseable date:{}", String.valueOf(start));
       return new String[0];
@@ -564,7 +641,6 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     tupleStream.close();
   }
 
-  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
 
     if (out == null) {
@@ -583,8 +659,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           if (tuple.EOF) {
             if (joinBatch.size() > 0) {
               JoinRunner joinRunner = new JoinRunner(joinBatch);
-              @SuppressWarnings({"rawtypes"})
-              Future future = threadPool.submit(joinRunner);
+              Future<List<Tuple>> future = threadPool.submit(joinRunner);
               futures.add(future);
             }
             break;
@@ -612,12 +687,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             }
           }
 
-          if(windowSet == null || (lag == 1 && !windowSet.contains(String.valueOf(value)))) {
+          if(windowSet == null) {
             joinBatch.add(value);
           }
 
           if(window > Integer.MIN_VALUE && value != null) {
-            windowSet.add(value);
 
             /*
             * A time window has been set.
@@ -625,7 +699,20 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             * We derive the window and add it to the join values below.
             */
 
-            String[] timeWindow = getTenSecondWindow(window, lag, value);
+            String[] timeWindow = null;
+
+            switch(this.interval) {
+              case WEEK_DAY_INTERVAL:
+                timeWindow = getWeekDayWindow(window, lag, value);
+                break;
+              case DAY_INTERVAL:
+                timeWindow = getDayWindow(window, lag, value);
+                break;
+              default:
+                timeWindow = getTenSecondWindow(window, lag, value);
+                break;
+            }
+
             for(String windowString : timeWindow) {
               if(!windowSet.contains(windowString)) {
                 /*
@@ -640,8 +727,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
           if (joinBatch.size() >= 400) {
             JoinRunner joinRunner = new JoinRunner(joinBatch);
-            @SuppressWarnings({"rawtypes"})
-            Future future = threadPool.submit(joinRunner);
+            Future<List<Tuple>> future = threadPool.submit(joinRunner);
             futures.add(future);
             joinBatch = new ArrayList<>();
           }

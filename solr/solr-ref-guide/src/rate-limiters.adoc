@@ -16,22 +16,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr allows rate limiting per request type. Each request type can be allocated a maximum allowed number of concurrent requests
-that can be active. The default rate limiting is implemented for updates and searches.
+Solr allows rate limiting per request type.
+Each request type can be allocated a maximum allowed number of concurrent requests that can be active.
+The default rate limiting is implemented for updates and searches.
 
 If a request exceeds the request quota, further incoming requests are rejected with HTTP error code 429 (Too Many Requests).
 
-Note that rate limiting works at an instance (JVM) level, not at a core or collection level. Consider that when planning capacity.
+Note that rate limiting works at an instance (JVM) level, not at a core or collection level.
+Consider that when planning capacity.
 There is future work planned to have finer grained execution here (https://issues.apache.org/jira/browse/SOLR-14710[SOLR-14710]).
 
 == When To Use Rate Limiters
-Rate limiters should be used when the user wishes to allocate a guaranteed capacity of the request threadpool to a specific
-request type. Indexing and search requests are mostly competing with each other for CPU resources. This becomes especially
-pronounced under high stress in production workloads. The current implementation has a query rate limiter which can free up
-resources for indexing.
+Rate limiters should be used when the user wishes to allocate a guaranteed capacity of the request threadpool to a specific request type.
+Indexing and search requests are mostly competing with each other for CPU resources.
+This becomes especially pronounced under high stress in production workloads.
+The current implementation has a query rate limiter which can free up resources for indexing.
 
 == Rate Limiter Configurations
-The default rate limiter is search rate limiter. Accordingly, it can be configured using the following command:
+The default rate limiter is search rate limiter.
+Accordingly, it can be configured using the following command:
 
  curl -X POST -H 'Content-type:application/json' -d '{
    "set-ratelimiter": {
@@ -44,40 +47,40 @@ The default rate limiter is search rate limiter. Accordingly, it can be configur
  }' http://localhost:8983/api/cluster
 
 === Enable Query Rate Limiter
-Controls enabling of query rate limiter. Default value is `false`.
+Controls enabling of query rate limiter.
+Default value is `false`.
 
   "enabled": true
 
 === Maximum Number Of Concurrent Requests
-Allows setting maximum concurrent search requests at a given point in time. Default value is number of cores * 3.
+Allows setting maximum concurrent search requests at a given point in time.
+Default value is number of cores * 3.
 
  "allowedRequests":20
 
 === Request Slot Allocation Wait Time
-Wait time in ms for which a request will wait for a slot to be available when all slots are full,
-before the request is put into the wait queue. This allows requests to have a chance to proceed if
-the unavailability of the request slots for this rate limiter is a transient phenomenon. Default value
-is -1, indicating no wait. 0 will represent the same -- no wait. Note that higher request allocation times
-can lead to larger queue times and can potentially lead to longer wait times for queries.
+Wait time in ms for which a request will wait for a slot to be available when all slots are full, before the request is put into the wait queue.
+This allows requests to have a chance to proceed if the unavailability of the request slots for this rate limiter is a transient phenomenon.
+Default value is -1, indicating no wait.
+0 will represent the same -- no wait.
+Note that higher request allocation times can lead to larger queue times and can potentially lead to longer wait times for queries.
 
  "slotAcquisitionTimeoutInMS":70
 
 === Slot Borrowing Enabled
-If slot borrowing (described below) is enabled or not. Default value is false.
+If slot borrowing (described below) is enabled or not.
+Default value is false.
 
-NOTE: This feature is experimental and can cause slots to be blocked if the
-borrowing request is long lived.
+NOTE: This feature is experimental and can cause slots to be blocked if the borrowing request is long lived.
 
  "slotBorrowingEnabled":true,
 
 === Guaranteed Slots
-The number of guaranteed slots that the query rate limiter will reserve irrespective
-of the load of query requests. This is used only if slot borrowing is enabled and acts
-as the threshold beyond which query rate limiter will not allow other request types to
-borrow slots from its quota. Default value is allowed number of concurrent requests / 2.
+The number of guaranteed slots that the query rate limiter will reserve irrespective of the load of query requests.
+This is used only if slot borrowing is enabled and acts as the threshold beyond which query rate limiter will not allow other request types to borrow slots from its quota.
+Default value is allowed number of concurrent requests / 2.
 
-NOTE: This feature is experimental and can cause slots to be blocked if the
-borrowing request is long lived.
+NOTE: This feature is experimental and can cause slots to be blocked if theborrowing request is long lived.
 
  "guaranteedSlots":5,
 
@@ -86,16 +89,13 @@ borrowing request is long lived.
 These are some of the things to keep in mind when using rate limiters.
 
 === Over Subscribing
-It is possible to define a size of quota for a request type which exceeds the size
-of the available threadpool. Solr does not enforce rules on the size of a quota that
-can be define for a request type. This is intentionally done to allow users full
-control on their quota allocation. However, if the quota exceeds the available threadpool's
-size, the standard queuing policies of the threadpool will kick in.
+It is possible to define a size of quota for a request type which exceeds the size of the available threadpool.
+Solr does not enforce rules on the size of a quota that can be define for a request type.
+This is intentionally done to allow users full control on their quota allocation.
+However, if the quota exceeds the available threadpool's size, the standard queuing policies of the threadpool will kick in.
 
 === Slot Borrowing
-If a quota does not have backlog but other quotas do, then the relatively less busier quota can
-"borrow" slot from the busier quotas. This is done on a round robin basis today with a futuristic
-pending task to make it a priority based model (https://issues.apache.org/jira/browse/SOLR-14709).
+If a quota does not have backlog but other quotas do, then the relatively less busier quota can "borrow" slot from the busier quotas.
+This is done on a round robin basis today with a futuristic pending task to make it a priority based model (https://issues.apache.org/jira/browse/SOLR-14709).
 
-NOTE: This feature is experimental and gives no guarantee of borrowed slots being
-returned in time.
+NOTE: This feature is experimental and gives no guarantee of borrowed slots being returned in time.

@@ -171,6 +171,11 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
                     .processAndWait(solrClient, 500);
             timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
             log.info("Restored from backup, took {}ms", timeTaken);
+            t = System.nanoTime();
+            AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+                restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), false, 3);
+            timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
+            log.info("Restored collection healthy, took {}ms", timeTaken);
             numFound = cluster.getSolrClient().query(restoreCollectionName,
                     new SolrQuery("*:*")).getResults().getNumFound();
             assertEquals(expectedDocsForFirstBackup, numFound);
@@ -234,7 +239,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         try (BackupRepository repository = cluster.getJettySolrRunner(0).getCoreContainer()
                 .newBackupRepository(BACKUP_REPO_NAME)) {
             String backupLocation = repository.getBackupLocation(getBackupLocation());
-            URI fullBackupLocationURI = repository.resolve(repository.createURI(backupLocation), backupName, getCollectionName());
+            URI fullBackupLocationURI = repository.resolveDirectory(repository.createDirectoryURI(backupLocation), backupName, getCollectionName());
             BackupFilePaths backupPaths = new BackupFilePaths(repository, fullBackupLocationURI);
             IncrementalBackupVerifier verifier = new IncrementalBackupVerifier(repository, backupLocation, backupName, getCollectionName(), 3);
 
@@ -448,7 +453,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
                                   String backupName, String collection, int maxNumberOfBackupToKeep) {
             this.repository = repository;
             this.backupLocation = backupLocation;
-            this.backupURI = repository.resolve(repository.createURI(backupLocation), backupName, collection);
+            this.backupURI = repository.resolveDirectory(repository.createURI(backupLocation), backupName, collection);
             this.incBackupFiles = new BackupFilePaths(repository, this.backupURI);
             this.backupName = backupName;
             this.maxNumberOfBackupToKeep = maxNumberOfBackupToKeep;
@@ -536,7 +541,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             URI zkBackupFolder = repository.resolve(backupURI, "zk_backup_"+numBackup);
             assertTrue(repository.exists(backupPropertiesFile));
             assertTrue(repository.exists(zkBackupFolder));
-            assertFolderAreSame(repository.resolve(backupURI, BackupFilePaths.getZkStateDir(prevBackupId)), zkBackupFolder);
+            assertFolderAreSame(repository.resolveDirectory(backupURI, BackupFilePaths.getZkStateDir(prevBackupId)), zkBackupFolder);
 
             // verify indexes file
             for(Slice slice : getCollectionState(getCollectionName()).getSlices()) {

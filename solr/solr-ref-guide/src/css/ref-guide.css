@@ -151,16 +151,6 @@ i
   margin: 50px 10px 20px 10px;
 }
 
-/* Special rules for homepage (index.html) so rows are all the same height */
-.row.match-my-cols {
-    display: table;
-}
-
-.row.match-my-cols [class*="col-"] {
-    float: none;
-    display: table-cell;
-    vertical-align: top;
-}
 
 /* General text paragraphs */
 
@@ -312,6 +302,14 @@ h6[id],
 dt[id]{
    padding-top: 60px;
    margin-top: -40px
+}
+
+/* used on scaling-solr for discrete headings in the sidebar block */
+h3[id].discrete,
+h4[id].discrete {
+  padding-top: 20px;
+  padding-bottom: 10px;
+  margin-top: -20px;
 }
 
 .sidebarblock > .title small,
@@ -720,7 +718,11 @@ ol.lowergreek
 
 dl dd
 {
-    margin-left: 1.125em;
+    margin-left: 20px;
+}
+
+dl dd dl {
+  margin-left: 30px;
 }
 
 dl dd:last-child,
@@ -976,16 +978,33 @@ table thead tr th
 table tr td,
 table tr th
 {
-    padding: .5625em .625em;
+    padding: 9px 10px;
     color: rgba(0,0,0,.8);
     font-size: inherit;
 }
 
-table tr.alt,
+/** Used on some tables to tighten up space between cells
+    Add [.lowpadding] as a role to the table to use this **/
+.tableblock.lowpadding table tr td,
+.tableblock.lowpadding table tr th
+{
+    padding: 2px 3px;
+    color: rgba(0,0,0,.8);
+    font-size: inherit;
+}
+
+/** table tr.alt,
 table tr.even,
 table tr:nth-of-type(even)
 {
     background: #f8f8f7;
+} **/
+
+table.stripes-all tr,
+table.stripes-odd tr:nth-of-type(odd),
+table.stripes-even tr:nth-of-type(even),
+table.stripes-hover tr:hover {
+  background:#f8f8f7
 }
 
 table tbody tr td,
@@ -1050,7 +1069,7 @@ table.tableblock th > p:last-child
     margin-bottom: 0;
 }
 
-table.spread
+.stretch table.tableblock
 {
     width: 100%;
 }
@@ -1163,6 +1182,17 @@ table tfoot th,
 table thead th
 {
     font-weight: bold;
+}
+
+/* Special formatting for tables on index.adoc home page */
+.home-table table th,
+.home-table table th a {
+    color: #D9411E;
+    font-size: 1.125em;
+}
+
+.home-table table thead {
+    background-color: #fff;
 }
 
 tbody tr th

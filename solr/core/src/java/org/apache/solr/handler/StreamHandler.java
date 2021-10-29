@@ -89,7 +89,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   private ModelCache modelCache;
-  private ConcurrentMap<String, Object> objectCache;
+  private ConcurrentMap<String, ConcurrentMap<String,Object>> objectCache;
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;

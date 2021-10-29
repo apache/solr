@@ -23,7 +23,6 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.CaffeineCache;
 import org.junit.BeforeClass;
@@ -48,10 +47,8 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
    * Gets a list of everything we can find in the classpath and makes sure it has
    * a name, description, etc...
    */
-  @SuppressWarnings({"unchecked"})
   public void testCallMBeanInfo() throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    List<Class> classes = new ArrayList<>();
+    List<Class<?>> classes = new ArrayList<>();
     classes.addAll(getClassesForPackage(SearchHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(SearchComponent.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(LukeRequestHandler.class.getPackage().getName()));
@@ -64,14 +61,12 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
-    for(@SuppressWarnings({"rawtypes"})Class clazz : classes ) {
+    for(Class<?> clazz : classes ) {
       if( SolrInfoBean.class.isAssignableFrom( clazz ) ) {
         try {
-          SolrInfoBean info = (SolrInfoBean)clazz.getConstructor().newInstance();
-          if (info instanceof SolrMetricProducer) {
-            ((SolrMetricProducer)info).initializeMetrics(solrMetricsContext, scope);
-          }
-          
+          SolrInfoBean info = clazz.asSubclass(SolrInfoBean.class).getConstructor().newInstance();
+          info.initializeMetrics(solrMetricsContext, scope);
+
           //System.out.println( info.getClass() );
           assertNotNull( info.getClass().getCanonicalName(), info.getName() );
           assertNotNull( info.getClass().getCanonicalName(), info.getDescription() );
@@ -93,8 +88,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
     assertTrue( "there are at least 10 SolrInfoBean that should be found in the classpath, found " + checked, checked > 10 );
   }
   
-  @SuppressWarnings({"rawtypes"})
-  private static List<Class> getClassesForPackage(String pckgname) throws Exception {
+  private static List<Class<?>> getClassesForPackage(String pckgname) throws Exception {
     ArrayList<File> directories = new ArrayList<>();
     ClassLoader cld = h.getCore().getResourceLoader().getClassLoader();
     String path = pckgname.replace('.', '/');
@@ -107,8 +101,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
       directories.add(f);
     }
       
-    @SuppressWarnings({"rawtypes"})
-    ArrayList<Class> classes = new ArrayList<>();
+    ArrayList<Class<?>> classes = new ArrayList<>();
     for (File directory : directories) {
       if (directory.exists()) {
         String[] files = directory.list();

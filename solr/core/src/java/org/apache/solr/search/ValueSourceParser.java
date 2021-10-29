@@ -46,7 +46,6 @@ import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.FieldType;
@@ -94,12 +93,6 @@ import org.locationtech.spatial4j.distance.DistanceUtils;
  * Intended usage is to create pluggable, named functions for use in function queries.
  */
 public abstract class ValueSourceParser implements NamedListInitializedPlugin {
-  /**
-   * Initialize the plugin.
-   */
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
-
   /**
    * Parse the user input into a ValueSource.
    */
@@ -1185,10 +1178,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   }
 
   static class DateValueSourceParser extends ValueSourceParser {
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    }
-
     public Date getDate(FunctionQParser fp, String arg) {
       if (arg == null) return null;
       // check character index 1 to be a digit.  Index 0 might be a +/-.

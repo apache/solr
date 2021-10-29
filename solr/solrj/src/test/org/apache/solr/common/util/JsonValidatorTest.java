@@ -28,7 +28,6 @@ import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
-    checkSchema("collections.collection.Commands");
     checkSchema("collections.collection.shards.Commands");
     checkSchema("collections.collection.shards.shard.Commands");
     checkSchema("cores.Commands");
@@ -86,7 +85,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
           "   adult : {type: Boolean}," +
           "   name: {type: string}}}");
     });
-    assertTrue(e.getMessage().contains("Unknown type"));
+    assertTrue(e.getMessage().contains("Unknown type int"));
 
     e = expectThrows(Exception.class, () -> {
       new JsonSchemaValidator("{" +

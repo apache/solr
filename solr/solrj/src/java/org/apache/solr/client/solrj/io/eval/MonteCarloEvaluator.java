@@ -35,10 +35,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class MonteCarloEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
 
-  @SuppressWarnings({"rawtypes"})
-  private Map variables = new LinkedHashMap();
+  private Map<String, Object> variables = new LinkedHashMap<>();
 
-  @SuppressWarnings({"unchecked"})
   public MonteCarloEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
 
@@ -46,10 +44,10 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
     //Get all the named params
     Set<String> echo = null;
     boolean echoAll = false;
-    for(StreamExpressionParameter np : namedParams) {
-      String name = ((StreamExpressionNamedParameter)np).getName();
+    for(StreamExpressionNamedParameter np : namedParams) {
+      String name = np.getName();
 
-      StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
+      StreamExpressionParameter param = np.getParameter();
       if(factory.isEvaluator((StreamExpression)param)) {
         StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
         variables.put(name, evaluator);
@@ -105,7 +103,6 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
 
   private void populateVariables(Tuple contextTuple) throws IOException {
 
-    @SuppressWarnings({"unchecked"})
     Set<Map.Entry<String, Object>> entries = variables.entrySet();
 
     for(Map.Entry<String, Object> entry : entries) {

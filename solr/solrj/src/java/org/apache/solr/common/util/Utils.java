@@ -89,8 +89,6 @@ import org.slf4j.MDC;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableList;
-import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 
@@ -99,17 +97,17 @@ public class Utils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings({"rawtypes"})
-  public static Map getDeepCopy(Map map, int maxDepth) {
+  public static Map getDeepCopy(Map<?,?> map, int maxDepth) {
     return getDeepCopy(map, maxDepth, true, false);
   }
 
   @SuppressWarnings({"rawtypes"})
-  public static Map getDeepCopy(Map map, int maxDepth, boolean mutable) {
+  public static Map getDeepCopy(Map<?,?> map, int maxDepth, boolean mutable) {
     return getDeepCopy(map, maxDepth, mutable, false);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Map getDeepCopy(Map map, int maxDepth, boolean mutable, boolean sorted) {
+  public static Map getDeepCopy(Map<?,?> map, int maxDepth, boolean mutable, boolean sorted) {
     if (map == null) return null;
     if (maxDepth < 1) return map;
     Map copy;
@@ -119,7 +117,7 @@ public class Utils {
       copy = map instanceof LinkedHashMap ? new LinkedHashMap<>(map.size()) : new HashMap<>(map.size());
     }
     for (Object o : map.entrySet()) {
-      Map.Entry e = (Map.Entry) o;
+      Map.Entry<?,?> e = (Map.Entry<?,?>) o;
       copy.put(e.getKey(), makeDeepCopy(e.getValue(), maxDepth, mutable, sorted));
     }
     return mutable ? copy : Collections.unmodifiableMap(copy);
@@ -155,21 +153,21 @@ public class Utils {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
     if (v instanceof MapWriter && maxDepth > 1) {
       v = ((MapWriter) v).toMap(new LinkedHashMap<>());
     } else if (v instanceof IteratorWriter && maxDepth > 1) {
-      v = ((IteratorWriter) v).toList(new ArrayList<>());
+      List<Object> l = ((IteratorWriter) v).toList(new ArrayList<>());
       if (sorted) {
-        Collections.sort((List) v);
+        l.sort(null);
       }
+      v = l;
     }
 
     if (v instanceof Map) {
       v = getDeepCopy((Map) v, maxDepth - 1, mutable, sorted);
     } else if (v instanceof Collection) {
-      v = getDeepCopy((Collection) v, maxDepth - 1, mutable, sorted);
+      v = getDeepCopy((Collection<?>) v, maxDepth - 1, mutable, sorted);
     }
     return v;
   }
@@ -188,21 +186,19 @@ public class Utils {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
+  public static Collection<?> getDeepCopy(Collection<?> c, int maxDepth, boolean mutable) {
     return getDeepCopy(c, maxDepth, mutable, false);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable, boolean sorted) {
+  public static Collection<?> getDeepCopy(Collection<?> c, int maxDepth, boolean mutable, boolean sorted) {
     if (c == null || maxDepth < 1) return c;
-    Collection result = c instanceof Set ?
-        (sorted ? new TreeSet() : new HashSet()) : new ArrayList();
-    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable, sorted));
+    Collection<Object> result = c instanceof Set ?
+        (sorted ? new TreeSet<>() : new HashSet<>()) : new ArrayList<>();
+    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable, sorted)); // TODO should this be maxDepth - 1?
     if (sorted && (result instanceof List)) {
-      Collections.sort((List) result);
+      ((List<Object>) result).sort(null);
     }
-    return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
+    return mutable ? result : Collections.unmodifiableCollection(result);
   }
 
   public static void writeJson(Object o, OutputStream os, boolean indent) throws IOException {
@@ -225,7 +221,6 @@ public class Utils {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
     public void handleUnknownClass(Object o) {
       // avoid materializing MapWriter / IteratorWriter to Map / List
       // instead serialize them directly
@@ -447,7 +442,6 @@ public class Utils {
     return setObjectByPath(root, parts, value);
   }
 
-  @SuppressWarnings({"unchecked"})
   public static boolean setObjectByPath(Object root, List<String> hierarchy, Object value) {
     if (root == null) return false;
     if (!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
@@ -466,8 +460,7 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return false;
         if (idx > -1) {
-          @SuppressWarnings({"rawtypes"})
-          List l = (List) o;
+          List<?> l = (List<?>) o;
           o = idx < l.size() ? l.get(idx) : null;
         }
         if (!isMapLike(o)) return false;
@@ -475,20 +468,22 @@ public class Utils {
       } else {
         if (idx == -2) {
           if (obj instanceof NamedList) {
-            @SuppressWarnings({"rawtypes"})
-            NamedList namedList = (NamedList) obj;
+            @SuppressWarnings("unchecked")
+            NamedList<Object> namedList = (NamedList<Object>) obj;
             int location = namedList.indexOf(s, 0);
             if (location == -1) namedList.add(s, value);
             else namedList.setVal(location, value);
           } else if (obj instanceof Map) {
-            ((Map) obj).put(s, value);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = ((Map<String, Object>) obj);
+            map.put(s, value);
           }
           return true;
         } else {
           Object v = getVal(obj, s, -1);
           if (v instanceof List) {
-            @SuppressWarnings({"rawtypes"})
-            List list = (List) v;
+            @SuppressWarnings("unchecked")
+            List<Object> list = (List<Object>) v;
             if (idx == -1) {
               list.add(value);
             } else {
@@ -533,8 +528,7 @@ public class Utils {
             Map<String, Object> map = (Map<String, Object>) o;
             o = getVal(new MapWriterMap(map), null, idx);
           } else {
-            @SuppressWarnings({"rawtypes"})
-            List l = (List) o;
+            List<?> l = (List<?>) o;
             o = idx < l.size() ? l.get(idx) : null;
           }
         }
@@ -547,8 +541,7 @@ public class Utils {
           if (val instanceof IteratorWriter) {
             val = getValueAt((IteratorWriter) val, idx);
           } else {
-            @SuppressWarnings({"rawtypes"})
-            List l = (List) val;
+            List<?> l = (List<?>) val;
             val = idx < l.size() ? l.get(idx) : null;
           }
         }
@@ -601,7 +594,6 @@ public class Utils {
     return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object getVal(Object obj, String key, int idx) {
     if (obj instanceof MapWriter) {
       Object[] result = new Object[1];
@@ -615,7 +607,7 @@ public class Utils {
             if (idx < 0) {
               if (k.equals(key)) result[0] = v;
             } else {
-              if (++count == idx) result[0] = new MapWriterEntry(k, v);
+              if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
             }
             return this;
           }
@@ -624,7 +616,7 @@ public class Utils {
         throw new RuntimeException(e);
       }
       return result[0];
-    } else if (obj instanceof Map) return ((Map) obj).get(key);
+    } else if (obj instanceof Map) return ((Map<?,?>) obj).get(key);
     else throw new RuntimeException("must be a NamedList or Map");
   }
 
@@ -656,7 +648,7 @@ public class Utils {
    * @param is to read
    * @throws IOException on problem with IO
    */
-  private static void readFully(InputStream is) throws IOException {
+  public static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
     while (is.read() != -1) {
     }
@@ -943,8 +935,7 @@ public class Utils {
 
 
 
-  @SuppressWarnings("rawtypes")
-  private static Map<Class, List<FieldWriter>> storedReflectData =   new ConcurrentHashMap<>();
+  private static Map<Class<?>, List<FieldWriter>> storedReflectData = new ConcurrentHashMap<>();
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;

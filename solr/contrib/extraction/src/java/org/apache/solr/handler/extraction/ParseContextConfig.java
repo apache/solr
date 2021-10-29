@@ -116,7 +116,7 @@ public class ParseContextConfig {
     return editor.getValue();
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({"unchecked"})
   public ParseContext create() {
     final ParseContext result = new ParseContext();
 

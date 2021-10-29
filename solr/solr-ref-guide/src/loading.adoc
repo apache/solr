@@ -22,7 +22,8 @@ These functions are designed to cut down the time spent on data preparation and 
 == Reading Files
 
 The `cat` function can be used to read files under the *userfiles* directory in
-`$SOLR_HOME`. The `cat` function takes two parameters.
+`$SOLR_HOME`.
+The `cat` function takes two parameters.
 
 The first parameter is a comma-delimited list of paths.
 If the path list contains directories, `cat` will crawl all the files in the directory and sub-directories.
@@ -81,12 +82,10 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Parsing CSV and TSV Files
 
-The `parseCSV` and `parseTSV` functions wrap the `cat` function and parse CSV
-(comma separated values) and TSV (tab separated values). Both of these functions
-expect a CSV or TSV header record at the beginning of each file.
+The `parseCSV` and `parseTSV` functions wrap the `cat` function and parse CSV (comma separated values) and TSV (tab separated values).
+Both of these functions expect a CSV or TSV header record at the beginning of each file.
 
-Both `parseCSV` and `parseTSV` emit tuples with the header values mapped to their
-corresponding values in each line.
+Both `parseCSV` and `parseTSV` emit tuples with the header values mapped to their corresponding values in each line.
 
 
 [source,text]
@@ -144,28 +143,24 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Visualizing
 
-Once that data has been parsed into tuples with `parseCSV` or `parseTSV` it can be
-visualized using Zeppelin-Solr.
+Once that data has been parsed into tuples with `parseCSV` or `parseTSV` it can be visualized using Zeppelin-Solr.
 
 The example below shows the output of the `parseCSV` function visualized as a table.
 
 image::images/math-expressions/csvtable.png[]
 
 Columns from the table can then be visualized using one of Apache Zeppelin's
-visualizations. The example below shows a scatter plot of the `petal_length` and `petal_width`
-grouped by `species`.
+visualizations.
+The example below shows a scatter plot of the `petal_length` and `petal_width` grouped by `species`.
 
 image::images/math-expressions/csv.png[]
 
 == Selecting Fields and Field Types
 
-The `select` function can be used to select specific fields from
-the CSV file and map them to new field names for indexing.
+The `select` function can be used to select specific fields from the CSV file and map them to new field names for indexing.
 
-Fields in the CSV file can be mapped to field names with
-dynamic field suffixes. This approach allows for fine grain
-control over schema field types without having to make any
-changes to schema files.
+Fields in the CSV file can be mapped to field names with dynamic field suffixes.
+This approach allows for fine grain control over schema field types without having to make any changes to schema files.
 
 Below is an example of selecting fields and mapping them
 to specific field types.
@@ -192,16 +187,15 @@ The section below shows some useful transformations that can be applied while an
 === Unique IDs
 
 Both `parseCSV` and `parseTSV` emit an *id* field if one is not present in the data already.
-The *id* field is a concatenation of the file path and the line number. This is a
-convenient way to ensure that records have consistent ids if an id
+The *id* field is a concatenation of the file path and the line number.
+This is a convenient way to ensure that records have consistent ids if an id
 is not present in the file.
 
 You can also map any fields in the file to the id field using the `select` function.
 The `concat` function can be used to concatenate two or more fields in the file
-to create an id. Or the `uuid` function can be used to create a random unique id. If
-the `uuid` function is used the data cannot be reloaded without first deleting
-the data, as the `uuid` function does not produce the same id for each document
-on subsequent loads.
+to create an id.
+Or the `uuid` function can be used to create a random unique id.
+If the `uuid` function is used the data cannot be reloaded without first deleting the data, as the `uuid` function does not produce the same id for each document on subsequent loads.
 
 Below is an example using the `concat` function to create a new id.
 
@@ -213,9 +207,8 @@ image::images/math-expressions/selectuuid.png[]
 
 === Record Numbers
 
-The `recNum` function can be used inside of a `select` function to add a record number
-to each tuple. The record number is useful for tracking location in the result set
-and can be used for filtering strategies such as skipping, paging and striding described in
+The `recNum` function can be used inside of a `select` function to add a record number to each tuple.
+The record number is useful for tracking location in the result set and can be used for filtering strategies such as skipping, paging and striding described in
 the <<Filtering Results>> section below.
 
 The example below shows the syntax of the `recNum` function:
@@ -260,8 +253,8 @@ When this expression is sent to the `/stream` handler it responds with:
 Then we can use the `dateTime` function to format the datetime and
 map it to a Solr date field.
 
-The `dateTime` function takes three parameters. The field in the data
-with the date string, a template to parse the date using a Java https://docs.oracle.com/javase/9/docs/api/java/text/SimpleDateFormat.html[`SimpleDateFormat` template],
+The `dateTime` function takes three parameters.
+The field in the data with the date string, a template to parse the date using a Java https://docs.oracle.com/javase/9/docs/api/java/text/SimpleDateFormat.html[`SimpleDateFormat` template],
 and an optional time zone.
 
 If the time zone is not present the time zone defaults to GMT time unless
@@ -299,8 +292,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === String Manipulation
 
-The `upper`, `lower`, `split`, `valueAt`, `trim`, and `concat` functions can be used to manipulate
-strings inside of the `select` function.
+The `upper`, `lower`, `split`, `valueAt`, `trim`, and `concat` functions can be used to manipulate strings inside of the `select` function.
 
 The example below shows the `upper` function used to upper case the *species*
 field.
@@ -308,8 +300,8 @@ field.
 image::images/math-expressions/selectupper.png[]
 
 The example below shows the `split` function which splits a field on
-a delimiter. This can be used to create multi-value fields from fields
-with an internal delimiter.
+a delimiter.
+This can be used to create multi-value fields from fields with an internal delimiter.
 
 The example below demonstrates this with a direct call to
 the `/stream` handler:
@@ -360,8 +352,7 @@ When this expression is sent to the `/stream` handler it responds with:
       }]}}
 ----
 
-The `valueAt` function can be used to select a specific index from
-a split array.
+The `valueAt` function can be used to select a specific index from a split array.
 
 image::images/math-expressions/valueat.png[]
 
@@ -401,22 +392,21 @@ image::images/math-expressions/paging.png[]
 ==== Striding
 
 The `eq` and nested `mod` function can be used to stride through the data at specific
-record number intervals. This allows for a sample to be taken at different intervals in the data
-in a systematic way.
+record number interval
+This allows for a sample to be taken at different intervals in the data in a systematic way.
 
 image::images/math-expressions/striding.png[]
 
 ==== Regex Matching
 
-The `matches` function can be used to test if a field in the record matches a specific
-regular expression. This provides a powerful *grep* like capability over the record set.
+The `matches` function can be used to test if a field in the record matches a specific regular expression.
+This provides a powerful *grep* like capability over the record set.
 
 image::images/math-expressions/matches.png[]
 
 === Handling Nulls
 
-In most cases nulls do not need to be handled directly unless there is specific logic needed
-to handle nulls during the load.
+In most cases nulls do not need to be handled directly unless there is specific logic needed to handle nulls during the load.
 
 The `select` function does not output fields that contain a null value.
 This means as nulls are encountered in the data the fields are not included in the tuples.
@@ -465,19 +455,15 @@ function can be used to expand the list of tokens to a stream of tuples.
 There are a number of interesting use cases for the `analyze` function:
 
 * Previewing the output of different analyzers before indexing.
-* Annotating documents with NLP generated tokens (entity extraction, noun phrases etc...)
-before the documents reach the indexing pipeline.
-This removes heavy NLP processing from the servers that may also be handling queries. It also allows
-more compute resources to be applied to the NLP indexing then is available on the search cluster.
-* Using the `cartesianProduct` function the analyzed tokens can be indexed as individual documents which allows
-analyzed tokens to be searched and analyzed with Solr's aggregation and graph expressions.
-* Also using `cartesianProduct` the analyzed tokens can be aggregated, analyzed and visualized using
-streaming expressions directly before indexing occurs.
+* Annotating documents with NLP generated tokens (entity extraction, noun phrases etc...) before the documents reach the indexing pipeline.
+This removes heavy NLP processing from the servers that may also be handling queries.
+It also allows more compute resources to be applied to the NLP indexing then is available on the search cluster.
+* Using the `cartesianProduct` function the analyzed tokens can be indexed as individual documents which allows analyzed tokens to be searched and analyzed with Solr's aggregation and graph expressions.
+* Also using `cartesianProduct` the analyzed tokens can be aggregated, analyzed and visualized using streaming expressions directly before indexing occurs.
 
 
-Below is an example of the `analyze` function being applied to the *Resolution.Description*
-field in the tuples. The *\_text_* fields analyzer is used to analyze the text and the
-analyzed tokens are added to the documents in the *token_ss* field.
+Below is an example of the `analyze` function being applied to the *Resolution.Description* field in the tuples.
+The *\_text_* fields analyzer is used to analyze the text and the analyzed tokens are added to the documents in the *token_ss* field.
 
 [source,text]
 ----
@@ -533,9 +519,9 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-The example below shows the `cartesianProduct` function expanding the analyzed terms in the `term_s` field into
-their own documents. Notice that the other fields from the document are maintained with each term. This allows each term
-to be indexed in a separate document so the relationships between terms and the other fields can be explored through
+The example below shows the `cartesianProduct` function expanding the analyzed terms in the `term_s` field into their own documents.
+Notice that the other fields from the document are maintained with each term.
+This allows each term to be indexed in a separate document so the relationships between terms and the other fields can be explored through
 graph expressions or aggregations.
 
 

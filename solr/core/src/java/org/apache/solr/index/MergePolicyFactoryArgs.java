@@ -31,9 +31,9 @@ public class MergePolicyFactoryArgs {
     this.args = new HashMap<>();
   }
 
-  public MergePolicyFactoryArgs(Iterable<Map.Entry<String,Object>> args) {
+  public MergePolicyFactoryArgs(Iterable<? extends Map.Entry<String,?>> args) {
     this.args = new HashMap<>();
-    for (final Map.Entry<String,Object> arg : args) {
+    for (final Map.Entry<String,?> arg : args) {
       this.args.put(arg.getKey(), arg.getValue());
     }
   }

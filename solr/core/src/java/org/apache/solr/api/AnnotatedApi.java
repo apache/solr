@@ -49,6 +49,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +89,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
   public EndPoint getEndPoint() {
     return endPoint;
   }
+
+  public Map<String, Cmd> getCommands() { return commands; }
 
   public static List<Api> getApis(Object obj) {
     return getApis(obj.getClass(), obj, true);
@@ -144,8 +147,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     }
   }
 
-
-  private AnnotatedApi(SpecProvider specProvider, EndPoint endPoint, Map<String, Cmd> commands, Api fallback) {
+  protected AnnotatedApi(SpecProvider specProvider, EndPoint endPoint, Map<String, Cmd> commands, Api fallback) {
     super(specProvider);
     this.endPoint = endPoint;
     this.fallback = fallback;
@@ -210,11 +212,11 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     }
 
     for (CommandOperation cmd : cmds) {
+      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.log("Command: " + cmd.name));
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 
-    @SuppressWarnings({"rawtypes"})
-    List<Map> errs = CommandOperation.captureErrors(cmds);
+    List<Map<String, Object>> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
       log.error("{}{}", ERR, Utils.toJSONString(errs));
       throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);

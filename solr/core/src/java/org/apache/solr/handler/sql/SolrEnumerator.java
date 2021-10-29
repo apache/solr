@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Date;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 
 /** Enumerator that reads from a Solr collection. */
@@ -35,7 +35,6 @@ class SolrEnumerator implements Enumerator<Object> {
   private final TupleStream tupleStream;
   private final List<Map.Entry<String, Class<?>>> fields;
   private Tuple current;
-  private char sep = 31;
 
   /** Creates a SolrEnumerator.
    *
@@ -87,15 +86,9 @@ class SolrEnumerator implements Enumerator<Object> {
       return val;
     }
 
-    if(val instanceof ArrayList) {
-      ArrayList<?> arrayList = (ArrayList<?>) val;
-      StringBuilder buf = new StringBuilder();
-
-      for(Object o : arrayList) {
-        buf.append(sep);
-        buf.append(o.toString());
-      }
-      val = buf.toString();
+    if (clazz.equals(Date.class)) {
+      // make sure the val returned is a Date as Avatica cannot deal with string values for Timestamp fields
+      val = tuple.getDate(field.getKey());
     }
 
     return val;

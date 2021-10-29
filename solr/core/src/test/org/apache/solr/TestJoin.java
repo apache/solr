@@ -244,8 +244,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         List<Doc> docList = new ArrayList<>(docs.size());
         for (@SuppressWarnings({"rawtypes"})Comparable id : docs) docList.add(model.get(id));
         Collections.sort(docList, createComparator("_docid_",true,false,false,false));
-        @SuppressWarnings({"rawtypes"})
-        List sortedDocs = new ArrayList();
+        List<Object> sortedDocs = new ArrayList<>();
         for (Doc doc : docList) {
           if (sortedDocs.size() >= 10) break;
           sortedDocs.add(doc.toObject(h.getCore().getLatestSchema()));

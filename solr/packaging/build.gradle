@@ -58,10 +58,12 @@ dependencies {
    ":solr:contrib:analytics",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
+   ":solr:contrib:gcs-repository",
    ":solr:contrib:jaegertracer-configurator",
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
    ":solr:contrib:prometheus-exporter",
+   ":solr:contrib:s3-repository",
    ":solr:contrib:scripting"
   ].each { contribName ->
     distSolr project(contribName)
@@ -71,7 +73,6 @@ dependencies {
   distSolr project(":solr:core")
   distSolr project(":solr:server")
   distSolr project(":solr:solrj")
-  distSolr project(":solr:test-framework")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")

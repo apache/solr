@@ -17,8 +17,12 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,9 +43,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermVectorParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
@@ -51,7 +53,6 @@ import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Return term vectors for the documents in a query result set.
@@ -75,7 +76,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *
  *
  */
-public class TermVectorComponent extends SearchComponent implements SolrCoreAware {
+public class TermVectorComponent extends SearchComponent {
 
 
   public static final String COMPONENT_NAME = "tv";
@@ -84,8 +85,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   private static final String TV_KEY_WARNINGS = "warnings";
 
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList initParams;
+  protected NamedList<?> initParams;
 
   /**
    * Helper method for determining the list of fields that we should 
@@ -122,7 +122,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       return (null != fieldNames) ?
         fieldNames :
         // return empty set indicating no fields should be used
-        Collections.<String>emptySet();
+        Collections.emptySet();
     }
 
     // otherwise us the raw fldList as is, no special parsing or globs
@@ -366,7 +366,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
               thePayloads = new NamedList<>();
               termInfo.add("payloads", thePayloads);
             }
-            thePayloads.add("payload", Base64.byteArrayToBase64(payload.bytes, payload.offset, payload.length));
+            thePayloads.add("payload", new String(Base64.getEncoder().encode(ByteBuffer.wrap(payload.bytes, payload.offset, payload.length)).array(), StandardCharsets.ISO_8859_1));
           }
         }
       }
@@ -414,8 +414,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       
       NamedList<Object> termVectorsNL = new NamedList<>();
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
+      @SuppressWarnings("unchecked")
+      Map.Entry<String, Object>[] arr = (NamedList.NamedListEntry<Object>[]) Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
 
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0 || !sreq.params.getBool(COMPONENT_NAME, false)) {
@@ -454,14 +454,9 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-
   }
 
   @Override

@@ -91,7 +91,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   public FeaturesSelectionStream(String zkHost,
                      String collectionName,
-                     @SuppressWarnings({"rawtypes"})Map params,
+                     Map<String,String> params,
                      String field,
                      String outcome,
                      String featureSet,
@@ -126,7 +126,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
     }
 
-    Map<String,String> params = new HashMap<String,String>();
+    Map<String,String> params = new HashMap<>();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
@@ -213,10 +213,9 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     return expression;
   }
 
-  @SuppressWarnings({"unchecked"})
   private void init(String collectionName,
                     String zkHost,
-                    @SuppressWarnings({"rawtypes"})Map params,
+                    Map<String, String> params,
                     String field,
                     String outcome,
                     String featureSet,
@@ -289,17 +288,16 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private List<Future<NamedList>> callShards(List<String> baseUrls) throws IOException {
+  private List<Future<NamedList<?>>> callShards(List<String> baseUrls) throws IOException {
 
-    List<Future<NamedList>> futures = new ArrayList<>();
+    List<Future<NamedList<?>>> futures = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       FeaturesSelectionCall lc = new FeaturesSelectionCall(baseUrl,
           this.params,
           this.field,
           this.outcome);
 
-      Future<NamedList> future = executorService.submit(lc);
+      Future<NamedList<?>> future = executorService.submit(lc);
       futures.add(future);
     }
 
@@ -338,9 +336,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
 
         long numDocs = 0;
-        for (@SuppressWarnings({"rawtypes"})Future<NamedList> getTopTermsCall : callShards(getShardUrls())) {
-          @SuppressWarnings({"rawtypes"})
-          NamedList resp = getTopTermsCall.get();
+        for (Future<NamedList<?>> getTopTermsCall : callShards(getShardUrls())) {
+          NamedList<?> resp = getTopTermsCall.get();
 
           @SuppressWarnings({"unchecked"})
           NamedList<Double> shardTopTerms = (NamedList<Double>)resp.get("featuredTerms");
@@ -402,8 +399,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     return result;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  protected class FeaturesSelectionCall implements Callable<NamedList> {
+  protected class FeaturesSelectionCall implements Callable<NamedList<?>> {
 
     private String baseUrl;
     private String outcome;
@@ -421,8 +417,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       this.paramsMap = paramsMap;
     }
 
-    @SuppressWarnings({"unchecked"})
-    public NamedList<Double> call() throws Exception {
+    public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
@@ -440,7 +435,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
       QueryRequest request= new QueryRequest(params);
       QueryResponse response = request.process(solrClient);
-      NamedList res = response.getResponse();
+      NamedList<?> res = response.getResponse();
       return res;
     }
   }

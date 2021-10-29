@@ -79,12 +79,6 @@ public class TermsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "terms";
 
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
-  {
-    super.init(args);
-  }
-
-  @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
 
@@ -386,8 +380,7 @@ public class TermsComponent extends SearchComponent {
     }
 
     TermsHelper ti = rb._termsHelper;
-    @SuppressWarnings({"rawtypes"})
-    NamedList terms = ti.buildResponse();
+    NamedList<Object> terms = ti.buildResponse();
 
     rb.rsp.add("terms", terms);
     if(ti.stats) {

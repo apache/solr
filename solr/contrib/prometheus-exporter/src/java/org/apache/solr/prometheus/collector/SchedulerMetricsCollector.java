@@ -77,9 +77,8 @@ public class SchedulerMetricsCollector implements Closeable {
     scheduler.scheduleWithFixedDelay(this::collectMetrics, 0, duration, timeUnit);
   }
 
-  private@SuppressWarnings({"try"})
-  void collectMetrics() {
-
+  @SuppressWarnings("try")
+  private void collectMetrics() {
     try (Histogram.Timer timer = metricsCollectionTime.startTimer()) {
       log.info("Beginning metrics collection");
 

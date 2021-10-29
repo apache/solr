@@ -112,7 +112,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
           payload = SimplePostTool.inputStreamToByteArray(is, maxSize);
         }
         MessageDigest m = MessageDigest.getInstance("MD5");
-        m.update(payload.array(), payload.position(), payload.limit());
+        m.update(payload.array(), payload.arrayOffset() + payload.position(), payload.limit());
         String md5 = new String(Hex.encodeHex(m.digest()));
 
         int duplicateCount = req.getSearcher().count(new TermQuery(new Term("md5", md5)));
@@ -191,7 +191,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
                   //should never happen unless a user wrote this document directly
                   throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Invalid document . No field called blob");
                 } else {
-                  os.write(buf.array(), 0, buf.limit());
+                  os.write(buf.array(), buf.arrayOffset(), buf.limit());
                 }
               }
             });
@@ -274,8 +274,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   public void init(PluginInfo info) {
     super.init(info.initArgs);
     if (info.initArgs != null) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList invariants = (NamedList) info.initArgs.get(PluginInfo.INVARIANTS);
+      NamedList<?> invariants = (NamedList<?>) info.initArgs.get(PluginInfo.INVARIANTS);
       if (invariants != null) {
         Object o = invariants.get("maxSize");
         if (o != null) {

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -46,10 +45,5 @@ public class DelegatingEventListener implements SolrEventListener {
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     holder.getInstance().ifPresent(it -> it.newSearcher(newSearcher, currentSearcher));
-  }
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-
   }
 }

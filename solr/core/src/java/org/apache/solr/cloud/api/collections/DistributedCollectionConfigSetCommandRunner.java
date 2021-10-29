@@ -238,7 +238,7 @@ public class DistributedCollectionConfigSetCommandRunner {
     // Following the call below returning true, we must eventually cancel or complete the task. Happens either in the
     // CollectionCommandRunner below or in the catch when the runner would not execute.
     if (!asyncTaskTracker.createNewAsyncJobTracker(asyncId)) {
-      NamedList<String> resp = new NamedList<>();
+      NamedList<Object> resp = new NamedList<>();
       resp.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
       resp.add(CoreAdminParams.REQUESTID, asyncId);
       return new OverseerSolrResponse(resp);
@@ -269,7 +269,7 @@ public class DistributedCollectionConfigSetCommandRunner {
       }
     } else {
       // Async calls do not wait for the command to finish but get instead back the async id (that they just sent...)
-      NamedList<String> resp = new NamedList<>();
+      NamedList<Object> resp = new NamedList<>();
       resp.add(CoreAdminParams.REQUESTID, asyncId);
       return new OverseerSolrResponse(resp);
     }
@@ -331,7 +331,6 @@ public class DistributedCollectionConfigSetCommandRunner {
      * (initiated before this method got called) on all execution paths out of this method!
      */
     @Override
-    @SuppressWarnings("unchecked")
     public OverseerSolrResponse call() {
       final String collName = getCollectionName(message);
       final String shardId = message.getStr(SHARD_ID_PROP);
@@ -341,8 +340,7 @@ public class DistributedCollectionConfigSetCommandRunner {
       MDCLoggingContext.setShard(shardId);
       MDCLoggingContext.setReplica(replicaName);
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList results = new NamedList();
+      NamedList<Object> results = new NamedList<>();
       try {
         // Create API lock for executing the command. This call is non blocking (not blocked on waiting for a lock to be acquired anyway,
         // might be blocked on access to ZK etc)

@@ -82,6 +82,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -171,7 +172,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   @Override
-  final public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
+  final public void init(NamedList<?> args) {
 
   }
 
@@ -205,11 +206,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (action == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
+      final String collection = params.get(COLLECTION);
+      MDCLoggingContext.setCollection(collection);
+      TraceUtils.setDbInstance(req, collection);
       CollectionOperation operation = CollectionOperation.get(action);
       if (log.isDebugEnabled()) {
         log.debug("Invoked Collection Action: {} with params {}", action.toLower(), req.getParamString());
       }
-      MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
@@ -296,7 +299,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       if (m.get(ASYNC) != null) {
         String asyncId = m.getStr(ASYNC);
-        NamedList<String> r = new NamedList<>();
+        NamedList<Object> r = new NamedList<>();
 
         if (coreContainer.getZkController().claimAsyncId(asyncId)) {
           boolean success = false;
@@ -318,7 +321,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         } else {
           r.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
         }
-        r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
+        r.add(CoreAdminParams.REQUESTID, m.get(ASYNC));
 
         return new OverseerSolrResponse(r);
       }
@@ -753,7 +756,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String extCollectionName = req.getParams().get(COLLECTION_PROP);
       String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
           .getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
-      if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
+      if (!ImplicitDocRouter.NAME.equals(((Map<?,?>) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
         throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
       copy(req.getParams(), map,
           REPLICATION_FACTOR,
@@ -1052,7 +1055,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         String prop = entry.getKey();
         if ("".equals(entry.getValue())) {
           // set to an empty string is equivalent to removing the property, see SOLR-12507
-          m.put(prop, null);
+          entry.setValue(null);
         }
         DocCollection.verifyProp(m, prop);
       }
@@ -1090,7 +1093,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
 
       // Check if the specified location is valid for this repository.
-      final URI uri = repository.createURI(location);
+      final URI uri = repository.createDirectoryURI(location);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
@@ -1139,13 +1142,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Check if the specified location is valid for this repository.
-      final URI uri = repository.createURI(location);
+      final URI uri = repository.createDirectoryURI(location);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
         }
       } catch (IOException ex) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + uri + ". Is it valid?", ex);
       }
 
       final String createNodeArg = req.getParams().get(CREATE_NODE_SET);
@@ -1190,13 +1193,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
 
         // Check if the specified location is valid for this repository.
-        URI uri = repository.createURI(location);
+        URI uri = repository.createDirectoryURI(location);
         try {
           if (!repository.exists(uri)) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + uri + " does not exist.");
           }
         } catch (IOException ex) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + uri + ". Is it valid?", ex);
         }
 
         int deletionModesProvided = 0;
@@ -1218,7 +1221,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         return params;
       }
     }),
-    @SuppressWarnings({"unchecked", "rawtypes"})
     LISTBACKUP_OP(LISTBACKUP, (req, rsp, h) -> {
       req.getParams().required().check(NAME);
 
@@ -1238,13 +1240,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
 
         String backupName = req.getParams().get(NAME);
-        final URI locationURI = repository.createURI(location);
+        final URI locationURI = repository.createDirectoryURI(location);
         try {
           if (!repository.exists(locationURI)) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + locationURI + " does not exist.");
           }
         } catch (IOException ex) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + locationURI + ". Is it valid?", ex);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + locationURI + ". Is it valid?", ex);
         }
         URI backupLocation = BackupFilePaths.buildExistingBackupLocationURI(repository, locationURI, backupName);
         if (repository.exists(repository.resolve(backupLocation, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
@@ -1257,7 +1259,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         List<BackupId> propsFiles = BackupFilePaths.findAllBackupIdsFromFileListing(subFiles);
 
         NamedList<Object> results = new NamedList<>();
-        ArrayList<Map> backups = new ArrayList<>();
+        ArrayList<Map<Object,Object>> backups = new ArrayList<>();
         String collectionName = null;
         for (BackupId backupId: propsFiles) {
           BackupProperties properties = BackupProperties.readFrom(repository, backupLocation, BackupFilePaths.getBackupPropsName(backupId));

@@ -17,8 +17,7 @@
     "autoSoftCommit":{
       "maxDocs":20,
       "maxTime":20},
-    "commitWithin":{"softCommit":11},
-    "indexWriter":{"closeWaitsForMerges":11}},
+    "commitWithin":{"softCommit":11}},
   "query":{
     "filterCache":{
       "class":0,

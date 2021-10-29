@@ -37,8 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
@@ -151,8 +149,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   }
 
   public static boolean getImmutable(SolrCore core) {
-    @SuppressWarnings({"rawtypes"})
-    NamedList configSetProperties = core.getConfigSetProperties();
+    NamedList<?> configSetProperties = core.getConfigSetProperties();
     if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
     return immutable != null && Boolean.parseBoolean(immutable.toString());
@@ -256,8 +253,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 Object o = pluginNameVsPluginInfo instanceof MapSerializable ?
                        pluginNameVsPluginInfo:
                         pluginNameVsPluginInfo.get(componentName);
-                @SuppressWarnings({"rawtypes"})
-                Map pluginInfo = o instanceof  MapSerializable? ((MapSerializable) o).toMap(new LinkedHashMap<>()): (Map) o;
+                Map<String, Object> pluginInfo = o instanceof MapSerializable ? ((MapSerializable) o).toMap(new LinkedHashMap<>()) : (Map<String, Object>) o;
                 val.put(parts.get(1), pluginNameVsPluginInfo instanceof PluginInfo? pluginInfo : Map.of(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
                   // meta=true is asking for the package info of the plugin
@@ -282,15 +278,14 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
     }
 
-    @SuppressWarnings({"unchecked"})
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
       String componentName = componentType == null ? null : req.getParams().get("componentName");
       boolean showParams = req.getParams().getBool("expandParams", false);
       Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
-      @SuppressWarnings({"rawtypes"})
-      Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
-      if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
+      @SuppressWarnings({"unchecked"})
+      Map<String, Object> reqHandlers = (Map<String, Object>) map.computeIfAbsent(SolrRequestHandler.TYPE,
+              k -> new LinkedHashMap<>());
       List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
       for (PluginInfo plugin : plugins) {
         if (SolrRequestHandler.TYPE.equals(plugin.type)) {
@@ -300,9 +295,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         }
       }
       if (!showParams) return map;
-      for (Object o : reqHandlers.entrySet()) {
-        @SuppressWarnings({"rawtypes"})
-        Map.Entry e = (Map.Entry) o;
+      for (Map.Entry<String, Object> e : reqHandlers.entrySet()) {
         if (componentName == null || e.getKey().equals(componentName)) {
           Map<String, Object> m = expandUseParams(req, e.getValue());
           e.setValue(m);
@@ -325,8 +318,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);
       if (useParams != null || useParamsInReq != null) {
-        @SuppressWarnings({"rawtypes"})
-        Map m = new LinkedHashMap<>();
+        Map<String, Object> m = new LinkedHashMap<>();
         pluginInfo.put("_useParamsExpanded_", m);
         List<String> params = new ArrayList<>();
         if (useParams != null) params.addAll(StrUtils.splitSmart(useParams, ','));
@@ -343,18 +335,14 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), req.getOriginalParams());
         r.getContext().put(USEPARAM, useParams);
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
+        NamedList<?> nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
         SolrPluginUtils.setDefaults(r,
             getSolrParamsFromNamedList(nl, DEFAULTS),
             getSolrParamsFromNamedList(nl, APPENDS),
             getSolrParamsFromNamedList(nl, INVARIANTS));
         //SolrParams.wrapDefaults(maskUseParams, req.getParams())
 
-        MapSolrParams mask = new MapSolrParams(ImmutableMap.<String, String>builder()
-            .put("componentName", "")
-            .put("expandParams", "")
-            .build());
+        MapSolrParams mask = new MapSolrParams(Map.of("componentName", "", "expandParams", ""));
         pluginInfo.put("_effectiveParams_",
             SolrParams.wrapDefaults(mask, r.getParams()));
       }
@@ -762,7 +750,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public static final String SET = "set";
   public static final String UPDATE = "update";
   public static final String CREATE = "create";
-  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete", "add");
+  private static final Set<String> cmdPrefixes = Set.of(CREATE, UPDATE, "delete", "add");
 
   /**
    * Block up to a specified maximum time until we see agreement on the schema
@@ -874,8 +862,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static class PerReplicaCallable extends SolrRequest implements Callable<Boolean> {
+  private static class PerReplicaCallable extends SolrRequest<SolrResponse> implements Callable<Boolean> {
     String coreUrl;
     String prop;
     int expectedZkVersion;

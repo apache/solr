@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -45,10 +46,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
+@LuceneTestCase.SuppressCodecs("SimpleText") // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class TestRestoreCore extends SolrJettyTestBase {
 
   JettySolrRunner leaderJetty;
-  TestReplicationHandler.SolrInstance leader = null;
+    ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
   private static final String CONF_DIR = "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf"
@@ -57,7 +59,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   private static String context = "/solr";
   private static long docsSeed; // see indexDocs()
 
-  private static JettySolrRunner createAndStartJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
+  private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
@@ -85,7 +87,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     super.setUp();
     String configFile = "solrconfig-leader.xml";
 
-    leader = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
     leader.setUp();
     leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 

@@ -159,7 +159,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     params = args.toSolrParams();
     this.hdfsDataDir = getConfig(HDFS_HOME, null);
@@ -450,8 +450,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     try {
       return fileSystem.getContentSummary(hdfsDirPath).getLength();
     } catch (IOException e) {
-      log.error("Error checking if hdfs path exists", e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error checking if hdfs path exists", e);
+      log.error("Error calculating size", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error calculating size", e);
     }
   }
 

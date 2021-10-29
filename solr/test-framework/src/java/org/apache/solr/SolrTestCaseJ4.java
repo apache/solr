@@ -62,7 +62,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +70,6 @@ import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import io.opentracing.noop.NoopTracerFactory;
@@ -143,6 +142,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
@@ -165,11 +165,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import org.apache.commons.io.IOUtils;
+
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase.
@@ -183,14 +186,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
-      "org.junit.",
-      "junit.framework.",
-      "sun.",
-      "java.lang.reflect.",
-      "com.carrotsearch.randomizedtesting.",
-  });
   
   public static final String DEFAULT_TEST_COLLECTION_NAME = "collection1";
   public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
@@ -227,6 +222,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  protected void assertExceptionThrownWithMessageContaining(Class<? extends Throwable> expectedType,
+                                                            List<String> expectedStrings, ThrowingRunnable runnable) {
+    Throwable thrown = expectThrows(expectedType, runnable);
+
+    if (expectedStrings != null) {
+      for (String expectedString : expectedStrings) {
+        assertThat(thrown.getMessage(), containsString(expectedString));
+      }
+    }
+  }
+
   /**
    * Annotation for test classes that want to disable SSL
    */
@@ -254,7 +260,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
-  protected static volatile SSLTestConfig sslConfig;
+  public static volatile SSLTestConfig sslConfig;
 
   @Rule
   public TestRule solrTestRules = 
@@ -288,10 +294,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
-    System.setProperty("enable.update.log", usually() ? "true" : "false");
+    System.setProperty("enable.update.log", Boolean.toString(usually()));
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
+    System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
     System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
@@ -360,13 +367,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       resetExceptionIgnores();
 
-      if (suiteFailureMarker.wasSuccessful()) {
-        // if the tests passed, make sure everything was closed / released
-        String orr = clearObjectTrackerAndCheckEmpty(60, false);
-        assertNull(orr, orr);
-      } else {
-        ObjectReleaseTracker.tryClose();
-      }
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
@@ -428,49 +428,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (ReflectiveOperationException e) {
       fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
     }
-  }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds) {
-    return clearObjectTrackerAndCheckEmpty(waitSeconds, false);
-  }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds, boolean tryClose) {
-    int retries = 0;
-    String result;
-    do {
-      result = ObjectReleaseTracker.checkEmpty();
-      if (result == null)
-        break;
-      try {
-        if (retries % 10 == 0) {
-          log.info("Waiting for all tracked resources to be released");
-          if (retries > 10) {
-            TraceFormatting tf = new TraceFormatting(DEFAULT_STACK_FILTERS);
-            Map<Thread,StackTraceElement[]> stacksMap = Thread.getAllStackTraces();
-            Set<Entry<Thread,StackTraceElement[]>> entries = stacksMap.entrySet();
-            for (Entry<Thread,StackTraceElement[]> entry : entries) {
-              String stack = tf.formatStackTrace(entry.getValue());
-              System.err.println(entry.getKey().getName() + ":\n" + stack);
-            }
-          }
-        }
-        TimeUnit.SECONDS.sleep(1);
-      } catch (InterruptedException e) { break; }
-    }
-    while (retries++ < waitSeconds);
-    
-    
-    log.info("------------------------------------------------------- Done waiting for tracked resources to be released");
-    
-    ObjectReleaseTracker.clear();
-    
-    return result;
   }
 
   @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
@@ -715,28 +672,42 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       numOpens = numCloses = 0;
     }
   }
-  
-  /** Causes an exception matching the regex pattern to not be logged. */
-  public static void ignoreException(String pattern) {
-    if (SolrException.ignorePatterns == null) // usually initialized already but in case not...
-      resetExceptionIgnores();
-    SolrException.ignorePatterns.add(pattern);
-  }
 
-  public static void unIgnoreException(String pattern) {
-    if (SolrException.ignorePatterns != null)
-      SolrException.ignorePatterns.remove(pattern);
+  private final static Map<String,ErrorLogMuter> errorMuters = new ConcurrentHashMap<>();
+  
+  /** 
+   * Causes any ERROR log messages matching with a substring matching the regex pattern to be filtered out by the ROOT logger
+   *
+   * @see #resetExceptionIgnores
+   * @deprecated use a {@link ErrorLogMuter} instead
+   */
+  @Deprecated
+  public static void ignoreException(String pattern) {
+    errorMuters.computeIfAbsent(pattern, (pat) -> ErrorLogMuter.regex(pat));
   }
 
   /**
-   * Clears all exception patterns, although keeps {@code "ignore_exception"}.
-   * {@link SolrTestCaseJ4} calls this in {@link AfterClass} so usually tests don't need to call this.
+   * @see #ignoreException
+   * @deprecated use a {@link ErrorLogMuter} instead
    */
-  public static void resetExceptionIgnores() {
-    // CopyOnWrite for safety; see SOLR-11757
-    SolrException.ignorePatterns = new CopyOnWriteArraySet<>(Collections.singleton("ignore_exception"));
+  @Deprecated
+  public static void unIgnoreException(String pattern) {
+    errorMuters.computeIfPresent(pattern, (pat, muter) -> { IOUtils.closeQuietly(muter); return null; } );
   }
-
+  
+  /**
+   * Clears all exception patterns, immediately re-registering {@code "ignore_exception"}.
+   * {@link SolrTestCaseJ4} calls this in both {@link BeforeClass} {@link AfterClass} so usually tests don't need to call this.
+   * 
+   * @see #ignoreException
+   * @deprecated use a {@link ErrorLogMuter} instead
+   */
+  @Deprecated
+  public static void resetExceptionIgnores() {
+    errorMuters.forEach( (k, muter) -> { IOUtils.closeQuietly(muter); errorMuters.remove(k); } );
+    ignoreException("ignore_exception");
+  }
+  
   protected static String getClassName() {
     return getTestClass().getName();
   }

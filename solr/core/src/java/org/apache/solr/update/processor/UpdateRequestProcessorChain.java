@@ -119,7 +119,6 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
    * @see DistributedUpdateProcessorFactory
    */
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void init(PluginInfo info) {
     final String infomsg = "updateRequestProcessorChain \"" + 
       (null != info.name ? info.name : "") + "\"" + 
@@ -158,7 +157,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       // by default, add distrib processor immediately before run
       DistributedUpdateProcessorFactory distrib
         = new DistributedUpdateProcessorFactory();
-      distrib.init(new NamedList());
+      distrib.init(new NamedList<>());
       list.add(runIndex, distrib);
 
       log.debug("inserting DistributedUpdateProcessorFactory into {}", infomsg);
@@ -172,7 +171,6 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 
   }
 
-  @SuppressWarnings({"rawtypes"})
   private List<UpdateRequestProcessorFactory> createProcessors(PluginInfo info) {
     List<PluginInfo> processors = info.getChildren("processor");
     return processors.stream().map(it -> {
@@ -181,7 +179,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
             UpdateRequestProcessorFactory.class.getSimpleName(), null);
 
       } else {
-        return new LazyUpdateRequestProcessorFactory(new PackagePluginHolder(
+        return new LazyUpdateRequestProcessorFactory(new PackagePluginHolder<>(
             it,
             solrCore,
             SolrConfig.classVsSolrPluginInfo.get(UpdateRequestProcessorFactory.class.getName())));
@@ -357,7 +355,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   public static class LazyUpdateProcessorFactoryHolder extends PluginBag.PluginHolder<UpdateRequestProcessorFactory> {
     private volatile UpdateRequestProcessorFactory lazyFactory;
 
-    public LazyUpdateProcessorFactoryHolder(@SuppressWarnings({"rawtypes"})final PluginBag.PluginHolder holder) {
+    public LazyUpdateProcessorFactoryHolder(final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder) {
       super(holder.getPluginInfo());
       lazyFactory = new LazyUpdateRequestProcessorFactory(holder);
     }
@@ -371,8 +369,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     public static class LazyUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
       private final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder;
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder holder) {
+      public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder) {
         this.holder = holder;
       }
 

@@ -128,6 +128,11 @@ allprojects { prj ->
       }
     }
 
+    // Disable checks on JMH generated files.
+    if (prj.path == ":solr:benchmark") {
+      forbiddenApisMain.exclude("**/jmh_generated/**")
+    }
+
     // We rely on resolved configurations to compute the relevant set of rule
     // files for forbiddenApis. Since we don't want to resolve these configurations until
     // the task is executed, we can't really use them as task inputs properly. This is a

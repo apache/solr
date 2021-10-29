@@ -36,8 +36,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
@@ -58,6 +59,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -75,7 +77,7 @@ public class CollApiCmds {
    * Interface implemented by all Collection API commands. Collection API commands are defined in classes whose names ends in {@code Cmd}.
    */
   protected interface CollectionApiCommand {
-    void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception;
+    void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception;
   }
 
   /**
@@ -149,8 +151,7 @@ public class CollApiCmds {
 
   static public class MockOperationCmd implements CollectionApiCommand {
     @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
-    @SuppressWarnings({"unchecked"})
-    public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws InterruptedException {
+    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws InterruptedException {
       //only for test purposes
       Thread.sleep(message.getInt("sleep", 1));
       if (log.isInfoEnabled()) {
@@ -167,8 +168,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @SuppressWarnings({"unchecked"})
-    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) {
+    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
@@ -184,7 +184,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results)
+    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
           CORE_NODE_NAME_PROP, NODE_NAME_PROP, REJOIN_AT_HEAD_PROP);
@@ -220,7 +220,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
       Map<String, Object> propMap = new HashMap<>();
@@ -243,7 +243,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results)
+    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
       Map<String, Object> propMap = new HashMap<>();
@@ -266,7 +266,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
       if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
@@ -291,18 +291,21 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
 
       final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
       //the rest of the processing is based on writing cluster state properties
-      //remove the property here to avoid any errors down the pipeline due to this property appearing
-      String configName = (String) message.getProperties().remove(CollectionAdminParams.COLL_CONF);
+      String configName = (String) message.getProperties().get(COLL_CONF);
 
       if (configName != null) {
         CollectionHandlingUtils.validateConfigOrThrowSolrException(ccc.getCoreContainer().getConfigSetService(), configName);
 
-        CollectionHandlingUtils.createConfNode(ccc.getSolrCloudManager().getDistribStateManager(), configName, collectionName);
-        new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);
+        // Back-compatibility reason: update configName in old location
+        // TODO in Solr 10 this code should go away
+        String collPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName;
+        if (ccc.getSolrCloudManager().getDistribStateManager().hasData(collPath)) {
+          ccc.getSolrCloudManager().getDistribStateManager().setData(collPath, Utils.toJSON(Map.of(ZkStateReader.CONFIGNAME_PROP, configName)), -1);
+        }
       }
 
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
@@ -320,8 +323,15 @@ public class CollApiCmds {
           for (Map.Entry<String, Object> updateEntry : message.getProperties().entrySet()) {
             String updateKey = updateEntry.getKey();
 
+            // update key from collection.configName to configName;
+            // actual renaming happens in org.apache.solr.cloud.overseer.CollectionMutator#modifyCollection
+            if (updateKey.equals(COLL_CONF)) {
+              updateKey = CONFIGNAME_PROP;
+            }
+
             if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
                 && !updateKey.equals(Overseer.QUEUE_OPERATION)
+                && !updateKey.equals(CommonAdminParams.ASYNC)
                 && updateEntry.getValue() != null // handled below in a separate conditional
                 && !updateEntry.getValue().equals(c.get(updateKey))) {
               return false;
@@ -339,8 +349,8 @@ public class CollApiCmds {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to modify collection", e);
       }
 
-      // if switching to/from read-only mode reload the collection
-      if (message.keySet().contains(ZkStateReader.READ_ONLY)) {
+      // if switching to/from read-only mode or configName is not null reload the collection
+      if (message.keySet().contains(ZkStateReader.READ_ONLY) || configName != null) {
         new ReloadCollectionCmd(ccc).call(clusterState, new ZkNodeProps(NAME, collectionName), results);
       }
     }

@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * LanguageIdentifier.
  * The tika-core-x.y.jar must be on the classpath
  * <p>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection</a>
  * @since 3.5
  */
 public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpdateProcessor {

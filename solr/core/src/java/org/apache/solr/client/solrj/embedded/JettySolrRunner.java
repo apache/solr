@@ -26,32 +26,49 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import org.apache.commons.io.output.NullPrintStream;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.CoreAdminOperation;
+import org.apache.solr.handler.admin.LukeRequestHandler;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -78,6 +95,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -313,8 +331,7 @@ public class JettySolrRunner {
         if (config.onlyHttp1) {
           connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
         } else {
-          connector = new ServerConnector(server, new HttpConnectionFactory(configuration),
-              new HTTP2CServerConnectionFactory(configuration));
+          connector = new ServerConnector(server, new HttpConnectionFactory(configuration), new HTTP2CServerConnectionFactory(configuration));
         }
       }
 
@@ -322,13 +339,15 @@ public class JettySolrRunner {
       connector.setPort(port);
       connector.setHost("127.0.0.1");
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
-      connector.setStopTimeout(0);
+
       server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
-      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
+      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration), new HTTP2CServerConnectionFactory(configuration));
+      connector.setReuseAddress(true);
       connector.setPort(port);
+      connector.setHost("127.0.0.1");
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
       server.setConnectors(new Connector[] {connector});
     }
@@ -693,6 +712,52 @@ public class JettySolrRunner {
         MDC.setContextMap(prevContext);
       } else {
         MDC.clear();
+      }
+    }
+  }
+
+  public void outputMetrics(File outputDirectory, String fileName) throws IOException {
+    if (getCoreContainer() != null) {
+
+      if (outputDirectory != null) {
+        Path outDir = outputDirectory.toPath();
+        if (!Files.exists(outDir)) {
+          Files.createDirectories(outDir);
+        }
+      }
+
+      SolrMetricManager metricsManager = getCoreContainer().getMetricManager();
+
+      Set<String> registryNames = metricsManager.registryNames();
+      for (String registryName : registryNames) {
+        MetricRegistry metricsRegisty = metricsManager.registry(registryName);
+        try (PrintStream ps = outputDirectory == null ? new NullPrintStream() : new PrintStream(new File(outputDirectory,  registryName + "_" + fileName), StandardCharsets.UTF_8)) {
+          ConsoleReporter reporter = ConsoleReporter.forRegistry(metricsRegisty).
+            convertRatesTo(TimeUnit.SECONDS).convertDurationsTo(TimeUnit.MILLISECONDS).filter(MetricFilter.ALL).outputTo(ps).build();
+          reporter.report();
+        }
+      }
+
+    } else {
+      throw new IllegalStateException("No CoreContainer found");
+    }
+  }
+
+  public void dumpCoresInfo(PrintStream pw) throws IOException {
+    if (getCoreContainer() != null) {
+      List<SolrCore> cores = getCoreContainer().getCores();
+      for (SolrCore core : cores) {
+        NamedList<Object> coreStatus = CoreAdminOperation.getCoreStatus(getCoreContainer(), core.getName(), false);
+        core.withSearcher(solrIndexSearcher -> {
+          SimpleOrderedMap<Object> lukeIndexInfo = LukeRequestHandler.getIndexInfo(solrIndexSearcher.getIndexReader());
+          @SuppressWarnings({"unchecked", "rawtypes"})
+          Map<String,Object> indexInfoMap = coreStatus.toMap(new LinkedHashMap<>());
+          indexInfoMap.putAll(lukeIndexInfo.toMap(new LinkedHashMap<>()));
+          pw.println(JSONUtil.toJSON(indexInfoMap, 2));
+
+          pw.println("");
+          return null;
+        });
       }
     }
   }

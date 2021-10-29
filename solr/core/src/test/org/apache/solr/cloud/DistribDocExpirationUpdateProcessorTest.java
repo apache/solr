@@ -77,8 +77,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   /**
    * Modifies the request to inlcude authentication params if needed, returns the request 
    */
-  @SuppressWarnings({"rawtypes"})
-  private <T extends SolrRequest> T setAuthIfNeeded(T req) {
+  private <T extends SolrRequest<?>> T setAuthIfNeeded(T req) {
     if (null != USER) {
       assert null != PASS;
       req.setBasicAuthCredentials(USER, PASS);
@@ -88,7 +87,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   
   public void setupCluster(boolean security) throws Exception {
     // we want at most one core per node to force lots of network traffic to try and tickle distributed bugs
-    final Builder b = configureCluster(4)
+    final MiniSolrCloudCluster.Builder b = configureCluster(4)
       .addConfig("conf", TEST_PATH().resolve("configsets").resolve("doc-expiry").resolve("conf"));
 
     COLLECTION = "expiring";

@@ -112,11 +112,10 @@ public class SubQueryAugmenterFactory extends TransformerFactory{
   @SuppressWarnings("unchecked")
   private void checkThereIsNoDupe(String field, Map<Object,Object> context) {
     // find a map
-    @SuppressWarnings({"rawtypes"})
-    final Map conflictMap;
+    final Map<Object,Object> conflictMap;
     final String conflictMapKey = getClass().getSimpleName();
     if (context.containsKey(conflictMapKey)) {
-      conflictMap = (Map) context.get(conflictMapKey);
+      conflictMap = (Map<Object,Object>) context.get(conflictMapKey);
     } else {
       conflictMap = new HashMap<>();
       context.put(conflictMapKey, conflictMap);
@@ -216,7 +215,7 @@ class SubQueryAugmenter extends DocTransformer {
       
       if (vals != null) {
         StringBuilder rez = new StringBuilder();
-        for (@SuppressWarnings({"rawtypes"})Iterator iterator = vals.iterator(); iterator.hasNext();) {
+        for (Iterator<Object> iterator = vals.iterator(); iterator.hasNext();) {
           Object object = iterator.next();
           rez.append(convertFieldValue(object));
           if (iterator.hasNext()) {
