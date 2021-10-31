@@ -84,6 +84,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private Set<String> skippedCoreNodeNames;
   private final String collection;
   private boolean readOnlyCollection = false;
+  private boolean broadcastDeleteById = false;
 
   // The cached immutable clusterState for the update... usually refreshed for each individual update.
   // Different parts of this class used to request current clusterState views, which lead to subtle bugs and race conditions
@@ -314,24 +315,42 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
+    setupRequest(cmd);
 
-    // if using the CompositeId router and route field is missing, distribute to all shard leaders
-    if(cmd.getRoute()==null) {
-      zkCheck();
-      DocCollection coll = zkController.getClusterState().getCollection(collection);
-      DocRouter router = coll.getRouter();
-      String routeField = router.getRouteField(coll);
-      if (router instanceof CompositeIdRouter && routeField != null)  {
-        DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
-        if (phase == DistribPhase.NONE) {
-          log.debug("The deleteById command is missing the required route, distributing to all shard leaders");
+    if (broadcastDeleteById && DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM)) == DistribPhase.NONE ) {
+
+      log.debug("The deleteById command is missing the required route, broadcasting to leaders of other shards");
+
+      ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
+      outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
+      outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+              zkController.getBaseUrl(), req.getCore().getName()));
+
+      SolrParams params = req.getParams();
+      String route = params.get(ShardParams._ROUTE_);
+      DocCollection coll = clusterState.getCollection(collection);
+      Collection<Slice> slices = coll.getRouter().getSearchSlices(route, params, coll);
+
+      // if just one slice, we can skip this
+      if (slices.size() > 1) {
+        List<SolrCmdDistributor.Node> leaders = new ArrayList<>(slices.size() - 1);
+        for (Slice slice : slices) {
+          String sliceName = slice.getName();
+          if (!sliceName.equals(cloudDesc.getShardId())) {
+            Replica leader;
+            try {
+              leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
+            } catch (InterruptedException e) {
+              throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
+            }
+            ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
+            leaders.add(new SolrCmdDistributor.ForwardNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName, maxRetriesOnForward));
+          }
         }
-        doDeleteByQuery(cmd);
-        return;
+        outParams.remove("commit"); // this will be distributed from the local commit
+        cmdDistrib.distribDelete(cmd, leaders, outParams, false, rollupReplicationTracker, null);
       }
     }
-
-    setupRequest(cmd);
 
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
@@ -623,6 +642,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       slice = coll.getSlice(shardId);
       if (slice == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No shard " + shardId + " in " + coll);
+      }
+      // if doc == null, then this is a DeleteById request with missing route, flag for forwarding to all shard leaders
+      if (doc == null) {
+        broadcastDeleteById = true;
       }
     }
 

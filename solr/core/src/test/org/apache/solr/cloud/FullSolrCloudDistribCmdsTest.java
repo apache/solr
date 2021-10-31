@@ -160,11 +160,12 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       shard1.commit();
       final AtomicInteger docCounts1 = new AtomicInteger(3);
       
-      // Add two documents to shard2
+      // Add three documents to shard2
       shard2.add(sdoc("id", "4", "title", "s2 four"));
       shard2.add(sdoc("id", "5", "title", "s2 five"));
+      shard2.add(sdoc("id", "6", "title", "s2 six"));
       shard2.commit();
-      final AtomicInteger docCounts2 = new AtomicInteger(2);
+      final AtomicInteger docCounts2 = new AtomicInteger(3);
 
       // A re-usable helper to verify that the expected number of documents can be found on each shard...
       Runnable checkShardCounts = () -> {
@@ -209,19 +210,19 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       checkShardCounts.run();
 
       { // Send a delete request to core hosting shard1 with NO route param for a document that is actually in shard2
-        // Shouldn't delete, since deleteById requests are not broadcast to all shard leaders.
-        // (This is effictively a request to delete "5" if an only if it is on shard1)
+        // This will broadcast to all shard leaders.
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("5");
         shard1.request(deleteRequest);
         shard1.commit();
+        docCounts2.decrementAndGet();
       }
       checkShardCounts.run();
       
       { // Multiple deleteById commands for different shards in a single request
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("2", "shard1");
-        deleteRequest.deleteById("5", "shard2");
+        deleteRequest.deleteById("6", "shard2");
         shard1.request(deleteRequest);
         shard1.commit();
         docCounts1.decrementAndGet();
@@ -305,7 +306,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       checkShardCounts.run();
 
       // Tests for distributing delete by id when route is missing from the request
-
       { // Send a delete request with no route to shard1 for document on shard2, should be distributed
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("8");
