@@ -22,7 +22,7 @@
          metadata-complete="true"
 >
   <listener>
-   <listener-class>org.apache.solr.servlet.CoreService</listener-class>
+   <listener-class>org.apache.solr.servlet.CoreContainerProvider</listener-class>
   </listener>
   <!-- Any path (name) registered in solrconfig.xml will be sent to that filter -->
   <filter>

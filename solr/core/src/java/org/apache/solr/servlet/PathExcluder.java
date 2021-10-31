@@ -16,9 +16,13 @@
  */
 package org.apache.solr.servlet;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * Denotes an object, usually a servlet that denies access to some paths based on the supplied patterns.
+ * Typically, this would be implemented via compiled regular expressions.
+ */
 public interface PathExcluder {
-  void setExcludePatterns(ArrayList<Pattern> excludePatterns);
+  void setExcludePatterns(List<Pattern> excludePatterns);
 }

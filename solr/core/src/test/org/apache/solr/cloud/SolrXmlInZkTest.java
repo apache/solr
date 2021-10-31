@@ -29,7 +29,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.servlet.SolrCoreUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -90,7 +89,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     props.setProperty("solr.test.sys.prop1", "propone");
     props.setProperty("solr.test.sys.prop2", "proptwo");
 
-    cfg = SolrCoreUtils.loadNodeConfig(solrHome, props);
+    cfg = NodeConfig.loadNodeConfig(solrHome, props);
     if (log.isInfoEnabled()) {
       log.info("####SETUP_END {}", getTestName());
     }

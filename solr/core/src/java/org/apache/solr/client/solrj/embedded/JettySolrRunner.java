@@ -70,7 +70,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminOperation;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.servlet.CoreService;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -144,7 +144,7 @@ public class JettySolrRunner {
   private String host;
 
   private volatile boolean started = false;
-  private CoreService coreService;
+  private CoreContainerProvider coreContainerProvider;
 
   public static class DebugFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -368,7 +368,7 @@ public class JettySolrRunner {
 
       @Override
       public void lifeCycleStopped(LifeCycle arg0) {
-        coreService.close();
+        coreContainerProvider.close();
       }
 
       @Override
@@ -386,8 +386,8 @@ public class JettySolrRunner {
 
         root.getServletContext().setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
         root.getServletContext().setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
-        coreService = new CoreService();
-        coreService.init(root.getServletContext());
+        coreContainerProvider = new CoreContainerProvider();
+        coreContainerProvider.init(root.getServletContext());
         log.info("Jetty properties: {}", nodeProperties);
 
         debugFilter = root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST) );
