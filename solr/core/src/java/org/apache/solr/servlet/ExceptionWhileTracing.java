@@ -16,6 +16,9 @@
  */
 package org.apache.solr.servlet;
 
+/*
+ * This is not pretty, hope to remove it when tracing becomes a filter.
+ */
 public class ExceptionWhileTracing extends RuntimeException {
   public Exception e;
 

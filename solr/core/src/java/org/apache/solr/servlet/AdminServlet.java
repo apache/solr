@@ -17,21 +17,27 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.apache.solr.servlet.ServletUtils.closeShield;
 import static org.apache.solr.servlet.ServletUtils.configExcludes;
 import static org.apache.solr.servlet.ServletUtils.excludedPath;
 
-@WebServlet
-public class AdminServlet extends HttpServlet implements PathExcluder{
-  private ArrayList<Pattern> excludes;
+/**
+ * WARNING. NOT A REAL CLASS (yet)
+ *
+ * This class is NOT yet functional it's serving as a foil for other development anything and everything
+ * might change here and it presently completes without doing anything useful at all. It might also
+ * be abandoned/deleted in the future too. No guarantees
+ */
+//@WebServlet //<=== uncomment for testing purposes only
+public class AdminServlet extends HttpServlet implements PathExcluder {
+  private List<Pattern> excludes;
 
   @Override
   public void init() throws ServletException {
@@ -65,7 +71,7 @@ public class AdminServlet extends HttpServlet implements PathExcluder{
   }
 
   @Override
-  public void setExcludePatterns(ArrayList<Pattern> excludePatterns) {
+  public void setExcludePatterns(List<Pattern> excludePatterns) {
     this.excludes = excludePatterns;
   }
 }
