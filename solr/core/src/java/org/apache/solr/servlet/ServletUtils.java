@@ -46,6 +46,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -143,7 +144,7 @@ public abstract class ServletUtils {
     }
   }
 
-  static boolean excludedPath(ArrayList<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+  static boolean excludedPath(List<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
     String requestPath = getPathAfterContext(request);
     // No need to even create the HttpSolrCall object if this path is excluded.
     if (excludePatterns != null) {

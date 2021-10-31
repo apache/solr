@@ -32,7 +32,7 @@ import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.servlet.CoreService.ServiceHolder;
+import org.apache.solr.servlet.CoreContainerProvider.ServiceHolder;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -80,15 +80,13 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   protected String abortErrorMessage = null;
 
   @Override
-  public void setExcludePatterns(ArrayList<Pattern> excludePatterns) {
+  public void setExcludePatterns(List<Pattern> excludePatterns) {
     this.excludePatterns = excludePatterns;
   }
 
-  private ArrayList<Pattern> excludePatterns;
-  
-  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
+  private List<Pattern> excludePatterns;
 
-  private RateLimitManager rateLimitManager;
+  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
   public HttpClient getHttpClient() {
     try {
@@ -128,7 +126,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   @Override
   public void init(FilterConfig config) throws ServletException {
     try {
-      coreService = CoreService.serviceForContext(config.getServletContext());
+      coreService = CoreContainerProvider.serviceForContext(config.getServletContext());
       SSLConfigurationsFactory.current().init();
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
@@ -192,13 +190,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   private void dispatch(FilterChain chain, HttpServletRequest request, HttpServletResponse response, boolean retry) throws IOException, ServletException, SolrAuthenticationException {
 
-
-
     AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
-    if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
-      throw new SolrAuthenticationException();
-    }
-
+    authenticateRequest(request, response, wrappedRequest);
     if (wrappedRequest.get() != null) {
       request = wrappedRequest.get();
     }
@@ -259,7 +252,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     }
   }
 
-  private boolean authenticateRequest(HttpServletRequest request, HttpServletResponse response, final AtomicReference<HttpServletRequest> wrappedRequest) throws IOException {
+  private void authenticateRequest(HttpServletRequest request, HttpServletResponse response, final AtomicReference<HttpServletRequest> wrappedRequest) throws IOException,SolrAuthenticationException {
     boolean requestContinues;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     CoreContainer cores;
@@ -273,18 +266,18 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       if (shouldAudit(EventType.ANONYMOUS)) {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ANONYMOUS, request));
       }
-      return true;
+      return;
     } else {
       // /admin/info/key must be always open. see SOLR-9188
       String requestPath = ServletUtils.getPathAfterContext(request);
       if (PublicKeyHandler.PATH.equals(requestPath)) {
         log.debug("Pass through PKI authentication endpoint");
-        return true;
+        return;
       }
       // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page  
       if ("/solr/".equals(requestPath) || "/".equals(requestPath)) {
         log.debug("Pass through Admin UI entry point");
-        return true;
+        return;
       }
       String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
@@ -293,7 +286,17 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         if (log.isDebugEnabled()) {
           log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         }
-        // upon successful authentication, this should call the chain's next filter.
+        // For legacy reasons, upon successful authentication this wants to call the chain's next filter, which
+        // obfuscates the layout of the code since one usually expects to be able to find the call to doFilter()
+        // in the implementation of javax.servlet.Filter. Supplying a trivial impl here to keep existing code happy
+        // while making the flow  clearer. Chain will be called after this method completes. Eventually auth all
+        // moves to its own filter (hopefully). Most auth plugins simply return true after calling this anyway
+        // so they obviously don't care. Kerberos plugins seem to mostly use it to satisfy the api of a wrapped
+        // instance of javax.servlet.Filter and neither of those seem to be doing anything fancy with the filter chain,
+        // so this would seem to be a hack brought on by the fact that our auth code has been  forced to be code
+        // within dispatch filter, rather than being a filter itself. The HadoopAuthPlugin has a suspicious amount
+        // of code after the call to doFilter() which seems to imply that anything in this chain can get executed before
+        // authentication completes, and I can't figure out how that's a good idea in the first place.
         requestContinues = authenticationPlugin.authenticate(request, response, (req, rsp) -> {
           isAuthenticated.set(true);
           wrappedRequest.set((HttpServletRequest) req);
@@ -314,12 +317,12 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       if (shouldAudit(EventType.REJECTED)) {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, request));
       }
-      return false;
+      throw new SolrAuthenticationException();
     }
     if (shouldAudit(EventType.AUTHENTICATED)) {
       cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHENTICATED, request));
     }
-    return true;
+    // Auth Success
   }
 
 
