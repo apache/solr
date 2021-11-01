@@ -36,6 +36,8 @@ import static org.apache.solr.security.MultiAuthPlugin.applyEditCommandToSchemeP
 
 /**
  * Authorization plugin designed to work with the MultiAuthPlugin to support different AuthorizationPlugin per scheme.
+ *
+ * @lucene.experimental
  */
 public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBase {
   private final Map<String, RuleBasedAuthorizationPluginBase> pluginMap = new LinkedHashMap<>();

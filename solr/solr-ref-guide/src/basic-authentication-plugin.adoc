@@ -94,6 +94,7 @@ Special care should be taken to only grant access to editing security to appropr
 Even with Basic authentication enabled, you should not unnecessarily expose Solr to the outside world.
 
 == Combining Basic Authentication with Other Schemes
+:experimental:
 
 When using other authentication schemes, such as the <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>, you may still want to use Basic authentication for a small set of "service account" oriented client applications.
 Solr provides the `MultiAuthPlugin` to support multiple authentication schemes. For example, you may want to integrate Solr with an OIDC provider for user accounts,

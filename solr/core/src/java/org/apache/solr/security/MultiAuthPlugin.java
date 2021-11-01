@@ -44,6 +44,8 @@ import org.eclipse.jetty.client.api.Request;
 /**
  * Authentication plugin that supports multiple Authorization schemes, such as Bearer and Basic.
  * The impl simply delegates to one of Solr's other AuthenticationPlugins, such as the BasicAuthPlugin or JWTAuthPlugin.
+ *
+ * @lucene.experimental
  */
 public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin, SpecProvider {
   public static final String PROPERTY_SCHEMES = "schemes";
