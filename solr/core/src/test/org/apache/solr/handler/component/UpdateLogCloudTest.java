@@ -71,12 +71,19 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
   @Test
   public void test() throws Exception {
 
+    int specialIdx = 0;
+
     final List<SolrClient> solrClients = new ArrayList<>();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+      if (!jettySolrRunner.getBaseUrl().toString().equals(
+          getCollectionState(COLLECTION).getLeader("shard1").getBaseUrl())) {
+        specialIdx = solrClients.size();
+      }
       solrClients.add(jettySolrRunner.newClient());
     }
 
-    cluster.getJettySolrRunner(0).stop();
+    cluster.getJettySolrRunner(specialIdx).stop();
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     new UpdateRequest()
     .add(sdoc("id", "1", "a_t", "one"))
@@ -84,12 +91,12 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     .deleteByQuery("a_t:three")
     .commit(cluster.getSolrClient(), COLLECTION);
 
-    cluster.getJettySolrRunner(0).start();
+    cluster.getJettySolrRunner(specialIdx).start();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     int idx = 0;
     for (SolrClient solrClient : solrClients) {
-      implTest(solrClient, idx==0 ? 0 : 3);
+      implTest(solrClient, idx==specialIdx ? 0 : 3);
       ++idx;
     }
 
@@ -105,7 +112,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     final QueryRequest reqV = new QueryRequest(params("qt","/get", "getVersions","12345"));
     final NamedList<?> rspV = solrClient.request(reqV, COLLECTION);
     final List<Long> versions = (List<Long>)rspV.get("versions");
-    assertEquals(numExpected, versions.size());
+    assertEquals(versions.toString(), numExpected, versions.size());
     if (numExpected == 0) {
       return;
     }
@@ -122,7 +129,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
       final QueryRequest reqU = new QueryRequest(params("qt","/get", "getUpdates", minVersion + "..."+maxVersion, "skipDbq", Boolean.toString(skipDbq)));
       final NamedList<?> rspU = solrClient.request(reqU, COLLECTION);
       final List<?> updatesList = (List<?>)rspU.get("updates");
-      assertEquals(updatesList.toString(), numExpected + (skipDbq ? 1 : 0), updatesList.size());
+      assertEquals(updatesList.toString(), numExpected, updatesList.size());
     }
 
   }
