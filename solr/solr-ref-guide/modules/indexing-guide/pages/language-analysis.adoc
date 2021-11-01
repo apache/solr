@@ -3228,16 +3228,20 @@ Lucene includes an example stopword list.
 
 ==== Swedish Stem Filter
 
-Solr includes two stemmers for Swedish: one in the `solr.SnowballPorterFilterFactory language="Swedish"`, and a lighter stemmer called `solr.SwedishLightStemFilterFactory`.
+Solr includes three stemmers for Swedish: one in the `solr.SnowballPorterFilterFactory language="Swedish"`, a lighter stemmer called `solr.SwedishLightStemFilterFactory`, and a minimal stemmer `solr.SwedishMinimalStemFilterFactory`.
+
+The Light variant is based on simple rules, and removes suffixes like `-het`, `-heten`, `-else`, `-elser` etc., while the Minimal one only tries to normalize singular/plural endings like `-er`, `-ar`, `-arne` etc. See {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/sv/package-summary.html[the Lucene javadocs] for more information.
+
 Lucene includes an example stopword list.
 
 Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 
-*Factory class:* `solr.SwedishStemFilterFactory`
+*Factory class:* `solr.SwedishStemFilterFactory`, `solr.SwedishLightStemFilterFactory` and `solr.SwedishMinimalStemFilterFactory`.
 
 *Arguments:* None
 
-*Example:*
+
+*Example (SwedishLightStemFilterFactory):*
 
 [.dynamic-tabs]
 --
