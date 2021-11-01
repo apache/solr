@@ -118,6 +118,31 @@ public class TestJsonFacets extends SolrTestCaseHS {
     FacetField.FacetMethod.DEFAULT_METHOD = defMethod; // note: the real default is restored in afterTests
   }
 
+  @Test
+  public void testOverrequestFunctionStability() {
+    //sanity-check input/output thresholds to verify expected behavior
+    int i = 0;
+    do {
+      // f(0..6) => 12
+      assertEquals(12, FacetFieldProcessor.applyOverrequestFunction(i));
+    } while (++i < 7);
+    long previousOutput = 13;
+    // f(7) => 13
+    assertEquals(previousOutput, FacetFieldProcessor.applyOverrequestFunction(i));
+    for ( ; ; i++) {
+      long nextOutput = FacetFieldProcessor.applyOverrequestFunction(i);
+      // output never decreases
+      assertTrue(nextOutput >= previousOutput);
+      // output always greater than input, until ...
+      if (nextOutput <= i) {
+        // output should equal input only once we reach the asymptote
+        assertEquals(FacetFieldProcessor.OVERREQUEST_ASYMPTOTE_THRESHOLD, i);
+        break;
+      }
+      previousOutput = nextOutput;
+    }
+  }
+
   // attempt to reproduce https://github.com/Heliosearch/heliosearch/issues/33
   @Test
   public void testComplex() throws Exception {
