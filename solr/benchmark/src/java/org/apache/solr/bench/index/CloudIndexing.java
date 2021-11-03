@@ -17,9 +17,9 @@
 package org.apache.solr.bench.index;
 
 import static org.apache.solr.bench.Docs.docs;
-import static org.apache.solr.bench.generators.SourceDSL.integers;
-import static org.apache.solr.bench.generators.SourceDSL.longs;
-import static org.apache.solr.bench.generators.SourceDSL.strings;
+import static org.apache.solr.bench.rndgen.SourceDSL.integers;
+import static org.apache.solr.bench.rndgen.SourceDSL.longs;
+import static org.apache.solr.bench.rndgen.SourceDSL.strings;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;

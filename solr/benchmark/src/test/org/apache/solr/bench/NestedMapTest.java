@@ -16,28 +16,29 @@
  */
 package org.apache.solr.bench;
 
-import static org.apache.solr.bench.generators.SourceDSL.dates;
-import static org.apache.solr.bench.generators.SourceDSL.doubles;
-import static org.apache.solr.bench.generators.SourceDSL.floats;
-import static org.apache.solr.bench.generators.SourceDSL.integers;
-import static org.apache.solr.bench.generators.SourceDSL.longs;
-import static org.apache.solr.bench.generators.SourceDSL.maps;
-import static org.apache.solr.bench.generators.SourceDSL.strings;
+import static org.apache.solr.bench.rndgen.SourceDSL.dates;
+import static org.apache.solr.bench.rndgen.SourceDSL.doubles;
+import static org.apache.solr.bench.rndgen.SourceDSL.floats;
+import static org.apache.solr.bench.rndgen.SourceDSL.integers;
+import static org.apache.solr.bench.rndgen.SourceDSL.longs;
+import static org.apache.solr.bench.rndgen.SourceDSL.maps;
+import static org.apache.solr.bench.rndgen.SourceDSL.strings;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.bench.generators.LazyGen;
-import org.apache.solr.bench.generators.NamedListGen;
-import org.apache.solr.bench.generators.SolrGen;
+import org.apache.solr.bench.rndgen.BenchmarkRandomSource;
+import org.apache.solr.bench.rndgen.Generate;
+import org.apache.solr.bench.rndgen.LazyGen;
+import org.apache.solr.bench.rndgen.NamedListGen;
+import org.apache.solr.bench.rndgen.Pair;
+import org.apache.solr.bench.rndgen.RndGen;
+import org.apache.solr.bench.rndgen.SplittableRandomGenerator;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.quicktheories.api.Pair;
-import org.quicktheories.core.Gen;
-import org.quicktheories.impl.BenchmarkRandomSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,13 +52,14 @@ public class NestedMapTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterClass() throws InterruptedException {
-    SolrGen.countsReport().forEach(log::info);
-    SolrGen.COUNTS.clear();
+    RndGen.countsReport().forEach(log::info);
+    RndGen.COUNTS.clear();
   }
 
   @Test
   public void testNestedMap() throws Exception {
-    Gen<? extends Map<String, ?>> mapGen = maps().of(getKey(), getValue(10)).ofSizeBetween(1, 300);
+    RndGen<? extends Map<String, ?>> mapGen =
+        maps().of(getKey(), getValue(10)).ofSizeBetween(1, 300);
 
     Map<String, ?> map =
         mapGen.generate(
@@ -68,12 +70,12 @@ public class NestedMapTest extends SolrTestCaseJ4 {
     //    }
   }
 
-  private static SolrGen<String> getKey() {
+  private static RndGen<String> getKey() {
     return strings().betweenCodePoints('a', 'z' + 1).ofLengthBetween(1, 10);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private static SolrGen<?> getValue(int depth) {
+  private static RndGen<?> getValue(int depth) {
     if (depth == 0) {
       return integers().from(1).upToAndIncluding(5000);
     }
@@ -91,6 +93,6 @@ public class NestedMapTest extends SolrTestCaseJ4 {
     values.add(Pair.of(13, doubles().all()));
     values.add(Pair.of(16, floats().all()));
     values.add(Pair.of(17, dates().all()));
-    return SolrGenerate.frequency(values);
+    return Generate.frequency(values);
   }
 }

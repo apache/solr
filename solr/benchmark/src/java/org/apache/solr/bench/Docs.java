@@ -29,14 +29,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.bench.generators.MultiString;
-import org.apache.solr.bench.generators.SolrGen;
+import org.apache.solr.bench.rndgen.BenchmarkRandomSource;
+import org.apache.solr.bench.rndgen.MultiString;
+import org.apache.solr.bench.rndgen.RandomnessSource;
+import org.apache.solr.bench.rndgen.RndGen;
+import org.apache.solr.bench.rndgen.SplittableRandomGenerator;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.quicktheories.core.Gen;
-import org.quicktheories.impl.BenchmarkRandomSource;
 
 /**
  * A tool to generate controlled random data for a benchmark. {@link SolrInputDocument}s are created
@@ -48,10 +49,10 @@ import org.quicktheories.impl.BenchmarkRandomSource;
  */
 public class Docs {
 
-  private final ThreadLocal<SolrRandomnessSource> random;
+  private final ThreadLocal<RandomnessSource> random;
   private final Queue<SolrInputDocument> docs = new ConcurrentLinkedQueue<>();
 
-  private final Map<String, Gen<?>> fields = Collections.synchronizedMap(new HashMap<>(16));
+  private final Map<String, RndGen<?>> fields = Collections.synchronizedMap(new HashMap<>(16));
 
   private ExecutorService executorService;
   private int stringFields;
@@ -154,8 +155,8 @@ public class Docs {
    */
   public SolrInputDocument inputDocument() {
     SolrInputDocument doc = new SolrInputDocument();
-    SolrRandomnessSource randomSource = random.get();
-    for (Map.Entry<String, Gen<?>> entry : fields.entrySet()) {
+    RandomnessSource randomSource = random.get();
+    for (Map.Entry<String, RndGen<?>> entry : fields.entrySet()) {
       doc.addField(entry.getKey(), entry.getValue().generate(randomSource));
     }
 
@@ -169,8 +170,8 @@ public class Docs {
    */
   public SolrDocument document() {
     SolrDocument doc = new SolrDocument();
-    SolrRandomnessSource randomSource = random.get();
-    for (Map.Entry<String, Gen<?>> entry : fields.entrySet()) {
+    RandomnessSource randomSource = random.get();
+    for (Map.Entry<String, RndGen<?>> entry : fields.entrySet()) {
       doc.addField(entry.getKey(), entry.getValue().generate(randomSource));
     }
 
@@ -184,7 +185,7 @@ public class Docs {
    * @param generator the generator
    * @return the docs
    */
-  public Docs field(String name, Gen<?> generator) {
+  public Docs field(String name, RndGen<?> generator) {
     fields.put(name, generator);
     return this;
   }
@@ -195,8 +196,8 @@ public class Docs {
    * @param generator the generator
    * @return the docs
    */
-  public Docs field(SolrGen<?> generator) {
-    Class<?> type = generator.type();
+  public Docs field(RndGen<?> generator) {
+    Class<?> type = generator.generate(random.get()).getClass();
     if (String.class == type) {
       fields.put("string" + (stringFields++ > 0 ? stringFields : "") + "_s", generator);
     } else if (MultiString.class == type) {
@@ -214,7 +215,7 @@ public class Docs {
     } else if (Double.class == type) {
       fields.put("double" + (doubleFields++ > 0 ? doubleFields : "") + "_d", generator);
     } else {
-      throw new IllegalArgumentException("Unknown type: " + generator.type());
+      throw new IllegalArgumentException("Unknown type: " + type);
     }
 
     return this;
