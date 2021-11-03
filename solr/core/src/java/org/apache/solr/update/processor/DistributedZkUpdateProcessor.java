@@ -419,47 +419,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (rollupReplicationTracker == null) {
         rollupReplicationTracker = new RollupRequestReplicationTracker();
       }
-      boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
-
-      ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
-      outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
-      outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-          zkController.getBaseUrl(), req.getCore().getName()));
-
-      SolrParams params = req.getParams();
-      String route = params.get(ShardParams._ROUTE_);
-      Collection<Slice> slices = coll.getRouter().getSearchSlices(route, params, coll);
-
-      List<SolrCmdDistributor.Node> leaders =  new ArrayList<>(slices.size());
-      for (Slice slice : slices) {
-        String sliceName = slice.getName();
-        Replica leader;
-        try {
-          leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
-        } catch (InterruptedException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
-        }
-
-        // TODO: What if leaders changed in the meantime?
-        // should we send out slice-at-a-time and if a node returns "hey, I'm not a leader" (or we get an error because it went down) then look up the new leader?
-
-        // Am I the leader for this slice?
-        ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
-        String leaderCoreNodeName = leader.getName();
-        String coreNodeName = cloudDesc.getCoreNodeName();
-        isLeader = coreNodeName.equals(leaderCoreNodeName);
-
-        if (isLeader) {
-          // don't forward to ourself
-          leaderForAnyShard = true;
-        } else {
-          leaders.add(new SolrCmdDistributor.ForwardNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName, maxRetriesOnForward));
-        }
-      }
-
-      outParams.remove("commit"); // this will be distributed from the local commit
-
-      cmdDistrib.distribDelete(cmd, leaders, outParams, false, rollupReplicationTracker, null);
+      boolean leaderForAnyShard = forwardDelete(coll, cmd);
 
       if (!leaderForAnyShard) {
         return;
@@ -483,6 +443,54 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     checkReplicationTracker(cmd);
     super.doDeleteByQuery(cmd, replicas, coll);
   }
+
+  private boolean forwardDelete(DocCollection coll, DeleteUpdateCommand cmd) throws IOException {
+
+    boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
+
+    ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
+    outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
+    outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+        zkController.getBaseUrl(), req.getCore().getName()));
+
+    SolrParams params = req.getParams();
+    String route = params.get(ShardParams._ROUTE_);
+    Collection<Slice> slices = coll.getRouter().getSearchSlices(route, params, coll);
+
+    List<SolrCmdDistributor.Node> leaders =  new ArrayList<>(slices.size());
+    for (Slice slice : slices) {
+      String sliceName = slice.getName();
+      Replica leader;
+      try {
+        leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
+      } catch (InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
+      }
+
+      // TODO: What if leaders changed in the meantime?
+      // should we send out slice-at-a-time and if a node returns "hey, I'm not a leader" (or we get an error because it went down) then look up the new leader?
+
+      // Am I the leader for this slice?
+      ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
+      String leaderCoreNodeName = leader.getName();
+      String coreNodeName = cloudDesc.getCoreNodeName();
+      isLeader = coreNodeName.equals(leaderCoreNodeName);
+
+      if (isLeader) {
+        // don't forward to ourself
+        leaderForAnyShard = true;
+      } else {
+        leaders.add(new SolrCmdDistributor.ForwardNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName, maxRetriesOnForward));
+      }
+    }
+
+    outParams.remove("commit"); // this will be distributed from the local commit
+
+    cmdDistrib.distribDelete(cmd, leaders, outParams, false, rollupReplicationTracker, null);
+
+    return leaderForAnyShard;
+  }
+
 
   @Override
   protected void doDistribDeleteByQuery(DeleteUpdateCommand cmd, List<SolrCmdDistributor.Node> replicas,
