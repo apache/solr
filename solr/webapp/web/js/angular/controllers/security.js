@@ -759,7 +759,10 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
             return;
           }
           $scope.togglePermDialog();
-          $scope.refreshSecurityPanel();
+          // avoids a weird race with not getting the latest config after an update
+          Security.get({path: "authorization"}, function (ignore) {
+            $scope.refreshSecurityPanel();
+          });
         });
       });
     } else {
@@ -775,7 +778,10 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         }
 
         $scope.togglePermDialog();
-        $scope.refreshSecurityPanel();
+        // avoids a weird race with not getting the latest config after an update
+        Security.get({path: "authorization"}, function (ignore) {
+          $scope.refreshSecurityPanel();
+        });
       });
     }
   };
