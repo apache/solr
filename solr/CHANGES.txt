@@ -445,6 +445,8 @@ Bug Fixes
 
 * SOLR-15722: Delete Replica does not delete the Per replica state (noble)
 
+* SOLR-15766: MultiAuthPlugin should send non-AJAX anonymous requests to the plugin that allows anonymous requests (Timothy Potter, Eric Pugh)
+
 Build
 ---------------------
 
