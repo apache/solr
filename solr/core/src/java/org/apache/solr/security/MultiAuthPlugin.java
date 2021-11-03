@@ -57,6 +57,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
   private final Map<String, AuthenticationPlugin> pluginMap = new LinkedHashMap<>();
   private final ResourceLoader loader;
+  private AuthenticationPlugin allowsUnknown = null; // the first of our plugins that allows anonymous requests
 
   // Get the loader from the CoreContainer so we can load the sub-plugins, such as the BasicAuthPlugin for Basic
   public MultiAuthPlugin(CoreContainer cc) {
@@ -143,6 +144,13 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     AuthenticationPlugin pluginForScheme = loader.newInstance(clazz, AuthenticationPlugin.class);
     pluginForScheme.init(schemeConfig);
     pluginMap.put(scheme.toLowerCase(Locale.ROOT), pluginForScheme);
+
+    if (allowsUnknown == null) {
+      if (!Boolean.parseBoolean(String.valueOf(schemeConfig.getOrDefault("blockUnknown", true)))) {
+        // plugin allows anonymous requests, so we'll send any non-AJAX requests without an authorization header to it
+        allowsUnknown = pluginForScheme;
+      }
+    }
   }
 
   @Override
@@ -160,21 +168,25 @@ public class MultiAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   @Override
   public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
     final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
-
-    // if no Authorization header but is an AJAX request, forward to the default scheme so it can handle it
     if (authHeader == null) {
-      if (BasicAuthPlugin.isAjaxRequest(request)) {
-        // use the first scheme listed as the default
-        return pluginMap.values().iterator().next().doAuthenticate(request, response, filterChain);
+      // no Authorization header but if it's an AJAX request, forward to the default scheme so it can handle it
+      // otherwise, send to the first plugin that allows blockUnknown = false
+      final AuthenticationPlugin plugin = BasicAuthPlugin.isAjaxRequest(request) ? pluginMap.values().iterator().next() : allowsUnknown;
+      boolean result = false;
+      if (plugin != null) {
+        pluginInRequest.set(plugin);
+        result = plugin.doAuthenticate(request, response, filterChain);
+      } else {
+        response.sendError(ErrorCode.UNAUTHORIZED.code, "No Authorization header");
       }
-
-      throw new SolrException(ErrorCode.UNAUTHORIZED, "No Authorization header");
+      return result;
     }
 
     final String scheme = getSchemeFromAuthHeader(authHeader);
     final AuthenticationPlugin plugin = pluginMap.get(scheme);
     if (plugin == null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Authorization scheme '" + scheme + "' not supported!");
+      response.sendError(ErrorCode.UNAUTHORIZED.code, "Authorization scheme '" + scheme + "' not supported!");
+      return false;
     }
 
     pluginInRequest.set(plugin);
