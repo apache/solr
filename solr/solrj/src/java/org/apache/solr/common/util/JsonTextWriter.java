@@ -66,10 +66,8 @@ public interface JsonTextWriter extends TextWriter {
   }
 
   default void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    // it might be more efficient to use a stringbuilder or write substrings
-    // if writing chars to the stream is slow.
     if (needsEscaping) {
-
+     StringBuilder sb = new StringBuilder(val.length() + 4);
 
      /* http://www.ietf.org/internet-drafts/draft-crockford-jsonorg-json-04.txt
       All Unicode characters may be placed within
@@ -77,55 +75,51 @@ public interface JsonTextWriter extends TextWriter {
       escaped: quotation mark, reverse solidus, and the control
       characters (U+0000 through U+001F).
      */
-      _writeChar('"');
 
       for (int i = 0; i < val.length(); i++) {
         char ch = val.charAt(i);
         if ((ch > '#' && ch != '\\' && ch < '\u2028') || ch == ' ') { // fast path
-          _writeChar(ch);
+          sb.append(ch);
           continue;
         }
         switch (ch) {
           case '"':
           case '\\':
-            _writeChar('\\');
-            _writeChar(ch);
+            sb.append('\\').
+                append(ch);
             break;
           case '\r':
-            _writeChar('\\');
-            _writeChar('r');
+            sb.append("\\r");
             break;
           case '\n':
-            _writeChar('\\');
-            _writeChar('n');
+            sb.append("\\n");
             break;
           case '\t':
-            _writeChar('\\');
-            _writeChar('t');
+            sb.append("\\t");
             break;
           case '\b':
-            _writeChar('\\');
-            _writeChar('b');
+            sb.append("\\b");
             break;
           case '\f':
-            _writeChar('\\');
-            _writeChar('f');
+            sb.append("\\f");
             break;
           case '\u2028': // fallthrough
           case '\u2029':
-            unicodeEscape(getWriter(), ch);
+            unicodeEscape(sb, ch);
             break;
           // case '/':
           default: {
             if (ch <= 0x1F) {
-              unicodeEscape(getWriter(), ch);
+              unicodeEscape(sb, ch);
             } else {
-              _writeChar(ch);
+              sb.append(ch);
             }
           }
         }
       }
 
+      _writeChar('"');
+      _writeStr(sb.toString());
       _writeChar('"');
     } else {
       _writeChar('"');
@@ -277,12 +271,11 @@ public interface JsonTextWriter extends TextWriter {
   }
 
   default void unicodeEscape(Appendable out, int ch) throws IOException {
-    out.append('\\');
-    out.append('u');
-    out.append(hexdigits[(ch >>> 12)]);
-    out.append(hexdigits[(ch >>> 8) & 0xf]);
-    out.append(hexdigits[(ch >>> 4) & 0xf]);
-    out.append(hexdigits[(ch) & 0xf]);
+    out.append("\\u").
+        append(hexdigits[(ch >>> 12)]).
+        append(hexdigits[(ch >>> 8) & 0xf]).
+        append(hexdigits[(ch >>> 4) & 0xf]).
+        append(hexdigits[(ch) & 0xf]);
   }
 
   default void writeNamedList(String name, NamedList<?> val) throws IOException {
