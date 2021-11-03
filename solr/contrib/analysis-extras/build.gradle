@@ -23,6 +23,7 @@ description = 'Additional analysis components'
 dependencies {
   api project(':solr:core')
 
+  implementation 'commons-io:commons-io'
   implementation "org.apache.lucene:lucene-analysis-icu"
   implementation "org.apache.lucene:lucene-analysis-smartcn"
   implementation "org.apache.lucene:lucene-analysis-morfologik"
