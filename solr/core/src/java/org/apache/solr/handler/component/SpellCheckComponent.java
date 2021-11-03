@@ -81,7 +81,7 @@ import org.slf4j.LoggerFactory;
  * and suggestions using the Lucene contributed SpellChecker.
  *
  * <p>
- * Refer to http://wiki.apache.org/solr/SpellCheckComponent for more details
+ * Refer to https://solr.apache.org/guide/spell-checking.html for more details
  * </p>
  *
  * @since solr 1.3
@@ -161,7 +161,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         int alternativeTermCount = params.getInt(SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT, 0);
         //If specified, this can be a discrete # of results, or a percentage of fq results.
         Integer maxResultsForSuggest = maxResultsForSuggest(rb);
-        
+
         ModifiableSolrParams customParams = new ModifiableSolrParams();
         for (String checkerName : getDictionaryNames(params)) {
           customParams.add(getCustomParams(checkerName, params));
@@ -174,7 +174,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         } else {
           hits = hitsLong.longValue();
         }
-        
+
         SpellingResult spellingResult = null;
         if (maxResultsForSuggest == null || hits <= maxResultsForSuggest) {
           SuggestMode suggestMode = SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
@@ -216,12 +216,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       }
     }
   }
-  
+
   private Integer maxResultsForSuggest(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     float maxResultsForSuggestParamValue = params.getFloat(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, 0.0f);
     Integer maxResultsForSuggest = null;
-    
+
     if (maxResultsForSuggestParamValue > 0.0f) {
       if (maxResultsForSuggestParamValue == (int) maxResultsForSuggestParamValue) {
         // If a whole number was passed in, this is a discrete number of documents
@@ -230,10 +230,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         // If a fractional value was passed in, this is the % of documents returned by the specified filter
         // If no specified filter, we use the most restrictive filter of the fq parameters
         String maxResultsFilterQueryString = params.get(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ);
-        
+
         int maxResultsByFilters = Integer.MAX_VALUE;
         SolrIndexSearcher searcher = rb.req.getSearcher();
-        
+
         try {
           if (maxResultsFilterQueryString != null) {
             // Get the default Lucene query parser
@@ -243,7 +243,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           } else {
             List<Query> filters = rb.getFilters();
 
-            // Get the maximum possible hits within these filters (size of most restrictive filter). 
+            // Get the maximum possible hits within these filters (size of most restrictive filter).
             if (filters != null) {
               for (Query query : filters) {
                 DocSet s = searcher.getDocSet(query);
@@ -260,7 +260,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           log.error("Error", e);
           return null;
         }
-        
+
         // Recalculate maxResultsForSuggest if filters were specified
         if (maxResultsByFilters != Integer.MAX_VALUE) {
           maxResultsForSuggest = Math.round(maxResultsByFilters * maxResultsForSuggestParamValue);
@@ -269,7 +269,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     return maxResultsForSuggest;
   }
-  
+
   protected void addCollationsToResponse(SolrParams params, SpellingResult spellingResult, ResponseBuilder rb, String q,
       NamedList<Object> response, boolean suggestionsMayOverlap) {
     int maxCollations = params.getInt(SPELLCHECK_MAX_COLLATIONS, 1);
@@ -290,7 +290,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         .setDocCollectionLimit(maxCollationCollectDocs)
     ;
     List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb);
-    //by sorting here we guarantee a non-distributed request returns all 
+    //by sorting here we guarantee a non-distributed request returns all
     //results in the same order as a distributed request would,
     //even in cases when the internal rank is the same.
     Collections.sort(collations);
@@ -383,7 +383,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         origQuery = params.get(CommonParams.Q);
       }
     }
-    
+
     long hits = rb.grouping() ? rb.totalHitCount : rb.getNumberDocumentsFound();
     boolean isCorrectlySpelled = hits > (maxResultsForSuggest==null ? 0 : maxResultsForSuggest);
 
@@ -473,7 +473,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         mergeData.origVsSuggested.put(suggestion.getToken(), suggested);
       }
 
-      // sum up original frequency          
+      // sum up original frequency
       int origFreq = 0;
       Integer o = mergeData.origVsFreq.get(suggestion.getToken());
       if (o != null)  origFreq += o;

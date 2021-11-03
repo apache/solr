@@ -32,3 +32,6 @@ __pycache__
 
 # Emacs backup
 *~
+
+# Ignore lucene included build
+lucene/

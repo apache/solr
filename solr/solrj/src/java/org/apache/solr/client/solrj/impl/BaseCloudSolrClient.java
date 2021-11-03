@@ -108,10 +108,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
           "CloudSolrClient ThreadPool"));
 
-  // We can figure this out from the collection,
-  // there's no need to let this get out of sync.
-  @Deprecated(since = "8.7")
-  private String routeFieldDeprecated = null;
   public static final String STATE_VERSION = "_stateVer_";
   private long retryExpiryTime = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);//3 seconds or 3 million nanos
   private final Set<String> NON_ROUTABLE_PARAMS;
@@ -291,28 +287,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       return provider.zkStateReader;
     }
     throw new IllegalStateException("This has no Zk stateReader");
-  }
-
-  /**
-   * @param routeField the field to route documents on.
-   *                   <p>
-   *                   deprecated, the field is automatically determined from Zookeeper
-   */
-  @Deprecated(since = "8.7")
-  public void setIdField(String routeField) {
-    log.warn("setIdField is deprecated, route field inferred from cluster state");
-    this.routeFieldDeprecated = routeField;
-  }
-
-  /**
-   * @return the field that updates are routed on.
-   *
-   * deprecated, the field is automatically determined from Zookeeper
-   */
-  @Deprecated (since = "8.7")
-  public String getIdField() {
-    log.warn("getIdField is deprecated, route field is in cluster state");
-    return routeFieldDeprecated;
   }
 
   /** Sets the default collection for request */
@@ -522,8 +496,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     //The value is a list of URLs for each replica in the slice.
     //The first value in the list is the leader for the slice.
     final Map<String, List<String>> urlMap = buildUrlMap(col, replicaListTransformer);
-    String routeField = (routeFieldDeprecated != null) ? routeFieldDeprecated :
-        (col.getRouter().getRouteField(col) == null) ? ID : col.getRouter().getRouteField(col);
+    String routeField = (col.getRouter().getRouteField(col) == null) ? ID : col.getRouter().getRouteField(col);
     final Map<String, ? extends LBSolrClient.Req> routes = createRoutes(updateRequest, routableParams, col, router, urlMap, routeField);
     if (routes == null) {
       if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, routeField)) {
