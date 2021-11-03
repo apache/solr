@@ -384,8 +384,6 @@ public class SolrCLI implements CLIO {
       return new ZkMkrootTool();
     else if ("assert".equals(toolType))
       return new AssertTool();
-    else if ("utils".equals(toolType))
-      return new UtilsTool();
     else if ("auth".equals(toolType))
       return new AuthTool();
     else if ("export".equals(toolType))
@@ -4169,91 +4167,4 @@ public class SolrCLI implements CLIO {
     @Override
     protected void runImpl(CommandLine cli) throws Exception {}
   }
-
-  public static class UtilsTool extends ToolBase {
-    private Path serverPath;
-    private Path logsPath;
-    private boolean beQuiet;
-
-    public UtilsTool() { this(CLIO.getOutStream()); }
-    public UtilsTool(PrintStream stdout) { super(stdout); }
-
-    public String getName() {
-      return "utils";
-    }
-
-    public Option[] getOptions() {
-      return new Option[]{
-          Option.builder("s")
-              .argName("path")
-              .hasArg()
-              .desc("Path to server dir. Required if logs path is relative.")
-              .build(),
-          Option.builder("l")
-              .argName("path")
-              .hasArg()
-              .desc("Path to logs dir. If relative, also provide server dir with -s.")
-              .build(),
-          Option.builder("q")
-              .desc("Be quiet, don't print to stdout, only return exit codes.")
-              .build()
-      };
-    }
-
-    @Override
-    public int runTool(CommandLine cli) throws Exception {
-      if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
-        new HelpFormatter().printHelp("bin/solr utils [OPTIONS]", getToolOptions(this));
-        return 1;
-      }
-      if (cli.hasOption("s")) {
-        serverPath = Paths.get(cli.getOptionValue("s"));
-      }
-      if (cli.hasOption("l")) {
-        logsPath = Paths.get(cli.getOptionValue("l"));
-      }
-      if (cli.hasOption("q")) {
-        beQuiet = cli.hasOption("q");
-      }
-      return 0;
-    }
-
-
-    // Private methods to follow
-
-    private void out(String message) {
-      if (!beQuiet) {
-        stdout.print(message + "\n");
-      }
-    }
-
-    private void prepareLogsPath() throws Exception {
-      if (logsPath == null) {
-        throw new Exception("Command requires the -l <log-directory> option");
-      }
-      if (!logsPath.isAbsolute()) {
-        if (serverPath != null && serverPath.isAbsolute() && Files.exists(serverPath)) {
-          logsPath = serverPath.resolve(logsPath);
-        } else {
-          throw new Exception("Logs directory must be an absolute path, or -s must be supplied.");
-        }
-      }
-    }
-
-    @Override
-    protected void runImpl(CommandLine cli) throws Exception {
-    }
-
-    public void setLogPath(Path logsPath) {
-      this.logsPath = logsPath;
-    }
-
-    public void setServerPath(Path serverPath) {
-      this.serverPath = serverPath;
-    }
-
-    public void setQuiet(boolean shouldPrintStdout) {
-      this.beQuiet = shouldPrintStdout;
-    }
-  } // end UtilsTool class
 }
