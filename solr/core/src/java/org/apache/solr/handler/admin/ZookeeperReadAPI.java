@@ -59,7 +59,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
 public class ZookeeperReadAPI {
   private final CoreContainer coreContainer;
-  private SolrParams rawWtParams;
+  private final SolrParams rawWtParams;
 
   public ZookeeperReadAPI(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
@@ -78,8 +78,7 @@ public class ZookeeperReadAPI {
   public void readNode(SolrQueryRequest req, SolrQueryResponse rsp) {
     String path = req.getPathTemplateValues().get("*");
     if (path == null || path.isEmpty()) path = "/";
-    req.setParams(SolrParams.wrapDefaults(rawWtParams, req.getParams()));
-    readNodeAndAddToResponse(path, rsp);
+    readNodeAndAddToResponse(path, req, rsp);
   }
 
   /**
@@ -90,8 +89,7 @@ public class ZookeeperReadAPI {
       permission = SECURITY_READ_PERM)
   public void readSecurityJsonNode(SolrQueryRequest req, SolrQueryResponse rsp) {
     String path = "/security.json";
-    req.setParams(SolrParams.wrapDefaults(rawWtParams, req.getParams()));
-    readNodeAndAddToResponse(path, rsp);
+    readNodeAndAddToResponse(path, req, rsp);
   }
 
   /**
@@ -167,12 +165,13 @@ public class ZookeeperReadAPI {
   /**
    * Reads content of a znode and adds it to the response
    */
-  private void readNodeAndAddToResponse(String zkPath, SolrQueryResponse rsp) {
+  private void readNodeAndAddToResponse(String zkPath, SolrQueryRequest req, SolrQueryResponse rsp) {
     byte[] d = readPathFromZookeeper(zkPath);
     if (d == null || d.length == 0) {
       rsp.add(zkPath, null);
       return;
     }
+    req.setParams(SolrParams.wrapDefaults(rawWtParams, req.getParams()));
     rsp.add(CONTENT, new ContentStreamBase.ByteArrayStream(d, null, guessMime(d[0])));
   }
 
