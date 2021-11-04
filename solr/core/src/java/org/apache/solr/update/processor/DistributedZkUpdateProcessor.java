@@ -317,36 +317,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
     setupRequest(cmd);
 
-    if (broadcastDeleteById && DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM)) == DistribPhase.NONE ) {
+    DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
-      log.debug("The deleteById command for doc {} is missing the required route, broadcasting to leaders of other shards", cmd.getId());
-
-      ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
-      outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
-      outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-              zkController.getBaseUrl(), req.getCore().getName()));
-
-      SolrParams params = req.getParams();
-      String route = params.get(ShardParams._ROUTE_);
+    if (broadcastDeleteById && DistribPhase.NONE == phase) {
       DocCollection coll = clusterState.getCollection(collection);
-      Collection<Slice> slices = coll.getRouter().getSearchSlices(route, params, coll);
-
-      List<SolrCmdDistributor.Node> leaders = new ArrayList<>(slices.size() - 1);
-      for (Slice slice : slices) {
-        String sliceName = slice.getName();
-        if (!sliceName.equals(cloudDesc.getShardId())) {
-          Replica leader;
-          try {
-            leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
-          } catch (InterruptedException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
-          }
-          ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
-          leaders.add(new SolrCmdDistributor.ForwardNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName, maxRetriesOnForward));
-        }
-      }
-      outParams.remove("commit"); // this will be distributed from the local commit
-      cmdDistrib.distribDelete(cmd, leaders, outParams, false, rollupReplicationTracker, null);
+      log.debug("The deleteById command for doc {} is missing the required route, broadcasting to leaders of other shards", cmd.getId());
+      forwardDelete(coll, cmd);
     }
 
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
