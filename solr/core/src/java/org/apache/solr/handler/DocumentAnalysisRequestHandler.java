@@ -349,6 +349,6 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    return Name.READ_PERM;
+    return Name.ALL;
   }
 }
