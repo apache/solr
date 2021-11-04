@@ -32,7 +32,6 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -48,8 +47,8 @@ import org.apache.solr.common.util.XML;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 /**
- * 
- * 
+ *
+ *
  * @since solr 1.3
  */
 public class UpdateRequest extends AbstractUpdateRequest {
@@ -350,22 +349,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
                                                              DocCollection col, Map<String,List<String>> urlMap,
                                                              ModifiableSolrParams params, String idField) {
     return getRoutes(router, col, urlMap, params, idField, LBSolrClient.Req::new);
-  }
-  
-  /**
-   * @param router to route updates with
-   * @param col DocCollection for the updates
-   * @param urlMap of the cluster
-   * @param params params to use
-   * @param idField the id field
-   * @return a Map of urls to requests
-   * @deprecated since 8.0, uses {@link #getRoutesToCollection(DocRouter, DocCollection, Map, ModifiableSolrParams, String)} instead
-   */
-  @Deprecated
-  public Map<String,LBHttpSolrClient.Req> getRoutes(DocRouter router,
-      DocCollection col, Map<String,List<String>> urlMap,
-      ModifiableSolrParams params, String idField) {
-    return getRoutes(router, col, urlMap, params, idField, LBHttpSolrClient.Req::new);
   }
   
   public void setDocIterator(Iterator<SolrInputDocument> docIterator) {

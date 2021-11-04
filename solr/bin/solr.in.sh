@@ -125,11 +125,6 @@
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
 
-# Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
-# start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
-# framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
-#SOLR_LOG_PRESTART_ROTATION=false
-
 # Enables jetty request log for all requests
 #SOLR_REQUESTLOG_ENABLED=false
 
