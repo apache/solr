@@ -321,7 +321,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     if (broadcastDeleteById && DistribPhase.NONE == phase) {
       DocCollection coll = clusterState.getCollection(collection);
-      log.debug("The deleteById command for doc {} is missing the required route, broadcasting to leaders of other shards", cmd.getId());
+      if (log.isDebugEnabled()) {
+        log.debug("The deleteById command for doc {} is missing the required route, broadcasting to leaders of other shards", cmd.getId());
+      }
       forwardDelete(coll, cmd);
     }
 
