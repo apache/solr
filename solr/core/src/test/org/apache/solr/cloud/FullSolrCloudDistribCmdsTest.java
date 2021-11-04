@@ -152,20 +152,19 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final DocCollection docCol =  cloudClient.getZkStateReader().getClusterState().getCollection(name);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
          SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
-         
+
       // Add three documents to shard1
       shard1.add(sdoc("id", "1", "title", "s1 one"));
       shard1.add(sdoc("id", "2", "title", "s1 two"));
       shard1.add(sdoc("id", "3", "title", "s1 three"));
       shard1.commit();
       final AtomicInteger docCounts1 = new AtomicInteger(3);
-      
-      // Add three documents to shard2
+
+      // Add two documents to shard2
       shard2.add(sdoc("id", "4", "title", "s2 four"));
       shard2.add(sdoc("id", "5", "title", "s2 five"));
-      shard2.add(sdoc("id", "6", "title", "s2 six"));
       shard2.commit();
-      final AtomicInteger docCounts2 = new AtomicInteger(3);
+      final AtomicInteger docCounts2 = new AtomicInteger(2);
 
       // A re-usable helper to verify that the expected number of documents can be found on each shard...
       Runnable checkShardCounts = () -> {
@@ -173,16 +172,16 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
           // including cloudClient helps us test view from other nodes that aren't the leaders...
           for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
             assertEquals(docCounts1.get() + docCounts2.get(), c.query(params("q", "*:*")).getResults().getNumFound());
-            
+
             assertEquals(docCounts1.get(), c.query(params("q", "*:*", "shards", "shard1")).getResults().getNumFound());
             assertEquals(docCounts2.get(), c.query(params("q", "*:*", "shards", "shard2")).getResults().getNumFound());
-            
+
             assertEquals(docCounts1.get() + docCounts2.get(), c.query(params("q", "*:*", "shards", "shard2,shard1")).getResults().getNumFound());
           }
-          
+
           assertEquals(docCounts1.get(), shard1.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound());
           assertEquals(docCounts2.get(), shard2.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound());
-          
+
         } catch (Exception sse) {
           throw new RuntimeException(sse);
         }
@@ -198,7 +197,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         docCounts1.decrementAndGet();
       }
       checkShardCounts.run();
-      
+
       { // Send a delete request to core hosting shard1 with a route param for a document that is actually in shard2
         // Should delete.
         final UpdateRequest deleteRequest = new UpdateRequest();
@@ -210,19 +209,19 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       checkShardCounts.run();
 
       { // Send a delete request to core hosting shard1 with NO route param for a document that is actually in shard2
-        // This will broadcast to all shard leaders.
+        // Shouldn't delete, since deleteById requests are not broadcast to all shard leaders.
+        // (This is effictively a request to delete "5" if an only if it is on shard1)
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("5");
         shard1.request(deleteRequest);
         shard1.commit();
-        docCounts2.decrementAndGet();
       }
       checkShardCounts.run();
-      
+
       { // Multiple deleteById commands for different shards in a single request
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("2", "shard1");
-        deleteRequest.deleteById("6", "shard2");
+        deleteRequest.deleteById("5", "shard2");
         shard1.request(deleteRequest);
         shard1.commit();
         docCounts1.decrementAndGet();
@@ -230,7 +229,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       }
       checkShardCounts.run();
     }
-    
+
   }
 
   public void testDeleteByIdCompositeRouterWithRouterField() throws Exception {
