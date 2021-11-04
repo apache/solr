@@ -161,6 +161,14 @@ public class InfoHandler extends RequestHandlerBase  {
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    return Name.CONFIG_READ_PERM;
+    // Delegate permission to the actual handler
+    String path = request.getResource();
+    String lastPath = path.substring(path.lastIndexOf("/") +1 );
+    RequestHandlerBase handler = handlers.get(lastPath.toLowerCase(Locale.ROOT));
+    if (handler != null) {
+      return handler.getPermissionName(request);
+    } else {
+      return null;
+    }
   }
 }
