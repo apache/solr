@@ -108,7 +108,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    return Name.CONFIG_READ_PERM;
+    return Name.READ_PERM;
   }
 
   private static enum ShowStyle {
