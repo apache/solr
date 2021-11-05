@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import com.google.common.collect.Maps;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.request.beans.AddReplicaPropertyPayload;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -29,16 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 /**
