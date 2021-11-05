@@ -44,6 +44,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -214,9 +215,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<>(numDeletesToKeep) {
     @Override
     protected boolean removeEldestEntry(Map.Entry<BytesRef, LogPtr> eldest) {
-      return size() > numDeletesToKeep;
+      final boolean remove = size() > numDeletesToKeep;
+      if (remove) didRemoveEldestEntry.set(true);
+      return remove;
     }
   };
+  public static AtomicBoolean didRemoveEldestEntry = new AtomicBoolean(false);
 
   /**
    * Holds the query and the version for a DeleteByQuery command
