@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Counter;
@@ -461,7 +460,6 @@ public class PeerSync implements SolrMetricProducer {
       int cmp = IndexFingerprint.compare(sreq.fingerprint, ourFingerprint);
       log.info("Fingerprint comparison: {}" , cmp);
       if(cmp != 0) {
-        seenFingerprintMismatch.set(true);
         log.info("Other fingerprint: {}, Our fingerprint: {}", sreq.fingerprint , ourFingerprint);
       }
       return cmp == 0;  // currently, we only check for equality...
@@ -470,7 +468,6 @@ public class PeerSync implements SolrMetricProducer {
       return false;
     }
   }
-  public static AtomicBoolean seenFingerprintMismatch = new AtomicBoolean(false);
 
   private boolean requestUpdates(ShardResponse srsp, String versionsAndRanges, long totalUpdates) {
     String replica = srsp.getShardRequest().shards[0];
