@@ -40,6 +40,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ENABLE;
+import static org.apache.solr.common.params.CommonParams.DISABLE;
+import static org.apache.solr.common.params.CommonParams.ACTION;
 
 /**
  * Ping Request Handler for reporting SolrCore health to a Load Balancer.
@@ -137,7 +140,15 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    return Name.HEALTH_PERM;
+    String action = request.getParams().get(ACTION, "").strip().toLowerCase(Locale.ROOT);
+    // Modifying the health check file requires more permission than just doing a ping
+    switch (action) {
+      case ENABLE:
+      case DISABLE:
+        return Name.CONFIG_EDIT_PERM;
+      default:
+        return Name.HEALTH_PERM;
+    }
   }
 
   protected enum ACTIONS {STATUS, ENABLE, DISABLE, PING};
