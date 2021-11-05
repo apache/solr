@@ -317,9 +317,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
     setupRequest(cmd);
 
-    DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
-
-    if (broadcastDeleteById && DistribPhase.NONE == phase) {
+    if (broadcastDeleteById && DistribPhase.NONE == DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM))) {
       DocCollection coll = clusterState.getCollection(collection);
       if (log.isDebugEnabled()) {
         log.debug("The deleteById command for doc {} is missing the required route, broadcasting to leaders of other shards", cmd.getId());
