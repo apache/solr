@@ -36,7 +36,7 @@ public class TestSolrRequestInfo extends SolrTestCaseJ4 {
                 new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(Map.of())),
                 new SolrQueryResponse());
         AtomicInteger counter = new AtomicInteger();
-        info.addCloseHookStrict(counter::incrementAndGet);
+        info.addCloseHook(counter::incrementAndGet);
         SolrRequestInfo.setRequestInfo(info);
         SolrRequestInfo.setRequestInfo(info);
         SolrRequestInfo.clearRequestInfo();
