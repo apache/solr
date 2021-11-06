@@ -51,6 +51,7 @@ public class SolrRequestInfo {
   protected TimeZone tz;
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
+  volatile boolean closed = false;
   protected SolrDispatchFilter.Action action;
   protected boolean useServerToken = false;
 
@@ -70,6 +71,8 @@ public class SolrRequestInfo {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     if (info == null) {
       throw new IllegalArgumentException("SolrRequestInfo is null");
+    } else if(info.closed) {
+      throw new IllegalArgumentException("SolrRequestInfo is closed");
     } else if (stack.size() <= MAX_STACK_SIZE) {
       stack.push(info);
     } else {
@@ -79,15 +82,22 @@ public class SolrRequestInfo {
   }
 
   /** Removes the most recent SolrRequestInfo from the stack */
-  public static void clearRequestInfo() {
+  static void clearRequestInfo(boolean close) {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     if (stack.isEmpty()) {
       assert false : "clearRequestInfo called too many times";
       log.error("clearRequestInfo called too many times");
     } else {
       SolrRequestInfo info = stack.pop();
-      closeHooks(info);
+      if(close) {
+        closeHooks(info);
+      }
     }
+  }
+
+  /** Removes the most recent SolrRequestInfo from the stack */
+  public static void clearRequestInfo() {
+    clearRequestInfo(true);
   }
 
   /**
@@ -105,10 +115,13 @@ public class SolrRequestInfo {
   }
 
   private static void closeHooks(SolrRequestInfo info) {
+    assert !info.closed: info + " has been closed already.";
+    if (info.closed){
+      log.error("SolrRequestInfo.closeHooks() called too many times");
+    }
+    info.closed = true;
     if (info.closeHooks != null) {
-      final List<Closeable> oldHooks = info.closeHooks;
-      info.closeHooks = null;
-      for (Closeable hook : oldHooks) {
+      for (Closeable hook : info.closeHooks) {
         try {
           hook.close();
         } catch (Exception e) {
@@ -234,7 +247,7 @@ public class SolrRequestInfo {
       @Override
       public void clean(AtomicReference<Object> ctx) {
         if (ctx.get() != null) {
-          SolrRequestInfo.clearRequestInfo();
+          SolrRequestInfo.clearRequestInfo(false);
         }
         SolrRequestInfo.reset();
       }
