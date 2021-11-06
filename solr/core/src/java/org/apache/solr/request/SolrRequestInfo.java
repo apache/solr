@@ -18,7 +18,6 @@ package org.apache.solr.request;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Date;
@@ -26,7 +25,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.common.SolrException;
@@ -108,7 +106,9 @@ public class SolrRequestInfo {
 
   private static void closeHooks(SolrRequestInfo info) {
     if (info.closeHooks != null) {
-      for (Closeable hook : info.closeHooks) {
+      final List<Closeable> oldHooks = info.closeHooks;
+      info.closeHooks = null;
+      for (Closeable hook : oldHooks) {
         try {
           hook.close();
         } catch (Exception e) {
@@ -185,11 +185,6 @@ public class SolrRequestInfo {
     this.rb = rb;
   }
 
-  /**
-   * adds the hook which will be invoked once or a few times per request completion
-   * @deprecated {@link #addCloseHookStrict(Closeable)}
-   * */
-  @Deprecated
   public void addCloseHook(Closeable hook) {
     // is this better here, or on SolrQueryRequest?
     synchronized (this) {
@@ -198,20 +193,6 @@ public class SolrRequestInfo {
       }
       closeHooks.add(hook);
     }
-  }
-  /**
-  * adds the hook which will be invoked strictly once per request completion
-  * */
-  public void addCloseHookStrict(Closeable hook) {
-    addCloseHook(new Closeable() {
-      AtomicBoolean closed = new AtomicBoolean(false);
-      @Override
-      public void close() throws IOException {
-        if (closed.compareAndSet(false, true)) {
-          hook.close();
-        }
-      }
-    });
   }
 
   public SolrDispatchFilter.Action getAction() {

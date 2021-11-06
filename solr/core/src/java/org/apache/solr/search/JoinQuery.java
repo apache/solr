@@ -139,9 +139,9 @@ class JoinQuery extends Query {
 
         if (fromRef != null) {
           final RefCounted<SolrIndexSearcher> ref = fromRef;
-          info.addCloseHookStrict(ref::decref);
+          info.addCloseHook(ref::decref);
         }
-        info.addCloseHookStrict(fromCore);
+        info.addCloseHook(fromCore);
       }
       this.toSearcher = searcher;
     }
