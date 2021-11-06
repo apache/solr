@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.api.EndPoint;
-import org.apache.solr.client.solrj.request.beans.AddReplicaPropertyPayload;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -36,14 +35,11 @@ import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 /**
- * V2 API for adding a property to a collection replica
+ * V2 API for displaying basic information about a single collection.
  *
- * This API (POST /v2/collections/collectionName {'add-replica-property': {...}}) is analogous to the v1
- * /admin/collections?action=ADDREPLICAPROP command.
- *
- * @see AddReplicaPropertyPayload
+ * This API (GET /v2/collections/collectionName) is analogous to the v1
+ * /admin/collections?action=CLUSTERSTATUS&collection=collectionName command.
  */
-
 public class CollectionStatusAPI {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
