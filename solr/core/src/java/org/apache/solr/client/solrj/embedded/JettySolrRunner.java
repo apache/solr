@@ -368,7 +368,7 @@ public class JettySolrRunner {
       }
 
       @Override
-      public void lifeCycleStopped(LifeCycle arg0) {
+      public synchronized void lifeCycleStopped(LifeCycle arg0) {
         coreContainerProvider.close();
       }
 
@@ -378,7 +378,7 @@ public class JettySolrRunner {
       }
 
       @Override
-      public void lifeCycleStarted(LifeCycle arg0) {
+      public synchronized void lifeCycleStarted(LifeCycle arg0) {
         jettyPort = getFirstConnectorPort();
         int port = jettyPort;
         if (proxyPort != -1) port = proxyPort;
