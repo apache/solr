@@ -95,9 +95,9 @@ public class CoreContainerProvider implements ServletContextListener {
   private static final Map<ContextInitializationKey, ServiceHolder> services =
       Collections.synchronizedMap(new WeakHashMap<>());
 
-  // todo: dependency injection instead, but CDI is not jetty native so for now this method and the associated
-  //  map will have to suffice. Note that this relies on ServletContext.equals() not implementing anything significantly
-  //  different thant Object.equals for its .equals method (I've found no implementation that even immplements it).
+  // todo: dependency injection instead, but for now this method and the associated  map will have to suffice.
+  //  Note that this relies on ServletContext.equals() not implementing anything significantly different
+  //  than Object.equals for its .equals method (I've found no implementation that even implements it).
   public static ServiceHolder serviceForContext(ServletContext ctx) throws InterruptedException {
     ContextInitializationKey key = new ContextInitializationKey(ctx);
     return services.computeIfAbsent(key, ServiceHolder::new);
@@ -147,20 +147,21 @@ public class CoreContainerProvider implements ServletContextListener {
 
   public void close() {
     CoreContainer cc = cores;
-    if (cc != null) {
-      ZkController zkController = cc.getZkController();
-      if (zkController != null) {
-
-        // Mark Miller suggested that we should be publishing that we are down before anything else which makes
-        // good sense, but the following causes test failures, so that improvement can be the subject of another
-        // PR/issue. Also, jetty might already be refusing requests by this point so that's a potential issue too.
-        // Digging slightly I see that there's a whole mess of code looking up collections and calculating state
-        // changes associated with this call, which smells a lot like we're duplicating node state in collection
-        // stuff, but it will take a lot of code reading to figure out why and if there's room for improvement.
-
-        //zkController.publishNodeAsDown(zkController.getNodeName());
-      }
-    }
+//    if (cc != null) {
+//      ZkController zkController = cc.getZkController();
+//      if (zkController != null) {
+//
+//        // Mark Miller suggested that we should be publishing that we are down before anything else which makes
+//        // good sense, but the following causes test failures, so that improvement can be the subject of another
+//        // PR/issue. Also, jetty might already be refusing requests by this point so that's a potential issue too.
+//        // Digging slightly I see that there's a whole mess of code looking up collections and calculating state
+//        // changes associated with this call, which smells a lot like we're duplicating node state in collection
+//        // stuff, but it will take a lot of code reading to figure out if that's really what it is, why we
+//        // did it and if there's room for improvement.
+//
+//        zkController.publishNodeAsDown(zkController.getNodeName());
+//      }
+//    }
     cores = null;
     try {
       if (metricManager != null) {
@@ -188,7 +189,7 @@ public class CoreContainerProvider implements ServletContextListener {
     }
     CoreContainer coresInit = null;
     try {
-      // "extra" properties must be init'ed first so we know things like "do we have a zkHost"
+      // "extra" properties must be initialized first, so we know things like "do we have a zkHost"
       // wrap as defaults (if set) so we can modify w/o polluting the Properties provided by our caller
       this.extraProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded
           ((Properties) servletContext.getAttribute(PROPERTIES_ATTRIBUTE));

@@ -144,6 +144,7 @@ public class JettySolrRunner {
   private String host;
 
   private volatile boolean started = false;
+
   private CoreContainerProvider coreContainerProvider;
 
   public static class DebugFilter implements Filter {
@@ -466,6 +467,8 @@ public class JettySolrRunner {
       }
       return getSolrDispatchFilter().getCores();
     } catch (UnavailableException e) {
+      // Since this is only used in tests, this is just a straight-up failure
+      // If this is converted for other use something else might be better here
       throw new RuntimeException(e);
     }
   }
@@ -640,24 +643,6 @@ public class JettySolrRunner {
     MDC.clear();
     try {
       Filter filter = dispatchFilter.getFilter();
-
-      // we want to shutdown outside of jetty cutting us off
-      SolrDispatchFilter sdf = getSolrDispatchFilter();
-      ExecutorService customThreadPool = null;
-      if (sdf != null) {
-        customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
-
-        sdf.closeOnDestroy();
-//        customThreadPool.submit(() -> {
-//          try {
-//            sdf.close();
-//          } catch (Throwable t) {
-//            log.error("Error shutting down Solr", t);
-//          }
-//        });
-
-      }
-
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
@@ -695,8 +680,10 @@ public class JettySolrRunner {
         timeout.waitFor("Timeout waiting for reserved executor to stop.", rte::isStopped);
       }
 
-      if (customThreadPool != null) {
-        ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+      // we want to shutdown outside of jetty cutting us off
+      SolrDispatchFilter sdf = getSolrDispatchFilter();
+      if (sdf != null) {
+        ExecutorUtil.shutdownAndAwaitTermination(getJettyShutDownThreadPool());
       }
 
       do {
@@ -718,6 +705,10 @@ public class JettySolrRunner {
         MDC.clear();
       }
     }
+  }
+
+  private ExecutorService getJettyShutDownThreadPool() {
+    return ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
   }
 
   public void outputMetrics(File outputDirectory, String fileName) throws IOException {

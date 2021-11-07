@@ -66,7 +66,8 @@ import static org.apache.solr.servlet.ServletUtils.excludedPath;
  * @since solr 1.2
  */
 // todo: get rid of this class entirely! Request dispatch is the container's responsibility. Much of what we have here
-//  should be several separate but composable servlet Filters, and a ServletContextListener for startup/shutdown
+//  should be several separate but composable servlet Filters, wrapping multiple servlets that are more focused in
+//  scope. This should become possible now that we have a ServletContextListener for startup/shutdown of CoreContainer
 //  that sets up a service from which things like CoreContainer can be requested. (or better yet injected)
 public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -74,7 +75,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   public static final String ATTR_TRACING_TRACER = Tracer.class.getName();
   public static final String ATTR_RATELIMIT_MANAGER = RateLimitManager.class.getName();
 
-  // TODO: see if we can get rid of the holder here (Servlet spec actually guarantees ContextListeners run before filter init)
+  // TODO: see if we can get rid of the holder here (Servlet spec actually guarantees ContextListeners run
+  //  before filter init, but JettySolrRunner that we use for tests is complicated)
   private ServiceHolder coreService;
 
   protected final CountDownLatch init = new CountDownLatch(1);
@@ -260,6 +262,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     }
   }
 
+  // TODO: make this a servlet filter
   private void authenticateRequest(HttpServletRequest request, HttpServletResponse response, final AtomicReference<HttpServletRequest> wrappedRequest) throws IOException,SolrAuthenticationException {
     boolean requestContinues;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
@@ -297,8 +300,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         // For legacy reasons, upon successful authentication this wants to call the chain's next filter, which
         // obfuscates the layout of the code since one usually expects to be able to find the call to doFilter()
         // in the implementation of javax.servlet.Filter. Supplying a trivial impl here to keep existing code happy
-        // while making the flow  clearer. Chain will be called after this method completes. Eventually auth all
-        // moves to its own filter (hopefully). Most auth plugins simply return true after calling this anyway
+        // while making the flow clearer. Chain will be called after this method completes. Eventually auth all
+        // moves to its own filter (hopefully). Most auth plugins simply return true after calling this anyway,
         // so they obviously don't care. Kerberos plugins seem to mostly use it to satisfy the api of a wrapped
         // instance of javax.servlet.Filter and neither of those seem to be doing anything fancy with the filter chain,
         // so this would seem to be a hack brought on by the fact that our auth code has been  forced to be code
@@ -346,9 +349,6 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
     }
     return cores.getAuditLoggerPlugin() != null && cores.getAuditLoggerPlugin().shouldLog(eventType);
-  }
-
-  public void closeOnDestroy() {
   }
 
   @VisibleForTesting
