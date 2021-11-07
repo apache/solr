@@ -78,7 +78,8 @@ public abstract class ServletUtils {
    * Wrap the request's input stream with a close shield. If this is a
    * retry, we will assume that the stream has already been wrapped and do nothing.
    *
-   * Only the container should ever actually close the servlet output stream.
+   * Only the container should ever actually close the servlet output stream. This method possibly
+   * should be turned into a servlet filter
    *
    * @param request The request to wrap.
    * @param retry If this is an original request or a retry.
@@ -176,6 +177,15 @@ public abstract class ServletUtils {
     }
   }
 
+  /**
+   * Enforces rate limiting for a request. Should be converted to a servlet filter at some point. Currently,
+   * this is tightly coupled with request tracing which is not ideal either.
+   *
+   * @param request The request to limit
+   * @param response The associated response
+   * @param limitedExecution code that will be traced
+   * @param trace a boolean that turns tracing on or off
+   */
   static void rateLimitRequest(HttpServletRequest request, HttpServletResponse response, Runnable limitedExecution, boolean trace) throws ServletException, IOException {
     boolean accepted = false;
     RateLimitManager rateLimitManager = getRateLimitManager(request);
@@ -203,7 +213,7 @@ public abstract class ServletUtils {
   }
 
   /**
-   * Sets up tracing for an HTTP request.
+   * Sets up tracing for an HTTP request. Perhaps should be converted to a servlet filter at some point.
    *
    * @param tracedExecution the executed code
    */
@@ -284,6 +294,7 @@ public abstract class ServletUtils {
   private static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
     try {
       ServletInputStream is = req.getInputStream();
+      //noinspection StatementWithEmptyBody
       while (!is.isFinished() && is.read() != -1) {}
     } catch (IOException e) {
       if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {

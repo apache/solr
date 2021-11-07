@@ -79,19 +79,12 @@ abstract public class BaseTestHarness {
 
     Document document;
     try {
-//      if (xml.startsWith("<html>")) {
-//        // probably got an error page
-//        System.err.println(xml);
-//      }
       document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
           (xml.getBytes(StandardCharsets.UTF_8)));
     } catch (UnsupportedEncodingException e1) {
       throw new RuntimeException("Totally weird UTF-8 exception", e1);
     } catch (IOException e2) {
       throw new RuntimeException("Totally weird io exception", e2);
-//    } catch (SAXParseException spe) {
-//      System.err.println(xml);
-//      throw spe;
     }
 
     for (String xp : tests) {
