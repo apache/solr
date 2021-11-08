@@ -399,8 +399,8 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   private static class ContextInitializationKey {
-    private ServletContext ctx;
-    volatile CountDownLatch initializing = new CountDownLatch(1);
+    private final ServletContext ctx;
+    private final CountDownLatch initializing = new CountDownLatch(1);
 
     private ContextInitializationKey(ServletContext ctx) {
       if (ctx == null) {
@@ -415,10 +415,6 @@ public class CoreContainerProvider implements ServletContextListener {
 
     public synchronized ServletContext getCtx() {
       return ctx;
-    }
-
-    public synchronized void setCtx(ServletContext ctx) {
-      this.ctx = ctx;
     }
 
     synchronized void makeReady() {

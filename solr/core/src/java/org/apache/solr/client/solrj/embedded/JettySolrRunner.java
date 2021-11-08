@@ -115,7 +115,7 @@ public class JettySolrRunner {
   // NOTE: needs to be larger than SolrHttpClient.threadPoolSweeperMaxIdleTime
   private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 260000;
 
-  Server server;
+  private Server server;
 
   volatile FilterHolder dispatchFilter;
   volatile FilterHolder debugFilter;
@@ -512,7 +512,7 @@ public class JettySolrRunner {
    *
    * @throws Exception if an error occurs on startup
    */
-  public void start(boolean reusePort) throws Exception {
+  public synchronized void start(boolean reusePort) throws Exception {
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
@@ -637,7 +637,7 @@ public class JettySolrRunner {
    *
    * @throws Exception if an error occurs on shutdown
    */
-  public void stop() throws Exception {
+  public synchronized void  stop() throws Exception {
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String,String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
