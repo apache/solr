@@ -22,6 +22,7 @@ description = 'Learning to Rank Package'
 dependencies {
   implementation project(':solr:core')
 
+  implementation 'commons-io:commons-io'
   implementation "org.apache.lucene:lucene-analysis-common"
 
   testImplementation('org.mockito:mockito-core', {

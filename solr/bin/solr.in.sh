@@ -70,6 +70,9 @@
 # Leave empty if not using SolrCloud
 #ZK_HOST=""
 
+# Set to true if your ZK host has a chroot path, and you want to create it automatically.
+#ZK_CREATE_CHROOT=true
+
 # Set the ZooKeeper client timeout (for SolrCloud mode)
 #ZK_CLIENT_TIMEOUT="30000"
 
@@ -121,11 +124,6 @@
 
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
-
-# Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
-# start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
-# framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
-#SOLR_LOG_PRESTART_ROTATION=false
 
 # Enables jetty request log for all requests
 #SOLR_REQUESTLOG_ENABLED=false
@@ -207,6 +205,8 @@
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 
+# Jetty GZIP module enabled by default
+#SOLR_GZIP_ENABLED=true
 
 # Settings for common system values that may cause operational imparement when system defaults are used.
 # Solr can use many processes and many file handles. On modern operating systems the savings by leaving

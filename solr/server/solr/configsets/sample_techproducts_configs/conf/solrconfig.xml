@@ -18,7 +18,7 @@
 
 <!--
      For more details about configurations options that may appear in
-     this file, see http://wiki.apache.org/solr/SolrConfigXml.
+     this file, see https://solr.apache.org/guide/configuring-solrconfig-xml.html.
 -->
 <config>
   <!-- In all configuration below, a prefix of "solr." for class names
@@ -214,7 +214,7 @@
                    'simple' is the default
 
          More details on the nuances of each LockFactory...
-         http://wiki.apache.org/lucene-java/AvailableLockFactories
+         https://cwiki.apache.org/confluence/display/lucene/AvailableLockFactories
     -->
     <lockType>${solr.lock.type:native}</lockType>
 
@@ -268,7 +268,7 @@
        parameters. Remove this to disable exposing Solr configuration
        and statistics to JMX.
 
-       For more details see http://wiki.apache.org/solr/SolrJmx
+       For more details see https://solr.apache.org/guide/jmx-with-solr.html
     -->
   <jmx />
   <!-- If you want to connect to a particular server, specify the
@@ -306,7 +306,7 @@
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents.
 
-         http://wiki.apache.org/solr/UpdateXmlMessages
+         https://solr.apache.org/guide/indexing-with-update-handlers.html
 
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
@@ -811,7 +811,7 @@
 
   <!-- Solr Cell Update Request Handler
 
-       https://lucene.apache.org/solr/guide/uploading-data-with-solr-cell-using-apache-tika.html
+       https://lucene.apache.org/solr/guide/indexing-with-tika.html
 
     -->
   <requestHandler name="/update/extract"
@@ -830,7 +830,7 @@
 
   <!-- XSLT Update Request Handler
 
-       https://lucene.apache.org/solr/guide/uploading-data-with-index-handlers.html#using-xslt-to-transform-xml-index-updates
+       https://lucene.apache.org/solr/guide/indexing-with-update-handlers.html#using-xslt-to-transform-xml-index-updates
 
     -->
   <requestHandler name="/update/xslt"
@@ -1105,7 +1105,7 @@
 
   <!-- Query Elevation Component
 
-       https://lucene.apache.org/solr/guide/the-query-elevation-component.html
+       https://lucene.apache.org/solr/guide/query-elevation-component.html
 
        a search component that enables you to configure the top
        results for a given query regardless of the normal lucene
@@ -1270,7 +1270,7 @@
        making this example suitable for detecting languages form full-text
        rich documents injected via ExtractingRequestHandler.
 
-       See more about langId at https://lucene.apache.org/solr/guide/detecting-languages-during-indexing.html
+       See more about langId at https://lucene.apache.org/solr/guide/language-detection.html
     -->
     <!--
      <updateRequestProcessorChain name="langid">
@@ -1305,7 +1305,7 @@
 
   <!-- Response Writers
 
-       http://wiki.apache.org/solr/QueryResponseWriter
+       https://solr.apache.org/guide/response-writers.html
 
        Request responses will be written using the writer specified by
        the 'wt' request parameter matching the name of a registered
@@ -1357,7 +1357,7 @@
 
   <!-- Function Parsers
 
-       http://wiki.apache.org/solr/FunctionQuery
+       https://solr.apache.org/guide/function-queries.html
 
        Multiple ValueSourceParsers can be registered by name, and then
        used as function names when using the "func" QParser.
@@ -1381,7 +1381,7 @@
   <queryParser enable="${solr.ltr.enabled:false}" name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"/>
 
   <!-- Document Transformers
-       http://wiki.apache.org/solr/DocTransformers
+       https://solr.apache.org/guide/document-transformers.html
     -->
   <!--
      Could be something like:
@@ -1421,4 +1421,13 @@
       <str name="fvCacheName">QUERY_DOC_FV</str>
     </transformer>
 
+    <!-- Example of ping handler with a healthcheckFile -->
+    <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
+      <!-- relative paths are resolved against the data dir -->
+      <str name="healthcheckFile">server-enabled.txt</str>
+      <lst name="invariants">
+        <str name="qt">/query</str><!-- handler to delegate to -->
+        <str name="q">*:*</str>
+      </lst>
+    </requestHandler>
 </config>

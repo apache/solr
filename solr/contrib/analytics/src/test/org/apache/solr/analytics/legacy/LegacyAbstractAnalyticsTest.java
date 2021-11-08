@@ -34,7 +34,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
@@ -222,7 +221,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
       while (file.hasNextLine()) {
         String line = file.nextLine();
         line = line.trim();
-        if( StringUtils.isBlank(line) || line.startsWith("#")){
+        if( line.isEmpty() || line.startsWith("#")){
           continue;
         }
         String[] param = line.split("=");

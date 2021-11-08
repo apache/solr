@@ -55,6 +55,9 @@ REM e.g. host1:2181,host2:2181/chroot
 REM Leave empty if not using SolrCloud
 REM set ZK_HOST=
 
+REM Set to true if your ZK host has a chroot path, and you want to create it automatically.
+REM set ZK_CREATE_CHROOT=true
+
 REM Set the ZooKeeper client timeout (for SolrCloud mode)
 REM set ZK_CLIENT_TIMEOUT=30000
 
@@ -97,11 +100,6 @@ REM set SOLR_LOG_LEVEL=INFO
 
 REM Location where Solr should write logs to. Absolute or relative to solr start dir
 REM set SOLR_LOGS_DIR=logs
-
-REM Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
-REM start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
-REM framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
-REM set SOLR_LOG_PRESTART_ROTATION=false
 
 REM Enables jetty request log for all requests
 REM set SOLR_REQUESTLOG_ENABLED=false
@@ -182,6 +180,9 @@ REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCrede
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
+
+REM Jetty GZIP module enabled by default
+REM set SOLR_GZIP_ENABLED=true
 
 REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 REM list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured

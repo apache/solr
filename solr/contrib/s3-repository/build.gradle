@@ -32,6 +32,10 @@ dependencies {
     }
     implementation (group: 'software.amazon.awssdk', name: 'sdk-core')
     implementation (group: 'software.amazon.awssdk', name: 'protocol-core')
+
+    implementation ('com.google.guava:guava') { transitive = false }
+    implementation 'commons-io:commons-io'
+
     runtimeOnly (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
     runtimeOnly (group: 'org.codehaus.woodstox', name: 'stax2-api')
 
@@ -49,6 +53,7 @@ dependencies {
     }
 
     testImplementation project(':solr:test-framework')
+    testImplementation 'org.apache.commons:commons-lang3'
 }
 
 test {
@@ -62,6 +67,4 @@ test {
     // Reduce logging noise during the tests
     environment "aws.accessKeyId", "foo"
     environment "aws.secretAccessKey", "bar"
-    environment "aws.sharedCredentialsFile", "conf/credentials"
-    environment "aws.configFile", "conf/config"
 }

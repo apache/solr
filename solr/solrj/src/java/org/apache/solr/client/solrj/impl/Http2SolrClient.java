@@ -28,6 +28,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -65,7 +66,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -488,7 +488,7 @@ public class Http2SolrClient extends SolrClient {
 
   private String basicAuthCredentialsToAuthorizationString(String user, String pass) {
     String userPass = user + ":" + pass;
-    return "Basic " + Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
+    return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(FALLBACK_CHARSET));
   }
 
   private Request makeRequest(SolrRequest<?> solrRequest, String collection)

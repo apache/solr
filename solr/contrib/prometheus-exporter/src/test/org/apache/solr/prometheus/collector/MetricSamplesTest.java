@@ -20,18 +20,16 @@ package org.apache.solr.prometheus.collector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import io.prometheus.client.Collector;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class MetricSamplesTest {
 
@@ -58,15 +56,15 @@ public class MetricSamplesTest {
         .findFirst()
         .orElseThrow(() -> new RuntimeException(String.format(Locale.ROOT, "Unable to find item %s", metricName)));
 
-    assertTrue(Iterables.elementsEqual(expectedValues, test1.samples.stream().map(s -> s.value).collect(Collectors.toList())));
+    assertEquals(expectedValues, test1.samples.stream().map(s -> s.value).collect(Collectors.toList()));
   }
 
   @Test
   public void asList() {
-    MetricSamples samples = new MetricSamples(Maps.newHashMap(ImmutableMap.<String, Collector.MetricFamilySamples>builder()
-        .put("test1", samples("test1", Collector.Type.GAUGE, sample("test1", 1.0), sample("test1", 2.0)))
-        .put("test2", samples("test2", Collector.Type.GAUGE, sample("test2", 1.0)))
-        .build()));
+    MetricSamples samples = new MetricSamples(Map.of(
+        "test1", samples("test1", Collector.Type.GAUGE, sample("test1", 1.0), sample("test1", 2.0)),
+        "test2", samples("test2", Collector.Type.GAUGE, sample("test2", 1.0))
+    ));
 
     List<Collector.MetricFamilySamples> output = samples.asList();
 
@@ -78,16 +76,15 @@ public class MetricSamplesTest {
 
   @Test
   public void addAll() {
-    MetricSamples lhs = new MetricSamples(Maps.newHashMap(ImmutableMap.<String, Collector.MetricFamilySamples>builder()
-        .put("same", samples("same", Collector.Type.GAUGE, sample("same", 1.0), sample("same", 2.0)))
-        .put("diff1", samples("diff1", Collector.Type.GAUGE, sample("diff1", 1.0)))
-        .build()));
+    MetricSamples lhs = new MetricSamples(new HashMap<>(Map.of(
+        "same", samples("same", Collector.Type.GAUGE, sample("same", 1.0), sample("same", 2.0)),
+        "diff1", samples("diff1", Collector.Type.GAUGE, sample("diff1", 1.0))
+    )));
 
-    MetricSamples rhs = new MetricSamples(Maps.newHashMap(ImmutableMap.<String, Collector.MetricFamilySamples>builder()
-        .put("same", samples("test1", Collector.Type.GAUGE, sample("test1", 3.0), sample("test1", 4.0)))
-        .put("diff2", samples("diff2", Collector.Type.GAUGE, sample("diff2", 1.0)))
-        .build()));
-
+    MetricSamples rhs = new MetricSamples(Map.of(
+        "same", samples("test1", Collector.Type.GAUGE, sample("test1", 3.0), sample("test1", 4.0)),
+        "diff2", samples("diff2", Collector.Type.GAUGE, sample("diff2", 1.0))
+    ));
     lhs.addAll(rhs);
 
     List<Collector.MetricFamilySamples> output = lhs.asList();

@@ -36,6 +36,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.BufferOverflowException;
@@ -118,8 +120,8 @@ public class SimplePostTool {
   static HashMap<String,String> mimeMap;
   FileFilter fileFilter;
   // Backlog for crawling
-  List<LinkedHashSet<URL>> backlog = new ArrayList<>();
-  Set<URL> visited = new HashSet<>();
+  List<LinkedHashSet<URI>> backlog = new ArrayList<>();
+  Set<URI> visited = new HashSet<>();
 
   static final Set<String> DATA_MODES = new HashSet<>();
   static final String USAGE_STRING_SHORT =
@@ -557,7 +559,8 @@ public class SimplePostTool {
 
   /**
    * This method takes as input a list of start URL strings for crawling,
-   * adds each one to a backlog and then starts crawling
+   * converts the URL strings to URI strings
+   * and adds each one to a backlog and then starts crawling
    * @param args the raw input args from main()
    * @param startIndexInArgs offset for where to start
    * @param out outputStream to write results to
@@ -565,16 +568,16 @@ public class SimplePostTool {
    */
   public int postWebPages(String[] args, int startIndexInArgs, OutputStream out) {
     reset();
-    LinkedHashSet<URL> s = new LinkedHashSet<>();
+    LinkedHashSet<URI> s = new LinkedHashSet<>();
     for (int j = startIndexInArgs; j < args.length; j++) {
       try {
-        URL u = new URL(normalizeUrlEnding(args[j]));
-        s.add(u);
-      } catch(MalformedURLException e) {
+        URI uri = new URI(normalizeUrlEnding(args[j]));
+        s.add(uri);
+      } catch(URISyntaxException e) {
         warn("Skipping malformed input URL: "+args[j]);
       }
     }
-    // Add URLs to level 0 of the backlog and start recursive crawling
+    // Add URIs to level 0 of the backlog and start recursive crawling
     backlog.add(s);
     return webCrawl(0, out);
   }
@@ -607,40 +610,41 @@ public class SimplePostTool {
    */
   protected int webCrawl(int level, OutputStream out) {
     int numPages = 0;
-    LinkedHashSet<URL> stack = backlog.get(level);
+    LinkedHashSet<URI> stack = backlog.get(level);
     int rawStackSize = stack.size();
     stack.removeAll(visited);
     int stackSize = stack.size();
-    LinkedHashSet<URL> subStack = new LinkedHashSet<>();
+    LinkedHashSet<URI> subStack = new LinkedHashSet<>();
     info("Entering crawl at level "+level+" ("+rawStackSize+" links total, "+stackSize+" new)");
-    for(URL u : stack) {
+    for(URI uri : stack) {
       try {
-        visited.add(u);
-        PageFetcherResult result = pageFetcher.readPageFromUrl(u);
+        visited.add(uri);
+        URL url = uri.toURL();
+        PageFetcherResult result = pageFetcher.readPageFromUrl(url);
         if(result.httpStatus == 200) {
-          u = (result.redirectUrl != null) ? result.redirectUrl : u;
+          url = (result.redirectUrl != null) ? result.redirectUrl : url;
           URL postUrl = new URL(appendParam(solrUrl.toString(),
-              "literal.id="+URLEncoder.encode(u.toString(),"UTF-8") +
-              "&literal.url="+URLEncoder.encode(u.toString(),"UTF-8")));
+              "literal.id="+URLEncoder.encode(url.toString(),"UTF-8") +
+              "&literal.url="+URLEncoder.encode(url.toString(),"UTF-8")));
           ByteBuffer content = result.content;
           boolean success = postData(new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), null, out, result.contentType, postUrl);
           if (success) {
-            info("POSTed web resource "+u+" (depth: "+level+")");
+            info("POSTed web resource "+url+" (depth: "+level+")");
             Thread.sleep(delay * 1000);
             numPages++;
             // Pull links from HTML pages only
             if(recursive > level && result.contentType.equals("text/html")) {
-              Set<URL> children = pageFetcher.getLinksFromWebPage(u, new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), result.contentType, postUrl);
+              Set<URI> children = pageFetcher.getLinksFromWebPage(url, new ByteArrayInputStream(content.array(), content.arrayOffset(), content.limit()), result.contentType, postUrl);
               subStack.addAll(children);
             }
           } else {
-            warn("An error occurred while posting "+u);
+            warn("An error occurred while posting "+uri);
           }
         } else {
-          warn("The URL "+u+" returned a HTTP result status of "+result.httpStatus);
+          warn("The URL "+uri+" returned a HTTP result status of "+result.httpStatus);
         }
-      } catch (IOException e) {
-        warn("Caught exception when trying to open connection to "+u+": "+e.getMessage());
+      } catch (IOException | URISyntaxException e) {
+        warn("Caught exception when trying to open connection to "+uri+": "+e.getMessage());
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -852,7 +856,7 @@ public class SimplePostTool {
   }
 
   /**
-   * Guesses the type of a file, based on file name suffix
+   * Guesses the type of file, based on file name suffix
    * Returns "application/octet-stream" if no corresponding mimeMap type.
    * @param file the file
    * @return the content-type guessed
@@ -1127,13 +1131,14 @@ public class SimplePostTool {
       robotsCache = new HashMap<>();
     }
 
-    public PageFetcherResult readPageFromUrl(URL u) {
+    public PageFetcherResult readPageFromUrl(URL u) throws URISyntaxException {
       PageFetcherResult res = new PageFetcherResult();
       try {
         if (isDisallowedByRobots(u)) {
           warn("The URL "+u+" is disallowed by robots.txt and will not be crawled.");
           res.httpStatus = 403;
-          visited.add(u);
+          URI uri = u.toURI();
+          visited.add(uri);
           return res;
         }
         res.httpStatus = 404;
@@ -1146,7 +1151,8 @@ public class SimplePostTool {
           info("The URL "+u+" caused a redirect to "+conn.getURL());
           u = conn.getURL();
           res.redirectUrl = u;
-          visited.add(u);
+          URI uri = u.toURI();
+          visited.add(uri);
         }
         if(res.httpStatus == 200) {
           // Raw content type of form "text/html; encoding=utf-8"
@@ -1235,10 +1241,10 @@ public class SimplePostTool {
      * @param is the input stream of the page
      * @param type the content-type
      * @param postUrl the URL (typically /solr/extract) in order to pull out links
-     * @return a set of URLs parsed from the page
+     * @return a set of URIs parsed from the page
      */
-    protected Set<URL> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
-      Set<URL> l = new HashSet<>();
+    protected Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
+      Set<URI> l = new HashSet<>();
       URL url = null;
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -1254,10 +1260,10 @@ public class SimplePostTool {
             link = computeFullUrl(u, link);
             if(link == null)
               continue;
-            url = new URL(link);
-            if(url.getAuthority() == null || !url.getAuthority().equals(u.getAuthority()))
-              continue;
-            l.add(url);
+            URI newUri = new URI(link);
+            if(newUri.getAuthority() == null || !newUri.getAuthority().equals(u.getAuthority())){
+              l.add(newUri);
+            }
           }
         }
       } catch (MalformedURLException e) {
@@ -1267,6 +1273,7 @@ public class SimplePostTool {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
+
       return l;
     }
   }
