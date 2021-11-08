@@ -143,6 +143,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   This was already working for XML & "javabin"/SolrJ.  Previously, omitting the ID would be confused
   for a partial/atomic update.  (David Smiley)
 
+* SOLR-15705: A delete-by-id command is forwarded to all shards when using the CompositeId router with a router field
+  and the route is missing from the command. (Michael Kosten via Christine Poerschke, David Smiley, Eric Pugh)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
