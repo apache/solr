@@ -60,7 +60,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SystemInfoHandler extends RequestHandlerBase 
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String PARAM_NODE = "node";
 
   public static String REDACT_STRING = RedactionUtils.getRedactString();
 
