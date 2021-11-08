@@ -47,6 +47,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -81,6 +82,15 @@ public class V2CollectionAPIMappingTest extends SolrTestCaseJ4 {
 
     apiBag = new ApiBag(false);
     ApiRegistrar.registerCollectionApis(apiBag, mockCollectionsHandler);
+  }
+
+  @Test
+  public void testGetCollectionStatus() throws Exception {
+    final SolrParams v1Params = captureConvertedV1Params("/collections/collName", "GET", Map.of(SHARD, new String[]{"shard2"}));
+
+    assertEquals(CollectionParams.CollectionAction.CLUSTERSTATUS.toString(), v1Params.get(ACTION));
+    assertEquals("collName", v1Params.get(COLLECTION));
+    assertEquals("shard2", v1Params.get(SHARD));
   }
 
   @Test
@@ -250,6 +260,33 @@ public class V2CollectionAPIMappingTest extends SolrTestCaseJ4 {
       public List<CommandOperation> getCommands(boolean validateInput) {
         if (v2RequestBody == null) return Collections.emptyList();
         return ApiBag.getCommandOperations(new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
+      }
+
+      @Override
+      public Map<String, String> getPathTemplateValues() {
+        return parts;
+      }
+
+      @Override
+      public String getHttpMethod() {
+        return method;
+      }
+    };
+
+
+    api.call(req, rsp);
+    verify(mockCollectionsHandler).handleRequestBody(queryRequestCaptor.capture(), any());
+    return queryRequestCaptor.getValue().getParams();
+  }
+
+  private SolrParams captureConvertedV1Params(String path, String method, Map<String, String[]> queryParams) throws Exception {
+    final HashMap<String, String> parts = new HashMap<>();
+    final Api api = apiBag.lookup(path, method, parts);
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    final LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, queryParams) {
+      @Override
+      public List<CommandOperation> getCommands(boolean validateInput) {
+        return Collections.emptyList();
       }
 
       @Override
