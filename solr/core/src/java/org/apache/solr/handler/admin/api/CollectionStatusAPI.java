@@ -53,7 +53,6 @@ public class CollectionStatusAPI {
             method = GET,
             permission = COLL_READ_PERM)
     public void getCollectionStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        log.info("JEGERLOWL In CollectionStatusAPI annotated entrypoint");
         req = wrapParams(req, // 'req' can have a 'shard' param
                 ACTION, CollectionParams.CollectionAction.CLUSTERSTATUS.toString(),
                 COLLECTION, req.getPathTemplateValues().get(ZkStateReader.COLLECTION_PROP));
