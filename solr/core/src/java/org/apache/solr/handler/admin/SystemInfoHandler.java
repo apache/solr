@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
 import org.apache.lucene.LucenePackage;
@@ -42,6 +43,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RedactionUtils;
@@ -349,6 +351,7 @@ public class SystemInfoHandler extends RequestHandlerBase
         RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
+        info.add("permissions", rbap.getPermissionNamesForRoles(roles));
       }
     }
 

@@ -25,8 +25,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.Utils;
@@ -46,6 +48,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, WildCardSupportMap> mapping = new HashMap<>();
+  private final Map<String, Set<Permission>> roleToPermissionsMap = new HashMap<>();
 
   // Doesn't implement Map because we violate the contracts of put() and get()
   private static class WildCardSupportMap {
@@ -108,6 +111,19 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     //check wildcard (all=*) permissions.
     MatchStatus flag = checkCollPerm(mapping.get("*"), context);
     return flag.rsp;
+  }
+
+  /**
+   * Retrieves permission names for a given set of roles
+   */
+  public Set<String> getPermissionNamesForRoles(Set<String> roles) {
+    Set<String> permissions = new HashSet<>();
+    for (String r : roles) {
+      if (roleToPermissionsMap.containsKey(r)) {
+        permissions.addAll(roleToPermissionsMap.get(r).stream().map(p -> p.name).filter(Objects::nonNull).collect(Collectors.toSet()));
+      }
+    }
+    return permissions;
   }
 
   private MatchStatus checkCollPerm(WildCardSupportMap pathVsPerms, AuthorizationContext context) {
@@ -284,6 +300,10 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
         if (perms == null) m.put(path, perms = new ArrayList<>());
         perms.add(permission);
       }
+    }
+    for (String r : permission.role) {
+      Set<Permission> rm = roleToPermissionsMap.computeIfAbsent(r, k -> new HashSet<>());
+      rm.add(permission);
     }
   }
 
