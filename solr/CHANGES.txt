@@ -164,6 +164,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15608: Remove deprecated methods, classes and constructors from solrj clients (janhoy)
 
+* SOLR-15705: A delete-by-id command is forwarded to all shards when using the CompositeId router with a router field
+  and the route is missing from the command. (Michael Kosten via Christine Poerschke, David Smiley, Eric Pugh)
+
 Build
 ---------------------
 
