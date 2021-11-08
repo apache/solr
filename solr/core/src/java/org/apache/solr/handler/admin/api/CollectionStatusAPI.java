@@ -38,7 +38,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
  * V2 API for displaying basic information about a single collection.
  *
  * This API (GET /v2/collections/collectionName) is analogous to the v1
- * /admin/collections?action=CLUSTERSTATUS&collection=collectionName command.
+ * /admin/collections?action=CLUSTERSTATUS&amp;collection=collectionName command.
  */
 public class CollectionStatusAPI {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
