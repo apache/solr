@@ -44,10 +44,10 @@ import org.apache.solr.util.LongIterator;
  *
  * This data structure is interoperable with the implementations found at:
  * <ul>
- *   <li><a href="https://github.com/citusdata/postgresql-hll/blob/master/README.md">postgresql-hll</a>, and</li>
+ *   <li><a href="https://github.com/citusdata/postgresql-hll/blob/v2.9.0/README.markdown">postgresql-hll</a>, and</li>
  *   <li><a href="https://github.com/aggregateknowledge/js-hll">js-hll</a></li>
  * </ul>
- * when <a href="https://github.com/metdos/postgresql-hll/blob/master/STORAGE.markdown">properly serialized</a>.
+ * when <a href="https://github.com/citusdata/postgresql-hll/blob/v2.9.0/STORAGE.markdown">properly serialized</a>.
  */
 public class HLL implements Cloneable {
     // minimum and maximum values for the log-base-2 of the number of registers
