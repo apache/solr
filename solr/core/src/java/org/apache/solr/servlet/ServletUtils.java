@@ -163,14 +163,14 @@ public abstract class ServletUtils {
     return false;
   }
 
-  static boolean excludedPath(ArrayList<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+  static boolean excludedPath(List<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
     return excludedPath(excludePatterns,request,response, null);
   }
 
   static void configExcludes(PathExcluder excluder, String patternConfig) {
     if(patternConfig != null) {
       String[] excludeArray = patternConfig.split(",");
-      ArrayList<Pattern> patterns = new ArrayList<>();
+      List<Pattern> patterns = new ArrayList<>();
       excluder.setExcludePatterns(patterns);
       for (String element : excludeArray) {
         patterns.add(Pattern.compile(element));
