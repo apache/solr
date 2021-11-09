@@ -17,6 +17,7 @@
 
 package org.apache.solr.jaeger;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import io.opentracing.util.GlobalTracer;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+@ThreadLeakLingering(linger = 10)
 public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
   @Rule public TestRule solrTestRules = new SystemPropertiesRestoreRule();
