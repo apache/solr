@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,6 +37,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
+@ThreadLeakLingering(linger = 10)
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15026")
 public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {

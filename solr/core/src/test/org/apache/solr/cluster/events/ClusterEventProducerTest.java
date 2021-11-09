@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.events;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -51,7 +52,8 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
-/**
+
+@ThreadLeakLingering(linger = 0)/**
  *
  */
 @LogLevel("org.apache.solr.cluster.events=DEBUG")
