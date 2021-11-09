@@ -46,6 +46,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.google.common.base.Strings;
@@ -66,6 +69,7 @@ import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -74,12 +78,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.CloudConfig;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrCoreInitializationException;
+import org.apache.solr.core.*;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -105,6 +104,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 /**
@@ -465,6 +466,7 @@ public class ZkController implements Closeable {
     });
 
     init();
+    persistRoles();
 
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       this.overseerJobQueue = null;
@@ -477,6 +479,28 @@ public class ZkController implements Closeable {
         getNodeName(), zkStateReader);
 
     assert ObjectReleaseTracker.track(this);
+  }
+
+  @SuppressWarnings("unchecked")
+  private void persistRoles() throws InterruptedException {
+    try {
+      zkClient.atomicUpdate(ZkStateReader.ROLES,
+              bytes -> {
+                Map<String, Object> map = bytes == null ? null :
+                        (Map<String, Object>) Utils.fromJSON(bytes);
+                map = cc.nodeRole.modifyRoleData(map,
+                        getNodeName());
+                return map == null ? null : Utils.toJSON(map);
+              });
+      if (cc.nodeRole.role() == NodeRole.Type.overseer) {
+        getOverseerCollectionQueue()
+                .offer(Utils.toJSON(Utils.makeMap(ACTION, ADDROLE.name(),
+                        "role", NodeRole.Type.overseer,
+                        "node", getNodeName())));
+      }
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "can't update roles");
+    }
   }
 
   /**
@@ -2198,7 +2222,7 @@ public class ZkController implements Closeable {
       List<?> nodeList = (List<?>) roles.get("overseer");
       if (nodeList == null) return;
       if (nodeList.contains(getNodeName())) {
-        ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.ADDROLE.toString().toLowerCase(Locale.ROOT),
+        ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT),
             "node", getNodeName(),
             "role", "overseer");
         log.info("Going to add role {} ", props);
