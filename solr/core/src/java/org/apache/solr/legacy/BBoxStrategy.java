@@ -50,7 +50,7 @@ import org.locationtech.spatial4j.shape.Shape;
  * A SpatialStrategy for indexing and searching Rectangles by storing its
  * coordinates in numeric fields. It supports all {@link SpatialOperation}s and
  * has a custom overlap relevancy. It is based on GeoPortal's <a
- * href="http://geoportal.svn.sourceforge.net/svnroot/geoportal/Geoportal/trunk/src/com/esri/gpt/catalog/lucene/SpatialClauseAdapter.java">SpatialClauseAdapter</a>.
+ * href="https://geoportal.sourceforge.io/javadoc/1.0/com/esri/gpt/catalog/lucene/SpatialClauseAdapter.html">SpatialClauseAdapter</a>.
  * <p>
  * <b>Characteristics:</b>
  * <br>
