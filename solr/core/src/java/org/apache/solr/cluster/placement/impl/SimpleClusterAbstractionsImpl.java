@@ -23,12 +23,18 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.*;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.NodeRole;
+import org.apache.zookeeper.KeeperException;
 
 import javax.annotation.Nonnull;
 
@@ -56,7 +62,26 @@ class SimpleClusterAbstractionsImpl {
     private final ClusterState clusterState;
 
     ClusterImpl(SolrCloudManager solrCloudManager) throws IOException {
-      liveNodes = NodeImpl.getNodes(solrCloudManager.getClusterStateProvider().getLiveNodes());
+      Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
+      try {
+        if (solrCloudManager.getDistribStateManager().hasData(ZkStateReader.ROLES)) {
+          VersionedData rolesData = solrCloudManager.getDistribStateManager().getData(ZkStateReader.ROLES);
+          if (rolesData != null && rolesData.getData().length > 0) {
+            Map<String, Object> roles = (Map<String, Object>) Utils.fromJSON(rolesData.getData());
+            List<String> noReplicasNodes = (List<String>) roles.get(NodeRole.NO_REPLICAS);
+            if (noReplicasNodes != null && !noReplicasNodes.isEmpty()) {
+              liveNodes = new HashSet<>(liveNodes);
+              liveNodes.removeAll(noReplicasNodes);
+            }
+          }
+        }
+
+      } catch (NoSuchElementException nsee) {
+        //no problem
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to communicate with Zookeeper");
+      }
+      this.liveNodes = NodeImpl.getNodes(liveNodes);
       clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
     }
 
