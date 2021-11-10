@@ -22,11 +22,8 @@ import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Properties;
 import java.util.SortedMap;
 
@@ -36,6 +33,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -184,29 +182,9 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       Files.copy(Path.of(sourceHome, "server", "solr", "solr.xml"), tempSolrHome.resolve("solr.xml"));
 
       Path collection1Dir = tempSolrHome.resolve("collection1");
-      Files.createDirectories(collection1Dir.resolve("conf"));
-
       Path configSetDir = Path.of(sourceHome, "server", "solr", "configsets", "sample_techproducts_configs", "conf");
 
-      Files.walkFileTree(configSetDir, new SimpleFileVisitor<>() {
-        Path source = configSetDir.getParent(); // Because otherwise we don't copy the "conf" dir
-
-        private Path resolveTarget(Path other) {
-          return collection1Dir.resolve(source.relativize(other).toString()); // LUCENE-10227 for why we need toString
-        }
-
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-          Files.createDirectories(resolveTarget(dir));
-          return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          Files.copy(file, resolveTarget(file));
-          return FileVisitResult.CONTINUE;
-        }
-      });
+      DirectoryUtil.copyDirectoryContents(configSetDir, collection1Dir.resolve("conf"));
 
       Properties props = new Properties();
       props.setProperty("name", "collection1");
