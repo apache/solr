@@ -2,7 +2,7 @@ We have a movie data set in JSON, Solr XML, and CSV formats.  All 3 formats cont
 
 This example uses the _default configset that ships with Solr plus some custom fields added via Schema API.
 
-The data is was fetched from Freebase, which was shutdown in 2016, and the data license is present in the films-LICENSE.txt file.
+The data is was fetched from Freebase and the data license is present in the films-LICENSE.txt file.  Freebase was shutdown in 2016 by Google.
 
 This data consists of the following fields:
  * "id" - unique identifier for the movie
@@ -75,11 +75,6 @@ This data consists of the following fields:
 
        http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre
 
-       Exploring the data further -
-
-         * Increase the MAX_ITERATIONS value, put in your freebase API_KEY and run the film_data_generator.py script using Python 3.
-           Now re-index Solr with the new data.
-       
 FAQ:
   Why override the schema of the _name_ and _initial_release_date_ fields?
 
