@@ -175,19 +175,22 @@ public class GCSBackupRepository implements BackupRepository {
 
     @Override
     public boolean exists(URI path) throws IOException {
-        if (path.toString().equals(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))) {
+        return exists(path.toString());
+    }
+
+    public boolean exists(String path) throws IOException {
+        if (path.equals(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))) {
             return true;
         }
 
-        if (path.toString().endsWith("/")) {
-            return storage.get(bucketName, path.toString(), Storage.BlobGetOption.fields()) != null;
+        if (path.endsWith("/")) {
+            return storage.get(bucketName, path, Storage.BlobGetOption.fields()) != null;
         } else {
-            final String filePath = path.toString();
-            final String directoryPath = path.toString() + "/";
+            final String filePath = path;
+            final String directoryPath = path + "/";
             return storage.get(bucketName, filePath, Storage.BlobGetOption.fields()) != null ||
-                    storage.get(bucketName, directoryPath, Storage.BlobGetOption.fields()) != null;
+                storage.get(bucketName, directoryPath, Storage.BlobGetOption.fields()) != null;
         }
-
     }
 
     @Override
@@ -293,7 +296,9 @@ public class GCSBackupRepository implements BackupRepository {
     @Override
     public void createDirectory(URI path) throws IOException {
         final String name = appendTrailingSeparatorIfNecessary(path.toString());
-        storage.create(BlobInfo.newBuilder(bucketName, name).build()) ;
+        if (!exists(name)) {
+            storage.create(BlobInfo.newBuilder(bucketName, name).build());
+        }
     }
 
     @Override
