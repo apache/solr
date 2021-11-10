@@ -406,6 +406,8 @@ Improvements
 
 * SOLR-15702: Stabilize S3 tests by using waiters after directory creation (Houston Putman)
 
+* SOLR-15700: Make include paths in bin/solr consistent (turnertg, janhoy via Eric Pugh)
+
 Optimizations
 ---------------------
 (No changes)
