@@ -22,7 +22,7 @@
 # file named solr.in.sh to set environment variables. Specifically,
 # the following locations are searched in this order:
 #
-# ./
+# <script location>/.
 # $HOME/.solr.in.sh
 # /usr/share/solr
 # /usr/local/share/solr
