@@ -17,9 +17,16 @@
 package org.apache.solr;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Properties;
 import java.util.SortedMap;
 
@@ -172,39 +179,46 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     if (sourceHome == null)
       throw new IllegalStateException("No source home! Cannot create the legacy example solr home directory.");
 
-    String legacyExampleSolrHome = null;
     try {
-      File tempSolrHome = LuceneTestCase.createTempDir().toFile();
-      org.apache.commons.io.FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
-      File collection1Dir = new File(tempSolrHome, "collection1");
-      org.apache.commons.io.FileUtils.forceMkdir(collection1Dir);
+      Path tempSolrHome = LuceneTestCase.createTempDir();
+      Files.copy(Path.of(sourceHome, "server", "solr", "solr.xml"), tempSolrHome.resolve("solr.xml"));
 
-      File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
-      org.apache.commons.io.FileUtils.copyDirectoryToDirectory(configSetDir, collection1Dir);
+      Path collection1Dir = tempSolrHome.resolve("collection1");
+      Files.createDirectories(collection1Dir.resolve("conf"));
+
+      Path configSetDir = Path.of(sourceHome, "server", "solr", "configsets", "sample_techproducts_configs", "conf");
+
+      Files.walkFileTree(configSetDir, new SimpleFileVisitor<>() {
+        Path source = configSetDir.getParent(); // Because otherwise we don't copy the "conf" dir
+
+        private Path resolveTarget(Path other) {
+          return collection1Dir.resolve(source.relativize(other).toString()); // LUCENE-10227 for why we need toString
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+          Files.createDirectories(resolveTarget(dir));
+          return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+          Files.copy(file, resolveTarget(file));
+          return FileVisitResult.CONTINUE;
+        }
+      });
+
       Properties props = new Properties();
       props.setProperty("name", "collection1");
-      OutputStreamWriter writer = null;
-      try {
-        writer = new OutputStreamWriter(FileUtils.openOutputStream(
-            new File(collection1Dir, "core.properties")), StandardCharsets.UTF_8);
+      try (Writer writer = new OutputStreamWriter(Files.newOutputStream(collection1Dir.resolve("core.properties")), StandardCharsets.UTF_8)) {
         props.store(writer, null);
-      } finally {
-        if (writer != null) {
-          try {
-            writer.close();
-          } catch (Exception ignore){}
-        }
       }
-      legacyExampleSolrHome = tempSolrHome.getAbsolutePath();
-    } catch (Exception exc) {
-      if (exc instanceof RuntimeException) {
-        throw (RuntimeException)exc;
-      } else {
-        throw new RuntimeException(exc);
-      }
+      return tempSolrHome.toString();
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
-
-    return legacyExampleSolrHome;
   }
 
 }
