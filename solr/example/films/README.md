@@ -14,7 +14,7 @@ This data consists of the following fields:
  The "name" and "initial_release_date" are created via the Schema API, and the "genre" and "direct_by" fields
  are created by the use of an Update Request Processor Change called "add-unknown-fields-to-the-schema".
 
- The below steps walk you through learning how to start up Solr, setup the films collection yourself, and then load data.  You can also run `bin/solr start -e films`.
+ The below steps walk you through learning how to start up Solr, setup the films collection yourself, and then load data.  You can also run `bin/solr start -e films` or `bin/solr start -c -e films` for SolrCloud version.
 
  Steps:
    * Start Solr:
