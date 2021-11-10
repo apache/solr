@@ -51,6 +51,7 @@ public class SolrRequestInfo {
   protected TimeZone tz;
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
+  volatile boolean closed = false;
   protected SolrDispatchFilter.Action action;
   protected boolean useServerToken = false;
 
@@ -70,6 +71,8 @@ public class SolrRequestInfo {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     if (info == null) {
       throw new IllegalArgumentException("SolrRequestInfo is null");
+    } else if(info.closed) {
+      throw new IllegalArgumentException("SolrRequestInfo is closed");
     } else if (stack.size() <= MAX_STACK_SIZE) {
       stack.push(info);
     } else {
@@ -112,6 +115,11 @@ public class SolrRequestInfo {
   }
 
   private static void closeHooks(SolrRequestInfo info) {
+    assert !info.closed: info + " has been closed already.";
+    if (info.closed){
+      log.error("SolrRequestInfo.closeHooks() called too many times");
+    }
+    info.closed = true;
     if (info.closeHooks != null) {
       for (Closeable hook : info.closeHooks) {
         try {

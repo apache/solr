@@ -50,7 +50,7 @@ public class TestSolrRequestInfo extends SolrTestCaseJ4 {
         assertNull(SolrRequestInfo.getRequestInfo());
     }
 
-    public void testThreadPool() throws InterruptedException {
+    public void testthreadPool() throws InterruptedException {
         final SolrRequestInfo info = new SolrRequestInfo(
                 new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(Map.of())),
                 new SolrQueryResponse());
