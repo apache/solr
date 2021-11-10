@@ -367,6 +367,7 @@ goto done
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
 @echo       schemaless:     Schema-less example
+@echo       films:          Example of using the _default configset and adding fields dynamically
 @echo.
 @echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup
 @echo                 Java debug options. For example, to enable a Java debugger to attach to the Solr JVM
@@ -1465,7 +1466,7 @@ goto done
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %* 
+  org.apache.solr.util.SolrCLI %*
 if errorlevel 1 (
    exit /b 1
 )
@@ -1940,7 +1941,7 @@ IF "!ZK_OP!"=="upconfig" (
 )
 goto done
 
- 
+
 :run_auth
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
