@@ -61,6 +61,7 @@ class SimpleClusterAbstractionsImpl {
     private final Set<Node> liveNodes;
     private final ClusterState clusterState;
 
+    @SuppressWarnings("unchecked")
     ClusterImpl(SolrCloudManager solrCloudManager) throws IOException {
       Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
       try {
