@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -754,7 +753,7 @@ public class HttpSolrCall {
         InputStream is = httpEntity.getContent();
         OutputStream os = resp.getOutputStream();
 
-        IOUtils.copyLarge(is, os);
+        is.transferTo(os);
       }
 
     } catch (IOException e) {

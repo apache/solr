@@ -337,7 +337,7 @@ public class PackageStoreAPI {
       rsp.add(FILE_STREAM, (SolrCore.RawWriter) os -> {
         packageStore.get(path, (it) -> {
           try {
-            org.apache.commons.io.IOUtils.copy(it.getInputStream(), os);
+            it.getInputStream().transferTo(os);
           } catch (IOException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
           }
