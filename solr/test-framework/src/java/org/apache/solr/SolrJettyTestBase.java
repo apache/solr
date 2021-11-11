@@ -179,12 +179,13 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     try {
       Path tempSolrHome = LuceneTestCase.createTempDir();
-      Files.copy(Path.of(sourceHome, "server", "solr", "solr.xml"), tempSolrHome.resolve("solr.xml"));
+      Path serverSolr = tempSolrHome.getFileSystem().getPath(sourceHome, "server", "solr");
+      Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
 
+      Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
       Path collection1Dir = tempSolrHome.resolve("collection1");
-      Path configSetDir = Path.of(sourceHome, "server", "solr", "configsets", "sample_techproducts_configs", "conf");
 
-      DirectoryUtil.copyDirectoryContents(configSetDir, collection1Dir.resolve("conf"));
+      DirectoryUtil.copyDirectoryContents(sourceConfig.resolve("conf"), collection1Dir.resolve("conf"));
 
       Properties props = new Properties();
       props.setProperty("name", "collection1");

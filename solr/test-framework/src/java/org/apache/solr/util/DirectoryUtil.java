@@ -34,9 +34,11 @@ public class DirectoryUtil {
    * will copy the contents of src directly into dst. This will not create a new "src" folder inside of dst.
    */
   public static void copyDirectoryContents(final Path source, final Path destination) throws IOException {
+    assert source.getFileSystem().equals(destination.getFileSystem());
+
     Files.walkFileTree(source, new SimpleFileVisitor<>() {
       private Path resolveTarget(Path other) {
-        return destination.resolve(source.relativize(other).toString()); // LUCENE-10227 for why we need toString
+        return destination.resolve(source.relativize(other));
       }
 
       @Override
