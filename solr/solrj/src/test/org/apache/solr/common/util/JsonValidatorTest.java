@@ -29,7 +29,6 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
     checkSchema("collections.collection.shards.Commands");
-    checkSchema("collections.collection.shards.shard.Commands");
     checkSchema("cores.Commands");
     checkSchema("cores.core.Commands");
     checkSchema("node.Commands");

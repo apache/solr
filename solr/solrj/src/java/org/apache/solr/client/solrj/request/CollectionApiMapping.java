@@ -62,8 +62,6 @@ public class CollectionApiMapping {
         "split",
         Map.of("split.key", "splitKey"),
         Map.of("property.", "coreProperties.")),
-    DELETE_SHARD(PER_COLLECTION_PER_SHARD_DELETE,
-        DELETE, DELETESHARD),
 
     CREATE_REPLICA(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
@@ -73,13 +71,7 @@ public class CollectionApiMapping {
         Map.of("property.", "coreProperties.")),
 
     DELETE_REPLICA(PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE,
-        DELETE, DELETEREPLICA),
-    SYNC_SHARD(PER_COLLECTION_PER_SHARD_COMMANDS,
-        POST,
-        CollectionAction.SYNCSHARD,
-        "synch-shard",
-        null),
-    FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null);
+        DELETE, DELETEREPLICA);
 
     public final String commandName;
     public final EndPoint endPoint;
@@ -199,8 +191,6 @@ public class CollectionApiMapping {
 
   public enum EndPoint implements V2EndPoint {
     PER_COLLECTION_SHARDS_COMMANDS("collections.collection.shards.Commands"),
-    PER_COLLECTION_PER_SHARD_COMMANDS("collections.collection.shards.shard.Commands"),
-    PER_COLLECTION_PER_SHARD_DELETE("collections.collection.shards.shard.delete"),
     PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE("collections.collection.shards.shard.replica.delete");
     final String specName;
 
