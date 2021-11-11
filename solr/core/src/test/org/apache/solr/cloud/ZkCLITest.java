@@ -16,22 +16,19 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -75,6 +72,53 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 
+  public static String setupCollection1() {
+
+    // I don't know why I have to go through all this rigamorole, copied from when this should work:
+//
+//    File workDir = createTempDir().toFile();
+//    setupJettyTestHome(workDir, "collection1");
+//    initCore("solrconfig.xml", "schema.xml");
+//    createAndStartJetty(workDir.getAbsolutePath());
+
+    // However the test testBootstrapWithChroot only works when I do all the rigamorole...  The others all pass with the
+    // above commented out code.
+
+
+    File tempSolrHome = LuceneTestCase.createTempDir().toFile();
+    try {
+
+      org.apache.commons.io.FileUtils.copyFileToDirectory(getFile("solr/solr.xml"), tempSolrHome);
+      File collection1Dir = new File(tempSolrHome, "collection1");
+      org.apache.commons.io.FileUtils.forceMkdir(collection1Dir);
+
+      File configSetDir = getFile("solr/collection1/conf");
+      org.apache.commons.io.FileUtils.copyDirectoryToDirectory(configSetDir, collection1Dir);
+      Properties props = new Properties();
+      props.setProperty("name", "collection1");
+      OutputStreamWriter writer = null;
+      try {
+        writer = new OutputStreamWriter(FileUtils.openOutputStream(
+                new File(collection1Dir, "core.properties")), StandardCharsets.UTF_8);
+        props.store(writer, null);
+      } finally {
+        if (writer != null) {
+          try {
+            writer.close();
+          } catch (Exception ignore){}
+        }
+      }
+    } catch (Exception exc) {
+      if (exc instanceof RuntimeException) {
+        throw (RuntimeException)exc;
+      } else {
+        throw new RuntimeException(exc);
+      }
+    }
+
+    return tempSolrHome.getAbsolutePath();
+  }
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -82,7 +126,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
       log.info("####SETUP_START {}", getTestName());
     }
 
-    String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+    String exampleHome = setupCollection1();
 
     Path tmpDir = createTempDir();
     solrHome = exampleHome;
