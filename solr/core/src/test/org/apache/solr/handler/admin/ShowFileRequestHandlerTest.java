@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -46,8 +47,10 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    File workDir = createTempDir().toFile();
+    setupJettyTestHome(workDir, "collection1");
     initCore("solrconfig.xml", "schema.xml");
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(workDir.getAbsolutePath());
   }
 
   public void test404ViaHttp() throws Exception {
@@ -88,7 +91,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   public void testGetRawFile() throws SolrServerException, IOException {
     SolrClient client = getSolrClient();
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
-    QueryRequest request = new QueryRequest(params("file", "managed-schema"));
+    QueryRequest request = new QueryRequest(params("file", "schema.xml"));
     request.setPath("/admin/file");
     final AtomicBoolean readFile = new AtomicBoolean();
     request.setResponseParser(new ResponseParser() {
