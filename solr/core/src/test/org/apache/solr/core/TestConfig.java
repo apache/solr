@@ -99,18 +99,9 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("prefix-proptwo-suffix", solrConfig.get("propTest").txt());
   }
 
-  // sometime if the config referes to old things, it must be replaced with new stuff
-  @Test
-  public void testAutomaticDeprecationSupport() {
-    // make sure the "admin/file" handler is registered
-    ShowFileRequestHandler handler = (ShowFileRequestHandler) h.getCore().getRequestHandler("/admin/file");
-    assertTrue("file handler should have been automatically registered", handler != null);
-
-  }
-  
  @Test
  public void testCacheEnablingDisabling() throws Exception {
-   // ensure if cache is not defined in the config then cache is disabled 
+   // ensure if cache is not defined in the config then cache is disabled
    SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-defaults.xml");
    assertNull(sc.filterCacheConfig);
    assertNull(sc.queryResultCacheConfig);
@@ -118,14 +109,14 @@ public class TestConfig extends SolrTestCaseJ4 {
    //
    assertNotNull(sc.userCacheConfigs);
    assertEquals(Collections.<String, CacheConfig>emptyMap(), sc.userCacheConfigs);
-   
-   // enable all the core caches (and one user cache) via system properties and verify 
+
+   // enable all the core caches (and one user cache) via system properties and verify
    System.setProperty("filterCache.enabled", "true");
    System.setProperty("queryResultCache.enabled", "true");
    System.setProperty("documentCache.enabled", "true");
    System.setProperty("user_defined_cache_XXX.enabled","true");
    // user_defined_cache_ZZZ.enabled defaults to false in config
-   
+
    sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-cache-enable-disable.xml");
    assertNotNull(sc.filterCacheConfig);
    assertNotNull(sc.queryResultCacheConfig);
@@ -134,7 +125,7 @@ public class TestConfig extends SolrTestCaseJ4 {
    assertNotNull(sc.userCacheConfigs);
    assertEquals(1, sc.userCacheConfigs.size());
    assertNotNull(sc.userCacheConfigs.get("user_defined_cache_XXX"));
-   
+
    // disable all the core caches (and enable both user caches) via system properties and verify
    System.setProperty("filterCache.enabled", "false");
    System.setProperty("queryResultCache.enabled", "false");
@@ -151,14 +142,14 @@ public class TestConfig extends SolrTestCaseJ4 {
    assertEquals(2, sc.userCacheConfigs.size());
    assertNotNull(sc.userCacheConfigs.get("user_defined_cache_XXX"));
    assertNotNull(sc.userCacheConfigs.get("user_defined_cache_ZZZ"));
-   
+
    System.clearProperty("user_defined_cache_XXX.enabled");
    System.clearProperty("user_defined_cache_ZZZ.enabled");
    System.clearProperty("filterCache.enabled");
    System.clearProperty("queryResultCache.enabled");
    System.clearProperty("documentCache.enabled");
  }
-  
+
 
   // If defaults change, add test methods to cover each version
   @Test
@@ -245,12 +236,12 @@ public class TestConfig extends SolrTestCaseJ4 {
     SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-basic.xml");
     SolrIndexConfig sic = sc.indexConfig;
 
-    assertEquals("ramBufferSizeMB sysprop", 
-                 Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), 
+    assertEquals("ramBufferSizeMB sysprop",
+                 Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")),
                                     sic.ramBufferSizeMB, 0.0D);
     assertEquals("ramPerThreadHardLimitMB sysprop",
         Integer.parseInt(System.getProperty("solr.tests.ramPerThreadHardLimitMB")), sic.ramPerThreadHardLimitMB);
-    assertEquals("useCompoundFile sysprop", 
+    assertEquals("useCompoundFile sysprop",
                  Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
   }
 
