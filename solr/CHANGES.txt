@@ -408,6 +408,8 @@ Bug Fixes
 
 * SOLR-10529: Solr UI Health Check enable/disable ping Button doesn't work (Oscar Wang via janhoy)
 
+* SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
