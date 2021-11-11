@@ -18,11 +18,10 @@ package org.apache.solr.schema;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
@@ -86,9 +85,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
     RuleBasedCollator tailoredCollator = new RuleBasedCollator(baseCollator.getRules() + DIN5007_2_tailorings);
     String tailoredRules = tailoredCollator.getRules();
     final String osFileName = "customrules.dat";
-    final FileOutputStream os = new FileOutputStream(new File(confDir, osFileName));
-    IOUtils.write(tailoredRules, os, "UTF-8");
-    os.close();
+    Files.writeString(confDir.toPath().resolve(osFileName), tailoredRules, StandardCharsets.UTF_8);
 
     assumeWorkingMockito();
 

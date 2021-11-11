@@ -69,6 +69,8 @@ allprojects { prj ->
       suppressAnnotations += [
           "**.SuppressForbidden"
       ]
+
+      ignoreSignaturesOfMissingClasses = true
     }
 
     // Configure defaults for sourceSets.test
@@ -87,6 +89,8 @@ allprojects { prj ->
       suppressAnnotations += [
           "**.SuppressForbidden"
       ]
+
+      ignoreSignaturesOfMissingClasses = true
     }
 
     // Configure defaults for sourceSets.tools (if present).

@@ -91,3 +91,6 @@ java.lang.System#currentTimeMillis()
 
 @defaultMessage Use slf4j classes instead
 java.util.logging.**
+
+@defaultMessage Use InputStream.transferTo(OutputStream) or Reader.transferTo(Writer) instead
+org.apache.commons.io.IOUtil#copy(java.io.InputStream, java.io.OutputStream)

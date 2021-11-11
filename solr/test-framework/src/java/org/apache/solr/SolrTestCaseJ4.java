@@ -41,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.SecureRandom;
@@ -2192,11 +2193,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static void copyMinConf(File dstRoot, String propertiesContent, String solrconfigXmlName) throws IOException {
-
     Path dstPath = dstRoot.toPath();
-    Files.createDirectories(dstPath);
-
     Path subHome = dstPath.resolve("conf");
+    Files.createDirectories(subHome);
+
     if (propertiesContent != null) {
       Files.writeString(dstRoot.toPath().resolve(CORE_PROPERTIES_FILENAME), propertiesContent);
     }
@@ -2222,10 +2222,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // the stock files in there.
 
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
-    Files.createDirectories(dstRoot.toPath());
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.toPath().resolve("solr.xml"));
-
     Path subHome = dstRoot.toPath().resolve(collection).resolve("conf");
+    Files.createDirectories(subHome);
+
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.toPath().resolve("solr.xml"), StandardCopyOption.REPLACE_EXISTING);
+
     Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
     Files.copy(top.resolve("currency.xml"), subHome.resolve("currency.xml"));
     Files.copy(top.resolve("mapping-ISOLatin1Accent.txt"), subHome.resolve("mapping-ISOLatin1Accent.txt"));
