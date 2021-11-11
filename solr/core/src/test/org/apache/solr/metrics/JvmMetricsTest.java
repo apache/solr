@@ -16,6 +16,7 @@
  */
 package org.apache.solr.metrics;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -56,7 +57,10 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    File workDir = createTempDir().toFile();
+    setupJettyTestHome(workDir, "collection1");
+    initCore("solrconfig.xml", "schema.xml");
+    createAndStartJetty(workDir.getAbsolutePath());
   }
 
   @Test
