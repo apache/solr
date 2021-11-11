@@ -94,3 +94,6 @@ java.util.logging.**
 
 @defaultMessage Use InputStream.transferTo(OutputStream) or Reader.transferTo(Writer) instead
 org.apache.commons.io.IOUtil#copy(java.io.InputStream, java.io.OutputStream)
+org.apache.commons.io.IOUtil#copyLarge(java.io.InputStream, java.io.OutputStream)
+org.apache.commons.io.IOUtil#copy(java.io.Reader, java.io.Writer)
+org.apache.commons.io.IOUtil#copyLarge(java.io.Reader, java.io.Writer)
