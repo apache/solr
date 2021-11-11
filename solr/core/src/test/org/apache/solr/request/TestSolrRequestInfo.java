@@ -53,7 +53,7 @@ public class TestSolrRequestInfo extends SolrTestCaseJ4 {
                 new LocalSolrQueryRequest(h.getCore(), params()),
                 new SolrQueryResponse());
         AtomicInteger counter = new AtomicInteger();
-        info.addCloseHook(counter::incrementAndGet);
+
         SolrRequestInfo.setRequestInfo(info);
         ExecutorUtil.MDCAwareThreadPoolExecutor pool = new ExecutorUtil.MDCAwareThreadPoolExecutor(1, 1, 1,
                 TimeUnit.SECONDS, new ArrayBlockingQueue<>(1));
@@ -61,13 +61,19 @@ public class TestSolrRequestInfo extends SolrTestCaseJ4 {
         pool.execute(() -> {
             final SolrRequestInfo poolInfo = SolrRequestInfo.getRequestInfo();
             assertSame(info, poolInfo);
+            info.addCloseHook(counter::incrementAndGet);
             run.set(true);
         });
-        pool.shutdown();
-        pool.awaitTermination(1, TimeUnit.MINUTES);
-        assertTrue(run.get());
+        if (random().nextBoolean()) {
+            pool.shutdown();
+        } else {
+            pool.shutdownNow();
+        }
         SolrRequestInfo.clearRequestInfo();
         SolrRequestInfo.reset();
+
+        pool.awaitTermination(1, TimeUnit.MINUTES);
+        assertTrue(run.get());
         assertEquals("hook should be closed only once", 1, counter.get());
         assertNull(SolrRequestInfo.getRequestInfo());
     }
