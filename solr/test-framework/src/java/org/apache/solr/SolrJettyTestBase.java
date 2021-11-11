@@ -168,6 +168,48 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   public static String legacyExampleCollection1SolrHome() {
+    // Let us pick which location we are pointing to, temporary for now!!!
+    //return legacyTechProductsCollection1SolrHome();
+    return testProductsCollection1SolrHome();
+  }
+
+  public static String testProductsCollection1SolrHome(){
+    File tmpSolrHome = createTempDir().toFile();
+    try {
+      FileUtils.copyFile(getFile("solrj/solr/solr.xml"), new File(tmpSolrHome.getAbsoluteFile(), "solr.xml"));
+      File collection1Dir = new File(tmpSolrHome, "collection1");
+      FileUtils.copyDirectory(new File(getFile("solrj/solr/testproducts/conf").getParent()), collection1Dir);
+
+      Properties props = new Properties();
+      props.setProperty("name", "collection1");
+      OutputStreamWriter writer = null;
+      try {
+        writer = new OutputStreamWriter(FileUtils.openOutputStream(
+                new File(collection1Dir, "core.properties")), StandardCharsets.UTF_8);
+        props.store(writer, null);
+      } finally {
+        if (writer != null) {
+          try {
+            writer.close();
+          } catch (Exception ignore){}
+        }
+      }
+
+    } catch (Exception exc) {
+      if (exc instanceof RuntimeException) {
+        throw (RuntimeException)exc;
+      } else {
+        throw new RuntimeException(exc);
+      }
+    }
+
+    return tmpSolrHome.getAbsolutePath();
+  }
+
+  public static String legacyTechProductsCollection1SolrHome() {
+
+
+
     String sourceHome = ExternalPaths.SOURCE_HOME;
     if (sourceHome == null)
       throw new IllegalStateException("No source home! Cannot create the legacy example solr home directory.");

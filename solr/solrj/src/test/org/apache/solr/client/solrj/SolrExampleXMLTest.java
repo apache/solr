@@ -37,14 +37,7 @@ public class SolrExampleXMLTest extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(getFile("solrj/solr/testproducts/conf").getParent()), new File(tmpSolrHome.getAbsoluteFile(), "collection1"));
-
-    FileUtils.copyFile(getFile("solrj/solr/solr.xml"), new File(tmpSolrHome.getAbsoluteFile(), "solr.xml"));
-
-    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
-
-    createAndStartJetty(tmpSolrHome.getAbsolutePath(), "solrconfig.xml", "managed-schema", "/solr", true, extraServlets);
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
   
   @Override
