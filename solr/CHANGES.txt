@@ -174,6 +174,8 @@ Build
 
 * SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
 
+* SOLR-15793: Pin http_parser.rb to specific version to allow Solr Ref Guide on Jekyll to run (Eric Pugh)
+
 Other Changes
 ----------------------
 * SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
@@ -407,6 +409,8 @@ Bug Fixes
 * SOLR-15653: Fix collection creation race that assumes a local clusterstate when the collection has only just been created. (Mark Miller)
 
 * SOLR-10529: Solr UI Health Check enable/disable ping Button doesn't work (Oscar Wang via janhoy)
+
+* SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
 
 ==================  8.11.0 ==================
 
