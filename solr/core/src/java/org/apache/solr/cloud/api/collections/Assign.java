@@ -340,7 +340,7 @@ public class Assign {
     return nodeNameVsShardCount;
   }
 
-  // throw an exception if any node int the supplied list is not live.
+  // throw an exception if any node in the supplied list is not live.
   // Empty or null list always succeeds and returns the input.
   private static List<String> checkLiveNodes(List<String> createNodeList, ClusterState clusterState) {
     Set<String> liveNodes = clusterState.getLiveNodes();
@@ -354,6 +354,26 @@ public class Assign {
       // was modifying the copy, if this method is made protected or public we want to go back to that
     }
     return createNodeList; // unmodified, but return for inline use
+  }
+
+  // throw an exception if all nodes in the supplied list are not live.
+  // Empty list will also fail.
+  // Returns the input
+  private static List<String> checkAnyLiveNodes(List<String> createNodeList, ClusterState clusterState) {
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    if (createNodeList == null) {
+      createNodeList = Collections.emptyList();
+    }
+    boolean anyLiveNodes = false;
+    for (String node : createNodeList) {
+      anyLiveNodes |= liveNodes.contains(node);
+    }
+    if (!anyLiveNodes) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "None of the node(s) specified " + createNodeList + " are not currently active in "
+              + createNodeList + ", no action taken.");
+    }
+    return createNodeList; // unmodified, but return for inline use. Only modified if empty, and that will throw an error
   }
 
   /**
@@ -501,8 +521,8 @@ public class Assign {
         nodeList = sortedNodeList.stream().map(replicaCount -> replicaCount.nodeName).collect(Collectors.toList());
       }
 
-      // otherwise we get a div/0 below
-      assert !nodeList.isEmpty();
+      // Throw an error if there aren't any live nodes.
+      checkAnyLiveNodes(nodeList, solrCloudManager.getClusterStateProvider().getClusterState());
 
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();

@@ -25,8 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
@@ -34,6 +37,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -77,6 +81,8 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     }
     if (target != null && !clusterState.liveNodesContain(target)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target Node: " + target + " is not live");
+    } else if (clusterState.getLiveNodes().size() <= 1) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No nodes other than the source node: " + source + " are live, therefore replicas cannot be moved");
     }
     List<ZkNodeProps> sourceReplicas = getReplicasOfNode(source, clusterState);
     // how many leaders are we moving? for these replicas we have to make sure that either:
@@ -115,7 +121,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
               .assignNrtReplicas(numNrtReplicas)
               .assignTlogReplicas(numTlogReplicas)
               .assignPullReplicas(numPullReplicas)
-              .onNodes(new ArrayList<>(ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes()))
+              .onNodes(ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes().stream().filter(node -> !node.equals(source)).collect(Collectors.toList()))
               .build();
           Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
               ccc.getCoreContainer(),
