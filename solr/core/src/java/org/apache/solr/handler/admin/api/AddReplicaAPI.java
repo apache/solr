@@ -58,7 +58,7 @@ public class AddReplicaAPI {
   }
 
   @Command(name = V2_ADD_REPLICA_CMD)
-  public void splitShard(PayloadObj<AddReplicaPayload> obj) throws Exception {
+  public void addReplica(PayloadObj<AddReplicaPayload> obj) throws Exception {
     final AddReplicaPayload v2Body = obj.get();
     final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.ADDREPLICA.toLower());

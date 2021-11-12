@@ -58,7 +58,7 @@ public class CreateShardAPI {
   }
 
   @Command(name = V2_CREATE_CMD)
-  public void splitShard(PayloadObj<CreateShardPayload> obj) throws Exception {
+  public void createShard(PayloadObj<CreateShardPayload> obj) throws Exception {
     final CreateShardPayload v2Body = obj.get();
     final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.CREATESHARD.toLower());

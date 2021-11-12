@@ -30,11 +30,11 @@ public class AddReplicaPayload implements ReflectMapWriter {
   @JsonProperty
   public String _route_;
 
-  // TODO Could 'node' be replaced (in v2 and v1) by just specifying a 'createNodeSet' of size 1?
+  // TODO Remove in favor of a createNodeSet/nodeSet param with size=1 (see SOLR-15542)
   @JsonProperty
   public String node;
 
-  // TODO Should this just be 'nodeSet' to match the name used by create-shard and other APIs?
+  // TODO Rename to 'nodeSet' to match the name used by create-shard and other APIs (see SOLR-15542)
   @JsonProperty
   public List<String> createNodeSet;
 

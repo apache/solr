@@ -217,7 +217,6 @@ public class V2ShardsAPIMappingTest extends SolrTestCaseJ4 {
       }
     };
 
-
     api.call(req, rsp);
     verify(mockCollectionsHandler).handleRequestBody(queryRequestCaptor.capture(), any());
     return queryRequestCaptor.getValue().getParams();
