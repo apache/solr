@@ -33,6 +33,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
@@ -460,4 +461,9 @@ public abstract class ConfigSetService {
    */
   public abstract List<String> getAllConfigFiles(String configName) throws IOException;
 
+  public interface ConfigResource {
+
+    ConfigNode get() throws Exception;
+
+  }
 }

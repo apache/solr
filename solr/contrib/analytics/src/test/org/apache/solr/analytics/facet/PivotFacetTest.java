@@ -16,12 +16,14 @@
  */
 package org.apache.solr.analytics.facet;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@ThreadLeakLingering(linger = 0)
 public class PivotFacetTest extends SolrAnalyticsFacetTestCase {
 
   @BeforeClass

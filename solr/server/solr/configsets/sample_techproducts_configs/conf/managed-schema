@@ -134,7 +134,7 @@
    <field name="pre" type="preanalyzed" indexed="true" stored="true"/>
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text_general" indexed="true" stored="true"/>
-   <field name="manu" type="text_gen_sort" indexed="true" stored="true" omitNorms="true" multiValued="false"/>
+   <field name="manu" type="text_gen_sort" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true" useDocValuesAsStored="true"/>
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="features" type="text_general" indexed="true" stored="true" multiValued="true"/>
    <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true" termOffsets="true" />
@@ -185,7 +185,11 @@
 
    <!-- non-tokenized version of manufacturer to make it easier to sort or group
         results by manufacturer.  copied from "manu" via copyField -->
-   <field name="manu_exact" type="string" indexed="true" stored="false" docValues="false" />
+   <field name="manu_exact" type="string" indexed="false" stored="false" docValues="true" />
+
+   <!-- non-tokenized version of name to make it easier to sort or group
+        results by product name.  copied from "name" via copyField -->
+   <field name="name_exact" type="string" indexed="false" stored="false" docValues="true" />
 
    <field name="payloads" type="payloads" indexed="true" stored="true"/>
 
@@ -247,6 +251,7 @@
    <copyField source="features" dest="text"/>
    <copyField source="includes" dest="text"/>
    <copyField source="manu" dest="manu_exact"/>
+   <copyField source="name" dest="name_exact"/>
 
    <!-- Copy the price into a currency enabled field (default USD) -->
    <copyField source="price" dest="price_c"/>

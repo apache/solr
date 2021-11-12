@@ -32,7 +32,6 @@ public class TestConfigOverlay extends SolrTestCase {
     assertTrue(isEditableProp("updateHandler/autoSoftCommit/maxDocs", true, null));
     assertTrue(isEditableProp("updateHandler/autoSoftCommit/maxTime", true, null));
     assertTrue(isEditableProp("updateHandler/commitWithin/softCommit", true, null));
-    assertTrue(isEditableProp("updateHandler/indexWriter/closeWaitsForMerges", true, null));
 
     assertTrue(isEditableProp("updateHandler.autoCommit.maxDocs", false, null));
     assertTrue(isEditableProp("updateHandler.autoCommit.maxTime", false, null));
@@ -40,15 +39,11 @@ public class TestConfigOverlay extends SolrTestCase {
     assertTrue(isEditableProp("updateHandler.autoSoftCommit.maxDocs", false, null));
     assertTrue(isEditableProp("updateHandler.autoSoftCommit.maxTime", false, null));
     assertTrue(isEditableProp("updateHandler.commitWithin.softCommit", false, null));
-    assertTrue(isEditableProp("updateHandler.indexWriter.closeWaitsForMerges", false, null));
     assertTrue(isEditableProp("query.useFilterForSortedQuery", false, null));
     assertTrue(isEditableProp("query.queryResultWindowSize", false, null));
     assertTrue(isEditableProp("query.queryResultMaxDocsCached", false, null));
     assertTrue(isEditableProp("query.enableLazyFieldLoading", false, null));
     assertTrue(isEditableProp("query.boolTofilterOptimizer", false, null));
-    assertTrue(isEditableProp("jmx.agentId", false, null));
-    assertTrue(isEditableProp("jmx.serviceUrl", false, null));
-    assertTrue(isEditableProp("jmx.rootName", false, null));
 
     assertTrue(isEditableProp("requestDispatcher.requestParsers.multipartUploadLimitInKB", false, null));
     assertTrue(isEditableProp("requestDispatcher.requestParsers.formdataUploadLimitInKB", false, null));

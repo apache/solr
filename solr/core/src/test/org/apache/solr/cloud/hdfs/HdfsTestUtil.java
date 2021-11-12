@@ -321,6 +321,8 @@ public class HdfsTestUtil {
           }
         }
         try {
+          dfsCluster.getDataNodes().forEach(dataNode -> dataNode.shutdown());
+          dfsCluster.shutdownNameNodes();
           dfsCluster.shutdown(true);
         } catch (Error e) {
           // Added in SOLR-7134
