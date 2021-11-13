@@ -23,7 +23,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
 import java.util.Map;
 
 public class SplitShardPayload implements ReflectMapWriter {
-  @JsonProperty(required = true)
+  @JsonProperty
   public String shard;
 
   @JsonProperty
@@ -59,5 +59,5 @@ public class SplitShardPayload implements ReflectMapWriter {
   public String async;
 
   @JsonProperty
-  public Boolean waitForFinalState = false;
+  public Boolean waitForFinalState;
 }

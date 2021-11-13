@@ -65,7 +65,9 @@ public class AddReplicaPayload implements ReflectMapWriter {
   @JsonProperty
   public Boolean skipNodeAssignment;
 
-  // TODO Should this be an enum?
+  // TODO Make this an enum - see SOLR-15796
   @JsonProperty
   public String type;
 }
+
+
