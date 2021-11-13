@@ -391,6 +391,8 @@ Other Changes
 
 * SOLR-15728: Remove dead, unused log rotation code from SolrCLI (janhoy)
 
+* SOLR-15791: Remove remaining unused <admin/> clauses from solrconfigs. (Eric Pugh)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
