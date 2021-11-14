@@ -140,7 +140,6 @@ allprojects { prj ->
             '-Xep:ThreadPriorityCheck:OFF',
             '-Xep:TypeParameterShadowing:OFF',
             '-Xep:TypeParameterUnusedInFormals:OFF',
-            '-Xep:URLEqualsHashCode:OFF',
             '-Xep:UndefinedEquals:OFF',
             '-Xep:UnescapedEntity:OFF',
             '-Xep:UnnecessaryParentheses:OFF',

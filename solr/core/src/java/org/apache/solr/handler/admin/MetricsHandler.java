@@ -50,6 +50,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -108,8 +109,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
       return; // Request was proxied to other node
     }
-
-    handleRequest(req.getParams(), (k, v) -> rsp.add(k, v));
+    SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+    try {
+      handleRequest(req.getParams(), (k, v) -> rsp.add(k, v));
+    } finally {
+      SolrRequestInfo.clearRequestInfo();
+    }
   }
   
   private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) throws Exception {
@@ -117,7 +122,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
-    cc.getCores().forEach((core) -> core.clearIndexSizeCache());
     boolean compact = params.getBool(COMPACT_PARAM, true);
     String[] keys = params.getParams(KEY_PARAM);
     if (keys != null && keys.length > 0) {

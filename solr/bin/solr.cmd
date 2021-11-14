@@ -1136,18 +1136,6 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
   set IS_64bit=true
 )
 
-REM Clean up and rotate logs. Default to false since 7.4 as log4j2 handles startup rotation
-IF [%SOLR_LOG_PRESTART_ROTATION%] == [] (
-  set SOLR_LOG_PRESTART_ROTATION=false
-)
-IF [%SOLR_LOG_PRESTART_ROTATION%] == [true] (
-  REM Enable any of these if you require old remove/archive behavior
-  REM call :run_utils "-remove_old_solr_logs 7" || echo "Failed removing old solr logs"
-  REM call :run_utils "-archive_gc_logs"        || echo "Failed archiving old GC logs"
-  REM call :run_utils "-archive_console_logs"   || echo "Failed archiving old console logs"
-  call :run_utils "-rotate_solr_logs 9"     || echo "Failed rotating old solr logs"
-)
-
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
@@ -1528,19 +1516,6 @@ goto done
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI version
-goto done
-
-:run_utils
-set "TOOL_CMD=%~1"
-set q="-q"
-IF "%verbose%"=="1"  set q=""
-"%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI utils -s "%DEFAULT_SERVER_DIR%" -l "%SOLR_LOGS_DIR%" %q:"=% %TOOL_CMD%
-if errorlevel 1 (
-   exit /b 1
-)
 goto done
 
 :parse_create_args

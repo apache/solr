@@ -45,7 +45,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 public class CollectionApiMapping {
 
   public enum Meta implements CommandMeta {
-    GET_A_COLLECTION(COLLECTION_STATE, GET, CLUSTERSTATUS),
     CREATE_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
         CREATESHARD,
@@ -199,7 +198,6 @@ public class CollectionApiMapping {
   }
 
   public enum EndPoint implements V2EndPoint {
-    COLLECTION_STATE("collections.collection"),
     PER_COLLECTION_SHARDS_COMMANDS("collections.collection.shards.Commands"),
     PER_COLLECTION_PER_SHARD_COMMANDS("collections.collection.shards.shard.Commands"),
     PER_COLLECTION_PER_SHARD_DELETE("collections.collection.shards.shard.delete"),

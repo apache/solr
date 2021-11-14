@@ -80,6 +80,8 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.logging.MDCSnapshot;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
@@ -430,7 +432,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-    doFilter(request, response, chain, false);
+    try (var mdcSnapshot = MDCSnapshot.create()) {
+      assert null != mdcSnapshot; // prevent compiler warning
+      MDCLoggingContext.reset();
+      MDCLoggingContext.setNode(cores);
+      
+      doFilter(request, response, chain, false);
+    }
   }
   
   public void doFilter(ServletRequest _request, ServletResponse _response, FilterChain chain, boolean retry) throws IOException, ServletException {
@@ -457,6 +465,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     boolean accepted = false;
     try (var scope = tracer.scopeManager().activate(span)) {
       assert scope != null; // prevent javac warning about scope being unused
+      MDCLoggingContext.setTracerId(span.context().toTraceId()); // handles empty string
 
       if (cores == null || cores.isShutDown()) {
         try {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -33,6 +34,7 @@ import java.util.Objects;
  *
  * @see org.apache.solr.handler.component.QueryComponent
  */
+@ThreadLeakLingering(linger = 10)
 public class DistributedQueryComponentCustomSortTest extends BaseDistributedSearchTestCase {
 
   public DistributedQueryComponentCustomSortTest() {

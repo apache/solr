@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.common.SolrException;
 
 public final class ShardResponse {
   private ShardRequest req;
@@ -32,7 +31,7 @@ public final class ShardResponse {
     return "ShardResponse:{shard="+shard+",shardAddress="+shardAddress
             +"\n\trequest=" + req
             +"\n\tresponse=" + rsp
-            + (exception==null ? "" : "\n\texception="+ SolrException.toStr(exception))
+            + (exception==null ? "" : "\n\texception="+ exception)
             +"\n}";
   }
 
