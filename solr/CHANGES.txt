@@ -425,6 +425,8 @@ Bug Fixes
 ---------------------
 * SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
 
+* SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
+  closed fromCore if provided (Mikhail Khludnev, David Smiley)
 
 ==================  8.11.0 ==================
 
@@ -460,9 +462,6 @@ Bug Fixes
 * SOLR-15702: Fix S3Repository to follow BackupRepository.createDirectory() API contract (Houston Putman)
 
 * SOLR-15696: Incremental backups no longer fail on collections that had previously seen a 'SPLITSHARD' operation. (Jason Gerlowski)
-
-* SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
-  closed fromCore if provided (Mikhail Khludnev, David Smiley)
 
 * SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
 
