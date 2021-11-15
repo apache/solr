@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.common.util.Utils;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
