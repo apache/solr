@@ -167,6 +167,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15705: A delete-by-id command is forwarded to all shards when using the CompositeId router with a router field
   and the route is missing from the command. (Michael Kosten via Christine Poerschke, David Smiley, Eric Pugh)
 
+* SOLR-15790: SearchHandler now includes the `rid` value in the Logging MDC for the duration of the request, allowing custom logging
+  configurations to include it. (hossman)
+
 Build
 ---------------------
 
@@ -391,6 +394,8 @@ Other Changes
 
 * SOLR-15728: Remove dead, unused log rotation code from SolrCLI (janhoy)
 
+* SOLR-15791: Remove remaining unused <admin/> clauses from solrconfigs. (Eric Pugh)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -416,6 +421,8 @@ Bug Fixes
 
 Bug Fixes
 ---------------------
+* SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
+
 * SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
 
 ==================  8.11.0 ==================
@@ -452,6 +459,9 @@ Bug Fixes
 * SOLR-15702: Fix S3Repository to follow BackupRepository.createDirectory() API contract (Houston Putman)
 
 * SOLR-15696: Incremental backups no longer fail on collections that had previously seen a 'SPLITSHARD' operation. (Jason Gerlowski)
+
+* SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
+  closed fromCore if provided (Mikhail Khludnev, David Smiley)
 
 * SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
 
