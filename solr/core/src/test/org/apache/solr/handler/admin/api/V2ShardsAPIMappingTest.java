@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import com.google.common.collect.Maps;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.CollectionParams;
