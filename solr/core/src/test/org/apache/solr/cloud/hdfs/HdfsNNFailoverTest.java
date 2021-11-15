@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -36,6 +37,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 40)
 public class HdfsNNFailoverTest extends BasicDistributedZkTest {
   private static final String COLLECTION = "collection";
   private static MiniDFSCluster dfsCluster;

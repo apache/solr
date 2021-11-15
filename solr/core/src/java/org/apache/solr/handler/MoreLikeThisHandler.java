@@ -264,8 +264,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase
             }
             rsp.add("debug", dbgInfo);
           } catch (Exception e) {
-            SolrException.log(log, "Exception during debug", e);
-            rsp.add("exception_during_debug", SolrException.toStr(e));
+            log.error("Exception during debug: {}", e, e);
+            rsp.add("exception_during_debug", e.getMessage());
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {

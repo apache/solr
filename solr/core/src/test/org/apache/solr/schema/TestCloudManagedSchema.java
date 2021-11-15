@@ -65,12 +65,12 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     NamedList<?> collectionStatus = (NamedList<?>)status.getVal(0);
     String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
     // Make sure the upgrade to managed schema happened
-    assertEquals("Schema resource name differs from expected name", "managed-schema", collectionSchema);
+    assertEquals("Schema resource name differs from expected name", "managed-schema.xml", collectionSchema);
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000);
     try {
       // Make sure "DO NOT EDIT" is in the content of the managed schema
-      String fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema");
+      String fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema.xml");
       assertTrue("Managed schema is missing", fileContent.contains("DO NOT EDIT"));
 
       // Make sure the original non-managed schema is no longer in ZooKeeper

@@ -531,7 +531,7 @@ public class MiniSolrCloudCluster {
    * @param configDir a path to the config set to upload
    * @param configName the name to give the configset
    */
-  public void uploadConfigSet(Path configDir, String configName) throws IOException, KeeperException, InterruptedException {
+  public void uploadConfigSet(Path configDir, String configName) throws IOException {
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null)) {
       ZkMaintenanceUtils.uploadToZK(zkClient, configDir, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + configName, ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
@@ -858,7 +858,7 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  public void outputMetrics(File outputDirectory, String fileName) throws IOException {
+  public void dumpMetrics(File outputDirectory, String fileName) throws IOException {
     for (JettySolrRunner jetty : jettys) {
       jetty.outputMetrics(outputDirectory, fileName);
     }

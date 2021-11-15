@@ -58,14 +58,14 @@ To add documents to the index, use bin/post, for example:
 For more information about this example please read...
 
  * [solr/example/README.md](./README.md)
- 
+
 For more information about the "Solr Home" and Solr specific configuration
 
 * https://lucene.apache.org/solr/guide/solr-tutorial.html
 
 For a Solr tutorial
 
- * https://wiki.apache.org/solr/SolrResources 
+ * https://solr.apache.org/resources.html 
 
 For a list of other tutorials and introductory articles.
 
@@ -75,13 +75,13 @@ Notes About These Examples
 ### References to Jar Files Outside This Directory
 
 Various example SolrHome dirs contained in this directory may use "<lib>"
-statements in the solrconfig.xml file to reference plugin jars outside of 
+statements in the solrconfig.xml file to reference plugin jars outside of
 this directory for loading "contrib" plugins via relative paths.  
 
-If you make a copy of this example server and wish to use the 
-ExtractingRequestHandler (SolrCell), the clustering component, 
+If you make a copy of this example server and wish to use the
+ExtractingRequestHandler (SolrCell), the clustering component,
 or any other modules in "contrib", you will need to
-copy the required jars or update the paths to those jars in your 
+copy the required jars or update the paths to those jars in your
 solrconfig.xml.
 
 ### Logging

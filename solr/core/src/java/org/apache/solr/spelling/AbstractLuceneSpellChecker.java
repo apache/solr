@@ -43,16 +43,16 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * Abstract base class for all Lucene-based spell checking implementations.
- * 
+ *
  * <p>
- * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * Refer to <a href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
  * for more details.
  * </p>
- * 
+ *
  * @since solr 1.3
  */
 public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
-  
+
   public static final String SPELLCHECKER_ARG_NAME = "spellchecker";
   public static final String LOCATION = "sourceLocation";
   public static final String INDEX_DIR = "spellcheckIndexDir";
@@ -130,14 +130,14 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     }
     return name;
   }
-  
+
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
     SpellingResult result = new SpellingResult(options.tokens);
     IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
     float theAccuracy = (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
-    
+
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
     for (Token token : options.tokens) {
       String tokenText = new String(token.buffer(), 0, token.length());

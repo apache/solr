@@ -241,10 +241,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     ensureOpen();
     return MultiDocValues.getNormValues(in, field); // TODO cache?
   }
-  
+
   @Override
   public Fields getTermVectors(int docID) throws IOException {
-    ensureOpen();
     return in.getTermVectors(docID);
   }
 
@@ -281,13 +280,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public VectorValues getVectorValues(String field) {
     ensureOpen();
-    return null; // because not supported.  Throw UOE?
+    return VectorValues.EMPTY;
   }
 
   @Override
-  public TopDocs searchNearestVectors(String field, float[] target, int k, int fanout)
+  public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs)
       throws IOException {
-    ensureOpen();
     return null; // because not supported.  Throw UOE?
   }
 
