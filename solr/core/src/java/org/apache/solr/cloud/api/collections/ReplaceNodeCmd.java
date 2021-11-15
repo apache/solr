@@ -96,6 +96,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     // map of collectionName_coreNodeName to watchers
     Map<String, CollectionStateWatcher> watchers = new HashMap<>();
     List<ZkNodeProps> createdReplicas = new ArrayList<>();
+    List<Replica> createdReplicaObjects = new ArrayList<>();
 
     AtomicBoolean anyOneFailed = new AtomicBoolean(false);
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(sourceReplicas.size(), ccc.getCloseableToLatchOn());
@@ -172,6 +173,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
         } else {
           log.debug("--- not waiting for {}", addedReplica);
         }
+        createdReplicaObjects.add(zkStateReader.getCollectionLive(sourceCollection).getReplica(addedReplica.getStr(ZkStateReader.CORE_NODE_NAME_PROP)));
       }
     }
 
