@@ -164,12 +164,20 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15608: Remove deprecated methods, classes and constructors from solrj clients (janhoy)
 
+* SOLR-15705: A delete-by-id command is forwarded to all shards when using the CompositeId router with a router field
+  and the route is missing from the command. (Michael Kosten via Christine Poerschke, David Smiley, Eric Pugh)
+
+* SOLR-15790: SearchHandler now includes the `rid` value in the Logging MDC for the duration of the request, allowing custom logging
+  configurations to include it. (hossman)
+
 Build
 ---------------------
 
 * LUCENE-10104, SOLR-15631: Upgrade forbiddenapis to version 3.2.  (Uwe Schindler)
 
 * SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
+
+* SOLR-15793: Pin http_parser.rb to specific version to allow Solr Ref Guide on Jekyll to run (Eric Pugh)
 
 Other Changes
 ----------------------
@@ -386,6 +394,8 @@ Other Changes
 
 * SOLR-15728: Remove dead, unused log rotation code from SolrCLI (janhoy)
 
+* SOLR-15791: Remove remaining unused <admin/> clauses from solrconfigs. (Eric Pugh)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -402,6 +412,10 @@ Bug Fixes
 * SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
 
 * SOLR-15653: Fix collection creation race that assumes a local clusterstate when the collection has only just been created. (Mark Miller)
+
+* SOLR-10529: Solr UI Health Check enable/disable ping Button doesn't work (Oscar Wang via janhoy)
+
+* SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
 
 ==================  8.11.0 ==================
 

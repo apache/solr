@@ -90,7 +90,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -504,9 +503,6 @@ public class HttpSolrCall {
    * This method processes the request.
    */
   public Action call() throws IOException {
-    MDCLoggingContext.reset();
-    MDCLoggingContext.setTracerId(getSpan().context().toTraceId()); // handles empty string
-    MDCLoggingContext.setNode(cores);
 
     if (cores == null) {
       sendError(503, "Server is shutting down or failed to initialize");

@@ -28,6 +28,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.logging.MDCSnapshot;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
@@ -162,7 +164,13 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-    doFilter(request, response, chain, false);
+    try (var mdcSnapshot = MDCSnapshot.create()) {
+      assert null != mdcSnapshot; // prevent compiler warning
+      MDCLoggingContext.reset();
+      MDCLoggingContext.setNode(getCores());
+
+      doFilter(request, response, chain, false);
+    }
   }
   
   public void doFilter(ServletRequest _request, ServletResponse _response, FilterChain chain, boolean retry) throws IOException, ServletException {

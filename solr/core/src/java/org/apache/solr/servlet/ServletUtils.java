@@ -26,6 +26,7 @@ import io.opentracing.tag.Tags;
 import org.apache.http.HttpHeaders;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.tracing.HttpServletCarrier;
 import org.slf4j.Logger;
@@ -226,6 +227,8 @@ public abstract class ServletUtils {
       try (var scope = tracer.scopeManager().activate(span)) {
 
         assert scope != null; // prevent javac warning about scope being unused
+        MDCLoggingContext.setTracerId(span.context().toTraceId()); // handles empty string
+
         try {
           tracedExecution.run();
         } catch (ExceptionWhileTracing e) {

@@ -78,6 +78,9 @@ dependencies {
     gems 'rubygems:tilt:2.0.10'
     gems 'rubygems:slim:4.1.0'
     gems 'rubygems:concurrent-ruby:1.1.9'
+    gems 'rubygems:http_parser.rb:0.6.0'
+
+
 }
 
 sourceSets {
