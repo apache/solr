@@ -18,9 +18,6 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.solr.common.util.SuppressForbidden;
@@ -30,11 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.AbstractAppender;
-import org.apache.logging.log4j.core.config.Property;
-import org.apache.logging.log4j.core.impl.MutableLogEvent;
 
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -46,7 +39,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   @LogLevel("=WARN")
   public void testErrorMutingRegex() throws Exception {
 
-    final ListAppender rootSanityCheck = new ListAppender("sanity-checker");
+    final Log4jListAppender rootSanityCheck = new Log4jListAppender("sanity-checker");
     try {
       LoggerContext.getContext(false).getConfiguration().getRootLogger().addAppender(rootSanityCheck, Level.WARN, null);
       LoggerContext.getContext(false).updateLoggers();
@@ -80,8 +73,8 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   @LogLevel("=WARN") 
   public void testMultipleMuters() throws Exception {
 
-    // Add a ListAppender to our ROOT logger so we can sanity check what log messages it gets
-    final ListAppender rootSanityCheck = new ListAppender("sanity-checker");
+    // Add a Log4jListAppender to our ROOT logger so we can sanity check what log messages it gets
+    final Log4jListAppender rootSanityCheck = new Log4jListAppender("sanity-checker");
     try {
       LoggerContext.getContext(false).getConfiguration().getRootLogger().addAppender(rootSanityCheck, Level.WARN, null);
       LoggerContext.getContext(false).updateLoggers();
@@ -116,8 +109,8 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
   @LogLevel("=WARN") 
   public void testDeprecatedBaseClassMethods() throws Exception {
     
-    // Add a ListAppender to our ROOT logger so we can sanity check what log messages it gets
-    final ListAppender rootSanityCheck = new ListAppender("sanity-checker");
+    // Add a Log4jListAppender to our ROOT logger so we can sanity check what log messages it gets
+    final Log4jListAppender rootSanityCheck = new Log4jListAppender("sanity-checker");
     try {
       LoggerContext.getContext(false).getConfiguration().getRootLogger().addAppender(rootSanityCheck, Level.WARN, null);
       LoggerContext.getContext(false).updateLoggers();
@@ -149,40 +142,4 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
     assertEquals(4, rootSanityCheck.getEvents().size());
   }
   
-  /**
-   * Maintains an in memory List of log events.
-   * <p>
-   * Inspired by <code>org.apache.logging.log4j.core.test.appender.ListAppender</code>
-   * but we have much simpler needs.
-   */
-  @SuppressForbidden(reason="We need to use log4J2 classes directly to check that the ErrorLogMuter is working")
-  public static final class ListAppender extends AbstractAppender {
-    // Use Collections.synchronizedList rather than CopyOnWriteArrayList because we expect
-    // more frequent writes than reads.
-    private final List<LogEvent> events = Collections.synchronizedList(new ArrayList<>());
-    private final List<LogEvent> publicEvents = Collections.unmodifiableList(events);
-    
-    public ListAppender(final String name) {
-      super(name, null, null, true, Property.EMPTY_ARRAY);
-      assert null != name;
-    }
-    
-    @Override
-    public void append(final LogEvent event) {
-      if (event instanceof MutableLogEvent) {
-        // must take snapshot or subsequent calls to logger.log() will modify this event
-        events.add(((MutableLogEvent) event).createMemento());
-      } else {
-        events.add(event);
-      }
-      if (log.isDebugEnabled()) {
-        log.debug("{} intercepted a log event (#{})", this.getName(), events.size());
-      }
-    }
-
-    /** Returns an immutable view of captured log events, contents can change as events are logged */
-    public List<LogEvent> getEvents() {
-      return publicEvents;
-    }
-  }
 }
