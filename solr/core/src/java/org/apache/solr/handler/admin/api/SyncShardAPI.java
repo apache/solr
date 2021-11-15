@@ -24,8 +24,6 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.SyncShardPayload;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.Map;
 
