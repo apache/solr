@@ -44,27 +44,19 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
   private final PlacementPlugin plugin;
-  private final DocCollection collection;
 
-  /**
-   * @param collection the collection for which this assign request is done. In theory would be better to pass it into the
-   *                   {@link #assign} call below (which would allow reusing instances of {@link PlacementPluginAssignStrategy},
-   *                   but for now doing it here in order not to change the other Assign.AssignStrategy implementations.
-   */
-  public PlacementPluginAssignStrategy(DocCollection collection, PlacementPlugin plugin) {
-    this.collection = collection;
+  public PlacementPluginAssignStrategy(PlacementPlugin plugin) {
     this.plugin = plugin;
   }
 
-  public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, Assign.AssignRequest... assignRequests)
+  public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, List<Assign.AssignRequest> assignRequests)
       throws Assign.AssignmentException, IOException, InterruptedException {
 
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
-    SolrCollection solrCollection = placementContext.getCluster().getCollection(collection.getName());
 
-    List<PlacementRequest> placementRequests = new ArrayList<>(assignRequests.length);
+    List<PlacementRequest> placementRequests = new ArrayList<>(assignRequests.size());
     for (Assign.AssignRequest assignRequest : assignRequests) {
-      placementRequests.add(PlacementRequestImpl.toPlacementRequest(placementContext.getCluster(), solrCollection, assignRequest));
+      placementRequests.add(PlacementRequestImpl.toPlacementRequest(placementContext.getCluster(), placementContext.getCluster().getCollection(assignRequest.collectionName), assignRequest));
     }
 
     final List<ReplicaPosition> replicaPositions = new ArrayList<>();
@@ -72,7 +64,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
       List<PlacementPlan> placementPlans = plugin.computePlacements(placementRequests, placementContext);
       if (placementPlans != null) {
         for (PlacementPlan placementPlan : placementPlans) {
-          replicaPositions.addAll(ReplicaPlacementImpl.toReplicaPositions(collection.getName(), placementPlan.getReplicaPlacements()));
+          replicaPositions.addAll(ReplicaPlacementImpl.toReplicaPositions(placementPlan.getRequest().getCollection().getName(), placementPlan.getReplicaPlacements()));
         }
       }
     } catch (PlacementException pe) {

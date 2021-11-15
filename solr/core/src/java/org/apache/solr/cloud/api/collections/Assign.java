@@ -22,6 +22,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -279,8 +280,7 @@ public class Assign {
                                                           CoreContainer coreContainer) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
-    DocCollection coll = clusterState.getCollection(collectionName);
-    List<String> createNodeList = null;
+    List<String> createNodeList;
 
     if (createNodeSet instanceof List) {
       createNodeList = (List<String>) createNodeSet;
@@ -302,7 +302,7 @@ public class Assign {
         .assignPullReplicas(pullReplicas)
         .onNodes(createNodeList)
         .build();
-    AssignStrategy assignStrategy = createAssignStrategy(coreContainer, clusterState, coll);
+    AssignStrategy assignStrategy = createAssignStrategy(coreContainer);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
@@ -400,11 +400,23 @@ public class Assign {
     /**
      * Assign new replicas to nodes.
      * @param solrCloudManager current instance of {@link SolrCloudManager}.
-     * @param assignRequest assign request.
+     * @param assignRequests assign request.
      * @return list of {@link ReplicaPosition}-s for new replicas.
      * @throws AssignmentException when assignment request cannot produce any valid assignments.
      */
-    List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest... assignRequest)
+    default List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest... assignRequests)
+        throws AssignmentException, IOException, InterruptedException {
+      return assign(solrCloudManager, Arrays.asList(assignRequests));
+    }
+
+    /**
+     * Assign new replicas to nodes.
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param assignRequests assign request.
+     * @return list of {@link ReplicaPosition}-s for new replicas.
+     * @throws AssignmentException when assignment request cannot produce any valid assignments.
+     */
+    List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, List<AssignRequest> assignRequests)
         throws AssignmentException, IOException, InterruptedException;
 
     /**
@@ -500,7 +512,7 @@ public class Assign {
 
   public static class LegacyAssignStrategy implements AssignStrategy {
     @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest... assignRequests) throws Assign.AssignmentException, IOException, InterruptedException {
+    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, List<AssignRequest> assignRequests) throws Assign.AssignmentException, IOException, InterruptedException {
       ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
 
       List<ReplicaPosition> result = new ArrayList<>();
@@ -563,11 +575,11 @@ public class Assign {
    * <p>If {@link PlacementPlugin} instance is null this call will return {@link LegacyAssignStrategy}, otherwise
    * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
-  public static AssignStrategy createAssignStrategy(CoreContainer coreContainer, ClusterState clusterState, DocCollection collection) {
+  public static AssignStrategy createAssignStrategy(CoreContainer coreContainer) {
     PlacementPlugin placementPlugin = coreContainer.getPlacementPluginFactory().createPluginInstance();
     if (placementPlugin != null) {
       // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
-      return new PlacementPluginAssignStrategy(collection, placementPlugin);
+      return new PlacementPluginAssignStrategy(placementPlugin);
     }  else {
         return new LegacyAssignStrategy();
       }
