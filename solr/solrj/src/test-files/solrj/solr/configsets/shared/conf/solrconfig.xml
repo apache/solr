@@ -17,8 +17,8 @@
 -->
 
 <!--
- This is a stripped down config file used for a simple example...  
- It is *not* a good example to work from. 
+ This is a stripped down config file used for a simple example...
+ It is *not* a good example to work from.
 -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
@@ -41,11 +41,6 @@
 
   <requestHandler name="/select" class="solr.SearchHandler"/>
 
-  <!-- config for the admin interface --> 
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-  </admin>
-
   <initParams path="/select">
     <lst name="defaults">
       <str name="df">name</str>
@@ -53,4 +48,3 @@
   </initParams>
 
 </config>
-

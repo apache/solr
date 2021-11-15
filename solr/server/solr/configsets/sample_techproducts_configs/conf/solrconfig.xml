@@ -1420,14 +1420,4 @@
     <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
       <str name="fvCacheName">QUERY_DOC_FV</str>
     </transformer>
-
-    <!-- Example of ping handler with a healthcheckFile -->
-    <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
-      <!-- relative paths are resolved against the data dir -->
-      <str name="healthcheckFile">server-enabled.txt</str>
-      <lst name="invariants">
-        <str name="qt">/query</str><!-- handler to delegate to -->
-        <str name="q">*:*</str>
-      </lst>
-    </requestHandler>
 </config>
