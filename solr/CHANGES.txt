@@ -410,6 +410,13 @@ Bug Fixes
 
 * SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
 
+==================  8.11.1 ==================
+
+Bug Fixes
+---------------------
+* SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
+
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
