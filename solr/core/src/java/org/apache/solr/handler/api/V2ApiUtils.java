@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,24 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
+package org.apache.solr.handler.api;
 
-public class BadMrClusterThreadsFilter implements ThreadFilter {
+import java.util.Map;
 
-  @Override
-  public boolean reject(Thread t) {
-    String name = t.getName();
-    if (name.startsWith("ForkJoinPool.")) { 
-      return true;
-    } else if (name.startsWith("com.google.inject.internal.util.$Finalizer")) { 
-      return true;
-    } else if (name.startsWith("IPC Client ")) { 
-      return true;
-    } else if (name.startsWith("Timer-")) { 
-      return true;
+/**
+ * Utilities helpful for common V2 API declaration tasks.
+ */
+public class V2ApiUtils {
+  private V2ApiUtils() { /* Private ctor prevents instantiation */ }
+
+  public static void flattenMapWithPrefix(Map<String, Object> toFlatten, Map<String, Object> destination,
+                                    String additionalPrefix) {
+    if (toFlatten == null || toFlatten.isEmpty() || destination == null) {
+      return;
     }
-    return false;
+
+    toFlatten.forEach((k, v) -> destination.put(additionalPrefix + k, v));
   }
 }

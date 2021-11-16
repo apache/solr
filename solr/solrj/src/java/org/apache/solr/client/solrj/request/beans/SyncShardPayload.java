@@ -14,16 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
 
-import java.util.Map;
+package org.apache.solr.client.solrj.request.beans;
+
+import org.apache.solr.common.util.ReflectMapWriter;
 
 /**
- * throws an {@link java.lang.Error} on init for testing purposes
+ * Empty payload for the /v2/collections/collName/shards/shardName {"sync-shard": {}} API.
  */
-public class ThrowErrorOnInitFieldType extends TextField {
-
-  protected void init(IndexSchema schema, Map<String,String> args) {
-    throw new Error("Doing my job, throwing java.lang.Error");
-  }
-}
+public class SyncShardPayload implements ReflectMapWriter { }

@@ -396,6 +396,8 @@ Other Changes
 
 * SOLR-15791: Remove remaining unused <admin/> clauses from solrconfigs. (Eric Pugh)
 
+* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -416,6 +418,8 @@ Bug Fixes
 * SOLR-10529: Solr UI Health Check enable/disable ping Button doesn't work (Oscar Wang via janhoy)
 
 * SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
+
+* SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
 
 * SOLR-15785: Custom node request handlers/endpoints that weren't in packages can now be located in JARs in solr-home/lib, not just WEB-INF/lib. (Nazerke Seidan, David Smiley)
 

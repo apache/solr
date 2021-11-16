@@ -19,24 +19,16 @@ package org.apache.solr.client.solrj.request;
 
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Pair;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.*;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.*;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 
 /**
  * Stores the mapping of v1 API parameters to v2 API parameters
@@ -45,41 +37,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 public class CollectionApiMapping {
 
   public enum Meta implements CommandMeta {
-    CREATE_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
-        POST,
-        CREATESHARD,
-        "create",
-        Map.of("createNodeSet", V2ApiConstants.NODE_SET),
-        Map.of("property.", "coreProperties.")) {
-      @Override
-      public String getParamSubstitute(String param) {
-        return super.getParamSubstitute(param);
-      }
-    },
-    SPLIT_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
-        POST,
-        SPLITSHARD,
-        "split",
-        Map.of("split.key", "splitKey"),
-        Map.of("property.", "coreProperties.")),
-    DELETE_SHARD(PER_COLLECTION_PER_SHARD_DELETE,
-        DELETE, DELETESHARD),
-
-    CREATE_REPLICA(PER_COLLECTION_SHARDS_COMMANDS,
-        POST,
-        ADDREPLICA,
-        "add-replica",
-        null,
-        Map.of("property.", "coreProperties.")),
-
-    DELETE_REPLICA(PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE,
-        DELETE, DELETEREPLICA),
-    SYNC_SHARD(PER_COLLECTION_PER_SHARD_COMMANDS,
-        POST,
-        CollectionAction.SYNCSHARD,
-        "synch-shard",
-        null),
-    FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null);
+    DELETE_REPLICA(PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE, DELETE, DELETEREPLICA);
 
     public final String commandName;
     public final EndPoint endPoint;
@@ -198,9 +156,6 @@ public class CollectionApiMapping {
   }
 
   public enum EndPoint implements V2EndPoint {
-    PER_COLLECTION_SHARDS_COMMANDS("collections.collection.shards.Commands"),
-    PER_COLLECTION_PER_SHARD_COMMANDS("collections.collection.shards.shard.Commands"),
-    PER_COLLECTION_PER_SHARD_DELETE("collections.collection.shards.shard.delete"),
     PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE("collections.collection.shards.shard.replica.delete");
     final String specName;
 

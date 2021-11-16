@@ -83,6 +83,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
     containerHandlers.getApiBag().registerObject(new CollectionsAPI(collectionsHandler));
     ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
+    ApiRegistrar.registerShardApis(containerHandlers.getApiBag(), collectionsHandler);
     containerHandlers.put(CORES_HANDLER_PATH, new CoreAdminHandler(mockCC));
     containerHandlers.put(CONFIGSETS_HANDLER_PATH, new ConfigSetsHandler(mockCC));
     out.put("getRequestHandlers", containerHandlers);
