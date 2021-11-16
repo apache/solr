@@ -24,6 +24,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +37,6 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -544,9 +544,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
 
     private static void copyConfFile(File dstRoot, String destCollection, String file) throws Exception {
-      File subHome = new File(dstRoot, destCollection + File.separator + "conf");
-      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-      FileUtils.copyFile(new File(top, file), new File(subHome, file));
+      Path subHome = dstRoot.toPath().resolve(destCollection).resolve("conf");
+      Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+      Files.copy(top.resolve(file), subHome.resolve(file));
     }
 
     public void copyConfigFile(File dstRoot, String destCollection, String file) throws Exception {
@@ -554,9 +554,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         createHome();
       }
 
-      File subHome = new File(dstRoot, destCollection + File.separator + "conf");
-      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-      FileUtils.copyFile(new File(top, file), new File(subHome, file));
+      SolrInstance.copyConfFile(dstRoot, destCollection, file);
     }
 
   }

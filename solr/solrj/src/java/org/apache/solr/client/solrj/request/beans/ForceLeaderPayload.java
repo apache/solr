@@ -15,20 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.core;
+package org.apache.solr.client.solrj.request.beans;
 
-import java.lang.invoke.MethodHandles;
+import org.apache.solr.common.util.ReflectMapWriter;
 
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class MockConcurrentMergeScheduler extends ConcurrentMergeScheduler {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Override
-  protected void handleMergeException(Throwable exc) {
-    // swallow the exception
-    log.warn("Merge exception:", exc);
-  }
-}
+/**
+ * Empty payload for the POST /v2/collections/collName/shards/shardName {"force-leader": {}} API.
+ */
+public class ForceLeaderPayload implements ReflectMapWriter { }
