@@ -227,7 +227,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(coll, 5, 5);
 
-    String liveNode = cloudClient.getZkStateReader().getClusterState().getLiveNodes().stream().findAny().get();
+    String liveNode = cloudClient.getZkStateReader().getClusterState().getLiveNodes().iterator().next();
     expectThrows(SolrException.class, () -> createReplaceNodeRequest(liveNode, null, null).process(cloudClient));
   }
 
