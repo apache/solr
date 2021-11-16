@@ -407,9 +407,6 @@ Improvements
 
 * SOLR-15610: log4j-layout-template-json is now included in solr server, allowing JSON formatted logs to be configurable. (hossman)
 
-* SOLR-15376: Accept "Long" values for CollectionAdminRequest.CreateTimeRoutedAlias.setMaxFutureMs
-  to support durations greater than ~ 25 days. (Nahian-Al Hasan, Gus Heck, Christine Poerschke)
-
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
