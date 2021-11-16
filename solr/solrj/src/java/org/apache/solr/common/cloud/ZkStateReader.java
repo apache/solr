@@ -103,6 +103,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
+  public static final String NODE_ROLES = "/node_roles";
   public static final String ALIASES = "/aliases.json";
   /**
    * This ZooKeeper file is no longer used starting with Solr 9 but keeping the name around to check if it

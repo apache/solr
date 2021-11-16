@@ -33,7 +33,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.NodeRole;
 import org.apache.zookeeper.KeeperException;
 
 import javax.annotation.Nonnull;
@@ -61,27 +60,8 @@ class SimpleClusterAbstractionsImpl {
     private final Set<Node> liveNodes;
     private final ClusterState clusterState;
 
-    @SuppressWarnings("unchecked")
     ClusterImpl(SolrCloudManager solrCloudManager) throws IOException {
-      Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
-      try {
-        if (solrCloudManager.getDistribStateManager().hasData(ZkStateReader.ROLES)) {
-          VersionedData rolesData = solrCloudManager.getDistribStateManager().getData(ZkStateReader.ROLES);
-          if (rolesData != null && rolesData.getData().length > 0) {
-            Map<String, Object> roles = (Map<String, Object>) Utils.fromJSON(rolesData.getData());
-            List<String> noReplicasNodes = (List<String>) roles.get(NodeRole.NO_REPLICAS);
-            if (noReplicasNodes != null && !noReplicasNodes.isEmpty()) {
-              liveNodes = new HashSet<>(liveNodes);
-              liveNodes.removeAll(noReplicasNodes);
-            }
-          }
-        }
-
-      } catch (NoSuchElementException nsee) {
-        //no problem
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to communicate with Zookeeper");
-      }
+      Set<String> liveNodes = filterNonDataNodes(solrCloudManager);
       this.liveNodes = NodeImpl.getNodes(liveNodes);
       clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
     }
@@ -106,6 +86,43 @@ class SimpleClusterAbstractionsImpl {
     public Iterable<SolrCollection> collections() {
       return ClusterImpl.this::iterator;
     }
+  }
+
+  private static Set<String> filterNonDataNodes(SolrCloudManager solrCloudManager) {
+    Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
+    Set<String> liveNodesCopy = liveNodes;
+    try {
+      List<String> nodesWithRoles =  solrCloudManager.getDistribStateManager().listData(ZkStateReader.NODE_ROLES);
+      if(!nodesWithRoles.isEmpty()) {
+        for (String node : nodesWithRoles) {
+          VersionedData data = null;
+          try {
+            data = solrCloudManager.getDistribStateManager()
+                    .getData(ZkStateReader.NODE_ROLES + "/" + node);
+          } catch (NoSuchElementException e) {
+            //this node probably went down
+            continue;
+          }
+          if(data != null && data.getData() != null && data.getData().length >0) {
+            @SuppressWarnings("unchecked")
+            Map<String,Object> map = (Map<String, Object>) Utils.fromJSON(data.getData());
+            if(Boolean.FALSE.equals(map.get("hasData"))) {
+              if(liveNodesCopy == liveNodes) {
+                //the map provided should not be modified. So we make a copy
+                liveNodesCopy = new HashSet<>(liveNodes);
+              }
+              liveNodesCopy.remove(node);
+            }
+          }
+        }
+      }
+
+    } catch (NoSuchElementException nsee) {
+      //no problem
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to communicate with Zookeeper");
+    }
+    return liveNodesCopy;
   }
 
 
