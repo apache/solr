@@ -72,7 +72,7 @@ Click on the btn:[Submit Document] button below the form to index your document.
 === Updating Data
 
 You may notice that even if you index content in this tutorial more than once, it does not duplicate the results found.
-This is because the example Solr schema (a file named either `managed-schema` or `schema.xml`) specifies a `uniqueKey` field called `id`.
+This is because the example Solr schema (a file named either `managed-schema.xml` or `schema.xml`) specifies a `uniqueKey` field called `id`.
 Whenever you POST commands to Solr to add a document with the same value for the `uniqueKey` as an existing document, it automatically replaces it for you.
 
 You can see that has happened by looking at the values for `numDocs` and `maxDoc` in the core-specific Overview section of the Solr Admin UI.

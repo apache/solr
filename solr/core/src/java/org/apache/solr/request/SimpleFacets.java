@@ -81,7 +81,7 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Grouping;
-import org.apache.solr.search.Insanity;
+import org.apache.solr.search.NumericHidingLeafReader;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
@@ -718,9 +718,9 @@ public class SimpleFacets {
     BytesRef prefixBytesRef = prefix != null ? new BytesRef(prefix) : null;
     final TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBytesRef, 128);
     
-    Collector groupWrapper = getInsanityWrapper(groupField, collector);
-    Collector fieldWrapper = getInsanityWrapper(field, groupWrapper);
-    // When GroupedFacetCollector can handle numerics we can remove the wrapped collectors
+    Collector groupWrapper = getNumericHidingWrapper(groupField, collector);
+    Collector fieldWrapper = getNumericHidingWrapper(field, groupWrapper);
+    // When GroupFacetCollector can handle numerics we can remove the wrapped collectors
     searcher.search(base.getTopFilter(), fieldWrapper);
     
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
@@ -750,16 +750,16 @@ public class SimpleFacets {
     return facetCounts;
   }
   
-  private Collector getInsanityWrapper(final String field, Collector collector) {
+  private Collector getNumericHidingWrapper(final String field, Collector collector) {
     SchemaField sf = searcher.getSchema().getFieldOrNull(field);
     if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumberType() != null) {
-      // it's a single-valued numeric field: we must currently create insanity :(
-      // there isn't a GroupedFacetCollector that works on numerics right now...
+      // it's a single-valued numeric field: we must hide the numeric because
+      // there isn't a GroupFacetCollector that works on numerics right now...
       return new FilterCollector(collector) {
         @Override
         public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-          LeafReader insane = Insanity.wrapInsanity(context.reader(), field);
-          return in.getLeafCollector(insane.getContext());
+          LeafReader leafReader = NumericHidingLeafReader.wrap(context.reader(), field);
+          return in.getLeafCollector(leafReader.getContext());
         }
       };
     } else {

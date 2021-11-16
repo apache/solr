@@ -251,6 +251,10 @@ public class ConfigOverlay implements MapSerializable {
     return Collections.unmodifiableMap(reqHandlers);
   }
 
+  boolean hasKey(String key) {
+    return props.containsKey(key);
+  }
+
 
   @SuppressWarnings({"unchecked"})
   public ConfigOverlay addNamedPlugin(Map<String, Object> info, String typ) {

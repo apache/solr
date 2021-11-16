@@ -18,6 +18,13 @@
 solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, $cookies, $window, Constants, SchemaDesigner, Luke) {
   $scope.resetMenu("schema-designer", Constants.IS_ROOT_PAGE);
 
+  $scope.schemas = [];
+  $scope.publishedSchemas = [];
+  $scope.sampleDocIds = [];
+  $scope.sortableFields = [];
+  $scope.hlFields = [];
+  $scope.types = [];
+
   $scope.onWarning = function (warnMsg, warnDetails) {
     $scope.updateWorking = false;
     delete $scope.updateStatusMessage;
@@ -437,6 +444,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
     if (data.docIds) {
       $scope.sampleDocIds = data.docIds;
+    } else {
+      $scope.sampleDocIds = [];
     }
 
     // re-apply the filters on the updated schema
@@ -1513,7 +1522,29 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.downloadConfig = function () {
-    location.href = "/api/schema-designer/download/"+$scope.currentSchema+"_configset.zip?wt=raw&configSet=" + $scope.currentSchema;
+    // have to use an AJAX request so we can supply the Authorization header
+    if (sessionStorage.getItem("auth.header")) {
+      var fileName = $scope.currentSchema+"_configset.zip";
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/api/schema-designer/download/"+fileName+"?wt=raw&configSet="+$scope.currentSchema, true);
+      xhr.setRequestHeader('Authorization', sessionStorage.getItem("auth.header"));
+      xhr.responseType = 'blob';
+      xhr.addEventListener('load',function() {
+        if (xhr.status === 200) {
+          var url = window.URL.createObjectURL(xhr.response);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.append(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        }
+      })
+      xhr.send();
+    } else {
+      location.href = "/api/schema-designer/download/"+$scope.currentSchema+"_configset.zip?wt=raw&configSet=" + $scope.currentSchema;
+    }
   };
 
   function docsToTree(docs) {

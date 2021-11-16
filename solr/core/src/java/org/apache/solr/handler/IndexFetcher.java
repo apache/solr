@@ -300,7 +300,7 @@ public class IndexFetcher {
   /**
    * Gets the latest commit version and generation from the leader
    */
-  NamedList<Object> getLatestVersion() throws IOException {
+  public NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);

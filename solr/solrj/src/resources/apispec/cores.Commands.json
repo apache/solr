@@ -60,7 +60,7 @@
         },
         "props": {
           "type": "object",
-          "documentation": "https://lucene.apache.org/solr/guide/defining-core-properties.html",
+          "documentation": "https://solr.apache.org/guide/core-discovery.html",
           "description": "Allows adding core.properties for the collection.",
           "additionalProperties": true
         },

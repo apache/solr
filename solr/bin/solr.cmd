@@ -85,12 +85,7 @@ IF NOT DEFINED SOLR_SSL_ENABLED (
 )
 
 IF "%SOLR_SSL_ENABLED%"=="true" (
-  set "SOLR_JETTY_CONFIG=--lib="%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*""
-  if !JAVA_MAJOR_VERSION! GEQ 9  (
-    set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=https"
-  ) else (
-    set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=https8"
-  )
+  set "SOLR_JETTY_CONFIG=--module=https --lib="%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*""
   set SOLR_URL_SCHEME=https
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
@@ -352,6 +347,7 @@ goto done
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
 @echo                   If neither ZK_HOST is defined in solr.in.cmd nor the -z parameter is specified,
 @echo                   an embedded ZooKeeper instance will be launched.
+@echo                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
 @echo.
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
@@ -1140,18 +1136,6 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
   set IS_64bit=true
 )
 
-REM Clean up and rotate logs. Default to false since 7.4 as log4j2 handles startup rotation
-IF [%SOLR_LOG_PRESTART_ROTATION%] == [] (
-  set SOLR_LOG_PRESTART_ROTATION=false
-)
-IF [%SOLR_LOG_PRESTART_ROTATION%] == [true] (
-  REM Enable any of these if you require old remove/archive behavior
-  REM call :run_utils "-remove_old_solr_logs 7" || echo "Failed removing old solr logs"
-  REM call :run_utils "-archive_gc_logs"        || echo "Failed archiving old GC logs"
-  REM call :run_utils "-archive_console_logs"   || echo "Failed archiving old console logs"
-  call :run_utils "-rotate_solr_logs 9"     || echo "Failed rotating old solr logs"
-)
-
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
@@ -1169,6 +1153,11 @@ IF "%SOLR_MODE%"=="solrcloud" (
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
   )
+
+  IF NOT "%ZK_CREATE_CHROOT%"=="" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DcreateZkChroot=%ZK_CREATE_CHROOT%"
+  )
+
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=
@@ -1527,19 +1516,6 @@ goto done
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI version
-goto done
-
-:run_utils
-set "TOOL_CMD=%~1"
-set q="-q"
-IF "%verbose%"=="1"  set q=""
-"%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI utils -s "%DEFAULT_SERVER_DIR%" -l "%SOLR_LOGS_DIR%" %q:"=% %TOOL_CMD%
-if errorlevel 1 (
-   exit /b 1
-)
 goto done
 
 :parse_create_args

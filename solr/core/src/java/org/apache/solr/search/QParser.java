@@ -33,7 +33,7 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
- * 
+ *
  *
  */
 public abstract class QParser {
@@ -53,12 +53,12 @@ public abstract class QParser {
 
   protected String stringIncludingLocalParams;   // the original query string including any local params
   protected boolean valFollowedParams;           // true if the value "qstr" followed the localParams
-  protected int localParamsEnd;                  // the position one past where the localParams ended 
+  protected int localParamsEnd;                  // the position one past where the localParams ended
 
   /**
    * Constructor for the QParser
    * @param qstr The part of the query string specific to this parser
-   * @param localParams The set of parameters that are specific to this QParser.  See http://wiki.apache.org/solr/LocalParams
+   * @param localParams The set of parameters that are specific to this QParser.  See https://solr.apache.org/guide/local-parameters-in-queries.html
    * @param params The rest of the {@link org.apache.solr.common.params.SolrParams}
    * @param req The original {@link org.apache.solr.request.SolrQueryRequest}.
    */
@@ -77,7 +77,7 @@ public abstract class QParser {
         Map<Object,Collection<Object>> tagMap = (Map<Object, Collection<Object>>)req.getContext().get("tags");
         if (tagMap == null) {
           tagMap = new HashMap<>();
-          context.put("tags", tagMap);          
+          context.put("tags", tagMap);
         }
         if (tagStr.indexOf(',') >= 0) {
           List<String> tags = StrUtils.splitSmart(tagStr, ',');

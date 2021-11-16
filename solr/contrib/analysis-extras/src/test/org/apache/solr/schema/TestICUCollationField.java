@@ -98,7 +98,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
       Mockito.when(loader.openResource(Mockito.anyString()))
              .thenReturn(new ByteArrayInputStream(tailoredRules.getBytes(StandardCharsets.UTF_8)));
     } else {
-      loader = new FilesystemResourceLoader(confDir.toPath());
+      loader = new FilesystemResourceLoader(confDir.toPath(), TestICUCollationField.class.getClassLoader());
     }
     final Collator readCollator = ICUCollationField.createFromRules(osFileName, loader);
     assertEquals(tailoredCollator, readCollator);

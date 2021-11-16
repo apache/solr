@@ -23,7 +23,7 @@
 
 
  For more information, on how to customize this file, please see
- http://lucene.apache.org/solr/guide/documents-fields-and-schema-design.html
+ http://lucene.apache.org/solr/guide/fields-and-schema-design.html
 
  PERFORMANCE NOTE: this schema includes many optional features and should not
  be used for benchmarking.  To improve performance one could
@@ -401,7 +401,7 @@
     <!-- Similarity is the scoring routine for each document vs. a query.
        A custom Similarity or SimilarityFactory may be specified here, but
        the default is fine for most applications.
-       For more info: http://lucene.apache.org/solr/guide/other-schema-elements.html#OtherSchemaElements-Similarity
+       For more info: http://lucene.apache.org/solr/guide/schema-elements.html#similarity
     -->
     <!--
      <similarity class="com.example.solr.CustomSimilarityFactory">
