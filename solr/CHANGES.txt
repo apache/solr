@@ -398,6 +398,8 @@ Other Changes
 
 * SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
 
+* SOLR-15784: Remove SolrJ dependency on commons-io. (Mike Drob)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
