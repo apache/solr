@@ -348,7 +348,7 @@ public class Assign {
       if (!liveNodes.containsAll(createNodeList)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "At least one of the node(s) specified " + createNodeList + " are not currently active in "
-                + createNodeList + ", no action taken.");
+                + liveNodes + ", no action taken.");
       }
       // the logic that was extracted to this method used to create a defensive copy but no code
       // was modifying the copy, if this method is made protected or public we want to go back to that
@@ -370,8 +370,8 @@ public class Assign {
     }
     if (!anyLiveNodes) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "None of the node(s) specified " + createNodeList + " are not currently active in "
-              + createNodeList + ", no action taken.");
+          "None of the node(s) specified " + createNodeList + " are currently active in "
+              + liveNodes + ", no action taken.");
     }
     return createNodeList; // unmodified, but return for inline use. Only modified if empty, and that will throw an error
   }

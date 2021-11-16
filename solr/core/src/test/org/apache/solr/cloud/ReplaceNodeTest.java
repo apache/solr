@@ -164,9 +164,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
     // make sure all newly created replicas on node are active
     List<Replica> newReplicas = collection.getReplicas(node2bdecommissioned);
-    replicas.forEach(r -> {
-      newReplicas.removeIf(nr -> nr.getName().equals(r.getName()));
-    });
+    replicas.forEach(r -> newReplicas.removeIf(nr -> nr.getName().equals(r.getName())));
     assertFalse(newReplicas.isEmpty());
     for (Replica r : newReplicas) {
       assertEquals(r.toString(), Replica.State.ACTIVE, r.getState());
