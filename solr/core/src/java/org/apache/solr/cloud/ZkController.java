@@ -73,7 +73,13 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.*;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrCoreInitializationException;
+import org.apache.solr.core.NodeRole;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -100,7 +106,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 /**
@@ -461,7 +466,6 @@ public class ZkController implements Closeable {
     });
 
     init();
-    persistRoles();
 
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       this.overseerJobQueue = null;
@@ -474,28 +478,6 @@ public class ZkController implements Closeable {
         getNodeName(), zkStateReader);
 
     assert ObjectReleaseTracker.track(this);
-  }
-
-  @SuppressWarnings("unchecked")
-  private void persistRoles() throws InterruptedException {
-    try {
-      zkClient.atomicUpdate(ZkStateReader.ROLES,
-              bytes -> {
-                Map<String, Object> map = bytes == null ? null :
-                        (Map<String, Object>) Utils.fromJSON(bytes);
-                map = cc.nodeRole.modifyRoleData(map,
-                        getNodeName());
-                return map == null ? null : Utils.toJSON(map);
-              });
-      if (cc.nodeRole.role() == NodeRole.Type.overseer) {
-        getOverseerCollectionQueue()
-                .offer(Utils.toJSON(Utils.makeMap(ACTION, ADDROLE.name(),
-                        "role", NodeRole.Type.overseer,
-                        "node", getNodeName())));
-      }
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "can't update roles");
-    }
   }
 
   /**
@@ -873,6 +855,7 @@ public class ZkController implements Closeable {
       throws KeeperException, InterruptedException, IOException {
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
     byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
@@ -1105,6 +1088,11 @@ public class ZkController implements Closeable {
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+    if(cc.nodeRole.role() != NodeRole.Type.data) {
+      //this is a non-data node
+      ops.add(Op.create(ZkStateReader.NODE_ROLES + "/" + nodeName, Utils.toJSON(cc.nodeRole), zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+
+    }
     zkClient.multi(ops, true);
   }
 
@@ -2210,6 +2198,10 @@ public class ZkController implements Closeable {
 
   public void checkOverseerDesignate() {
     try {
+      if(cc.nodeRole.role() == NodeRole.Type.overseer) {
+        setPreferredOverseer();
+        return;
+      }
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if (data == null) return;
       Map<?,?> roles = (Map<?,?>) Utils.fromJSON(data);
@@ -2217,17 +2209,21 @@ public class ZkController implements Closeable {
       List<?> nodeList = (List<?>) roles.get("overseer");
       if (nodeList == null) return;
       if (nodeList.contains(getNodeName())) {
-        ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT),
-            "node", getNodeName(),
-            "role", "overseer");
-        log.info("Going to add role {} ", props);
-        getOverseerCollectionQueue().offer(Utils.toJSON(props));
+       setPreferredOverseer();
       }
     } catch (NoNodeException nne) {
       return;
     } catch (Exception e) {
       log.warn("could not read the overseer designate ", e);
     }
+  }
+
+  private void setPreferredOverseer() throws KeeperException, InterruptedException {
+    ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT),
+        "node", getNodeName(),
+        "role", "overseer");
+    log.info("Going to add role {} ", props);
+    getOverseerCollectionQueue().offer(Utils.toJSON(props));
   }
 
   public CoreContainer getCoreContainer() {
