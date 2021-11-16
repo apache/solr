@@ -343,7 +343,12 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           return;
         }
       } else {
-        klas = coreContainer.getResourceLoader().findClass(klassInfo.className, Object.class);
+        try {
+          klas = coreContainer.getResourceLoader().findClass(klassInfo.className, Object.class);
+        } catch (Exception e) {
+          errs.add("Error loading class " + e.toString());
+          return;
+        }
         pkgVersion = null;
       }
       if (!Modifier.isPublic(klas.getModifiers())) {
