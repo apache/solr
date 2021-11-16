@@ -419,6 +419,8 @@ Bug Fixes
 
 * SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
 
+* SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
+
 ==================  8.11.1 ==================
 
 Bug Fixes
