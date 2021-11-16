@@ -520,8 +520,9 @@ public class Assign {
 
       boolean hasCrawledReplicas = false;
       HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount = new HashMap<>();
+      int i = 0;
       for (AssignRequest assignRequest : assignRequests) {
-        List<String> nodeList = assignRequest.nodes; // can this be empty list?
+        List<String> nodeList = assignRequest.nodes;
 
         // if nodelist was empty, this map will be empty too. (passing null above however gets a full map)
         if (nodeList == null || nodeList.isEmpty()) {
@@ -541,7 +542,6 @@ public class Assign {
         // Throw an error if there aren't any live nodes.
         checkAnyLiveNodes(nodeList, solrCloudManager.getClusterStateProvider().getClusterState());
 
-        int i = 0;
         for (String aShard : assignRequest.shardNames) {
           for (Map.Entry<Replica.Type, Integer> e : countsPerReplicaType(assignRequest).entrySet()) {
             for (int j = 0; j < e.getValue(); j++) {
