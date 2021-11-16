@@ -170,6 +170,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15790: SearchHandler now includes the `rid` value in the Logging MDC for the duration of the request, allowing custom logging
   configurations to include it. (hossman)
 
+* SOLR-15785: Custom node request handlers/endpoints that weren't in packages can now be located in JARs in solr-home/lib,
+  not just WEB-INF/lib. (Nazerke Seidan, David Smiley)
+
 Build
 ---------------------
 
@@ -420,8 +423,6 @@ Bug Fixes
 * SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
 
 * SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
-
-* SOLR-15785: Custom node request handlers/endpoints that weren't in packages can now be located in JARs in solr-home/lib, not just WEB-INF/lib. (Nazerke Seidan, David Smiley)
 
 ==================  8.11.1 ==================
 
