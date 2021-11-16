@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Pair;
@@ -45,35 +44,8 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 public class CollectionApiMapping {
 
   public enum Meta implements CommandMeta {
-    CREATE_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
-        POST,
-        CREATESHARD,
-        "create",
-        Map.of("createNodeSet", V2ApiConstants.NODE_SET),
-        Map.of("property.", "coreProperties.")) {
-      @Override
-      public String getParamSubstitute(String param) {
-        return super.getParamSubstitute(param);
-      }
-    },
-    SPLIT_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
-        POST,
-        SPLITSHARD,
-        "split",
-        Map.of("split.key", "splitKey"),
-        Map.of("property.", "coreProperties.")),
-    DELETE_SHARD(PER_COLLECTION_PER_SHARD_DELETE,
-        DELETE, DELETESHARD),
-
-    CREATE_REPLICA(PER_COLLECTION_SHARDS_COMMANDS,
-        POST,
-        ADDREPLICA,
-        "add-replica",
-        null,
-        Map.of("property.", "coreProperties.")),
-
-    DELETE_REPLICA(PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE,
-        DELETE, DELETEREPLICA),
+    DELETE_SHARD(PER_COLLECTION_PER_SHARD_DELETE, DELETE, DELETESHARD),
+    DELETE_REPLICA(PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE, DELETE, DELETEREPLICA),
     SYNC_SHARD(PER_COLLECTION_PER_SHARD_COMMANDS,
         POST,
         CollectionAction.SYNCSHARD,
@@ -198,7 +170,6 @@ public class CollectionApiMapping {
   }
 
   public enum EndPoint implements V2EndPoint {
-    PER_COLLECTION_SHARDS_COMMANDS("collections.collection.shards.Commands"),
     PER_COLLECTION_PER_SHARD_COMMANDS("collections.collection.shards.shard.Commands"),
     PER_COLLECTION_PER_SHARD_DELETE("collections.collection.shards.shard.delete"),
     PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE("collections.collection.shards.shard.replica.delete");
