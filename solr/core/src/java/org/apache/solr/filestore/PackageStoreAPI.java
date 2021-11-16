@@ -334,16 +334,18 @@ public class PackageStoreAPI {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.add(CommonParams.WT, FILE_STREAM);
       req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
-      rsp.add(FILE_STREAM, (SolrCore.RawWriter) os -> {
-        packageStore.get(path, (it) -> {
+      rsp.add(FILE_STREAM, (SolrCore.RawWriter) os ->
+        packageStore.get(path, it -> {
           try {
-            it.getInputStream().transferTo(os);
+            InputStream inputStream = it.getInputStream();
+            if (inputStream != null) {
+              inputStream.transferTo(os);
+            }
           } catch (IOException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
           }
-        }, false);
-
-      });
+        }, false)
+      );
     }
 
   }
