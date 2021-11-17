@@ -19,6 +19,8 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
@@ -90,39 +92,26 @@ class SimpleClusterAbstractionsImpl {
 
   private static Set<String> filterNonDataNodes(SolrCloudManager solrCloudManager) {
     Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
-    Set<String> liveNodesCopy = liveNodes;
+    AtomicReference<Set<String>> liveNodesCopy = new AtomicReference<>(liveNodes);
     try {
-      List<String> nodesWithRoles =  solrCloudManager.getDistribStateManager().listData(ZkStateReader.NODE_ROLES);
-      if(!nodesWithRoles.isEmpty()) {
-        for (String node : nodesWithRoles) {
-          VersionedData data = null;
-          try {
-            data = solrCloudManager.getDistribStateManager()
-                    .getData(ZkStateReader.NODE_ROLES + "/" + node);
-          } catch (NoSuchElementException e) {
-            //this node probably went down
-            continue;
-          }
-          if(data != null && data.getData() != null && data.getData().length >0) {
-            @SuppressWarnings("unchecked")
-            Map<String,Object> map = (Map<String, Object>) Utils.fromJSON(data.getData());
-            if(Boolean.FALSE.equals(map.get("hasData"))) {
-              if(liveNodesCopy == liveNodes) {
-                //the map provided should not be modified. So we make a copy
-                liveNodesCopy = new HashSet<>(liveNodes);
-              }
-              liveNodesCopy.remove(node);
-            }
-          }
-        }
-      }
+     solrCloudManager.getDistribStateManager().forEachChild(ZkStateReader.NODE_ROLES, (name, data) -> {
+       if(data != null && data.getData() != null && data.getData().length >0) {
+         @SuppressWarnings("unchecked")
+         Map<String,Object> map = (Map<String, Object>) Utils.fromJSON(data.getData());
+         if(Boolean.FALSE.equals(map.get("hasData"))) {
+           if(liveNodesCopy.get() == liveNodes) {
+             //the map provided should not be modified. So we make a copy
+             liveNodesCopy.set(new HashSet<>(liveNodes));
+           }
+           liveNodesCopy.get().remove(name);
+         }
+       }
+     });
 
-    } catch (NoSuchElementException nsee) {
-      //no problem
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to communicate with Zookeeper");
     }
-    return liveNodesCopy;
+    return liveNodesCopy.get();
   }
 
 

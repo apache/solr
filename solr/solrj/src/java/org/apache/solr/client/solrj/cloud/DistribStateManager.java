@@ -24,8 +24,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import java.util.function.BiConsumer;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -138,6 +140,27 @@ public interface DistribStateManager extends SolrCloseable {
         if (!ignoreMissing) {
           throw e;
         }
+      }
+    }
+  }
+  default void  forEachChild(String path,  BiConsumer<String, VersionedData> fun)
+          throws InterruptedException, IOException, KeeperException {
+    List<String> children = null;
+    try {
+      children = listData(ZkStateReader.NODE_ROLES);
+    } catch (NoSuchElementException e) {
+      return;
+    }
+    if(!children.isEmpty()) {
+      for (String node : children) {
+        VersionedData data = null;
+        try {
+          data = getData(ZkStateReader.NODE_ROLES + "/" + node);
+        } catch (NoSuchElementException e) {
+          //this node probably was deleted
+          continue;
+        }
+        fun.accept(node, data);
       }
     }
   }
