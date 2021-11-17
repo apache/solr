@@ -270,11 +270,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       log.debug("No contentType specified");
       return null;
     }
-    contentType = contentType.split(";")[0].trim().toLowerCase(Locale.ROOT); // Strip away charset part
-    if (!KNOWN_MIME_TYPES.contains(contentType)) {
+    String rawContentType = contentType.split(";")[0].trim().toLowerCase(Locale.ROOT); // Strip away charset part
+    if (!KNOWN_MIME_TYPES.contains(rawContentType)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Requested content type '" + contentType + "' is not supported.");
     }
-    if (contentType.contains("html")) {
+    if (rawContentType.contains("html")) {
       log.info("Using text/plain instead of {}", contentType);
       return "text/plain";
     }

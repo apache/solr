@@ -172,8 +172,8 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     assertEquals("text/plain", ShowFileRequestHandler.getSafeContentType("application/xhtml+xml"));
 
     // Content-type with charset
-    assertEquals("text/csv", ShowFileRequestHandler.getSafeContentType("text/csv ; charset=utf-8"));
-    assertEquals("text/xml", ShowFileRequestHandler.getSafeContentType("text/xml;charset=utf-8"));
+    assertEquals("text/csv ; charset=utf-8", ShowFileRequestHandler.getSafeContentType("text/csv ; charset=utf-8"));
+    assertEquals("text/xml;charset=utf-8", ShowFileRequestHandler.getSafeContentType("text/xml;charset=utf-8"));
 
     // Null
     assertNull(ShowFileRequestHandler.getSafeContentType(null));
