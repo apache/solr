@@ -946,6 +946,14 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
+      if(nodeRole.role() == NodeRole.Type.overseer) {
+        try {
+          log.info("This node is started as an overseer");
+          zkSys.getZkController().setPreferredOverseer();
+        } catch (KeeperException | InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      }
       if (!distributedCollectionCommandRunner.isPresent()) {
         zkSys.getZkController().checkOverseerDesignate();
       }
