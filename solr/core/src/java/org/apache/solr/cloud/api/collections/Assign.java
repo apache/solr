@@ -257,17 +257,16 @@ public class Assign {
   public static void filterNonDataNodes(DistribStateManager zk, List<String> liveNodes) {
     try {
      zk.forEachChild(ZkStateReader.NODE_ROLES, (name, data) -> {
-       if(data != null && data.getData() != null && data.getData().length >0) {
+       if (data != null && data.getData() != null && data.getData().length > 0) {
          @SuppressWarnings("unchecked")
-         Map<String,Object> map = (Map<String, Object>) Utils.fromJSON(data.getData());
-         if(Boolean.FALSE.equals(map.get(NodeRole.HAS_DATA))) {
+         List<String> roles = (List<String>) Utils.fromJSON(data.getData());
+         if (roles.contains(NodeRole.Role.DATA.toString()) == false) {
            liveNodes.remove(name);
          }
        }
      });
-
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to communicate with Zookeeper");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Problem fetching roles from Zookeeper", e);
     }
   }
 

@@ -18,6 +18,7 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 
 import com.google.common.collect.Maps;
@@ -46,6 +47,8 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
@@ -74,17 +77,19 @@ public class ClusterAPI {
     this.collectionsHandler = ch;
     this.configSetsHandler = configSetsHandler;
   }
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @EndPoint(method = GET,
           path = "/cluster/node-roles",
           permission = COLL_READ_PERM)
   @SuppressWarnings("unchecked")
+  // nocommit: it must also output all data nodes that didn't start with -Dsolr.node.roles
   public void roles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    Map <String, Map<String,Object>> result = new LinkedHashMap<>();
+    Map <String, List<String>> result = new LinkedHashMap<>();
     collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().
             forEachChild(ZkStateReader.NODE_ROLES, (node, data) -> {
-      if(data != null && data.getData() != null) {
-        result.put(node, (Map<String, Object>) Utils.fromJSON(data.getData()));
+      if (data != null && data.getData() != null) {
+        result.put(node, ((List<String>) Utils.fromJSON(data.getData())));
       }
     });
     rsp.add("node-roles", result);
@@ -102,10 +107,10 @@ public class ClusterAPI {
   public static List<String> getNodesByRole(String role, DistribStateManager zk) throws InterruptedException, IOException, KeeperException {
     List<String> result = new ArrayList<>();
     zk.forEachChild(ZkStateReader.NODE_ROLES, (node, data) -> {
-      if(data != null && data.getData() != null) {
+      if (data != null && data.getData() != null) {
         @SuppressWarnings("unchecked")
-        Map<String, Object> roleData = (Map<String, Object>) Utils.fromJSON(data.getData());
-        if(role.equals(roleData.get("role"))) {
+        List<String> rolesData = (List<String>) Utils.fromJSON(data.getData());
+        if (rolesData.contains(role)) {
           result.add(node);
         }
       }
