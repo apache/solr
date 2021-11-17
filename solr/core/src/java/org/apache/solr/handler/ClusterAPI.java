@@ -17,8 +17,7 @@
 
 package org.apache.solr.handler;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.api.Command;
@@ -31,6 +30,7 @@ import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -71,6 +71,42 @@ public class ClusterAPI {
     this.collectionsHandler = ch;
     this.configSetsHandler = configSetsHandler;
   }
+
+  @EndPoint(method = GET,
+          path = "/cluster/node-roles",
+          permission = COLL_READ_PERM)
+  public void roles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    Map <String, Map<String,Object>> result = new LinkedHashMap<>();
+    collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().
+            forEachChild(ZkStateReader.NODE_ROLES, (node, data) -> {
+      if(data != null && data.getData() != null) {
+        result.put(node, (Map<String, Object>) Utils.fromJSON(data.getData()));
+      }
+    });
+    rsp.add("node-roles", result);
+  }
+
+  @EndPoint(method = GET,
+          path = "/cluster/node-roles/{role}",
+          permission = COLL_READ_PERM)
+  public void rolesOfNode(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    String role = req.getPathTemplateValues().get("role");
+
+    List<String> result = new ArrayList<>();
+    collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().
+            forEachChild(ZkStateReader.NODE_ROLES, (node, data) -> {
+
+      if(data != null && data.getData() != null) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> roleData = (Map<String, Object>) Utils.fromJSON(data.getData());
+        if(role.equals(roleData.get("role"))) {
+          result.add(node);
+        }
+      }
+    });
+    rsp.add("nodes", result);
+  }
+
 
   @EndPoint(method = GET,
       path = "/cluster/aliases",
