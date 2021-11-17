@@ -17,15 +17,18 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.impl.ZkDistribStateManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
@@ -59,11 +62,18 @@ public class OverseerNodePrioritizer {
 
   public synchronized void prioritizeOverseerNodes(String overseerId) throws Exception {
     SolrZkClient zk = zkStateReader.getZkClient();
-    if(!zk.exists(ZkStateReader.ROLES,true))return;
-    Map<?,?> m = (Map<?,?>) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
+    List<String> overseerDesignates = new ArrayList<>();
+    if(zk.exists(ZkStateReader.ROLES,true)) {
+      Map<?,?> m = (Map<?,?>) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
+      @SuppressWarnings("unchecked")
+      List<String> l = (List<String>) m.get("overseer");
+      if(l != null) {
+        overseerDesignates.addAll(l);
+      }
+    }
 
-    List<?> overseerDesignates = (List<?>) m.get("overseer");
-    if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
+    overseerDesignates.addAll(ClusterAPI.getNodesByRole("overseer", new ZkDistribStateManager(zkStateReader.getZkClient())));
+    if(overseerDesignates.isEmpty()) return;
     String ldr = OverseerTaskProcessor.getLeaderNode(zk);
     if(overseerDesignates.contains(ldr)) return;
     log.info("prioritizing overseer nodes at {} overseer designates are {}", overseerId, overseerDesignates);

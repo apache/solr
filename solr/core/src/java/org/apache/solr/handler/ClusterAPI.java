@@ -17,12 +17,14 @@
 
 package org.apache.solr.handler;
 
+import java.io.IOException;
 import java.util.*;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
 import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
@@ -43,6 +45,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.zookeeper.KeeperException;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
@@ -92,11 +95,13 @@ public class ClusterAPI {
           permission = COLL_READ_PERM)
   public void nodesWithRole(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String role = req.getPathTemplateValues().get("role");
+    rsp.add("nodes",
+            getNodesByRole(role, collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager()));
+  }
 
+  public static List<String> getNodesByRole(String role, DistribStateManager zk) throws InterruptedException, IOException, KeeperException {
     List<String> result = new ArrayList<>();
-    collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().
-            forEachChild(ZkStateReader.NODE_ROLES, (node, data) -> {
-
+    zk.forEachChild(ZkStateReader.NODE_ROLES, (node, data) -> {
       if(data != null && data.getData() != null) {
         @SuppressWarnings("unchecked")
         Map<String, Object> roleData = (Map<String, Object>) Utils.fromJSON(data.getData());
@@ -105,7 +110,7 @@ public class ClusterAPI {
         }
       }
     });
-    rsp.add("nodes", result);
+    return result;
   }
 
 

@@ -2198,10 +2198,6 @@ public class ZkController implements Closeable {
 
   public void checkOverseerDesignate() {
     try {
-      if(cc.nodeRole.role() == NodeRole.Type.overseer) {
-        setPreferredOverseer();
-        return;
-      }
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if (data == null) return;
       Map<?,?> roles = (Map<?,?>) Utils.fromJSON(data);
@@ -2218,10 +2214,11 @@ public class ZkController implements Closeable {
     }
   }
 
-  private void setPreferredOverseer() throws KeeperException, InterruptedException {
+  public void setPreferredOverseer() throws KeeperException, InterruptedException {
     ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT),
         "node", getNodeName(),
-        "role", "overseer");
+        "role", "overseer",
+        "persist", "false");
     log.info("Going to add role {} ", props);
     getOverseerCollectionQueue().offer(Utils.toJSON(props));
   }
