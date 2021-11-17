@@ -565,7 +565,7 @@ Improvements
 
 * SOLR-15610: log4j-layout-template-json is now included in solr server, allowing JSON formatted logs to be configurable. (hossman)
 
-* SOLR-15607: Explicitly indent results in Admin Query UI by default (Olvia Falk via Eric Pugh)
+* SOLR-15607: Explicitly indent results in Admin Query UI by default (Olivia Falk via Eric Pugh)
 
 * SOLR-15555: Identical filter queries will no longer race to record a filterCache entry. Allows for async cache computation instead of
   all queries contending for the same set of locks on the cache. Fixed a bug with ramBytes usage reporting on filterCache.
