@@ -143,21 +143,21 @@ public interface DistribStateManager extends SolrCloseable {
       }
     }
   }
-  default void  forEachChild(String path,  BiConsumer<String, VersionedData> fun)
+  default void forEachChild(String path, BiConsumer<String, VersionedData> fun)
           throws InterruptedException, IOException, KeeperException {
     List<String> children = null;
     try {
-      children = listData(ZkStateReader.NODE_ROLES);
+      children = listData(path);
     } catch (NoSuchElementException e) {
       return;
     }
-    if(!children.isEmpty()) {
-      for (String node : children) {
+    if (!children.isEmpty()) {
+      for (String node: children) {
         VersionedData data = null;
         try {
-          data = getData(ZkStateReader.NODE_ROLES + "/" + node);
+          data = getData(path + "/" + node);
         } catch (NoSuchElementException e) {
-          //this node probably was deleted
+          // this node must've been deleted
           continue;
         }
         fun.accept(node, data);

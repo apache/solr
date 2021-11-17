@@ -17,53 +17,62 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
+
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class NodeRole implements MapWriter {
-  private boolean hasData = true;
-  private Type role  =Type.data;
+public class NodeRole implements IteratorWriter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final String NODE_ROLES_PROP = "solr.node.roles";
+
+  private final Set<Role> roles;
 
   public NodeRole(String role) {
     if (StringUtils.isEmpty(role)) {
+      // if no roles were specified, assume "data" role for backcompat reasons
+      roles = Set.of(Role.DATA);
       return;
     }
-    Set<String> roles = new HashSet<>(StrUtils.split(role, ','));
-    if (roles.isEmpty()) return;
-    for (String s : roles) {
-      if (Type.data.name().equals(s)) {
-        hasData = true;
-        continue;
-      }
-      if (Type.overseer.name().equals(s)) {
-        this.role = Type.overseer;
-        hasData = false;
-      } else {
-        throw new RuntimeException("Unknown type");
-      }
+    Set<String> rolesSet = new HashSet<>(StrUtils.split(role, ','));
+    if (rolesSet.isEmpty()) {
+      // if no roles were specified, assume "data" role for backcompat reasons
+      roles = Set.of(Role.DATA);
+      return;
     }
-
+    roles = new TreeSet<>();
+    for (String r: rolesSet) {
+      roles.add(Role.valueOfCaseInsensitive(r));
+    }
   }
 
-  public boolean hasData() {
-    return hasData;
-  }
-
-  public Type role() {
-    return role;
+  public Set<Role> getRoles() {
+    return roles;
   }
 
   @Override
-  public void writeMap(EntryWriter ew) throws IOException {
-    ew.put(HAS_DATA, hasData);
-    ew.put("role", role.name());
+  public void writeIter(ItemWriter iw) throws IOException {
+    for (Role role: roles) iw.add(role.toString());
   }
 
-  public enum Type {
-    data, overseer;
+  public enum Role {
+    DATA, OVERSEER;
+
+    public static Role valueOfCaseInsensitive(String value) {
+      // Given a user string "overseer", convert to OVERSEER and return the enum value
+      String canonicalValue = value.toUpperCase().replace(' ', '_');
+      return Role.valueOf(canonicalValue);
+    }
+
+    @Override
+    public String toString() {
+      return super.toString().toLowerCase();
+    }
   }
-  public static final String HAS_DATA = "hasData";
-  public static final String NODE_ROLE = "solr.node.role";
 }

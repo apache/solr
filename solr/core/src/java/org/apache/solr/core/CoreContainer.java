@@ -246,7 +246,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRole nodeRole = new NodeRole(System.getProperty(NodeRole.NODE_ROLE));
+  public final NodeRole nodeRoles = new NodeRole(System.getProperty(NodeRole.NODE_ROLES_PROP));
 
   private final ClusterSingletons clusterSingletons = new ClusterSingletons(
       () -> getZkController() != null &&
@@ -947,7 +947,7 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
-      if(nodeRole.role() == NodeRole.Type.overseer) {
+      if (nodeRoles.getRoles().contains(NodeRole.Role.OVERSEER)) {
         try {
           log.info("This node is started as an overseer");
           zkSys.getZkController().setPreferredOverseer();

@@ -79,7 +79,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
-import org.apache.solr.core.NodeRole;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -1088,11 +1087,11 @@ public class ZkController implements Closeable {
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
-    if(cc.nodeRole.role() != NodeRole.Type.data) {
-      //this is a non-data node
-      ops.add(Op.create(ZkStateReader.NODE_ROLES + "/" + nodeName, Utils.toJSON(cc.nodeRole), zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
 
-    }
+    // Create the roles node as well
+    ops.add(Op.create(ZkStateReader.NODE_ROLES + "/" + nodeName,
+            Utils.toJSON(cc.nodeRoles), zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+
     zkClient.multi(ops, true);
   }
 
