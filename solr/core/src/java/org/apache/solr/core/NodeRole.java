@@ -31,10 +31,7 @@ public class NodeRole implements MapWriter {
       return;
     }
     Set<String> roles = new HashSet<>(StrUtils.split(role, ','));
-    if (roles.isEmpty()) {
-      hasData = true;
-      return;
-    }
+    if (roles.isEmpty()) return;
     for (String s : roles) {
       if (Type.data.name().equals(s)) {
         hasData = true;
@@ -42,6 +39,7 @@ public class NodeRole implements MapWriter {
       }
       if (Type.overseer.name().equals(s)) {
         this.role = Type.overseer;
+        hasData = false;
       } else {
         throw new RuntimeException("Unknown type");
       }
@@ -59,16 +57,13 @@ public class NodeRole implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    ew.put("hasData", hasData);
+    ew.put(HAS_DATA, hasData);
     ew.put("role", role.name());
   }
 
   public enum Type {
     data, overseer;
   }
-
-
-
-  public static final String NO_REPLICAS = "no-replicas";
-
+  public static final String HAS_DATA = "hasData";
+  public static final String NODE_ROLE = "solr.node.role";
 }

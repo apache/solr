@@ -51,7 +51,9 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeRole;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -227,7 +229,9 @@ public class Assign {
     return false;
   }
 
-  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
+  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random,
+                                                               DistribStateManager zk) {
+
     List<String> nodeList;
     final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
@@ -243,10 +247,28 @@ public class Assign {
       }
     } else {
       nodeList = new ArrayList<>(liveNodes);
+      filterNonDataNodes(zk, nodeList);
       Collections.shuffle(nodeList, random);
     }
 
     return nodeList;
+  }
+
+  public static void filterNonDataNodes(DistribStateManager zk, List<String> liveNodes) {
+    try {
+     zk.forEachChild(ZkStateReader.NODE_ROLES, (name, data) -> {
+       if(data != null && data.getData() != null && data.getData().length >0) {
+         @SuppressWarnings("unchecked")
+         Map<String,Object> map = (Map<String, Object>) Utils.fromJSON(data.getData());
+         if(Boolean.FALSE.equals(map.get(NodeRole.HAS_DATA))) {
+           liveNodes.remove(name);
+         }
+       }
+     });
+
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to communicate with Zookeeper");
+    }
   }
 
   static class ReplicaCount {

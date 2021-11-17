@@ -246,7 +246,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRole nodeRole = new NodeRole(System.getProperty("node.roles"));
+  public final NodeRole nodeRole = new NodeRole(System.getProperty(NodeRole.NODE_ROLE));
 
   private final ClusterSingletons clusterSingletons = new ClusterSingletons(
       () -> getZkController() != null &&

@@ -75,6 +75,7 @@ public class ClusterAPI {
   @EndPoint(method = GET,
           path = "/cluster/node-roles",
           permission = COLL_READ_PERM)
+  @SuppressWarnings("unchecked")
   public void roles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     Map <String, Map<String,Object>> result = new LinkedHashMap<>();
     collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().
@@ -89,7 +90,7 @@ public class ClusterAPI {
   @EndPoint(method = GET,
           path = "/cluster/node-roles/{role}",
           permission = COLL_READ_PERM)
-  public void rolesOfNode(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void nodesWithRole(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String role = req.getPathTemplateValues().get("role");
 
     List<String> result = new ArrayList<>();
