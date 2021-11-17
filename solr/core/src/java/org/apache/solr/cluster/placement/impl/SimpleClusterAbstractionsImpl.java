@@ -19,23 +19,16 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.*;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 
 import javax.annotation.Nonnull;
 
@@ -63,8 +56,7 @@ class SimpleClusterAbstractionsImpl {
     private final ClusterState clusterState;
 
     ClusterImpl(SolrCloudManager solrCloudManager) throws IOException {
-      Set<String> liveNodes = filterNonDataNodes(solrCloudManager);
-      this.liveNodes = NodeImpl.getNodes(liveNodes);
+      liveNodes = NodeImpl.getNodes(solrCloudManager.getClusterStateProvider().getLiveNodes());
       clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
     }
 
@@ -88,30 +80,6 @@ class SimpleClusterAbstractionsImpl {
     public Iterable<SolrCollection> collections() {
       return ClusterImpl.this::iterator;
     }
-  }
-
-  private static Set<String> filterNonDataNodes(SolrCloudManager solrCloudManager) {
-    Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
-    AtomicReference<Set<String>> liveNodesCopy = new AtomicReference<>(liveNodes);
-    try {
-     solrCloudManager.getDistribStateManager().forEachChild(ZkStateReader.NODE_ROLES, (name, data) -> {
-       if(data != null && data.getData() != null && data.getData().length >0) {
-         @SuppressWarnings("unchecked")
-         Map<String,Object> map = (Map<String, Object>) Utils.fromJSON(data.getData());
-         if(Boolean.FALSE.equals(map.get("hasData"))) {
-           if(liveNodesCopy.get() == liveNodes) {
-             //the map provided should not be modified. So we make a copy
-             liveNodesCopy.set(new HashSet<>(liveNodes));
-           }
-           liveNodesCopy.get().remove(name);
-         }
-       }
-     });
-
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to communicate with Zookeeper");
-    }
-    return liveNodesCopy.get();
   }
 
 
