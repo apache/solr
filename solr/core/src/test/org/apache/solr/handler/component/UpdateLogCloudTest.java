@@ -29,6 +29,8 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.MockDirectoryFactory;
+import org.apache.solr.core.StandardDirectoryFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -36,12 +38,20 @@ import org.junit.Test;
 
 public class UpdateLogCloudTest extends SolrCloudTestCase {
 
+  private static Boolean expectVersionsAfterRestart = null;
   private static String COLLECTION;
   private static final int NUM_SHARDS = 1;
   private static final int NUM_REPLICAS = 4;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    // choose a directory factory
+    expectVersionsAfterRestart = random().nextBoolean();
+    System.setProperty("solr.directoryFactory",
+        (expectVersionsAfterRestart
+            ? StandardDirectoryFactory.class.getCanonicalName()
+                : MockDirectoryFactory.class.getCanonicalName()));
+
     // create and configure cluster
     configureCluster(NUM_SHARDS*NUM_REPLICAS /* nodeCount */)
     .addConfig("conf", configset("cloud-dynamic"))
@@ -82,6 +92,14 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
       solrClients.add(jettySolrRunner.newClient());
     }
 
+    new UpdateRequest()
+    .add(sdoc("id", "0", "a_t", "zero"))
+    .commit(cluster.getSolrClient(), COLLECTION);
+
+    for (SolrClient solrClient : solrClients) {
+      implTest(solrClient, 1);
+    }
+
     cluster.getJettySolrRunner(specialIdx).stop();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
@@ -96,7 +114,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
 
     int idx = 0;
     for (SolrClient solrClient : solrClients) {
-      implTest(solrClient, idx==specialIdx ? 0 : 3);
+      implTest(solrClient, idx==specialIdx ? (expectVersionsAfterRestart ? 4 : 0) : 4);
       ++idx;
     }
 
