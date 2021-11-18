@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-var contentTypeMap = { xml : 'text/xml', html : 'text/xml', js : 'text/javascript', json : 'application/json', 'css' : 'text/plain' };
+var contentTypeMap = { xml : 'application/xml', html : 'application/xml', js : 'application/javascript', json : 'application/json', css : 'text/plain' };
 var languages = {js: "javascript", xml:"xml", xsl:"xml", vm: "xml", html: "xml", json: "json"};
 
 solrAdminApp.controller('FilesController',
