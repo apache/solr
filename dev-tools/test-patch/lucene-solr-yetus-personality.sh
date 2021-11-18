@@ -113,11 +113,11 @@ function personality_modules
   case ${moduleType} in
     submodules)
       for module in "${CHANGED_MODULES[@]}"; do
-        if [[ ! "${module}" =~ ^lucene/(licenses|site) ]]; then # blacklist lucene/ dirs that aren't modules
+        if [[ ! "${module}" =~ ^lucene/(licenses|site) ]]; then # disallow lucene/ dirs that aren't modules
           if [[ "${module}" =~ ^(lucene/(analysis/[^/]+|[^/]+)) ]]; then
             local lucene_module=${BASH_REMATCH[0]}
             personality_enqueue_module "${lucene_module}" "${extra}"
-          elif [[ "${module}" =~ ^solr/(core|solrj|test-framework|solr-ref-guide|contrib/[^.]+) ]]; then # whitelist solr/ modules
+          elif [[ "${module}" =~ ^solr/(core|solrj|test-framework|solr-ref-guide|contrib/[^.]+) ]]; then # allow solr/ modules
             local solr_module=${BASH_REMATCH[0]}
             # In solr-ref-guide module, do not execute "compile" or "unit" plugins
             if [[ ! "${solr_module}" == solr/solr-ref-guide || ! ${testtype} =~ ^(compile|unit)$ ]]; then

@@ -1168,8 +1168,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
 )
 
 REM IP-based access control
-set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_WHITELIST%" ^
--Dsolr.jetty.inetaccess.excludes="%SOLR_IP_BLACKLIST%"
+set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_ALLOWLIST%" ^
+-Dsolr.jetty.inetaccess.excludes="%SOLR_IP_DENYLIST%"
 
 REM These are useful for attaching remove profilers like VisualVM/JConsole
 IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (

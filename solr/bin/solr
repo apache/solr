@@ -2073,8 +2073,8 @@ else
 fi
 
 # IP-based access control
-IP_ACL_OPTS=("-Dsolr.jetty.inetaccess.includes=${SOLR_IP_WHITELIST}" \
-             "-Dsolr.jetty.inetaccess.excludes=${SOLR_IP_BLACKLIST}")
+IP_ACL_OPTS=("-Dsolr.jetty.inetaccess.includes=${SOLR_IP_ALLOWLIST}" \
+             "-Dsolr.jetty.inetaccess.excludes=${SOLR_IP_DENYLIST}")
 
 # These are useful for attaching remote profilers like VisualVM/JConsole
 if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then

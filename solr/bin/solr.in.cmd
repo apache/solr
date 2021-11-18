@@ -118,12 +118,12 @@ REM set SOLR_JETTY_HOST=127.0.0.1
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:
 REM   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-REM set SOLR_IP_WHITELIST=
+REM set SOLR_IP_ALLOWLIST=
 
 REM Block access to solr from specific IP addresses.
 REM Specify a comma-separated list of addresses or networks, for example:
 REM   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-REM set SOLR_IP_BLACKLIST=
+REM set SOLR_IP_DENYLIST=
 
 REM Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 REM to enable https module with custom jetty configuration.
