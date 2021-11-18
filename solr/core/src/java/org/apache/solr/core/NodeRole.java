@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.*;
 
 import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
