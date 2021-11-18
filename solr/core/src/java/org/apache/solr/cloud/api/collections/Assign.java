@@ -260,7 +260,7 @@ public class Assign {
        if (data != null && data.getData() != null && data.getData().length > 0) {
          @SuppressWarnings("unchecked")
          List<String> roles = (List<String>) Utils.fromJSON(data.getData());
-         if (roles.contains(NodeRole.Role.DATA.toString()) == false) {
+         if (!roles.contains(NodeRole.Role.DATA.toString())) {
            liveNodes.remove(name);
          }
        }
