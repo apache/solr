@@ -34,6 +34,7 @@ import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,4 +169,12 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     return Category.ADMIN;
   }
 
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    if (request.getParams().get("set") != null) {
+      return Name.CONFIG_EDIT_PERM; // Change log level
+    } else {
+      return Name.CONFIG_READ_PERM;
+    }
+  }
 }
