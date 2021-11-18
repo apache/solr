@@ -405,8 +405,6 @@ Other Changes
 
 * SOLR-15791: Remove remaining unused <admin/> clauses from solrconfigs. (Eric Pugh)
 
-* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
-
 * SOLR-15784: Remove SolrJ dependency on commons-io. (Mike Drob)
 
 Bug Fixes
@@ -444,6 +442,8 @@ Bug Fixes
 * SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
 
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
+
+* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
 
 ==================  8.11.0 ==================
 
