@@ -511,6 +511,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.isSchemaDesignerEnabled = true;
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
+      $scope.usersPermissions = data.security.permissions;
 
       var currentCollectionName = $route.current.params.core;
       delete $scope.currentCollection;
@@ -610,4 +611,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   $scope.$on('$routeChangeStart', function() {
       $rootScope.exceptions = {};
   });
+
+  $scope.permissions = permissions;
+  $scope.isPermitted = function (permissions) {
+    return hasAllRequiredPermissions(permissions, $scope.usersPermissions);
+  }
 });

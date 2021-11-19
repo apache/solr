@@ -36,3 +36,16 @@ const permissions = {
   PACKAGE_READ_PERM: "package-read",
   ALL_PERM: "all"
 }
+
+/**
+ * Returns true if all required permissions are available
+ * @param requiredPermissions the permission(s) to check for, can be a single or array
+ * @param userPermissions the actual permissions of current user
+ * @returns {boolean}
+ */
+var hasAllRequiredPermissions = function (requiredPermissions, userPermissions) {
+  if (!Array.isArray(requiredPermissions)) {
+    requiredPermissions = [requiredPermissions];
+  }
+  return requiredPermissions.every(elem => userPermissions.indexOf(elem) > -1);
+}
