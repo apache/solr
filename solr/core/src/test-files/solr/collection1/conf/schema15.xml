@@ -437,14 +437,8 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
-  <!-- Poly field -->
+  <fieldType name="location" class="solr.LatLonPointSpatialField"/>
   <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
-
-  <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-  <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
   <fieldType name="text_min_hash" class="solr.TextField" positionIncrementGap="100">
     <analyzer>
@@ -540,11 +534,9 @@
   -->
   <field name="timestamp" type="date" indexed="true" stored="true"/>
 
-  <!-- Test a point field for distances -->
-  <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
+  <field name="xy" type="xy" indexed="true" stored="true" multiValued="false"/>
+  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
+
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
 
   <!-- to test uniq fields -->
@@ -566,8 +558,6 @@
   <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
 
   <field name="min_hash_analysed" type="text_min_hash" multiValued="false" indexed="true" stored="false"/>
-
-  <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>

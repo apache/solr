@@ -14,20 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
 
-import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
+package org.apache.solr.client.solrj.request.beans;
+
+import org.apache.solr.common.util.ReflectMapWriter;
 
 /**
- * @see TermQueryPrefixTreeStrategy
- * @deprecated use {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy} or {@link RptWithGeometrySpatialField}
+ * Empty payload for the POST /v2/collections/collName/shards/shardName {"force-leader": {}} API.
  */
-@Deprecated
-public class SpatialTermQueryPrefixTreeFieldType extends AbstractSpatialPrefixTreeFieldType<TermQueryPrefixTreeStrategy> {
-
-  @Override
-  protected TermQueryPrefixTreeStrategy newPrefixTreeStrategy(String fieldName) {
-    return new TermQueryPrefixTreeStrategy(grid,fieldName);
-  }
-}
-
+public class ForceLeaderPayload implements ReflectMapWriter { }

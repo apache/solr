@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.solr.core;
+package org.apache.solr.handler.api;
 
-import java.lang.invoke.MethodHandles;
+import java.util.Map;
 
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+/**
+ * Utilities helpful for common V2 API declaration tasks.
+ */
+public class V2ApiUtils {
+  private V2ApiUtils() { /* Private ctor prevents instantiation */ }
 
-public class MockConcurrentMergeScheduler extends ConcurrentMergeScheduler {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static void flattenMapWithPrefix(Map<String, Object> toFlatten, Map<String, Object> destination,
+                                    String additionalPrefix) {
+    if (toFlatten == null || toFlatten.isEmpty() || destination == null) {
+      return;
+    }
 
-  @Override
-  protected void handleMergeException(Throwable exc) {
-    // swallow the exception
-    log.warn("Merge exception:", exc);
+    toFlatten.forEach((k, v) -> destination.put(additionalPrefix + k, v));
   }
 }

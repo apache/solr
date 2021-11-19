@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 
@@ -62,7 +61,7 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
       @Override
       public void write(OutputStream os) throws IOException {
         try(var inStream = stream.getStream()) {
-          IOUtils.copy(inStream, os);
+          inStream.transferTo(os);
         }
       }
 
