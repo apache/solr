@@ -28,7 +28,6 @@ def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCK
 def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
-def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
 
 def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName','');
 
@@ -111,8 +110,7 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
 
   // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
   inputs.properties([
-          baseDockerImage: baseDockerImage,
-          githubUrlOrMirror: githubUrlOrMirror
+          baseDockerImage: baseDockerImage
   ])
   inputs.files(configurations.solrTgz)
 
@@ -123,7 +121,6 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
               "-f", "solr-${version}/docker/Dockerfile.local",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
-              "--build-arg", "GITHUB_URL=${inputs.properties.githubUrlOrMirror}",
               "-"
     }
   }
@@ -393,7 +390,6 @@ task testBuildDockerfileOfficial(type: Copy) {
             "--iidfile", imageIdFileOfficial,
             '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
             '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
-            "--build-arg", "GITHUB_URL=${githubUrlOrMirror}",
             '-'
         }
         
