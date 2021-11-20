@@ -46,7 +46,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.EmptyEntityResolver;
-import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -345,10 +344,5 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMsg);
     }
     return stream;
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    return Name.ALL;
   }
 }

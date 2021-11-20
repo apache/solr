@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -35,10 +34,5 @@ public class NotFoundRequestHandler extends RequestHandlerBase{
   @Override
   public String getDescription() {
     return "No Operation";
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    return Name.ALL;
   }
 }

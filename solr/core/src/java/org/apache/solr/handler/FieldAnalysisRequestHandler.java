@@ -29,7 +29,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.security.AuthorizationContext;
 
 import java.io.Reader;
 import java.io.IOException;
@@ -232,10 +231,5 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     }
 
     return analyzeResults;
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    return Name.READ_PERM;
   }
 }

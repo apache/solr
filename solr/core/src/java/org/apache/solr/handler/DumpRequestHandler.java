@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,21 +28,14 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAware
+public class DumpRequestHandler extends RequestHandlerBase
 {
-  private SolrCore solrCore;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   @SuppressWarnings({"unchecked"})
@@ -134,20 +126,5 @@ public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAw
       NamedList<String> nl = (NamedList<String>) args.get(PluginInfo.DEFAULTS);
       if (nl!=null) subpaths = nl.getAll("subpath");
     }
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    if (solrCore != null && solrCore.getSolrConfig().isEnableRemoteStreams()) {
-      log.warn("Dump request handler requires config-read permission when remote streams are enabled");
-      return Name.CONFIG_READ_PERM;
-    } else {
-      return Name.ALL;
-    }
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-    this.solrCore = core;
   }
 }

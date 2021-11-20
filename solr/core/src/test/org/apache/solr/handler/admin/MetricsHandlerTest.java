@@ -37,7 +37,6 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -534,11 +533,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     @Override
     public Boolean registerV2() {
       return Boolean.FALSE;
-    }
-
-    @Override
-    public Name getPermissionName(AuthorizationContext request) {
-      return Name.METRICS_READ_PERM;
     }
   }
 }
