@@ -176,6 +176,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15376: Accept "Long" values for CollectionAdminRequest.CreateTimeRoutedAlias.setMaxFutureMs
   to support durations greater than ~ 25 days. (Nahian-Al Hasan, Gus Heck, Christine Poerschke)
 
+* SOLR-15427: Nested docs: [child limit=...] now defaults to -1 which is interpreted as unlimited.
+  (David Smiley)
+
 Build
 ---------------------
 
@@ -437,7 +440,7 @@ Bug Fixes
 
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
   closed fromCore if provided (Mikhail Khludnev, David Smiley)
-  
+
 * SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
 
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
