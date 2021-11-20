@@ -36,17 +36,18 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
 import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionAdminParams.*;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionParams.NAME;
 import static org.apache.solr.common.params.CommonAdminParams.*;
 import static org.apache.solr.common.params.CommonParams.*;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CoreAdminParams.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -138,7 +139,7 @@ public class V2ShardsAPIMappingTest {
                         "}}}");
 
         assertEquals(CollectionParams.CollectionAction.SPLITSHARD.lowerName, v1Params.get(ACTION));
-        assertEquals("collName", v1Params.get(CollectionAdminParams.COLLECTION));
+        assertEquals("collName", v1Params.get(COLLECTION));
         assertEquals("shard1", v1Params.get(SHARD_ID_PROP));
         assertEquals("someRangeValues", v1Params.get(CoreAdminParams.RANGES));
         assertEquals("someSplitKey", v1Params.get(SPLIT_KEY));
@@ -173,7 +174,7 @@ public class V2ShardsAPIMappingTest {
                         "}}}");
 
         assertEquals(CollectionParams.CollectionAction.CREATESHARD.lowerName, v1Params.get(ACTION));
-        assertEquals("collName", v1Params.get(CollectionAdminParams.COLLECTION));
+        assertEquals("collName", v1Params.get(COLLECTION));
         assertEquals("shard1", v1Params.get(SHARD_ID_PROP));
         assertEquals("foo,bar,baz", v1Params.get(CREATE_NODE_SET_PARAM));
         assertEquals(true, v1Params.getPrimitiveBool(FOLLOW_ALIASES));
@@ -210,7 +211,7 @@ public class V2ShardsAPIMappingTest {
                         "}}}");
 
         assertEquals(CollectionParams.CollectionAction.ADDREPLICA.lowerName, v1Params.get(ACTION));
-        assertEquals("collName", v1Params.get(CollectionAdminParams.COLLECTION));
+        assertEquals("collName", v1Params.get(COLLECTION));
         assertEquals("shard1", v1Params.get(SHARD_ID_PROP));
         assertEquals("someRouteValue", v1Params.get("_route_"));
         assertEquals("someNodeValue", v1Params.get("node"));
@@ -226,6 +227,31 @@ public class V2ShardsAPIMappingTest {
         assertEquals("tlog", v1Params.get("type"));
         assertEquals("foo1", v1Params.get("property.foo"));
         assertEquals("bar1", v1Params.get("property.bar"));
+    }
+
+    // really this is a replica API, but since there's only 1 API on the replica path, it's included here for simplicity.
+    @Test
+    public void testDeleteReplicaAllProperties() throws Exception {
+        final ModifiableSolrParams v2QueryParams = new ModifiableSolrParams();
+        v2QueryParams.add("deleteIndex", "true");
+        v2QueryParams.add("deleteDataDir", "true");
+        v2QueryParams.add("deleteInstanceDir", "true");
+        v2QueryParams.add("followAliases", "true");
+        v2QueryParams.add("count", "4");
+        v2QueryParams.add("onlyIfDown", "true");
+        final SolrParams v1Params = captureConvertedV1Params("/collections/collName/shards/shard1/someReplica",
+                "DELETE", v2QueryParams);
+
+        assertEquals(CollectionParams.CollectionAction.DELETEREPLICA.lowerName, v1Params.get(ACTION).toLowerCase(Locale.ROOT));
+        assertEquals("collName", v1Params.get(COLLECTION));
+        assertEquals("shard1", v1Params.get(SHARD_ID_PROP));
+        assertEquals("someReplica", v1Params.get(REPLICA));
+        assertEquals("true", v1Params.get(DELETE_INDEX));
+        assertEquals("true", v1Params.get(DELETE_DATA_DIR));
+        assertEquals("true", v1Params.get(DELETE_INSTANCE_DIR));
+        assertEquals("true", v1Params.get(FOLLOW_ALIASES));
+        assertEquals("4", v1Params.get(COUNT_PROP));
+        assertEquals("true", v1Params.get(ONLY_IF_DOWN));
     }
 
     private SolrParams captureConvertedV1Params(String path, String method, SolrParams queryParams) throws Exception {

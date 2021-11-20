@@ -51,5 +51,7 @@ public class ApiRegistrar {
     apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
     apiBag.registerObject(new SyncShardAPI(collectionsHandler));
     apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
+    // really this is a replica API, but since there's only 1 API on the replica path, it's included here for simplicity.
+    apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
   }
 }
