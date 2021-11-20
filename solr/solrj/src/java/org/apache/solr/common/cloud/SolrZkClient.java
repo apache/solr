@@ -16,20 +16,13 @@
  */
 package org.apache.solr.common.cloud;
 
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -39,7 +32,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -435,13 +427,13 @@ public class SolrZkClient implements Closeable {
 
   public void makePath(String path, File file, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToByteArray(file),
+    makePath(path, Files.readAllBytes(file.toPath()),
         CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
   public void makePath(String path, File file, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToByteArray(file), retryOnConnLoss);
+    makePath(path, Files.readAllBytes(file.toPath()), retryOnConnLoss);
   }
 
   public void makePath(String path, CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
@@ -594,7 +586,7 @@ public class SolrZkClient implements Closeable {
     if (log.isDebugEnabled()) {
       log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
     }
-    byte[] data = FileUtils.readFileToByteArray(file);
+    byte[] data = Files.readAllBytes(file.toPath());
     return setData(path, data, retryOnConnLoss);
   }
 
@@ -645,26 +637,6 @@ public class SolrZkClient implements Closeable {
     StringBuilder sb = new StringBuilder();
     printLayout("/", 0, sb);
     out.println(sb.toString());
-  }
-
-  public static String prettyPrint(String input, int indent) {
-    try {
-      Source xmlInput = new StreamSource(new StringReader(input));
-      StringWriter stringWriter = new StringWriter();
-      StreamResult xmlOutput = new StreamResult(stringWriter);
-      TransformerFactory transformerFactory = TransformerFactory.newInstance();
-      transformerFactory.setAttribute("indent-number", indent);
-      Transformer transformer = transformerFactory.newTransformer();
-      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-      transformer.transform(xmlInput, xmlOutput);
-      return xmlOutput.getWriter().toString();
-    } catch (Exception e) {
-      throw new RuntimeException("Problem pretty printing XML", e);
-    }
-  }
-
-  private static String prettyPrint(String input) {
-    return prettyPrint(input, 2);
   }
 
   public void close() {

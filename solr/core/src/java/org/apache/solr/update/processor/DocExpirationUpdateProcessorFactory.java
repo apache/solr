@@ -195,7 +195,7 @@ public final class DocExpirationUpdateProcessorFactory
   private SolrException confErr(final String msg, SolrException root) {
     return new SolrException(SERVER_ERROR, this.getClass().getSimpleName()+": "+msg, root);
   }
-  private String removeArgStr(@SuppressWarnings({"rawtypes"})final NamedList args,
+  private String removeArgStr(final NamedList<?> args,
                               final String arg, final String def,
                               final String errMsg) {
 
@@ -209,9 +209,8 @@ public final class DocExpirationUpdateProcessorFactory
     throw confErr(arg + " " + errMsg);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
 
     deleteChainName = removeArgStr(args, DEL_CHAIN_NAME_CONF, null,
                                    "must be a <str> or <null/> for default chain");

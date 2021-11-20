@@ -74,8 +74,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
       if(!(objects[0] instanceof List)) {
         throw new IOException("The termVectors function expects a list of Tuples as a parameter.");
       } else {
-        @SuppressWarnings({"rawtypes"})
-        List list = (List)objects[0];
+        List<?> list = (List<?>)objects[0];
         if(list.size() > 0) {
           Object o = list.get(0);
           if(!(o instanceof Tuple)) {

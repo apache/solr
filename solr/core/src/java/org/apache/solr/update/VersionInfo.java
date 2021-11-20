@@ -94,8 +94,8 @@ public class VersionInfo {
     this.ulog = ulog;
     IndexSchema schema = ulog.uhandler.core.getLatestSchema(); 
     versionField = getAndCheckVersionField(schema);
-    versionBucketLockTimeoutMs = ulog.uhandler.core.getSolrConfig().getInt("updateHandler/versionBucketLockTimeoutMs",
-        Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
+    versionBucketLockTimeoutMs = ulog.uhandler.core.getSolrConfig().get("updateHandler").get("versionBucketLockTimeoutMs")
+        .intVal(Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {
       if (versionBucketLockTimeoutMs > 0) {
@@ -220,8 +220,7 @@ public class VersionInfo {
       if (lookup < 0) return null; // this means the doc doesn't exist in the index yet
 
       ValueSource vs = versionField.getType().getValueSource(versionField, null);
-      @SuppressWarnings({"rawtypes"})
-      Map context = ValueSource.newContext(searcher);
+      Map<Object, Object> context = ValueSource.newContext(searcher);
       vs.createWeight(context, searcher);
       FunctionValues fv = vs.getValues(context, searcher.getTopReaderContext().leaves().get((int) (lookup >> 32)));
       long ver = fv.longVal((int) lookup);
@@ -257,8 +256,7 @@ public class VersionInfo {
     
     long maxVersionInIndex = 0L;
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
-    @SuppressWarnings({"rawtypes"})
-    Map funcContext = ValueSource.newContext(searcher);
+    Map<Object, Object> funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
     // TODO: multi-thread this
     for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {

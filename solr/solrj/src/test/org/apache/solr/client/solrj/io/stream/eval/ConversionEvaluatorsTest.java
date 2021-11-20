@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ConversionEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
@@ -48,7 +47,7 @@ public class ConversionEvaluatorsTest {
     factory = new StreamFactory();
     factory.withFunctionName("convert", ConversionEvaluator.class).withFunctionName("raw", RawValueEvaluator.class);
 
-    values = new HashedMap<>();
+    values = new HashMap<>();
   }
 
   @Test
@@ -69,8 +68,7 @@ public class ConversionEvaluatorsTest {
       evaluator = factory.constructEvaluator("convert(inches, yards, 3)");
       StreamContext streamContext = new StreamContext();
       evaluator.setStreamContext(streamContext);
-      @SuppressWarnings({"rawtypes"})
-      Tuple tuple = new Tuple(new HashMap());
+      Tuple tuple = new Tuple(new HashMap<>());
       evaluator.evaluate(tuple);
       assertTrue(false);
     } catch (IOException e) {

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import javax.xml.xpath.XPathConstants;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,19 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.StrUtils;
-
 import org.apache.solr.core.PluginInfo;
-
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -70,7 +65,8 @@ public class CacheConfig implements MapSerializable{
 
   private String regenImpl;
 
-  public CacheConfig() {}
+  public CacheConfig() {
+  }
 
   @SuppressWarnings({"rawtypes"})
   public CacheConfig(Class<? extends SolrCache> clazz, Map<String,String> args, CacheRegenerator regenerator) {
@@ -88,15 +84,12 @@ public class CacheConfig implements MapSerializable{
     this.regenerator = regenerator;
   }
 
-  public static Map<String, CacheConfig> getMultipleConfigs(SolrConfig solrConfig, String configPath) {
-    NodeList nodes = (NodeList) solrConfig.evaluate(configPath, XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0) return new LinkedHashMap<>();
-    Map<String, CacheConfig> result = new HashMap<>(nodes.getLength());
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-      if ("true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
-        CacheConfig config = getConfig(solrConfig, node.getNodeName(),
-                DOMUtil.toMap(node.getAttributes()), configPath);
+  public static Map<String, CacheConfig> getMultipleConfigs(SolrConfig solrConfig, String configPath, List<ConfigNode> nodes) {
+    if (nodes == null || nodes.size() == 0) return new LinkedHashMap<>();
+    Map<String, CacheConfig> result = new HashMap<>(nodes.size());
+    for (ConfigNode node : nodes) {
+      if (node.boolAttr("enabled", true)) {
+        CacheConfig config = getConfig(solrConfig, node.name(), node.attributes().asMap(), configPath);
         result.put(config.args.get(NAME), config);
       }
     }
@@ -104,24 +97,21 @@ public class CacheConfig implements MapSerializable{
   }
 
 
-  public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
-    Node node = solrConfig.getNode(xpath, false);
-    if(node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
-      Map<?, ?> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
-      if(m==null) return null;
+  public static CacheConfig getConfig(SolrConfig solrConfig, ConfigNode node, String xpath) {
+    if (!node.exists() || !"true".equals(node.attributes().get("enabled", "true"))) {
+      Map<String, Object> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
+      if (m == null) return null;
       List<String> parts = StrUtils.splitSmart(xpath, '/');
-      return getConfig(solrConfig,parts.get(parts.size()-1), Collections.emptyMap(), xpath);
+      return getConfig(solrConfig, parts.get(parts.size() - 1), Collections.emptyMap(), xpath);
     }
-    return getConfig(solrConfig, node.getNodeName(),DOMUtil.toMap(node.getAttributes()), xpath);
+    return getConfig(solrConfig, node.name(), node.attributes().asMap(), xpath);
   }
 
 
-  @SuppressWarnings({"unchecked"})
-  public static CacheConfig getConfig(SolrConfig solrConfig, String nodeName, Map<String,String> attrs, String xpath) {
+  public static CacheConfig getConfig(SolrConfig solrConfig, String nodeName, Map<String, String> attrs, String xpath) {
     CacheConfig config = new CacheConfig();
     config.nodeName = nodeName;
-    @SuppressWarnings({"rawtypes"})
-    Map attrsCopy = new LinkedHashMap<>(attrs.size());
+    Map<String,String> attrsCopy = new LinkedHashMap<>(attrs.size());
     for (Map.Entry<String, String> e : attrs.entrySet()) {
       attrsCopy.put(e.getKey(), String.valueOf(e.getValue()));
     }
@@ -146,13 +136,13 @@ public class CacheConfig implements MapSerializable{
     if (config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
     config.clazz = new Supplier<>() {
       @SuppressWarnings("rawtypes")
-      Class<SolrCache> loadedClass;
+      Class<? extends SolrCache> loadedClass;
 
       @Override
       @SuppressWarnings("rawtypes")
       public Class<? extends SolrCache> get() {
         if (loadedClass != null) return loadedClass;
-        return loadedClass = (Class<SolrCache>) loader.findClass(
+        return loadedClass = loader.findClass(
                 new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
                 SolrCache.class, true);
       }
@@ -168,7 +158,7 @@ public class CacheConfig implements MapSerializable{
   @SuppressWarnings({"rawtypes"})
   public SolrCache newInstance() {
     try {
-      SolrCache cache = clazz.get().getConstructor().newInstance();
+      SolrCache<?,?> cache = clazz.get().getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {
@@ -181,6 +171,7 @@ public class CacheConfig implements MapSerializable{
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
+    // TODO: Should not create new HashMap?
     return new HashMap<>(args);
   }
 

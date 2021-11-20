@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -79,16 +78,14 @@ import org.slf4j.LoggerFactory;
 public class RecoveryStrategy implements Runnable, Closeable {
 
   public static class Builder implements NamedListInitializedPlugin {
-    @SuppressWarnings({"rawtypes"})
-    private NamedList args;
+    private NamedList<?> args;
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+    public void init(NamedList<?> args) {
       this.args = args;
     }
 
     // this should only be used from SolrCoreState
-    @SuppressWarnings({"unchecked"})
     public RecoveryStrategy create(CoreContainer cc, CoreDescriptor cd,
         RecoveryStrategy.RecoveryListener recoveryListener) {
       final RecoveryStrategy recoveryStrategy = newRecoveryStrategy(cc, cd, recoveryListener);
@@ -176,7 +173,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   /** Builds a new HttpSolrClient for use in recovery.  Caller must close */
-  private final HttpSolrClient buildRecoverySolrClient(final String leaderUrl) {
+  private final HttpSolrClient.Builder recoverySolrClientBuilder(final String leaderUrl) {
     // workaround for SOLR-13605: get the configured timeouts & set them directly
     // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
@@ -184,7 +181,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             .withConnectionTimeout(cfg.getDistributedConnectionTimeout())
             .withSocketTimeout(cfg.getDistributedSocketTimeout())
             .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient())
-            ).build();
+            );
   }
   
   // make sure any threads stop retrying
@@ -281,7 +278,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    try (HttpSolrClient client = buildRecoverySolrClient(leaderUrl)) {
+    try (HttpSolrClient client = recoverySolrClientBuilder(leaderUrl).build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -770,8 +767,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return leaderReplica;
       }
 
-      try (HttpSolrClient httpSolrClient = buildRecoverySolrClient(leaderReplica.getCoreUrl())) {
-        SolrPingResponse resp = httpSolrClient.ping();
+      try (HttpSolrClient httpSolrClient = recoverySolrClientBuilder(leaderReplica.getCoreUrl()).build()) {
+        httpSolrClient.ping();
         return leaderReplica;
       } catch (IOException e) {
         log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
@@ -866,8 +863,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
     // timeout after 5 seconds more than the max timeout (conflictWait + 3 seconds) on the server side
     int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
-    try (HttpSolrClient client = buildRecoverySolrClient(leaderBaseUrl)) {
-      client.setSoTimeout(readTimeout);
+    try (HttpSolrClient client = recoverySolrClientBuilder(leaderBaseUrl).withSocketTimeout(readTimeout).build()) {
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
       prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
 

@@ -22,11 +22,12 @@
 # file named solr.in.sh to set environment variables. Specifically,
 # the following locations are searched in this order:
 #
-# ./
+# <script location>/.
 # $HOME/.solr.in.sh
 # /usr/share/solr
 # /usr/local/share/solr
-# /var/solr/
+# /etc/default
+# /var/solr
 # /opt/solr
 #
 # Another option is to specify the full path to the include file in the
@@ -86,6 +87,7 @@ if [ -z "$SOLR_INCLUDE" ]; then
                /usr/share/solr/solr.in.sh \
                /usr/local/share/solr/solr.in.sh \
                /etc/default/solr.in.sh \
+               /var/solr/solr.in.sh \
                /opt/solr/solr.in.sh; do
     if [ -r "$include" ]; then
         SOLR_INCLUDE="$include"
@@ -166,8 +168,9 @@ else
     exit 1
   fi
   JAVA_VENDOR="Oracle"
-  if [ "`echo $JAVA_VER | grep -i "IBM J9"`" != "" ]; then
-      JAVA_VENDOR="IBM J9"
+   # OpenJ9 was previously known as IBM J9, this will match both
+  if [ "`echo $JAVA_VER | grep -i -E "OpenJ9|IBM J9"`" != "" ]; then
+      JAVA_VENDOR="OpenJ9"
   fi
 fi
 
@@ -189,15 +192,7 @@ if [ -z "$SOLR_SSL_ENABLED" ]; then
   fi
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
-  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
-    echo >&2 "HTTP/2 + SSL is not support in Java 8. "
-    echo >&2 "Configure Solr with HTTP/1.1 + SSL"
-    SOLR_JETTY_CONFIG+=("--module=https8")
-  else
-    SOLR_JETTY_CONFIG+=("--module=https")
-  fi
-
-  SOLR_JETTY_CONFIG+=("--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
+  SOLR_JETTY_CONFIG+=("--module=https" "--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
@@ -277,6 +272,11 @@ fi
 # Requestlog options
 if [ "$SOLR_REQUESTLOG_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
+fi
+
+# Jetty gzip module enabled by default
+if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
+  SOLR_JETTY_CONFIG+=("--module=gzip")
 fi
 
 # Authentication options
@@ -372,6 +372,7 @@ function print_usage() {
     echo "  -z <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
     echo "                   If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                   an embedded ZooKeeper instance will be launched."
+    echo "                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
     echo ""
     echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
@@ -951,7 +952,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               HEALTHCHECK_COLLECTION="$2"
               shift 2
           ;;
-          -z|-zkhost)
+          -z|-zkhost|-zkHost)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
                 exit 1
@@ -1293,7 +1294,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             fi
             shift 1
         ;;
-        -z|-zkhost)
+        -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
             fi
@@ -1446,7 +1447,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "$AUTH_OP")
             shift
         ;;
-        -z|-zkhost|zkHost)
+        -z|-zkhost|-zkHost)
             ZK_HOST="$2"
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-zkHost" "$ZK_HOST")
             shift 2
@@ -1472,17 +1473,15 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         ;;
         -prompt)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-prompt" "$2")
-            shift
+            shift 2
         ;;
         -blockUnknown)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-blockUnknown" "$2")
-            shift
-            break
+            shift 2
         ;;
         -updateIncludeFileOnly)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-updateIncludeFileOnly" "$2")
-            shift
-            break
+            shift 2
         ;;
         -V|--verbose)
             VERBOSE="-verbose"
@@ -1716,7 +1715,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=" -p $SOLR_PORT"
             shift 2
         ;;
-        -z|-zkhost)
+        -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Zookeeper connection string is required when using the $1 option!"
               exit 1
@@ -1999,14 +1998,6 @@ if $verbose ; then
 else
   q="-q"
 fi
-# Rotate and clean on startup. Default to false since 7.4 as log4j2 handles startup rotation
-if [ "${SOLR_LOG_PRESTART_ROTATION:=false}" == "true" ]; then
-  # Enable any of these if you require old remove/archive behavior
-  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -remove_old_solr_logs 7 || echo "Failed removing old solr logs"
-  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_gc_logs $q     || echo "Failed archiving old GC logs"
-  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_console_logs   || echo "Failed archiving old console logs"
-  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -rotate_solr_logs 10    || echo "Failed rotating old solr logs"
-fi
 
 # Establish default GC logging opts if no env var set (otherwise init to sensible default)
 if [ -z ${GC_LOG_OPTS+x} ]; then
@@ -2023,9 +2014,9 @@ fi
 
 # if verbose gc logging enabled, setup the location of the log file and rotation
 if [ "$GC_LOG_OPTS" != "" ]; then
-  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
+  if [[ "$JAVA_VER_NUM" -lt "9" ]] || [ "$JAVA_VENDOR" == "OpenJ9" ]; then
     gc_log_flag="-Xloggc"
-    if [ "$JAVA_VENDOR" == "IBM J9" ]; then
+    if [ "$JAVA_VENDOR" == "OpenJ9" ]; then
       gc_log_flag="-Xverbosegclog"
     fi
     if [ -z ${JAVA8_GC_LOG_FILE_OPTS+x} ]; then
@@ -2065,6 +2056,10 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     fi
 
     CLOUD_MODE_OPTS+=('-DzkRun')
+  fi
+
+  if [ -n "$ZK_CREATE_CHROOT" ]; then
+    CLOUD_MODE_OPTS+=("-DcreateZkChroot=$ZK_CREATE_CHROOT")
   fi
 
   # and if collection1 needs to be bootstrapped

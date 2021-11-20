@@ -283,8 +283,7 @@ public class JDBCStream extends TupleStream implements Expressible {
       resultSet = statement.executeQuery(sqlQuery);
       resultSet.setFetchSize(fetchSize);
     } catch (SQLException e) {
-      throw new IOException(String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'.\n"
-          + e.getMessage(), sqlQuery, connectionUrl), e);
+      throw new IOException(String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'.%nCaused by: %s", sqlQuery, connectionUrl, e.getMessage()), e);
     }
     
     try{
@@ -388,7 +387,7 @@ public class JDBCStream extends TupleStream implements Expressible {
           return columnName;
         }
       };
-    } 
+    }
     // Here we are switching to check against the SQL type because date/times are
     // notorious for not being consistent. We don't know if the driver is mapping
     // to a java.time.* type or some old-school type. 
@@ -428,7 +427,21 @@ public class JDBCStream extends TupleStream implements Expressible {
           return columnName;
         }
       };
-    } 
+    } else if (Object.class.getName().equals(className)) {
+      // Calcite SQL type ANY comes across as generic Object (for multi-valued fields)
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Object obj = resultSet.getObject(columnNumber);
+          return resultSet.wasNull() ? null : obj;
+        }
+
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    }
     // Now we're going to start seeing if things are assignable from the returned type
     // to a more general type - this allows us to cover cases where something we weren't 
     // explicitly expecting, but can handle, is being returned.

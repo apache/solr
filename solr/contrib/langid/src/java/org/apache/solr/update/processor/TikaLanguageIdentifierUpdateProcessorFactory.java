@@ -31,14 +31,14 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * The UpdateProcessorChain config entry can take a number of parameters
  * which may also be passed as HTTP parameters on the update request
  * and override the defaults. Here is the simplest processor config possible:
- * 
+ *
  * <pre class="prettyprint" >
  * &lt;processor class=&quot;org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;langid.fl&quot;&gt;title,text&lt;/str&gt;
  *   &lt;str name=&quot;langid.langField&quot;&gt;language_s&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection</a>
  * @since 3.5
  */
 public class TikaLanguageIdentifierUpdateProcessorFactory extends
@@ -55,27 +55,26 @@ public class TikaLanguageIdentifierUpdateProcessorFactory extends
   /**
    * The UpdateRequestProcessor may be initialized in solrconfig.xml similarly
    * to a RequestHandler, with defaults, appends and invariants.
-   * @param args a NamedList with the configuration parameters 
+   * @param args a NamedList with the configuration parameters
    */
   @Override
-  @SuppressWarnings("rawtypes")
-  public void init( NamedList args )
+  public void init(NamedList<?> args )
   {
     if (args != null) {
       Object o;
       o = args.get("defaults");
-      if (o != null && o instanceof NamedList) {
-        defaults = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        defaults = ((NamedList<?>) o).toSolrParams();
       } else {
         defaults = args.toSolrParams();
       }
       o = args.get("appends");
-      if (o != null && o instanceof NamedList) {
-        appends = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        appends = ((NamedList<?>) o).toSolrParams();
       }
       o = args.get("invariants");
-      if (o != null && o instanceof NamedList) {
-        invariants = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        invariants = ((NamedList<?>) o).toSolrParams();
       }
     }
   }

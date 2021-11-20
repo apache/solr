@@ -273,20 +273,19 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public synchronized void accept(SolrDocument doc) throws IOException {
       charArr.reset();
-      Map m = new LinkedHashMap(doc.size());
+      Map<String, Object> m = new LinkedHashMap<>(doc.size());
       doc.forEach((s, field) -> {
         if (s.equals("_version_") || s.equals("_roor_")) return;
         if (field instanceof List) {
-          if (((List) field).size() == 1) {
-            field = ((List) field).get(0);
+          if (((List<?>) field).size() == 1) {
+            field = ((List<?>) field).get(0);
           }
         }
         field = constructDateStr(field);
         if (field instanceof List) {
-          List list = (List) field;
+          List<?> list = (List<?>) field;
           if (hasdate(list)) {
             ArrayList<Object> listCopy = new ArrayList<>(list.size());
             for (Object o : list) listCopy.add(constructDateStr(o));
@@ -301,7 +300,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       super.accept(doc);
     }
 
-    private boolean hasdate(@SuppressWarnings({"rawtypes"})List list) {
+    private boolean hasdate(List<?> list) {
       boolean hasDate = false;
       for (Object o : list) {
         if(o instanceof Date){

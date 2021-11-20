@@ -16,9 +16,9 @@
  */
 package org.apache.solr.search;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
@@ -173,13 +173,14 @@ public class JoinQParserPlugin extends QParserPlugin {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     routerField = (String) args.get("routerField");
 
     if (args.get("allowSolrUrls") != null) {
-      allowSolrUrls = new HashSet<>();
-      allowSolrUrls.addAll((List<String>) args.get("allowSolrUrls"));
+      @SuppressWarnings("unchecked")
+      Collection<String> configUrls = (Collection<String>) args.get("allowSolrUrls");
+
+      allowSolrUrls = new HashSet<>(configUrls);
     } else {
       allowSolrUrls = null;
     }

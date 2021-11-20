@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,6 +110,14 @@ public class ClusterStateMutator {
       collectionProps.put("autoCreated", "true");
     }
 
+    // put configName in props so that it will appear in state.json
+    final String configName = (String) message.getProperties().get(CollectionAdminParams.COLL_CONF);
+
+    if (configName != null) {
+      collectionProps.put(ZkStateReader.CONFIGNAME_PROP, configName);
+    }
+
+    assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
     DocCollection newCollection = new DocCollection(cName, slices, collectionProps, router, -1);
 
     return new ZkWriteCommand(cName, newCollection);

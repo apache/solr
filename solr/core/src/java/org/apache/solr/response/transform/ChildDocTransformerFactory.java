@@ -19,6 +19,8 @@ package org.apache.solr.response.transform;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -180,7 +182,11 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     SolrCache<Query, BitSetProducer> parentCache = request.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
     if (parentCache != null) {
-      return parentCache.computeIfAbsent(query, QueryBitSetProducer::new);
+      try {
+        return parentCache.computeIfAbsent(query, QueryBitSetProducer::new);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e); // Shouldn't happen because QBSP doesn't throw
+      }
     } else {
       return new QueryBitSetProducer(query);
     }

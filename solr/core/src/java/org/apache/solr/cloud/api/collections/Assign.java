@@ -177,7 +177,7 @@ public class Assign {
   }
 
   private static int defaultCounterValue(DocCollection collection, boolean newCollection, String shard) {
-    if (newCollection) return 0;
+    if (newCollection || collection == null) return 0;
 
     int defaultValue;
     if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
@@ -201,20 +201,20 @@ public class Assign {
     return defaultValue;
   }
 
-  public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
-    Slice slice = collection.getSlice(shard);
+  public static String buildSolrCoreName(DistribStateManager stateManager, String collectionName, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
+
     int defaultValue = defaultCounterValue(collection, newCollection, shard);
-    int replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
-    String coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
-    while (existCoreName(coreName, slice)) {
-      replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
-      coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
+    int replicaNum = incAndGetId(stateManager, collectionName, defaultValue);
+    String coreName = buildSolrCoreName(collectionName, shard, type, replicaNum);
+    while (collection != null && existCoreName(coreName, collection.getSlice(shard))) {
+      replicaNum = incAndGetId(stateManager, collectionName, defaultValue);
+      coreName = buildSolrCoreName(collectionName, shard, type, replicaNum);
     }
     return coreName;
   }
 
   public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type) {
-    return buildSolrCoreName(stateManager, collection, shard, type, false);
+    return buildSolrCoreName(stateManager, collection.getName(), collection, shard, type, false);
   }
 
   private static boolean existCoreName(String coreName, Slice slice) {
@@ -340,7 +340,7 @@ public class Assign {
     return nodeNameVsShardCount;
   }
 
-  // throw an exception if any node int the supplied list is not live.
+  // throw an exception if any node in the supplied list is not live.
   // Empty or null list always succeeds and returns the input.
   private static List<String> checkLiveNodes(List<String> createNodeList, ClusterState clusterState) {
     Set<String> liveNodes = clusterState.getLiveNodes();
@@ -348,12 +348,32 @@ public class Assign {
       if (!liveNodes.containsAll(createNodeList)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "At least one of the node(s) specified " + createNodeList + " are not currently active in "
-                + createNodeList + ", no action taken.");
+                + liveNodes + ", no action taken.");
       }
       // the logic that was extracted to this method used to create a defensive copy but no code
       // was modifying the copy, if this method is made protected or public we want to go back to that
     }
     return createNodeList; // unmodified, but return for inline use
+  }
+
+  // throw an exception if all nodes in the supplied list are not live.
+  // Empty list will also fail.
+  // Returns the input
+  private static List<String> checkAnyLiveNodes(List<String> createNodeList, ClusterState clusterState) {
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    if (createNodeList == null) {
+      createNodeList = Collections.emptyList();
+    }
+    boolean anyLiveNodes = false;
+    for (String node : createNodeList) {
+      anyLiveNodes |= liveNodes.contains(node);
+    }
+    if (!anyLiveNodes) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "None of the node(s) specified " + createNodeList + " are currently active in "
+              + liveNodes + ", no action taken.");
+    }
+    return createNodeList; // unmodified, but return for inline use. Only modified if empty, and that will throw an error
   }
 
   /**
@@ -501,8 +521,8 @@ public class Assign {
         nodeList = sortedNodeList.stream().map(replicaCount -> replicaCount.nodeName).collect(Collectors.toList());
       }
 
-      // otherwise we get a div/0 below
-      assert !nodeList.isEmpty();
+      // Throw an error if there aren't any live nodes.
+      checkAnyLiveNodes(nodeList, solrCloudManager.getClusterStateProvider().getClusterState());
 
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();

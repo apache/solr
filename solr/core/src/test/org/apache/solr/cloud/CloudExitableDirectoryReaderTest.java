@@ -81,7 +81,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     // create one more node then shard, so that we also test the case of proxied requests.
-    Builder clusterBuilder = configureCluster(3)
+    MiniSolrCloudCluster.Builder clusterBuilder = configureCluster(3)
         .addConfig("conf", TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));
     clusterBuilder.withMetrics(true);
     clusterBuilder

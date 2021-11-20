@@ -1,5 +1,4 @@
 = Collections API
-:page-children: cluster-node-management, collection-management, collection-aliasing, shard-management, replica-management
 :page-show-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -18,7 +17,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-A SolrCloud cluster includes a number of components. The Collections API is provided to allow you to control your cluster, including the collections, shards, replicas, backups, leader election, and other operations needs.
+A SolrCloud cluster includes a number of components.
+The Collections API is provided to allow you to control your cluster, including the collections, shards, replicas, backups, leader election, and other operations needs.
 
 Because this API has a large number of commands and options, we've grouped the commands into the following sub-sections:
 
@@ -26,7 +26,7 @@ Because this API has a large number of commands and options, we've grouped the c
 
 *<<collection-management.adoc#,Collection Management>>*: Create, list, reload and delete collections; set collection properties; migrate documents to another collection; rebalance leaders; backup and restore collections.
 
-*<<collection-aliasing.adoc#,Collection Aliasing>>*: Create, list or delete collection aliases; set alias properties.
+*<<alias-management.adoc#,Alias Management>>*: Create, list or delete collection aliases; set alias properties.
 
 *<<shard-management.adoc#,Shard Management>>*: Create and delete a shard; split a shard into two or more additional shards; force a shard leader.
 
@@ -34,9 +34,12 @@ Because this API has a large number of commands and options, we've grouped the c
 
 == Asynchronous Calls
 
-Since some collection API calls can be long running tasks (such as SPLITSHARD), you can optionally have the calls run asynchronously. Specifying `async=<request-id>` enables you to make an asynchronous call, the status of which can be requested using the <<requeststatus,REQUESTSTATUS>> call at any time.
+Since some collection API calls can be long running tasks (such as SPLITSHARD), you can optionally have the calls run asynchronously.
+Specifying `async=<request-id>` enables you to make an asynchronous call, the status of which can be requested using the <<requeststatus,REQUESTSTATUS>> call at any time.
 
-As of now, REQUESTSTATUS does not automatically clean up the tracking data structures, meaning the status of completed or failed tasks stays stored in ZooKeeper unless cleared manually. DELETESTATUS can be used to clear the stored statuses. However, there is a limit of 10,000 on the number of async call responses stored in a cluster.
+As of now, REQUESTSTATUS does not automatically clean up the tracking data structures, meaning the status of completed or failed tasks stays stored in ZooKeeper unless cleared manually.
+DELETESTATUS can be used to clear the stored statuses.
+However, there is a limit of 10,000 on the number of async call responses stored in a cluster.
 
 === Examples of Async Requests
 
@@ -61,7 +64,7 @@ http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collec
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Content-Type: application/json' -d '
   {
     "split": {
       "shard": "shard1",
@@ -94,7 +97,8 @@ curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Conten
 [[requeststatus]]
 == REQUESTSTATUS: Request Status of an Async Call
 
-Request the status and response of an already submitted <<Asynchronous Calls,Asynchronous Collection API>> (below) call. This call is also used to clear up the stored statuses.
+Request the status and response of an already submitted <<Asynchronous Calls,Asynchronous Collection API>> (below) call.
+This call is also used to clear up the stored statuses.
 
 [.dynamic-tabs]
 --
@@ -123,7 +127,14 @@ curl -X GET http://localhost:8983/api/cluster/command-status/1000
 === REQUESTSTATUS Parameters
 
 `requestid`::
-The user defined request ID for the request. This can be used to track the status of the submitted asynchronous task. This parameter is required.
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The user defined request ID for the request.
+This can be used to track the status of the submitted asynchronous task.
 
 === Examples using REQUESTSTATUS
 
@@ -204,7 +215,7 @@ curl -X DELETE http://localhost:8983/api/cluster/command-status/1000
 Flush out all stored completed and failed async request responses:
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/cluster/command-status
+curl -X DELETE http://localhost:8983/api/cluster/command-status?flush=true
 ----
 ====
 --
@@ -212,11 +223,22 @@ curl -X DELETE http://localhost:8983/api/cluster/command-status
 === DELETESTATUS Parameters
 
 `requestid`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The request ID of the asynchronous call whose stored response should be cleared.
 
 `flush`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Set to `true` to clear all stored completed and failed async request responses.
-This is required only with the V1 API.
 
 === Examples using DELETESTATUS
 

@@ -70,6 +70,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
+
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
@@ -494,8 +497,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     Tuple t0, t1, t2;
-    @SuppressWarnings({"rawtypes"})
-    List<Map> maps0, maps1, maps2;
+    List<Map<?,?>> maps0, maps1, maps2;
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
@@ -1566,18 +1568,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 3);
 
       Tuple t0 = tuples.get(0);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps0 = t0.getMaps("group");
+      List<Map<?,?>> maps0 = t0.getMaps("group");
       assertMaps(maps0, 0, 1, 2, 9);
 
       Tuple t1 = tuples.get(1);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps1 = t1.getMaps("group");
+      List<Map<?,?>> maps1 = t1.getMaps("group");
       assertMaps(maps1, 3, 5, 7, 8);
 
       Tuple t2 = tuples.get(2);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps2 = t2.getMaps("group");
+      List<Map<?,?>> maps2 = t2.getMaps("group");
       assertMaps(maps2, 4, 6);
 
 
@@ -4541,39 +4540,5 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     return true;
   }
-  
-  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
-    if(maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
-    }
 
-    int i=0;
-    for(int val : ids) {
-      @SuppressWarnings({"rawtypes"})
-      Map t = maps.get(i);
-      String tip = (String)t.get("id");
-      if(!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
-  private boolean assertList(@SuppressWarnings({"rawtypes"})List list, Object... vals) throws Exception {
-
-    if(list.size() != vals.length) {
-      throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);
-    }
-
-    for(int i=0; i<list.size(); i++) {
-      Object a = list.get(i);
-      Object b = vals[i];
-      if(!a.equals(b)) {
-        throw new Exception("List items not equals:"+a+" : "+b);
-      }
-    }
-
-    return true;
-  }
 }

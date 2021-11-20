@@ -34,7 +34,7 @@ public class SpellCheckResponse {
   private List<Suggestion> suggestions = new ArrayList<>();
   Map<String, Suggestion> suggestionMap = new LinkedHashMap<>();
 
-  public SpellCheckResponse(NamedList<Object> spellInfo) {
+  public SpellCheckResponse(NamedList<?> spellInfo) {
     @SuppressWarnings("unchecked")
     NamedList<Object> sugg = (NamedList<Object>) spellInfo.get("suggestions");
     if (sugg == null) {
@@ -145,7 +145,6 @@ public class SpellCheckResponse {
     private List<String> alternatives = new ArrayList<>();
     private List<Integer> alternativeFrequencies;
 
-    @SuppressWarnings({"rawtypes"})
     public Suggestion(String token, NamedList<Object> suggestion) {
       this.token = token;
       for (int i = 0; i < suggestion.size(); i++) {
@@ -160,14 +159,13 @@ public class SpellCheckResponse {
         } else if ("origFreq".equals(n)) {
           originalFrequency = (Integer) suggestion.getVal(i);
         } else if ("suggestion".equals(n)) {
-          @SuppressWarnings("unchecked")
-          List list = (List)suggestion.getVal(i);
+          List<?> list = (List<?>)suggestion.getVal(i);
           if (list.size() > 0 && list.get(0) instanceof NamedList) {
             // extended results detected
             @SuppressWarnings("unchecked")
-            List<NamedList> extended = (List<NamedList>)list;
+            List<NamedList<?>> extended = (List<NamedList<?>>)list;
             alternativeFrequencies = new ArrayList<>();
-            for (NamedList nl : extended) {
+            for (NamedList<?> nl : extended) {
               alternatives.add((String)nl.get("word"));
               alternativeFrequencies.add((Integer)nl.get("freq"));
             }

@@ -29,7 +29,6 @@ import org.apache.solr.common.util.Utils;
 
 public class TestSolrJacksonAnnotation extends SolrTestCase {
 
-  @SuppressWarnings({"unchecked"})
   public void testSerDe() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
     mapper.setAnnotationIntrospector(new SolrJacksonAnnotationInspector());
@@ -38,22 +37,26 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     o.field = "v1";
     o.f2 = "v2";
     o.ifld = 1234;
+    o.lfld = 5678L;
     String json = mapper.writeValueAsString(o);
 
-    @SuppressWarnings({"rawtypes"})
-    Map m = (Map) Utils.fromJSONString(json);
+    @SuppressWarnings("unchecked")
+    Map<Object, Object> m = (Map<Object, Object>) Utils.fromJSONString(json);
     assertEquals("v1",  m.get("field"));
     assertEquals("v2",  m.get("friendlyName"));
     assertEquals("1234",  String.valueOf(m.get("friendlyIntFld")));
+    assertEquals("5678",  String.valueOf(m.get("friendlyLongFld")));
     TestObj o1 = mapper.readValue(json, TestObj.class);
 
     assertEquals("v1", o1.field);
     assertEquals("v2", o1.f2);
     assertEquals(1234, o1.ifld);
+    assertEquals(5678L, o1.lfld);
 
     Map<String, Object> schema = JsonSchemaCreator.getSchema(TestObj.class);
     assertEquals("string", Utils.getObjectByPath(schema,true,"/properties/friendlyName/type"));
     assertEquals("integer", Utils.getObjectByPath(schema,true,"/properties/friendlyIntFld/type"));
+    assertEquals("long", Utils.getObjectByPath(schema,true,"/properties/friendlyLongFld/type"));
     assertEquals("friendlyName", Utils.getObjectByPath(schema,true,"/required[0]"));
 
 
@@ -66,7 +69,9 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     assertTrue(errs.get(0).contains("Missing required attribute"));
     m.put("friendlyIntFld", Boolean.TRUE);
     errs = validator.validateJson(m);
+    assertTrue(errs.get(0).contains("Value is not valid"));
     m.put("friendlyIntFld", "another String");
+    errs = validator.validateJson(m);
     assertTrue(errs.get(0).contains("Value is not valid"));
   }
 
@@ -80,5 +85,7 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     public String f2;
     @JsonProperty("friendlyIntFld")
     public int ifld;
+    @JsonProperty("friendlyLongFld")
+    public long lfld;
   }
 }

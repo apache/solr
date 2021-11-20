@@ -33,13 +33,15 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import io.opentracing.Span;
-import org.apache.commons.io.IOUtils;
+import io.opentracing.tag.Tags;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -70,6 +72,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -86,7 +89,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -109,6 +111,7 @@ import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -499,11 +502,6 @@ public class HttpSolrCall {
    * This method processes the request.
    */
   public Action call() throws IOException {
-    MDCLoggingContext.reset();
-    Span activeSpan = (Span) req.getAttribute(Span.class.getName()); // never null
-    MDCLoggingContext.setTracerId(activeSpan.context().toTraceId()); // handles empty string
-
-    MDCLoggingContext.setNode(cores);
 
     if (cores == null) {
       sendError(503, "Server is shutting down or failed to initialize");
@@ -520,6 +518,8 @@ public class HttpSolrCall {
 
     try {
       init();
+
+      TraceUtils.ifNotNoop(getSpan(), this::populateTracingSpan);
 
       // Perform authorization here, if:
       //    (a) Authorization is enabled, and
@@ -601,6 +601,40 @@ public class HttpSolrCall {
       return RETURN;
     }
 
+  }
+
+  /** Get the span for this request.  Not null. */
+  protected Span getSpan() {
+    // Span was put into the request by SolrDispatchFilter
+    return (Span) Objects.requireNonNull(req.getAttribute(Span.class.getName()));
+  }
+
+  // called after init().
+  protected void populateTracingSpan(Span span) {
+    // Set db.instance
+    String coreOrColName = HttpSolrCall.this.origCorename;
+    if (coreOrColName == null && getCore() != null) {
+      coreOrColName = getCore().getName();
+    }
+    if (coreOrColName != null) {
+      span.setTag(Tags.DB_INSTANCE, coreOrColName);
+    }
+
+    // Set operation name.
+    String path = getPath();
+    if (coreOrColName != null) {
+      // prefix path by core or collection name
+      if (getCore() != null && getCore().getName().equals(coreOrColName)) {
+        path = "/{core}" + path;
+      } else {
+        path = "/{collection}" + path;
+      }
+    }
+    String verb =
+        getQueryParams()
+            .get(CoreAdminParams.ACTION, req.getMethod())
+            .toLowerCase(Locale.ROOT);
+    span.setOperationName(verb + ":" + path);
   }
 
   private boolean shouldAudit() {
@@ -719,7 +753,7 @@ public class HttpSolrCall {
         InputStream is = httpEntity.getContent();
         OutputStream os = resp.getOutputStream();
 
-        IOUtils.copyLarge(is, os);
+        is.transferTo(os);
       }
 
     } catch (IOException e) {
@@ -762,8 +796,7 @@ public class HttpSolrCall {
     } finally {
       try {
         if (exp != null) {
-          @SuppressWarnings({"rawtypes"})
-          SimpleOrderedMap info = new SimpleOrderedMap();
+          SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
           int code = ResponseUtils.getErrorInfo(ex, info, log);
           sendError(code, info.toString());
         }
@@ -875,8 +908,7 @@ public class HttpSolrCall {
       if (null != ct) response.setContentType(ct);
 
       if (solrRsp.getException() != null) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList info = new SimpleOrderedMap();
+        NamedList<Object> info = new SimpleOrderedMap<>();
         int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
         solrRsp.add("error", info);
         response.setStatus(code);
@@ -1198,9 +1230,8 @@ public class HttpSolrCall {
     return null;
   }
 
-  @SuppressWarnings({"unchecked"})
   protected Map<String, JsonSchemaValidator> getValidators(){
-    return Collections.EMPTY_MAP;
+    return Collections.emptyMap();
   }
 
   /**

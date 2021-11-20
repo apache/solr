@@ -32,7 +32,6 @@ public class CovarianceEvaluator extends RecursiveObjectEvaluator implements Man
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException{
 
     if(values.length == 2) {
@@ -41,8 +40,8 @@ public class CovarianceEvaluator extends RecursiveObjectEvaluator implements Man
       Covariance covariance = new Covariance();
 
       return covariance.covariance(
-          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+          ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
       );
     } else if(values.length == 1) {
       Matrix matrix = (Matrix) values[0];

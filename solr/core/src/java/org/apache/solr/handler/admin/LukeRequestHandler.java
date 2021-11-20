@@ -22,9 +22,12 @@ import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -66,7 +69,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -294,7 +296,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       BytesRef bytes = field.binaryValue();
       if (bytes != null) {
-        f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
+        f.add( "binary", new String(Base64.getEncoder().encode(ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length)).array(), StandardCharsets.ISO_8859_1));
       }
       if (!ftype.isPointField()) {
         Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
@@ -629,7 +631,6 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
   // especially on large indexes!
-  @SuppressWarnings("unchecked")
   private static void getDetailedFieldInfo(SolrQueryRequest req, String field, SimpleOrderedMap<Object> fieldMap)
       throws IOException {
 
@@ -727,8 +728,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * Private internal class that counts up frequent terms
    */
-  @SuppressWarnings("rawtypes")
-  private static class TopTermQueue extends PriorityQueue
+  private static class TopTermQueue extends PriorityQueue<TopTermQueue.TermInfo>
   {
     static class TermInfo {
       TermInfo(Term t, int df) {
@@ -750,10 +750,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
 
     @Override
-    protected final boolean lessThan(Object a, Object b) {
-      TermInfo termInfoA = (TermInfo)a;
-      TermInfo termInfoB = (TermInfo)b;
-      return termInfoA.docFreq < termInfoB.docFreq;
+    protected final boolean lessThan(TermInfo a, TermInfo b) {
+      return a.docFreq < b.docFreq;
     }
 
     /**
@@ -764,7 +762,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       // reverse the list..
       List<TermInfo> aslist = new LinkedList<>();
       while( size() > 0 ) {
-        aslist.add( 0, (TermInfo)pop() );
+        aslist.add( 0, pop());
       }
 
       NamedList<Integer> list = new NamedList<>();
@@ -779,7 +777,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       return list;
     }
     public TermInfo getTopTermInfo() {
-      return (TermInfo)top();
+      return top();
     }
   }
 }

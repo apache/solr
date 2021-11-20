@@ -81,7 +81,7 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Grouping;
-import org.apache.solr.search.Insanity;
+import org.apache.solr.search.NumericHidingLeafReader;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
@@ -267,8 +267,7 @@ public class SimpleFacets {
       } else {
         return base;
       }
-      @SuppressWarnings({"rawtypes"})
-      AllGroupHeadsCollector allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
+      AllGroupHeadsCollector<?> allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
       searcher.search(base.getTopFilter(), allGroupHeadsCollector);
       return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
     } else {
@@ -334,8 +333,7 @@ public class SimpleFacets {
       );
     }
 
-    @SuppressWarnings({"rawtypes"})
-    AllGroupsCollector collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
+    AllGroupsCollector<?> collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
     searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.getTopFilter()), collector);
     return collector.getGroupCount();
   }
@@ -720,9 +718,9 @@ public class SimpleFacets {
     BytesRef prefixBytesRef = prefix != null ? new BytesRef(prefix) : null;
     final TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBytesRef, 128);
     
-    Collector groupWrapper = getInsanityWrapper(groupField, collector);
-    Collector fieldWrapper = getInsanityWrapper(field, groupWrapper);
-    // When GroupedFacetCollector can handle numerics we can remove the wrapped collectors
+    Collector groupWrapper = getNumericHidingWrapper(groupField, collector);
+    Collector fieldWrapper = getNumericHidingWrapper(field, groupWrapper);
+    // When GroupFacetCollector can handle numerics we can remove the wrapped collectors
     searcher.search(base.getTopFilter(), fieldWrapper);
     
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
@@ -752,16 +750,16 @@ public class SimpleFacets {
     return facetCounts;
   }
   
-  private Collector getInsanityWrapper(final String field, Collector collector) {
+  private Collector getNumericHidingWrapper(final String field, Collector collector) {
     SchemaField sf = searcher.getSchema().getFieldOrNull(field);
     if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumberType() != null) {
-      // it's a single-valued numeric field: we must currently create insanity :(
-      // there isn't a GroupedFacetCollector that works on numerics right now...
+      // it's a single-valued numeric field: we must hide the numeric because
+      // there isn't a GroupFacetCollector that works on numerics right now...
       return new FilterCollector(collector) {
         @Override
         public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-          LeafReader insane = Insanity.wrapInsanity(context.reader(), field);
-          return in.getLeafCollector(insane.getContext());
+          LeafReader leafReader = NumericHidingLeafReader.wrap(context.reader(), field);
+          return in.getLeafCollector(leafReader.getContext());
         }
       };
     } else {
@@ -787,7 +785,6 @@ public class SimpleFacets {
    * @see #getFieldMissingCount
    * @see #getFacetTermEnumCounts
    */
-  @SuppressWarnings("unchecked")
   public NamedList<Object> getFacetFieldCounts()
       throws IOException, SyntaxError {
 
@@ -803,8 +800,7 @@ public class SimpleFacets {
     int maxThreads = req.getParams().getInt(FacetParams.FACET_THREADS, 0);
     Executor executor = maxThreads == 0 ? directExecutor : facetExecutor;
     final Semaphore semaphore = new Semaphore((maxThreads <= 0) ? Integer.MAX_VALUE : maxThreads);
-    @SuppressWarnings({"rawtypes"})
-    List<Future<NamedList>> futures = new ArrayList<>(facetFs.length);
+    List<Future<NamedList<?>>> futures = new ArrayList<>(facetFs.length);
 
     if (fdebugParent != null) {
       fdebugParent.putInfoItem("maxThreads", maxThreads);
@@ -822,8 +818,7 @@ public class SimpleFacets {
         final String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);
         final String key = parsed.key;
         final String facetValue = parsed.facetValue;
-        @SuppressWarnings({"rawtypes"})
-        Callable<NamedList> callable = () -> {
+        Callable<NamedList<?>> callable = () -> {
           try {
             NamedList<Object> result = new SimpleOrderedMap<>();
             if(termList != null) {
@@ -847,15 +842,14 @@ public class SimpleFacets {
           }
         };
 
-        @SuppressWarnings({"rawtypes"})
-        RunnableFuture<NamedList> runnableFuture = new FutureTask<>(callable);
+        RunnableFuture<NamedList<?>> runnableFuture = new FutureTask<>(callable);
         semaphore.acquire();//may block and/or interrupt
         executor.execute(runnableFuture);//releases semaphore when done
         futures.add(runnableFuture);
       }//facetFs loop
 
       //Loop over futures to get the values. The order is the same as facetFs but shouldn't matter.
-      for (@SuppressWarnings({"rawtypes"})Future<NamedList> future : futures) {
+      for (Future<NamedList<?>> future : futures) {
         res.addAll(future.get());
       }
       assert semaphore.availablePermits() >= maxThreads;
@@ -1205,8 +1199,7 @@ public class SimpleFacets {
     return res;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public NamedList getHeatmapCounts() throws IOException, SyntaxError {
+  public NamedList<Object> getHeatmapCounts() throws IOException, SyntaxError {
     final NamedList<Object> resOuter = new SimpleOrderedMap<>();
     String[] unparsedFields = rb.req.getParams().getParams(FacetParams.FACET_HEATMAP);
     if (unparsedFields == null || unparsedFields.length == 0) {

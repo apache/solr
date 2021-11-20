@@ -472,9 +472,9 @@ is book and it's a child of a book part. Excluding block content."
     option? :autowidth
   end
 
-  def spread?
+  def stretch?
     if !autowidth? || local_attr?('width')
-      'spread' if attr? :tablepcwidth, 100
+      'stretch' if attr? :tablepcwidth, 100
     end
   end
 

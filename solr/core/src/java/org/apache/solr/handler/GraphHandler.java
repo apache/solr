@@ -91,7 +91,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     return PermissionNameProvider.Name.READ_PERM;
   }
 
-  @SuppressWarnings({"unchecked"})
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
@@ -125,7 +124,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
         } else {
           @SuppressWarnings("resource")
           StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
-          streamFactory.withFunctionName(key, () -> holder.getClazz());
+          streamFactory.withFunctionName(key, holder);
         }
 
       }
@@ -147,8 +146,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(log, e);
-      @SuppressWarnings({"rawtypes"})
-      Map requestContext = req.getContext();
+      Map<Object,Object> requestContext = req.getContext();
       requestContext.put("stream", new DummyErrorStream(e));
       return;
     }
@@ -159,8 +157,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);
     tupleStream.setStreamContext(context);
-    @SuppressWarnings({"rawtypes"})
-    Map requestContext = req.getContext();
+    Map<Object,Object> requestContext = req.getContext();
     requestContext.put("stream", new TimerStream(new ExceptionStream(tupleStream)));
     requestContext.put("traversal", traversal);
   }
@@ -254,7 +251,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return null;
     }
 
-    @SuppressWarnings({"unchecked"})
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if(tuple.EOF) {

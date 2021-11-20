@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
 import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
@@ -128,6 +127,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
+   * Take the request specific basic auth creds on this admin request and propagate them to a related request if does
+   * not already have credentials set, such as a CollectionAdminRequest.RequestStatus when doing async requests.
+   */
+  protected <T extends CollectionAdminRequest<? extends CollectionAdminResponse>> T propagateBasicAuthCreds(T req) {
+    String user = getBasicAuthUser();
+    String pass = getBasicAuthPassword();
+    if (user != null && pass != null && req.getBasicAuthUser() == null) {
+      req.setBasicAuthCredentials(user, pass);
+    }
+    return req;
+  }
+
+  /**
    * Base class for asynchronous collection admin requests
    */
   public abstract static class AsyncCollectionAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
@@ -208,7 +220,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public RequestStatusState processAndWait(String asyncId, SolrClient client, long timeoutSeconds)
         throws IOException, SolrServerException, InterruptedException {
       processAsync(asyncId, client);
-      return requestStatus(asyncId).waitFor(client, timeoutSeconds);
+      return propagateBasicAuthCreds(requestStatus(asyncId)).waitFor(client, timeoutSeconds);
     }
 
     @Override
@@ -271,8 +283,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  protected abstract static class ShardSpecificAdminRequest extends CollectionAdminRequest {
+  protected abstract static class ShardSpecificAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
 
     protected String collection;
     protected String shard;
@@ -293,7 +304,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    protected CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
   }
@@ -1561,8 +1572,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class RequestStatusResponse extends CollectionAdminResponse {
 
     public RequestStatusState getRequestStatus() {
-      @SuppressWarnings({"rawtypes"})
-      NamedList innerResponse = (NamedList) getResponse().get("status");
+      NamedList<?> innerResponse = (NamedList<?>) getResponse().get("status");
       return RequestStatusState.fromKey((String) innerResponse.get("state"));
     }
 
@@ -1620,7 +1630,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       while (System.nanoTime() < finishTime) {
         state = this.process(client).getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
-          deleteAsyncId(requestId).process(client);
+          propagateBasicAuthCreds(deleteAsyncId(requestId)).process(client);
           return state;
         }
         TimeUnit.SECONDS.sleep(1);
@@ -1794,7 +1804,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private final String interval;
     //Optional:
     private TimeZone tz;
-    private Integer maxFutureMs;
+    private Long maxFutureMs;
     private String preemptiveCreateMath;
     private String autoDeleteAge;
 
@@ -1815,8 +1825,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    /** Sets how long into the future (millis) that we will allow a document to pass. */
+    /**
+     * Sets how long into the future (millis) that we will allow a document to pass.
+     *
+     * @deprecated Please use {@link #setMaxFutureMs(Long)} instead.
+     * */
+    @Deprecated
     public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
+      this.maxFutureMs = Long.valueOf(maxFutureMs);
+      return this;
+    }
+
+    /** Sets how long into the future (millis) that we will allow a document to pass. */
+    public CreateTimeRoutedAlias setMaxFutureMs(Long maxFutureMs) {
       this.maxFutureMs = maxFutureMs;
       return this;
     }
@@ -2652,9 +2673,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    */
   public static class RequestApiDistributedProcessingResponse extends CollectionAdminResponse {
     public boolean getIsCollectionApiDistributed() {
-      @SuppressWarnings({"rawtypes"})
-      Boolean isDistributedApi = (Boolean) getResponse().get("isDistributedApi");
-      return isDistributedApi;
+      return (Boolean) getResponse().get("isDistributedApi");
     }
   }
 

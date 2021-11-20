@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Writer;
 
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
@@ -87,9 +86,6 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
     public static class UselessOutputWriter implements QueryResponseWriter {
 
         public UselessOutputWriter() {}
-
-        @Override
-        public void init(@SuppressWarnings({"rawtypes"})NamedList n) {}
 
         @Override
         public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)

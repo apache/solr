@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -58,6 +59,7 @@ import org.junit.Test;
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@ThreadLeakLingering(linger = 0)
 public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
@@ -4029,24 +4031,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       throw new Exception("Doubles not equal:"+d+" : "+dv);
     }
 
-    return true;
-  }
-
-  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
-    if(maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
-    }
-
-    int i=0;
-    for(int val : ids) {
-      @SuppressWarnings({"rawtypes"})
-      Map t = maps.get(i);
-      String tip = (String)t.get("id");
-      if(!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
-      }
-      ++i;
-    }
     return true;
   }
 

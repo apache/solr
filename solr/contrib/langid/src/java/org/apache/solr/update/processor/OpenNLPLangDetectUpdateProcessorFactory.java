@@ -37,7 +37,7 @@ import opennlp.tools.langdetect.LanguageDetectorModel;
  * The UpdateProcessorChain config entry can take a number of parameters
  * which may also be passed as HTTP parameters on the update request
  * and override the defaults. Here is the simplest processor config possible:
- * 
+ *
  * <pre class="prettyprint" >
  * &lt;processor class=&quot;org.apache.solr.update.processor.OpenNLPLangDetectUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;langid.fl&quot;&gt;title,text&lt;/str&gt;
@@ -45,7 +45,7 @@ import opennlp.tools.langdetect.LanguageDetectorModel;
  *   &lt;str name="langid.model"&gt;langdetect-183.bin&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection</a>
  *
  * @since 7.3.0
  */
@@ -61,23 +61,23 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
   private SolrResourceLoader solrResourceLoader;
 
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
+  public void init(NamedList<?> args )
   {
     if (args != null) {
       Object o;
       o = args.get("defaults");
-      if (o != null && o instanceof NamedList) {
-        defaults = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        defaults = ((NamedList<?>) o).toSolrParams();
       } else {
         defaults = args.toSolrParams();
       }
       o = args.get("appends");
-      if (o != null && o instanceof NamedList) {
-        appends = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        appends = ((NamedList<?>) o).toSolrParams();
       }
       o = args.get("invariants");
-      if (o != null && o instanceof NamedList) {
-        invariants = ((NamedList) o).toSolrParams();
+      if (o instanceof NamedList) {
+        invariants = ((NamedList<?>) o).toSolrParams();
       }
 
       // Look for model filename in invariants, then in args, then defaults
@@ -86,8 +86,8 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
       }
       if (modelFile == null) {
         o = args.get(MODEL_PARAM);
-        if (o != null && o instanceof String) {
-          modelFile = (String)o;
+        if (o instanceof String) {
+          modelFile = (String) o;
         } else {
           modelFile = defaults.get(MODEL_PARAM);
           if (modelFile == null) {

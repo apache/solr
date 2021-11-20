@@ -124,7 +124,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   
   @Test
   @ShardsFixed(num = 3)
-  @SuppressWarnings("unchecked")
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
@@ -1229,7 +1228,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return ur;
   }
 
-  @SuppressWarnings("rawtypes")
   protected long addDocAndGetVersion(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
@@ -1242,7 +1240,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // send updates to leader, to avoid SOLR-8733
     resp = ureq.process(LEADER);
     
-    long returnedVersion = Long.parseLong(((NamedList)resp.getResponse().get("adds")).getVal(0).toString());
+    long returnedVersion = Long.parseLong(((NamedList<?>)resp.getResponse().get("adds")).getVal(0).toString());
     assertTrue("Due to SOLR-8733, sometimes returned version is 0. Let us assert that we have successfully"
         + " worked around that problem here.", returnedVersion > 0);
     return returnedVersion;

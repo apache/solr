@@ -53,6 +53,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -283,7 +284,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
@@ -291,6 +291,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
     }
+    
+    tagRequestWithRequestId(rb);
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
     rb.setDebug(dbg);
@@ -300,19 +302,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    if (req.getCore().getCircuitBreakerManager().isEnabled()) {
+    final CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+    if (circuitBreakerManager.isEnabled()) {
       List<CircuitBreaker> trippedCircuitBreakers;
 
       if (timer != null) {
         RTimerTree subt = timer.sub("circuitbreaker");
         rb.setTimer(subt);
 
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
 
         rb.getTimer().stop();
       } else {
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
       }
 
@@ -325,8 +326,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
 
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
-
-    tagRequestWithRequestId(rb);
 
     if (timer == null) {
       // non-debugging prepare phase
@@ -397,8 +396,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
           }
         }
         if(rb.isDebug()) {
-          NamedList debug = new NamedList();
-          debug.add("explain", new NamedList());
+          NamedList<Object> debug = new NamedList<>();
+          debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
         rb.rsp.getResponseHeader().asShallowMap()
@@ -551,6 +550,17 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     final boolean ridTaggingDisabled = rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
     if (! ridTaggingDisabled) {
       String rid = getOrGenerateRequestId(rb.req);
+
+      // NOTE: SearchHandler explicitly never clears/removes this MDC value...
+      // We want it to live for the entire request, beyond the scope of SearchHandler's processing, and trust
+      // SolrDispatchFilter to clean it up at the end of the request.
+      //
+      // Examples:
+      // - ERROR logging of Exceptions propogated up to our base class
+      // - SolrCore.RequestLog
+      // - ERRORs that may be logged during response writing
+      MDC.put(CommonParams.REQUEST_ID, rid);
+      
       if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
         ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
         params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it

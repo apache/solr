@@ -60,11 +60,9 @@ public class OverseerNodePrioritizer {
   public synchronized void prioritizeOverseerNodes(String overseerId) throws Exception {
     SolrZkClient zk = zkStateReader.getZkClient();
     if(!zk.exists(ZkStateReader.ROLES,true))return;
-    @SuppressWarnings({"rawtypes"})
-    Map m = (Map) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
+    Map<?,?> m = (Map<?,?>) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
 
-    @SuppressWarnings({"rawtypes"})
-    List overseerDesignates = (List) m.get("overseer");
+    List<?> overseerDesignates = (List<?>) m.get("overseer");
     if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
     String ldr = OverseerTaskProcessor.getLeaderNode(zk);
     if(overseerDesignates.contains(ldr)) return;
@@ -105,7 +103,7 @@ public class OverseerNodePrioritizer {
     params.set("qt", adminPath);
     params.set("electionNode", electionNode);
     ShardRequest sreq = new ShardRequest();
-    sreq.purpose = 1;
+    sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
     String replica = zkStateReader.getBaseUrlForNodeName(LeaderElector.getNodeName(electionNode));
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;

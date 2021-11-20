@@ -34,7 +34,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
@@ -80,7 +82,6 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void integrationTest() {
     assumeWorkingMockito();
 
@@ -123,10 +124,10 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
           addNewReplica(replicas, collection, slice, downNodes);
         }
         Map<String, Replica> replicaMap = replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
-        sliceMap.put(slice, new Slice(slice, replicaMap, map(), collection));
+        sliceMap.put(slice, new Slice(slice, replicaMap, Collections.emptyMap(), collection));
       }
       @SuppressWarnings({"unchecked"})
-      DocCollection col = new DocCollection(collection, sliceMap, map(), DocRouter.DEFAULT);
+      DocCollection col = new DocCollection(collection, sliceMap, Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT);
       collToState.put(collection, col);
     }
     // reverse map
@@ -183,8 +184,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   private CoreDescriptor newCoreDescriptor(Replica r) {
-    @SuppressWarnings({"unchecked"})
-    Map<String,String> props = map(
+    Map<String,String> props = Map.of(
         CoreDescriptor.CORE_SHARD, r.getShard(),
         CoreDescriptor.CORE_COLLECTION, r.getCollection(),
         CoreDescriptor.CORE_NODE_NAME, r.getNodeName()
@@ -195,8 +195,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {
     String replica = "r" + replicaList.size();
     String node = possibleNodes.get(random().nextInt(possibleNodes.size())); // place on a random node
-    @SuppressWarnings({"unchecked"})
-    Replica r = new Replica(replica, map("core", replica, "node_name", node), collection, slice);
+    Replica r = new Replica(replica, Map.of("core", replica, "node_name", node), collection, slice);
     replicaList.add(r);
     return r;
   }

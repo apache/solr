@@ -74,12 +74,10 @@ public class TestInjection {
    * If non-null, then this class should be used for accessing random entropy
    * @see #random
    */
-  @SuppressWarnings({"rawtypes"})
-  private static final Class LUCENE_TEST_CASE;
+  private static final Class<?> LUCENE_TEST_CASE;
   
   static {
-    @SuppressWarnings({"rawtypes"})
-    Class nonFinalTemp = null;
+    Class<?> nonFinalTemp = null;
     try {
       ClassLoader classLoader = MethodHandles.lookup().lookupClass().getClassLoader();
       nonFinalTemp = classLoader.loadClass(LUCENE_TEST_CASE_FQN);
@@ -99,7 +97,6 @@ public class TestInjection {
       return null;
     } else {
       try {
-        @SuppressWarnings({"unchecked"})
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {
@@ -152,6 +149,10 @@ public class TestInjection {
 
   public volatile static Integer delayInExecutePlanAction=null;
 
+  public volatile static Integer delayBeforeCreatingNewDocSet = null;
+
+  public volatile static AtomicInteger countDocSetDelays = new AtomicInteger(0);
+
   public volatile static boolean failInExecutePlanAction = false;
 
   /**
@@ -193,6 +194,8 @@ public class TestInjection {
     wrongIndexFingerprint = null;
     delayBeforeFollowerCommitRefresh = null;
     delayInExecutePlanAction = null;
+    delayBeforeCreatingNewDocSet = null;
+    countDocSetDelays.set(0);
     failInExecutePlanAction = false;
     skipIndexWriterCommitOnClose = false;
     uifOutOfMemoryError = false;
@@ -575,6 +578,22 @@ public class TestInjection {
   public static boolean injectUIFOutOfMemoryError() {
     if (uifOutOfMemoryError ) {
       throw new OutOfMemoryError("Test Injection");
+    }
+    return true;
+  }
+
+  public static boolean injectDocSetDelay(Object query) {
+    if (delayBeforeCreatingNewDocSet != null)  {
+      countDocSetDelays.incrementAndGet();
+      try {
+        log.info("Pausing DocSet for {}ms: {}", delayBeforeCreatingNewDocSet, query);
+        if (log.isDebugEnabled()) {
+          log.debug("", new Exception("Stack Trace"));
+        }
+        Thread.sleep(delayBeforeCreatingNewDocSet);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
     return true;
   }

@@ -30,7 +30,7 @@ REM set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 
 REM Configure verbose GC logging:
 REM For Java 8: if this is set, additional params will be added to specify the log file & rotation
-REM For Java 9 or higher: GC_LOG_OPTS is currently not supported. If you set it, the startup script will exit with failure.
+REM For Java 9 or higher: GC_LOG_OPTS is currently not supported unless you are using OpenJ9. Otherwise if you set it, the startup script will exit with failure.
 REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
@@ -54,6 +54,9 @@ REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot
 REM Leave empty if not using SolrCloud
 REM set ZK_HOST=
+
+REM Set to true if your ZK host has a chroot path, and you want to create it automatically.
+REM set ZK_CREATE_CHROOT=true
 
 REM Set the ZooKeeper client timeout (for SolrCloud mode)
 REM set ZK_CLIENT_TIMEOUT=30000
@@ -97,11 +100,6 @@ REM set SOLR_LOG_LEVEL=INFO
 
 REM Location where Solr should write logs to. Absolute or relative to solr start dir
 REM set SOLR_LOGS_DIR=logs
-
-REM Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
-REM start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
-REM framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
-REM set SOLR_LOG_PRESTART_ROTATION=false
 
 REM Enables jetty request log for all requests
 REM set SOLR_REQUESTLOG_ENABLED=false
@@ -182,6 +180,9 @@ REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCrede
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
+
+REM Jetty GZIP module enabled by default
+REM set SOLR_GZIP_ENABLED=true
 
 REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 REM list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured

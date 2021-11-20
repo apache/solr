@@ -37,7 +37,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -68,11 +68,7 @@ public class AdminHandlersProxy {
     
     Set<String> nodes;
     String pathStr = req.getPath();
-    
-    @SuppressWarnings({"unchecked"})
-    Map<String,String> paramsMap = req.getParams().toMap(new HashMap<>());
-    paramsMap.remove(PARAM_NODES);
-    SolrParams params = new MapSolrParams(paramsMap);
+
     Set<String> liveNodes = container.getZkController().zkStateReader.getClusterState().getLiveNodes();
     
     if (nodeNames.equals("all")) {
@@ -94,7 +90,9 @@ public class AdminHandlersProxy {
     if (log.isDebugEnabled()) {
       log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
     }
-    
+
+    ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+    params.remove(PARAM_NODES);
     Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
     for (String node : nodes) {
       responses.put(node, callRemoteNode(node, pathStr, params, container.getZkController()));
@@ -126,8 +124,7 @@ public class AdminHandlersProxy {
     log.debug("Proxying {} request to node {}", endpoint, nodeName);
     URL baseUrl = new URL(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
+    SolrRequest<?> proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
     HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
     return new Pair<>(proxyResp.future, solr);
   }

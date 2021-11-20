@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -28,7 +29,6 @@ import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.SetAliasPropertyPayload;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -41,14 +41,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.*;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
@@ -77,7 +78,9 @@ public class CollectionsAPI {
       method = GET,
       permission = COLL_READ_PERM)
   public void getCollections(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    CollectionsHandler.CollectionOperation.LIST_OP.execute(req, rsp, collectionsHandler);
+      final Map<String, Object> v1Params = Maps.newHashMap();
+      v1Params.put(ACTION, CollectionAction.LIST.toLower());
+      collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
     @EndPoint(
@@ -87,7 +90,6 @@ public class CollectionsAPI {
     public class CollectionsCommands {
 
         @Command(name = V2_BACKUP_CMD)
-        @SuppressWarnings("unchecked")
         public void backupCollection(PayloadObj<BackupCollectionPayload> obj) throws Exception {
             final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
             v1Params.put(ACTION, CollectionAction.BACKUP.toLower());
@@ -151,7 +153,6 @@ public class CollectionsAPI {
         }
 
         @Command(name= V2_DELETE_ALIAS_CMD)
-        @SuppressWarnings("unchecked")
         public void deleteAlias(PayloadObj<DeleteAliasPayload> obj) throws Exception {
             final DeleteAliasPayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
@@ -161,7 +162,6 @@ public class CollectionsAPI {
         }
 
         @Command(name = V2_CREATE_COLLECTION_CMD)
-        @SuppressWarnings("unchecked")
         public void create(PayloadObj<CreatePayload> obj) throws Exception {
             final CreatePayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
@@ -207,25 +207,5 @@ public class CollectionsAPI {
                 }
             }
         }
-
-        private void flattenMapWithPrefix(Map<String, Object> toFlatten, Map<String, Object> destination,
-                                          String additionalPrefix) {
-            if (toFlatten == null || toFlatten.isEmpty() || destination == null) {
-                return;
-            }
-
-            toFlatten.forEach((k, v) -> destination.put(additionalPrefix + k, v));
-        }
   }
-
-  @EndPoint(path = {"/c/{collection}", "/collections/{collection}"},
-      method = DELETE,
-      permission = COLL_EDIT_PERM)
-  public void deleteCollection(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req = wrapParams(req, ACTION,
-        CollectionAction.DELETE.toString(),
-        NAME, req.getPathTemplateValues().get(ZkStateReader.COLLECTION_PROP));
-    collectionsHandler.handleRequestBody(req, rsp);
-  }
-
 }

@@ -204,7 +204,6 @@ public class DistributedApiAsyncTracker {
    * {@link RequestStatusState} is {@link RequestStatusState#COMPLETED} or {@link RequestStatusState#FAILED} (and will be
    * {@code null} in all other cases).
    */
-  @SuppressWarnings("unchecked")
   public Pair<RequestStatusState, OverseerSolrResponse> getAsyncTaskRequestStatus(String asyncId) throws Exception {
     if (asyncId == null || !trackedAsyncTasks.contains(asyncId)) {
       // This return addresses the whole "No persistent node" column from the table
@@ -233,8 +232,7 @@ public class DistributedApiAsyncTracker {
     if (response == null) {
       // Node crash has removed the ephemeral node, but the command did not complete execution (or didn't even start it, who
       // knows). We have a failure to report though so let's create a reasonable return response.
-      @SuppressWarnings({"rawtypes"})
-      NamedList results = new NamedList();
+      NamedList<Object> results = new NamedList<>();
       SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
       nl.add("msg", "Operation (asyncId: " + asyncId + ") failed due to server restart. Please resubmit.");
       nl.add("rspCode", SERVER_ERROR.code);

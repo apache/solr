@@ -22,7 +22,6 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -54,7 +53,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   private String _baseWriter = null;
   
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
+  public void init(NamedList<?> n) {
     if( n != null ) {
       Object base = n.get( "base" );
       if( base != null ) {
@@ -84,7 +83,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
       try(Reader reader = content.getReader()) {
-        IOUtils.copy( reader, writer );
+        reader.transferTo(writer);
       }
     } else {
       getBaseWriter( request ).write( writer, request, response );
@@ -98,7 +97,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
       try(InputStream in = content.getStream()) {
-        IOUtils.copy( in, out );
+        in.transferTo(out);
       }
     } else {
       QueryResponseWriterUtil.writeQueryResponse(out, 

@@ -128,11 +128,9 @@ public class SolrDocumentTest extends SolrTestCase
     doc.clear();
     assertEquals( 0, doc.getFieldNames().size() );
     
-    @SuppressWarnings({"rawtypes"})
-    Iterable iter = new Iterable() {
+    Iterable<String> iter = new Iterable<>() {
       @Override
-      @SuppressWarnings({"rawtypes"})
-      public Iterator iterator() {
+      public Iterator<String> iterator() {
         return c0.iterator();
       }
     };

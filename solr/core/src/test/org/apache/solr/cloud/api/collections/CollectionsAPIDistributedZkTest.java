@@ -42,7 +42,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -55,13 +54,11 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -215,8 +212,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("action", CollectionAction.CREATE.toString());
     params.set("numShards", 2);
     // missing required collection parameter
-    @SuppressWarnings({"rawtypes"})
-    final SolrRequest request = new QueryRequest(params);
+    final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
     expectThrows(Exception.class, () -> {
@@ -233,8 +229,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set(REPLICATION_FACTOR, 10);
     params.set("collection.configName", "conf");
 
-    @SuppressWarnings({"rawtypes"})
-    final SolrRequest request = new QueryRequest(params);
+    final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
     expectThrows(Exception.class, () -> {
@@ -251,8 +246,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     params.set("numShards", 0);
     params.set("collection.configName", "conf");
 
-    @SuppressWarnings({"rawtypes"})
-    final SolrRequest request = new QueryRequest(params);
+    final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(request);
@@ -336,10 +330,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   @Test
   public void testSpecificConfigsets() throws Exception {
     CollectionAdminRequest.createCollection("withconfigset2", "conf2", 1, 1).process(cluster.getSolrClient());
-    byte[] data = zkClient().getData(ZkStateReader.COLLECTIONS_ZKNODE + "/" + "withconfigset2", null, null, true);
-    assertNotNull(data);
-    ZkNodeProps props = ZkNodeProps.load(data);
-    String configName = props.getStr(ZkController.CONFIGNAME_PROP);
+    String configName  = cluster.getSolrClient().getClusterStateProvider().getCollection("withconfigset2").getConfigName();
     assertEquals("conf2", configName);
   }
 

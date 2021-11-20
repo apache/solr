@@ -162,7 +162,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   protected long cacheVersion;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     this.initArgs = args.toSolrParams();
   }
 
@@ -633,9 +633,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @param context the {@link SolrQueryRequest#getContext()} or null if none.  We'll cache our results here.
    */
   //TODO consider simplifying to remove "boosted" arg which can be looked up in context via BOOSTED key?
-  @SuppressWarnings({"unchecked"})
   public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Set<BytesRef> boosted,
-                                           @SuppressWarnings({"rawtypes"})Map context) throws IOException {
+                                           Map<Object,Object> context) throws IOException {
 
     IntIntHashMap boostDocs = null;
 

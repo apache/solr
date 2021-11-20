@@ -1,5 +1,9 @@
 = Getting Started
-:page-children: solr-tutorial, a-quick-overview, solr-system-requirements, installing-solr
+:page-children: introduction, \
+    solr-concepts, \
+    solr-tutorial, \
+    solr-admin-ui, \
+    about-this-guide
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -20,12 +24,28 @@
 [.lead]
 Solr makes it easy for programmers to develop sophisticated, high-performance search applications with advanced features.
 
-This section introduces you to the basic Solr architecture and features to help you get up and running quickly. It covers the following topics:
+This section introduces you to the basic Solr architecture and features to help you get up and running quickly.
+It covers the following topics:
 
-<<solr-tutorial.adoc#,Solr Tutorial>>: This tutorial covers getting Solr up and running
+****
+<<introduction.adoc#,*Introduction to Solr*>>: Short introduction to Solr's primary features.
+****
 
-<<a-quick-overview.adoc#,A Quick Overview>>: A high-level overview of how Solr works.
+****
+<<solr-concepts.adoc#,*Solr Concepts*>>: Beginner information on Solr and information retrieval concepts.
 
-<<solr-system-requirements.adoc#,Solr System Requirements>>: Solr System Requirement
+// This pulls the sub-section list from the child page to reduce errors
+include::solr-concepts.adoc[tag=concept-sections]
+****
 
-<<installing-solr.adoc#,Installing Solr>>: A walkthrough of the Solr installation process.
+****
+<<solr-tutorial.adoc#,*Solr Tutorial*>>: A multi-exercise tutorial that covers the main concepts of indexing and querying Solr.
+****
+
+****
+<<solr-admin-ui.adoc#,*Solr Admin UI*>>: Solr's Web-based interface for administering Solr.
+****
+
+****
+<<about-this-guide.adoc#,*About this Guide*>>: How to use this Reference Guide.
+****

@@ -16,29 +16,8 @@
  */
 package org.apache.solr.security;
 
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -47,11 +26,12 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
+import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
@@ -64,6 +44,35 @@ import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.Principal;
+import java.security.cert.X509Certificate;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Authenticaion plugin that finds logged in user by validating the signature of a JWT token
@@ -83,6 +92,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_REDIRECT_URIS = "redirectUris";
   private static final String PARAM_ISSUERS = "issuers";
   private static final String PARAM_REALM = "realm";
+  private static final String PARAM_TRUSTED_CERTS_FILE = "trustedCertsFile";
+  private static final String PARAM_TRUSTED_CERTS = "trustedCerts";
 
   private static final String DEFAULT_AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
@@ -94,6 +105,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
       PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_REALM, PARAM_ROLES_CLAIM,
       PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS,
+      PARAM_TRUSTED_CERTS_FILE, PARAM_TRUSTED_CERTS,
       // These keys are supported for now to enable PRIMARY issuer config through top-level keys
       JWTIssuerConfig.PARAM_JWKS_URL, JWTIssuerConfig.PARAM_JWK, JWTIssuerConfig.PARAM_ISSUER,
       JWTIssuerConfig.PARAM_CLIENT_ID, JWTIssuerConfig.PARAM_WELL_KNOWN_URL, JWTIssuerConfig.PARAM_AUDIENCE,
@@ -114,12 +126,20 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private List<JWTIssuerConfig> issuerConfigs;
   private boolean requireIssuer;
   private JWTVerificationkeyResolver verificationKeyResolver;
+  private Collection<X509Certificate> trustedSslCerts;
   String realm;
+  private final CoreContainer coreContainer;
 
   /**
    * Initialize plugin
    */
-  public JWTAuthPlugin() {}
+  public JWTAuthPlugin() {
+    this(null);
+  }
+
+  public JWTAuthPlugin(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
+  }
 
   @SuppressWarnings("unchecked")
   @Override
@@ -130,7 +150,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     unknownKeys.remove("class");
     unknownKeys.remove("");
     if (!unknownKeys.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JwtAuth configuration parameter " + unknownKeys); 
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JwtAuth configuration parameter " + unknownKeys);
     }
 
     blockUnknown = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, false)));
@@ -155,8 +175,37 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
     }
 
+    // Parse custom IDP SSL Cert from either path or string
+    InputStream trustedCertsStream = null;
+    String trustedCertsFile = (String) pluginConfig.get(PARAM_TRUSTED_CERTS_FILE);
+    String trustedCerts = (String) pluginConfig.get(PARAM_TRUSTED_CERTS);
+    if (trustedCertsFile != null && trustedCerts != null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Found both " + PARAM_TRUSTED_CERTS_FILE + " and " + PARAM_TRUSTED_CERTS + ", please use only one");
+    }
+    if (trustedCertsFile != null) {
+      try {
+        Path trustedCertsPath = Paths.get(trustedCertsFile);
+        if (coreContainer != null) {
+          coreContainer.assertPathAllowed(trustedCertsPath);
+        }
+        trustedCertsStream = Files.newInputStream(trustedCertsPath);
+        log.info("Reading trustedCerts from file {}", trustedCertsFile);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + trustedCertsFile, e);
+      }
+    }
+    if (trustedCerts != null) {
+      log.info("Reading trustedCerts PEM from configuration string");
+      trustedCertsStream = IOUtils.toInputStream(trustedCerts, StandardCharsets.UTF_8);
+    }
+    if (trustedCertsStream != null) {
+      trustedSslCerts = CryptoKeys.parseX509Certs(trustedCertsStream);
+    }
+
     long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
-    JWTIssuerConfig.setHttpsJwksFactory(new JWTIssuerConfig.HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD));
+
+    JWTIssuerConfig.setHttpsJwksFactory(new JWTIssuerConfig.HttpsJwksFactory(
+        jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD, trustedSslCerts));
 
     issuerConfigs = new ArrayList<>();
 
@@ -214,6 +263,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       }
       if (primary.isValid()) {
         log.debug("Found issuer in top level config");
+        primary.setTrustedCerts(trustedSslCerts);
         primary.init();
         return Optional.of(primary);
       } else {
@@ -250,6 +300,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       if (issuers != null) {
         issuers.forEach(issuerConf -> {
           JWTIssuerConfig ic = new JWTIssuerConfig(issuerConf);
+          ic.setTrustedCerts(trustedSslCerts);
           ic.init();
           configs.add(ic);
           if (log.isDebugEnabled()) {
@@ -574,7 +625,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);
     String headerJson = Utils.toJSONString(data);
-    return Base64.byteArrayToBase64(headerJson.getBytes(StandardCharsets.UTF_8));
+    return Base64.getEncoder().encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
   }
 
   /**
@@ -583,7 +634,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   static class JWTAuthenticationResponse {
     private final Principal principal;
     private String errorMessage;
-    private AuthCode authCode;
+    private final AuthCode authCode;
     private InvalidJwtException jwtException;
   
     enum AuthCode {

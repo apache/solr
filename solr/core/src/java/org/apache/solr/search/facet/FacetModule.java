@@ -91,7 +91,6 @@ public class FacetModule extends SearchComponent {
     SolrParams params = rb.req.getParams();
 
     boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
-    @SuppressWarnings({"unchecked"})
     Map<String, Object> facetInfo = null;
     if (isShard) {
       String jfacet = params.get(FACET_INFO);
@@ -285,7 +284,7 @@ public class FacetModule extends SearchComponent {
       if (top == null) continue; // shards.tolerant=true will cause this to happen on exceptions/errors
       Object facet = top.get("facets");
       if (facet == null) {
-        @SuppressWarnings("rawtypes") SimpleOrderedMap shardResponseHeader = (SimpleOrderedMap) rsp.getResponse().get("responseHeader");
+        SimpleOrderedMap<?> shardResponseHeader = (SimpleOrderedMap<?>) rsp.getResponse().get("responseHeader");
         if (Boolean.TRUE.equals(shardResponseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
         }
@@ -481,7 +480,7 @@ public class FacetModule extends SearchComponent {
       if (bucket == null) {
         bucket = newBucket(null, mcontext);
       }
-      bucket.mergeBucket((SimpleOrderedMap) facet, mcontext);
+      bucket.mergeBucket((SimpleOrderedMap<?>) facet, mcontext);
     }
 
     @Override
