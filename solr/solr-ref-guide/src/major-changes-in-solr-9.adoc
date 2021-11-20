@@ -80,6 +80,8 @@ All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHt
 
 * SOLR-15409: Zookeeper client libraries upgraded to 3.7.0, which may not be compatible with your existing server installations
 
+* SOLR-11623: Every request handler in Solr now implements PermissionNameProvider. Any custom or 3rd party request handler must also do this
+
 
 == New Features & Enhancements
 

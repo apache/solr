@@ -53,6 +53,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -455,7 +456,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public void testRequestHandlerBaseException() {
     final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler = new RequestHandlerBase() {
-        @Override
+      @Override
+      public Name getPermissionName(AuthorizationContext request) {
+        return Name.ALL;
+      }
+
+      @Override
         public String getDescription() { return tmp; }
         @Override
         public void handleRequestBody
