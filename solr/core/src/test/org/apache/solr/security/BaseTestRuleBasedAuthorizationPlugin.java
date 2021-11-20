@@ -45,7 +45,6 @@ import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.util.LogLevel;
 import org.hamcrest.core.IsInstanceOf;
-import org.hamcrest.core.IsNot;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -213,14 +212,14 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "userPrincipal", "tim",
         "handler", new ReplicationHandler(),
         "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
-        , FORBIDDEN);
+        , STATUS_OK); // Replication requires "READ" permission, which Tim has
 
     checkRules(Map.of("resource", ReplicationHandler.PATH,
         "httpMethod", "POST",
         "userPrincipal", "cio",
         "handler", new ReplicationHandler(),
         "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
-        , STATUS_OK);
+        , FORBIDDEN); // User cio has role 'su' which does not have 'read' permission
 
     checkRules(Map.of("resource", "/admin/collections",
         "userPrincipal", "tim",
@@ -353,7 +352,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         , STATUS_OK);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(Map.of("resource", "/admin/info/properties",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
@@ -385,7 +384,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         , STATUS_OK);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(Map.of("resource", "/admin/info/properties",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
@@ -416,7 +415,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         , FORBIDDEN);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(Map.of("resource", "/admin/info/properties",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
