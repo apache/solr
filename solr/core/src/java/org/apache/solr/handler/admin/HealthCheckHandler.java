@@ -40,7 +40,6 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -275,10 +274,5 @@ public class HealthCheckHandler extends RequestHandlerBase {
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    return Name.HEALTH_PERM;
   }
 }

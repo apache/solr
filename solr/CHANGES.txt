@@ -162,9 +162,6 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15278: Add V2 equivalent to allow deleting async collection list of statuses. (Eric Pugh)
 
-* SOLR-11623: Every request handler in Solr now implements PermissionNameProvider to explicitly decide on what security
-  permissions are required to access the handler (janhoy, Hrishikesh Gadre, David Smiley)
-
 * SOLR-15608: Remove deprecated methods, classes and constructors from solrj clients (janhoy)
 
 * SOLR-15705: A delete-by-id command is forwarded to all shards when using the CompositeId router with a router field
@@ -178,6 +175,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15376: Accept "Long" values for CollectionAdminRequest.CreateTimeRoutedAlias.setMaxFutureMs
   to support durations greater than ~ 25 days. (Nahian-Al Hasan, Gus Heck, Christine Poerschke)
+
+* SOLR-15427: Nested docs: [child limit=...] now defaults to -1 which is interpreted as unlimited.
+  (David Smiley)
 
 Build
 ---------------------
@@ -405,9 +405,9 @@ Other Changes
 
 * SOLR-15791: Remove remaining unused <admin/> clauses from solrconfigs. (Eric Pugh)
 
-* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
-
 * SOLR-15784: Remove SolrJ dependency on commons-io. (Mike Drob)
+
+* SOLR-15808: [Docker] The jattach tool is now installed with apt (janhoy)
 
 * SOLR-15809: Get rid of blacklist/whitelist terminology
   JWTAuthPlugin parameter 'algWhitelist' is now 'algAllowlist'
@@ -445,10 +445,12 @@ Bug Fixes
 
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
   closed fromCore if provided (Mikhail Khludnev, David Smiley)
-  
+
 * SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
 
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
+
+* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
 
 ==================  8.11.0 ==================
 
@@ -470,6 +472,8 @@ Improvements
 ---------------------
 
 * SOLR-15707: Add the ability to set the AWS Profile per S3Repository (Houston Putman)
+
+* SOLR-15700: Make include paths in bin/solr consistent (turnertg, janhoy via Eric Pugh)
 
 Optimizations
 ---------------------

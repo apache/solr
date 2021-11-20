@@ -387,7 +387,6 @@ solrAdminApp.config([
     if (activeRequests == 0) {
       $rootScope.$broadcast('loadingStatusInactive');
     }
-    $rootScope.showAuthzFailures = false;
     if ($rootScope.retryCount>0) {
       $rootScope.connectionRecovered = true;
       $rootScope.retryCount=0;
@@ -443,9 +442,6 @@ solrAdminApp.config([
         sessionStorage.setItem("auth.location", $location.path());
         $location.path('/login');
       }
-    } else if (rejection.status === 403 && !isHandledBySchemaDesigner) {
-      // No permission
-      $rootScope.showAuthzFailures = true;
     } else {
       // schema designer prefers to handle errors itself
       if (!isHandledBySchemaDesigner) {

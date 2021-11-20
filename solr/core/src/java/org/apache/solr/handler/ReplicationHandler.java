@@ -96,7 +96,6 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -133,11 +132,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   SolrCore core;
   
   private volatile boolean closed = false;
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    return Name.READ_PERM;
-  }
 
   private static final class CommitVersionInfo {
     public final long version;

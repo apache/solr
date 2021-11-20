@@ -32,7 +32,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
@@ -434,10 +433,5 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
   @Override
   public Category getCategory() {
     return Category.ADMIN;
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    return Name.METRICS_READ_PERM;
   }
 }
