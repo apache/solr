@@ -172,6 +172,11 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
       log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; //'ALL' applies to everything!
+    } else if (! (context.getHandler() instanceof PermissionNameProvider)) {
+      if (log.isTraceEnabled()) {
+        log.trace("Request handler [{}] is not a PermissionNameProvider, perm doesnt apply", context.getHandler());
+      }
+      return false; // We're not 'ALL', and the handler isn't associated with any other predefined permissions
     } else {
       PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
       PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
