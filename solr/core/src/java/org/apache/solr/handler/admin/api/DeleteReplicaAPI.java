@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.api.EndPoint;
+import org.apache.solr.client.solrj.request.beans.AddReplicaPayload;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -31,7 +32,12 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-
+/**
+ * V2 API for deleting an existing replica from a shard.
+ *
+ * This API (DELETE /v2/collections/collectionName/shards/shardName/replicaName is analogous to the v1
+ * /admin/collections?action=DELETEREPLICA command.
+ */
 public class DeleteReplicaAPI {
 
     private final CollectionsHandler collectionsHandler;
