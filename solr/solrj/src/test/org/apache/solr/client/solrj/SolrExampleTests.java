@@ -76,6 +76,7 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.RTimer;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
@@ -100,6 +101,11 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   static {
     ignoreException("uniqueKey");
+  }
+
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    createAndStartJetty(testProductsCollection1SolrHome());
   }
 
   @Before

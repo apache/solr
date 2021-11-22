@@ -30,10 +30,10 @@ import org.junit.BeforeClass;
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
+//  @BeforeClass
+//  public static void beforeTest() throws Exception {
+//    createAndStartJetty(testProductsCollection1SolrHome());
+//  }
 
   @Override
   public SolrClient createNewSolrClient()

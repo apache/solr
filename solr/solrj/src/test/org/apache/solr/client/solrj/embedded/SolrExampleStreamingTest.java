@@ -39,10 +39,10 @@ import java.util.List;
 @Slow
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
+//  @BeforeClass
+//  public static void beforeTest() throws Exception {
+//    createAndStartJetty(testProductsCollection1SolrHome());
+//  }
 
   @Override
   public SolrClient createNewSolrClient()

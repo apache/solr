@@ -57,10 +57,10 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJettyTest extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
+//  @BeforeClass
+//  public static void beforeTest() throws Exception {
+//    createAndStartJetty(testProductsCollection1SolrHome());
+//  }
 
   @Test
   public void testBadSetup() {

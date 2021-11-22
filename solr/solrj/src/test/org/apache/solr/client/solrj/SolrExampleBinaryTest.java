@@ -29,10 +29,10 @@ import org.junit.BeforeClass;
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleBinaryTest extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
+//  @BeforeClass
+//  public static void beforeTest() throws Exception {
+//    createAndStartJetty(testProductsCollection1SolrHome());
+//  }
 
   @Override
   public SolrClient createNewSolrClient()

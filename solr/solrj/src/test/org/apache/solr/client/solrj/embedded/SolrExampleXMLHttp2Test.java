@@ -25,10 +25,10 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.junit.BeforeClass;
 
 public class SolrExampleXMLHttp2Test extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
+//  @BeforeClass
+//  public static void beforeTest() throws Exception {
+//    createAndStartJetty(testProductsCollection1SolrHome());
+//  }
 
   @Override
   public SolrClient createNewSolrClient() {
