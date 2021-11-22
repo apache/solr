@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.api.EndPoint;
-import org.apache.solr.client.solrj.request.beans.AddReplicaPayload;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
