@@ -16,17 +16,11 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
-
-import java.io.File;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the xml codec for
@@ -35,10 +29,10 @@ import java.util.TreeMap;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleXMLTest extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
+//  @BeforeClass
+//  public static void beforeTest() throws Exception {
+//    createAndStartJetty(testProductsCollection1SolrHome());
+//  }
   
   @Override
   public SolrClient createNewSolrClient() {

@@ -41,7 +41,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(testProductsCollection1SolrHome());
   }
 
   static final int numdocs = 1000;  

@@ -213,7 +213,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
   @Test
   public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
 
-    String solrHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+    String solrHome = SolrJettyTestBase.testProductsCollection1SolrHome();
 
     CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
     System.setProperty("zkHost", zkServer.getZkAddress());

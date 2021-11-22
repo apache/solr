@@ -122,8 +122,11 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
     return result;
   }
 
+  // I don't like that this is a test-framework, but references
+  // SolrJettyTestBase.testProductsCollection1SolrHome which refers to a collection only used by solrj
+  // tests predominantly.  Also it's confusing that this initCore overrides the initCore in SolrTestCaseJ4
   public static void initCore() throws Exception {
-    final String home = legacyExampleCollection1SolrHome();
+    final String home = SolrJettyTestBase.testProductsCollection1SolrHome();
     final String config = home + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
     final String schema = home + "/" + DEFAULT_CORE_NAME + "/conf/schema.xml";
     initCore(config, schema, home);

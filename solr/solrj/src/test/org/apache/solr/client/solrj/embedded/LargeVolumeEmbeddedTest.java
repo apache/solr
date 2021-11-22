@@ -16,12 +16,16 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.junit.BeforeClass;
 
 public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    initCore();
+    final String home = SolrJettyTestBase.testProductsCollection1SolrHome();
+    final String config = home + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
+    final String schema = home + "/" + DEFAULT_CORE_NAME + "/conf/schema.xml";
+    initCore(config, schema, home);
   }
 }

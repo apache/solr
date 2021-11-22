@@ -43,7 +43,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(testProductsCollection1SolrHome());
   }
 
   @Before

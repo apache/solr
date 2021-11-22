@@ -58,7 +58,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(testProductsCollection1SolrHome());
   }
 
   @Override

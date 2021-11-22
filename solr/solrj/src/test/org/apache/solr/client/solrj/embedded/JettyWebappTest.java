@@ -62,7 +62,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
   public void setUp() throws Exception
   {
     super.setUp();
-    System.setProperty("solr.solr.home", SolrJettyTestBase.legacyExampleCollection1SolrHome());
+    System.setProperty("solr.solr.home", SolrJettyTestBase.testProductsCollection1SolrHome());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 

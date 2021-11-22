@@ -51,7 +51,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(true)
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(testProductsCollection1SolrHome(), jettyConfig);
 
     try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
         .useHttp1_1(true)
@@ -71,7 +71,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(false)
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(testProductsCollection1SolrHome(), jettyConfig);
 
     try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
         .useHttp1_1(true)
@@ -92,7 +92,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(true)
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(testProductsCollection1SolrHome(), jettyConfig);
 
     System.clearProperty("solr.http1");
     try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")

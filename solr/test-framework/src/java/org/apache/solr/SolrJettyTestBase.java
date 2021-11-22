@@ -167,12 +167,13 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     }
   }
 
-  public static String legacyExampleCollection1SolrHome() {
+  //public static String legacyExampleCollection1SolrHome() {
     // Let us pick which location we are pointing to, temporary for now!!!
     //return legacyTechProductsCollection1SolrHome();
-    return testProductsCollection1SolrHome();
-  }
+    //return testProductsCollection1SolrHome();
+  //}
 
+  // I feel like this method should live not on this class, but in a class in the solr/solrj project.
   public static String testProductsCollection1SolrHome(){
     File tmpSolrHome = createTempDir().toFile();
     try {
@@ -206,47 +207,46 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     return tmpSolrHome.getAbsolutePath();
   }
 
-  public static String legacyTechProductsCollection1SolrHome() {
-
-
-
-    String sourceHome = ExternalPaths.SOURCE_HOME;
-    if (sourceHome == null)
-      throw new IllegalStateException("No source home! Cannot create the legacy example solr home directory.");
-
-    String legacyExampleSolrHome = null;
-    try {
-      File tempSolrHome = LuceneTestCase.createTempDir().toFile();
-      org.apache.commons.io.FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
-      File collection1Dir = new File(tempSolrHome, "collection1");
-      org.apache.commons.io.FileUtils.forceMkdir(collection1Dir);
-
-      File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
-      org.apache.commons.io.FileUtils.copyDirectoryToDirectory(configSetDir, collection1Dir);
-      Properties props = new Properties();
-      props.setProperty("name", "collection1");
-      OutputStreamWriter writer = null;
-      try {
-        writer = new OutputStreamWriter(FileUtils.openOutputStream(
-            new File(collection1Dir, "core.properties")), StandardCharsets.UTF_8);
-        props.store(writer, null);
-      } finally {
-        if (writer != null) {
-          try {
-            writer.close();
-          } catch (Exception ignore){}
-        }
-      }
-      legacyExampleSolrHome = tempSolrHome.getAbsolutePath();
-    } catch (Exception exc) {
-      if (exc instanceof RuntimeException) {
-        throw (RuntimeException)exc;
-      } else {
-        throw new RuntimeException(exc);
-      }
-    }
-
-    return legacyExampleSolrHome;
-  }
+//  public static String legacyTechProductsCollection1SolrHome() {
+//
+//
+//    String sourceHome = ExternalPaths.SOURCE_HOME;
+//    if (sourceHome == null)
+//      throw new IllegalStateException("No source home! Cannot create the legacy example solr home directory.");
+//
+//    String legacyExampleSolrHome = null;
+//    try {
+//      File tempSolrHome = LuceneTestCase.createTempDir().toFile();
+//      org.apache.commons.io.FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
+//      File collection1Dir = new File(tempSolrHome, "collection1");
+//      org.apache.commons.io.FileUtils.forceMkdir(collection1Dir);
+//
+//      File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
+//      org.apache.commons.io.FileUtils.copyDirectoryToDirectory(configSetDir, collection1Dir);
+//      Properties props = new Properties();
+//      props.setProperty("name", "collection1");
+//      OutputStreamWriter writer = null;
+//      try {
+//        writer = new OutputStreamWriter(FileUtils.openOutputStream(
+//            new File(collection1Dir, "core.properties")), StandardCharsets.UTF_8);
+//        props.store(writer, null);
+//      } finally {
+//        if (writer != null) {
+//          try {
+//            writer.close();
+//          } catch (Exception ignore){}
+//        }
+//      }
+//      legacyExampleSolrHome = tempSolrHome.getAbsolutePath();
+//    } catch (Exception exc) {
+//      if (exc instanceof RuntimeException) {
+//        throw (RuntimeException)exc;
+//      } else {
+//        throw new RuntimeException(exc);
+//      }
+//    }
+//
+//    return legacyExampleSolrHome;
+//  }
 
 }
