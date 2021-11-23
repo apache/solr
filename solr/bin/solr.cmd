@@ -1167,6 +1167,16 @@ IF "%SOLR_MODE%"=="solrcloud" (
   )
 )
 
+REM Exit if old syntax found
+IF DEFINED SOLR_IP_BLACKLIST (
+  set SCRIPT_ERROR=SOLR_IP_BLACKLIST and SOLR_IP_WHITELIST are no longer supported. Please use SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST instead.
+  goto err
+)
+IF DEFINED SOLR_IP_WHITELIST (
+  set SCRIPT_ERROR=SOLR_IP_BLACKLIST and SOLR_IP_WHITELIST are no longer supported. Please use SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST instead.
+  goto err
+)
+
 REM IP-based access control
 set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_ALLOWLIST%" ^
 -Dsolr.jetty.inetaccess.excludes="%SOLR_IP_DENYLIST%"

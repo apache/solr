@@ -2074,6 +2074,12 @@ else
   fi
 fi
 
+# Exit if old syntax found
+if [ -n "${SOLR_IP_BLACKLIST}" ] || [ -n "${SOLR_IP_WHITELIST}" ]; then
+  echo "ERROR: SOLR_IP_BLACKLIST and SOLR_IP_WHITELIST are no longer supported. Please use SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST instead."
+  exit 1
+fi
+
 # IP-based access control
 IP_ACL_OPTS=("-Dsolr.jetty.inetaccess.includes=${SOLR_IP_ALLOWLIST}" \
              "-Dsolr.jetty.inetaccess.excludes=${SOLR_IP_DENYLIST}")
