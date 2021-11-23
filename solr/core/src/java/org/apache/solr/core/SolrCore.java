@@ -2287,7 +2287,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             searcherLock.wait();
           } catch (InterruptedException e) {
             if (log.isInfoEnabled()) {
-              log.info(SolrException.toStr(e));
+              log.info("Interupted waiting for searcherLock", e);
             }
           }
         }
@@ -2318,7 +2318,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             searcherLock.wait();
           } catch (InterruptedException e) {
             if (log.isInfoEnabled()) {
-              log.info(SolrException.toStr(e));
+              log.info("Interupted waiting for searcherLock", e);
             }
           }
           continue;  // go back to the top of the loop and retry

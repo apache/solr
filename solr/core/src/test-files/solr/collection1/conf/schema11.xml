@@ -240,17 +240,6 @@
     <fieldType name="tdates" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
 
 
-    <!-- Poly field -->
-    <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-    <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-    <fieldType name="geohash" class="solr.GeoHashField"/>
-
-    <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-
-    <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multi
-valued. -->
-    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
-
   <!-- eff_tint class can't be randomized, because ExternalFileField disallows point-based keyField.  See SOLR-10846. -->
   <fieldType name="eff_tint" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
   <field name="eff_tint" type="eff_tint" indexed="true" stored="true"/>
@@ -292,12 +281,6 @@ valued. -->
    <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />
    <copyField source="id" dest="id_i" />
    <field name="text" type="text" indexed="true" stored="false" />
-
-   <!-- Test a point field for distances -->
-   <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-   <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-
-   <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
 
    <field name="signatureField" type="string" indexed="true" stored="false"/>
 

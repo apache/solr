@@ -11,8 +11,9 @@
     join-query-parser, \
     spatial-search, \
     other-parsers, \
-    parallel-sql-interface, \
-    query-screen
+    sql-query, \
+    query-screen, \
+    sql-screen
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -60,8 +61,10 @@ If you have custom parsing needs, you may want to extend that class to create yo
 | <<join-query-parser.adoc#,Join Query Parser>>: Query parser to facilitate joins.
 | <<spatial-search.adoc#,Spatial Search>>: Solr's spatial search capabilities.
 | <<other-parsers.adoc#,Other Parsers>>: More parsers designed for use in specific situations.
-| <<parallel-sql-interface.adoc#,Parallel SQL Interface>>: SQL interface for Solr.
+| <<sql-query.adoc#,SQL Query>>: SQL language support for Solr.
 | <<query-screen.adoc#,Query Screen>>: Form-based query builder.
+| <<sql-screen.adoc#,SQL Screen>>: SQL query runner with tabular results.
+|
 |===
 // end::parser-sections[]
 ****

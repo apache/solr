@@ -409,7 +409,11 @@ public class CoreContainer {
       }
       log.info("Initializing authorization plugin: {}", klas);
       authorizationPlugin = new SecurityPluginHolder<>(newVersion,
-          getResourceLoader().newInstance(klas, AuthorizationPlugin.class));
+          getResourceLoader().newInstance(klas,
+              AuthorizationPlugin.class,
+              null,
+              new Class<?>[]{CoreContainer.class},
+              new Object[]{this}));
 
       // Read and pass the authorization context to the plugin
       authorizationPlugin.plugin.init(authorizationConf);
@@ -765,6 +769,7 @@ public class CoreContainer {
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
     ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
+    ApiRegistrar.registerShardApis(containerHandlers.getApiBag(), collectionsHandler);
     containerHandlers.getApiBag().registerObject(collectionsAPI);
     containerHandlers.getApiBag().registerObject(collectionsAPI.collectionsCommands);
     final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);

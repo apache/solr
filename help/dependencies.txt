@@ -182,7 +182,7 @@ Note the brackets - they are important and prevent accidental
 mistakes of applying the exclusion to the wrong scope.
 
 
-Updating dependency checksum and licenses
+Updating dependency checksums and licenses
 -----------------------------------------
 
 The last step is to make sure the licenses, notice files and checksums
@@ -191,6 +191,6 @@ missing and where:
 
 gradlew licenses
 
-To update JAR checksums for licenses use:
+To update JAR checksums (sha1) for licenses use:
 
 gradlew updateLicenses

@@ -19,6 +19,7 @@ package org.apache.solr.cloud.hdfs;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -62,6 +63,7 @@ import java.util.concurrent.TimeUnit;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class StressHdfsTest extends BasicDistributedZkTest {
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
   private static MiniDFSCluster dfsCluster;

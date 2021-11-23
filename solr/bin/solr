@@ -22,11 +22,12 @@
 # file named solr.in.sh to set environment variables. Specifically,
 # the following locations are searched in this order:
 #
-# ./
+# <script location>/.
 # $HOME/.solr.in.sh
 # /usr/share/solr
 # /usr/local/share/solr
-# /var/solr/
+# /etc/default
+# /var/solr
 # /opt/solr
 #
 # Another option is to specify the full path to the include file in the
@@ -86,6 +87,7 @@ if [ -z "$SOLR_INCLUDE" ]; then
                /usr/share/solr/solr.in.sh \
                /usr/local/share/solr/solr.in.sh \
                /etc/default/solr.in.sh \
+               /var/solr/solr.in.sh \
                /opt/solr/solr.in.sh; do
     if [ -r "$include" ]; then
         SOLR_INCLUDE="$include"
@@ -1995,14 +1997,6 @@ if $verbose ; then
   q=""
 else
   q="-q"
-fi
-# Rotate and clean on startup. Default to false since 7.4 as log4j2 handles startup rotation
-if [ "${SOLR_LOG_PRESTART_ROTATION:=false}" == "true" ]; then
-  # Enable any of these if you require old remove/archive behavior
-  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -remove_old_solr_logs 7 || echo "Failed removing old solr logs"
-  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_gc_logs $q     || echo "Failed archiving old GC logs"
-  #run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -archive_console_logs   || echo "Failed archiving old console logs"
-  run_tool utils -s "$DEFAULT_SERVER_DIR" -l "$SOLR_LOGS_DIR" $q -rotate_solr_logs 10    || echo "Failed rotating old solr logs"
 fi
 
 # Establish default GC logging opts if no env var set (otherwise init to sensible default)

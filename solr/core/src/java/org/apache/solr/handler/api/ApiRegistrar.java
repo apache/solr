@@ -19,16 +19,7 @@ package org.apache.solr.handler.api;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
-import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
-import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
-import org.apache.solr.handler.admin.api.MigrateDocsAPI;
-import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
-import org.apache.solr.handler.admin.api.MoveReplicaAPI;
-import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
-import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
-import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.*;
 
 /**
  * Registers annotation-based V2 APIs with an {@link ApiBag}
@@ -50,5 +41,17 @@ public class ApiRegistrar {
     apiBag.registerObject(new RebalanceLeadersAPI(collectionsHandler));
     apiBag.registerObject(new ReloadCollectionAPI(collectionsHandler));
     apiBag.registerObject(new SetCollectionPropertyAPI(collectionsHandler));
+    apiBag.registerObject(new CollectionStatusAPI(collectionsHandler));
+  }
+
+  public static void registerShardApis(ApiBag apiBag, CollectionsHandler collectionsHandler) {
+    apiBag.registerObject(new SplitShardAPI(collectionsHandler));
+    apiBag.registerObject(new CreateShardAPI(collectionsHandler));
+    apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
+    apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
+    apiBag.registerObject(new SyncShardAPI(collectionsHandler));
+    apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
+    // really this is a replica API, but since there's only 1 API on the replica path, it's included here for simplicity.
+    apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
   }
 }

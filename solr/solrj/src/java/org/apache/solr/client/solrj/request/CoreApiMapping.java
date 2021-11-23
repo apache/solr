@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
+import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
@@ -83,7 +83,7 @@ public class CoreApiMapping {
     }
 
     @Override
-    public CollectionApiMapping.V2EndPoint getEndPoint() {
+    public ApiMapping.V2EndPoint getEndPoint() {
       return endPoint;
     }
 
@@ -95,7 +95,7 @@ public class CoreApiMapping {
 
   }
 
-  public enum EndPoint implements CollectionApiMapping.V2EndPoint {
+  public enum EndPoint implements ApiMapping.V2EndPoint {
     CORES_STATUS("cores.Status"),
     CORES_COMMANDS("cores.Commands"),
     PER_CORE_COMMANDS("cores.core.Commands"),
