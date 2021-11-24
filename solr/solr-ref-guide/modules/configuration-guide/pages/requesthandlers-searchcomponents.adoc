@@ -19,16 +19,16 @@
 After the `<query>` section of `solrconfig.xml`, request handlers and search components are configured.
 
 A _request handler_ processes requests coming to Solr.
-These might be query requests, index update requests or specialized interactions such as <<ping.adoc#,ping>>.
+These might be query requests, index update requests or specialized interactions such as xref:deployment-guide:ping.adoc[].
 
 Not all handlers are defined explicitly in `solrconfig.xml`, many are defined implicitly.
-See <<implicit-requesthandlers.adoc#,Implicit Request Handlers>> for details.
+See xref:implicit-requesthandlers.adoc[] for details.
 
-Additionally, handlers can be defined or overridden in `configoverlay.json` by using <<config-api.adoc#,Config API>>.
-Finally, independent parameter sets can be also defined by <<request-parameters-api.adoc#,Request Parameters API>>.
-They will be stored in `params.json` file and referenced with <<#paramsets-and-useparams,useParams>>.
+Additionally, handlers can be defined or overridden in `configoverlay.json` by using xref:config-api.adoc[].
+Finally, independent parameter sets can be also defined by xref:request-parameters-api.adoc[].
+They will be stored in `params.json` file and referenced with <<paramsets-and-useparams,useParams>>.
 
-All of this multi-layered configuration, may be verified via  <<config-api.adoc#,Config API>>.
+All of this multi-layered configuration can be verified via xref:config-api.adoc[].
 
 Defining your own config handlers is often a useful way to provide defaults and advanced configuration to support business cases and simplify client API.
 At the same time, using every single option explained in this guide, will most certainly cause some confusion about which parameter is actually used when.
@@ -81,7 +81,7 @@ Notice the URL-encoded space (as +) for the values of `fl` parameter.
 http://localhost:8983/solr/techproducts/select?q=id:SP2514N&fl=id+name&wt=xml
 ----
 
-And here is an example of parameters being sent through the POST form to `/query` Search Handler using <<json-request-api.adoc#,JSON Request API>>.
+The following is an example of parameters being sent through the POST form to `/query` Search Handler using the xref:query-guide:json-request-api.adoc[].
 
 [source,bash]
 ----
@@ -111,7 +111,7 @@ The parameters there are used unless they are overridden by any other method.
 </requestHandler>
 ----
 
-This example defined a useful troubleshooting parameter <<common-query-parameters.adoc#echoparams-parameter,echoParams>>, with value that returns only params defined in the request itself (no defaults), set it to `all` for more information.
+This example defined a useful troubleshooting parameter xref:query-guide:common-query-parameters.adoc#echoparams-parameter[echoParams], with value that returns only params defined in the request itself (no defaults), set it to `all` for more information.
 It also defines the `rows` parameter, with how many results to return (per page) (10 is a true default actually, so this is a redundant definition, if you are not going to modify it).
 
 Note also that the way the defaults are defined in the list varies if the parameter is a string, an integer, or another type.
@@ -131,7 +131,7 @@ Other specialized types may exist, they would be explained in the sections for r
 ==== Appends
 
 In the `appends` section, you can define parameters that are added those already defined elsewhere.
-These are useful when the same parameter may be meaningfully defined multiple times, such as for <<common-query-parameters.adoc#fq-filter-query-parameter,filter queries>>.
+These are useful when the same parameter may be meaningfully defined multiple times, such as for xref:query-guide:common-query-parameters.adoc#fq-filter-query-parameter[filter queries].
 There is no mechanism in Solr to allow a client to override these additions, so you should be absolutely sure you always want these parameters applied to queries.
 
 [source,xml]
@@ -167,11 +167,11 @@ these are the only facets they will be able to see counts for; regardless of wha
 It is also possible to configure defaults for request handlers with a section called `initParams`.
 These defaults can be used when you want to have common properties that will be used by each separate handler.
 For example, if you intend to create several request handlers that will all request the same list of fields in the response, you can configure an `initParams` section with your list of fields.
-For more information about `initParams`, see the section <<initparams.adoc#,InitParams>>.
+For more information about `initParams`, see the section xref:initparams.adoc[].
 
 === Paramsets and UseParams
 If you are expecting to change the parameters often, or if you want define sets of parameters that you can apply on the fly,
-you can define them with <<request-parameters-api.adoc#,Request Parameters API>> and then invoke them
+you can define them with xref:request-parameters-api.adoc[] and then invoke them
 by providing one or more in `useParams` setting either in the handler definition itself or as a query parameter.
 
 [source,xml]
@@ -187,9 +187,8 @@ by providing one or more in `useParams` setting either in the handler definition
 http://localhost/solr/techproducts/select?useParams=myFacets,myQueries
 ----
 
-If paramset is called but is not defined, it is ignored.
-This allows most <<implicit-requesthandlers.adoc#,implicit request handlers>> to call specific paramsets,
-that you can define later, as needed.
+If a paramset is called but is not defined, it is ignored.
+This allows most xref:implicit-requesthandlers.adoc[] to call specific paramsets that you can define later, as needed.
 
 
 == Search Handlers
@@ -210,10 +209,10 @@ The following sections are allowed within a Search Handler:
 
 All the blocks are optional, especially since parameters can also be provided with `initParams` and `useParams`.
 
-The defaults/appends/invariants blocks were described <<#defaults-appends-and-invariants,higher>> on the page.
-All the parameters described in the section  <<query-guide.adoc#,Query Guide>> can be defined as parameters for any of the Search Handlers.
+The defaults/appends/invariants blocks were described earlier in <<defaults-appends-and-invariants>>.
+All query parameters can be defined as parameters for any of the Search Handlers.
 
-The Search Components blocks are described next, and <<solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory,shardHandlerFactory>> is for fine-tuning of the SolrCloud distributed requests.
+The Search Components blocks are described next, and xref:deployment-guide:solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory[shardHandlerFactory] is for fine-tuning of the SolrCloud distributed requests.
 
 === Defining Search Components
 The search components themselves are defined outside of the Request Handlers and then are referenced from various Search Handlers that want to use them.
@@ -228,30 +227,30 @@ They are called in the order listed.
 [cols="20,40,40",options="header"]
 |===
 |Component Name |Class Name |More Information
-|query |`solr.QueryComponent` |Described in the section <<query-syntax-and-parsers.adoc#,Query Syntax and Parsing>>.
-|facet |`solr.FacetComponent` |Original parameter-based facet component, described in the section <<faceting.adoc#,Faceting>>.
-|facet_module |`solr.facet.FacetModule` | JSON Faceting and Analytics module, described in the section <<json-facet-api.adoc#, JSON Facet API>>.
-|mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#,MoreLikeThis>>.
-|highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#,Highlighting>>.
-|stats |`solr.StatsComponent` |Described in the section <<stats-component.adoc#,The Stats Component>>.
-|expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>.
-|terms |`solr.TermsComponent` |Described in the section <<terms-component.adoc#,The Terms Component>>.
-|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
+|query |`solr.QueryComponent` |Described in the section xref:query-guide:query-syntax-and-parsers.adoc[].
+|facet |`solr.FacetComponent` |Original parameter-based facet component, described in the section xref:query-guide:faceting.adoc[].
+|facet_module |`solr.facet.FacetModule` | JSON Faceting and Analytics module, described in the section xref:query-guide:json-facet-api.adoc[].
+|mlt |`solr.MoreLikeThisComponent` |Described in the section xref:query-guide:morelikethis.adoc[].
+|highlight |`solr.HighlightComponent` |Described in the section xref:query-guide:highlighting.adoc[].
+|stats |`solr.StatsComponent` |Described in the section xref:query-guide:stats-component.adoc[].
+|expand |`solr.ExpandComponent` |Described in the section xref:query-guide:collapse-and-expand-results.adoc[].
+|terms |`solr.TermsComponent` |Described in the section xref:query-guide:terms-component.adoc[].
+|debug |`solr.DebugComponent` |Described in the section on xref:query-guide:common-query-parameters.adoc#debug-parameter[debug Parameter].
 |===
 
 ==== Shipped Custom Components
 Apart from default components, Solr ships with a number of additional - very useful - components.
 They do need to defined and referenced in `solrconfig.xml` to be actually used.
 
-* `AnalyticsComponent`, described in the section <<analytics.adoc#,Analytics>>.
-* `ClusteringComponent`, described in the section <<result-clustering.adoc#,Result Clustering>>.
+* `AnalyticsComponent`, described in the section xref:query-guide:analytics.adoc[].
+* `ClusteringComponent`, described in the section xref:query-guide:result-clustering.adoc[].
 * `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}/core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
-* `QueryElevationComponent`, described in the section <<query-elevation-component.adoc#,The Query Elevation Component>>.
-* `RealTimeGetComponent`, described in the section <<realtime-get.adoc#,RealTime Get>>.
+* `QueryElevationComponent`, described in the section xref:query-guide:query-elevation-component.adoc[].
+* `RealTimeGetComponent`, described in the section xref:realtime-get.adoc[].
 * `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}/core/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
-* `SpellCheckComponent`, described in the section <<spell-checking.adoc#,Spell Checking>>.
-* `SuggestComponent`, described in the section <<suggester.adoc#,Suggester>>.
-* `TermVectorComponent`, described in the section <<term-vector-component.adoc#,The Term Vector Component>>.
+* `SpellCheckComponent`, described in the section xref:query-guide:spell-checking.adoc[].
+* `SuggestComponent`, described in the section xref:query-guide:suggester.adoc[].
+* `TermVectorComponent`, described in the section xref:query-guide:term-vector-component.adoc[].
 
 Some third party components are also linked from https://solr.cool/ website.
 
@@ -310,8 +309,7 @@ This should be considered as a last-resort option as the default list may change
 == Update Request Handlers
 
 The Update Request Handlers are request handlers which process updates to the index.
-Most of the request handlers are <<implicit-requesthandlers.adoc#update-handlers,implicit>>
-and can be customized by defining properly named Paramsets.
+Most of the available update request handlers are xref:implicit-requesthandlers.adoc#update-handlers[implicit] and can be customized by defining properly named Paramsets.
 
 If you need to define additional Update Request Handler, the syntax is:
 
@@ -323,10 +321,10 @@ If you need to define additional Update Request Handler, the syntax is:
 
 ----
 
-The full details are covered in the section <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>.
+The full details are covered in the section xref:indexing-guide:indexing-with-update-handlers.adoc[].
 
 Similar to Search Components for Search Handlers, Solr has document-preprocessing plugins for Update Request Handlers,
-called <<update-request-processors.adoc#,Update Request Processors>>,
+called xref:update-request-processors.adoc[],
 which also allow for default and custom configuration chains.
 
-Note: Do not confuse Update Request Handlers with <<commits-transaction-logs.adoc#,`updateHandler`>> section also defined in `solrconfig.xml`.
+Note: Do not confuse Update Request Handlers with xref:commits-transaction-logs.adoc[`updateHandler`] section also defined in `solrconfig.xml`.

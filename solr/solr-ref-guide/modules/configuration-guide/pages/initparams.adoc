@@ -21,7 +21,7 @@ The `<initParams>` section of `solrconfig.xml` allows you to define request hand
 
 There are a couple of use cases where this might be desired:
 
-* Some handlers are implicitly defined in code (see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>>) and there should be a way to add, append, or override some of the implicitly defined properties.
+* Some handlers are implicitly defined in code (see xref:implicit-requesthandlers.adoc[]) and there should be a way to add, append, or override some of the implicitly defined properties.
 * There are a few properties that are used across handlers.
 This helps you keep only a single definition of those properties and apply them over multiple handlers.
 

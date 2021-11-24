@@ -36,12 +36,12 @@ One resource is the Solr Wiki documentation on plugins at https://cwiki.apache.o
 There are essentially two types of plugins in Solr:
 
 * Collection level plugins.
-These are registered on individual collections, either by hand-editing the `solrconfig.xml` or schema files for the collection's configset or by using the <<config-api.adoc#,config API>> or <<schema-api.adoc#,schema API>>.
+These are registered on individual collections, either by hand-editing the `solrconfig.xml` or schema files for the collection's configset or by using the xref:config-api.adoc[] or xref:indexing-guide:schema-api.adoc[].
 Examples of these are query parsers, request handlers, update request processors, value source parsers, response writers etc.
 
 * Cluster level (or Core Container level) plugins.
 These are plugins that are installed at a cluster level and every Solr node has one instance each of these plugins.
-Examples of these are <<authentication-and-authorization-plugins.adoc#,authentication and authorization plugins>>, <<metrics-reporting.adoc#reporters,metrics reporters>>, https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers] etc.
+Examples of these are xref:deployment-guide:authentication-and-authorization-plugins.adoc[], xref:deployment-guide:metrics-reporting.adoc#reporters[metrics reporters], https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers], etc.
 
 == Installing Plugins ==
 
@@ -56,10 +56,10 @@ The next sections describe some options:
 // tag::plugin-sections[]
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<libs.adoc#,Lib Directories>>: Plugins as libraries on the filesystem.
-| <<package-manager.adoc#,Package Management>>: Package-based plugins.
-| <<cluster-plugins.adoc#,Cluster Plugins>>: Cluster-level plugins.
-| <<replica-placement-plugins.adoc#,Replica Placement Plugins>>: Plugins specifically for replica placement.
+| xref:libs.adoc[]: Plugins as libraries on the filesystem.
+| xref:package-manager.adoc[]: Package-based plugins.
+| xref:cluster-plugins.adoc[]: Cluster-level plugins.
+| xref:replica-placement-plugins.adoc[]: Plugins specifically for replica placement.
 |===
 // end::plugin-sections[]
 ****

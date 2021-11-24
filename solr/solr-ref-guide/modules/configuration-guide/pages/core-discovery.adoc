@@ -117,7 +117,7 @@ The configuration file name for a given core.
 +
 The schema file name for a given core.
 The default is `schema.xml` but please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use.
-See <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for more details.
+See xref:schema-factory.adoc[] for more details.
 
 `dataDir`::
 +
@@ -135,7 +135,7 @@ The core's data directory (where indexes are stored) as either an absolute pathn
 |Optional |Default: none
 |===
 +
-The name of a defined configset, if desired, to use to configure the core (see the section <<config-sets.adoc#,Configsets>> for more details).
+The name of a defined configset, if desired, to use to configure the core (see the section xref:config-sets.adoc[] for more details).
 
 `properties`::
 +
@@ -216,4 +216,4 @@ The name of the collection this core is part of (SolrCloud only).
 Future parameter for SolrCloud or a way for users to mark nodes for their own use.
 
 Additional user-defined properties may be specified for use as variables.
-For more information on how to define local properties, see the section <<property-substitution.adoc#,Property Substitution in `solrconfig.xml`>>.
+For more information on how to define local properties, see the section xref:property-substitution.adoc[].

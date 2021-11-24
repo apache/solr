@@ -34,7 +34,7 @@ The default value "false" will ignore requests to `/select` if a request handler
 A value of "true" will route query requests to the parser defined with the `qt` value if a request handler is not explicitly registered with the name `/select`.
 
 In recent versions of Solr, a `/select` request handler is defined by default, so a value of "false" will work fine.
-See the section <<requesthandlers-searchcomponents.adoc#,Request Handlers and Search Components>> for more information.
+See the section xref:requesthandlers-searchcomponents.adoc[] for more information.
 
 [source,xml]
 ----
@@ -114,7 +114,7 @@ This `HttpServletRequest` is not used by any Solr component, but may be useful w
                 addHttpRequestToContext="false" />
 ----
 
-The below command is an example of how to enable RemoteStreaming and BodyStreaming through the <<config-api.adoc#commands-for-common-properties,Config API>>:
+The below command is an example of how to enable RemoteStreaming and BodyStreaming through the xref:config-api.adoc#commands-for-common-properties[Config API]:
 
 [.dynamic-tabs]
 --

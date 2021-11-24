@@ -69,18 +69,18 @@ You may see other files, but the main ones you need to know are discussed below.
 Inside Solr's Home, you'll find these files:
 
 * `solr.xml` specifies configuration options for your Solr server instance.
-For more information on `solr.xml` see <<configuring-solr-xml.adoc#,Configuring solr.xml>>.
+For more information on `solr.xml` see xref:configuring-solr-xml.adoc[].
 * Per Solr Core:
 ** `core.properties` defines specific properties for each core such as its name, the collection the core belongs to, the location of the schema, and other parameters.
-For more details on `core.properties`, see the section <<core-discovery.adoc#,Core Discovery>>.
+For more details on `core.properties`, see the section xref:core-discovery.adoc[].
 ** `solrconfig.xml` controls high-level behavior.
 You can, for example, specify an alternate location for the data directory.
-For more information on `solrconfig.xml`, see <<configuring-solrconfig-xml.adoc#,Configuring solrconfig.xml>>.
+For more information on `solrconfig.xml`, see xref:configuring-solrconfig-xml.adoc[].
 ** `managed-schema.xml` or `schema.xml` describes the documents you will ask Solr to index.
 The schema defines a document as a collection of fields.
 You can define both the field types and the fields themselves.
 Field type definitions are powerful and include information about how Solr processes incoming field values and query values.
-For more information on Solr schemas, see <<solr-schema.adoc#,Solr Schema>>.
+For more information on Solr schemas, see xref:indexing-guide:solr-schema.adoc[].
 ** `data/` contains index files.
 
 Note that the SolrCloud example does not include a `conf` directory for each Solr Core (so there is no `solrconfig.xml` or schema file).
@@ -96,12 +96,12 @@ The Files screen in the Admin UI lets you browse & view configuration files (suc
 .The Files Screen
 image::configuration-files/files-screen.png[Files screen,height=400]
 
-If you are using <<cluster-types.adoc#solrcloud-mode,SolrCloud>>, the files displayed are the configuration files for this collection stored in ZooKeeper.
+If you are using xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud], the files displayed are the configuration files for this collection stored in ZooKeeper.
 In user-managed clusters or single-node installations, all files in the `conf` directory are displayed.
 
 The configuration files shown may or may not be used by the collection as use of the file depends on how they are referenced in either `solrconfig.xml` or your schema.
 
 Configuration files cannot be edited with this screen, so a text editor of some kind must be used.
 
-This screen is related to the <<schema-browser-screen.adoc#,Schema Browser Screen>>, in that they both can display information from the schema.
+This screen is related to the xref:indexing-guide:schema-browser-screen.adoc[], in that they both can display information from the schema.
 However, the Schema Browser provides a way to drill into the analysis chain and displays linkages between field types, fields, and dynamic field rules.

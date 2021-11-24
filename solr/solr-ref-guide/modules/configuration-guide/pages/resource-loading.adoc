@@ -19,17 +19,17 @@
 
 Solr components can be configured using *resources*: data stored in external files that may be referred to in a location-independent fashion.
 
-Examples of resources include: files needed by schema components, e.g., a stopword list for <<filters.adoc#stop-filter,Stop Filter>>; and machine-learned models for <<learning-to-rank.adoc#,Learning to Rank>>.
+Examples of resources include: files needed by schema components, e.g., a stopword list for xref:indexing-guide:filters.adoc#stop-filter[Stop Filter]; and machine-learned models for xref:query-guide:learning-to-rank.adoc[].
 _Resources are typically resolved from the configSet_ but there are other options too.
 
 Solr's resources are generally only loaded initially when the Solr collection or Solr core is loaded.
 After you update a resource, you'll typically need to _reload_ the affected collections when running SolrCloud, or the cores when running a user-managed cluster or single-node installation.
 Restarting all affected Solr nodes also works.
-<<managed-resources.adoc#,Managed resources>> can be manipulated via APIs and do not need an explicit reload.
+xref:managed-resources.adoc[] can be manipulated via APIs and do not need an explicit reload.
 
 == Resources in Configsets
 
-<<config-sets.adoc#,Configsets>> are the directories containing solrconfig.xml, the schema, and resources referenced by them.
+xref:config-sets.adoc[] are the directories containing `solrconfig.xml`, the schema, and resources referenced by them.
 In SolrCloud they are stored in ZooKeeper.
 In a user-managed cluster and a single-node installation they are stored on the file system.
 In any mode, resources may be shared or may be dedicated to a configSet.
@@ -37,7 +37,7 @@ Prefer to put resources here.
 
 == Resources in Other Places
 
-Resources can also be placed in an arbitrary directory and <<libs.adoc#lib-directives-in-solrconfig,referenced>> from a `<lib />` directive in `solrconfig.xml`, provided the directive refers to a directory and not the actual resource file.
+Resources can also be placed in an arbitrary directory and xref:libs.adoc#lib-directives-in-solrconfig[referenced] from a `<lib />` directive in `solrconfig.xml`, provided the directive refers to a directory and not the actual resource file.
 Example: `<lib path="/volume/models/" />`
 This choice may make sense if the resource is too large for a configset in ZooKeeper.
 However it's up to you to somehow ensure that all nodes in your cluster have access to these resources.

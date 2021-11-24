@@ -30,7 +30,7 @@ There are several special places you can place Solr plugin `.jar` files:
 
 * `<solr_home>/lib/`: The `.jar` files placed here are available to all Solr cores running on the node, and to node level plugins referenced in `solr.xml` -- so basically everything.
 This directory is not present by default so create it.
-See <<taking-solr-to-production.adoc#solr-home-directory,Solr home directory>>.
+See xref:deployment-guide:taking-solr-to-production.adoc[].
 
 * `<core_instance>/lib/`: In a user-managed cluster or a single-node installation, you may want to add plugins just for a specific Solr core.
 Create this adjacent to the `conf/` directory; it's not present by default.
@@ -45,7 +45,7 @@ Solr plugins won't work in these locations.
 
 == Lib Directives in SolrConfig
 
-_Both_ plugin and <<resource-loading.adoc#,resource>> file paths are configurable via `<lib/>` directives in `solrconfig.xml`.
+_Both_ plugin and xref:resource-loading.adoc[resource] file paths are configurable via `<lib/>` directives in `solrconfig.xml`.
 When a directive matches a directory, then resources can be resolved from it.
 When a directive matches a `.jar` file, Solr plugins and their dependencies are resolved from it.
 Resources can be placed in a `.jar` too but that's unusual.

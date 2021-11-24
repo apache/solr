@@ -19,7 +19,7 @@
 
 The package manager in Solr allows installation and updating of Solr-specific packages in Solr's cluster environment.
 
-In this system, a _package_ is a set of Java jar files (usually one) containing one or more <<solr-plugins.adoc#,Solr plugins>>.
+In this system, a _package_ is a set of Java jar files (usually one) containing one or more xref:solr-plugins.adoc[].
 Each jar file is also accompanied by a signature string (which can be verified against a supplied public key).
 
 A key design aspect of this system is the ability to install or update packages in a cluster environment securely without the need to restart every node.
@@ -27,7 +27,7 @@ A key design aspect of this system is the ability to install or update packages 
 Other elements of the design include the ability to install from a remote repository; package standardization; a command line interface (CLI); and a package store.
 
 This section will focus on how to use the package manager to install and update packages.
-For technical details, see the section <<package-manager-internals.adoc#,Package Manager internals>>.
+For technical details, see the section xref:package-manager-internals.adoc[].
 
 == Interacting with the Package Manager
 
@@ -51,7 +51,7 @@ $ bin/solr -c -Denable.packages=true
 
 WARNING: There are security consequences to enabling the package manager.
 If an unauthorized user gained access to the system, they would have write access to ZooKeeper and could install packages from untrusted sources.
-Always ensure you have secured Solr with firewalls and <<authentication-and-authorization-plugins.adoc#,authentication>> before enabling the package manager.
+Always ensure you have secured Solr with firewalls and xref:deployment-guide:authentication-and-authorization-plugins.adoc[] before enabling the package manager.
 
 === Add Trusted Repositories
 
@@ -118,7 +118,7 @@ If you pass `-y` to the command, confirmation can be skipped.
 
 ==== Manual Deploy
 
-It is also possible to deploy a package's collection level plugins manually by editing a <<config-sets.adoc#,configset>> and reloading the collection.
+It is also possible to deploy a package's collection level plugins manually by editing a xref:config-sets.adoc[configset] and reloading the collection.
 
 For example, if a package named `mypackage` contains a request handler, we would add it to a configset's `solrconfig.xml` like this:
 
@@ -127,7 +127,7 @@ For example, if a package named `mypackage` contains a request handler, we would
 <requestHandler name="/myhandler" class="mypackage:full.path.to.MyClass"></requestHandler>
 ----
 
-Then use either the Collections API <<collection-management.adoc#reload,RELOAD command>> or the <<collections-core-admin.adoc#,Admin UI>> to reload the collection.
+Then use either the Collections API xref:deployment-guide:collection-management.adoc#reload[RELOAD command] or the xref:deployment-guide:collections-core-admin.adoc[Admin UI] to reload the collection.
 
 Next, set the package version that this collection is using.
 If the collection is named `collection1`, the package name is `mypackage`, and the installed version is `1.0.0`, the command would look like this:

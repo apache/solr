@@ -19,7 +19,7 @@
 The `solr.xml` file defines some global configuration options that apply to all or many cores.
 
 This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs.
-For details on how to configure `core.properties`, see the section <<core-discovery.adoc#,Core Discovery>>.
+For details on how to configure `core.properties`, see the section xref:core-discovery.adoc[].
 
 == Defining solr.xml
 
@@ -239,7 +239,7 @@ This global limit provides a safety constraint on the total number of clauses al
 This limit is enforced at multiple points in  Lucene, both to prevent primitive query objects (mainly `BooleanQuery`) from being constructed with an excessive number of clauses in a way that may exhaust the JVM heap, but also to ensure that no composite query (made up of multiple primitive queries) can be executed with an excessive _total_ number of nested clauses in a way that may cause a search thread to use excessive CPU.
 +
 In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.
-This is the same system property used in the `_default` configset for the <<caches-warming.adoc#maxbooleanclauses-element,`<maxBooleanClauses>` element of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
+This is the same system property used in the `_default` configset for the xref:caches-warming.adoc#maxbooleanclauses-element[`<maxBooleanClauses>` element of `solrconfig.xml`] making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
 +
 [source,xml]
 ----
@@ -358,7 +358,7 @@ When a different machine takes over serving that core things will be much easier
 |Optional |Default: none
 |===
 +
-Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.
+Optional parameters that can be specified if you are using xref:deployment-guide:zookeeper-access-control.adoc[].
 
 `distributedClusterStateUpdates`::
 +
@@ -544,7 +544,7 @@ The `<metrics>` element in `solr.xml` allows you to customize the metrics report
 You can define system properties that should not be returned, or define custom suppliers and reporters.
 
 In a default `solr.xml` you will not see any `<metrics>` configuration.
-If you would like to customize the metrics for your installation, see the section <<metrics-reporting.adoc#metrics-configuration,Metrics Configuration>>.
+If you would like to customize the metrics for your installation, see the section xref:deployment-guide:metrics-reporting.adoc#metrics-configuration[Metrics Configuration].
 
 == Substituting JVM System Properties in solr.xml
 

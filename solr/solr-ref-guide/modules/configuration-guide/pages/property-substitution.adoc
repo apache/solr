@@ -48,11 +48,11 @@ bin/solr start -Dsolr.lock.type=none
 In general, any Java system property that you want to set can be passed through the `bin/solr` script using the standard `-Dproperty=value` syntax.
 
 Alternatively, you can add common system properties to the `SOLR_OPTS` environment variable defined in the Solr include file (`bin/solr.in.sh` or `bin/solr.in.cmd`).
-For more information about how the Solr include file works, refer to: <<taking-solr-to-production.adoc#,Taking Solr to Production>>.
+For more information about how the Solr include file works, refer to: xref:deployment-guide:taking-solr-to-production.adoc[].
 
 == Config API to Override solrconfig.xml
 
-The <<config-api.adoc#,Config API>> allows you to use an API to modify Solr's configuration, specifically user defined properties.
+The xref:config-api.adoc[] allows you to use an API to modify Solr's configuration, specifically user defined properties.
 Changes made with this API are stored in a file named `configoverlay.json`.
 This file should only be edited with the API, but will look like this example:
 
@@ -69,7 +69,7 @@ This file should only be edited with the API, but will look like this example:
       "components":["terms"]}}}
 ----
 
-For more details, see the section <<config-api.adoc#,Config API>>.
+For more details, see the section xref:config-api.adoc[].
 
 == User-Defined Properties in core.properties
 
@@ -136,7 +136,7 @@ For example, regardless of whether the name for a particular Solr core is explic
 </requestHandler>
 ----
 
-All implicit properties use the `solr.core.` name prefix, and reflect the runtime value of the equivalent <<core-discovery.adoc#,`core.properties` property>>:
+All implicit properties use the `solr.core.` name prefix, and reflect the runtime value of the equivalent xref:core-discovery.adoc[`core.properties` property]:
 
 * `solr.core.name`
 * `solr.core.config`

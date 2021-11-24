@@ -30,7 +30,7 @@ Real Time Get relies on the update log feature, which is enabled by default and 
 </updateLog>
 ----
 
-Real Time Get requests can be performed using the `/get` handler which exists implicitly in Solr - see <<implicit-requesthandlers.adoc#,Implicit Request Handlers>> - it's equivalent to the following configuration:
+Real Time Get requests can be performed using the `/get` handler which exists implicitly in Solr - see xref:implicit-requesthandlers.adoc[] - it's equivalent to the following configuration:
 
 [source,xml]
 ----
@@ -166,7 +166,7 @@ http://localhost:8983/api/collections/techproducts/get?id=mydoc&id=IW-02
 ====
 --
 
-Real Time Get requests can also be combined with filter queries, specified with an <<common-query-parameters.adoc#fq-filter-query-parameter,`fq` parameter>>:
+Real Time Get requests can also be combined with filter queries, specified with an xref:query-guide:common-query-parameters.adoc#fq-filter-query-parameter[`fq` parameter]:
 
 [.dynamic-tabs]
 --

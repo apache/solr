@@ -64,7 +64,7 @@ v2: `api/node/logging` |{solr-javadocs}/core/org/apache/solr/handler/admin/Loggi
 Luke:: Expose the internal Lucene index.
 This handler must have a collection name in the path to the endpoint.
 +
-*Documentation*: <<luke-request-handler.adoc#,Luke Request Handler>>
+*Documentation*: xref:indexing-guide:luke-request-handler.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -75,7 +75,7 @@ This handler must have a collection name in the path to the endpoint.
 MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans].
 This handler must have a collection name in the path to the endpoint.
 +
-*Documentation*: <<mbean-request-handler.adoc#,MBean Request Handler>>
+*Documentation*: xref:deployment-guide:mbean-request-handler.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -86,7 +86,7 @@ This handler must have a collection name in the path to the endpoint.
 Ping:: Health check.
 This handler must have a collection name in the path to the endpoint.
 +
-*Documentation*: <<ping.adoc#,Ping>>
+*Documentation*: xref:deployment-guide:ping.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -157,7 +157,7 @@ Document Analysis:: Return a breakdown of the analysis process of the given docu
 |===
 
 Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s).
-This handler drives the <<analysis-screen.adoc#,Analysis screen>> in Solr's Admin UI.
+This handler drives the xref:indexing-guide:analysis-screen.adoc[] in Solr's Admin UI.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -170,7 +170,7 @@ This handler drives the <<analysis-screen.adoc#,Analysis screen>> in Solr's Admi
 [horizontal]
 Config API:: Retrieve and modify Solr configuration.
 +
-*Documentation*: <<config-api.adoc#,Config API>>
+*Documentation*: xref:config-api.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -199,7 +199,7 @@ This handler must have a core name in the path to the endpoint.
 
 Schema API:: Retrieve and modify the Solr schema.
 +
-*Documentation*: <<schema-api.adoc#,Schema API>>
+*Documentation*: xref:indexing-guide:schema-api.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -214,7 +214,7 @@ v2: `api/collections/<collection>/schema`, `api/cores/<core>/schema` |{solr-java
 [horizontal]
 Export:: Export full sorted result sets.
 +
-*Documentation*: <<exporting-result-sets.adoc#,Exporting Result Sets>>
+*Documentation*: xref:query-guide:exporting-result-sets.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -224,7 +224,7 @@ Export:: Export full sorted result sets.
 
 RealTimeGet:: Low-latency retrieval of the latest version of a document.
 +
-*Documentation*: <<realtime-get.adoc#,RealTime Get>>
+*Documentation*: xref:realtime-get.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -234,7 +234,7 @@ RealTimeGet:: Low-latency retrieval of the latest version of a document.
 
 Graph Traversal:: Return http://graphml.graphdrawing.org/[GraphML] formatted output from a `gatherNodes` streaming expression.
 +
-*Documentation*: <<graph-traversal.adoc#,Graph Traversal>>
+*Documentation*: xref:query-guide:graph-traversal.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -244,7 +244,7 @@ Graph Traversal:: Return http://graphml.graphdrawing.org/[GraphML] formatted out
 
 SQL:: SQL query support.
 +
-*Documentation*: <<sql-query.adoc#sql-request-handler,SQL Request Handler>>
+*Documentation*: xref:query-guide:sql-query.adoc#sql-request-handler[SQL Request Handler]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -254,7 +254,7 @@ SQL:: SQL query support.
 
 Streaming Expressions:: Distributed stream processing.
 +
-*Documentation*: <<streaming-expressions.adoc#streaming-requests-and-responses,Streaming Requests and Responses>>
+*Documentation*: xref:query-guide:streaming-expressions.adoc#streaming-requests-and-responses[Streaming Requests and Responses]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -264,7 +264,7 @@ Streaming Expressions:: Distributed stream processing.
 
 Terms:: Return a field's indexed terms and the number of documents containing each term.
 +
-*Documentation*: <<terms-component.adoc#using-the-terms-component-in-a-request-handler,Using the Terms Component in a Request Handler>>
+*Documentation*: xref:query-guide:terms-component.adoc#using-the-terms-component-in-a-request-handler[Using the Terms Component in a Request Handler]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -277,7 +277,7 @@ Terms:: Return a field's indexed terms and the number of documents containing ea
 [horizontal]
 Update:: Add, delete and update indexed documents formatted as SolrXML, CSV, SolrJSON or javabin.
 +
-*Documentation*: <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>
+*Documentation*: xref:indexing-guide:indexing-with-update-handlers.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -287,7 +287,7 @@ Update:: Add, delete and update indexed documents formatted as SolrXML, CSV, Sol
 
 CSV Updates:: Add and update CSV-formatted documents.
 +
-*Documentation*: <<indexing-with-update-handlers.adoc#csv-update-convenience-paths,CSV Update Convenience Paths>>
+*Documentation*: xref:indexing-guide:indexing-with-update-handlers.adoc#csv-update-convenience-paths[CSV Update Convenience Paths]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -297,7 +297,7 @@ CSV Updates:: Add and update CSV-formatted documents.
 
 JSON Updates:: Add, delete and update SolrJSON-formatted documents.
 +
-*Documentation*: <<indexing-with-update-handlers.adoc#json-update-convenience-paths,JSON Update Convenience Paths>>
+*Documentation*: xref:indexing-guide:indexing-with-update-handlers.adoc#json-update-convenience-paths[JSON Update Convenience Paths]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -307,7 +307,7 @@ JSON Updates:: Add, delete and update SolrJSON-formatted documents.
 
 Custom JSON Updates:: Add and update custom JSON-formatted documents.
 +
-*Documentation*: <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>
+*Documentation*: xref:indexing-guide:transforming-and-indexing-custom-json.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -317,7 +317,7 @@ Custom JSON Updates:: Add and update custom JSON-formatted documents.
 
 == How to View Implicit Handler Paramsets
 
-You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#,Config API>>.
+You can see configuration for all request handlers, including the implicit request handlers, via the xref:config-api.adoc[].
 
 To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request parameter.
 
@@ -382,6 +382,6 @@ The response will look similar to:
 
 == How to Edit Implicit Handler Paramsets
 
-Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the <<request-parameters-api.adoc#, Request Parameters API>> using the paramset listed in the above table.
+Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the xref:request-parameters-api.adoc[] using the paramset listed in the above table.
 However, other parameters, including SearchHandler components, may not be modified.
 The invariants and appends specified in the implicit configuration cannot be overridden.

@@ -33,7 +33,7 @@ All Config API endpoints are collection-specific, meaning this API can inspect o
 Use GET to retrieve and POST for executing commands.
 * `_collection_/config/overlay`: retrieve the details in the `configoverlay.json` only, removing any options defined in `solrconfig.xml` directly or implicitly through defaults.
 * `_collection_/config/params`: create parameter sets that can override or take the place of parameters defined in `solrconfig.xml`.
-See <<request-parameters-api.adoc#,Request Parameters API>> for more information about this endpoint.
+See xref:request-parameters-api.adoc[] for more information about this endpoint.
 
 == Retrieving the Config
 
@@ -92,7 +92,7 @@ http://localhost:8983/api/collections/techproducts/config/requestHandler
 ====
 --
 
-The output will be details of each request handler defined in `solrconfig.xml`, <<implicit-requesthandlers.adoc#,defined implicitly>> by Solr, and defined with this Config API stored in `configoverlay.json`.
+The output will be details of each request handler defined in `solrconfig.xml`, xref:implicit-requesthandlers.adoc[defined implicitly] by Solr, and defined with this Config API stored in `configoverlay.json`.
 To see the configuration for implicit request handlers, add `expandParams=true` to the request.
 See the documentation for implicit request handlers linked above for examples using this command.
 
@@ -169,7 +169,7 @@ The names of these properties are derived from their XML paths as found in `solr
 
 *Update Handler Settings*
 
-See <<commits-transaction-logs.adoc#,Commits and Transaction Logs>> for defaults and acceptable values for these settings.
+See xref:commits-transaction-logs.adoc[] for defaults and acceptable values for these settings.
 
 * `updateHandler.autoCommit.maxDocs`
 * `updateHandler.autoCommit.maxTime`
@@ -180,7 +180,7 @@ See <<commits-transaction-logs.adoc#,Commits and Transaction Logs>> for defaults
 
 *Query Settings*
 
-See <<caches-warming.adoc#,Caches and Query Warming>> for defaults and acceptable values for these settings.
+See xref:caches-warming.adoc[] for defaults and acceptable values for these settings.
 
 _Caches and Cache Sizes_
 
@@ -217,14 +217,14 @@ _Query Sizing and Warming_
 
 _Query Circuit Breakers_
 
-See <<circuit-breakers.adoc#,Circuit Breakers in Solr>> for more details
+See xref:deployment-guide:circuit-breakers.adoc[] for more details
 
 * `query.useCircuitBreakers`
 * `query.memoryCircuitBreakerThresholdPct`
 
 *RequestDispatcher Settings*
 
-See <<requestdispatcher.adoc#,RequestDispatcher>> for defaults and acceptable values for these settings.
+See xref:requestdispatcher.adoc[] for defaults and acceptable values for these settings.
 
 * `requestDispatcher.handleSelect`
 * `requestDispatcher.requestParsers.enableRemoteStreaming`
@@ -587,7 +587,7 @@ If the property has already been set, this command will overwrite the previous s
 The structure of the request is similar to the structure of requests using other commands, in the format of `"command":{"variable_name": "property_value"}`.
 You can add more than one variable at a time if necessary.
 
-For more information about user-defined properties, see the section <<property-substitution.adoc#user-defined-properties-in-core-properties,User defined properties in core.properties>>.
+For more information about user-defined properties, see the section xref:property-substitution.adoc#user-defined-properties-in-core-properties[User defined properties in core.properties].
 
 See also the section <<Creating and Updating User-Defined Properties>> below for examples of how to use this type of command.
 
@@ -888,7 +888,7 @@ Every write operation performed through the API would 'touch' the directory and 
 Every core would check if the schema file, `solrconfig.xml`, or `configoverlay.json` has been modified by comparing the `znode` versions.
 If any have been modified, the core is reloaded.
 
-If `params.json` is modified, the params object is just updated without a core reload (see <<request-parameters-api.adoc#,Request Parameters API>> for more information about `params.json`).
+If `params.json` is modified, the params object is just updated without a core reload (see xref:request-parameters-api.adoc[] for more information about `params.json`).
 
 === Empty Command
 
