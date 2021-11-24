@@ -33,7 +33,7 @@ The default port when running Solr is 8983.
 The samples, URLs and screenshots in this guide may show different ports, because the port number that Solr uses is configurable.
 
 If you have not customized your installation of Solr, please make sure that you use port 8983 when following the examples, or configure your own installation to use the port numbers shown in the examples.
-For information about configuring port numbers, see the section <<monitoring-solr.adoc#,Monitoring Solr>>.
+For information about configuring port numbers, see the section xref:deployment-guide:monitoring-solr.adoc[].
 
 Similarly, URL examples use `localhost` throughout; if you are accessing Solr from a location remote to the server hosting Solr, replace `localhost` with the proper domain or IP where Solr is running.
 
@@ -59,7 +59,7 @@ However, there can be exceptions, particularly if your installation has customiz
 In several cases of this Guide, our examples are built from the "techproducts" example (i.e., you have started Solr with the command `bin/solr -e techproducts`).
 In this case, `solr.home` will be a sub-directory of the `example/` directory created for you automatically.
 
-See also the section <<configuration-files.adoc#solr-home,Solr Home>> for further details on what is contained in this directory.
+See also the section xref:configuration-guide:configuration-files.adoc#solr-home[Solr Home] for further details on what is contained in this directory.
 
 == API Examples
 
@@ -72,7 +72,7 @@ In all cases the paths and endpoints used are different.
 Throughout this Guide, we have added examples of both styles with sections labeled "V1 API" and "V2 API".
 As of the 7.2 version of this Guide, these examples are not yet complete - more coverage will be added as future versions of the Guide are released.
 
-The section <<v2-api.adoc#,V2 API>> provides more information about how to work with the new API structure, including how to disable it if you choose to do so.
+The section xref:configuration-guide:v2-api.adoc[] provides more information about how to work with the new API structure, including how to disable it if you choose to do so.
 
 All APIs return a response header that includes the status of the request and the time to process it.
 Some APIs will also include the parameters used for the request.

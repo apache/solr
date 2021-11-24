@@ -104,7 +104,7 @@ Enter `techproducts` at the prompt and hit kbd:[enter].
 How many shards would you like to split techproducts into? [2]
 ----
 
-This is asking how many <<solr-glossary.adoc#shard,shards>> you want to split your index into across the two nodes.
+This is asking how many xref:solr-glossary.adoc#shard[shards] you want to split your index into across the two nodes.
 Choosing "2" (the default) means we will split the index relatively evenly across both nodes, which is a good way to start.
 Accept the default by hitting kbd:[enter].
 
@@ -113,7 +113,7 @@ Accept the default by hitting kbd:[enter].
 How many replicas per shard would you like to create? [2]
 ----
 
-A replica is a copy of the index that's used for failover (see also the <<solr-glossary.adoc#replica,Solr Glossary definition>>).
+A replica is a copy of the index that's used for failover (see also the xref:solr-glossary.adoc#replica[Solr Glossary definition]).
 Again, the default of "2" is fine to start with here also, so accept the default by hitting kbd:[enter].
 
 [source,subs="verbatim,attributes+"]
@@ -191,7 +191,7 @@ We'll use this tool for the indexing examples below.
 You'll need a command shell to run some of the following examples, rooted in the Solr install directory; the shell from where you launched Solr works just fine.
 
 NOTE: Currently the `bin/post` tool does not have a comparable Windows script, but the underlying Java program invoked is available.
-We'll show examples below for Windows, but you can also see the <<post-tool.adoc#post-tool-windows-support,Windows section>> of the Post Tool documentation for more details.
+We'll show examples below for Windows, but you can also see the section xref:indexing-guide:post-tool.adoc#post-tool-windows-support[Post Tool Windows Support].
 
 The data we will index is in the `example/exampledocs` directory.
 The documents are in a mix of document formats (JSON, CSV, etc.), and fortunately we can index them all at once:
@@ -330,7 +330,7 @@ You should only see the IDs of the matching records returned.
 All Solr queries look for documents using some field.
 Often you want to query across multiple fields at the same time, and this is what we've done so far with the "foundation" query.
 This is possible with the use of copy fields, which are set up already with this set of configurations.
-We'll cover copy fields a little bit more in <<tutorial-films.adoc#,Exercise 2>>.
+We'll cover copy fields a little bit more in xref:tutorial-films.adoc[Exercise 2].
 
 Sometimes, though, you want to limit your query to a single field.
 This can make your queries more efficient and the results more relevant for users.
@@ -486,7 +486,7 @@ This time you get 13 results.
 === More Information on Searching
 
 We have only scratched the surface of the search options available in Solr.
-For more Solr search options, see the <<query-guide.adoc#,Query Guide>>.
+For more Solr search options, see xref:query-guide:query-syntax-and-parsers.adoc[].
 
 == Exercise 1 Wrap Up
 
@@ -506,4 +506,4 @@ To stop both of the Solr nodes we started, issue the command:
 
 `bin/solr stop -all`
 
-For more information on start/stop and collection options with `bin/solr`, see <<solr-control-script-reference.adoc#,Solr Control Script Reference>>.
+For more information on start/stop and collection options with `bin/solr`, see xref:deployment-guide:solr-control-script-reference.adoc[].

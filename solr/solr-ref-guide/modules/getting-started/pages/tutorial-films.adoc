@@ -326,7 +326,7 @@ If you wanted to control the number of items in a bucket, you could do something
 You should only see 4 facets returned.
 
 There are a great deal of other parameters available to help you control how Solr constructs the facets and facet lists.
-We'll cover some of them in this exercise, but you can also see the section <<faceting.adoc#,Faceting>> for more detail.
+We'll cover some of them in this exercise, but you can also see the section xref:query-guide:faceting.adoc[] for more detail.
 
 ==== Range Facets
 

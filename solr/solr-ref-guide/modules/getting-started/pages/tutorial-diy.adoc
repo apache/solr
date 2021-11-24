@@ -63,10 +63,10 @@ Indexing content such as this demonstrates the need to plan Solr for your data, 
 
 SolrJ::
 SolrJ is a Java-based client for interacting with Solr.
-Use <<solrj.adoc#,SolrJ>> for JVM-based languages or other <<client-apis.adoc#,Solr clients>> to programmatically create documents to send to Solr.
+Use xref:deployment-guide:solrj.adoc[] for JVM-based languages or other xref:deployment-guide:client-apis.adoc[] to programmatically create documents to send to Solr.
 
 Documents Screen::
-Use the Admin UI <<documents-screen.adoc#,Documents tab>> (at http://localhost:8983/solr/#/localDocs/documents) to paste in a document to be indexed, or select `Document Builder` from the `Document Type` dropdown to build a document one field at a time.
+Use the Admin UI xref:indexing-guide:documents-screen.adoc[] (at http://localhost:8983/solr/#/localDocs/documents) to paste in a document to be indexed, or select `Document Builder` from the `Document Type` dropdown to build a document one field at a time.
 Click on the btn:[Submit Document] button below the form to index your document.
 
 === Updating Data
@@ -107,4 +107,4 @@ You can also modify the above to only delete documents that match a specific que
 
 At this point, you're ready to start working on your own.
 
-Jump ahead to the overall <<solr-tutorial.adoc#wrapping-up,wrap up>> when you're ready to stop Solr and remove all the examples you worked with and start fresh.
+Jump ahead to the overall xref:solr-tutorial.adoc#wrapping-up[wrap up] when you're ready to stop Solr and remove all the examples you worked with and start fresh.

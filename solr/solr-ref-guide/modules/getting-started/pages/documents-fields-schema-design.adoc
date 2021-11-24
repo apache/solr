@@ -77,7 +77,7 @@ For the biography field, you can tell Solr how to break apart the biography into
 You can tell Solr that you want to make all the words lower case, and you can tell Solr to remove accents marks.
 
 Field analysis is an important part of a field type.
-<<document-analysis.adoc#,Document Analysis in Solr>> is a detailed description of field analysis.
+xref:indexing-guide:document-analysis.adoc[] is a detailed description of field analysis.
 
 == Solr's Schema File
 
@@ -98,4 +98,4 @@ If you aren't sure yet, plan on some test indexing runs to see how the data in y
 Build into your implementation plan some time for iteration and start small.
 The more you're able to define your schema before indexing all of your documents, the higher your chances for a successful search application for your users.
 
-More information about the schema is in the section <<schema-elements.adoc#,Schema Elements>>.
+More information about the schema is in the section xref:indexing-guide:schema-elements.adoc[].
