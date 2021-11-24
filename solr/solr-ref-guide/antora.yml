@@ -1,7 +1,12 @@
 name: solr
-version: '9_0_0'
-display_version: '9.0'
-title: Solr
+# Note for future: We can assign the version based on parsing the branch name:
+# 'branch_(*)_(*)': $1.$2' (or $1_$2)
+# This could also be on the content source in playbook.yml
+version:
+   '*/(*)': '$1'
+prerelease: true
+#display_version: '9.0'
+title: Solr Reference Guide DRAFT
 nav:
 - modules/getting-started/getting-started-nav.adoc
 - modules/deployment-guide/deployment-nav.adoc

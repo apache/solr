@@ -4,6 +4,10 @@ site:
   start_page: solr::index.adoc
 content:
   sources:
+#  - url: https://github.com/apache/solr
+#    branches: jira/solr-15556-antora
+#    start_path: solr/solr-ref-guide
+#    edit_url: '{web_url}/tree/{refname}/{path}'
   - url: ../../
     branches: HEAD
     start_path: solr/solr-ref-guide
