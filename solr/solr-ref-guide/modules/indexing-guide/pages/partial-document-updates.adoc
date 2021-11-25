@@ -139,13 +139,13 @@ In-place updates avoid that.
 .Routing Updates using child document Ids in SolrCloud
 
 When SolrCloud receives document updates, the
-<<solrcloud-shards-indexing.adoc#document-routing,document routing>> rules for the collection is used to determine which shard should process the update based on the `id` of the document.
+xref:deployment-guide:solrcloud-shards-indexing.adoc#document-routing[document routing] rules for the collection is used to determine which shard should process the update based on the `id` of the document.
 
 When sending an update that specifies the `id` of a _child document_ this will not work by default: the correct shard to send the document to is based on the `id` of the "Root" document for the block the child document is in, *not* the `id` of the child document being updated.
 
 Solr offers two solutions to address this:
 
-* Clients may specify a <<solrcloud-shards-indexing.adoc#document-routing,`\_route_` parameter>>, with the `id` of the Root document as the parameter value, on each update to tell Solr which shard should process the update.
+* Clients may specify a xref:deployment-guide:solrcloud-shards-indexing.adoc#document-routing[`\_route_` parameter], with the `id` of the Root document as the parameter value, on each update to tell Solr which shard should process the update.
 * Clients can use the (default) `compositeId` router's "prefix routing" feature when indexing all documents to ensure that all child/descendent documents in a Block use the same `id` prefix as the Root level document.
 This will cause Solr's default routing logic to automatically send child document updates to the correct shard.
 
@@ -159,13 +159,13 @@ equivalent, but it may be absent or not equivalent (e.g., when using the `implic
 All of the examples below use `id` prefixes, so no `\_route_` parameter will be necessary for these examples.
 ====
 
-For the upcoming examples, we'll assume an index containing the same documents covered in <<indexing-nested-documents#example-indexing-syntax,Indexing Nested Documents>>:
+For the upcoming examples, we'll assume an index containing the same documents covered in xref:indexing-nested-documents.adoc#example-indexing-syntax[Indexing Nested Documents]:
 
 include::indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-documents]
 
 ==== Modifying Child Document Fields
 
-All of the <<#atomic-updates,Atomic Update operations>> mentioned above are supported for "real" fields of Child Documents:
+All of the <<atomic-updates,Atomic Update operations>> mentioned above are supported for "real" fields of Child Documents:
 
 [source,bash]
 ----
@@ -345,7 +345,7 @@ Use the parameter `failOnVersionConflicts=false` to avoid failure of the entire 
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
 When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response.
-This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#,`/get` request>>.
+This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant xref:configuration-guide:realtime-get.adoc[`/get` request].
 
 Following are some examples using `versions=true` in queries:
 
@@ -487,7 +487,7 @@ Optimistic Concurrency is extremely powerful, and works very efficiently because
 However, in some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version.
 In situations like this the {solr-javadocs}/core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
 
-The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the <<update-request-processors.adoc#update-request-processor-configuration,UpdateRequestProcessorChain>> and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
+The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the xref:configuration-guide:update-request-processors.adoc#update-request-processor-configuration[UpdateRequestProcessorChain] and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
 
 [source,xml]
 ----

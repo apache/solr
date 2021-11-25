@@ -18,18 +18,16 @@
 // under the License.
 
 Update handlers are request handlers designed to add, delete and update documents to the index.
-In addition to having plugins for importing rich documents <<indexing-with-tika.adoc#,Indexing with Solr Cell and Apache Tika>>, Solr natively supports indexing structured documents in XML, CSV, and JSON.
+In addition to having plugins for importing rich documents xref:indexing-with-tika.adoc[], Solr natively supports indexing structured documents in XML, CSV, and JSON.
 
 The recommended way to configure and use request handlers is with path based names that map to paths in the request URL.
-However, request handlers can also be specified with the `qt` (query type) parameter if the <<requestdispatcher.adoc#,`requestDispatcher`>> is appropriately configured.
+However, request handlers can also be specified with the `qt` (query type) parameter if the xref:configuration-guide:requestdispatcher.adoc[`requestDispatcher`] is appropriately configured.
 It is possible to access the same handler using more than one name, which can be useful if you wish to specify different sets of default options.
 
-A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the <<content-streams.adoc#,ContentStream>>.
+A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the xref:content-streams.adoc[ContentStream].
 
 If you need to pre-process documents after they are loaded but before they are indexed (or even checked against the schema),
-Solr has document-preprocessing plugins for Update Request Handlers,
-called <<update-request-processors.adoc#,Update Request Processors>>,
-which allow for default and custom configuration chains.
+Solr has document preprocessing plugins for Update Request Handlers, called xref:configuration-guide:update-request-processors.adoc[], which allow for default and custom configuration chains.
 
 == UpdateRequestHandler Configuration
 
@@ -184,7 +182,7 @@ A single delete message can contain multiple delete operations.
 ====
 
 When using the Join query parser in a Delete By Query, you should use the `score` parameter with a value of "none" to avoid a `ClassCastException`.
-See the section on the <<other-parsers.adoc#,Join Query Parser>> for more details on the `score` parameter.
+See the section on the xref:query-guide:join-query-parser.adoc[] for more details on the `score` parameter.
 
 ====
 
@@ -250,7 +248,7 @@ This alternative `curl` command performs equivalent operations but with minimal 
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
 
-Short requests can also be sent using a HTTP GET command, if enabled in <<requestdispatcher.adoc#requestparsers-element,`requestParsers`>> element of `solrconfig.xml`, URL-encoding the request, as in the following.
+Short requests can also be sent using a HTTP GET command, if enabled in xref:configuration-guide:requestdispatcher.adoc#requestparsers-element[`requestParsers`] element of `solrconfig.xml`, URL-encoding the request, as in the following.
 Note the escaping of "<" and ">":
 
 [source,bash]
@@ -275,9 +273,9 @@ The status field will be non-zero in case of failure.
 === Using XSLT to Transform XML Index Updates
 
 The Scripting contrib module provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation].
-You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
+You must have an XSLT stylesheet in the `conf/xslt` directory of your xref:configuration-guide:config-sets.adoc[configset] that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
-Learn more about adding the `dist/solr-scripting-*.jar` file into Solr's <<libs.adoc#lib-directories,Lib Directories>>.
+Learn more about adding the `dist/solr-scripting-*.jar` file into Solr's xref:configuration-guide:libs.adoc#lib-directories[Lib Directories].
 
 === tr Parameter
 
@@ -287,7 +285,7 @@ The transformation must be found in the Solr `conf/xslt` directory.
 
 === XSLT Configuration
 
-The example below, from the `sample_techproducts_configs` <<config-sets.adoc#,configset>> in the Solr distribution, shows how the XSLT Update Request Handler is configured.
+The example below, from the `sample_techproducts_configs` xref:configuration-guide:config-sets.adoc[configset] in the Solr distribution, shows how the XSLT Update Request Handler is configured.
 
 [source,xml]
 ----
@@ -358,12 +356,12 @@ $ curl -o standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/
 $ curl -X POST -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl"
 ----
 
-NOTE: You can see the opposite export/import cycle using the `tr` parameter in <<response-writers.adoc#xslt-writer-example,Response Writer XSLT example>>.
+NOTE: You can see the opposite export/import cycle using the `tr` parameter in the xref:query-guide:response-writers.adoc#xslt-writer-example[Response Writer XSLT example].
 
 == JSON Formatted Index Updates
 
 Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents.
-If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described in the section <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>.
+If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described in the section xref:transforming-and-indexing-custom-json.adoc[].
 
 === Solr-Style JSON
 
@@ -507,7 +505,7 @@ The `/update/json` path may be useful for clients sending in JSON formatted upda
 === Custom JSON Documents
 
 Solr can support custom JSON.
-This is covered in the section <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>.
+This is covered in the section xref:transforming-and-indexing-custom-json.adoc[].
 
 
 == CSV Formatted Index Updates

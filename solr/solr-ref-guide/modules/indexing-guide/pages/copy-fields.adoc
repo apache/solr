@@ -28,7 +28,7 @@ In the schema file, it's very simple to make copies of fields:
 ----
 
 In this example, we want Solr to copy the `cat` field to a field named `text`.
-Fields are copied before <<document-analysis.adoc#,analysis>> is done, meaning you can have two fields with identical original content, but which use different analysis chains and are stored in the index differently.
+Fields are copied before xref:document-analysis.adoc[analysis], meaning you can have two fields with identical original content, but which use different analysis chains and are stored in the index differently.
 
 In the example above, if the `text` destination field has data of its own in the input documents, the contents of the `cat` field will be added as additional values – just as if all of the values had originally been specified by the client.
 Remember to configure your fields as `multivalued="true"` if they will ultimately get multiple values (either from a multivalued source or from multiple `copyField` directives).

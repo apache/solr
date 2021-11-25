@@ -24,7 +24,7 @@ Fields, dynamic fields, field types and copyField rules may be added, removed or
 Future Solr releases will extend write access to allow more schema elements to be modified.
 
 The Schema API utilizes the `ManagedIndexSchemaFactory` class, which is the default schema factory in modern Solr versions.
-See the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>> for more information about choosing a schema factory for your index.
+See the section xref:configuration-guide:schema-factory.adoc[] for more information about choosing a schema factory for your index.
 
 .Hand editing of the managed schema is discouraged
 [NOTE]
@@ -55,7 +55,7 @@ You must reindex documents in order to apply schema changes to them.
 Queries and updates made after the change may encounter errors that were not present before the change.
 Completely deleting the index and rebuilding it is usually the only option to fix such errors.
 
-See the section <<reindexing.adoc#,Reindexing>> for more information about reindexing.
+See the section xref:reindexing.adoc[] for more information about reindexing.
 ====
 
 All of the examples in this section assume you are running the "techproducts" Solr example:
@@ -96,7 +96,7 @@ The `add-field` command adds a new field definition to your schema.
 If a field with the same name exists an error is thrown.
 
 All of the properties available when defining a field with manual schema edits can be passed via the API.
-These request attributes are described in detail in the section <<fields.adoc#,Fields>>.
+These request attributes are described in detail in the section xref:fields.adoc[].
 
 For example, to define a new stored field named "sell_by", of type "pdate", you would POST the following request:
 
@@ -170,7 +170,7 @@ Note that you must supply the full definition for a field - this command will *n
 If the field does not exist in the schema an error is thrown.
 
 All of the properties available when defining a field with manual schema edits can be passed via the API.
-These request attributes are described in detail in the section <<fields.adoc#,Fields>>.
+These request attributes are described in detail in the section xref:fields.adoc[].
 
 For example, to replace the definition of an existing field "sell_by", to make it be of type "date" and to not be stored, you would POST the following request:
 
@@ -210,7 +210,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 The `add-dynamic-field` command adds a new dynamic field rule to your schema.
 
 All of the properties available when editing the schema can be passed with the POST request.
-The section <<dynamic-fields.adoc#,Dynamic Fields>> has details on all of the attributes that can be defined for a dynamic field rule.
+The section xref:dynamic-fields.adoc[] has details on all of the attributes that can be defined for a dynamic field rule.
 
 For example, to create a new dynamic field rule where all incoming fields ending with "_s" would be stored and have field type "string", you can POST a request like this:
 
@@ -284,7 +284,7 @@ Note that you must supply the full definition for a dynamic field rule - this co
 If the dynamic field rule does not exist in the schema an error is thrown.
 
 All of the properties available when editing the schema can be passed with the POST request.
-The section <<dynamic-fields.adoc#,Dynamic Fields>> has details on all of the attributes that can be defined for a dynamic field rule.
+The section xref:dynamic-fields.adoc[] has details on all of the attributes that can be defined for a dynamic field rule.
 
 For example, to replace the definition of the "*_s" dynamic field rule with one where the field type is "text_general" and it's not stored, you can POST a request like this:
 
@@ -325,7 +325,7 @@ The `add-field-type` command adds a new field type to your schema.
 
 All of the field type properties available when editing the schema by hand are available for use in a POST request.
 The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc.
-Details of all of the available options are described in the section <<field-types.adoc#,Field Types>>.
+Details of all of the available options are described in the section xref:field-type-definitions-and-properties.adoc[].
 
 For example, to create a new field type named "myNewTxtField", you can POST a request as follows:
 
@@ -444,7 +444,7 @@ If the field type does not exist in the schema an error is thrown.
 
 All of the field type properties available when editing the schema by hand are available for use in a POST request.
 The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc.
-Details of all of the available options are described in the section <<field-types.adoc#,Field Types>>.
+Details of all of the available options are described in the section xref:field-type-definitions-and-properties.adoc[].
 
 For example, to replace the definition of a field type named "myNewTxtField", you can make a POST request as follows:
 
@@ -517,7 +517,7 @@ A field or an array of fields to which the source field will be copied.
 |===
 +
 The upper limit for the number of characters to be copied.
-The section <<copy-fields.adoc#,Copy Fields>> has more details.
+The section xref:copy-fields.adoc[] has more details.
 
 For example, to define a rule to copy the field "shelf" to the "location" and "catchall" fields, you would POST the following request:
 
@@ -944,7 +944,7 @@ The output will include each field and any defined configuration for each field.
 The defined configuration can vary for each field, but will minimally include the field `name`, the `type`, if it is `indexed` and if it is `stored`.
 
 If `multiValued` is defined as either true or false (most likely true), that will also be shown.
-See the section <<fields.adoc#,Fields>> for more information about each parameter.
+See the section xref:fields.adoc[] for more information about each parameter.
 
 ==== List Fields Examples
 
@@ -1060,7 +1060,7 @@ If `false`, only explicitly specified field properties will be included.
 
 The output will include each dynamic field rule and the defined configuration for each rule.
 The defined configuration can vary for each rule, but will minimally include the dynamic field `name`, the `type`, if it is `indexed` and if it is `stored`.
-See the section <<dynamic-fields.adoc#,Dynamic Fields>> for more information about each parameter.
+See the section xref:dynamic-fields.adoc[] for more information about each parameter.
 
 ==== List Dynamic Field Examples
 
@@ -1189,7 +1189,7 @@ If `false`, only explicitly specified field properties will be included.
 The output will include each field type and any defined configuration for the type.
 The defined configuration can vary for each type, but will minimally include the field type `name` and the `class`.
 If query or index analyzers, tokenizers, or filters are defined, those will also be shown with other defined parameters.
-See the section <<field-types.adoc#,Field Types>> for more information about how to configure various types of fields.
+See the section xref:field-type-definitions-and-properties.adoc[] for more information about how to configure various types of fields.
 
 ==== List Field Type Examples
 
@@ -1312,7 +1312,7 @@ If not specified, all copyField-s will be included in the response.
 ==== List Copy Field Response
 
 The output will include the `source` and `dest` (destination) of each copy field rule defined in `schema.xml`.
-For more information about copy fields, see the section <<copy-fields.adoc#,Copy Fields>>.
+For more information about copy fields, see the section xref:copy-fields.adoc[].
 
 ==== List Copy Field Examples
 
@@ -1649,6 +1649,5 @@ curl -X GET "http://localhost:8983/api/collections/techproducts/schema/similarit
 
 == Manage Resource Data
 
-The <<managed-resources.adoc#,Managed Resources>> REST API provides a mechanism for any Solr plugin to expose resources that should support CRUD (Create, Read, Update, Delete) operations.
+The xref:configuration-guide:managed-resources.adoc[] REST API provides a mechanism for any Solr plugin to expose resources that should support CRUD (Create, Read, Update, Delete) operations.
 Depending on which field types and analyzers are configured in your Schema, additional `/schema/` REST API paths may exist.
-See the <<managed-resources.adoc#,Managed Resources>> section for more information and examples.

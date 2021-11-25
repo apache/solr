@@ -27,7 +27,7 @@ It is strongly recommended that Solr users have a consistent, repeatable process
 
 [CAUTION]
 ====
-Re-ingesting all the documents in your corpus without first insuring that all documents and Lucene segments have been deleted is *not* sufficient, see the section <<reindexing.adoc#reindexing-strategies,Reindexing Strategies>>.
+Re-ingesting all the documents in your corpus without first insuring that all documents and Lucene segments have been deleted is *not* sufficient, see the section <<Reindexing Strategies>>.
 ====
 
 Reindexing is recommended during major upgrades, so in addition to covering what types of configuration changes should trigger a reindex, this section will also cover strategies for reindexing.
@@ -57,7 +57,7 @@ This type of change is usually only made during or because of a major upgrade.
 When you change your schema by adding fields, removing fields, or changing the field or field type definitions you generally do so with the intent that those changes alter how documents are searched.
 The full effects of those changes are not reflected in the corpus as a whole until all documents are reindexed.
 
-Changes to *any* field/field type property described in <<field-type-definitions-and-properties.adoc#field-type-properties,Field Type Properties>> must be reindexed in order for the change to be reflected in _all_ documents.
+Changes to *any* field/field type property described in xref:field-type-definitions-and-properties.adoc#field-type-properties[Field Type Properties] must be reindexed in order for the change to be reflected in _all_ documents.
 
 [CAUTION]
 ====
@@ -69,7 +69,7 @@ Negative impacts on the user may not be immediately apparent.
 
 ==== Changing Field Analysis
 
-Beyond specific field-level properties, <<analyzers.adoc#,analysis chains>> are also configured on field types, and are applied at index and query time.
+Beyond specific field-level properties, xref:analyzers.adoc[analysis chains] are also configured on field types, and are applied at index and query time.
 
 If separate analysis chains are defined for query and indexing events for a field and you change _only_ the query-time analysis chain, reindexing is not necessary.
 
@@ -80,11 +80,11 @@ Identifying changes to solrconfig.xml that alter how data is ingested and thus r
 The general rule is "anything that changes what gets stored in the index requires reindexing".
 Here are several known examples.
 
-The parameter `luceneMatchVersion` in solrconfig.xml controls the compatibility of Solr with Lucene.
+The parameter `luceneMatchVersion` in `solrconfig.xml` controls the compatibility of Solr with Lucene.
 Since this parameter can change the rules for analysis behind the scenes, it's always recommended to reindex when changing it.
 Usually this is only changed in conjunction with a major upgrade.
 
-If you make a change to Solr's <<update-request-processors.adoc#,Update Request Processors>>, it's generally because you want to change something about how _update requests_ (documents) are _processed_ (indexed).
+If you make a change to Solr's xref:configuration-guide:update-request-processors.adoc[], it's generally because you want to change something about how _update requests_ (documents) are _processed_ (indexed).
 In this case, we recommend that you reindex your documents to implement the changes you've made just as if you had changed the schema.
 
 Similarly, if you change the `codecFactory` parameter in `solrconfig.xml`, it is again strongly recommended that you
@@ -139,7 +139,7 @@ It's important to verify that *all* documents have been deleted, as that ensures
 deleted as well.
 
 To verify that there are no segments in your index, look in the data/index directory and confirm it has no segments files.
-Since the data directory can be customized, see the section <<index-location-format.adoc#specifying-a-location-for-index-data-with-the-datadir-parameter,Specifying a Location for Index Data with the dataDir Parameter>> for the location of your index files.
+Since the data directory can be customized, see the section xref:configuration-guide:index-location-format.adoc#specifying-a-location-for-index-data-with-the-datadir-parameter[Specifying a Location for Index Data with the dataDir Parameter] for the location of your index files.
 
 Note you will need to verify the indexes have been removed in every shard and every replica on every node of a cluster.
 It is not sufficient to only query for the number of documents because you may have no documents but still have index
@@ -152,14 +152,14 @@ A variation on this approch is to delete and recreate your collection using the 
 
 === Index to Another Collection
 
-Another approach is to use index to a new collection and use Solr's <<alias-management.adoc#createalias,collection alias>> feature to seamlessly point the application to a new collection without downtime.
+Another approach is to use index to a new collection and use Solr's xref:deployment-guide:alias-management.adoc#createalias[collection alias] feature to seamlessly point the application to a new collection without downtime.
 
 This option is only available for Solr installations running in SolrCloud mode.
 
 With this approach, you will index your documents into a new collection that uses your changes and, once indexing and testing are complete, create an alias that points your front-end at the new collection.
 From that point, new queries and updates will be routed to the new collection seamlessly.
 
-Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the Collections API <<collection-management.adoc#delete,DELETE command>>.
+Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the Collections API xref:deployment-guide:collection-management.adoc#delete[DELETE command].
 
 [NOTE]
 One advantage of this option is that if you you can switch back to the old collection if you discover problems our testing did not uncover.

@@ -20,7 +20,7 @@ Filters examine a stream of tokens and keep them, transform them, or discard the
 
 == About Filters
 
-Like <<tokenizers.adoc#,tokenizers>>, filters consume input and produce a stream of tokens.
+Like xref:tokenizers.adoc[tokenizers], filters consume input and produce a stream of tokens.
 Filters also derive from `org.apache.lucene.analysis.TokenStream` but unlike tokenizers, a filter's input is another TokenStream.
 The job of a filter is usually easier than that of a tokenizer since in most cases a filter looks at each token in the stream sequentially and decides whether to pass it along, replace it, or discard it.
 
@@ -90,7 +90,7 @@ Solr includes several language-specific stemmers created by the http://snowball.
 The generic <<Snowball Porter Stemmer Filter>> can be used to configure any of these language stemmers.
 Solr also includes a convenience wrapper for the English Snowball stemmer.
 There are also several purpose-built stemmers for non-English languages.
-These stemmers are described in <<language-analysis.adoc#,Language Analysis>>.
+These stemmers are described in xref:language-analysis.adoc[].
 
 === Filters with Arguments
 
@@ -199,7 +199,7 @@ If `true`, the original token is preserved: "thé" -> "the", "thé"
 == Beider-Morse Filter
 
 Implements the Beider-Morse Phonetic Matching (BMPM) algorithm, which allows identification of similar names, even if they are spelled differently or in different languages.
-More information about how this works is available in the section on <<phonetic-matching.adoc#beider-morse-phonetic-matching-bmpm,Phonetic Matching>>.
+More information about how this works is available in the section xref:phonetic-matching.adoc#beider-morse-phonetic-matching-bmpm[Beider-Morse Phonetic Matching].
 
 [IMPORTANT]
 ====
@@ -284,7 +284,7 @@ The value `auto` will allow the filter to identify the language, or a comma-sepa
 
 == Classic Filter
 
-This filter takes the output of the <<tokenizers.adoc#classic-tokenizer,Classic Tokenizer>> and strips periods from acronyms and "'s" from possessives.
+This filter takes the output of the xref:tokenizers.adoc#classic-tokenizer[Classic Tokenizer] and strips periods from acronyms and "'s" from possessives.
 
 *Factory class:* `solr.ClassicFilterFactory`
 
@@ -328,9 +328,9 @@ This filter takes the output of the <<tokenizers.adoc#classic-tokenizer,Classic 
 
 This filter for use in `index` time analysis creates word shingles by combining common tokens such as stop words with regular tokens.
 This can result in an index with more unique terms, but is useful for creating phrase queries containing common words, such as "the cat", in a way that will typically be much faster then if the combined tokens are not used, because only the term positions of documents containg both terms in sequence have to be considered.
-Correct usage requires being paired with <<#common-grams-query-filter,Common Grams Query Filter>> during `query` analysis.
+Correct usage requires being paired with <<Common Grams Query Filter>> during `query` analysis.
 
-These filters can also be combined with <<#stop-filter,Stop Filter>> so searching for `"the cat"` would match different documents then `"a cat"`, while pathological searches for either `"the"` or `"a"` would not match any documents.
+These filters can also be combined with <<Stop Filter>> so searching for `"the cat"` would match different documents then `"a cat"`, while pathological searches for either `"the"` or `"a"` would not match any documents.
 
 *Factory class:* `solr.CommonGramsFilterFactory`
 
@@ -409,18 +409,18 @@ If `true`, the filter ignores the case of words when comparing them to the commo
 
 == Common Grams Query Filter
 
-This filter is used for the `query` time analysis aspect of <<#common-grams-filter,Common Grams Filter>> -- see that filer for a description of arguments, example configuration, and sample input/output.
+This filter is used for the `query` time analysis aspect of <<Common Grams Filter>> -- see that filer for a description of arguments, example configuration, and sample input/output.
 
 == Collation Key Filter
 
 Collation allows sorting of text in a language-sensitive way.
 It is usually used for sorting, but can also be used with advanced searches.
-We've covered this in much more detail in the section on <<language-analysis.adoc#unicode-collation,Unicode Collation>>.
+We've covered this in much more detail in the section on xref:language-analysis.adoc#unicode-collation[Unicode Collation].
 
 == Daitch-Mokotoff Soundex Filter
 
 Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently.
-More information about how this works is available in the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
+More information about how this works is available in the section on xref:phonetic-matching.adoc[].
 
 *Factory class:* `solr.DaitchMokotoffSoundexFilterFactory`
 
@@ -468,7 +468,7 @@ Setting this to `false` will enable phonetic matching, but the exact spelling of
 == Double Metaphone Filter
 
 This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec.
-For more information, see the <<phonetic-matching.adoc#,Phonetic Matching>> section.
+For more information, see xref:phonetic-matching.adoc[].
 
 *Factory class:* `solr.DoubleMetaphoneFilterFactory`
 
@@ -1050,7 +1050,7 @@ This filter is generally only useful at index time.
 This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>.
 This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 *Factory class:* `solr.ICUFoldingFilterFactory`
@@ -1191,7 +1191,7 @@ See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[Uni
 
 For detailed information about these normalization forms, see http://unicode.org/reports/tr15/[Unicode Normalization Forms].
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 == ICU Transform Filter
@@ -1244,7 +1244,7 @@ For a full list of ICU System Transforms, see http://demo.icu-project.org/icu-bi
 
 For detailed information about ICU Transforms, see http://userguide.icu-project.org/transforms/general.
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 == Keep Word Filter
@@ -1703,7 +1703,7 @@ All other characters are left unchanged.
 
 == Managed Stop Filter
 
-This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#,managed from a REST API.>>
+This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are xref:configuration-guide:managed-resources.adoc[managed from a REST API].
 
 *Arguments:*
 
@@ -1750,7 +1750,7 @@ See <<Stop Filter>> for example input/output.
 
 == Managed Synonym Filter
 
-This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
+This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is xref:configuration-guide:managed-resources.adoc[managed from a REST API].
 
 .Managed Synonym Filter has been Deprecated
 [WARNING]
@@ -1764,7 +1764,7 @@ For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 == Managed Synonym Graph Filter
 
-This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
+This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is xref:configuration-guide:managed-resources.adoc[managed from a REST API].
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output.
 This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
@@ -2199,7 +2199,7 @@ Otherwise the token is passed through.
 == Phonetic Filter
 
 This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package.
-For more information, see the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
+For more information, see the section on xref:phonetic-matching.adoc[].
 
 *Factory class:* `solr.PhoneticFilterFactory`
 
@@ -3062,7 +3062,7 @@ s|Required |Default: none
 The path to a file that contains a list of synonyms, one per line.
 In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with `\#` are ignored.
 This may be a comma-separated list of paths.
-See <<resource-loading.adoc#,Resource Loading>> for more information.
+See xref:configuration-guide:resource-loading.adoc[] for more information.
 +
 There are two ways to specify synonym mappings:
 +
@@ -3429,7 +3429,7 @@ With the example below, for a token "example.com" with type `<URL>`, the token e
 == Type Token Filter
 
 This filter blacklists or whitelists a specified list of token types, assuming the tokens have type metadata associated with them.
-For example, the <<tokenizers.adoc#uax29-url-email-tokenizer,UAX29 URL Email Tokenizer>> emits "<URL>" and "<EMAIL>" typed tokens, as well as other types.
+For example, the xref:tokenizers.adoc#uax29-url-email-tokenizer[UAX29 URL Email Tokenizer] emits "<URL>" and "<EMAIL>" typed tokens, as well as other types.
 This filter would allow you to pull out only e-mail addresses from text as tokens, if you wish.
 
 *Factory class:* `solr.TypeTokenFilterFactory`

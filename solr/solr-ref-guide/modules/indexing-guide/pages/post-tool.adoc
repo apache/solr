@@ -121,7 +121,7 @@ bin/post -c signals -params "separator=%09" -type text/csv data.tsv
 ----
 
 The content type (`-type`) parameter is required to treat the file as the proper type, otherwise it will be ignored and a WARNING logged as it does not know what type of content a .tsv file is.
-The <<indexing-with-update-handlers.adoc#csv-formatted-index-updates,CSV handler>> supports the `separator` parameter, and is passed through using the `-params` setting.
+The xref:indexing-with-update-handlers.adoc#csv-formatted-index-updates[CSV handler] supports the `separator` parameter, and is passed through using the `-params` setting.
 
 === Indexing JSON
 

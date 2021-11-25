@@ -31,7 +31,7 @@ It's also possible for more than one token to have the same position or refer to
 Keep this in mind if you use token metadata for things like highlighting search results in the field text.
 
 == About Tokenizers
-You configure the tokenizer for a text field type in the <<solr-schema.adoc#,schema>> with a `<tokenizer>` element, as a child of `<analyzer>`:
+You configure the tokenizer for a text field type in the xref:schema-elements.adoc[schema] with a `<tokenizer>` element, as a child of `<analyzer>`:
 
 [.dynamic-tabs]
 --
@@ -549,7 +549,7 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
 [IMPORTANT]
 ====
 
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
 ====
@@ -913,4 +913,4 @@ Valid values:
 
 == OpenNLP Tokenizer and OpenNLP Filters
 
-See <<language-analysis.adoc#opennlp-integration,OpenNLP Integration>> for information about using the OpenNLP Tokenizer, along with information about available OpenNLP token filters.
+See xref:language-analysis.adoc#opennlp-integration[OpenNLP Integration] for information about using the OpenNLP Tokenizer, along with information about available OpenNLP token filters.

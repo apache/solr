@@ -29,7 +29,7 @@ Another way to think of this is that, instead of specifying the field in documen
 ====
 External fields are not searchable.
 They can be used only for function queries or display.
-For more information on function queries, see the section on <<function-queries.adoc#,Function Queries>>.
+For more information on function queries, see the section on xref:query-guide:function-queries.adoc[].
 ====
 
 The `ExternalFileField` type is handy for cases where you want to update a particular field in many documents more often than you want to update the rest of the documents.
@@ -38,7 +38,7 @@ You might want to update the rank of all the documents daily or hourly, while th
 Without `ExternalFileField`, you would need to update each document just to change the rank.
 Using `ExternalFileField` is much more efficient because all document values for a particular field are stored in an external file that can be updated as frequently as you wish.
 
-In the <<solr-schema.adoc#,schema>>, the definition of this field type might look like this:
+In the xref:schema-elements.adoc[schema], the definition of this field type might look like this:
 
 [source,xml]
 ----
@@ -77,7 +77,7 @@ The file does not need to be sorted, but Solr will be able to perform the lookup
 === Reloading an External File
 
 It's possible to define an event listener to reload an external file when either a searcher is reloaded or when a new searcher is started.
-See the section <<caches-warming.adoc#query-related-listeners,Query-Related Listeners>> for more information, but a sample definition in `solrconfig.xml` might look like this:
+See the section xref:configuration-guide:caches-warming.adoc#query-related-listeners[Query-Related Listeners] for more information, but a sample definition in `solrconfig.xml` might look like this:
 
 [source,xml]
 ----

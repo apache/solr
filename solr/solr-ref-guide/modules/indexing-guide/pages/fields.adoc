@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Fields are defined in the fields element of a <<solr-schema.adoc#,schema>>.
+Fields are defined in the fields element of a xref:schema-elements.adoc[schema].
 Once you have the field types set up, defining the fields themselves is simple.
 
 == Example Field Definition
@@ -69,7 +69,7 @@ If this property is not specified, there is no default.
 
 Fields can have many of the same properties as field types.
 Properties from the table below which are specified on an individual field will override any explicit value for that property specified on the `fieldType` of the field, or any implicit default property value provided by the underlying `fieldType` implementation.
-The table below is reproduced from <<field-type-definitions-and-properties.adoc#,Field Type Definitions and Properties>>, which has more details:
+The table below is reproduced from xref:field-type-definitions-and-properties.adoc[], which has more details:
 
 --
 include::field-type-definitions-and-properties.adoc[tag=field-params]

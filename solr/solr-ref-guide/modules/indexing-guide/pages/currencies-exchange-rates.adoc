@@ -35,7 +35,7 @@ The following features are supported:
 CurrencyField has been deprecated in favor of CurrencyFieldType; all configuration examples below use CurrencyFieldType.
 ====
 
-The `currency` field type is defined in the <<solr-schema.adoc#,schema>>.
+The `currency` field type is defined in the xref:schema-elements.adoc[schema].
 This is the default configuration of this type.
 
 [source,xml]
@@ -51,7 +51,7 @@ This is a file of exchange rates between our default currency to other currencie
 There is an alternate implementation that would allow regular downloading of currency data.
 See <<Exchange Rates>> below for more.
 
-Many of the example schemas that ship with Solr include a <<dynamic-fields.adoc#,dynamic field>> that uses this type, such as this example:
+Many of the example schemas that ship with Solr include a xref:dynamic-fields.adoc[dynamic field] that uses this type, such as this example:
 
 [source,xml]
 ----
@@ -83,7 +83,7 @@ The currency code field will use the `"*_s_ns"` dynamic field, which must exist 
 .Atomic Updates won't work if dynamic sub-fields are stored
 [NOTE]
 ====
-As noted in <<partial-document-updates.adoc#field-storage,Atomic Update Field Storage>>, stored dynamic sub-fields will cause indexing to fail when you use Atomic Updates.
+As noted in xref:partial-document-updates.adoc#field-storage[Atomic Update Field Storage], stored dynamic sub-fields will cause indexing to fail when you use Atomic Updates.
 To avoid this problem, specify `stored="false"` on those dynamic fields.
 ====
 

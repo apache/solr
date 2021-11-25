@@ -25,7 +25,7 @@ Tokens are delimited by white space and/or a relatively small set of punctuation
 In other languages the tokenization rules are often not so simple.
 Some European languages may also require special tokenization rules, such as rules for decompounding German words.
 
-For information about language detection at index time, see <<language-detection.adoc#,Language Detection>>.
+For information about language detection at index time, see xref:language-detection.adoc[].
 
 == KeywordMarkerFilterFactory
 
@@ -33,7 +33,7 @@ Protects words from being modified by stemmers.
 A customized protected word list may be specified with the "protected" attribute in the schema.
 Any words in the protected word list will not be modified by any stemmer in Solr.
 
-A sample Solr `protwords.txt` with comments can be found in the `sample_techproducts_configs` <<config-sets.adoc#,configset>> directory:
+A sample Solr `protwords.txt` with comments can be found in the `sample_techproducts_configs` xref:configuration-guide:config-sets.adoc[configset] directory:
 
 [.dynamic-tabs]
 --
@@ -186,7 +186,7 @@ s|Required |Default: none
 The path of a file that contains a list of simple words, one per line.
 Blank lines and lines that begin with "`#`" are ignored.
 +
-See <<resource-loading.adoc#,Resource Loading>> for more information.
+See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 `minWordSize`::
 +
@@ -269,7 +269,7 @@ Unicode Collation in Solr is fast, because all the work is done at index time.
 Rather than specifying an analyzer within `<fieldtype ... class="solr.TextField">`, the `solr.CollationField` and `solr.ICUCollationField` field type classes provide this functionality.
 `solr.ICUCollationField`, which is backed by http://site.icu-project.org[the ICU4J library], provides more flexible configuration, has more locales, is significantly faster, and requires less memory and less index space, since its keys are smaller than those produced by the JDK implementation that backs `solr.CollationField`.
 
-To use `solr.ICUCollationField`, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use `solr.ICUCollationField`, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 `solr.ICUCollationField` and `solr.CollationField` fields can be created in two ways:
@@ -695,13 +695,13 @@ On the other hand, it can reduce precision because language-specific character d
 
 The `lucene/analysis/opennlp` module provides OpenNLP integration via several analysis components: a tokenizer, a part-of-speech tagging filter, a phrase chunking filter, and a lemmatization filter.
 In addition to these analysis components, Solr also provides an update request processor to extract named entities.
-See also <<update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins,Update Processor Factories That Can Be Loaded as Plugins>>.
+See also xref:configuration-guide:update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins[Update Processor Factories That Can Be Loaded as Plugins].
 
 NOTE: The <<OpenNLP Tokenizer>> must be used with all other OpenNLP analysis components, for two reasons.
 First, the OpenNLP Tokenizer detects and marks the sentence boundaries required by all the OpenNLP filters.
 Second, since the pre-trained OpenNLP models used by these filters were trained using the corresponding language-specific sentence-detection/tokenization models, the same tokenization using the same models must be used at runtime for optimal performance.
 
-To use the OpenNLP components, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use the OpenNLP components, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 === OpenNLP Tokenizer
@@ -722,7 +722,7 @@ s|Required |Default: none
 |===
 +
 The path of a language-specific OpenNLP sentence detection model file.
-See <<resource-loading.adoc#,Resource Loading>> for more information.
+See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 `tokenizerModel`::
 +
@@ -732,7 +732,7 @@ s|Required |Default: none
 |===
 +
 The path of a language-specific OpenNLP tokenization model file.
-See <<resource-loading.adoc#,Resource Loading>> for more information.
+See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 *Example:*
 
@@ -783,11 +783,12 @@ s|Required |Default: none
 |===
 +
 The path of a language-specific OpenNLP POS tagger model file.
-See <<resource-loading.adoc#,Resource Loading>> for more information.
+See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 *Examples:*
 
-The OpenNLP tokenizer will tokenize punctuation, which is useful for following token filters, but ordinarily you don't want to include punctuation in your index, so the `TypeTokenFilter` (<<filters.adoc#type-token-filter,described here>>) is included in the examples below, with `stop.pos.txt` containing the following:
+The OpenNLP tokenizer will tokenize punctuation, which is useful for following token filters.
+Ordinarily you don't want to include punctuation in your index, so the xref:filters.adoc#type-token-filter[`TypeTokenFilter`] is included in the examples below, with `stop.pos.txt` containing the following:
 
 .stop.pos.txt
 [source,text]
@@ -839,7 +840,7 @@ Index the POS for each token as a payload:
 ====
 --
 
-Index the POS for each token as a synonym, after prefixing the POS with "@" (see the <<filters.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+Index the POS for each token as a synonym, after prefixing the POS with "@" (see the xref:filters.adoc#type-as-synonym-filter[TypeAsSynonymFilter description]):
 
 [source,xml]
 ----
@@ -888,7 +889,7 @@ s|Required |Default: none
 |===
 +
 The path of a language-specific OpenNLP phrase chunker model file.
-See <<resource-loading.adoc#,Resource Loading>> for more information.
+See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 *Examples*:
 
@@ -928,7 +929,7 @@ Index the phrase chunk label for each token as a payload:
 ====
 --
 
-Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the <<filters.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the xref:filters.adoc#type-as-synonym-filter[TypeAsSynonymFilter description]):
 
 [source,xml]
 ----
@@ -963,7 +964,7 @@ Either `dictionary` or `lemmatizerModel` must be provided, and both may be provi
 |===
 +
 The path of a lemmatization dictionary file.
-See <<resource-loading.adoc#,Resource Loading>> for more information.
+See xref:configuration-guide:resource-loading.adoc[] for more information.
 The dictionary file must be encoded as UTF-8, with one entry per line, in the form `word[tab]lemma[tab]part-of-speech`, e.g., `wrote[tab]write[tab]VBD`.
 
 `lemmatizerModel`::
@@ -974,7 +975,7 @@ The dictionary file must be encoded as UTF-8, with one entry per line, in the fo
 |===
 +
 The path of a language-specific OpenNLP lemmatizer model file.
-See <<resource-loading.adoc#,Resource Loading>> for more information.
+See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 *Examples:*
 
@@ -1324,12 +1325,12 @@ The stemmer language, `Catalan` in this case.
 
 === Traditional Chinese
 
-The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>> is suitable for Traditional Chinese text.
+The default configuration of the xref:tokenizers.adoc#icu-tokenizer[ICU Tokenizer] is suitable for Traditional Chinese text.
 It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
-<<tokenizers.adoc#standard-tokenizer,Standard Tokenizer>> can also be used to tokenize Traditional Chinese text.
+The xref:tokenizers.adoc#standard-tokenizer[Standard Tokenizer] can also be used to tokenize Traditional Chinese text.
 Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.
 When combined with <<CJK Bigram Filter>>, overlapping bigrams of Chinese characters are formed.
 
@@ -1377,7 +1378,7 @@ When combined with <<CJK Bigram Filter>>, overlapping bigrams of Chinese charact
 
 === CJK Bigram Filter
 
-Forms bigrams (overlapping 2-character sequences) of CJK characters that are generated from <<tokenizers.adoc#standard-tokenizer,Standard Tokenizer>> or <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>>.
+Forms bigrams (overlapping 2-character sequences) of CJK characters that are generated from the xref:tokenizers.adoc#standard-tokenizer[Standard Tokenizer] or the xref:tokenizers.adoc#icu-tokenizer[ICU Tokenizer].
 
 By default, all CJK characters produce bigrams, but finer grained control is available by specifying orthographic type arguments `han`, `hiragana`, `katakana`, and `hangul`.
 When set to `false`, characters of the corresponding type will be passed through as unigrams, and will not be included in any bigrams.
@@ -1440,12 +1441,12 @@ See the example under <<Traditional Chinese>>.
 
 For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<HMM Chinese Tokenizer>>.
 This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model.
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
-The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>> is also suitable for Simplified Chinese text.
+The default configuration of the xref:tokenizers.adoc#icu-tokenizer[ICU Tokenizer] is also suitable for Simplified Chinese text.
 It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
 Also useful for Chinese analysis:
@@ -1503,7 +1504,7 @@ Also useful for Chinese analysis:
 
 For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the `solr.HMMChineseTokenizerFactory` in the `analysis-extras` contrib module.
 This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model.
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 *Factory class:* `solr.HMMChineseTokenizerFactory`
@@ -2346,7 +2347,7 @@ Removes terms with one of the configured parts-of-speech.
 |===
 +
 Filename for a list of parts-of-speech for which to remove terms.
-See `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` <<config-sets.adoc#,configset>> for an example.
+See `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` xref:configuration-guide:config-sets.adoc[configset] for an example.
 
 ==== Japanese Katakana Stem Filter
 
@@ -2550,10 +2551,10 @@ This filter replaces term text with the Reading Attribute, the Hangul transcript
 === Hebrew, Lao, Myanmar, Khmer
 
 Lucene provides support, in addition to UAX#29 word break rules, for Hebrew's use of the double and single quote characters, and for segmenting Lao, Myanmar, and Khmer into syllables with the `solr.ICUTokenizerFactory` in the `analysis-extras` contrib module.
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
-See <<tokenizers.adoc#icu-tokenizer,the ICUTokenizer>> for more information.
+See xref:tokenizers.adoc#icu-tokenizer[ICUTokenizer] for more information.
 
 === Latvian
 
@@ -2825,7 +2826,7 @@ Solr includes support for normalizing Persian, and Lucene includes an example st
 
 Solr provides support for Polish stemming with the `solr.StempelPolishStemFilterFactory`, and `solr.MorphologikFilterFactory` for lemmatization, in the `contrib/analysis-extras` module.
 The `solr.StempelPolishStemFilterFactory` component includes an algorithmic stemmer with tables for Polish.
-To use either of these filters, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use either of these filters, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 *Factory class:* `solr.StempelPolishStemFilterFactory` and `solr.MorfologikFilterFactory`
@@ -3373,7 +3374,7 @@ Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFa
 === Ukrainian
 
 Solr provides support for Ukrainian lemmatization with the `solr.MorphologikFilterFactory`, in the `contrib/analysis-extras` module.
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 Lucene also includes an example Ukrainian stopword list, in the `lucene-analyzers-morfologik` jar.

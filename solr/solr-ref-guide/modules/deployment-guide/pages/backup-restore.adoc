@@ -659,7 +659,7 @@ An example configuration using the overall and GCS-client properties can be seen
 === S3BackupRepository
 
 Stores and retrieves backup files in an Amazon S3 bucket.
-This plugin must first be xref:solr-plugins.adoc#installing-plugins[installed] before using.
+This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
 
 This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 

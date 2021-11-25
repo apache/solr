@@ -44,13 +44,13 @@ Notes:
 2. [[fpbuc_2,2]] Will be used if present, but not necessary.
 3. [[fpbuc_3,3]] (if termVectors=true)
 4. [[fpbuc_4,4]] A tokenizer must be defined for the field, but it doesn't need to be indexed.
-5. [[fpbuc_5,5]] Described in <<document-analysis.adoc#,Document Analysis in Solr>>.
+5. [[fpbuc_5,5]] Described in xref:document-analysis.adoc[].
 6. [[fpbuc_6,6]] Term vectors are not mandatory here.
 If not true, then a stored field is analyzed.
 So term vectors are recommended, but only required if `stored=false`.
 7. [[fpbuc_7,7]] For most field types, either `indexed` or `docValues` must be true, but both are not required.
-<<docvalues.adoc#,DocValues>> can be more efficient in many cases.
+xref:docvalues.adoc[] can be more efficient in many cases.
 For `[Int/Long/Float/Double/Date]PointFields`, `docValues=true` is required.
 8. [[fpbuc_8,8]] Stored content will be used by default, but docValues can alternatively be used.
-See <<docvalues.adoc#,DocValues>>.
-9. [[fpbuc_9,9]] Multi-valued sorting may be performed on docValues-enabled fields using the two-argument `field()` function, e.g., `field(myfield,min)`; see the <<function-queries.adoc#field-function,field() function in Function Queries>>.
+See xref:docvalues.adoc[].
+9. [[fpbuc_9,9]] Multi-valued sorting may be performed on docValues-enabled fields using the two-argument `field()` function, e.g., `field(myfield,min)`; see the xref:query-guide:function-queries.adoc#field-function[field() function in Function Queries].

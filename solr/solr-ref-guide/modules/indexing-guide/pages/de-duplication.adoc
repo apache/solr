@@ -40,11 +40,11 @@ When a document is added, a signature will automatically be generated and attach
 
 == Configuration Options
 
-There are two places in Solr to configure de-duplication: in `solrconfig.xml` and in the <<solr-schema.adoc#,schema>>.
+There are two places in Solr to configure de-duplication: in `solrconfig.xml` and in the xref:schema-elements.adoc[schema].
 
 === In solrconfig.xml
 
-The `SignatureUpdateProcessorFactory` has to be registered in `solrconfig.xml` as part of an <<update-request-processors.adoc#,Update Request Processor Chain>>, as in this example:
+The `SignatureUpdateProcessorFactory` has to be registered in `solrconfig.xml` as part of an xref:configuration-guide:update-request-processors.adoc[Update Request Processor Chain], as in this example:
 
 [source,xml]
 ----
@@ -125,7 +125,7 @@ There are 2 important things to keep in mind when using `SignatureUpdateProcesso
 
 . The `overwriteDupes=true` setting does not work _except_ in the special case of using the uniqueKey field as the `signatureField`.
 Attempting De-duplication on any other `signatureField` will not work correctly because of how updates are forwarded to replicas
-. When using the uniqueKey field as the `signatureField`, `SignatureUpdateProcessorFactory` must be run prior to the `<<update-request-processors.adoc#update-processors-in-solrcloud,DistributedUpdateProcessor>>` to ensure that documents can be routed to the correct shard leader based on the (generated) uniqueKey field.
+. When using the uniqueKey field as the `signatureField`, `SignatureUpdateProcessorFactory` must be run prior to the xref:configuration-guide:update-request-processors.adoc#update-processors-in-solrcloud[`DistributedUpdateProcessor`] to ensure that documents can be routed to the correct shard leader based on the (generated) uniqueKey field.
 
 (Using any other `signatureField` with `overwriteDupes=false` -- to generate a Signature for each document with out De-duplication -- has no limitations.)
 ====

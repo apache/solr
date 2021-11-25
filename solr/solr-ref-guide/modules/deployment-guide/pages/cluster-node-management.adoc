@@ -601,7 +601,7 @@ The node to be removed.
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be xref:collections-api.adoc#asynchronous-calls[processed asynchronously].
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 [[addrole]]
 == ADDROLE: Add a Role

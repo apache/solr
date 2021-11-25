@@ -61,7 +61,7 @@ Wildcards can be used here, see <<Using Wildcards for Field Names>> below for mo
 |Optional |Default: `false`
 |===
 +
-This parameter is particularly convenient when the fields in the input JSON are not available in the schema and <<schemaless-mode.adoc#,schemaless mode>> is not enabled.
+This parameter is particularly convenient when the fields in the input JSON are not available in the schema and xref:schemaless-mode.adoc[schemaless mode] is not enabled.
 This will index all the fields into the default search field (using the `df` parameter) and only the `uniqueKey` field is mapped to the corresponding field in the schema.
 If the input JSON does not have a value for the `uniqueKey` field then a UUID is generated for the same.
 
@@ -332,12 +332,12 @@ Solr will automatically attempt to add the content of the field from the JSON in
 ====
 Documents will be rejected during indexing if the fields do not exist in the schema before indexing.
 So, if you are NOT using schemaless mode, you must pre-create all fields.
-If you are working in <<schemaless-mode.adoc#,Schemaless Mode>>, however, fields that don't exist will be created on the fly with Solr's best guess for the field type.
+If you are working in xref:configuration-guide:schemaless-mode.adoc[], however, fields that don't exist will be created on the fly with Solr's best guess for the field type.
 ====
 
 === Reusing Parameters in Multiple Requests
 
-You can store and re-use parameters with Solr's <<request-parameters-api.adoc#,Request Parameters API>>.
+You can store and re-use parameters with Solr's xref:configuration-guide:request-parameters-api.adoc[].
 
 Say we wanted to define parameters to split documents at the `exams` field, and map several other fields.
 We could make an API request such as:
