@@ -291,7 +291,7 @@ It's possible to define some components as being used before (with `first-compon
 
 NOTE: The component registered with the name "debug" will always be executed after the "last-components"
 
-If you define `components` instead, the <<#default-components,default components (above)>> will not be executed, and `first-components` and `last-components` are disallowed.
+If you define `components` instead, the <<default-components>> will not be executed, and `first-components` and `last-components` are disallowed.
 This should be considered as a last-resort option as the default list may change in a later Solr version.
 
 [source,xml]

@@ -92,7 +92,7 @@ docker run --name solr_demo -d -p 8983:8983 solr solr-demo
 
 == How the Image Works
 
-The container contains an installation of Solr, as installed by the <<taking-solr-to-production.adoc#service-installation-script,service installation script>>.
+The container contains an installation of Solr, as installed by the xref:taking-solr-to-production.adoc#service-installation-script[service installation script].
 This stores the Solr distribution in `/opt/solr`, and configures Solr to use `/var/solr` to store data and logs, using the `/etc/default/solr` file for configuration.
 If you want to persist the data, mount a volume or directory on `/var/solr`.
 Solr expects some files and directories in `/var/solr`; if you use your own directory or volume you can either pre-populate them, or let Solr docker copy them for you.
@@ -104,7 +104,7 @@ The Solr docker distribution adds scripts in `/opt/solr/docker/scripts` to make 
 === Creating Cores
 
 When Solr runs in standalone mode, you create "cores" to store data.
-On a non-Docker Solr, you would run the server in the background, then use the <<solr-control-script-reference.adoc#,Solr control script>> to create cores and load data.
+On a non-Docker Solr, you would run the server in the background, then use the xref:solr-control-script-reference.adoc[Solr control script] to create cores and load data.
 With Solr docker you have various options.
 
 ==== Manually
@@ -136,7 +136,7 @@ docker run -d -p 8983:8983 --name my_solr -v $PWD/config/solr:/my_core_config/co
 ----
 
 N.B. When specifying the full path to the configset, the actual core configuration should be located inside that directory in the `conf` directory.
-See <<config-sets.adoc#,Configsets>> for details.
+See xref:configuration-guide:config-sets.adoc[] for details.
 
 ==== Using solr-create Command
 
@@ -188,8 +188,8 @@ The fourth way is to use the remote API, from the host or from one of the contai
 curl 'http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted3&numShards=1&collection.configName=_default'
 ----
 
-If you want to use a custom config for your collection, you first need to upload it, and then refer to it by name when you create the collection.
-See the Ref guide on how to use the <<solr-control-script-reference.adoc#upload-a-configuration-set,ZooKeeper upload>> or the <<configsets-api.adoc#configsets-upload,Configsets API>>.
+If you want to use a custom configuration for your collection, you first need to upload it, and then refer to it by name when you create the collection.
+You can use the xref:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk` command] or the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configsets API].
 
 === Loading Your Own Data
 
@@ -222,7 +222,7 @@ Alternatively, you can make the data available on a volume at Solr start time, a
 === solr.in.sh Configuration
 
 In Solr it is common to configure settings in https://github.com/apache/solr/blob/main/solr/bin/solr.in.sh[solr.in.sh],
-as documented in the <<taking-solr-to-production.adoc#environment-overrides-include-file,Taking Solr to Production page>>.
+as documented in the section xref:taking-solr-to-production.adoc#environment-overrides-include-file[Environment Overrides Include File].
 
 The `solr.in.sh` file can be found in `/etc/default`:
 
@@ -314,7 +314,7 @@ jattach 10 jcmd GC.heap_info
 
 == Updating from Solr 5-7 to 8+
 
-In Solr 8, the Solr Docker image switched from just extracting the Solr tar, to using the <<taking-solr-to-production.adoc#service-installation-script,service installation script>>.
+In Solr 8, the Solr Docker image switched from just extracting the Solr tar, to using the xref:taking-solr-to-production.adoc#service-installation-script[service installation script].
 This was done for various reasons: to bring it in line with the recommendations by the Solr Ref Guide and to make it easier to mount volumes.
 
 This is a backwards incompatible change, and means that if you're upgrading from an older version, you will most likely need to make some changes.

@@ -22,7 +22,7 @@ You don't need to install any packages or configure anything.
 
 HTTP requests can be sent to Solr using the standard `XMLHttpRequest` mechanism.
 
-By default, Solr sends <<response-writers.adoc#json-response-writer,JavaScript Object Notation (JSON) responses>>, which are easily interpreted in JavaScript.
+By default, Solr sends xref:query-guide:response-writers.adoc#json-response-writer[JavaScript Object Notation (JSON) responses], which are easily interpreted in JavaScript.
 You don't need to add anything to the request URL to have responses sent as JSON.
 
 For more information and an excellent example, take a look at the SolJSON page on the Solr Wiki:

@@ -193,13 +193,13 @@ Configuring both will cause an error.
 
 === Multiple Authentication Schemes
 
-Solr provides the <<basic-authentication-plugin.adoc#combining-basic-authentication-with-other-schemes,MultiAuthPlugin>> to support multiple authentication schemes based on the `Authorization` header.
+Solr provides the xref:basic-authentication-plugin.adoc#combining-basic-authentication-with-other-schemes[MultiAuthPlugin] to support multiple authentication schemes based on the `Authorization` header.
 This allows you to configure Solr to delegate user management and authentication to an OIDC provider using the `JWTAuthPlugin`,
 but also allow a small set of service accounts to use `Basic` authentication when using OIDC is not supported or practical.
 
 == Editing JWT Authentication Plugin Configuration
 
-All properties mentioned above can be set or changed using the <<basic-authentication-plugin.adoc#editing-basic-authentication-plugin-configuration,Authentication API>>.
+All properties mentioned above can be set or changed using the xref:basic-authentication-plugin.adoc#editing-basic-authentication-plugin-configuration[Authentication API].
 You can thus start with a simple configuration with only `class` and `blockUnknown=false` configured and then configure the rest using the API.
 
 === Set a Configuration Property

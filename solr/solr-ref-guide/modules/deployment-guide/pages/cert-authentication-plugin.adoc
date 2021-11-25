@@ -36,7 +36,7 @@ An example `security.json` is shown below:
 === Certificate Validation
 
 Parts of certificate validation, including verifying the trust chain and peer hostname/ip address will be done by the web servlet container before the request ever reaches the authentication plugin.
-These checks are described in the <<enabling-ssl.adoc#,Enabling SSL>> section.
+These checks are described in the xref:enabling-ssl.adoc[] section.
 
 This plugin provides no additional checking beyond what has been configured via SSL properties.
 
@@ -58,4 +58,4 @@ It is best practice to verify the actual contents of certificates issued by your
 == Using Certificate Auth with Clients (including SolrJ)
 
 With certificate authentication enabled, all client requests must include a valid certificate.
-This is identical to the <<enabling-ssl.adoc#example-client-actions,client requirements>> when using SSL.
+This is identical to the xref:enabling-ssl.adoc#example-client-actions[client requirements] when using SSL.

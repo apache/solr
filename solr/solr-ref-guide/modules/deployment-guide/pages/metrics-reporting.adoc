@@ -104,7 +104,7 @@ When making requests with the <<Metrics API>>, you can specify `&group=jetty` to
 
 The metrics available in your system can be customized by modifying the `<metrics>` element in `solr.xml`.
 
-TIP: See also the section <<configuring-solr-xml.adoc#,Format of Solr.xml>> for more information about the `solr.xml` file, where to find it, and how to edit it.
+TIP: See also the section xref:configuration-guide:configuring-solr-xml.adoc[] for more information about the `solr.xml` file, where to find it, and how to edit it.
 
 === Disabling the Metrics Collection
 The `<metrics>` element in `solr.xml` supports one attribute `enabled`, which takes a boolean value,

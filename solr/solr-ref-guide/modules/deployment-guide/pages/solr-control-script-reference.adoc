@@ -23,7 +23,7 @@ You can start and stop Solr, create and delete collections or cores, perform ope
 You can find the script in the `bin/` directory of your Solr installation.
 The `bin/solr` script makes Solr easier to work with by providing simple commands and options to quickly accomplish common goals.
 
-More examples of `bin/solr` in use are available throughout this Guide, but particularly in the sections <<installing-solr.adoc#starting-solr,Starting Solr>> and <<tutorial-solrcloud.adoc#,Getting Started with SolrCloud>>.
+More examples of `bin/solr` in use are available throughout this Guide, but particularly in the sections xref:installing-solr.adoc#starting-solr[Starting Solr] and xref:getting-started:tutorial-solrcloud.adoc[].
 
 == Starting and Stopping
 
@@ -77,7 +77,7 @@ Start Solr in SolrCloud mode, which will also launch the embedded ZooKeeper inst
 +
 This option can be shortened to simply `-c`.
 +
-If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) or pass the `-z` parameter.
+If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) or pass the `-z` parameter.
 +
 For more details, see the section <<SolrCloud Mode>> below.
 +
@@ -283,7 +283,7 @@ The `-c` and `-cloud` options are equivalent:
 
 If you specify a ZooKeeper connection string, such as `-z 192.168.1.4:2181`, then Solr will connect to ZooKeeper and join the cluster.
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from all `bin/solr` commands.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files,Updating Solr Include Files>>) you can omit `-z <zk host string>` from all `bin/solr` commands.
 
 When starting Solr in SolrCloud mode, if you do not define `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` nor specify the `-z` option, then Solr will launch an embedded ZooKeeper server listening on the Solr port + 1000.
 For example, if Solr is running on port 8983, then the embedded ZooKeeper will listen on port 9983.
@@ -297,7 +297,7 @@ To do this use the `mkroot` command outlined below, for example: `bin/solr zk mk
 
 When starting in SolrCloud mode, the interactive script session will prompt you to choose a configset to use.
 
-For more information about starting Solr in SolrCloud mode, see also the section <<tutorial-solrcloud.adoc#,Getting Started with SolrCloud>>.
+For more information about starting Solr in SolrCloud mode, see also the section xref:getting-started:tutorial-solrcloud.adoc[].
 
 ==== Running with Example Configurations
 
@@ -305,11 +305,11 @@ For more information about starting Solr in SolrCloud mode, see also the section
 
 The example configurations allow you to get started quickly with a configuration that mirrors what you hope to accomplish with Solr.
 
-Each example launches Solr with a managed schema, which allows use of the <<schema-api.adoc#,Schema API>> to make schema edits, but does not allow manual editing of a Schema file.
+Each example launches Solr with a managed schema, which allows use of the xref:indexing-guide:schema-api.adoc[] to make schema edits, but does not allow manual editing of a Schema file.
 
-If you would prefer to manually modify a `schema.xml` file directly, you can change this default as described in the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>>.
+If you would prefer to manually modify a `schema.xml` file directly, you can change this default as described in the section xref:configuration-guide:schema-factory.adoc[].
 
-Unless otherwise noted in the descriptions below, the examples do not enable SolrCloud nor <<schemaless-mode.adoc#,schemaless mode>>.
+Unless otherwise noted in the descriptions below, the examples do not enable SolrCloud nor xref:indexing-guide:schemaless-mode.adoc[].
 
 The following examples are provided:
 
@@ -322,8 +322,8 @@ When using this example, you can choose from any of the available configsets fou
 +
 The configset used can be found in `$SOLR_HOME/server/solr/configsets/sample_techproducts_configs`.
 
-* *schemaless*: This example starts a single-node Solr instance using a managed schema, as described in the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>>, and provides a very minimal pre-defined schema.
-Solr will run in <<schemaless-mode.adoc#,Schemaless Mode>> with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
+* *schemaless*: This example starts a single-node Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and provides a very minimal pre-defined schema.
+Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
 +
 The configset used can be found in `$SOLR_HOME/server/solr/configsets/_default`.
 
@@ -743,8 +743,8 @@ Currently, this script only enables Basic Authentication, and is only available 
 
 The command `bin/solr auth enable` configures Solr to use Basic Authentication when accessing the User Interface, using `bin/solr` and any API requests.
 
-TIP: For more information about Solr's authentication plugins, see the section <<securing-solr.adoc#,Securing Solr>>.
-For more information on Basic Authentication support specifically, see the section  <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>>.
+TIP: For more information about Solr's authentication plugins, see the section xref:securing-solr.adoc[].
+For more information on Basic Authentication support specifically, see the section xref:basic-authentication-plugin.adoc[].
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
@@ -866,7 +866,7 @@ However, the `basicAuth.conf` file is not removed with either option.
 
 == Set or Unset Configuration Properties
 
-The `bin/solr` script enables a subset of the Config API: <<config-api.adoc#commands-for-common-properties,(un)setting common properties>> and <<config-api.adoc#commands-for-user-defined-properties,(un)setting user-defined properties>>.
+The `bin/solr` script enables a subset of the Config API: xref:configuration-guide:config-api.adoc#commands-for-common-properties[(un)setting common properties] and xref:configuration-guide:config-api.adoc#commands-for-user-defined-properties[(un)setting user-defined properties].
 
 `bin/solr config [options]`
 
@@ -888,7 +888,7 @@ To unset a previously set common property, specify `-action unset-property` with
 
 === Set or Unset User-Defined Properties
 
-To set the user-defined property `update.autoCreateFields` to `false` (to disable <<schemaless-mode.adoc#,Schemaless Mode>>):
+To set the user-defined property `update.autoCreateFields` to `false` (to disable xref:indexing-guide:schemaless-mode.adoc[]):
 
 `bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false`
 
@@ -1041,7 +1041,7 @@ bin/solr zk upconfig -z 111.222.333.444:2181 -n mynewconfig -d /path/to/configse
 ====
 This command does *not* automatically make changes effective!
 It simply uploads the configuration sets to ZooKeeper.
-You can use the Collection API's <<collection-management.adoc#reload,RELOAD command>> to reload any collections that uses this configuration set.
+You can use the Collection API's xref:collection-management.adoc#reload[RELOAD command] to reload any collections that uses this configuration set.
 ====
 
 === Download a Configuration Set
@@ -1459,7 +1459,7 @@ bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.js
 
 === Importing Documents to a Collection
 
-Once you have exported documents in a file, you can use the <<indexing-with-update-handlers.adoc#,/update request handler>> to import them to a new Solr collection.
+Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc[/update request handler] to import them to a new Solr collection.
 
 *Example: import `jsonl` files*
 

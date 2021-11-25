@@ -223,10 +223,10 @@ Sets the maximum number of clauses allowed when parsing a boolean query string.
 This limit only impacts boolean queries specified by a user as part of a query string, and provides per-collection controls on how complex user specified boolean queries can be.
 Query strings that specify more clauses than this will result in an error.
 
-If this per-collection limit is greater than the <<configuring-solr-xml#global-maxbooleanclauses,global `maxBooleanClauses` limit>> specified in `solr.xml`, it will have no effect, as that setting also limits the size of user specified boolean queries.
+If this per-collection limit is greater than the xref:configuring-solr-xml.adoc#global-maxbooleanclauses[global `maxBooleanClauses` limit] specified in `solr.xml`, it will have no effect, as that setting also limits the size of user specified boolean queries.
 
 In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.
-This is the same system property used in the <<configuring-solr-xml#global-maxbooleanclauses,global `maxBooleanClauses` setting>> in the default `solr.xml` making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update the `solrconfig.xml` files in each collection.
+This is the same system property used in the xref:configuring-solr-xml#global-maxbooleanclauses[global `maxBooleanClauses` setting] in the default `solr.xml` making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update the `solrconfig.xml` files in each collection.
 
 [source,xml]
 ----

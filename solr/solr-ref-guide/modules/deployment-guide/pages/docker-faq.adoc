@@ -178,7 +178,7 @@ This is especially a problem for ZooKeeper 3.4.6; future versions are better at 
 Docker 1.10 has a new `--ip` configuration option that allows you to specify an IP address for a container.
 It also has a `--ip-range` option that allows you to specify the range that other containers get addresses from.
 Used together, you can implement static addresses.
-See the <<docker-networking.adoc#,Solr Docker networking guide>> for more information.
+See the xref:docker-networking.adoc[] for more information.
 
 == Can I run ZooKeeper and Solr with Docker Links?
 
@@ -223,7 +223,7 @@ Then go to `+http://localhost:8983/solr/#/~cloud+` (adjust the hostname for your
 
 == How can I run ZooKeeper and Solr with Docker Compose?
 
-See the <<solr-in-docker.adoc#docker-compose,docker compose example>>.
+See the xref:solr-in-docker.adoc#docker-compose[docker compose example].
 
 == How can I get rid of "shared memory" warnings on Solr startup?
 

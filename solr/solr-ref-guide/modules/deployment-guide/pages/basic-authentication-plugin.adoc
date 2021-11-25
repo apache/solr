@@ -19,12 +19,12 @@
 Solr can support Basic authentication for users with the use of the `BasicAuthPlugin`.
 
 This plugin only provides user authentication.
-To control user permissions, you may need to configure an authorization plugin as described in the section <<rule-based-authorization-plugin.adoc#,Rule-Based Authorization Plugin>>.
+To control user permissions, you may need to configure an authorization plugin as described in the section xref:rule-based-authorization-plugin.adoc[].
 
 == Enable Basic Authentication
 
 To use Basic authentication, you must first create a `security.json` file.
-This file and where to put it is described in detail in the section <<authentication-and-authorization-plugins.adoc#configuring-security-json,Configuring security.json>>.
+This file and where to put it is described in detail in the section xref:authentication-and-authorization-plugins.adoc#configuring-security-json[Configuring security.json].
 
 If running in cloud mode, you can use the `bin/solr auth` command-line utility to enable security for a new installation, see: `bin/solr auth --help` for more details.
 
@@ -70,7 +70,7 @@ However, you will want to ensure that `blockUnknown` is set to `true` or omitted
 [WARNING]
 ====
 If you set `blockUnknown` to `false`, then *any* request that is not explicitly protected by a permission will be accessible to anonymous users!
-Consequently, you should define a role binding for every <<rule-based-authorization-plugin.adoc#permissions,predefined>> permission you want to protect.
+Consequently, you should define a role binding for every xref:rule-based-authorization-plugin.adoc#permissions[predefined permission] you want to protect.
 You can assign the special `role: null` binding for requests that you want to allow anonymous users to access. To protect all endpoints except those with `role:null`,
 you can add a role binding for the `all` permission and place it in the last position in `security.json`.
 ====
@@ -78,14 +78,14 @@ you can add a role binding for the `all` permission and place it in the last pos
 If `realm` is not defined, it will default to `solr`.
 
 If you are using SolrCloud, you must upload `security.json` to ZooKeeper.
-An example command and more information about securing your setup can be found at <<authentication-and-authorization-plugins#in-a-solrcloud-cluster,Authentication and Authorization Plugins In a SolrCloud Cluster>>.
+An example command and more information about securing your setup can be found at xref:authentication-and-authorization-plugins#in-a-solrcloud-cluster[Authentication and Authorization Plugins In a SolrCloud Cluster].
 
 === Caveats
 
 There are a few things to keep in mind when using the Basic authentication plugin.
 
 * Credentials are sent in plain text by default.
-It's recommended to use SSL for communication when Basic authentication is enabled, as described in the section <<enabling-ssl.adoc#,Enabling SSL>>.
+It's recommended to use SSL for communication when Basic authentication is enabled, as described in the section xref:enabling-ssl.adoc[].
 
 * A user who has access to write permissions to `security.json` will be able to modify all permissions and user permission assignments.
 Special care should be taken to only grant access to editing security to appropriate users.
@@ -96,7 +96,7 @@ Even with Basic authentication enabled, you should not unnecessarily expose Solr
 == Combining Basic Authentication with Other Schemes
 :experimental:
 
-When using other authentication schemes, such as the <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>, you may still want to use Basic authentication for a small set of "service account" oriented client applications.
+When using other authentication schemes, such as the xref:jwt-authentication-plugin.adoc[], you may still want to use Basic authentication for a small set of "service account" oriented client applications.
 Solr provides the `MultiAuthPlugin` to support multiple authentication schemes. For example, you may want to integrate Solr with an OIDC provider for user accounts,
 but also use Basic for authenticating requests coming from the Prometheus metrics exporter. The `MultiAuthPlugin` uses the scheme of the `Authorization` header to determine which
 plugin should handle each request. The `MultiAuthPlugin` is useful when running Solr on Kubernetes as you can delegate user management and authentication to an OIDC provider for end-users,

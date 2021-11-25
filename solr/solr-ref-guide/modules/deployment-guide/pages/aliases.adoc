@@ -32,15 +32,15 @@ In other cases update commands are rejected with an error since there is no logi
 
 == Standard Aliases
 
-Standard aliases are created and updated using the <<alias-management.adoc#createalias,CREATEALIAS>> command.
+Standard aliases are created and updated using the xref:alias-management.adoc#createalias[CREATEALIAS] command.
 
-The current list of collections that are members of an alias can be verified via the <<cluster-node-management.adoc#clusterstatus,CLUSTERSTATUS>> command.
+The current list of collections that are members of an alias can be verified via the xref:cluster-node-management.adoc#clusterstatus[CLUSTERSTATUS] command.
 
-The full definition of all aliases including metadata about that alias (in the case of routed aliases, see below) can be verified via the <<alias-management.adoc#listaliases,LISTALIASES>> command.
+The full definition of all aliases including metadata about that alias (in the case of routed aliases, see below) can be verified via the xref:alias-management.adoc#listaliases[LISTALIASES] command.
 
-Alternatively this information is available by checking `/aliases.json` in ZooKeeper with either the native ZooKeeper  client or in the <<cloud-screens.adoc#tree-view,tree page>> of the cloud menu in the admin UI.
+Alternatively this information is available by checking `/aliases.json` in ZooKeeper with either the native ZooKeeper  client or in the xref:cloud-screens.adoc#tree-view[tree page] of the cloud menu in the admin UI.
 
-Aliases may be deleted via the <<alias-management.adoc#deletealias,DELETEALIAS>> command.
+Aliases may be deleted via the xref:alias-management.adoc#deletealias[DELETEALIAS] command.
 When deleting an alias, underlying collections are *unaffected*.
 
 [TIP]
@@ -48,7 +48,7 @@ When deleting an alias, underlying collections are *unaffected*.
 Any alias (standard or routed) that references multiple collections may complicate relevancy.
 By default, SolrCloud scores documents on a per-shard basis.
 
-With multiple collections in an alias this is always a problem, so if you have a use case for which BM25 or TF/IDF relevancy is important you will want to turn on one of the <<solrcloud-distributed-requests.adoc#distributedidf,ExactStatsCache>> implementations.
+With multiple collections in an alias this is always a problem, so if you have a use case for which BM25 or TF/IDF relevancy is important you will want to turn on one of the xref:solrcloud-distributed-requests.adoc#distributedidf[ExactStatsCache] implementations.
 
 However, for analytical use cases where results are sorted on numeric, date, or alphanumeric field values, rather than relevancy calculations, this is not a problem.
 ====
@@ -59,7 +59,7 @@ To address the update limitations associated with standard aliases and provide a
 There are presently two types of routed alias: time routed and category routed.
 These are described in detail below, but share some common behavior.
 
-When processing an update for a routed alias, Solr initializes its <<update-request-processors.adoc#,UpdateRequestProcessor>> chain as usual, but when `DistributedUpdateProcessor` (DUP) initializes, it detects that the update targets a routed alias and injects `RoutedAliasUpdateProcessor` (RAUP) in front of itself.
+When processing an update for a routed alias, Solr initializes its xref:configuration-guide:update-request-processors.adoc[] chain as usual, but when `DistributedUpdateProcessor` (DUP) initializes, it detects that the update targets a routed alias and injects `RoutedAliasUpdateProcessor` (RAUP) in front of itself.
 RAUP, in coordination with the Overseer, is the main part of a routed alias, and must immediately precede DUP.
 It is not possible to configure custom chains with other types of UpdateRequestProcessors between RAUP and DUP.
 
@@ -72,7 +72,7 @@ WARNING: It's extremely important with all routed aliases that the route values 
 Reindexing a document with a different route value for the same ID produces two distinct documents with the same ID accessible via the alias.
 All query time behavior of the routed alias is *_undefined_* and not easily predictable once duplicate ID's exist.
 
-CAUTION: It is a bad idea to use "data driven" mode (aka <<schemaless-mode.adoc#,schemaless-mode>>) with routed aliases, as duplicate schema mutations might happen concurrently leading to errors.
+CAUTION: It is a bad idea to use "data driven" mode (aka xref:configuration-guide:schemaless-mode.adoc[]) with routed aliases, as duplicate schema mutations might happen concurrently leading to errors.
 
 
 === Time Routed Aliases
@@ -86,8 +86,8 @@ If you need to store a lot of timestamped data in Solr, such as logs or IoT sens
 
 ==== How It Works
 
-First you create a time routed aliases using the <<alias-management.adoc#createalias,CREATEALIAS>> command with the desired router settings.
-Most of the settings are editable at a later time using the <<alias-management.adoc#aliasprop,ALIASPROP>> command.
+First you create a time routed aliases using the xref:alias-management.adoc#createalias[CREATEALIAS] command with the desired router settings.
+Most of the settings are editable at a later time using the xref:alias-management.adoc#aliasprop[ALIASPROP] command.
 
 The first collection will be created automatically, along with an alias pointing to it.
 Each underlying Solr "core" in a collection that is a member of a TRA has a special core property referencing the alias.
@@ -115,7 +115,7 @@ Each time a new collection is added, the oldest collections in the TRA are exami
 All this happens synchronously, potentially adding seconds to the update request and indexing latency.
 +
 If `router.preemptiveCreateMath` is configured and if the document arrives within this window then it will occur asynchronously.
-See <<alias-management.adoc#time-routed-alias-parameters,Time Routed Alias Parameters>> for more information.
+See xref:alias-management.adoc#time-routed-alias-parameters[Time Routed Alias Parameters] for more information.
 
 Any other type of update like a commit or delete is routed by RAUP to all collections.
 Generally speaking, this is not a performance concern.
@@ -145,15 +145,15 @@ This approach allows for simplified indexing of data that must be segregated int
 
 ==== How It Works
 
-First you create a category routed alias using the <<alias-management.adoc#createalias,CREATEALIAS>> command with the desired router settings.
-Most of the settings are editable at a later time using the <<alias-management.adoc#aliasprop,ALIASPROP>> command.
+First you create a category routed alias using the xref:alias-management.adoc#createalias[CREATEALIAS] command with the desired router settings.
+Most of the settings are editable at a later time using the xref:alias-management.adoc#aliasprop[ALIASPROP] command.
 
 The alias will be created with a special place-holder collection which will always be named `myAlias\__CRA__NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA\__TEMP`.
 The first document indexed into the CRA will create a second collection named `myAlias__CRA__foo` (for a routed field value of `foo`).
 The second document indexed will cause the temporary place holder collection to be deleted.
 Thereafter collections will be created whenever a new value for the field is encountered.
 
-CAUTION: To guard against runaway collection creation options for limiting the total number of categories, and for rejecting values that don't match, a regular expression parameter is provided (see <<alias-management.adoc#category-routed-alias-parameters,Category Routed Alias Parameters>> for details).
+CAUTION: To guard against runaway collection creation options for limiting the total number of categories, and for rejecting values that don't match, a regular expression parameter is provided (see xref:alias-management.adoc#category-routed-alias-parameters[Category Routed Alias Parameters] for details).
 +
 Note that by providing very large or very permissive values for these options you are accepting the risk that garbled data could potentially create thousands of collections and bring your cluster to a grinding halt.
 
@@ -223,7 +223,7 @@ More dimensions will be supported in the future (see https://issues.apache.org/j
 ==== How It Works
 
 First you create a dimensional routed alias with the desired router settings for each dimension.
-See the <<alias-management.adoc#createalias,CREATEALIAS>> command documentation for details on how to specify the per-dimension configuration.
+See the xref:alias-management.adoc#createalias[CREATEALIAS] command documentation for details on how to specify the per-dimension configuration.
 Typical collection names will be of the form (example is for category x time example, with 30 minute intervals):
 
 [source,text]
@@ -314,7 +314,7 @@ If a new category is introduced at a later date and indexing latency is an impor
 
 * If the number of extra time slices to be created is not very large, then sending a single document out of band from regular indexing, and waiting for collection creation to complete before allowing the new category to be sent via the SLA constrained process.
 
-* If the above procedure is likely to create an extreme number of collections, and the earliest possible document in the new category is known, the start time for the time dimension may be adjusted using the <<alias-management.adoc#aliasprop,ALIASPROP>> command
+* If the above procedure is likely to create an extreme number of collections, and the earliest possible document in the new category is known, the start time for the time dimension may be adjusted using the xref:alias-management.adoc#aliasprop[ALIASPROP] command
 
 === Improvement Possibilities
 

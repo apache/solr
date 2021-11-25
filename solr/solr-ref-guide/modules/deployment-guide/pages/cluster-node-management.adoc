@@ -229,7 +229,7 @@ curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/jso
 +
 The name of the property.
 Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
-If the <<distributed-tracing.adoc#,Jaeger tracing contrib>> has been enabled, the property `samplePercentage` is also available.
+If the xref:distributed-tracing.adoc[Jaeger tracing contrib] has been enabled, the property `samplePercentage` is also available.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.
@@ -344,7 +344,7 @@ Support for the "collectionDefaults" key will be removed in Solr 9.
 === Default Shard Preferences
 
 Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness.
-First, make sure to "label" your nodes using a <<property-substitution.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`).
+First, make sure to "label" your nodes using a xref:configuration-guide:property-substitution.adoc#jvm-system-properties[system property] (e.g., `-Drack=rack1`).
 Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_PROPERTY_NAME` like this:
 
 [source,bash]
@@ -539,7 +539,7 @@ Keep in mind that this can lead to very high network and disk I/O if the replica
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 `timeout`::
 +
@@ -601,7 +601,7 @@ The node to be removed.
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 [[addrole]]
 == ADDROLE: Add a Role

@@ -18,7 +18,7 @@
 
 If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr includes a Prometheus exporter to collect metrics and other data.
 
-A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from <<metrics-reporting.adoc#,Metrics API>>, but also facet counts which come from <<query-guide.adoc#,Query Guide>> and responses to <<collections-api.adoc#,Collections API>> commands and <<ping.adoc#,PingRequestHandler>> requests.
+A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from the xref:metrics-reporting.adoc#metrics-api[Metrics API], but also facet counts which come from xref:query-guide:facet.adoc[] and responses to xref:configuration-guide:collections-api.adoc[] commands and xref:ping.adoc[] requests.
 
 This graphic provides a more detailed view:
 
@@ -212,7 +212,7 @@ Extra JVM options.
 |===
 +
 Credentials for connecting to a ZooKeeper host that is protected with ACLs.
-For more information on what to include in this variable, refer to the section <<zookeeper-access-control.adoc#zookeeper-acls-in-solr-scripts,ZooKeeper Access Control>> or the <<getting-metrics-from-a-secured-solrcloud,example below>>.
+For more information on what to include in this variable, refer to the section xref:zookeeper-access-control.adoc#zookeeper-acls-in-solr-scripts[ZooKeeper ACLs in Solr Scripts] or the example <<getting-metrics-from-a-secured-solrcloud>> below.
 
 `CLASSPATH_PREFIX`::
 +
@@ -223,15 +223,14 @@ For more information on what to include in this variable, refer to the section <
 +
 Location of extra libraries to load when starting the `solr-exporter`.
 
-All <<#command-line-parameters,command line parameters>> are able to be provided via environment variables when using the `./bin` scripts.
+All <<command-line-parameters>> are able to be provided via environment variables when using the `./bin` scripts.
 
 === Getting Metrics from a Secured SolrCloud
 
-Your SolrCloud might be secured by measures described in <<securing-solr.adoc#,Securing Solr>>.
-The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<solrj.adoc#,SolrJ>>.
-This is possible because the main script picks up <<Environment Variable Options>>  and passes them on to the Java process.
+Your SolrCloud security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using xref:solrj.adoc[].
+This is possible because the main script picks up <<Environment Variable Options>> and passes them on to the Java process.
 
-Example for a SolrCloud instance secured by <<basic-authentication-plugin.adoc#,Basic Authentication>>, <<enabling-ssl.adoc#,SSL>> and <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>:
+The following example assumes a SolrCloud instance secured by xref:basic-authentication-plugin.adoc[], xref:enabling-ssl.adoc[SSL] and xref:zookeeper-access-control.adoc[].
 
 Suppose you have a file `basicauth.properties` with the Solr Basic-Auth credentials:
 
@@ -409,10 +408,10 @@ Between these elements, the data the `solr-exporter` should request is defined.
 There are several possible types of requests to make:
 
 [horizontal]
-`<ping>`:: Scrape the response to a <<ping.adoc#,PingRequestHandler>> request.
-`<metrics>`:: Scrape the response to a <<metrics-reporting.adoc#metrics-api,Metrics API>> request.
-`<collections>`:: Scrape the response to a <<collections-api.adoc#,Collections API>> request.
-`<search>`:: Scrape the response to a <<query-guide.adoc#,search>> request.
+`<ping>`:: Scrape the response to a xref:ping.adoc[] request.
+`<metrics>`:: Scrape the response to a xref:metrics-reporting.adoc#metrics-api[Metrics API] request.
+`<collections>`:: Scrape the response to a xref:configuration-guide:collections-api.adoc[] request.
+`<search>`:: Scrape the response to a xref:query-guide:query-syntax-and-parsers.adoc[query] request.
 
 Within each of these types, we need to define the query and how to work with the response.
 To do this, we define two additional elements:

@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The MBean Request Handler offers programmatic access to the information provided on the <<plugins-stats-screen.adoc#,Plugin/Stats>> page of the Admin UI.
+The MBean Request Handler offers programmatic access to the information provided on the xref:plugins-stats-screen.adoc[] of the Admin UI.
 
 The MBean Request Handler accepts the following parameters:
 
@@ -57,11 +57,11 @@ The default is `false`.
 |===
 +
 The output format.
-This operates the same as the <<response-writers.adoc#,`wt` parameter in a query>>.
+This operates the same as the xref:query-guide:response-writers.adoc[`wt` parameter in a query].
 
 == MBeanRequestHandler Examples
 
-All of the examples in this section assume you are running the <<tutorial-techproducts.adoc#,"techproducts" example>>.
+All of the examples in this section assume you are running the xref:getting-started:tutorial-techproducts.adoc["techproducts" example].
 
 To return information about the CACHE category only:
 

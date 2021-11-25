@@ -16,12 +16,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This screen provides status information about each collection & node in your cluster, as well as access to the low level data being stored in <<zookeeper-file-management.adoc#,ZooKeeper files>>.
+This screen provides status information about each collection & node in your cluster, as well as access to the low level data being stored in xref:zookeeper-file-management.adoc[ZooKeeper files].
 
 .Only Visible When using SolrCloud
 [NOTE]
 ====
-The "Cloud" menu option is only available when Solr is running <<cluster-types.adoc#solrcloud-mode,SolrCloud>>.
+The "Cloud" menu option is only available when Solr is running xref:cluster-types.adoc#solrcloud-mode[SolrCloud].
 User-managed clusters or single-node installations will not display this option.
 ====
 

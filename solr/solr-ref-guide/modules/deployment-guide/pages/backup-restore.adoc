@@ -24,7 +24,7 @@ If you run a user-managed cluster or a single-node installation, you will use th
 
 [NOTE]
 ====
-Backups (and Snapshots) capture data that has been <<commits-transaction-logs.adoc#hard-commits-vs-soft-commits,hard committed>>.
+Backups (and Snapshots) capture data that has been xref:configuration-guide:commits-transaction-logs.adoc#hard-commits-vs-soft-commits[hard committed].
 Committing changes using `softCommit=true` may result in changes that are visible in search results but not included in subsequent backups.
 
 Likewise, committing changes using `openSearcher=false` may result in changes committed to disk and included in subsequent backups, even if they are not currently visible in search results.
@@ -32,7 +32,7 @@ Likewise, committing changes using `openSearcher=false` may result in changes co
 
 == SolrCloud Clusters
 
-Support for backups in SolrCloud is provided with the <<collection-management.adoc#,Collections API>>.
+Support for backups in SolrCloud is provided with the xref:collection-management.adoc#backup[Collections API].
 This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
 
 NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes, or HDFS.
@@ -40,20 +40,20 @@ NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same
 Four different API commands are supported:
 
 * `action=BACKUP`: This command backs up Solr indexes and configurations.
-More information is available in the section <<collection-management.adoc#backup,Backup Collection>>.
+More information is available in the section xref:collection-management.adoc#backup[Backup Collection].
 * `action=RESTORE`: This command restores Solr indexes and configurations.
-More information is available in the section <<collection-management.adoc#restore,Restore Collection>>.
+More information is available in the section xref:collection-management.adoc#restore[Restore Collection].
 * `action=LISTBACKUP`: This command lists the backup points available at a specified location, displaying metadata for each.
-More information is available in the section <<collection-management.adoc#listbackup,List Backups>>.
+More information is available in the section xref:collection-management.adoc#listbackup[List Backups].
 * `action=DELETEBACKUP`: This command allows deletion of backup files or whole backups.
-More information is available in the section <<collection-management.adoc#deletebackup,Delete Backups>>.
+More information is available in the section xref:collection-management.adoc#deletebackup[Delete Backups].
 
 == User-Managed Clusters and Single-Node Installations
 
 Backups and restoration uses Solr's replication handler.
 Out of the box, Solr includes implicit support for replication so this API can be used.
 Configuration of the replication handler can, however, be customized by defining your own replication handler in `solrconfig.xml`.
-For details on configuring the replication handler, see the section <<user-managed-index-replication.adoc#configuring-the-replicationhandler,Configuring the ReplicationHandler>>.
+For details on configuring the replication handler, see the section xref:user-managed-index-replication.adoc#configuring-the-replicationhandler[Configuring the ReplicationHandler].
 
 === Backup API
 
@@ -105,7 +105,7 @@ If a name is not specified then the directory name will have the following forma
 The number of backups to keep.
 If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error.
 Also, this parameter is not taken into consideration if the backup name is specified.
-More information about `maxNumberOfBackups` can be found in the section <<user-managed-index-replication.adoc#configuring-the-replicationhandler,Configuring the ReplicationHandler>>.
+More information about `maxNumberOfBackups` can be found in the section xref:user-managed-index-replication.adoc#configuring-the-replicationhandler[Configuring the ReplicationHandler].
 
 `repository`::
 +
@@ -461,7 +461,7 @@ An example configuration using these properties can be found below:
 
 === GCSBackupRepository
 
-Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
+Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket. This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
 
 GCSBackupRepository accepts the following options for overall configuration:
 
@@ -659,7 +659,7 @@ An example configuration using the overall and GCS-client properties can be seen
 === S3BackupRepository
 
 Stores and retrieves backup files in an Amazon S3 bucket.
-This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
+This plugin must first be xref:solr-plugins.adoc#installing-plugins[installed] before using.
 
 This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 

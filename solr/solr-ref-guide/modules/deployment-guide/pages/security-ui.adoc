@@ -29,7 +29,7 @@ The Security screen warns you if security is not enabled for Solr. You are stron
 
 image::security-ui/security-not-enabled-warn.png[image,width=500]
 
-When first getting started with Solr, use the `bin/solr auth` command-line utility to enable security for your Solr installation (cloud mode only), see <<solr-control-script-reference.adoc#authentication,bin/solr auth>> for usage instructions.
+When first getting started with Solr, use the `bin/solr auth` command-line utility to enable security for your Solr installation (cloud mode only), see xref:solr-control-script-reference.adoc#authentication[`bin/solr auth`] for usage instructions.
 For example, the following command will enable *basic authentication* and prompt you for the username and password for the initial user with administrative access:
 [source,bash]
 ----
@@ -43,13 +43,13 @@ You do not need to restart Solr as the security configuration will be refreshed 
 The Security screen provides the following features:
 
 * Security Settings: Details about the configured authentication and authorization plugins.
-* Users: Read, create, update, and delete user accounts if using the <<basic-authentication-plugin.adoc#,Basic Authentication>> plugin; this panel is disabled for all other authentication plugins.
-* Roles: Read, create, and update roles if using the <<rule-based-authorization-plugin.adoc#,Rule-based Authorization>> plugin; this panel is disabled for all other authorization plugins.
-* Permissions: Read, create, update, and delete permissions if using the <<rule-based-authorization-plugin.adoc#,Rule-based Authorization>> plugin.
+* Users: Read, create, update, and delete user accounts if using the xref:basic-authentication-plugin.adoc[] plugin; this panel is disabled for all other authentication plugins.
+* Roles: Read, create, and update roles if using the xref:rule-based-authorization-plugin.adoc[] plugin; this panel is disabled for all other authorization plugins.
+* Permissions: Read, create, update, and delete permissions if using the xref:rule-based-authorization-plugin.adoc[] plugin.
 
 == User Management
 
-Administrators can read, create, update, and delete user accounts when using the <<basic-authentication-plugin.adoc#,Basic Authentication>> plugin.
+Administrators can read, create, update, and delete user accounts when using the xref:basic-authentication-plugin.adoc[] plugin.
 
 image::security-ui/users.png[image,width=500]
 
@@ -68,11 +68,12 @@ For systems with many user accounts, use the filter controls at the top of the u
 
 image::security-ui/filter-users.png[image,width=400]
 
-For other authentication plugins, such as the <<jwt-authentication-plugin.adoc#,JWT Authentication>> plugin, this panel will be disabled as users are managed by an external system.
+For other authentication plugins, such as the xref:jwt-authentication-plugin.adoc[] plugin, this panel will be disabled as users are managed by an external system.
 
 == Role Management
 
-<<rule-based-authorization-plugin.adoc#roles,Roles>> link users to permissions. If using the <<rule-based-authorization-plugin.adoc#,Rule-based Authorization>> plugin, administrators can read, create, and update roles. Deleting roles is not supported.
+xref:rule-based-authorization-plugin.adoc#roles[Roles] link users to permissions.
+If using the Rule-based Authorization plugin, administrators can read, create, and update roles. Deleting roles is not supported.
 
 image::security-ui/roles.png[image,width=500]
 
@@ -86,7 +87,7 @@ The *Permissions* panel on the Security screen allows administrators to read, cr
 
 image::security-ui/permissions.png[image,width=900]
 
-For detailed information about how permissions work in Solr, see: <<rule-based-authorization-plugin.adoc#permissions,Rule-based Authorization Permissions>>.
+For detailed information about how permissions work in Solr, see: xref:rule-based-authorization-plugin.adoc#permissions[Rule-based Authorization Permissions].
 
 === Add Permission
 
@@ -102,9 +103,5 @@ If you do not select any roles for a permission, then the permission is assigned
 However, if *Block anonymous requests* (`blockUnknown=true`) is checked, then anonymous users will not be allowed to make requests, thus permission with the `null` role are effectively inactive.
 
 To edit a permission, simply click on the corresponding row in the table. When editing a permission, the current index of the permission in the list of permissions is editable.
-This allows you to re-order permissions if needed; see <<rule-based-authorization-plugin.adoc#permission-ordering-and-resolution,Permission Ordering>>.
+This allows you to re-order permissions if needed; see xref:rule-based-authorization-plugin.adoc#permission-ordering-and-resolution[Permission Ordering].
 In general, you want to permissions listed from most specific to least specific in `security.json`.
-
-
-
-

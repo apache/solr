@@ -74,4 +74,4 @@ If you do not want the DistributedUpdateProcessFactory auto-injected into your c
 In the update process, Solr skips updating processors that have already been run on other nodes.
 +
 For more on the default update request processor chain and options, see
-the section <<update-request-processors.adoc#default-update-request-processor-chain,Default Update Request Processor Chain>>.
+the section xref:configuration-guide:update-request-processors.adoc#default-update-request-processor-chain[Default Update Request Processor Chain].

@@ -72,7 +72,7 @@ To activate the SSL settings, uncomment and update the set of properties beginni
 ====
 [.tab-label]**nix (solr.in.sh)*
 
-NOTE: If you setup Solr as a service on Linux using the steps outlined in <<taking-solr-to-production.adoc#,Taking Solr to Production>>, then make these changes in `/var/solr/solr.in.sh`.
+NOTE: If you setup Solr as a service on Linux using the steps outlined in xref:taking-solr-to-production.adoc[], then make these changes in `/var/solr/solr.in.sh`.
 
 [source,bash]
 ----
@@ -218,7 +218,7 @@ There are several related JIRA tickets where SSL support is being planned/worked
 After creating the keystore described above and before you start any SolrCloud nodes, you must configure your Solr cluster properties in ZooKeeper so that Solr nodes know to communicate via SSL.
 
 This section assumes you have created and started an external ZooKeeper.
-See <<zookeeper-ensemble.adoc#,ZooKeeper Ensemble>> for more information.
+See xref:zookeeper-ensemble.adoc[] for more information.
 
 The `urlScheme` cluster-wide property needs to be set to `https` before any Solr node starts up.
 The examples below use the `zkcli` tool that comes with Solr to do this.
@@ -245,7 +245,7 @@ C:\> server\scripts\cloud-scripts\zkcli.bat -zkhost server1:2181,server2:2181,se
 --
 
 Be sure to use the correct `zkhost` value for your system.
-If you have set up your ZooKeeper ensemble to use a <<taking-solr-to-production.adoc#zookeeper-chroot,chroot for Solr>>, make sure to include it in the `zkhost` string, e.g., `-zkhost server1:2181,server2:2181,server3:2181/solr`.
+If you have set up your ZooKeeper ensemble to use a xref:taking-solr-to-production.adoc#zookeeper-chroot[chroot for Solr], make sure to include it in the `zkhost` string, e.g., `-zkhost server1:2181,server2:2181,server3:2181/solr`.
 
 === Update Cluster Properties for Existing Collections
 
@@ -253,7 +253,7 @@ If you are using SolrCloud and have collections created before enabling SSL, you
 
 If you do not have existing collections or are not using SolrCloud, you can skip ahead and start Solr.
 
-Updating cluster properties can be done with the Collections API <<cluster-node-management.adoc#clusterprop,CLUSTERPROP>> command, as in this example (update the hostname and port as appropriate for your system):
+Updating cluster properties can be done with the Collections API xref:cluster-node-management.adoc#clusterprop[CLUSTERPROP command], as in this example (update the hostname and port as appropriate for your system):
 
 [source,terminal]
 $ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https
@@ -292,7 +292,7 @@ C:\> bin\solr.cmd -p 8984
 
 === Start SolrCloud
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from all of the `bin/solr`/`bin\solr.cmd` commands below.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from all of the `bin/solr`/`bin\solr.cmd` commands below.
 
 Start each Solr node with the Solr control script as shown in the examples below.
 Customize the values for the parameters shown as necessary and add any used in your system.

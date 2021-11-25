@@ -100,12 +100,12 @@ Then use the `bin/solr zk` command to upload the file:
 >bin/solr zk cp ./security.json zk:security.json -z localhost:2181
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from the above command.
 
 [WARNING]
 ====
 Whenever you use any security plugins and store `security.json` in ZooKeeper, we highly recommend that you implement access control in your ZooKeeper nodes.
-Information about how to enable this is available in the section <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.
+Information about how to enable this is available in the section xref:zookeeper-access-control.adoc[].
 ====
 
 Once `security.json` has been uploaded to ZooKeeper, you should use the appropriate APIs for the plugins you're using to update it.
@@ -191,8 +191,8 @@ The Admin UI is an AngularJS application running inside your browser, and is tre
 When authentication is required the Admin UI will presented you with a login dialogue.
 The authentication plugins currently supported by the Admin UI are:
 
-* <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>>
-* <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>
+* xref:basic-authentication-plugin.adoc[]
+* xref:jwt-authentication-plugin.adoc[]
 
 If your plugin of choice is not supported, the Admin UI will still let you perform unrestricted operations, while for restricted operations you will need to interact with Solr by sending HTTP requests instead of through the graphical user interface of the Admin UI.
 All operations supported by Admin UI can be performed through Solr's APIs.

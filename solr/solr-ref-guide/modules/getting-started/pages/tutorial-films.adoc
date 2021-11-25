@@ -36,7 +36,7 @@ When it's done start the second node, and tell it how to connect to to ZooKeeper
 
 `./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983`
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from the above command.
 
 === Create a New Collection
 

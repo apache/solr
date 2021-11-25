@@ -25,7 +25,7 @@ Some use cases for collection aliasing:
 * Time series data
 * Reindexing content behind the scenes
 
-For an overview of aliases in Solr, see the section <<aliases.adoc#,Aliases>>.
+For an overview of aliases in Solr, see the section xref:aliases.adoc[].
 
 [[createalias]]
 == CREATEALIAS: Create or Modify an Alias for a Collection
@@ -46,7 +46,7 @@ While it is possible to send updates to an alias spanning multiple collections, 
 *Routed aliases* are aliases with additional capabilities to act as a kind of super-collection that route updates to the correct collection.
 
 Routing is data driven and may be based on a temporal field or on categories   specified in a field (normally string based).
-See <<aliases.adoc#routed-aliases,Routed Aliases>> for some important high-level information before getting started.
+See xref:aliases.adoc#routed-aliases[Routed Aliases] for some important high-level information before getting started.
 
 [source,text]
 ----
@@ -92,7 +92,7 @@ It must therefore adhere to normal requirements for collection naming.
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 ==== Standard Alias Parameters
 
@@ -123,7 +123,7 @@ s|Required |Default: none
 The type of routing to use.
 Presently only `time` and `category` and `Dimensional[]` are valid.
 +
-In the case of a multi dimensional routed alias (aka "DRA", see <<aliases.adoc#dimensional-routed-aliases,Aliases>>), it is required to express all the dimensions in the same order that they will appear in the dimension
+In the case of a xref:aliases.adoc#dimensional-routed-aliases[multi-dimensional routed alias] (aka "DRA"), it is required to express all the dimensions in the same order that they will appear in the dimension
 array.
 The format for a DRA `router.name` is `Dimensional[dim1,dim2]` where `dim1` and `dim2` are valid `router.name` values for each sub-dimension.
 Note that DRA's are very new, and only 2D DRA's are presently supported.
@@ -147,7 +147,7 @@ This field is required on all incoming documents.
 |Optional |Default: none
 |===
 +
-The `*` wildcard can be replaced with any parameter from the <<collection-management.adoc#create,CREATE>> command except `name`.
+The `*` wildcard can be replaced with any parameter from the xref:collection-management.adoc#create[CREATE] command except `name`.
 All other fields are identical in requirements and naming except that we insist that the configset be explicitly specified.
 The configset must be created beforehand, either uploaded or copied and modified.
 It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
@@ -161,7 +161,7 @@ It's probably a bad idea to use "data driven" mode as schema mutations might hap
 s|Required |Default: none
 |===
 +
-The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW" optionally with <<date-formatting-math.adoc#date-math,date math>>).
+The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW" optionally with xref:indexing-guide:date-formatting-math.adoc#date-math[date math]).
 +
 The first collection created for the alias will be internally named after this value.
 If a document is submitted with an earlier value for `router.field` then the earliest collection the alias points to then it will yield an error since it can't be routed.
@@ -680,7 +680,7 @@ A dictionary of name/value pairs of properties to be set.
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 === ALIASPROP Response
 
@@ -738,7 +738,7 @@ The name of the alias to delete.
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 === DELETEALIAS Response
 

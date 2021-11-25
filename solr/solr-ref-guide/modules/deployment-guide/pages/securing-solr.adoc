@@ -36,13 +36,13 @@ When planning how to secure Solr, you should consider which of the available fea
 Encrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on the network.
 TLS is also normally a requirement to prevent credential sniffing when using Authentication.
 
-See the section <<enabling-ssl.adoc#,Enabling TLS (SSL)>> for details.
+See the section xref:enabling-ssl.adoc[] for details.
 
 == Authentication and Authorization
 
-Use the <<security-ui.adoc#,Security>> screen in the Admin UI to manage users, roles, and permissions.
+Use the xref:security-ui.adoc[] screen in the Admin UI to manage users, roles, and permissions.
 
-See chapter <<authentication-and-authorization-plugins.adoc#,Configuring Authentication and Authorization>> to learn how to work with the `security.json` file.
+See section xref:authentication-and-authorization-plugins.adoc[] to learn how to work with the `security.json` file.
 
 [#securing-solr-auth-plugins]
 === Authentication Plugins
@@ -53,11 +53,11 @@ The authentication plugins that ship with Solr are:
 // tag::list-of-authentication-plugins[]
 [width=100%,cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>>
-| <<kerberos-authentication-plugin.adoc#,Kerberos Authentication Plugin>>
-| <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>
-| <<cert-authentication-plugin.adoc#,Certificate Authentication Plugin>>
-| <<hadoop-authentication-plugin.adoc#,Hadoop Authentication Plugin>>
+| xref:basic-authentication-plugin.adoc[]
+| xref:kerberos-authentication-plugin.adoc[]
+| xref:jwt-authentication-plugin.adoc[]
+| xref:cert-authentication-plugin.adoc[]
+| xref:hadoop-authentication-plugin.adoc[]
 |
 |===
 // end::list-of-authentication-plugins[]
@@ -70,15 +70,15 @@ The authorization plugins that ship with Solr are:
 // tag::list-of-authorization-plugins[]
 [width=100%,cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<rule-based-authorization-plugin.adoc#,Rule-Based Authorization Plugin>>
-| <<rule-based-authorization-plugin.adoc#,External Role Rule-Based Authorization Plugin>>
+| xref:rule-based-authorization-plugin.adoc[]
+| xref:rule-based-authorization-plugin.adoc[External Role Rule-Based Authorization Plugin]
 |===
 // end::list-of-authorization-plugins[]
 
 == Audit Logging
 
 Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs.
-Learn more about audit logging and how to implement an audit logger plugin in the section <<audit-logging.adoc#,Audit Logging>>.
+Learn more about audit logging and how to implement an audit logger plugin in the section xref:audit-logging.adoc[].
 
 == Request Logging
 
@@ -100,7 +100,7 @@ SOLR_IP_BLACKLIST="192.168.0.3, 192.168.0.4"
 == Securing ZooKeeper Traffic
 
 ZooKeeper is a central and important part of a SolrCloud cluster and understanding how to secure
-its content is covered in the section <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.
+its content is covered in the section xref:zookeeper-access-control.adoc[].
 
 == Network Configuration
 

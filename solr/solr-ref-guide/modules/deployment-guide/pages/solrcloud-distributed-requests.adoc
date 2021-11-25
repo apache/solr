@@ -115,7 +115,7 @@ There are several ways to control how queries are routed.
 
 === Limiting Which Shards are Queried
 
-While one of the advantages of using SolrCloud is the ability to query very large collections distributed across various shards, in some cases you may have configured Solr so you know <<solrcloud-shards-indexing.adoc#document-routing,you are only interested in results from a specific subset of shards>>.
+While one of the advantages of using SolrCloud is the ability to query very large collections distributed across various shards, in some cases you may have configured Solr with specific xref:solrcloud-shards-indexing.adoc#document-routing[document routing].
 You have the option of searching over all of your data or just parts of it.
 
 Because SolrCloud automatically load balances queries, a query across all shards for a collection is simply a query that does not define a `shards` parameter:
@@ -222,7 +222,7 @@ The difference is that the non-leader `TLOG` replica also captures updates in it
 
 `node.sysprop`::
 Query will be routed to nodes with same defined system properties as the current one.
-For example, if you start Solr nodes on different racks, you'll want to identify those nodes by a <<property-substitution.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`).
+For example, if you start Solr nodes on different racks, you'll want to identify those nodes by a xref:configuration-guide:property-substitution.adoc#jvm-system-properties[system property] (e.g., `-Drack=rack1`).
 Then, queries can contain `shards.preference=node.sysprop:sysprop.rack`, to make sure you always hit shards with the same value of `rack`.
 
 *Examples*:
@@ -285,7 +285,7 @@ The `\_route_` parameter can be used to specify a route key which is used to fig
 For example, if you have a document with a unique key "user1!123", then specifying the route key as "_route_=user1!" (notice the trailing '!' character) will route the request to the shard which hosts that user.
 You can specify multiple route keys separated by comma.
 This parameter can be leveraged when we have shard data by users.
-See <<solrcloud-shards-indexing.adoc#document-routing,Document Routing>> for more information
+See xref:solrcloud-shards-indexing.adoc#document-routing[Document Routing] for more information
 
 [source,plain]
 ----
@@ -335,7 +335,7 @@ To add a `shardHandlerFactory` to the standard search handler, provide a configu
 
 NOTE:: The `shardHandlerFactory` is reliant on the `allowUrls` parameter configured in `solr.xml`, which controls which nodes are allowed to talk to each other.
 This means that the configuration of hosts is global instead of per-core or per-collection.
-See the section <<configuring-solr-xml.adoc#allow-urls, Format of solr.allowUrls>> for details.
+See the section xref:configuration-guide:configuring-solr-xml.adoc#allow-urls [allowUrls] for details.
 
 The `HttpShardHandlerFactory` accepts the following parameters:
 

@@ -18,7 +18,7 @@
 
 When using traditional index sharding, you will need to consider how to query your documents.
 
-It is highly recommended that you use <<cluster-types.adoc#solrcloud-mode,SolrCloud>> when needing to scale up or scale out.
+It is highly recommended that you use xref:cluster-types.adoc#solrcloud-mode[SolrCloud] when needing to scale up or scale out.
 The setup described below is legacy and was used prior to the existence of SolrCloud.
 SolrCloud provides for a truly distributed set of features with support for things like automatic routing, leader election, optimistic concurrency and other sanity checks that are expected out of a distributed system.
 
@@ -75,7 +75,7 @@ The following components support distributed search:
 
 The nodes allowed in the `shards` parameter is configurable through the `allowUrls` property in `solr.xml`.
 This allow-list is automatically configured for SolrCloud but needs explicit configuration for user-managed clusters.
-Read more details in the section <<solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>>.
+Read more details in the section xref:solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory[Configuring the ShardHandlerFactory].
 
 == Limitations to User-Managed Distributed Search
 
@@ -96,12 +96,12 @@ Document adds and deletes are forwarded to the appropriate server/shard based on
 
 Formerly a limitation was that TF/IDF relevancy computations only used shard-local statistics.
 This is still the case by default.
-If your data isn't randomly distributed, or if you want more exact statistics, then you can configure the <<solrcloud-distributed-requests#distributedidf,`ExactStatsCache`>>.
+If your data isn't randomly distributed, or if you want more exact statistics, then you can configure the xref:solrcloud-distributed-requests.adoc#distributedidf[`ExactStatsCache`].
 
 == Avoiding Distributed Deadlock
 
 Like in SolrCloud mode, inter-shard requests could lead to a distributed deadlock.
-It can be avoided by following the instructions in the section  <<solrcloud-distributed-requests.adoc#,Distributed Requests>>.
+It can be avoided by following the instructions in the section xref:solrcloud-distributed-requests.adoc[].
 
 == Load Balancing Requests
 

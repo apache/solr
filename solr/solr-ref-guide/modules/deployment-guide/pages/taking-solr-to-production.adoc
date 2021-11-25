@@ -54,7 +54,7 @@ With this approach, the files in `/opt/solr` will remain untouched and all files
 
 === Create the Solr User
 
-Running Solr as `root` is not recommended for security reasons, and the <<solr-control-script-reference.adoc#,control script>> start command will refuse to do so.
+Running Solr as `root` is not recommended for security reasons, and the xref:solr-control-script-reference.adoc#starting-and-stopping[`bin/solr start`] command will refuse to do so.
 Consequently, you should determine the username of a system user that will own all of the Solr files and the running Solr process.
 By default, the installation script will create the *solr* user, but you can override this setting using the -u option.
 If your organization has specific requirements for creating new user accounts, then you should create the user before running the script.
@@ -117,7 +117,7 @@ The Solr home directory (not to be confused with the Solr installation directory
 By default, the installation script uses `/var/solr/data`.
 If the `-d` option is used on the install script, then this will change to the `data` subdirectory in the location given to the -d option.
 Take a moment to inspect the contents of the Solr home directory on your system.
-If you do not <<zookeeper-file-management.adoc#,store `solr.xml` in ZooKeeper>>, the home directory must contain a `solr.xml` file.
+If you do not xref:zookeeper-file-management.adoc[store `solr.xml` in ZooKeeper], the home directory must contain a `solr.xml` file.
 When Solr starts up, the Solr Control Script passes the location of the home directory using the `-Dsolr.solr.home=...` system property.
 
 ==== Environment Overrides Include File
@@ -136,7 +136,7 @@ SOLR_PID_DIR=/var/solr
 SOLR_HOME=/var/solr/data
 ----
 
-The `SOLR_PID_DIR` variable sets the directory where the <<solr-control-script-reference.adoc#,control script>> will write out a file containing the Solr server’s process ID.
+The `SOLR_PID_DIR` variable sets the directory where the xref:solr-control-script-reference.adoc[control script] will write out a file containing the Solr server’s process ID.
 
 ==== Log Settings
 
@@ -150,7 +150,7 @@ LOG4J_PROPS=/var/solr/log4j2.xml
 SOLR_LOGS_DIR=/var/solr/logs
 ----
 
-For more information about Log4J configuration, please see: <<configuring-logging.adoc#,Configuring Logging>>
+For more information about Log4J configuration, please see: xref:configuring-logging.adoc[].
 
 ==== init.d Script
 
@@ -219,7 +219,7 @@ This scheduler uses multiple threads to merge Lucene segments in the background.
 By default, the `ConcurrentMergeScheduler` auto-detects defaults for `maxThreadCount` and `maxMergeCount` accordingly.
 `maxThreadCount` is set to 4 or half the number of processors available to the JVM whichever is greater and `maxMergeCount` is set to `maxThreadCount+5`.
 
-If you have a spinning disk, it is best to explicitly set values for `maxThreadCount` and `maxMergeCount` in the <<index-segments-merging.adoc#mergescheduler, IndexConfig section of SolrConfig.xml>> so that values appropriate to your hardware are used.
+If you have a spinning disk, it is best to explicitly set values for `maxThreadCount` and `maxMergeCount` in the xref:configuration-guide:index-segments-merging.adoc#mergescheduler[IndexConfig section of SolrConfig.xml] so that values appropriate to your hardware are used.
 
 === Memory and GC Settings
 
@@ -235,10 +235,10 @@ SOLR_HEAP="8g"
 [NOTE]
 ====
 Do not allocate a very large Java Heap unless you know you need it.
-See <<jvm-settings.adoc#choosing-memory-heap-settings,Choosing Memory Heap Settings>> for details.
+See xref:jvm-settings.adoc#choosing-memory-heap-settings[Choosing Memory Heap Settings] for details.
 ====
 
-Also, the <<solr-control-script-reference.adoc#,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
+Also, the xref:solr-control-script-reference.adoc[Solr Control Script] comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
 However, these settings may not work well for your specific use of Solr.
 Consequently, you may need to change the GC settings, which should also be done with the `GC_TUNE` variable in the `/etc/default/solr.in.sh` include file.
 
@@ -246,7 +246,7 @@ For more information about garbage collection settings refer to following articl
 . https://cwiki.apache.org/confluence/display/solr/ShawnHeisey
 . https://www.oracle.com/technetwork/articles/java/g1gc-1984535.html
 
-You can also refer to <<jvm-settings.adoc#,JVM Settings>> for tuning your memory and garbage collection settings.
+You can also refer to xref:jvm-settings.adoc[] for tuning your memory and garbage collection settings.
 
 ==== Out-of-Memory Shutdown Hook
 
@@ -278,7 +278,7 @@ For instance, to ensure all znodes created by SolrCloud are stored under `/solr`
 ZK_HOST=zk1,zk2,zk3/solr
 ----
 
-Before using a chroot for the first time, you need to create the root path (znode) in ZooKeeper by using the <<solr-control-script-reference.adoc#,Solr Control Script>>.
+Before using a chroot for the first time, you need to create the root path (znode) in ZooKeeper by using the xref:solr-control-script-reference.adoc[Solr Control Script].
 We can use the mkroot command for that:
 
 [source,bash]
@@ -289,7 +289,7 @@ bin/solr zk mkroot /solr -z <ZK_node>:<ZK_PORT>
 [NOTE]
 ====
 If you also want to bootstrap ZooKeeper with existing `solr_home`, you can instead use the `zkcli.sh` / `zkcli.bat` `bootstrap` command, which will also create the chroot path if it does not exist.
-See <<zookeeper-utilities.adoc#,ZooKeeper Utilities>> for more info.
+See xref:zookeeper-utilities.adoc[] for more info.
 ====
 
 === Solr Hostname

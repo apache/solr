@@ -29,10 +29,10 @@ Solr offers documentation on the following client integrations:
 // tag::client-sections[]
 [width=100%,cols="1,1",frame=none,grid=none,stripes=none]
 |===
-| <<solrj.adoc#,SolrJ>>: SolrJ, an API for working with Java applications.
-| <<javascript.adoc#,JavaScript>>: JavaScript clients.
-| <<python.adoc#,Python>>: Python and JSON responses.
-| <<ruby.adoc#,Ruby>>: Solr with Ruby applications.
+| xref:solrj.adoc[]: SolrJ, an API for working with Java applications.
+| xref:javascript.adoc[]: JavaScript clients.
+| xref:python.adoc[]: Python and JSON responses.
+| xref:ruby.adoc[]: Solr with Ruby applications.
 |===
 //end::client-sections[]
 ****
@@ -57,8 +57,7 @@ The other operations are similar, although in certain cases the HTTP request is 
 An index operation, for example, may contain a document in the body of the request.
 
 Solr also features an EmbeddedSolrServer that offers a Java API without requiring an HTTP connection.
-For details, see <<solrj.adoc#,SolrJ>>.
-
+For details, see xref:solrj.adoc[].
 
 == Choosing an Output Format
 
@@ -67,7 +66,7 @@ Parsing the responses is a slightly more thorny problem.
 Fortunately, Solr makes it easy to choose an output format that will be easy to handle on the client side.
 
 Specify a response format using the `wt` parameter in a query.
-The available response formats are documented in <<response-writers.adoc#,Response Writers>>.
+The available response formats are documented in xref:query-guide:response-writers.adoc.
 
 Most client APIs hide this detail for you, so for many types of client applications, you won't ever have to specify a `wt` parameter.
 In JavaScript, however, the interface to Solr is a little closer to the metal, so you will need to add this parameter yourself.

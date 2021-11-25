@@ -19,13 +19,13 @@
 If you are using Kerberos to secure your network environment, the Kerberos authentication plugin can be used to secure a Solr cluster.
 
 This allows Solr to use a Kerberos service principal and keytab file to authenticate with ZooKeeper and between nodes of the Solr cluster (if applicable).
-Users of the Admin UI and all clients (such as <<solrj.adoc#,SolrJ>>) would also need to have a valid ticket before being able to use the UI or send requests to Solr.
+Users of the Admin UI and all clients (such as xref:solrj.adoc[]) would also need to have a valid ticket before being able to use the UI or send requests to Solr.
 
 Support for Kerberos authentication is available in SolrCloud, user-managed, or single-node installations.
 
 [TIP]
 ====
-If you are using Solr with a Hadoop cluster secured with Kerberos and intend to store your Solr indexes in HDFS, also see the section <<solr-on-hdfs.adoc#,Solr on HDFS>> for additional steps to configure Solr for that purpose.
+If you are using Solr with a Hadoop cluster secured with Kerberos and intend to store your Solr indexes in HDFS, also see the section xref:solr-on-hdfs.adoc[] for additional steps to configure Solr for that purpose.
 The instructions on this page apply only to scenarios where Solr will be secured with Kerberos.
 If you only need to store your indexes in a Kerberized HDFS system, please see the Running Solr on HDFS section.
 ====
@@ -36,7 +36,7 @@ When setting up Solr to use Kerberos, configurations are put in place for Solr t
 The configurations define the service principal name and the location of the keytab file that contains the credentials.
 
 As with all authentication plugins, Kerberos authentication configuration is stored in `security.json`.
-This file is discussed in the section <<authentication-and-authorization-plugins.adoc#configuring-security-json,Configuring security.json>>.
+This file is discussed in the section xref:authentication-and-authorization-plugins.adoc#configuring-security-json[Configuring security.json].
 
 === Service Principals and Keytab Files
 
@@ -205,7 +205,7 @@ If you are using Solr in a single-node installation, you need to create the `sec
 
 [IMPORTANT]
 ====
-If you already have a `/security.json` file in ZooKeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the <<zookeeper-utilities.adoc#,ZooKeeper Utilities>> available in Solr.
+If you already have a `/security.json` file in ZooKeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the xref:zookeeper-utilities.adoc[] available in Solr.
 ====
 
 === Define a JAAS Configuration File
@@ -260,7 +260,7 @@ The path should be enclosed in double-quotes.
 === Solr Startup Parameters
 
 While starting up Solr, the following host-specific parameters need to be passed.
-These parameters can be passed at the command line with the `bin/solr` start command (see <<solr-control-script-reference.adoc#,Solr Control Script Reference>> for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
+These parameters can be passed at the command line with the `bin/solr` start command (see xref:solr-control-script-reference.adoc[] for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
 
 `solr.kerberos.name.rules`::
 +
@@ -373,7 +373,7 @@ Delegation tokens can reduce the load because they do not access the server afte
 * If requests or permissions need to be delegated to another user.
 
 To enable delegation tokens, several parameters must be defined.
-These parameters can be passed at the command line with the `bin/solr` start command (<<solr-control-script-reference.adoc#,Solr Control Script Reference>>) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
+These parameters can be passed at the command line with the `bin/solr` start command xref:solr-control-script-reference.adoc[]) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
 
 `solr.kerberos.delegation.token.enabled`::
 +
@@ -451,7 +451,7 @@ Note you also need to customize the `-z` property as appropriate for the locatio
 $ bin/solr -c -z server1:2181,server2:2181,server3:2181/solr
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from the above command.
 
 === Test the Configuration
 

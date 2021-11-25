@@ -43,16 +43,15 @@ bin/solr create -c mycollection -d _default
 ----
 
 The create command will upload a copy of the `_default` configuration directory to ZooKeeper under `/configs/mycollection`.
-Refer to the <<solr-control-script-reference.adoc#,Solr Control Script Reference>> page for more details about the create command for creating collections.
+Refer to the xref:solr-control-script-reference.adoc[] for more details about the create command for creating collections.
 
-Once a configuration directory has been uploaded to ZooKeeper, you can update them using the <<solr-control-script-reference.adoc#,Solr Control Script>>
+Once a configuration directory has been uploaded to ZooKeeper, you can update them using the xref:solr-control-script-reference.adoc[Solr Control Script].
 
 IMPORTANT: It's a good idea to keep these files under version control.
 
-
 == Uploading Configuration Files using bin/solr or SolrJ
 
-In production situations, <<config-sets.adoc#,Configsets>> can also be uploaded to ZooKeeper independent of collection creation using either Solr's <<solr-control-script-reference.adoc#,Solr Control Script>> or SolrJ.
+In production situations, xref:configuration-guide:config-sets.adoc[] can also be uploaded to ZooKeeper independent of collection creation using either Solr's xref:solr-control-script-reference.adoc[Solr Control Script] or xref:solrj.adoc[].
 
 The below command can be used to upload a new configset using the bin/solr script.
 
@@ -82,7 +81,7 @@ To update or change your SolrCloud configuration files:
 == Preparing ZooKeeper before First Cluster Start
 
 If you will share the same ZooKeeper instance with other applications you should use a _chroot_ in ZooKeeper.
-Please see <<taking-solr-to-production.adoc#zookeeper-chroot,ZooKeeper chroot>> for instructions.
+Please see xref:taking-solr-to-production.adoc#zookeeper-chroot[ZooKeeper chroot] for instructions.
 
 There are certain configuration files containing cluster wide configuration.
 Since some of these are crucial for the cluster to function properly, you may need to upload such files to ZooKeeper before starting your Solr cluster for the first time.
@@ -95,4 +94,4 @@ If you for example would like to keep your `solr.xml` in ZooKeeper to avoid havi
 bin/solr zk cp file:local/file/path/to/solr.xml zk:/solr.xml -z localhost:2181
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files,Updating Solr Include Files>>) you can omit `-z <zk host string>` from the above command.

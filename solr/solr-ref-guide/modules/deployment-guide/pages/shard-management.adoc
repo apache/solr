@@ -108,7 +108,7 @@ When using `splitMethod=rewrite` (default) you must ensure that the node running
 Also, the first replicas of resulting sub-shards will always be placed on the shard leader node.
 
 Shard splitting can be a long running process.
-In order to avoid timeouts, you should run this as an <<collections-api.adoc#asynchronous-calls,asynchronous call>>.
+In order to avoid timeouts, you should run this as an xref:configuration-guide:collections-api.adoc#asynchronous-calls[asynchronous call].
 
 === SPLITSHARD Parameters
 
@@ -203,7 +203,7 @@ A float value which must be smaller than `0.5` that allows to vary the sub-shard
 |===
 +
 Set core property _name_ to _value_.
-See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
+See the section xref:configuration-guide:core-discovery.adoc[] for details on supported properties and values.
 
 `waitForFinalState`::
 +
@@ -231,7 +231,7 @@ If `true` then each stage of processing will be timed and a `timing` section wil
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 `splitByPrefix`::
 +
@@ -413,7 +413,7 @@ The defaults for the collection are used if omitted.
 |===
 +
 Set core property _name_ to _value_.
-See the section <<core-discovery.adoc#,Core Discovery>> for details on supported properties and values.
+See the section xref:configuration-guide:core-discovery.adoc[] for details on supported properties and values.
 
 `waitForFinalState`::
 +
@@ -432,7 +432,7 @@ If `false`, the API will return the status of the single action, which may be be
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 === CREATESHARD Response
 
@@ -534,7 +534,7 @@ Set this to `false` to prevent the index directory from being deleted.
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 === DELETESHARD Response
 

@@ -90,7 +90,7 @@ There are two ways:
 The first way is to set the `SOLR_LOG_LEVEL` environment variable before you start Solr, or place the same variable in `bin/solr.in.sh` or `bin/solr.in.cmd`.
 The variable must contain an uppercase string with a supported log level (see above).
 
-The second way is to start Solr with the -v or -q options, see <<solr-control-script-reference.adoc#,Solr Control Script Reference>> for details.
+The second way is to start Solr with the -v or -q options, see xref:solr-control-script-reference.adoc[] for details.
 Examples:
 
 [source,bash]
@@ -111,7 +111,7 @@ The format of the log messages can be changed by https://logging.apache.org/log4
 
 When you're ready to deploy Solr in production, set the variable `SOLR_LOGS_DIR` to the location where you want Solr to write log files, such as `/var/solr/logs`.
 You may also want to tweak `log4j2.xml`.
-Note that if you installed Solr as a service using the instructions provided in <<taking-solr-to-production.adoc#,Taking Solr to Production>>, then see `/var/solr/log4j2.xml` instead of the default `server/resources` version.
+Note that if you installed Solr as a service using the instructions provided in xref:taking-solr-to-production.adoc[], then see `/var/solr/log4j2.xml` instead of the default `server/resources` version.
 
 When starting Solr in the foreground (`-f` option), all logs will be sent to the console, in addition to `solr.log`.
 When starting Solr in the background, it will write all `stdout` and `stderr` output to a log file in `solr-<port>-console.log`, and automatically disable the CONSOLE logger configured in `log4j2.xml`, having the same effect as if you removed the CONSOLE appender from the rootLogger manually.
@@ -149,4 +149,4 @@ The log file under which you can find all these queries is called `solr_slow_req
 == Logging Select Request Parameters
 
 In addition to the logging options described above, it's possible to log only a selected list of request parameters (such as those sent with queries) with an additional request parameter called `logParamsList`.
-See the section on <<common-query-parameters.adoc#logparamslist-parameter,logParamsList Parameter>> for more information.
+See the section on xref:query-guide:common-query-parameters.adoc#logparamslist-parameter[logParamsList Parameter] for more information.

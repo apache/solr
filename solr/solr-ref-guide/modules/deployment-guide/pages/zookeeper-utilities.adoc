@@ -20,12 +20,12 @@ A ZooKeeper Command Line Interface (CLI) script is available to allow you to int
 
 While Solr's Admin UI includes pages dedicated to the state of your SolrCloud cluster, it does not allow you to download or modify related configuration files.
 
-TIP: See the section <<cloud-screens.adoc#,Cloud Screens>> for more information about using the Admin UI screens.
+TIP: See the section xref:cloud-screens.adoc[] for more information about using the Admin UI screens.
 
 The ZooKeeper CLI script found in `server/scripts/cloud-scripts` let you upload configuration information to ZooKeeper.
 It also provides a few other commands that let you link collection sets to collections, make ZooKeeper paths or clear them, and download configurations from ZooKeeper to the local filesystem.
 
-Many of the functions provided by the zkCli.sh script are also provided by the <<solr-control-script-reference.adoc#,Solr Control Script>>, which may be more familiar as the start script ZooKeeper maintenance commands are very similar to Unix commands.
+Many of the functions provided by the `zkCli.sh` script are also provided by the xref:solr-control-script-reference.adoc[Solr Control Script], which may be more familiar as the start script ZooKeeper maintenance commands are very similar to Unix commands.
 
 .Solr's zkcli.sh vs ZooKeeper's zkCli.sh
 [IMPORTANT]
@@ -156,7 +156,7 @@ This can be useful to create a chroot path in ZooKeeper before first cluster sta
 This command will add or modify a single cluster property in `clusterprops.json`.
 Use this command instead of the usual getfile -> edit -> putfile cycle.
 
-Unlike the CLUSTERPROP command on the <<cluster-node-management.adoc#clusterprop,Collections API>>, this command does *not* require a running Solr cluster.
+Unlike the xref:cluster-node-management.adoc#clusterprop[CLUSTERPROP] command on the Collections API, this command does *not* require a running Solr cluster.
 
 [source,bash]
 ----

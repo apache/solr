@@ -189,7 +189,7 @@ These possible values are allowed:
 * `pull`: The PULL type does not maintain a transaction log and only updates its index via replication.
 This type is not eligible to become a leader.
 +
-See the section <<solrcloud-shards-indexing.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
+See the section xref:solrcloud-shards-indexing.adoc#types-of-replicas[Types of Replicas] for more information about replica type options.
 
 `nrtReplicas`::
 +
@@ -229,7 +229,7 @@ Defaults to `1` if `type` is `pull` otherwise `0`.
 |===
 +
 Set core property _name_ to _value_.
-See <<core-discovery.adoc#,Core Discovery>> for details about supported properties and values.
+See xref:configuration-guide:core-discovery.adoc[] for details about supported properties and values.
 
 [WARNING]
 ====
@@ -255,7 +255,7 @@ If `false`, the API will return the status of the single action, which may be be
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 === Additional Examples using ADDREPLICA
 
@@ -445,7 +445,7 @@ Defaults to `true`, but is ignored if the replica does not have the property `sh
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 
 [[deletereplica]]
@@ -579,7 +579,7 @@ When set to `true`, no action will be taken if the replica is active.
 |Optional |Default: none
 |===
 +
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
 
 [[addreplicaprop]]
 == ADDREPLICAPROP: Add Replica Property

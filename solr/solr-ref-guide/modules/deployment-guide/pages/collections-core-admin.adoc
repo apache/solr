@@ -16,13 +16,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Collections screen provides some basic functionality for managing your Collections, powered by the <<collections-api.adoc#,Collections API>>.
+The Collections screen provides some basic functionality for managing your Collections, powered by the xref:configuration-guide:collections-api.adoc[].
 
 [NOTE]
 ====
 If you are running a user-managed cluster or a single-node installation, you will not see a Collections option in the left nav menu of the Admin UI.
 
-You will instead see a "Core Admin" screen that supports some comparable Core level information & manipulation via the <<coreadmin-api.adoc#,CoreAdmin API>> instead.
+You will instead see a "Core Admin" screen that supports some comparable Core level information & manipulation via the xref:configuration-guide:coreadmin-api.adoc[] instead.
 ====
 
 The main display of this page provides a list of collections that exist in your cluster.
@@ -35,6 +35,6 @@ image::collections-core-admin/collection-admin.png[image,width=653,height=250]
 
 Replicas can be deleted by clicking the red "X" next to the replica name.
 
-If the shard is inactive, for example after a <<shard-management.adoc#splitshard,SPLITSHARD action>>, an option to delete the shard will appear as a red "X" next to the shard name.
+If the shard is inactive, for example after a xref:shard-management.adoc#splitshard[SPLITSHARD action], an option to delete the shard will appear as a red "X" next to the shard name.
 
 image::collections-core-admin/DeleteShard.png[image,width=486,height=250]
