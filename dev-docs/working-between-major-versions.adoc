@@ -43,12 +43,12 @@ This folder is not a git folder however. Instead, it will hold all of our solr g
 
 ```bash
 cd solr
-# "Main" will be the main lucene-solr checkout, that all worktrees stem from.
+# "Main" will be the main solr checkout, that all worktrees stem from.
 git clone git@github.com:apache/solr.git main
 cd main
 # For each branch that you want a separate directory created for, add a worktree
 git worktree add ../9x branch_9x
-# For making bugfixes to the 8.x line, we need to add the older lucene-solr repository as a remote
+# For making bugfixes to the 8.11.x line, we need to add the older lucene-solr repository as a remote
 git remote add -f lucene-solr git@github.com:apache/lucene-solr.git
 git worktree add ../8_11 lucene-solr/branch_8_11
 ```
