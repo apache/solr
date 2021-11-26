@@ -423,7 +423,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
     }
     // We skip core.seedVersionBuckets(); We don't have a transaction log
-    log.info("Finished recovery process, successful=[{}] msTimeTaken={}", successfulRecovery, timer.getTime());
+    if (log.isInfoEnabled()) {
+      log.info("Finished recovery process, successful=[{}] msTimeTaken={}", successfulRecovery, timer.getTime());
+    }
 
   }
 
@@ -731,7 +733,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
       core.seedVersionBuckets();
     }
 
-    log.info("Finished recovery process, successful=[{}] msTimeTaken={}", successfulRecovery, timer.getTime());
+    if (log.isInfoEnabled()) {
+      log.info("Finished recovery process, successful=[{}] msTimeTaken={}", successfulRecovery, timer.getTime());
+    }
   }
 
   /**
