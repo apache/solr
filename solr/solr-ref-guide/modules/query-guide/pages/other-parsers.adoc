@@ -20,13 +20,13 @@ In addition to the main query parsers, there are several other query parsers tha
 
 This section details the other parsers, and gives examples for how they might be used.
 
-Many of these parsers are expressed the same way as <<local-params.adoc#,Local Params>>.
+Many of these parsers are expressed the same way as xref:local-params.adoc[].
 
 == Block Join Query Parsers
 
 The Block Join query parsers are used with nested documents to query for parents and/or children.
 
-These parsers are covered in detail in the section <<block-join-query-parser.adoc#,Block Join Query Parser>>.
+These parsers are covered in detail in the section xref:block-join-query-parser.adoc[].
 
 == Boolean Query Parser
 
@@ -106,7 +106,7 @@ q={!bool must=$ref}&ref=foo&ref=bar
 ----
 
 Referred queries might be excluded via tags.
-Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
+Overall the idea is similar to xref:faceting.adoc#tagging-and-excluding-filters[excluding fq in facets].
 
 [source,text]
 ----
@@ -124,7 +124,7 @@ q={!bool must=foo}
 
 `BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value.
 The main value is any query to be "wrapped" and "boosted" -- only documents which match that query will match the final query produced by this parser.
-Parameter `b` is a <<function-queries.adoc#available-functions,function>> to be evaluated against each document that matches the original query, and the result of the function will be multiplied into into the final score for that document.
+Parameter `b` is a xref:function-queries.adoc#available-functions[function] to be evaluated against each document that matches the original query, and the result of the function will be multiplied into into the final score for that document.
 
 === Boost Query Parser Examples
 
@@ -143,9 +143,9 @@ Creates a query `name:foo` which has it's scores multiplied by the _inverse_ of 
 q={!boost b=div(1,add(1,price))}name:foo
 ----
 
-The `<<function-queries.adoc#query-function,query(...)>>` function is particularly useful for situations where you want to multiply (or divide) the score for each document matching your main query by the score that document would have from another query.
+The xref:function-queries.adoc#query-function[`query(...)`] function is particularly useful for situations where you want to multiply (or divide) the score for each document matching your main query by the score that document would have from another query.
 
-This example uses <<local-params.adoc#parameter-dereferencing,local param variables>> to create a query for `name:foo` which is boosted by the scores from the independently specified query `category:electronics`:
+This example uses xref:local-params.adoc#parameter-dereferencing[local param variables] to create a query for `name:foo` which is boosted by the scores from the independently specified query `category:electronics`:
 
 [source,text]
 ----
@@ -161,7 +161,7 @@ The `CollapsingQParser` is really a _post filter_ that provides more performant 
 This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components.
 So all downstream components (faceting, highlighting, etc.) will work with the collapsed result set.
 
-Details about using the `CollapsingQParser` can be found in the section <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>.
+Details about using the `CollapsingQParser` can be found in the section xref:collapse-and-expand-results.adoc[].
 
 == Complex Phrase Query Parser
 
@@ -216,7 +216,7 @@ It may be prudent to restrict wildcards to at least two or preferably three lett
 Allowing very short prefixes may result in to many low-quality documents being returned.
 
 Notice that it also supports leading wildcards "*a" as well with consequent performance implications.
-Applying <<filters.adoc#reversed-wildcard-filter,ReversedWildcardFilterFactory>> in index-time analysis is usually a good idea.
+Applying xref:indexing-guide:filters.adoc#reversed-wildcard-filter[ReversedWildcardFilterFactory] in index-time analysis is usually a good idea.
 
 ==== MaxBooleanClauses with Complex Phrase Parser
 
@@ -227,7 +227,7 @@ You may need to increase MaxBooleanClauses in `solrconfig.xml` as a result of th
 <maxBooleanClauses>4096</maxBooleanClauses>
 ----
 
-This property is described in more detail in the section <<caches-warming.adoc#query-sizing-and-warming,Query Sizing and Warming>>.
+This property is described in more detail in the section xref:configuration-guide:caches-warming.adoc#query-sizing-and-warming[Query Sizing and Warming].
 
 ==== Stopwords with Complex Phrase Parser
 
@@ -292,7 +292,7 @@ The `param` local parameter uses "`$`" syntax to refer to a few queries, where `
 == Function Query Parser
 
 The `FunctionQParser` extends the `QParserPlugin` and creates a function query from the input value.
-This is only one way to use function queries in Solr; for another, more integrated, approach, see the section on <<function-queries.adoc#,Function Queries>>.
+This is only one way to use function queries in Solr; for another, more integrated, approach, see the section on xref:function-queries.adoc[].
 
 Example:
 
@@ -572,7 +572,7 @@ The hash range query parser has a per-segment cache for each field that this que
 When specifying a min/max hash range and a field name with the hash range query parser, only documents that contain a field value that hashes into that range will be returned.
 If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.
 
-In the <<join-query-parser.adoc#cross-collection-join,cross collection join>> case, the hash range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
+In the xref:join-query-parser.adoc#cross-collection-join[cross collection join] case, the hash range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
 
 This query parser uses the MurmurHash3_x86_32.
 This is the same as the default hashing for the default composite ID router in Solr.
@@ -634,7 +634,7 @@ Note the name of the cache should be the field name prefixed by "`hash_`".
 
 The Join Query Parser allows users to run queries that normalize relationships between documents, similar to SQL-style joins.
 
-Details of this query parser are in the section <<join-query-parser.adoc#,Join Query Parser>>.
+Details of this query parser are in the section xref:join-query-parser.adoc[].
 
 == Learning To Rank Query Parser
 
@@ -647,7 +647,7 @@ Example:
 {!ltr model=myModel reRankDocs=100}
 ----
 
-Details about using the `LTRQParserPlugin` can be found in the <<learning-to-rank.adoc#,Learning To Rank>> section.
+Details about using the `LTRQParserPlugin` can be found in the xref:learning-to-rank.adoc[] section.
 
 == Max Score Query Parser
 
@@ -888,7 +888,7 @@ The implementation is derived from an unbiased method proposed in later work^[3]
 
 The `MLTQParser` enables retrieving documents that are similar to a given document.
 It uses Lucene's existing `MoreLikeThis` logic and also works in SolrCloud mode.
-Information about how to use this query parser is with the documentation about MoreLikeThis, in the section <<morelikethis.adoc#morelikethis-query-parser,MoreLikeThis Query Parser>>.
+Information about how to use this query parser is with the documentation about MoreLikeThis, in the section xref:morelikethis.adoc#morelikethis-query-parser[MoreLikeThis Query Parser].
 
 == Nested Query Parser
 
@@ -1095,7 +1095,7 @@ http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='pagerank', fu
 
 The `ReRankQParserPlugin` is a special purpose parser for Re-Ranking the top results of a simple query using a more complex ranking query.
 
-Details about using the `ReRankQParserPlugin` can be found in the <<query-re-ranking.adoc#,Query Re-Ranking>> section.
+Details about using the `ReRankQParserPlugin` can be found in the xref:query-re-ranking.adoc[] section.
 
 == Simple Query Parser
 
@@ -1178,7 +1178,7 @@ However, this can lead to odd results in some cases.
 There are two spatial QParsers in Solr: `geofilt` and `bbox`.
 But there are other ways to query spatially: using the `frange` parser with a distance function, using the standard (lucene) query parser with the range syntax to pick the corners of a rectangle, or with RPT and BBoxField you can use the standard query parser but use a special syntax within quotes that allows you to pick the spatial predicate.
 
-All these options are documented further in the section <<spatial-search.adoc#,Spatial Search>>.
+All these options are documented further in the section xref:spatial-search.adoc[].
 
 == Surround Query Parser
 
@@ -1284,7 +1284,7 @@ If no analysis or transformation is desired for any type of field, see the <<Raw
 
 `TermsQParser` functions similarly to the <<Term Query Parser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
 
-This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<standard-query-parser.adoc#,Standard Query Parser>> to generate a boolean query since the default implementation `method` avoids scoring.
+This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the xref:standard-query-parser.adoc[] to generate a boolean query since the default implementation `method` avoids scoring.
 
 This query parser takes the following parameters:
 

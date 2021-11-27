@@ -32,9 +32,9 @@ Since the Analytics framework is a _search component_, it must be declared as su
 For distributed analytics requests over cloud collections, the component uses the `AnalyticsHandler` strictly for inter-shard communication.
 The Analytics Handler should not be used by users to submit analytics requests.
 
-To use the Analytics Component, the first step is to install this contrib module's plugins into Solr -- see the <<solr-plugins.adoc#installing-plugins,Solr Plugins>> section on how to do this.
+To use the Analytics Component, the first step is to install this contrib module's plugins into Solr -- see the xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins] section on how to do this.
 Note: Method with `<lib/>` directive doesn't work.
-Instead copy `${solr.install.dir}/dist/solr-analytics-x.x.x.jar` to `${solr.install.dir}/server/solr-webapp/webapp/WEB-INF/lib/`, as described in the <<libs.adoc#lib-directories,lib directories documentation>>.
+Instead copy `${solr.install.dir}/dist/solr-analytics-x.x.x.jar` to `${solr.install.dir}/server/solr-webapp/webapp/WEB-INF/lib/`, as described in the xref:configuration-guide:libs.adoc[].
 
 Next you need to register the request handler and search component.
 Add the following lines to `solrconfig.xml`, near the defintions for other request handlers:
@@ -60,14 +60,14 @@ For these changes to take effect, restart Solr or reload the core or collection.
 == Request Syntax
 
 An Analytics request is passed to Solr with the parameter `analytics` in a request sent to the
-<<requesthandlers-searchcomponents.adoc#search-handlers,Search Handler>>.
+xref:configuration-guide:requesthandlers-searchcomponents.adoc#search-handlers[search handler].
 Since the analytics request is sent inside of a search handler request, it will compute results based on the result set determined by the search handler.
 
 For example, this curl command encodes and POSTs a simple analytics request to the search handler:
 
 [source,bash]
 ----
-curl --data-binary 'analytics={
+$ curl --data-binary 'analytics={
    "expressions" : {
       "revenue" : "sum(mult(price,quantity))"
       }
@@ -162,14 +162,14 @@ The ways that these can be defined are described below.
 
 Sources::
 * Constants: The values defined in the expression.
-The supported constant types are described in the <<analytics-expression-sources.adoc#constants, Analytics Expression Source Reference>>.
+The supported constant types are described in the section xref:analytics-expression-sources.adoc#constants[Constants].
 
 * Fields: Solr fields that are read from the index.
-The supported fields are listed in the <<analytics-expression-sources.adoc#supported-field-types, Analytics Expression Source Reference>>.
+The supported fields are listed in the section xref:analytics-expression-sources.adoc#supported-field-types[Supported Field Types].
 
 Mapping Functions::
 Mapping functions map values for each Solr Document or Reduction.
-The provided mapping functions are detailed in the <<analytics-mapping-functions.adoc#,Analytics Mapping Function Reference>>.
+The provided mapping functions are detailed in the xref:analytics-mapping-functions.adoc[].
 
 * Unreduced Mapping: Mapping a Field with another Field or Constant returns a value for every Solr Document.
 Unreduced mapping functions can take fields, constants as well as other unreduced mapping functions as input.
@@ -178,7 +178,7 @@ Unreduced mapping functions can take fields, constants as well as other unreduce
 
 Reduction Functions::
 Functions that reduce the values of sources and/or unreduced mapping functions for every Solr Document to a single value.
-The provided reduction functions are detailed in the <<analytics-reduction-functions.adoc#,Analytics Reduction Function Reference>>.
+The provided reduction functions are detailed in the xref:analytics-reduction-functions.adoc[].
 
 ==== Component Ordering
 
@@ -212,25 +212,25 @@ With the above definitions and ordering, an example expression can be broken up 
 div(sum(a,fill_missing(b,0)),add(10.5,count(mult(a,c)))))
 
 As a whole, this is a reduced mapping function.
-The `div` function is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#division,provided mapping function>> and has reduced arguments.
+The `div` function is a reduced mapping function since it is a xref:analytics-mapping-functions.adoc#division[provided mapping function] and has reduced arguments.
 
 If we break down the expression further:
 
 * `sum(a,fill_missing(b,0))`: Reduction Function +
-`sum` is a <<analytics-reduction-functions.adoc#sum,provided reduction function>>.
+`sum` is a xref:analytics-reduction-functions.adoc#sum[provided reduction function].
 ** `a`: Field
 ** `fill_missing(b,0)`: Unreduced Mapping Function +
-`fill_missing` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#fill-missing,provided mapping function>> and has a field argument.
+`fill_missing` is an unreduced mapping function since it is a xref:analytics-mapping-functions.adoc#fill-missing[provided mapping function] and has a field argument.
 *** `b`: Field
 *** `0`: Constant
 
 * `add(10.5,count(mult(a,c)))`: Reduced Mapping Function +
-`add` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#addition,provided mapping function>> and has a reduction function argument.
+`add` is a reduced mapping function since it is a xref:analytics-mapping-functions.adoc#addition[provided mapping function] and has a reduction function argument.
 ** `10.5`: Constant
 ** `count(mult(a,c))`: Reduction Function +
-`count` is a  <<analytics-reduction-functions.adoc#count,provided reduction function>>
+`count` is a xref:analytics-reduction-functions.adoc#count[provided reduction function].
 *** `mult(a,c)`: Unreduced Mapping Function +
-`mult` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#multiplication,provided mapping function>> and has two field arguments.
+`mult` is an unreduced mapping function since it is a xref:analytics-mapping-functions.adoc#multiplication[provided mapping function] and has two field arguments.
 **** `a`: Field
 **** `c`: Field
 
@@ -771,7 +771,7 @@ A <<Facet Sorting,sort>> for the results of the pivot.
 
 Range Facets are used to group documents by the value of a field into a given set of ranges.
 The inputs for analytics range facets are identical to those used for Solr range facets.
-Refer to the <<faceting.adoc#range-faceting,Range Facet documentation>> for additional questions regarding use.
+Refer to the section xref:faceting.adoc#range-faceting[Range Faceting] for more information regarding use.
 
 ==== Parameters
 

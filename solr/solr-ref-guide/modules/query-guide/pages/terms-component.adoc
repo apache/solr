@@ -25,7 +25,7 @@ The document frequencies returned are the number of documents that match the ter
 
 == Configuring the Terms Component
 
-Terms Component is one of  <<requesthandlers-searchcomponents.adoc#defining-search-components,the default search components>>
+Terms Component is one of xref:configuration-guide:requesthandlers-searchcomponents.adoc#defining-search-components[the default search components]
 and does not need to be defined in `solrconfig.xml`.
 
 The definition is equivalent to:
@@ -37,7 +37,7 @@ The definition is equivalent to:
 
 === Using the Terms Component in a Request Handler
 
-Solr comes with an <<implicit-requesthandlers.adoc#query-handlers,Implicit RequestHandler>> definition `/terms`, which enables (only) Terms component.
+Solr comes with an xref:configuration-guide:implicit-requesthandlers.adoc#query-handlers[implicit request handler] definition `/terms`, which enables (only) Terms component.
 
 If you want to enable Terms component when using another Request Handler, `terms=true` parameter needs to be passed during the request or be set in the handler's defaults.
 
@@ -425,7 +425,7 @@ Results (notice that the term counts are not affected by the query):
 
 == Using the Terms Component for an Auto-Suggest Feature
 
-If the <<suggester.adoc#,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application.
+If the xref:suggester.adoc[] doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application.
 Simply submit a query specifying whatever characters the user has typed so far as a prefix.
 For example, if the user has typed "at", the search engine's interface would submit the following query:
 

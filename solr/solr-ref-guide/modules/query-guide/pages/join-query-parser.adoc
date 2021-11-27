@@ -196,7 +196,7 @@ As the join keys are streamed to the node, a bitset of the matching documents in
 This avoids keeping the full set of join keys in memory at any given time.
 This bitset is then inserted into the filter cache upon successful execution as with the normal behavior of the Solr filter cache.
 
-If the local index is sharded according to the join key field, the cross collection join can leverage a secondary query parser called the <<other-parsers.adoc#hash-range-query-parser,Hash Range Query Parser>>.
+If the local index is sharded according to the join key field, the cross collection join can leverage a secondary query parser called the xref:other-parsers.adoc#hash-range-query-parser[Hash Range Query Parser].
 The hash range query parser is responsible for returning only the documents that hash to a given range of values.
 This allows the `CrossCollectionQuery` to query the remote Solr collection and return only the join keys that would match a specific shard in the local Solr collection.
 This has the benefit of making sure that network traffic doesn't increase as the number of shards increases and allows for much greater scalability.

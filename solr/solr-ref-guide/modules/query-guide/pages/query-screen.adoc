@@ -48,23 +48,23 @@ If a query handler is not specified, Solr processes the response with the standa
 
 q::
 The query event.
-See <<query-guide.adoc#,Query Guide>> for an explanation of this parameter.
+See xref:standard-query-parser.adoc[] for an explanation of this parameter.
 
 fq::
 The filter queries.
-See <<common-query-parameters.adoc#,Common Query Parameters>> for more information on this parameter.
+See xref:common-query-parameters.adoc[] for more information on this parameter.
 
 sort::
 Sorts the response to a query in either ascending or descending order based on the response's score or another specified characteristic.
 
 start, rows::
 `start` is the offset into the query result starting at which documents should be returned.
-The default value is 0, meaning that the query should return results starting with the first document that matches.
-This field accepts the same syntax as the start query parameter, which is described in <<query-guide.adoc#,Query Guide>>. `rows` is the number of rows to return.
+The default value is `0`, meaning that the query should return results starting with the first document that matches.
+This field accepts the same syntax as the `start` query parameter, which is described in xref:common-query-parameters.adoc[]. `rows` is the number of rows to return.
 
 fl::
 Defines the fields to return for each document.
-You can explicitly list the stored fields, <<function-queries.adoc#,functions>>, and <<document-transformers.adoc#,doc transformers>> you want to have returned by separating them with either a comma or a space.
+You can explicitly list the stored fields, xref:function-queries.adoc[functions], and xref:document-transformers.adoc[doc transformers] you want to have returned by separating them with either a comma or a space.
 
 wt::
 Specifies the Response Writer to be used to format the query response.
@@ -79,23 +79,23 @@ This debugging information is intended to be intelligible to the administrator o
 
 dismax::
 Click this button to enable the DisMax query parser.
-See <<dismax-query-parser.adoc#,The DisMax Query Parser>> for further information.
+See xref:dismax-query-parser.adoc[] for further information.
 
 edismax::
 Click this button to enable the Extended query parser.
-See <<edismax-query-parser.adoc#,The Extended DisMax Query Parser>> for further information.
+See xref:edismax-query-parser.adoc[] for further information.
 
 hl:: Click this button to enable highlighting in the query response.
-See <<highlighting.adoc#,Highlighting>> for more information.
+See xref:highlighting.adoc[]> for more information.
 
 facet::
 Enables faceting, the arrangement of search results into categories based on indexed terms.
-See <<faceting.adoc#,Faceting>> for more information.
+See xref:faceting.adoc[] for more information.
 
 spatial::
 Click to enable using location data for use in spatial or geospatial searches.
-See <<spatial-search.adoc#,Spatial Search>> for more information.
+See xref:spatial-search.adoc[] for more information.
 
 spellcheck::
 Click this button to enable the Spellchecker, which provides inline query suggestions based on other, similar, terms.
-See <<spell-checking.adoc#,Spell Checking>> for more information.
+See xref:spell-checking.adoc[] for more information.

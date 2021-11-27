@@ -294,7 +294,7 @@ r=knnRegress(obs, quality, 5, scale="true"),
 == knnSearch
 
 The `knnSearch` function returns the k-nearest neighbors for a document based on text similarity.
-Under the covers the `knnSearch` function uses Solr's <<other-parsers.adoc#more-like-this-query-parser,More Like This>> query parser plugin.
+Under the covers the `knnSearch` function uses Solr's xref:morelikethis.adoc#morelikethis-query-parser[More Like This query parser].
 This capability uses the search engine's query, term statistics, scoring, and ranking capability to perform a fast, nearest neighbor search for similar documents over large distributed indexes.
 
 The results of this search can be used directly or provide *candidates* for machine learning operations such as a secondary KNN vector search.
@@ -412,7 +412,7 @@ K-means clustering produces centroids or *prototype* vectors which can be used t
 In this example the key features of the centroids are extracted to represent the key phrases for clusters of TF-IDF term vectors.
 
 NOTE: The example below works with TF-IDF _term vectors_.
-The section <<term-vectors.adoc#,Text Analysis and Term Vectors>> offers a full explanation of this features.
+The section xref:term-vectors.adoc[] offers a full explanation of this features.
 
 In the example the `search` function returns documents where the `review_t` field matches the phrase "star wars".
 The `select` function is run over the result set and applies the `analyze` function which uses the Lucene/Solr analyzer attached to the schema field `text_bigrams` to re-analyze the `review_t` field.

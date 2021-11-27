@@ -48,7 +48,7 @@ s|Required |Default: none
 Specifies a field for which statistics should be generated.
 This parameter may be invoked multiple times in a query in order to request statistics on multiple fields.
 +
-<<local-params.adoc#,Local Params>> may be used to indicate a subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name.
+xref:local-params.adoc[] may be used to indicate a subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name.
 See the examples below.
 
 
@@ -165,7 +165,7 @@ This statistic is computed for all field types but is not computed by default.
 
 == Local Params with the Stats Component
 
-Similar to the <<faceting.adoc#,Facet Component>>, the `stats.field` parameter supports local params for:
+Similar to the xref:faceting.adoc[Facet Component], the `stats.field` parameter supports local params for:
 
 * Tagging & Excluding Filters: `stats.field={!ex=filterA}price`
 * Changing the Output Key: `stats.field={!key=my_price_stats}price`
@@ -227,4 +227,4 @@ http://localhost:8983/solr/techproducts/select?q=*:*&fq={!tag=stock_check}inStoc
 
 Sets of `stats.field` parameters can be referenced by `tag` when using Pivot Faceting to compute multiple statistics at every level (i.e., field) in the tree of pivot constraints.
 
-For more information and a detailed example, please see <<faceting.adoc#combining-stats-component-with-pivots,Combining Stats Component With Pivots>>.
+For more information and a detailed example, please see xref:faceting.adoc#combining-stats-component-with-pivots[Combining Stats Component With Pivots].

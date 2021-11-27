@@ -40,7 +40,7 @@ This handler compiles the expression, runs the expression logic and returns a JS
 
 === Admin UI Stream Panel
 
-The easiest way to run streaming expressions and math expressions is through the <<stream-screen.adoc#,Stream Screen>> in the Solr Admin UI.
+The easiest way to run streaming expressions and math expressions is through the xref:stream-screen.adoc[] in the Solr Admin UI.
 
 A sample `search` streaming expression is shown in the screenshot below:
 

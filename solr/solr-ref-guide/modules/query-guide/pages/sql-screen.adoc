@@ -23,4 +23,4 @@ In the example in the screenshot, a SQL query has been submitted, and the screen
 .Results of a SQL Query
 image::sql-screen/sql-query-ui.png[image,height=400]
 
-Learn more about by reading the <<sql-query.adoc#,SQL details>>, including the specific <<sql-query.adoc#solr-sql-syntax,SQL syntax>> supported by Solr.
+Learn more by reading the xref:sql-query.adoc[], including the specific xref:sql-query.adoc#solr-sql-syntax[SQL syntax] supported by Solr.

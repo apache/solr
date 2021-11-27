@@ -20,7 +20,7 @@ The SuggestComponent in Solr provides users with automatic suggestions for query
 
 You can use this to implement a powerful auto-suggest feature in your search application.
 
-Although it is possible to use the <<spell-checking.adoc#,Spell Checking>> functionality to power autosuggest behavior, Solr has a dedicated {solr-javadocs}/core/org/apache/solr/handler/component/SuggestComponent.html[SuggestComponent] designed for this functionality.
+Although it is possible to use the xref:spell-checking.adoc[] functionality to power autosuggest behavior, Solr has a dedicated {solr-javadocs}/core/org/apache/solr/handler/component/SuggestComponent.html[SuggestComponent] designed for this functionality.
 
 This approach utilizes Lucene's Suggester implementation and supports all of the lookup implementations available in Lucene.
 
@@ -31,7 +31,7 @@ The main features of this Suggester are:
 * Distributed support
 
 The `solrconfig.xml` found in Solr's "techproducts" example has a Suggester implementation configured already.
-For more on search components, see the section <<requesthandlers-searchcomponents.adoc#,Request Handlers and Search Components>>.
+For more on search components, see the section xref:configuration-guide:requesthandlers-searchcomponents.adoc[].
 
 The "techproducts" example `solrconfig.xml` has a `suggest` search component and a `/suggest` request handler already configured.
 You can use that as the basis for your configuration, or create it from scratch, as detailed below.
@@ -130,7 +130,7 @@ A field from the index to use as the basis of suggestion terms.
 If `sourceLocation` is empty (meaning any dictionary implementation other than `FileDictionaryFactory`), then terms from this field in the index will be used.
 +
 To be used as the basis for a suggestion, the field must be stored.
-You may want to <<copy-fields.adoc#,use copyField rules>> to create a special 'suggest' field comprised of terms from other fields in documents.
+You may want to xref:indexing-guide:copy-fields.adoc[use copyField rules] to create a special 'suggest' field comprised of terms from other fields in documents.
 +
 You usually want a minimal amount of analysis on the field (no stemming, no synonyms, etc.), so an option is to create a field type in your schema that only uses basic tokenizers or filters.
 An example of such a field type is shown here:
@@ -689,7 +689,7 @@ See the <<Example Usages>> section below for an example request and response.
 == Adding the Suggest Request Handler
 
 After adding the search component, a request handler must be added to `solrconfig.xml`.
-This request handler works the <<requesthandlers-searchcomponents.adoc#,same as any other request handler>>, and allows you to configure default parameters for serving suggestion requests.
+This request handler works the xref:configuration-guide:requesthandlers-searchcomponents.adoc[same as any other request handler], and allows you to configure default parameters for serving suggestion requests.
 The request handler definition must incorporate the "suggest" search component defined previously.
 
 [source,xml]

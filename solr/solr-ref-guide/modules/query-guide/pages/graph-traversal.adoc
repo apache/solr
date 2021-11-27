@@ -31,7 +31,7 @@ Some sample use cases are provided later in the document.
 ====
 This document assumes a basic understanding of graph terminology and streaming expressions.
 You can begin exploring graph traversal concepts with this https://en.wikipedia.org/wiki/Graph_traversal[Wikipedia article].
-More details about streaming expressions are available in this Guide, in the section <<streaming-expressions.adoc#,Streaming Expressions>>.
+More details about streaming expressions are available in this Guide, in the section xref:streaming-expressions.adoc[].
 ====
 
 == Basic Syntax
@@ -68,7 +68,7 @@ nodes(emails,
 
 The `nodes` function above finds all the edges with "johndoe@apache.org" or "janesmith@apache.org" in the `from` field and gathers the `to` field.
 
-Like all <<streaming-expressions.adoc#,Streaming Expressions>>, you can execute a `nodes` expression by sending it to the `/stream` handler.
+Like all xref:streaming-expressions.adoc[], you can execute a `nodes` expression by sending it to the `/stream` handler.
 For example:
 
 [source,bash]
@@ -260,7 +260,7 @@ nodes(emails,
 
 In the example above only emails that match the filter query will be included in the traversal.
 Any Solr query can be included here.
-So you can do fun things like <<spatial-search.adoc#,geospatial queries>>, apply any of the available <<query-syntax-and-parsers.adoc#,query parsers>>, or even write custom query parsers to limit the traversal.
+So you can do fun things like xref:spatial-search.adoc[geospatial queries], apply any of the available xref:query-syntax-and-parsers.adoc[query parsers], or even write custom query parsers to limit the traversal.
 
 == Root Streams
 

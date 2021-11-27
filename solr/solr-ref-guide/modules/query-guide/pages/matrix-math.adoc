@@ -119,7 +119,7 @@ responds with:
 == Visualization
 
 The `zplot` function can plot matrices as a heat map using the `heat` named parameter.
-Heat maps are powerful visualization tools for displaying <<statistics.adoc#correlation-matrices,*correlation*>> and <<machine-learning.adoc#distance-and-distance-matrices,*distance*>> matrices described later in the guide.
+Heat maps are powerful visualization tools for displaying xref:statistics.adoc#correlation-matrices[*correlation*] and xref:machine-learning.adoc#distance-and-distance-matrices[*distance*] matrices described later in the guide.
 The example below shows a 2x2 matrix visualized using the heat map
 visualization in Apache Zeppelin.
 

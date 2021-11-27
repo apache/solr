@@ -21,7 +21,7 @@
 
 Solr supports an alternate request API which accepts requests composed in part or entirely of JSON objects.
 This alternate API can be preferable in some situations, where its increased readability and flexibility make it easier to use than the entirely query-parameter driven alternative.
-There is also some functionality which can only be accessed through this JSON request API, such as much of the analytics capabilities of <<json-facet-api.adoc#facet-analytics-module,JSON Faceting>>
+There is also some functionality which can only be accessed through this JSON request API, such as much of the analytics capabilities of the xref:json-facet-api.adoc[].
 
 == Building JSON Requests
 The core of the JSON Request API is its ability to specify request parameters as JSON in the request body, as shown by the example below:
@@ -174,7 +174,7 @@ include::example$JsonRequestApiTest.java[tag=solrj-json-facet-all-query-params-e
 ====
 --
 
-See the <<json-facet-api.adoc#facet-analytics-module,JSON Facet API>> for more on faceting and analytics commands.
+See the xref:json-facet-api.adoc[] for more on faceting and analytics commands.
 
 == Supported Properties and Syntax
 
@@ -249,7 +249,7 @@ Parameters placed in a `params` block act as if they were added verbatim to the 
 curl "http://localhost:8983/solr/techproducts/query?fl=name,price&q=memory&rows=1"
 ----
 
-Usage of `queries` key is described in <<json-query-dsl.adoc#additional-queries,Query DSL>>.
+Usage of `queries` key is described in xref:json-query-dsl.adoc#additional-queries[Additional Queries].
 
 
 === Parameter Substitution / Macro Expansion

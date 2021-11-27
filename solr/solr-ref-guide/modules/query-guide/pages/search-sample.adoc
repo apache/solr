@@ -66,7 +66,7 @@ The visualization examples below use small random samples, but Solr's random sam
 These larger samples can be used to build reliable statistical models that describe large data sets (billions of documents) with sub-second performance.
 
 The examples below demonstrate univariate and bivariate scatter plots of random samples.
-Statistical modeling with random samples is covered in the <<statistics.adoc#,Statistics>>, <<probability-distributions.adoc#,Probability>>, <<regression.adoc#,Linear Regression>>, <<curve-fitting.adoc#,Curve Fitting>>, and <<machine-learning.adoc#,Machine Learning>> sections.
+Statistical modeling with random samples is covered in the xref:statistics.adoc[], xref:probability-distributions.adoc[], xref:regression.adoc[], xref:curve-fitting.adoc[], and xref:machine-learning.adoc[] sections.
 
 === Univariate Scatter Plots
 
@@ -134,7 +134,7 @@ image::math-expressions/stats.png[]
 === facet
 
 The `facet` function performs single and multi-dimension aggregations that behave in a similar manner to SQL group by aggregations.
-Under the covers the `facet` function pushes down the aggregations to Solr's <<json-facet-api.adoc#,JSON Facet API>> for fast distributed execution.
+Under the covers the `facet` function pushes down the aggregations to Solr's xref:json-facet-api.adoc[] for fast distributed execution.
 
 The example below performs a single dimension aggregation from the nyc311 (NYC complaints) dataset.
 The aggregation returns the top five *complaint types* by *count* for records with a status of *Pending*.
@@ -223,7 +223,7 @@ image::math-expressions/sterms.png[]
 === nodes
 
 The `nodes` function performs aggregations of nodes during a breadth first search of a graph.
-This function is covered in detail in the section <<graph-traversal.adoc#,Graph Traversal>>.
+This function is covered in detail in the section xref:graph-traversal.adoc[].
 In this example the focus will be on finding correlated nodes in a time series graph using the `nodes` expressions.
 
 The example below finds stock tickers whose daily movements tend to be correlated with the ticker *jpm* (JP Morgan).

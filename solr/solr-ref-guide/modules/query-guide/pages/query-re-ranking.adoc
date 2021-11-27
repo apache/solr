@@ -48,7 +48,7 @@ The `rerank` parser wraps a query specified by an local parameter, along with ad
 s|Required |Default: none
 |===
 +
-The query string for your complex ranking query - in most cases <<local-params.adoc#,a variable>> will be used to refer to another request parameter.
+The query string for your complex ranking query - in most cases xref:local-params.adoc[a variable] will be used to refer to another request parameter.
 
 `reRankDocs`::
 +
@@ -81,11 +81,11 @@ If a document matches the original query, but does not match the re-ranking quer
 
 === LTR Query Parser
 
-The `ltr` stands for Learning To Rank, please see <<learning-to-rank.adoc#,Learning To Rank>> for more detailed information.
+The `ltr` stands for Learning To Rank, please see xref:learning-to-rank.adoc[] for more detailed information.
 
 == Combining Ranking Queries with Other Solr Features
 
 The `rq` parameter and the re-ranking feature in general works well with other Solr features.
-For example, it can be used in conjunction with the <<collapse-and-expand-results.adoc#,collapse parser>> to re-rank the group heads after they've been collapsed.
-It also preserves the order of documents elevated by the <<query-elevation-component.adoc#,elevation component>>.
-And it even has its own custom explain so you can see how the re-ranking scores were derived when looking at <<common-query-parameters.adoc#debug-parameter,debug information>>.
+For example, it can be used in conjunction with xref:collapse-and-expand-results.adoc[] to re-rank the group heads after they've been collapsed.
+It also preserves the order of documents elevated by the xref:query-elevation-component.adoc[].
+And it even has its own custom explain so you can see how the re-ranking scores were derived when looking at xref:common-query-parameters.adoc#debug-parameter[debug information].

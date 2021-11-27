@@ -21,9 +21,9 @@ Queries and filters provided in JSON requests can be specified using a rich, pow
 == Query DSL Structure
 The JSON Request API accepts query values in three different formats:
 
-* A valid <<standard-query-parser.adoc#,query string>> that uses the default `deftype` (`lucene`, in most cases), e.g., `title:solr`.
+* A valid xref:standard-query-parser.adoc[query string] that uses the default `deftype` (`lucene`, in most cases), e.g., `title:solr`.
 
-* A valid <<local-params.adoc#,local params query string>> that specifies its `deftype` explicitly, e.g., `{!dismax qf=title}solr`.
+* A valid xref:local-params.adoc[local params query string] that specifies its `deftype` explicitly, e.g., `{!dismax qf=title}solr`.
 
 * A valid JSON object with the name of the query parser and any relevant parameters, e.g., `{ "lucene": {"df":"title", "query":"solr"}}`.
 ** The top level "query" JSON block generally only has a single property representing the name of the query parser to use.
@@ -237,7 +237,7 @@ include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-2]
 --
 
 === Nested Boolean Query Example
-Query nesting is commonly seen when combining multiple query clauses together using pseudo-boolean logic with the <<other-parsers.adoc#boolean-query-parser,BoolQParser>>.
+Query nesting is commonly seen when combining multiple query clauses together using pseudo-boolean logic with the xref:other-parsers.adoc#boolean-query-parser[BoolQParser].
 
 The example below shows how the `BoolQParser` can be used to create powerful nested queries.
 In this example, a user searches for results with `iPod` in the field `name` which are _not_ in the bottom half of the `popularity` rankings.
@@ -308,7 +308,7 @@ include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-bool-condensed]
 ====
 --
 
-Example of referencing <<Additional Queries,additional queries>>, <<Tagging in JSON Query DSL,tagging>> and <<other-parsers.adoc#boolean-query-parser,exclusions>>:
+Example of referencing <<Additional Queries,additional queries>>, <<Tagging in JSON Query DSL,tagging>>, and xref:other-parsers.adoc#boolean-query-parser[exclusions]:
 
 [source,bash]
 ----
@@ -395,14 +395,14 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 ----
 
 Overall this example doesn't make much sense, but just demonstrates the syntax.
-This feature is useful in <<json-faceting-domain-changes.adoc#adding-domain-filters,filtering domain>> in JSON Facet API <<json-facet-api.adoc#changing-the-domain,domain changes>>.
+This feature is useful in xref:json-faceting-domain-changes.adoc#adding-domain-filters[filtering domain] in JSON Facet API xref:json-facet-api.adoc#changing-the-domain[domain changes].
 Note that these declarations add request parameters underneath, so using same names with other parameters might cause unexpected behavior.
 
 == Tagging in JSON Query DSL
 
 Query and filter clauses can also be individually "tagged".
 Tags serve as handles for query clauses, allowing them to be referenced from elsewhere in the request.
-This is most commonly used by the filter-exclusion functionality offered by both <<faceting.adoc#tagging-and-excluding-filters,traditional>> and <<json-faceting-domain-changes.adoc#filter-exclusions,JSON>> faceting.
+This is most commonly used by the filter-exclusion functionality offered by both xref:faceting.adoc#tagging-and-excluding-filters[traditional] and xref:json-faceting-domain-changes.adoc#filter-exclusions[JSON] faceting.
 
 Queries and filters are tagged by wrapping them in a surrounding JSON object.
 The name of the tag is specified as a JSON key, with the query string (or object) becoming the value associated with that key.
@@ -454,8 +454,8 @@ Let's go on item by item:
 
 * _Filter exclusion_ is usually necessary when multiple filter values can be applied to each field.
 This is also also known as drill-sideways facets.
-See also <<faceting.adoc#tagging-and-excluding-filters,the classic example>> of filter exclusion.
-* _Nested documents_, or child documents, are described in <<indexing-nested-documents.adoc#,Indexing Nested Documents>>.
+See also xref:faceting.adoc#tagging-and-excluding-filters[tagging and filter exclusion].
+* _Nested documents_, or child documents, are described in xref:indexing-guide:indexing-nested-documents.adoc[].
 In the example below, they are referred as SKUs since this is a frequent use case for this feature.
 * _Counting facets over children documents_ means that even though the result of the search are usually parent documents, the children documents and their fields are used for faceting.
 * _Facet counts roll up_ means that child documents contribute facet hits because parent documents they are linked to are counted.
@@ -505,4 +505,4 @@ The SKU field is defined as `sku_attr1`, and we've set `limit=-1` so we get all 
 The `blockChildren` value references the all-parents query.
 Then we define a filter to restrict to SKU docs but exclude one tag retaining only `sku_attr2:bar`.
 <6> Counts the subfacet in parent documents.
-See also <<json-facet-api.adoc#uniqueblock-and-block-join-counts>>.
+See also xref:json-facet-api.adoc#uniqueblock-and-block-join-counts[uniqueBlock() and Block Join Counts].

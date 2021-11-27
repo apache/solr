@@ -21,7 +21,7 @@ The Solr JDBC driver can support http://zeppelin.apache.org/[Apache Zeppelin].
 [NOTE]
 ====
 A Solr-specific interpreter is available as an alternative to using the JDBC driver.
-See the section <<math-start.adoc#zeppelin-solr-interpreter,Zeppelin-Solr Interpreter>> for details.
+See the section xref:math-start.adoc#zeppelin-solr-interpreter[Zeppelin-Solr Interpreter] for details.
 
 If you choose to use Zeppelin's JDBC interpreter instead, you must use Zeppelin 0.6.0 or greater to get JDBC support.
 ====

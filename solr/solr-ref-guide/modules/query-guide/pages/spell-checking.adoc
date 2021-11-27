@@ -173,7 +173,7 @@ The results are combined and collations can contain a mix of corrections from bo
 
 === Add It to a Request Handler
 
-Queries will be sent to a <<query-syntax-and-parsers.adoc#,RequestHandler>>.
+Queries will be sent to a xref:configuration-guide:request-handlers-and-search-components.adoc[request handler].
 If every request should generate a suggestion, then you would add the following to the `requestHandler` that you are using:
 
 [source,xml]
@@ -227,7 +227,7 @@ This parameter specifies the query to spellcheck.
 +
 If `spellcheck.q` is defined, then it is used; otherwise the original input query is used.
 The `spellcheck.q` parameter is intended to be the original query, minus any extra markup like field names, boosts, and so on.
-If the `q` parameter is specified, then the `SpellingQueryConverter` class is used to parse it into tokens; otherwise the <<tokenizers.adoc#white-space-tokenizer,`WhitespaceTokenizer`>> is used.
+If the `q` parameter is specified, then the `SpellingQueryConverter` class is used to parse it into tokens; otherwise the xref:indexing-guide:tokenizers.adoc#white-space-tokenizer[WhitespaceTokenizer] is used.
 +
 The choice of which one to use is up to the application.
 Essentially, if you have a spelling "ready" version in your application, then it is probably better to use `spellcheck.q`.
@@ -507,7 +507,7 @@ s|Required |Default: none
 |===
 +
 Specifies the shards in your distributed indexing configuration.
-For more information about distributed indexing, see <<user-managed-distributed-search.adoc#,User-Managed Distributed Search>>.
+For more information about distributed indexing, see xref:deployment-guide:cluster-types.adoc[].
 
 `shards.qt`::
 +

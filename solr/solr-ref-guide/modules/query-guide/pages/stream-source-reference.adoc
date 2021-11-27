@@ -27,7 +27,7 @@ By default, the `/select` handler is used.
 The `/select` handler can be used for simple rapid prototyping of expressions.
 For production, however, you will most likely want to use the `/export` handler which is designed to `sort` and `export` entire result sets.
 The `/export` handler is not used by default because it has stricter requirements then the `/select` handler so it's not as easy to get started working with.
-To read more about the `/export` handler requirements review the section <<exporting-result-sets.adoc#,Exporting Result Sets>>.
+To read more about the `/export` handler requirements review the section xref:exporting-result-sets.adoc[].
 
 === search Parameters
 
@@ -43,7 +43,7 @@ The default is `/select`.
 This parameter is only needed with the `/select` handler (which is the default) since the `/export` handler always returns all rows.
 * `partitionKeys`: Comma delimited list of keys to partition the search results by.
 To be used with the parallel function for parallelizing operations across worker nodes.
-See the <<stream-decorator-reference.adoc#parallel,parallel>> function for details.
+See the xref:stream-decorator-reference.adoc#parallel[parallel] function for details.
 
 === search Syntax
 
@@ -347,7 +347,7 @@ cat("authors.txt,fiction/scifi/", maxLines=500)
 == nodes
 
 The `nodes` function provides breadth-first graph traversal.
-For details, see the section <<graph-traversal.adoc#,Graph Traversal>>.
+For details, see the section xref:graph-traversal.adoc[].
 
 == knnSearch
 
@@ -384,7 +384,7 @@ knnSearch(collection1,
 
 The `model` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection.
 The `model` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format.
-After the model is retrieved it can be used by the <<stream-decorator-reference.adoc#classify,classify function>> to classify documents.
+After the model is retrieved it can be used by the xref:stream-decorator-reference.adoc#classify[classify function] to classify documents.
 
 A single model tuple is fetched and returned based on the *id* parameter.
 The model is retrieved by matching the *id* parameter with a model name in the index.
@@ -558,7 +558,7 @@ When used in parallel mode the partitionKeys parameter must be provided.
 * `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
 * `partitionKeys`: Comma delimited list of keys to partition the search results by.
 To be used with the parallel function for parallelizing operations across worker nodes.
-See the <<stream-decorator-reference.adoc#parallel,parallel>> function for details.
+See the xref:stream-decorator-reference.adoc#parallel[parallel] function for details.
 
 === shuffle Syntax
 

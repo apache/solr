@@ -397,7 +397,7 @@ In order to support temporal graph queries a ten second truncated timestamp in *
 Here is a sample ten second truncated timestamp: `2021-02-10T20:51:30Z`.
 This small data change enables some very important use cases so it's well worth the effort.
 
-Solr's indexing tool for Solr logs, described <<logs.adoc#,here>>, already adds the ten second truncated timestamps.
+Solr's indexing tool for Solr logs, described xref:logs.adoc[here], already adds the ten second truncated timestamps.
 So those using Solr to analyze Solr logs get temporal graph expressions for free.
 
 === Root Events

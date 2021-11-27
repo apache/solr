@@ -63,7 +63,7 @@ http://localhost:8983/solr/gettingstarted/stream?action=PLUGINS
 [[list]]
 == LIST: List Daemon processes
 
-The <<stream-decorator-reference.adoc#daemon,daemon>> function allows you to wrap a streaming expression and run it at intervals to provide both continuous push and pull streaming.
+The xref:stream-decorator-reference.adoc#daemon[`daemon`] function allows you to wrap a streaming expression and run it at intervals to provide both continuous push and pull streaming.
 This command lists out all the currently running daemon processes.
 
 `/stream?action=LIST`

@@ -318,7 +318,7 @@ Explicitly converts the values of a `String` or `Long` expression into `Dates`.
 [[analytics-date-math]]
 === Date Math
 Compute the given date math strings for the values of a `Date` expression.
-The date math strings *must* be <<analytics-expression-sources.adoc#strings, constant>>.
+The date math strings *must* be xref:analytics-expression-sources.adoc#strings[constant].
 
 `date_math(< _Date_ >, < _Constant String_ >...)` => `< _Date_ >`::
     * `date_math(1800-04-15, '+1DAY', '-1MONTH')` => `1800-03-16`
@@ -348,7 +348,7 @@ Concatenations the values of the `String` expression(s) together.
     _Empty values are ignored_
 
 === Separated Concatenation
-Concatenations the values of the `String` expression(s) together using the given <<analytics-expression-sources.adoc#strings, constant string>> value as a separator.
+Concatenations the values of the `String` expression(s) together using the given xref:analytics-expression-sources.adoc#strings[constant string] value as a separator.
 
 `concat_sep(< _Constant String_ >, < _Multi String_ >)` => `< _Single String_ >`::
     * `concat_sep('-', ['a','b'])` => `'a-b'`

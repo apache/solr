@@ -388,8 +388,8 @@ As you can see in the examples above, the `cartesianProduct` function does suppo
 == classify
 
 The `classify` function classifies tuples using a logistic regression text classification model.
-It was designed specifically to work with models trained using the <<stream-source-reference.adoc#train,train function>>.
-The `classify` function uses the <<stream-source-reference.adoc#model,model function>> to retrieve a stored model and then scores a stream of tuples using the model.
+It was designed specifically to work with models trained using the xref:stream-source-reference.adoc#train[`train` function].
+The `classify` function uses the xref:stream-source-reference.adoc#model[`model` function] to retrieve a stored model and then scores a stream of tuples using the model.
 The tuples read by the classifier must contain a text field that can be used for classification.
 The classify function uses a Lucene analyzer to extract the features from the text so the model can be applied.
 By default the `classify` function looks for the analyzer using the name of text field in the tuple.
@@ -528,7 +528,7 @@ daemon(id="uniqueId",
 The sample code above shows a `daemon` function wrapping an `update` function, which is wrapping a `topic` function.
 When this expression is sent to the `/stream` handler, the `/stream` hander sees the `daemon` function and keeps it in memory where it will run at intervals.
 In this particular example, the `daemon` function will run the `update` function every second.
-The `update` function is wrapping a <<stream-source-reference.adoc#topic,`topic` function>>, which will stream tuples that match the `topic` function query in batches.
+The `update` function is wrapping a xref:stream-source-reference.adoc#topic[`topic` function], which will stream tuples that match the `topic` function query in batches.
 Each subsequent call to the topic will return the next batch of tuples for the topic.
 The `update` function will send all the tuples matching the topic to another collection to be indexed.
 The `terminate` parameter tells the daemon to terminate when the `topic` function stops sending tuples.
@@ -539,7 +539,7 @@ Custom push functions can be plugged in that push documents out of Solr and into
 Push streaming can also be used for continuous background aggregation scenarios where aggregates are rolled up in the background at intervals and pushed to other Solr collections.
 Another use case is continuous background machine learning model optimization, where the optimized model is pushed to another Solr collection where it can be integrated into queries.
 
-The `/stream` handler supports a small <<stream-api.adoc#plugins,set of commands>> for listing and controlling daemon functions:
+The `/stream` handler supports a small xref:stream-api.adoc#plugins[set of commands] for listing and controlling daemon functions:
 
 [source,text]
 ----
@@ -630,7 +630,7 @@ daemonStream.close();
 
 == delete
 
-The `delete` function wraps other functions and uses the `id` and `\_version_` values found to send the tuples to a SolrCloud collection as <<indexing-with-update-handlers.adoc#delete-operations,Delete By Id>> commands.
+The `delete` function wraps other functions and uses the `id` and `\_version_` values found to send the tuples to a SolrCloud collection as xref:indexing-guide:indexing-with-update-handlers.adoc#delete-operations[Delete By Id] commands.
 
 This is similar to the `<<#update,update()>>` function described below.
 
@@ -660,7 +660,7 @@ The example above consumes the tuples returned by the `search` function against 
 [NOTE]
 ====
 Unlike the `update()` function, `delete()` defaults to `pruneVersionField=false` -- preserving any `\_version_` values found in the inner stream when converting the tuples to "Delete By ID" requests.
-This ensures that using this stream will not (by default) result in deleting any documents that were updated _after_ the `search(...)` was executed, but _before_ the `delete(...)` processed that tuple (leveraging <<partial-document-updates.adoc#optimistic-concurrency,Optimistic concurrency>> constraints).
+This ensures that using this stream will not (by default) result in deleting any documents that were updated _after_ the `search(...)` was executed, but _before_ the `delete(...)` processed that tuple (leveraging xref:indexing-guide:partial-document-updates.adoc#optimistic-concurrency[optimistic concurrency] constraints).
 
 Users who wish to ignore concurrent updates and delete all matched documents should set `pruneVersionField=true` (or ensure that the inner stream tuples do not include any `\_version_` values).
 
@@ -723,7 +723,7 @@ daemon(id="myDaemon",
                       id="myTopic")))
 ----
 
-In the example above a <<daemon,daemon>> wraps an executor, which wraps a <<stream-source-reference.adoc#topic,topic>> that is returning tuples with expressions to execute.
+In the example above a <<daemon,`daemon`>> wraps an executor, which wraps a xref:stream-source-reference.adoc#topic[`topic`] that is returning tuples with expressions to execute.
 When sent to the stream handler, the daemon will call the executor at intervals which will cause the executor to read from the topic and execute the expressions found in the `expr_s` field.
 The daemon will repeatedly call the executor until all the tuples that match the topic have been iterated, then it will terminate.
 This is the approach for executing batches of streaming expressions from a `topic` queue.
@@ -1229,7 +1229,7 @@ The `priority` function is a simple priority scheduler for the <<executor>> func
 The `executor` function doesn't directly have a concept of task prioritization; instead it simply executes tasks in the order that they are read from its underlying stream.
 The `priority` function provides the ability to schedule a higher priority task ahead of lower priority tasks that were submitted earlier.
 
-The `priority` function wraps two <<stream-source-reference.adoc#topic,topics>> that are both emitting tuples that contain streaming expressions to execute.
+The `priority` function wraps two xref:stream-source-reference.adoc#topic[`topic` functions] that are both emitting tuples that contain streaming expressions to execute.
 The first topic is considered the higher priority task queue.
 
 Each time the `priority` function is called, it checks the higher priority task queue to see if there are any tasks to execute.
@@ -1334,7 +1334,7 @@ This allows the rollup function to rollup the over the `a_s` field, one group at
 
 == scoreNodes
 
-See section in <<graph-traversal.adoc#using-the-scorenodes-function-to-make-a-recommendation,graph traversal>>.
+See section in xref:graph-traversal.adoc#using-the-scorenodes-function-to-make-a-recommendation[graph traversal].
 
 == select
 
@@ -1483,4 +1483,4 @@ The `update` function wraps another functions and sends the tuples to a SolrClou
 The example above sends the tuples returned by the `search` function to the `destinationCollection` to be indexed.
 
 Wrapping `search(...)` as showing in this example is the common case usage of this decorator: to read documents from a collection as tuples, process or modify them in some way, and then add them back to a new collection.
-For this reason, `pruneVersionField=true` is the default behavior -- stripping any `\_version_` values found in the inner stream when converting the tuples to Solr documents to prevent any unexpected errors from <<partial-document-updates.adoc#optimistic-concurrency,Optimistic concurrency>> constraints.
+For this reason, `pruneVersionField=true` is the default behavior -- stripping any `\_version_` values found in the inner stream when converting the tuples to Solr documents to prevent any unexpected errors from xref:indexing-guide:partial-document-updates.adoc#optimistic-concurrency[optimistic concurrency] constraints.

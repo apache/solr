@@ -101,7 +101,7 @@ add(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then field
 == analyze
 
 The `analyze` function analyzes text using a Lucene/Solr analyzer and returns a list of tokens emitted by the analyzer.
-The `analyze` function can be called on its own or within the `<<stream-decorator-reference.adoc#select,select>>` and `<<stream-decorator-reference.adoc#cartesianproduct,cartesianProduct>>` streaming expressions.
+The `analyze` function can be called on its own or within the xref:stream-decorator-reference.adoc#select[`select`] and xref:stream-decorator-reference.adoc#cartesianproduct[`cartesianProduct`] streaming expressions.
 
 === analyze Parameters
 

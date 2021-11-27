@@ -69,7 +69,7 @@ When using `*`, consider adding `hl.requireFieldMatch=true`.
 Note that the field(s) listed here ought to have compatible text-analysis (defined in the schema) with field(s) referenced in the query to be highlighted.
 It may be necessary to modify `hl.q` and `hl.qparser` and/or modify the text analysis.
 +
-The following example uses the <<local-params.adoc#,local params>> syntax and <<edismax-query-parser.adoc#,the eDisMax parser>> to highlight fields in `hl.fl`:
+The following example uses the xref:local-params.adoc[local params] syntax and xref:edismax-query-parser.adoc[] to highlight fields in `hl.fl`:
 +
 [source,text]
 &hl.fl=field1 field2&hl.q={!edismax qf=$hl.fl v=$q}&hl.qparser=lucene&hl.requireFieldMatch=true
@@ -96,7 +96,7 @@ The default is the value of the `q` parameter (already parsed).
 |Optional |Default: _see description_
 |===
 +
-The <<query-syntax-and-parsers.adoc#,query parser>> to use for the `hl.q` query.
+The xref:query-syntax-and-parsers.adoc[query parser] to use for the `hl.q` query.
 It only applies when `hl.q` is set.
 +
 The default is the value of the `defType` parameter which in turn defaults to `lucene`.
@@ -247,7 +247,7 @@ When there is a match to the query term in that field, it will be included for e
 
 == Choosing a Highlighter
 
-Solr provides a `HighlightComponent` (a <<requesthandlers-searchcomponents.adoc#defining-search-components,`SearchComponent`>>) and it's in the default list of components for search handlers.
+Solr provides a `HighlightComponent` (a xref:configuration-guide:requesthandlers-searchcomponents.adoc#defining-search-components[`SearchComponent`]) and it's in the default list of components for search handlers.
 It offers a somewhat unified API over multiple actual highlighting implementations (or simply "highlighters") that do the business of highlighting.
 
 There are many parameters supported by more than one highlighter, and sometimes the implementation details and semantics will be a bit different, so don't expect identical results when switching highlighters.

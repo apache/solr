@@ -126,7 +126,7 @@ A spatial indexed field.
 |Optional |Default: `none`
 |===
 +
-If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-params.adoc#,local param>>_ determines what scores will be produced.
+If the query is used in a scoring context (e.g., as the main query in `q`), this xref:local-params.adoc[_local param_] determines what scores will be produced.
 Advanced option; not supported by PointType.
 +
 Valid values are:
@@ -227,11 +227,11 @@ The only spatial types which stand to benefit from this technique are those with
 There are four distance function queries:
 
 * `geodist`, see below, usually the most appropriate;
-*  <<function-queries.adoc#dist-function,`dist`>>, to calculate the p-norm distance between multi-dimensional vectors;
-* <<function-queries.adoc#hsin-function,`hsin`>>, to calculate the distance between two points on a sphere;
-* <<function-queries.adoc#sqedist-function,`sqedist`>>, to calculate the squared Euclidean distance between two points.
+*  xref:function-queries.adoc#dist-function[`dist`], to calculate the p-norm distance between multi-dimensional vectors;
+* xref:function-queries.adoc#hsin-function[`hsin`], to calculate the distance between two points on a sphere;
+* xref:function-queries.adoc#sqedist-function[`sqedist`], to calculate the squared Euclidean distance between two points.
 
-For more information about these function queries, see the section on <<function-queries.adoc#,Function Queries>>.
+For more information about these function queries, see the section on xref:function-queries.adoc[].
 
 === geodist
 
@@ -270,7 +270,7 @@ There are other ways to do it too, like using a `{!geofilt}` in each facet.query
 
 === Boost Nearest Results
 
-Using the <<dismax-query-parser.adoc#,DisMax>> or <<edismax-query-parser.adoc#,Extended DisMax>>, you can combine spatial search with the boost function to boost the nearest results:
+Using the xref:dismax-query-parser.adoc[] or xref:edismax-query-parser.adoc[], you can combine spatial search with the boost function to boost the nearest results:
 
 [source,text]
 &q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc
@@ -564,7 +564,7 @@ Assuming you name your field "geom", you can configure an optional cache in `sol
 ----
 
 When using this field type, you will likely _not_ want to mark the field as stored because it's redundant with the DocValues data and surely larger because of the formatting (be it WKT or GeoJSON).
-To retrieve the spatial data in search results from DocValues, use the <<document-transformers.adoc#geo-geospatial-formatter,`[geo]` transformer>>.
+To retrieve the spatial data in search results from DocValues, use the xref:document-transformers.adoc#geo-geospatial-formatter[`[geo]` transformer].
 
 === Heatmap Faceting
 
@@ -574,7 +574,7 @@ The grid cells are determined at index-time based on RPT's configuration.
 At facet counting time, the indexed cells in the region of interest are traversed and a grid of counters corresponding to each cell are incremented.
 Solr can return the data in a straight-forward 2D array of integers or in a PNG which compresses better for larger data sets but must be decoded.
 
-The heatmap feature is accessible both from Solr's standard faceting feature, plus the newer more flexible <<json-facet-api.adoc#heatmap-facet,JSON Facet API>>.
+The heatmap feature is accessible both from Solr's standard faceting feature and the xref:json-facet-api.adoc#heatmap-facet[JSON Facet API].
 We'll proceed now with standard faceting.
 As a part of faceting, it supports the `key` local parameter as well as excluding tagged filter queries, just like other types of faceting do.
 This allows multiple heatmaps to be returned on the same field with different filters.

@@ -39,7 +39,7 @@ be supported; the maximum is mostly limited only by memory.
 
 To configure the tagger, your Solr schema needs 2 fields:
 
-* A unique key field (see <<schema-elements.adoc#unique-key,Unique Key>> for how to define a unique key in your schema).
+* A unique key field (see xref:indexing-guide:schema-elements.adoc#unique-key[Unique Key] for how to define a unique key in your schema).
   Recommended field settings: set `docValues=true`.
 * A tag field, which must be a `TextField`, with `ConcatenateGraphFilterFactory` at the end of the index chain (not the query chain):
   Set `preservePositionIncrements=false` on that filter.

@@ -26,7 +26,7 @@ The only thing you need to do outside Solr is train your own ranking model.
 === Re-Ranking
 
 Re-Ranking allows you to run a simple query for matching documents and then re-rank the top N documents using the scores from a different, more complex query.
-This page describes the use of *LTR* complex queries, information on other rank queries included in the Solr distribution can be found on the <<query-re-ranking.adoc#,Query Re-Ranking>> page.
+This page describes the use of *LTR* complex queries, information on other rank queries included in the Solr distribution can be found in xref:query-re-ranking.adoc[].
 
 === Learning To Rank Models
 
@@ -91,7 +91,7 @@ The process of https://en.wikipedia.org/wiki/Feature_engineering[feature enginee
 
 ==== Feature Extraction
 
-The ltr contrib module includes a <<document-transformers.adoc#,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
+The ltr contrib module includes a xref:document-transformers.adoc[`[features]` transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
 
 ==== Feature Selection and Model Training
 
@@ -647,7 +647,7 @@ Assuming that you consider to use a large model placed at `/path/to/models/myMod
 }
 ----
 
-First, add the directory to Solr's resource paths with a <<libs.adoc#lib-directives-in-solrconfig,`<lib/>` directive>>:
+First, add the directory to Solr's resource paths with a xref:configuration-guide:libs.adoc#lib-directives-in-solrconfig[`<lib/>` directive]:
 
 [source,xml]
 ----
@@ -674,11 +674,11 @@ NOTE: No `"features"` are configured in `myWrapperModel` because the features of
 
 CAUTION: `<lib dir="/path/to/models" regex=".*\.json" />` doesn't work as expected in this case, because `SolrResourceLoader` considers given resources as JAR if `<lib />` indicates files.
 
-As an alternative to the above-described `DefaultWrapperModel`, it is possible to <<zookeeper-ensemble.adoc#increasing-the-file-size-limit,increase ZooKeeper's file size limit>>.
+As an alternative to the above-described `DefaultWrapperModel`, it is possible to xref:deployment-guide:zookeeper-ensemble.adoc#increasing-the-file-size-limit[increase ZooKeeper's file size limit].
 
 === Applying Changes
 
-The feature store and the model store are both <<managed-resources.adoc#,Managed Resources>>.
+The feature store and the model store are both xref:configuration-guide:managed-resources.adoc[].
 Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
 
 === LTR Examples

@@ -19,7 +19,7 @@
 This section exposes potential techniques which can be used for searching deeply nested documents, showcasing how more complex queries can be constructed using some of Solr's query parsers and document transformers.
 
 These features require `\_root_` and `\_nest_path_` to be declared in the schema.
-Please refer to <<indexing-nested-documents.adoc#, Indexing Nested Documents>> for details about schema and index configuration.
+Please refer to xref:indexing-guide:indexing-nested-documents.adoc[] for details about schema and index configuration.
 
 [NOTE]
 This section does not demonstrate faceting on nested documents.
@@ -36,7 +36,7 @@ include::indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-docume
 By default, documents that match a query do not include any of their nested children in the response.
 The `[child]` Doc Transformer Can be used enrich query results with the documents' descendants.
 
-For a detailed explanation of this transformer, and specifics on it's syntax & limitations, please refer to the section <<document-transformers.adoc#child-childdoctransformerfactory, [child] - ChildDocTransformerFactory>>.
+For a detailed explanation of this transformer, and specifics on it's syntax & limitations, please refer to the section xref:document-transformers.adoc#child-childdoctransformerfactory[[child] - ChildDocTransformerFactory].
 
 A simple query matching all documents with a description that includes "staplers":
 
@@ -105,7 +105,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
 === Child Query Parser
 
 The `{!child}` query parser can be used to search for the _descendent_ documents of parent documents matching a wrapped query.
-For a detailed explanation of this parser, see the section <<block-join-query-parser.adoc#block-join-children-query-parser, Block Join Children Query Parser>>.
+For a detailed explanation of this parser, see the section xref:block-join-query-parser.adoc#block-join-children-query-parser[Block Join Children Query Parser].
 
 Let's consider again the `description_t:staplers` query used above -- if we wrap that query in a `{!child}` query parser then instead of "matching" & returning the product level documents, we instead match all of the _descendent_ child documents of the original query:
 
@@ -145,7 +145,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
   }}
 ----
 
-In this example we've used `\*:* -\_nest_path_:*` as our <<block-join-query-parser.adoc#block-mask,`of` parameter>> to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
+In this example we've used `\*:* -\_nest_path_:*` as our xref:block-join-query-parser.adoc#block-mask[`of` parameter] to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
 
 By changing the `of` parameter to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.
 In the query below, we search for all descendants of `skus` (using an `of` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less then `50`:
@@ -186,7 +186,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 === Parent Query Parser
 
 The inverse of the `{!child}` query parser is the `{!parent}` query parser, which lets you search for the _ancestor_ documents of some child documents matching a wrapped query.
-For a detailed explanation of this parser, see the section <<block-join-query-parser.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>.
+For a detailed explanation of this parser, see the section xref:block-join-query-parser.adoc#block-join-parent-query-parser[Block Join Parent Query Parser].
 
 Let's first consider this example of searching for all "manual" type documents that have exactly `1` page:
 

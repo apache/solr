@@ -230,7 +230,7 @@ This can be computationally expensive.
 
 To see an example of TermVector component output, see the Wiki page: https://cwiki.apache.org/confluence/display/solr/TermVectorComponentExampleOptions
 
-For schema requirements, see also the section  <<field-properties-by-use-case.adoc#, Field Properties by Use Case>>.
+For schema requirements, see also the section xref:indexing-guide:field-properties-by-use-case.adoc[].
 
 == SolrJ and the Term Vector Component
 

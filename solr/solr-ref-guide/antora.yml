@@ -22,3 +22,4 @@ asciidoc:
     solr-docs-version: '9.0'
     idseparator: '-'
     idprefix: ''
+    toc: ~

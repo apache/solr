@@ -20,7 +20,7 @@ The Query Elevation Component lets you configure the top results for a given que
 
 This is sometimes called "sponsored search", "editorial boosting", or "best bets." This component matches the user query text to a configured map of top results.
 The text can be any string or non-string IDs, as long as it's indexed.
-Although this component will work with any QueryParser, it makes the most sense to use with <<dismax-query-parser.adoc#,DisMax>> or <<edismax-query-parser.adoc#,eDisMax>>.
+Although this component will work with any QueryParser, it makes the most sense to use with the xref:dismax-query-parser.adoc[] or the xref:edismax-query-parser.adoc[].
 
 The Query Elevation Component also supports distributed searching.
 
@@ -98,7 +98,7 @@ s|Required |Default: none
 |===
 +
 Path to the file that defines the elevation rules.
-This file must exist in the <<config-sets.adoc#,configset>>.
+This file must exist in the xref:configuration-guide:config-sets.adoc[configset].
 Unlike most configuration, this component will re-read its configuration if the file changed following a commit.
 However, that doesn't work in SolrCloud, and there has to be an actual index change for a commit to have an effect for it to be used as a way to pick up changes.
 In all cases, you can reload affected cores/collections to use any new configuration in a configset.
@@ -205,7 +205,7 @@ You can force set `useConfiguredElevatedOrder` during runtime by supplying it as
 
 === Document Transformers and the markExcludes Parameter
 
-The `[elevated]` <<document-transformers.adoc#,Document Transformer>> can be used to annotate each document with information about whether or not it was elevated:
+The `[elevated]` xref:document-transformers.adoc[Document Transformer] can be used to annotate each document with information about whether or not it was elevated:
 
 [source,text]
 http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&fl=id,[elevated]

@@ -22,7 +22,7 @@ In many applications the UI for these sorted results are displayed to the user i
 
 == Basic Pagination
 
-In Solr, this basic paginated searching is supported using the `start` and `rows` parameters, and performance of this common behaviour can be tuned by utilizing the <<caches-warming.adoc#query-result-cache,`queryResultCache`>> and adjusting the <<caches-warming.adoc#queryresultwindowsize-element,`queryResultWindowSize`>> configuration options based on your expected page sizes.
+In Solr, this basic paginated searching is supported using the `start` and `rows` parameters, and performance of this common behaviour can be tuned by utilizing the xref:configuration-guide:caches-warming.adoc#query-result-cache[`queryResultCache`] and adjusting the xref:configuration-guide:caches-warming.adoc#queryresultwindowsize-element[`queryResultWindowSize`] configuration options based on your expected page sizes.
 
 === Basic Pagination Examples
 
@@ -105,7 +105,7 @@ There are a few important constraints to be aware of when using `cursorMark` par
 
 . `cursorMark` and `start` are mutually exclusive parameters.
 * Your requests must either not include a `start` parameter, or it must be specified with a value of "```0```".
-. When using the <<common-query-parameters.adoc#timeallowed-parameter,`timeAllowed`>> request parameter, partial results may be returned.
+. When using the xref:common-query-parameters.adoc#timeallowed-parameter[`timeAllowed`] request parameter, partial results may be returned.
 If time expires before the search is complete, as indicated when the `responseHeader` includes `"partialResults": true`, some matching documents may have been skipped.
 Additionally, if `cursorMark` matches `nextCursorMark`, you cannot be sure that there are no more results.
 +
@@ -114,10 +114,10 @@ When the `responseHeader` no longer includes `"partialResults": true`, and `curs
 . `sort` clauses must include the uniqueKey field (either `asc` or `desc`).
 +
 If `id` is your uniqueKey field, then sort parameters like `id asc` and `name asc, id desc` would both work fine, but `name asc` by itself would not
-. Sorts including <<date-formatting-math.adoc#,Date Math>> based functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request.
+. Sorts including xref:indexing-guide:date-formatting-math.adoc[Date Math-based] functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request.
 This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
 +
-In this situation, choose & re-use a fixed value for the <<date-formatting-math.adoc#now,`NOW` request parameter>> in all of your cursor requests.
+In this situation, choose & re-use a fixed value for the xref:indexing-guide:date-formatting-math.adoc#now[`NOW` request parameter] in all of your cursor requests.
 
 Cursor mark values are computed based on the sort values of each document in the result, which means multiple documents with identical sort values will produce identical Cursor mark values if one of them is the last document on a page of results.
 In that situation, the subsequent request using that `cursorMark` would not know which of the documents with the identical mark values should be skipped.
@@ -288,4 +288,4 @@ while (true) {
 }
 ----
 
-TIP: For certain specialized cases, the <<exporting-result-sets.adoc#,/export handler>> may be an option.
+TIP: For certain specialized cases, the xref:exporting-result-sets.adoc[/export handler] may be an option.

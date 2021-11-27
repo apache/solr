@@ -58,7 +58,7 @@ is equivalent to:
 
 `q={!type=dismax qf=myfield}solr rocks`
 
-If no "type" is specified (either explicitly or implicitly) then the <<standard-query-parser.adoc#,lucene parser>> is used by default.
+If no "type" is specified (either explicitly or implicitly) then the xref:standard-query-parser.adoc[] is used by default.
 Thus:
 
 `fq={!df=summary}solr rocks`

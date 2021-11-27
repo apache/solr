@@ -24,12 +24,12 @@ In this case, the query term "DVD" appeared in all three categories, so Solr gro
 .Prefer Collapse & Expand instead
 [NOTE]
 ====
-Solr's <<collapse-and-expand-results.adoc#,Collapse and Expand>> feature is newer and mostly overlaps with Result Grouping.
+Solr's xref:collapse-and-expand-results.adoc[] feature is newer and mostly overlaps with Result Grouping.
 There are features unique to both, and they have different performance characteristics.
 That said, in most cases Collapse and Expand is preferable to Result Grouping.
 ====
 
-Result Grouping is separate from <<faceting.adoc#,Faceting>>.
+Result Grouping is separate from xref:faceting.adoc[].
 Though it is conceptually similar, faceting returns all relevant results and allows the user to refine the results based on the facet category.
 For example, if you search for "shoes" on a footwear retailer's e-commerce site, Solr would return all results for that query term, along with selectable facets such as "size," "color," "brand," and so on.
 
@@ -383,8 +383,8 @@ This is because one result for "memory" did not have a price assigned to it.
 
 == Distributed Result Grouping Caveats
 
-Grouping is supported for <<cluster-types.adoc#solrcloud-mode,distributed searches>>, with some caveats:
+Grouping is supported for xref:deployment-guide:cluster-types.adoc#solrcloud-mode[distributed searches], with some caveats:
 
 * Currently `group.func` is not supported in any distributed searches
 * `group.ngroups` and `group.facet` require that all documents in each group must be co-located on the same shard in order for accurate counts to be returned.
-<<solrcloud-shards-indexing.adoc#,Document routing via composite keys>> can be a useful solution in many situations.
+xref:deployment-guide:solrcloud-shards-indexing.adoc[Document routing via composite keys] can be a useful solution in many situations.

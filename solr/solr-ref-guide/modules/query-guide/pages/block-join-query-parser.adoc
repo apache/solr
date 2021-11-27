@@ -17,7 +17,7 @@
 // under the License
 
 There are two query parsers that support block joins.
-These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#,indexed as Nested Documents>>.
+These parsers allow indexing and searching for relational content that has been xref:indexing-guide:indexing-nested-documents.adoc[indexed as Nested Documents].
 
 The example usage of the query parsers below assumes the following documents have been indexed:
 
@@ -99,7 +99,7 @@ This is equivalent to:
 q={!child of=<blockMask>}+<someParents> +BRAND:Foo +NAME:Bar
 
 Notice "$" syntax in `filters` for referencing queries; comma-separated tags `excludeTags` allows to exclude certain queries by tagging.
-Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
+Overall the idea is similar to xref:faceting.adoc#tagging-and-excluding-filters[excluding `fq` in facets].
 Note, that filtering is applied to the subordinate clause (`<someParents>`), and the intersection result is joined to the children.
 
 === All Children Syntax
@@ -162,7 +162,7 @@ q={!parent which=<blockMask>}+<someChildren> +COLOR:Red +SIZE:XL
 
 Notice the "$" syntax in `filters` for referencing queries.
 Comma-separated tags in `excludeTags` allow excluding certain queries by tagging.
-Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
+Overall the idea is similar to xref:faceting.adoc#tagging-and-excluding-filters[excluding `fq` in facets].
 Note that filtering is applied to the subordinate clause (`<someChildren>`) first, and the intersection result is joined to the parents.
 
 === Scoring with the Block Join Parent Query Parser
