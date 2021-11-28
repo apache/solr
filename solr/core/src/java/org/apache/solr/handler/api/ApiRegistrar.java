@@ -19,6 +19,8 @@ package org.apache.solr.handler.api;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.api.*;
 
 /**
@@ -53,5 +55,17 @@ public class ApiRegistrar {
     apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
     // really this is a replica API, but since there's only 1 API on the replica path, it's included here for simplicity.
     apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
+  }
+
+  public static void registerNodeSpecificApis(ApiBag apiBag, CoreAdminHandler coreHandler,
+                                              InfoHandler infoHandler) {
+    apiBag.registerObject(new OverseerOperationAPI(coreHandler));
+    apiBag.registerObject(new RejoinLeaderElectionAPI(coreHandler));
+    apiBag.registerObject(new InvokeClassAPI(coreHandler));
+    apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
+    apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
+    apiBag.registerObject(new NodeLoggingAPI(infoHandler.getLoggingHandler()));
+    apiBag.registerObject(new NodeSystemInfoAPI(infoHandler.getSystemInfoHandler()));
+    apiBag.registerObject(new NodeHealthAPI(infoHandler.getHealthCheckHandler()));
   }
 }

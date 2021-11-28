@@ -16,12 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.solr.api.ApiBag.ReqHandlerToApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -29,10 +24,13 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.api.Api;
 
-import static java.util.Collections.singletonList;
-import static org.apache.solr.common.util.Utils.getSpec;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 public class InfoHandler extends RequestHandlerBase  {
@@ -108,21 +106,25 @@ public class InfoHandler extends RequestHandlerBase  {
     return Category.ADMIN;
   }
 
-  protected PropertiesRequestHandler getPropertiesHandler() {
+  public PropertiesRequestHandler getPropertiesHandler() {
     return (PropertiesRequestHandler) handlers.get("properties");
 
   }
 
-  protected ThreadDumpHandler getThreadDumpHandler() {
+  public ThreadDumpHandler getThreadDumpHandler() {
     return (ThreadDumpHandler) handlers.get("threads");
   }
 
-  protected LoggingHandler getLoggingHandler() {
+  public LoggingHandler getLoggingHandler() {
     return (LoggingHandler) handlers.get("logging");
   }
 
-  protected SystemInfoHandler getSystemInfoHandler() {
+  public SystemInfoHandler getSystemInfoHandler() {
     return (SystemInfoHandler) handlers.get("system");
+  }
+
+  public HealthCheckHandler getHealthCheckHandler() {
+    return (HealthCheckHandler) handlers.get("health");
   }
 
   protected void setPropertiesHandler(PropertiesRequestHandler propertiesHandler) {
@@ -141,6 +143,10 @@ public class InfoHandler extends RequestHandlerBase  {
     handlers.put("system", systemInfoHandler);
   }
 
+  protected void setHealthCheckHandler(HealthCheckHandler healthCheckHandler) {
+    handlers.put("health", healthCheckHandler);
+  }
+
   @Override
   public SolrRequestHandler getSubHandler(String subPath) {
     return this;
@@ -150,11 +156,6 @@ public class InfoHandler extends RequestHandlerBase  {
 
   @Override
   public Collection<Api> getApis() {
-    return singletonList(new ReqHandlerToApi(this, getSpec("node.Info")));
-  }
-
-  @Override
-  public Boolean registerV2() {
-    return Boolean.TRUE;
+    return Collections.emptyList();
   }
 }
