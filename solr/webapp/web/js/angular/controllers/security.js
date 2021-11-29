@@ -298,7 +298,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     $scope.manageUserRolesEnabled = false;
 
     Security.get({path: "authorization"}, function (data) {
-      console.log(">> refresh authorization: "+JSON.stringify(data));
+      //console.log(">> authorization: "+JSON.stringify(data));
       
       if (!data.authorization) {
         $scope.isSecurityAdminEnabled = false;
@@ -631,9 +631,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     var permName = $scope.selectedPredefinedPermission ? $scope.selectedPredefinedPermission : $scope.upsertPerm.name.trim();
     if (window.confirm("Confirm delete the '"+permName+"' permission?")) {
       var index = parseInt($scope.upsertPerm.index);
-      console.log(">> delete perm at index "+index+"; "+JSON.stringify($scope.upsertPerm));
       Security.post({path: "authorization"}, { "delete-permission": index }, function (data) {
-        console.log(">> delete perm at index "+index+" returned : "+JSON.stringify(data));
         $scope.togglePermDialog();
         $scope.refreshSecurityPanel();
       });

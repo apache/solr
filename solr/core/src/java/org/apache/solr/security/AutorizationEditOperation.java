@@ -176,7 +176,7 @@ enum AutorizationEditOperation {
   }
 
   static void setIndex(List<Map<String, Object>> permissionsCopy) {
-    AtomicInteger counter = new AtomicInteger(0);
+    final AtomicInteger counter = new AtomicInteger(0);
     permissionsCopy.forEach(map -> map.put(INDEX, counter.incrementAndGet()));
   }
 
