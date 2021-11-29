@@ -20,8 +20,10 @@ package org.apache.solr.client.solrj.request.beans;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
+import java.util.List;
+
 public class InvokeClassPayload implements ReflectMapWriter {
 
     @JsonProperty(required = true)
-    public String[] classes;
+    public List<String> classes;
 }

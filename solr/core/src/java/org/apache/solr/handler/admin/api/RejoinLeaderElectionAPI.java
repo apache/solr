@@ -68,6 +68,6 @@ public class RejoinLeaderElectionAPI {
             v1Params.put(CORE_NODE_NAME_PROP, v2Body.coreNodeName);
         }
 
-        coreAdminHandler.handleRequestBody(wrapParams(payload.getRequest(), v1Params), payload.getResponse());
+            coreAdminHandler.handleRequestBody(wrapParams(payload.getRequest(), v1Params), payload.getResponse());
     }
 }

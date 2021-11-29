@@ -21,14 +21,15 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.OverseerOperationPayload;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.OVERSEEROP;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
@@ -57,7 +58,7 @@ public class OverseerOperationAPI {
     @Command(name = OVERSEER_OP_CMD)
     public void joinOverseerLeaderElection(PayloadObj<OverseerOperationPayload> payload) throws Exception {
         final Map<String, Object> v1Params = payload.get().toMap(new HashMap<>());
-        v1Params.put(ACTION, OVERSEEROP);
+        v1Params.put(ACTION, CoreAdminParams.CoreAdminAction.OVERSEEROP.name().toLowerCase(Locale.ROOT));
         coreAdminHandler.handleRequestBody(wrapParams(payload.getRequest(), v1Params), payload.getResponse());
     }
 }

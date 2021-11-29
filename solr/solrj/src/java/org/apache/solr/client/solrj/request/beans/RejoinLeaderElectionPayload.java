@@ -22,6 +22,8 @@ import org.apache.solr.common.util.ReflectMapWriter;
 
 public class RejoinLeaderElectionPayload implements ReflectMapWriter {
 
+    // TODO It seems like most of these properties should be required, but it's hard to tell which ones are meant to be
+    //  required without that being specified on the v1 API or elsewhere
     @JsonProperty
     public String collection;
 

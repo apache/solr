@@ -21,16 +21,14 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.InvokeClassPayload;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVOKE;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
 /**
@@ -54,10 +52,13 @@ public class InvokeClassAPI {
     @Command(name = INVOKE_CMD)
     public void invokeClasses(PayloadObj<InvokeClassPayload> payload) throws Exception {
         final InvokeClassPayload v2Body = payload.get();
-        final Map<String, Object> v1Params = new HashMap<>();
-        v1Params.put(ACTION, INVOKE.name().toLowerCase(Locale.ROOT));
-        v1Params.put("class", v2Body.classes);
+        final ModifiableSolrParams v1Params = new ModifiableSolrParams(payload.getRequest().getParams());
+        v1Params.add(ACTION, INVOKE.name().toLowerCase(Locale.ROOT));
+        for (String clazzStr : v2Body.classes) {
+            v1Params.add("class", clazzStr);
+        }
 
-        coreAdminHandler.handleRequestBody(wrapParams(payload.getRequest(), v1Params), payload.getResponse());
+        payload.getRequest().setParams(v1Params);
+        coreAdminHandler.handleRequestBody(payload.getRequest(), payload.getResponse());
     }
 }
