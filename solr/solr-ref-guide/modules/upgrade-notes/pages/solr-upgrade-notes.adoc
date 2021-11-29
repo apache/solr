@@ -60,21 +60,22 @@ The `MultiAuthRuleBasedAuthorizationPlugin` is used when the `MultiAuthPlugin` i
 
 For information on configuring these plugins, see the following sections:
 
-* <<basic-authentication-plugin.adoc#combining-basic-authentication-with-other-schemes,Combining Basic Authentication with Other Schemes>>
-* <<rule-based-authorization-plugin.adoc#multiple-authorization-plugins,Multiple Authorization Plugins>>
+* xref:deployment-guide:basic-authentication-plugin.adoc#combining-basic-authentication-with-other-schemes[Combining Basic Authentication with Other Schemes]
+* xref:deployment-guide:rule-based-authorization-plugin.adoc#multiple-authorization-plugins[Multiple Authorization Plugins]
 
 
 *ZooKeeper chroot*
 
 It's now possible to create the ZooKeeper chroot at startup if it does not already exist.
-See the section <<zookeeper-ensemble.adoc#using-the-z-parameter-with-binsolr,Using the -z Parameter with bin/solr>> for an example.
+See the section xref:deployment-guide:zookeeper-ensemble.adoc#using-the-z-parameter-with-binsolr[Using the -z Parameter with bin/solr] for an example.
 
 *Other Changes*
 
 A few other minor changes are worth noting:
 
-* The `config-read` pre-defined permission now correctly governs access for various configuration-related APIs. See also <<rule-based-authorization-plugin.adoc#predefined-permissions,Predefined Permissions>>.
-* The S3BackupRepository supports configuring the AWS Profile, if necessary. See also <<backup-restore.adoc#s3backuprepository,S3BackupRepository>>.
+* The `config-read` pre-defined permission now correctly governs access for various configuration-related APIs.
+See also xref:deployment-guide:rule-based-authorization-plugin.adoc#predefined-permissions[Predefined Permissions].
+* The S3BackupRepository supports configuring the AWS Profile, if necessary. See also xref:deployment-guide:backup-restore.adoc#s3backuprepository[S3BackupRepository].
 * Additionally, backups will now properly succeed after SPLITSHARD operations, and will correctly handle incremental backup purges.
 * SolrJ now supports uploading configsets.
 
@@ -100,13 +101,13 @@ The designer screen provides a safe environment for you to:
 * Test how schema changes will impact query-time behavior.
 * Save your changes to a configset to use with a new collection.
 
-See the section <<schema-designer.adoc#,Schema Designer>> for full details.
+See the section xref:indexing-guide:schema-designer.adoc[] for full details.
 
 *Backups in S3*
 
 Following the redesign of backups in Solr 8.8 that allowed storage of incremental backups in Google Cloud environments, Solr 8.10 provides support for storing backups in Amazon S3 buckets.
 
-See the section <<backup-restore.adoc#s3backuprepository,S3BackupRepository>> for how to configure.
+See the section xref:deployment-guide:backup-restore.adoc#s3backuprepository[S3BackupRepository] for how to configure.
 
 *Security Admin UI*
 
@@ -115,7 +116,7 @@ Solr's Admin UI also got a new screen to support management of users, roles, and
 The new UI works when authentication and/or authorization has been enabled with `bin/solr auth` or by manually installing a `security.json` file.
 Before this, it provides a warning that your Solr instance is unsecured.
 
-See the section <<security-ui.adoc#,Security UI>> for details.
+See the section xref:deployment-guide:security-ui.adoc[] for details.
 
 *Solr SQL Improvements*
 
@@ -132,12 +133,12 @@ A number of improvements have been made in Solr's SQL functionality:
 A new option for the `shards.preference` parameter allows selection of nodes based on whether or not the replica is a leader.
 Now adding `shards.preference=replica.leader:false` will limit queries only to replicas which are not currently their shard's leader.
 
-See the section <<solrcloud-distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details and examples.
+See the section xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-preference-parameter[shards.preference Parameter] for details and examples.
 
 *Metrics & Prometheus Exporter*
 
 A new `expr` option in the Metrics API allows for more advanced filtering of metrics based on regular expressions.
-See the section <<metrics-reporting.adoc#metrics-api,Metrics API>> for examples.
+See the section xref:deployment-guide:metrics-reporting.adoc#metrics-api[Metrics API] for examples.
 
 The Prometheus Exporter's default `solr-exporter.config` has been improved to use the new `expr` option in the Metrics API to get a smaller set of metrics.
 The default metrics exported still include most metrics, but the configuration will be easier to trim as needed.
@@ -146,7 +147,7 @@ This should help provide performance improvements in busy clusters being monitor
 *ZooKeeper Credentials*
 
 ZooKeeper credentials can now be stored in a file whose location is defined with a system property instead of being passed in plain-text.
-See <<zookeeper-access-control.adoc#out-of-the-box-credential-implementations,Out of the Box Credential Implementations>> for how to set this up.
+See xref:deployment-guide:zookeeper-access-control.adoc#out-of-the-box-credential-implementations[Out of the Box Credential Implementations] for how to set this up.
 
 === Solr 8.9
 

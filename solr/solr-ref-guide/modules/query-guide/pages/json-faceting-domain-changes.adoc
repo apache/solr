@@ -226,7 +226,7 @@ When a collection contains xref:indexing-guide:indexing-nested-documents.adoc[ne
 Both of these options work similarly to the corresponding xref:block-join-query-parser.adoc[] by taking in a single String query that exclusively matches all parent documents in the collection.
 If `blockParent` is used, then the resulting domain will contain all parent documents of the children from the original domain.
 If `blockChildren` is used, then the resulting domain will contain all child documents of the parents from the original domain.
-Quite often facets over child documents needs to be counted in parent documents, this can be done by `uniqueBlock(\_root_)` as described in <<json-facet-api#uniqueblock-and-block-join-counts, Block Join Facet Counts>>.
+Quite often facets over child documents needs to be counted in parent documents, this can be done by `uniqueBlock(\_root_)` as described in xref:json-facet-api.adoc#uniqueblock-and-block-join-counts[Block Join Facet Counts].
 
 [source,json,subs="verbatim,callouts"]]
 ----

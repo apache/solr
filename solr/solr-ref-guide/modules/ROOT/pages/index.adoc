@@ -1,13 +1,5 @@
 = Apache Solr Reference Guide
-:page-children: getting-started, \
-    deployment-guide, \
-    configuration-guide, \
-    schema-indexing-guide, \
-    query-guide, \
-    solr-upgrade-notes
-:page-notitle:
 :page-show-toc: false
-:page-layout: home
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

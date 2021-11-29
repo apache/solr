@@ -54,7 +54,7 @@ This parser wraps a query that matches some parent documents and returns the chi
 The syntax for this parser is: `q={!child of=<blockMask>}<someParents>`.
 
 * The inner subordinate query string (`someParents`) must be a query that will match some parent documents
-* The `of` parameter must be a query string to use as a <<#block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
+* The `of` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
 
 The resulting query will match all documents which do _not_ match the `<blockMask>` query and are children (or descendents) of the documents matched by `<someParents>`.
 
@@ -74,7 +74,7 @@ We only get one document in response:
 
 [CAUTION]
 ====
-The query for `someParents` *MUST* match a strict subset of the documents matched by the <<#block-mask,Block Mask>> or your query may result in an Error:
+The query for `someParents` *MUST* match a strict subset of the documents matched by the <<block-mask,Block Mask>> or your query may result in an Error:
 
 [literal]
 Parent query must not match any docs besides parent filter.
@@ -114,7 +114,7 @@ This parser takes a query that matches child documents and returns their parents
 The syntax for this parser is similar to the `child` parser: `q={!parent which=<blockMask>}<someChildren>`.
 
 * The inner subordinate query string (`someChildren`) must be a query that will match some child documents
-* The `which` parameter must be a query string to use as a <<#block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
+* The `which` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
 
 The resulting query will match all documents which _do_ match the `<blockMask>` query and are parents (or ancestors) of the documents matched by `<someChildren>`.
 
@@ -135,7 +135,7 @@ We get this document in response:
 
 [CAUTION]
 ====
-The query for `someChildren` *MUST NOT* match any documents matched by the <<#block-mask,Block Mask>> or your query may result in an Error:
+The query for `someChildren` *MUST NOT* match any documents matched by the <<block-mask,Block Mask>> or your query may result in an Error:
 
 [literal]
 Child query must not match same docs with parent filter.
@@ -210,4 +210,4 @@ A similar problematic situation can arise when mixing parent/child documents wit
 ...then our simple `doc_type:parent` Block Mask would no longer be adequate.
  We would instead need to use `\*:* -doc_type:child` or `doc_type:(simple parent)` to prevent our "simple" document from mistakenly being treated as a "child" of an adjacent "parent" document.
 
-The <<searching-nested-documents#searching-nested-documents,Searching Nested Documents>> section contains more detailed examples of specifing Block Mask queries with non trivial hierarchicies of documents.
+The xref:query-guide:searching-nested-documents[] section contains more detailed examples of specifying Block Mask queries with non trivial hierarchies of documents.

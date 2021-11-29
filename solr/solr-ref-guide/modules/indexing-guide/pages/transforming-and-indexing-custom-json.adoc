@@ -332,7 +332,7 @@ Solr will automatically attempt to add the content of the field from the JSON in
 ====
 Documents will be rejected during indexing if the fields do not exist in the schema before indexing.
 So, if you are NOT using schemaless mode, you must pre-create all fields.
-If you are working in xref:configuration-guide:schemaless-mode.adoc[], however, fields that don't exist will be created on the fly with Solr's best guess for the field type.
+If you are working in xref:schemaless-mode.adoc[], however, fields that don't exist will be created on the fly with Solr's best guess for the field type.
 ====
 
 === Reusing Parameters in Multiple Requests

@@ -1,4 +1,5 @@
 = Searching Nested Child Documents
+:page-partial:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -23,13 +24,13 @@ Please refer to xref:indexing-guide:indexing-nested-documents.adoc[] for details
 
 [NOTE]
 This section does not demonstrate faceting on nested documents.
-For nested document faceting, please refer to the <<json-facet-api#uniqueblock-and-block-join-counts,Block Join Facet Counts>> section.
+For nested document faceting, please refer to the xref:json-facet-api.adoc#uniqueblock-and-block-join-counts[Block Join Facet Counts] section.
 
 == Query Examples
 
-For the upcoming examples, we'll assume an index containing the same documents covered in <<indexing-nested-documents#example-indexing-syntax,Indexing Nested Documents>>:
+For the upcoming examples, we'll assume an index containing the same documents covered in xref:indexing-guide:indexing-nested-documents.adoc#example-indexing-syntax[Indexing Nested Documents]:
 
-include::indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-documents]
+include::indexing-guide:page$indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-documents]
 
 === Child Doc Transformer
 
@@ -175,7 +176,7 @@ Note that in the above example, the `/` characters in the `\_nest_path_` were "d
 
 (You can see that only a single level of of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param).
 
-You may find it more convenient to use <<local-params#parameter-dereferencing,parameter references>> in conjunction with <<other-parsers#other-parsers,other parsers>> that do not treat `/` as a special character to express the same query in a more verbose form:
+You may find it more convenient to use xref:local-params.adoc#parameter-dereferencing[parameter references] in conjunction with xref:other-parsers[other parsers] that do not treat `/` as a special character to express the same query in a more verbose form:
 
 [source,text]
 ----
@@ -236,7 +237,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
   }}
 ----
 
-In this example we've used `\*:* -\_nest_path_:*` as our <<block-join-query-parser#block-mask,`which` parameter>> to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
+In this example we've used `\*:* -\_nest_path_:*` as our xref:block-join-query-parser.adoc#block-mask[`which` parameter] to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
 
 By changing the `which` parameter to match ancestors at specific `\_nest_path_` levels, we can change the type of ancestors we return.
 In the query below, we search for `skus` (using an `which` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) that are the ancestors of `manuals` with exactly `1` page:
@@ -261,7 +262,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 
 [CAUTION]
 ====
-Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `which` parameter, for the <<#double-escaping-nest-path-slashes,same reasons discussed above>> regarding the `{!child} pasers `of` parameter.
+Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `which` parameter, for the <<double-escaping-nest-path-slashes,same reasons discussed above>> regarding the `{!child} pasers `of` parameter.
 ====
 
 === Combining Block Join Query Parsers with Child Doc Transformer

@@ -1,4 +1,3 @@
-.Solr Upgrade Notes
 * xref:solr-upgrade-notes.adoc[]
 ** xref:major-changes-in-solr-9.adoc[]
 ** xref:major-changes-in-solr-8.adoc[]

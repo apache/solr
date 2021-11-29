@@ -632,7 +632,7 @@ daemonStream.close();
 
 The `delete` function wraps other functions and uses the `id` and `\_version_` values found to send the tuples to a SolrCloud collection as xref:indexing-guide:indexing-with-update-handlers.adoc#delete-operations[Delete By Id] commands.
 
-This is similar to the `<<#update,update()>>` function described below.
+This is similar to the `<<update,update()>>` function described below.
 
 === delete Parameters
 

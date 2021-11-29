@@ -140,7 +140,7 @@ There are two options for this parameter.
 For terms in the ASCII range, this will be alphabetically sorted.
 +
 The default is `count` if `facet.limit` is greater than 0, otherwise, the default is `index`.
-Note that the default logic is changed when <<#limiting-facet-with-certain-terms>>
+Note that the default logic is changed when <<Limiting Facet with Certain Terms>>.
 
 `facet.limit`::
 +
@@ -423,7 +423,7 @@ filter::: This method generates the ranges based on other facet.range parameters
 It will make use of the filterCache, so it will benefit of a cache large enough to contain all ranges.
 +
 dv::: This method iterates the documents that match the main query, and for each of them finds the correct range for the value.
-This method will make use of xref:docvalues.adoc[] (if enabled for the field) or fieldCache.
+This method will make use of xref:indexing-guide:docvalues.adoc[] (if enabled for the field) or fieldCache.
 The `dv` method is not supported for field type DateRangeField or when using xref:result-grouping.adoc[group.facets].
 --
 

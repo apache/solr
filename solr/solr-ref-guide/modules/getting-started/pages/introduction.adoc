@@ -26,7 +26,7 @@ Any platform capable of HTTP can talk to Solr.
 See xref:deployment-guide:client-apis.adoc[] for details on client APIs.
 
 Flexible schema configurations allow nearly any type of data to be stored in Solr.
-The xref:indexing-guide:schema-indexing-guide.adoc[] has more details on these options.
+The xref:indexing-guide:schema-elements.adoc[] has more details on these options.
 
 Solr offers support for the simplest keyword searching through to complex queries on multiple fields and faceted search results.
 Collapsing and clustering results offer compelling features for e-commerce and storefronts.

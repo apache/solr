@@ -137,7 +137,7 @@ Note that this transformer can be used even when the query used to match the res
 q=book_title:Solr&fl=id,[child childFilter=doc_type:chapter limit=100]
 ----
 
-If the documents involved include a `\_nest_path_` field, then it is used to re-create the hierarchical structure of the descendent documents using the original pseudo-field names the documents were indexed with, otherwise the descendent documents are returned as a flat list of <<indexing-nested-documents#indexing-anonymous-children,anonymous children>>.
+If the documents involved include a `\_nest_path_` field, then it is used to re-create the hierarchical structure of the descendent documents using the original pseudo-field names the documents were indexed with, otherwise the descendent documents are returned as a flat list of xref:indexing-guide:indexing-nested-documents#indexing-anonymous-children[anonymous children].
 
 `childFilter`::
 +

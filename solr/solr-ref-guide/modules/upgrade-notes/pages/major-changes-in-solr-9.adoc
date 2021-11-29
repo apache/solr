@@ -44,7 +44,7 @@ Also removes support for cluster property `legacyCloud` (as if always false now)
 Otherwise, SolrJ will not be able to connect to the cluster once it has upgraded to Solr 9.
 Once you have upgraded all Solr clusters that the client is connecting to, you can upgrade the SolrJ client to 9.x.
 
-* If you're using Solr in standalone mode with the <<query-elevation-component.adoc#,Query Elevation Component>> with it's elevation file in the data directory, you'll have to move it to the <<config-sets.adoc#,Configset>> instead.
+* If you're using Solr in standalone mode with the xref:query-guide:query-elevation-component.adoc[] with it's elevation file in the data directory, you'll have to move it to the xref:configuration-guide:config-sets.adoc[Configset] instead.
 The only reason QEC supported the data directory was to support loading its changes on a commit instead of a more expensive core reload.
 That feature now works from the configset dir too.
 SolrCloud doesn't support that but may sometime.
@@ -128,14 +128,14 @@ Any custom response writer extending `TextResponseWriter` will need to implement
 
 === solr.xml maxBooleanClauses now enforced recursively
 
-Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
+Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global xref:configuration-guide:configuring-solr-xml#global-maxbooleanclauses[`maxBooleanClauses`] option is enforced.
 
 In previous versios of Solr, this option was a hard limit on the number of clauses in any `BooleanQuery` object - but it was only enforced for the _direct_ clauses.
 Starting with Solr 9, this global limit is now also enforced against the total number of clauses in a _nested_ query structure.
 
 Users who upgrade from prior versions of Solr may find that some requests involving complex internal query structures (Example: long query strings using `edismax` with many `qf` and `pf` fields that include query time synonym expansion) which worked in the past now hit this limit and fail.
 
-User's in this situation are advised to consider the complexity f their queries/configuration, and increase the value of `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` if warranted.
+User's in this situation are advised to consider the complexity f their queries/configuration, and increase the value of xref:configuration-guide:configuring-solr-xml#global-maxbooleanclauses[`maxBooleanClauses`] if warranted.
 
 === Log4J configuration & Solr MDC values
 
@@ -174,7 +174,7 @@ What percentage of them get reported to a tracing server is up to you.
 This change is backward incompatible.
 If you need the pre-9.0 default behavior, you need to explicitly set `blockUnknown:false` in `security.json`.
 
-* The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see <<configuring-solr-xml.adoc#allow-urls, Format of solr.allowUrls>> documentation.
+* The allow-list defining allowed URLs for the `shards` parameter is not in the `shardHandler` configuration anymore. It is defined by the `allowUrls` top-level property of the `solr.xml` file. For more information, see xref:configuration-guide:configuring-solr-xml.adoc#allow-urls[Format of solr.allowUrls] documentation.
 
 * SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
 Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include (solr.in.sh/solr.in.cmd) file.

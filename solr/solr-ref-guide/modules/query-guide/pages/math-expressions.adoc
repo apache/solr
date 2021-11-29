@@ -1,5 +1,5 @@
 = Streaming Expressions and Math Expressions
-:toc!:
+:page-toclevels: 0
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -47,3 +47,4 @@ image::math-expressions/searchiris.png[]
 | *xref:graph.adoc[]*: Bipartite graphs, in-degree centrality, graph recommenders, temporal graphs and event correlation.
 | *xref:computational-geometry.adoc[]*: Convex Hulls and Enclosing Disks.
 | *xref:logs.adoc[]*: Solr log analytics and visualization.
+|===

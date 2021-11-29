@@ -198,7 +198,7 @@ q=cheese
 bf=div(1,sum(1,price))^1.5
 ----
 
-Specifying functions with the bf parameter is essentially just shorthand for using the `bq` parameter (<<#bq-bf-shortcomings,with the same shortcomings>>) combined with the `{!func}` parser -- with the addition of the simplified "query boost" syntax.
+Specifying functions with the bf parameter is essentially just shorthand for using the `bq` parameter (<<bq-bf-shortcomings,with the same shortcomings>>) combined with the `{!func}` parser -- with the addition of the simplified "query boost" syntax.
 
 For example, the two `bf` parameters listed below, are completely equivalent to the two `bq` parameters below:
 

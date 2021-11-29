@@ -80,7 +80,7 @@ For more information on `solrconfig.xml`, see xref:configuring-solrconfig-xml.ad
 The schema defines a document as a collection of fields.
 You can define both the field types and the fields themselves.
 Field type definitions are powerful and include information about how Solr processes incoming field values and query values.
-For more information on Solr schemas, see xref:indexing-guide:solr-schema.adoc[].
+For more information on Solr schemas, see xref:indexing-guide:schema-elements.adoc[].
 ** `data/` contains index files.
 
 Note that the SolrCloud example does not include a `conf` directory for each Solr Core (so there is no `solrconfig.xml` or schema file).

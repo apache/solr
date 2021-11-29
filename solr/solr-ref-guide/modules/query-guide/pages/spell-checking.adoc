@@ -173,7 +173,7 @@ The results are combined and collations can contain a mix of corrections from bo
 
 === Add It to a Request Handler
 
-Queries will be sent to a xref:configuration-guide:request-handlers-and-search-components.adoc[request handler].
+Queries will be sent to a xref:configuration-guide:requesthandlers-searchcomponents.adoc[request handler].
 If every request should generate a suggestion, then you would add the following to the `requestHandler` that you are using:
 
 [source,xml]

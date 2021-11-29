@@ -200,7 +200,7 @@ The brackets around a query determine its inclusiveness.
 Here's an example: `count:{1 TO 10]`
 
 Wildcards, `*`, can also be used for either or both endpoints to specify an open-ended range query.
-This is a <<#differences-between-lucenes-classic-query-parser-and-solrs-standard-query-parser,divergence from Lucene's Classic Query Parser>>.
+This is a <<differences-between-lucenes-classic-query-parser-and-solrs-standard-query-parser,divergence from Lucene's Classic Query Parser>>.
 
 * `field:[* TO 100]` finds all field values less than or equal to 100.
 * `field:[100 TO *]` finds all field values greater than or equal to 100.
@@ -253,7 +253,7 @@ Example:
 
 == Querying Specific Fields
 
-Data indexed in Solr is organized in xref:indexing-guide:fields.adoc[fields], which are defined in xref:indexing-guide:schema-element.adoc[a schema].
+Data indexed in Solr is organized in xref:indexing-guide:fields.adoc[fields], which are defined in xref:indexing-guide:schema-elements.adoc[a schema].
 Searches can take advantage of fields to add precision to queries.
 For example, you can search for a term only in a specific field, such as a title field.
 

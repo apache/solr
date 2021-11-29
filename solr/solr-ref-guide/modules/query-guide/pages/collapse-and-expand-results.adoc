@@ -107,7 +107,7 @@ The `top_fc` hint is only available when collapsing on String fields.
 `top_fc` will also result in having the collapsed field cached in memory twice if it's used for faceting or sorting.
 For very high cardinality (high distinct count) fields, `top_fc` may not fare so well.
 +
-* `block`: This indicates that the field being collapsed on is suitable for the optimzed <<#block-collapsing,Block Collapse>> logic described below.
+* `block`: This indicates that the field being collapsed on is suitable for the optimized <<Block Collapsing>> logic described below.
 
 `size`::
 +

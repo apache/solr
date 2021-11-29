@@ -356,7 +356,7 @@ By default, the `/sql` request handler is configured as an implicit handler, mea
 
 ==== Authorization for SQL Requests
 
-If your Solr cluster is configured to use the xref:rule-based-authorization-plugin.adoc[],
+If your Solr cluster is configured to use the xref:deployment-guide:rule-based-authorization-plugin.adoc[],
 then you need to grant `GET` and `POST` permissions on the `/sql`, `/select`, and `/export` endpoints for all collections you intend to execute SQL queries against.
 The `/select` endpoint is used for `LIMIT` queries, whereas the `/export` handler is used for queries without a `LIMIT`, so in most cases, you'll want to grant access to both.
 If you're using a worker collection for the `/sql` handler, then you only need to grant access to the `/sql` endpoint for the worker collection and not the collections in the data tier.
