@@ -27,7 +27,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
@@ -361,9 +360,4 @@ class EmptyRequestHandler extends RequestHandlerBase
   }
 
   @Override public String getDescription() { return null; }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    return Name.ALL;
-  }
 }
