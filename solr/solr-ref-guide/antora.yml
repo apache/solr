@@ -1,7 +1,7 @@
 name: solr
-# Note for future: We can assign the version based on parsing the branch name:
+# Assigns the version based on parsing the branch name:
 # 'branch_(*)_(*)': $1.$2' (or $1_$2)
-# This could also be on the content source in playbook.yml
+# This could also be put in the content source in playbook.yml
 version:
    '*/(*)': '$1'
 prerelease: true
@@ -16,10 +16,19 @@ nav:
 - modules/upgrade-notes/upgrade-nav.adoc
 asciidoc:
   attributes:
+    idseparator: '-'
+    idprefix: ''
     solr-javadocs: https://solr.apache.org/docs/9_0_0/
     lucene-javadocs: https://lucene.apache.org/core/9_0_0/
     solr-root-path: /Users/cass/solr-repos/solr-fork/solr/
+    java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
+    # Hardcode some version attributes for now TODO
+    # This will make some constructed links be 404 since they aren't parsed
     solr-docs-version: '9.0'
-    idseparator: '-'
-    idprefix: ''
-    toc: ~
+    ivy-tika-version: '${ivyTika}'
+    ivy-opennlp-version: '1.9.1'
+    ivy-commons-codec-version: '1.13'
+    ivy-zookeeper-version: '3.7.0'
+    ivy-log4j-version: '2.14.1'
+    ivy-hadoop-version: '3.2.0'
+    ivy-dropwizard-version: '4.1.5'
