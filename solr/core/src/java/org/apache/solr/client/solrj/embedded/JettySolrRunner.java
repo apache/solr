@@ -23,6 +23,7 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -69,6 +70,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminOperation;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -113,7 +115,7 @@ public class JettySolrRunner {
   // NOTE: needs to be larger than SolrHttpClient.threadPoolSweeperMaxIdleTime
   private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 260000;
 
-  Server server;
+  private Server server;
 
   volatile FilterHolder dispatchFilter;
   volatile FilterHolder debugFilter;
@@ -142,6 +144,8 @@ public class JettySolrRunner {
   private String host;
 
   private volatile boolean started = false;
+
+  private CoreContainerProvider coreContainerProvider;
 
   public static class DebugFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -364,7 +368,9 @@ public class JettySolrRunner {
       }
 
       @Override
-      public void lifeCycleStopped(LifeCycle arg0) {}
+      public synchronized void lifeCycleStopped(LifeCycle arg0) {
+        coreContainerProvider.close();
+      }
 
       @Override
       public void lifeCycleStarting(LifeCycle arg0) {
@@ -372,8 +378,7 @@ public class JettySolrRunner {
       }
 
       @Override
-      public void lifeCycleStarted(LifeCycle arg0) {
-
+      public synchronized void lifeCycleStarted(LifeCycle arg0) {
         jettyPort = getFirstConnectorPort();
         int port = jettyPort;
         if (proxyPort != -1) port = proxyPort;
@@ -382,7 +387,8 @@ public class JettySolrRunner {
 
         root.getServletContext().setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
         root.getServletContext().setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
-
+        coreContainerProvider = new CoreContainerProvider();
+        coreContainerProvider.init(root.getServletContext());
         log.info("Jetty properties: {}", nodeProperties);
 
         debugFilter = root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST) );
@@ -455,10 +461,16 @@ public class JettySolrRunner {
    * @return the {@link CoreContainer} for this node
    */
   public CoreContainer getCoreContainer() {
-    if (getSolrDispatchFilter() == null || getSolrDispatchFilter().getCores() == null) {
-      return null;
+    try {
+      if (getSolrDispatchFilter() == null || getSolrDispatchFilter().getCores() == null) {
+        return null;
+      }
+      return getSolrDispatchFilter().getCores();
+    } catch (UnavailableException e) {
+      // Since this is only used in tests, this is just a straight-up failure
+      // If this is converted for other use something else might be better here
+      throw new RuntimeException(e);
     }
-    return getSolrDispatchFilter().getCores();
   }
 
   public String getNodeName() {
@@ -500,7 +512,7 @@ public class JettySolrRunner {
    *
    * @throws Exception if an error occurs on startup
    */
-  public void start(boolean reusePort) throws Exception {
+  public synchronized void start(boolean reusePort) throws Exception {
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
@@ -527,7 +539,7 @@ public class JettySolrRunner {
       }
       synchronized (JettySolrRunner.this) {
         int cnt = 0;
-        while (!waitOnSolr || !dispatchFilter.isRunning() || getCoreContainer() == null) {
+        while (!waitOnSolr || !dispatchFilter.isRunning() ) {
           this.wait(100);
           if (cnt++ == 15) {
             throw new RuntimeException("Jetty/Solr unresponsive");
@@ -561,7 +573,7 @@ public class JettySolrRunner {
 
 
   private void setProtocolAndHost() {
-    String protocol = null;
+    String protocol;
 
     Connector[] conns = server.getConnectors();
     if (0 == conns.length) {
@@ -575,7 +587,7 @@ public class JettySolrRunner {
     this.host = c.getHost();
   }
 
-  private void retryOnPortBindFailure(int portRetryTime, int port) throws Exception, InterruptedException {
+  private void retryOnPortBindFailure(int portRetryTime, int port) throws Exception {
     TimeOut timeout = new TimeOut(portRetryTime, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     int tryCnt = 1;
     while (true) {
@@ -625,34 +637,12 @@ public class JettySolrRunner {
    *
    * @throws Exception if an error occurs on shutdown
    */
-  public void stop() throws Exception {
+  public synchronized void  stop() throws Exception {
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String,String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
       Filter filter = dispatchFilter.getFilter();
-
-      // we want to shutdown outside of jetty cutting us off
-      SolrDispatchFilter sdf = getSolrDispatchFilter();
-      ExecutorService customThreadPool = null;
-      if (sdf != null) {
-        customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
-
-        sdf.closeOnDestroy(false);
-//        customThreadPool.submit(() -> {
-//          try {
-//            sdf.close();
-//          } catch (Throwable t) {
-//            log.error("Error shutting down Solr", t);
-//          }
-//        });
-        try {
-          sdf.close();
-        } catch (Throwable t) {
-          log.error("Error shutting down Solr", t);
-        }
-      }
-
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
@@ -687,12 +677,13 @@ public class JettySolrRunner {
         rte.stop();
 
         TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-        timeout.waitFor("Timeout waiting for reserved executor to stop.", ()
-            -> rte.isStopped());
+        timeout.waitFor("Timeout waiting for reserved executor to stop.", rte::isStopped);
       }
 
-      if (customThreadPool != null) {
-        ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+      // we want to shutdown outside of jetty cutting us off
+      SolrDispatchFilter sdf = getSolrDispatchFilter();
+      if (sdf != null) {
+        ExecutorUtil.shutdownAndAwaitTermination(getJettyShutDownThreadPool());
       }
 
       do {
@@ -714,6 +705,10 @@ public class JettySolrRunner {
         MDC.clear();
       }
     }
+  }
+
+  private ExecutorService getJettyShutDownThreadPool() {
+    return ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
   }
 
   public void outputMetrics(File outputDirectory, String fileName) throws IOException {
@@ -750,12 +745,11 @@ public class JettySolrRunner {
         NamedList<Object> coreStatus = CoreAdminOperation.getCoreStatus(getCoreContainer(), core.getName(), false);
         core.withSearcher(solrIndexSearcher -> {
           SimpleOrderedMap<Object> lukeIndexInfo = LukeRequestHandler.getIndexInfo(solrIndexSearcher.getIndexReader());
-          @SuppressWarnings({"unchecked", "rawtypes"})
           Map<String,Object> indexInfoMap = coreStatus.toMap(new LinkedHashMap<>());
           indexInfoMap.putAll(lukeIndexInfo.toMap(new LinkedHashMap<>()));
           pw.println(JSONUtil.toJSON(indexInfoMap, 2));
 
-          pw.println("");
+          pw.println();
           return null;
         });
       }
@@ -897,7 +891,12 @@ public class JettySolrRunner {
   private void waitForLoadingCoresToFinish(long timeoutMs) {
     if (dispatchFilter != null) {
       SolrDispatchFilter solrFilter = (SolrDispatchFilter) dispatchFilter.getFilter();
-      CoreContainer cores = solrFilter.getCores();
+      CoreContainer cores;
+      try {
+        cores = solrFilter.getCores();
+      } catch (UnavailableException e) {
+        throw new IllegalStateException("The CoreContainer is unavailable!");
+      }
       if (cores != null) {
         cores.waitForLoadingCoresToFinish(timeoutMs);
       } else {
