@@ -451,6 +451,8 @@ Bug Fixes
 
 * SOLR-13900: Reset index values on authorization rules after deleting by index (Timothy Potter)
 
+* SOLR-15813: Schema designer not handling `update.autoCreateFields` stored as a string (vs. boolean) in the config overlay (Timothy Potter)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
