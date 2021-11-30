@@ -35,12 +35,14 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
-  /**
-   * Feature flag to enable storing the 'base_url' property; base_url will not be stored as of Solr 9.x.
-   * Installations that use an older (pre-8.8) SolrJ against a 8.8.0 or newer server will need to set this system
-   * property to 'true' to avoid NPEs when reading cluster state from Zookeeper, see SOLR-15145.
+  /*
+   * Un-used feature flag (do not use) to enable storing the 'base_url' property; originally introduced in SOLR-12182 in an effort
+   * to allow auto-migration from non-SSL to SSL enabled cluster. However, that prevents rolling upgrades from stored to non-stored
+   * as the nodes still running the older code that expects it to be stored will get NPEs.
+   * Also, not storing base_url means a client application cannot have different urlSchemes for multiple clusters concurrently,
+   * which was also raised as a concern on SOLR-12182. This flag was set to true as part of the fix for SOLR-15587.
    */
-  static final boolean STORE_BASE_URL = Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "false"));
+  static final boolean STORE_BASE_URL = true; // Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "true"));
 
   protected final Map<String,Object> propMap;
 
@@ -49,12 +51,6 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public ZkNodeProps(Map<String,Object> propMap) {
     this.propMap = new HashMap<>(propMap); // We need propMap to be mutable
-
-    // don't store base_url if we have a node_name to recompute from when we read back from ZK
-    // sub-classes that know they need a base_url (Replica) can eagerly compute in their ctor
-    if (!STORE_BASE_URL && this.propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
-      this.propMap.remove(ZkStateReader.BASE_URL_PROP);
-    }
 
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
@@ -129,11 +125,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public void write(JSONWriter jsonWriter) {
     // don't write out the base_url if we have a node_name
-    if (!STORE_BASE_URL && propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
-      final Map<String, Object> filtered = new HashMap<>(propMap);
-      filtered.remove(ZkStateReader.BASE_URL_PROP);
-      jsonWriter.write(filtered);
-    } else if (STORE_BASE_URL && propMap.get(ZkStateReader.BASE_URL_PROP) == null && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
+    if (propMap.get(ZkStateReader.BASE_URL_PROP) == null && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
       // this is for back-compat with older SolrJ
       final Map<String, Object> addBaseUrl = new HashMap<>(propMap);
       addBaseUrl.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName((String)propMap.get(ZkStateReader.NODE_NAME_PROP)));

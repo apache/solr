@@ -154,7 +154,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, State.ACTIVE.toString())));
     validate();
 
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
+    propMap.putIfAbsent(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   // clone constructor
@@ -173,7 +173,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     }
     readPrs();
     validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
+    propMap.putIfAbsent(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   /**
@@ -197,7 +197,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     type = Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
     if(state == null) state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, "active")));
     validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
+    propMap.putIfAbsent(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   private void readPrs() {
@@ -371,11 +371,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
       // propMap takes precedence because it's mutable and we can't control its
       // contents, so a third party may override some declared fields
       for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        final String key = e.getKey();
-        // don't store the base_url as we can compute it from the node_name
-        if (!BASE_URL_PROP.equals(key)) {
-          writer.put(e.getKey(), e.getValue(), p);
-        }
+        writer.put(e.getKey(), e.getValue(), p);
       }
 
       writer.put(ZkStateReader.CORE_NAME_PROP, core, p)

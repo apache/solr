@@ -61,7 +61,6 @@ public enum UrlScheme {
    */
   public String applyUrlScheme(final String url) {
     Objects.requireNonNull(url, "URL must not be null!");
-
     // heal an incorrect scheme if needed, otherwise return null indicating no change
     final int at = url.indexOf("://");
     return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);

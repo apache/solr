@@ -98,6 +98,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.UrlScheme.HTTP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
@@ -899,8 +900,13 @@ public class ZkController implements Closeable {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
 
+      // Make the urlScheme globally accessible (on the server-side only)
+      // note: Can't read cluster properties until createClusterState ^ is called
+      final String urlSchemeFromClusterProp = zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, HTTP);
+      UrlScheme.INSTANCE.setUrlScheme(urlSchemeFromClusterProp);
+
       // this must happen after zkStateReader has initialized the cluster props
-      this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
+      this.baseURL = Utils.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
 
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
