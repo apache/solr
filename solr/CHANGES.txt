@@ -409,6 +409,11 @@ Other Changes
 
 * SOLR-15808: [Docker] The jattach tool is now installed with apt (janhoy)
 
+* SOLR-15809: Get rid of blacklist/whitelist terminology
+  JWTAuthPlugin parameter 'algWhitelist' is now 'algAllowlist'
+  Environment variables SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST are no longer supported, but replaced with SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST.
+  (janhoy)
+
 * SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
 
 Bug Fixes
