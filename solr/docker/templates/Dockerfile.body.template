@@ -37,9 +37,6 @@ RUN set -ex; \
 
 LABEL maintainer="The Apache Lucene/Solr Project"
 LABEL repository="https://github.com/apache/lucene-solr"
-  
-# Override the default github URL to provide a mirror for github releases.
-ARG GITHUB_URL=github.com
 
 RUN set -ex; \
     apt-get update; \

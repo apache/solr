@@ -411,8 +411,10 @@ Other Changes
 
 * SOLR-15809: Get rid of blacklist/whitelist terminology
   JWTAuthPlugin parameter 'algWhitelist' is now 'algAllowlist'
-  Environment variables `SOLR_IP_WHITELIST` and `SOLR_IP_BLACKLIST` are no longer supported, but replaced with `SOLR_IP_ALLOWLIST` and `SOLR_IP_DENYLIST`.
+  Environment variables SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST are no longer supported, but replaced with SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST.
   (janhoy)
+
+* SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
 
 Bug Fixes
 ---------------------
@@ -451,6 +453,10 @@ Bug Fixes
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
 
 * SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
+
+* SOLR-13900: Reset index values on authorization rules after deleting by index (Timothy Potter)
+
+* SOLR-15813: Schema designer not handling `update.autoCreateFields` stored as a string (vs. boolean) in the config overlay (Timothy Potter)
 
 ==================  8.11.0 ==================
 
