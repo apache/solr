@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -517,32 +518,27 @@ public class Assign {
 
       List<ReplicaPosition> result = new ArrayList<>();
 
-
-      boolean hasCrawledReplicas = false;
       HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount = new HashMap<>();
-      int i = 0;
+      addNodeNameVsShardCount(clusterState, nodeNameVsShardCount);
       for (AssignRequest assignRequest : assignRequests) {
-        List<String> nodeList = assignRequest.nodes;
+        Collection<ReplicaCount> replicaCounts = nodeNameVsShardCount.values();
 
-        // if nodelist was empty, this map will be empty too. (passing null above however gets a full map)
-        if (nodeList == null || nodeList.isEmpty()) {
-          if (!hasCrawledReplicas) {
-            // Add to the existing list, in case previous assignRequests used a static list, and added counts for their new replicas
-            addNodeNameVsShardCount(clusterState, nodeNameVsShardCount);
-            hasCrawledReplicas = true;
-          }
-          ArrayList<Assign.ReplicaCount> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
-          sortedNodeList.sort(Comparator.<ReplicaCount>comparingInt(rc -> rc.weight(assignRequest.collectionName)).thenComparing(ReplicaCount::nodeName));
-          nodeList = sortedNodeList.stream().map(ReplicaCount::nodeName).collect(Collectors.toList());
-        } else {
-          // If there is a provided node list, make sure that all are "live"
-          checkLiveNodes(nodeList, clusterState);
+        if (assignRequest.nodes != null && !assignRequest.nodes.isEmpty()) {
+          // Throw an error if there are any non-live nodes.
+          checkLiveNodes(assignRequest.nodes, clusterState);
+          HashSet<String> nodeSet = new HashSet<>(assignRequest.nodes);
+          replicaCounts = replicaCounts.stream().filter(rc -> nodeSet.contains(rc.nodeName)).collect(Collectors.toList());
+        } else if (nodeNameVsShardCount.values().isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are no live nodes in the cluster");
         }
 
-        // Throw an error if there aren't any live nodes.
-        checkAnyLiveNodes(nodeList, solrCloudManager.getClusterStateProvider().getClusterState());
-
         for (String aShard : assignRequest.shardNames) {
+          // Reset the ordering of the nodes for each shard, using the replicas added in the previous shards and assign requests
+          List<String> nodeList = replicaCounts.stream()
+                  .sorted(Comparator.<ReplicaCount>comparingInt(rc -> rc.weight(assignRequest.collectionName)).thenComparing(ReplicaCount::nodeName))
+                  .map(ReplicaCount::nodeName)
+                  .collect(Collectors.toList());
+          int i = 0;
           for (Map.Entry<Replica.Type, Integer> e : countsPerReplicaType(assignRequest).entrySet()) {
             for (int j = 0; j < e.getValue(); j++) {
               String assignedNode = nodeList.get(i % nodeList.size());

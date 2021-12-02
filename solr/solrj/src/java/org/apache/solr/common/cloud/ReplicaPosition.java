@@ -18,6 +18,8 @@
 package org.apache.solr.common.cloud;
 
 
+import java.util.Comparator;
+
 public class ReplicaPosition implements Comparable<ReplicaPosition> {
   public final String collection;
   public final String shard;
@@ -39,11 +41,16 @@ public class ReplicaPosition implements Comparable<ReplicaPosition> {
     this.node = node;
   }
 
+  private static final Comparator<ReplicaPosition> comparator =
+          Comparator
+                  .<ReplicaPosition,String>comparing(rp -> rp.collection)
+                  .thenComparing(rp -> rp.shard)
+                  .thenComparing(rp -> rp.type)
+                  .thenComparingInt(rp -> rp.index);
+
   @Override
   public int compareTo(ReplicaPosition that) {
-    //this is to ensure that we try one replica from each shard first instead of
-    // all replicas from same shard
-    return Integer.compare(index, that.index);
+    return comparator.compare(this, that);
   }
 
   @Override
