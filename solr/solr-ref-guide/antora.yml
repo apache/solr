@@ -2,6 +2,7 @@ name: solr
 # Assigns the version based on parsing the branch name:
 # 'branch_(*)_(*)': $1.$2' (or $1_$2)
 # This could also be put in the content source in playbook.yml
+# This doesn't really work on Jenkins since it calls all checkouts HEAD
 version:
    '*/(*)': '$1'
 prerelease: true

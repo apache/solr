@@ -295,5 +295,6 @@ abstract class PrepareSources extends DefaultTask {
 
 antora {
   playbookFile = file("playbook.yml")
-  antoraVersion = "3.0.0-beta.3"
+  antoraVersion = "3.0.0-beta.4"
+  arguments = ["--generator @antora/site-generator"]
 }
