@@ -45,7 +45,7 @@ limitations under the License.
         </label>
         <div class="multiple" id="fq">
           <div class="row clearfix" ng-repeat="filter in filters">
-            <input type="text" ng-model="filter.fq" name="fq" title="Filter query.">
+            <textarea type="text" ng-model="filter.fq" name="fq" title="Filter query."></textarea>
             <div class="buttons">
               <a class="rem" ng-click="removeFilter($index)"><span></span></a>
               <a class="add" ng-click="addFilter($index)"><span></span></a>
@@ -350,7 +350,7 @@ limitations under the License.
         <label for="custom_parameters">
           <a rel="help">Raw Query Parameters</a>
         </label>
-        <input type="text" ng-model="rawParams" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2">
+        <textarea type="text" name="rawParams" ng-model="rawParams" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2"></textarea>
       </fieldset>
 
       <button type="submit" ng-click="doQuery()">Execute Query</button>
