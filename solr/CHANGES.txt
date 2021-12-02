@@ -173,6 +173,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15785: Custom node request handlers/endpoints that weren't in packages can now be located in JARs in solr-home/lib,
   not just WEB-INF/lib. (Nazerke Seidan, David Smiley)
 
+* SOLR-15803: Compute concurrent replica assignment requests together, using the shared context to better distribute replicas. (Houston Putman)
+
 Build
 ---------------------
 
