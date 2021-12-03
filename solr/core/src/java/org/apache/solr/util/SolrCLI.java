@@ -274,7 +274,13 @@ public class SolrCLI implements CLIO {
 
     SSLConfigurationsFactory.current().init();
 
-    Tool tool = findTool(args);
+    Tool tool = null;
+    try {
+      tool = findTool(args);
+    } catch (IllegalArgumentException iae) {
+      System.err.println(iae.getMessage());
+      System.exit(1);
+    }
     CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
     System.exit(tool.runTool(cli));
   }
@@ -408,7 +414,7 @@ public class SolrCLI implements CLIO {
         return tool;
     }
 
-    throw new IllegalArgumentException(toolType + " not supported!");
+    throw new IllegalArgumentException("Command '" + toolType + "' not supported!");
   }
 
   private static void displayToolOptions() throws Exception {
