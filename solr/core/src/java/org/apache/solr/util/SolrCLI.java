@@ -278,7 +278,7 @@ public class SolrCLI implements CLIO {
     try {
       tool = findTool(args);
     } catch (IllegalArgumentException iae) {
-      System.err.println(iae.getMessage());
+      CLIO.err(iae.getMessage());
       System.exit(1);
     }
     CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
