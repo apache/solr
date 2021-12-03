@@ -414,7 +414,7 @@ public class SolrCLI implements CLIO {
         return tool;
     }
 
-    throw new IllegalArgumentException("Command '" + toolType + "' not supported!");
+    throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
   private static void displayToolOptions() throws Exception {
