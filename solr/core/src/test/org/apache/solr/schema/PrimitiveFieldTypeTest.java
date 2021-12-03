@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 /**
@@ -43,7 +42,6 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    System.setProperty(SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM, "true");
 
     initMap = new HashMap<>();
     config = new SolrConfig(TEST_PATH().resolve("collection1"), testConfHome + "solrconfig.xml");
@@ -51,7 +49,6 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
   
   @Override
   public void tearDown() throws Exception {
-    System.clearProperty(SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
     super.tearDown();
   }
 
