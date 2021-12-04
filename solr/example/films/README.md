@@ -59,6 +59,8 @@ This data consists of the following fields:
                   example/films/films.csv \
                   -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
      ```
+
+
    * Let's get searching!
      - Search for 'Batman':
 
@@ -76,6 +78,56 @@ This data consists of the following fields:
      - Let's see the distribution of genres across all the movies. See the facet section of the response for the counts:
 
        http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre
+
+   * Let's do some relevancy tuning with ParamSets :
+
+     - Search for 'harry potter':
+
+       http://localhost:8983/solr/films/query?q=name:harry%20potter
+
+       * Notice the very first result is the move _Dumb &amp; Dumberer: When Harry Met Lloyd_?
+       That is clearly not what we are looking for.  
+
+     - Let's set up two relevancy algorithms, and then compare the quality of the results.
+         Algorithm *A* will be with dismax and a qf parameter, and then Algorithm *B*
+         will be dismax, qf and a must match of 100%.
+
+         ```
+         curl http://localhost:8983/solr/films/config/params -X POST -H 'Content-type:application/json' --data-binary '{
+           "set": {
+              "algo_a":{
+                "defType":"dismax",
+                "qf":"name"
+              }
+            },
+            "set": {
+              "algo_b":{
+                "defType":"dismax",
+                "qf":"name",
+                "mm":"100%"
+              }
+             }            
+         }'
+         ```
+
+     - Search for 'harry potter' with Algorithm *A*:
+
+       http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_a
+
+       * Now we are returning the Harry Potter movies, however notice that we still have the
+         _Dumb &amp; Dumberer: When Harry Met Lloyd_ coming back?   
+
+     - Search for 'harry potter' with Algorithm *B*:
+
+       http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_b
+
+       * We are now returning fewer, more precise results!  We can say that we believe
+         Algorithm *B* is better then Algorithm *A*.  You can extend this to online
+         A/B testing very easily to confirm with real users.
+
+
+
+
 
 FAQ:
   Why override the schema of the _name_ and _initial_release_date_ fields?
