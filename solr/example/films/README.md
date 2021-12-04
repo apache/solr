@@ -16,7 +16,7 @@ This data consists of the following fields:
 
  The below steps walk you through learning how to start up Solr, setup the films collection yourself, and then load data.  We'll then create ParamSets to organize our query parameters.
 
- You can also run `bin/solr start -example films` or `bin/solr start -c -example films` for SolrCloud version to get started.
+ You can also run `bin/solr start -example films` or `bin/solr start -c -example films` for SolrCloud version which does all the below steps for you.
 
  Steps:
    * Start Solr:
