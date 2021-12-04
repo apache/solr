@@ -1,6 +1,6 @@
 We have a movie data set in JSON, Solr XML, and CSV formats.  All 3 formats contain the same data.  You can use any one format to index documents to Solr.
 
-This example uses the `_default` configset that ships with Solr plus some custom fields added via Schema API.  It demonstrates the use of ParamSets in conjunction with the (Request Parameters API)[https://solr.apache.org/guide/request-parameters-api.html].
+This example uses the `_default` configset that ships with Solr plus some custom fields added via Schema API.  It demonstrates the use of ParamSets in conjunction with the [Request Parameters API](https://solr.apache.org/guide/request-parameters-api.html).
 
 The original data was fetched from Freebase and the data license is present in the films-LICENSE.txt file.  Freebase was shutdown in 2016 by Google.
 
@@ -79,7 +79,7 @@ This data consists of the following fields:
 
        http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre
 
-   * Let's do some relevancy tuning with ParamSets :
+   * Time for relevancy tuning with ParamSets :
 
      - Search for 'harry potter':
 
@@ -89,8 +89,8 @@ This data consists of the following fields:
        That is clearly not what we are looking for.  
 
      - Let's set up two relevancy algorithms, and then compare the quality of the results.
-         Algorithm *A* will be with dismax and a qf parameter, and then Algorithm *B*
-         will be dismax, qf and a must match of 100%.
+         Algorithm *A* will use the `dismax` and a `qf` parameters, and then Algorithm *B*
+         will use `dismax`, `qf` and a must match `mm` of 100%.
 
          ```
          curl http://localhost:8983/solr/films/config/params -X POST -H 'Content-type:application/json' --data-binary '{
@@ -115,7 +115,7 @@ This data consists of the following fields:
        http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_a
 
        * Now we are returning the Harry Potter movies, however notice that we still have the
-         _Dumb &amp; Dumberer: When Harry Met Lloyd_ coming back?   
+         _Dumb &amp; Dumberer: When Harry Met Lloyd_ movie coming back?   
 
      - Search for 'harry potter' with Algorithm *B*:
 
