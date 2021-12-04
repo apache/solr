@@ -1,20 +1,22 @@
 We have a movie data set in JSON, Solr XML, and CSV formats.  All 3 formats contain the same data.  You can use any one format to index documents to Solr.
 
-This example uses the _default configset that ships with Solr plus some custom fields added via Schema API.
+This example uses the `_default` configset that ships with Solr plus some custom fields added via Schema API.  It demonstrates the use of ParamSets in conjunction with the (Request Parameters API)[https://solr.apache.org/guide/request-parameters-api.html].
 
-The data is was fetched from Freebase and the data license is present in the films-LICENSE.txt file.  Freebase was shutdown in 2016 by Google.
+The original data was fetched from Freebase and the data license is present in the films-LICENSE.txt file.  Freebase was shutdown in 2016 by Google.
 
 This data consists of the following fields:
- * "id" - unique identifier for the movie
- * "name" - Name of the movie
- * "directed_by" - The person(s) who directed the making of the film
- * "initial_release_date" - The earliest official initial film screening date in any country
- * "genre" - The genre(s) that the movie belongs to
+ * `id` - unique identifier for the movie
+ * `name` - Name of the movie
+ * `directed_by` - The person(s) who directed the making of the film
+ * `initial_release_date` - The earliest official initial film screening date in any country
+ * `genre` - The genre(s) that the movie belongs to
 
- The "name" and "initial_release_date" are created via the Schema API, and the "genre" and "direct_by" fields
- are created by the use of an Update Request Processor Change called "add-unknown-fields-to-the-schema".
+ The `name` and `initial_release_date` are created via the Schema API, and the `genre` and `direct_by` fields
+ are created by the use of an Update Request Processor Chain called `add-unknown-fields-to-the-schema`.
 
- The below steps walk you through learning how to start up Solr, setup the films collection yourself, and then load data.  You can also run `bin/solr start -e films` or `bin/solr start -c -e films` for SolrCloud version.
+ The below steps walk you through learning how to start up Solr, setup the films collection yourself, and then load data.  We'll then create ParamSets to organize our query parameters.
+
+ You can also run `bin/solr start -example films` or `bin/solr start -c -example films` for SolrCloud version to get started.
 
  Steps:
    * Start Solr:
