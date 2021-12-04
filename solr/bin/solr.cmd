@@ -367,7 +367,7 @@ goto done
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
 @echo       schemaless:     Schema-less example
-@echo       films:          Example of using the _default configset and adding fields dynamically
+@echo       films:          Example of starting with _default configset and defining explicit fields dynamically
 @echo.
 @echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup
 @echo                 Java debug options. For example, to enable a Java debugger to attach to the Solr JVM

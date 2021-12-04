@@ -27,7 +27,7 @@ separate directory. To run a specific example, do:
     cloud        : SolrCloud example
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
-    films        : Example of using the _default configset and adding fields dynamically.
+    films        : Example of starting with _default configset and defining explicit fields dynamically.
 ```
 
 For instance, if you want to run the SolrCloud example, do:
