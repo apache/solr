@@ -114,16 +114,16 @@ This data consists of the following fields:
 
        http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_a
 
-       * Now we are returning the Harry Potter movies, however notice that we still have the
+       * Now we are returning the five results, including the Harry Potter movies, however notice that we still have the
          _Dumb &amp; Dumberer: When Harry Met Lloyd_ movie coming back?   
 
      - Search for 'harry potter' with Algorithm *B*:
 
        http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_b
 
-       * We are now returning fewer, more precise results!  We can say that we believe
-         Algorithm *B* is better then Algorithm *A*.  You can extend this to online
-         A/B testing very easily to confirm with real users.
+       * We are now returning only the four Harry Potter movies, leading to more precise results!
+           We can say that we believe Algorithm *B* is better then Algorithm *A*.  You can extend
+           this to online A/B testing very easily to confirm with real users.
 
 
 
