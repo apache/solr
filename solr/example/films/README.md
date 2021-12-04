@@ -81,38 +81,6 @@ FAQ:
   Why override the schema of the _name_ and _initial_release_date_ fields?
 
      Without overriding those field types, the _name_ field would have been guessed as a multi-valued string field type
-     and _initial_release_date_ would have been guessed as a multi-valued pdate type.  It makes more sense with this
+     and _initial_release_date_ would have been guessed as a multi-valued `pdate` type.  It makes more sense with this
      particular data set domain to have the movie name be a single valued general full-text searchable field,
      and for the release date also to be single valued.
-
-  How do I clear and reset my environment?
-
-      See the script below.
-
-  Is there an easy to copy/paste script to do all of the above?
-
-```
-    Here ya go << END_OF_SCRIPT
-
-bin/solr stop
-rm server/logs/*.log
-rm -Rf server/solr/films/
-bin/solr start
-bin/solr create -c films
-curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
-    "add-field" : {
-        "name":"name",
-        "type":"text_general",
-        "multiValued":false,
-        "stored":true
-    },
-    "add-field" : {
-        "name":"initial_release_date",
-        "type":"pdate",
-        "stored":true
-    }
-}'
-bin/post -c films example/films/films.json
-
-# END_OF_SCRIPT
-```
