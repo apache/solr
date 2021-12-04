@@ -164,6 +164,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15608: Remove deprecated methods, classes and constructors from solrj clients (janhoy)
 
+* SOLR-15786: Add the "films" example to SolrCLI via -e films parameter. (Eric Pugh)
+
 Build
 ---------------------
 
