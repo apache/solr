@@ -2656,7 +2656,7 @@ public class SolrCLI implements CLIO {
               .argName("NAME")
               .hasArg()
               .required(true)
-              .desc("Name of the example to launch, one of: cloud, techproducts, schemaless.")
+              .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
               .longOpt("example")
               .build(),
           Option.builder("script")
@@ -2773,11 +2773,11 @@ public class SolrCLI implements CLIO {
       String exampleType = cli.getOptionValue("example");
       if ("cloud".equals(exampleType)) {
         runCloudExample(cli);
-      } else if ("techproducts".equals(exampleType) || "schemaless".equals(exampleType)) {
+      } else if ("techproducts".equals(exampleType) || "schemaless".equals(exampleType) || "films".equals(exampleType)) {
         runExample(cli, exampleType);
       } else {
         throw new IllegalArgumentException("Unsupported example "+exampleType+
-            "! Please choose one of: cloud, schemaless, or techproducts");
+            "! Please choose one of: cloud, schemaless, techproducts, or films");
       }
     }
 
@@ -2859,8 +2859,42 @@ public class SolrCLI implements CLIO {
           echo("exampledocs directory not found, skipping indexing step for the techproducts example");
         }
       }
+      else if ("films".equals(exampleName) && !alreadyExists) {
+        echo("Adding name and initial_release_data fields to films schema \"_default\"");
 
-      echo("\nSolr "+exampleName+" example launched successfully. Direct your Web browser to "+solrUrl+" to visit the Solr Admin UI");
+        HttpSolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build();
+        try {
+          SolrCLI.postJsonToSolr(solrClient, "/" + collectionName + "/schema", "{\n" +
+                  "        \"add-field\" : {\n" +
+                  "          \"name\":\"name\",\n" +
+                  "          \"type\":\"text_general\",\n" +
+                  "          \"multiValued\":false,\n" +
+                  "          \"stored\":true\n" +
+                  "        },\n" +
+                  "        \"add-field\" : {\n" +
+                  "          \"name\":\"initial_release_date\",\n" +
+                  "          \"type\":\"pdate\",\n" +
+                  "          \"stored\":true\n" +
+                  "        }\n" +
+                  "      }");
+        } catch (Exception ex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        }
+
+        File filmsJsonFile = new File(exampleDir, "films/films.json");
+        String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
+        echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
+        String currentPropVal = System.getProperty("url");
+        System.setProperty("url", updateUrl);
+        SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
+        if (currentPropVal != null) {
+          System.setProperty("url", currentPropVal); // reset
+        } else {
+          System.clearProperty("url");
+        }
+      }
+
+        echo("\nSolr "+exampleName+" example launched successfully. Direct your Web browser to "+solrUrl+" to visit the Solr Admin UI");
     }
 
     protected void runCloudExample(CommandLine cli) throws Exception {
