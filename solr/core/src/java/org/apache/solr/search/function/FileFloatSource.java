@@ -47,7 +47,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.VersionedFile;
 import org.slf4j.Logger;
@@ -362,11 +361,6 @@ public class FileFloatSource extends ValueSource {
     @Override
     public String getDescription() {
       return "Reload readerCache request handler";
-    }
-
-    @Override
-    public Name getPermissionName(AuthorizationContext request) {
-      return Name.UPDATE_PERM;
     }
   }
 }

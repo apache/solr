@@ -14,25 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler;
+package org.apache.solr.servlet;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
- * Does nothing other than showing a 404 message
+ * Denotes an object, usually a servlet that denies access to some paths based on the supplied patterns.
+ * Typically, this would be implemented via compiled regular expressions.
  */
-public class NotFoundRequestHandler extends RequestHandlerBase{
-  @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "" + req.getContext().get(PATH) + " is not found");
-  }
-
-  @Override
-  public String getDescription() {
-    return "No Operation";
-  }
+public interface PathExcluder {
+  void setExcludePatterns(List<Pattern> excludePatterns);
 }

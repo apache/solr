@@ -14,25 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler;
+package org.apache.solr.servlet;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
-
-/**
- * Does nothing other than showing a 404 message
+/*
+ * This is not pretty, hope to remove it when tracing becomes a filter.
  */
-public class NotFoundRequestHandler extends RequestHandlerBase{
-  @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "" + req.getContext().get(PATH) + " is not found");
-  }
+public class ExceptionWhileTracing extends RuntimeException {
+  public Exception e;
 
-  @Override
-  public String getDescription() {
-    return "No Operation";
+  public ExceptionWhileTracing(Exception e) {
+    this.e = e;
   }
 }
