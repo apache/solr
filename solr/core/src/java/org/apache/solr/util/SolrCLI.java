@@ -16,48 +16,6 @@
  */
 package org.apache.solr.util;
 
-import javax.net.ssl.SSLPeerUnverifiedException;
-import java.io.Console;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileOwnerAttributeView;
-import java.time.Instant;
-import java.time.Period;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
@@ -103,13 +61,13 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -124,6 +82,43 @@ import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLPeerUnverifiedException;
+import java.io.Console;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileOwnerAttributeView;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
@@ -279,8 +274,14 @@ public class SolrCLI implements CLIO {
 
     SSLConfigurationsFactory.current().init();
 
-    Tool tool = findTool(args);
-    CommandLine cli = parseCmdLine(args, tool.getOptions());
+    Tool tool = null;
+    try {
+      tool = findTool(args);
+    } catch (IllegalArgumentException iae) {
+      CLIO.err(iae.getMessage());
+      System.exit(1);
+    }
+    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
     System.exit(tool.runTool(cli));
   }
 
@@ -289,7 +290,15 @@ public class SolrCLI implements CLIO {
     return newTool(toolType);
   }
 
+  /**
+   * @deprecated Use the method that takes a tool name as the first argument instead.
+   */
+  @Deprecated
   public static CommandLine parseCmdLine(String[] args, Option[] toolOptions) throws Exception {
+    return parseCmdLine(SolrCLI.class.getName(), args, toolOptions);
+  }
+
+  public static CommandLine parseCmdLine(String toolName, String[] args, Option[] toolOptions) throws Exception {
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<String>();
     List<String> dashDList = new ArrayList<String>();
@@ -305,7 +314,7 @@ public class SolrCLI implements CLIO {
 
     // process command-line args to configure this application
     CommandLine cli =
-        processCommandLineArgs(joinCommonAndToolOptions(toolOptions), toolArgs);
+        processCommandLineArgs(toolName, joinCommonAndToolOptions(toolOptions), toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -389,8 +398,6 @@ public class SolrCLI implements CLIO {
       return new ZkMkrootTool();
     else if ("assert".equals(toolType))
       return new AssertTool();
-    else if ("utils".equals(toolType))
-      return new UtilsTool();
     else if ("auth".equals(toolType))
       return new AuthTool();
     else if ("export".equals(toolType))
@@ -407,7 +414,7 @@ public class SolrCLI implements CLIO {
         return tool;
     }
 
-    throw new IllegalArgumentException(toolType + " not supported!");
+    throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
   private static void displayToolOptions() throws Exception {
@@ -466,11 +473,18 @@ public class SolrCLI implements CLIO {
     return options.toArray(new Option[0]);
   }
 
+  /**
+   * @deprecated Use the method that takes a tool name as the first argument instead.
+   */
+  @Deprecated
+  public static CommandLine processCommandLineArgs(Option[] customOptions, String[] args) {
+    return processCommandLineArgs(SolrCLI.class.getName(), customOptions, args);
+  }
 
   /**
    * Parses the command-line arguments passed by the user.
    */
-  public static CommandLine processCommandLineArgs(Option[] customOptions, String[] args) {
+  public static CommandLine processCommandLineArgs(String toolName, Option[] customOptions, String[] args) {
     Options options = new Options();
 
     options.addOption("help", false, "Print this message");
@@ -499,13 +513,13 @@ public class SolrCLI implements CLIO {
             + exp.getMessage());
       }
       HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(SolrCLI.class.getName(), options);
+      formatter.printHelp(toolName, options);
       exit(1);
     }
 
     if (cli.hasOption("help")) {
       HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(SolrCLI.class.getName(), options);
+      formatter.printHelp(toolName, options);
       exit(0);
     }
 
@@ -1002,7 +1016,7 @@ public class SolrCLI implements CLIO {
           Option.builder("get")
               .argName("URL")
               .hasArg()
-              .required(false)
+              .required(true)
               .desc("Send a GET request to a Solr API endpoint.")
               .build()
       };
@@ -2814,7 +2828,7 @@ public class SolrCLI implements CLIO {
         };
         CreateTool createTool = new CreateTool(stdout);
         int createCode =
-            createTool.runTool(processCommandLineArgs(joinCommonAndToolOptions(createTool.getOptions()), createArgs));
+            createTool.runTool(processCommandLineArgs(createTool.getName(), joinCommonAndToolOptions(createTool.getOptions()), createArgs));
         if (createCode != 0)
           throw new Exception("Failed to create "+collectionName+" using command: "+ Arrays.asList(createArgs));
       }
@@ -2986,7 +3000,7 @@ public class SolrCLI implements CLIO {
 
       // let's not fail if we get this far ... just report error and finish up
       try {
-        configTool.runTool(processCommandLineArgs(joinCommonAndToolOptions(configTool.getOptions()), configArgs));
+        configTool.runTool(processCommandLineArgs(configTool.getName(), joinCommonAndToolOptions(configTool.getOptions()), configArgs));
       } catch (Exception exc) {
         CLIO.err("Failed to update '"+propName+"' property due to: "+exc);
       }
@@ -3244,7 +3258,7 @@ public class SolrCLI implements CLIO {
       CreateCollectionTool createCollectionTool = new CreateCollectionTool(stdout);
       int createCode =
           createCollectionTool.runTool(
-              processCommandLineArgs(joinCommonAndToolOptions(createCollectionTool.getOptions()), createArgs));
+              processCommandLineArgs(createCollectionTool.getName(), joinCommonAndToolOptions(createCollectionTool.getOptions()), createArgs));
 
       if (createCode != 0)
         throw new Exception("Failed to create collection using command: "+ Arrays.asList(createArgs));
@@ -4036,8 +4050,12 @@ public class SolrCLI implements CLIO {
               "\n {\"name\":\"security-edit\", \"role\":\"admin\"}," +
               "\n {\"name\":\"security-read\", \"role\":\"admin\"}," +
               "\n {\"name\":\"config-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"config-read\", \"role\":\"admin\"}," +
               "\n {\"name\":\"collection-admin-edit\", \"role\":\"admin\"}," +
-              "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}" +
+              "\n {\"name\":\"collection-admin-read\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"core-admin-read\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"all\", \"role\":\"admin\"}" +
               "\n   ]," +
               "\n   \"user-role\":{\"" + username + "\":\"admin\"}" +
               "\n  }" +
@@ -4208,245 +4226,4 @@ public class SolrCLI implements CLIO {
     @Override
     protected void runImpl(CommandLine cli) throws Exception {}
   }
-
-  public static class UtilsTool extends ToolBase {
-    private Path serverPath;
-    private Path logsPath;
-    private boolean beQuiet;
-
-    public UtilsTool() { this(CLIO.getOutStream()); }
-    public UtilsTool(PrintStream stdout) { super(stdout); }
-
-    public String getName() {
-      return "utils";
-    }
-
-    public Option[] getOptions() {
-      return new Option[]{
-          Option.builder("s")
-              .argName("path")
-              .hasArg()
-              .desc("Path to server dir. Required if logs path is relative.")
-              .build(),
-          Option.builder("l")
-              .argName("path")
-              .hasArg()
-              .desc("Path to logs dir. If relative, also provide server dir with -s.")
-              .build(),
-          Option.builder("q")
-              .desc("Be quiet, don't print to stdout, only return exit codes.")
-              .build(),
-          Option.builder("remove_old_solr_logs")
-              .argName("daysToKeep")
-              .hasArg()
-              .type(Integer.class)
-              .desc("Path to logs directory.")
-              .build(),
-          Option.builder("rotate_solr_logs")
-              .argName("generations")
-              .hasArg()
-              .type(Integer.class)
-              .desc("Rotate solr.log to solr.log.1 etc.")
-              .build(),
-          Option.builder("archive_gc_logs")
-              .desc("Archive old garbage collection logs into archive/.")
-              .build(),
-          Option.builder("archive_console_logs")
-              .desc("Archive old console logs into archive/.")
-              .build()
-      };
-    }
-
-    @Override
-    public int runTool(CommandLine cli) throws Exception {
-      if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
-        new HelpFormatter().printHelp("bin/solr utils [OPTIONS]", getToolOptions(this));
-        return 1;
-      }
-      if (cli.hasOption("s")) {
-        serverPath = Paths.get(cli.getOptionValue("s"));
-      }
-      if (cli.hasOption("l")) {
-        logsPath = Paths.get(cli.getOptionValue("l"));
-      }
-      if (cli.hasOption("q")) {
-        beQuiet = cli.hasOption("q");
-      }
-      if (cli.hasOption("remove_old_solr_logs")) {
-        if (removeOldSolrLogs(Integer.parseInt(cli.getOptionValue("remove_old_solr_logs"))) > 0) return 1;
-      }
-      if (cli.hasOption("rotate_solr_logs")) {
-        if (rotateSolrLogs(Integer.parseInt(cli.getOptionValue("rotate_solr_logs"))) > 0) return 1;
-      }
-      if (cli.hasOption("archive_gc_logs")) {
-        if (archiveGcLogs() > 0) return 1;
-      }
-      if (cli.hasOption("archive_console_logs")) {
-        if (archiveConsoleLogs() > 0) return 1;
-      }
-      return 0;
-    }
-
-    /**
-     * Moves gc logs into archived/
-     * @return 0 on success
-     * @throws Exception on failure
-     */
-    public int archiveGcLogs() throws Exception {
-      prepareLogsPath();
-      Path archivePath = logsPath.resolve("archived");
-      if (!archivePath.toFile().exists()) {
-        Files.createDirectories(archivePath);
-      }
-      List<Path> archived = Files.find(archivePath, 1, (f, a)
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
-          .collect(Collectors.toList());
-      for (Path p : archived) {
-        Files.delete(p);
-      }
-      List<Path> files = Files.find(logsPath, 1, (f, a)
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
-          .collect(Collectors.toList());
-      if (files.size() > 0) {
-        out("Archiving " + files.size() + " old GC log files to " + archivePath);
-        for (Path p : files) {
-          Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-        }
-      }
-      return 0;
-    }
-
-    /**
-     * Moves console log(s) into archiced/
-     * @return 0 on success
-     * @throws Exception on failure
-     */
-    public int archiveConsoleLogs() throws Exception {
-      prepareLogsPath();
-      Path archivePath = logsPath.resolve("archived");
-      if (!archivePath.toFile().exists()) {
-        Files.createDirectories(archivePath);
-      }
-      List<Path> archived = Files.find(archivePath, 1, (f, a)
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
-          .collect(Collectors.toList());
-      for (Path p : archived) {
-        Files.delete(p);
-      }
-      List<Path> files = Files.find(logsPath, 1, (f, a)
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
-          .collect(Collectors.toList());
-      if (files.size() > 0) {
-        out("Archiving " + files.size() + " console log files to " + archivePath);
-        for (Path p : files) {
-          Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-        }
-      }
-      return 0;
-    }
-
-    /**
-     * Rotates solr.log before starting Solr. Mimics log4j2 behavior, i.e. with generations=9:
-     * <pre>
-     *   solr.log.9 (and higher) are deleted
-     *   solr.log.8 -&gt; solr.log.9
-     *   solr.log.7 -&gt; solr.log.8
-     *   ...
-     *   solr.log   -&gt; solr.log.1
-     * </pre>
-     * @param generations number of generations to keep. Should agree with setting in log4j2.xml
-     * @return 0 if success
-     * @throws Exception if problems
-     */
-    public int rotateSolrLogs(int generations) throws Exception {
-      prepareLogsPath();
-      if (logsPath.toFile().exists() && logsPath.resolve("solr.log").toFile().exists()) {
-        out("Rotating solr logs, keeping a max of "+generations+" generations.");
-        try (Stream<Path> files = Files.find(logsPath, 1,
-            (f, a) -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr.log."))
-            .sorted((b,a) -> Integer.valueOf(a.getFileName().toString().substring(9))
-                .compareTo(Integer.valueOf(b.getFileName().toString().substring(9))))) {
-          files.forEach(p -> {
-            try {
-              int number = Integer.parseInt(p.getFileName().toString().substring(9));
-              if (number >= generations) {
-                Files.delete(p);
-              } else {
-                Path renamed = p.getParent().resolve("solr.log." + (number + 1));
-                Files.move(p, renamed);
-              }
-            } catch (IOException e) {
-              out("Problem during rotation of log files: " + e.getMessage());
-            }
-          });
-        } catch (NumberFormatException nfe) {
-          throw new Exception("Do not know how to rotate solr.log.<ext> with non-numeric extension. Rotate aborted.", nfe);
-        }
-        Files.move(logsPath.resolve("solr.log"), logsPath.resolve("solr.log.1"));
-      }
-
-      return 0;
-    }
-
-    /**
-     * Deletes time-stamped old solr logs, if older than n days
-     * @param daysToKeep number of days logs to keep before deleting
-     * @return 0 on success
-     * @throws Exception on failure
-     */
-    public int removeOldSolrLogs(int daysToKeep) throws Exception {
-      prepareLogsPath();
-      if (logsPath.toFile().exists()) {
-        try (Stream<Path> stream = Files.find(logsPath, 2, (f, a) -> a.isRegularFile()
-            && Instant.now().minus(Period.ofDays(daysToKeep)).isAfter(a.lastModifiedTime().toInstant())
-            && String.valueOf(f.getFileName()).startsWith("solr_log_"))) {
-          List<Path> files = stream.collect(Collectors.toList());
-          if (files.size() > 0) {
-            out("Deleting "+files.size() + " solr_log_* files older than " + daysToKeep + " days.");
-            for (Path p : files) {
-              Files.delete(p);
-            }
-          }
-        }
-      }
-      return 0;
-    }
-
-    // Private methods to follow
-
-    private void out(String message) {
-      if (!beQuiet) {
-        stdout.print(message + "\n");
-      }
-    }
-
-    private void prepareLogsPath() throws Exception {
-      if (logsPath == null) {
-        throw new Exception("Command requires the -l <log-directory> option");
-      }
-      if (!logsPath.isAbsolute()) {
-        if (serverPath != null && serverPath.isAbsolute() && Files.exists(serverPath)) {
-          logsPath = serverPath.resolve(logsPath);
-        } else {
-          throw new Exception("Logs directory must be an absolute path, or -s must be supplied.");
-        }
-      }
-    }
-
-    @Override
-    protected void runImpl(CommandLine cli) throws Exception {
-    }
-
-    public void setLogPath(Path logsPath) {
-      this.logsPath = logsPath;
-    }
-
-    public void setServerPath(Path serverPath) {
-      this.serverPath = serverPath;
-    }
-
-    public void setQuiet(boolean shouldPrintStdout) {
-      this.beQuiet = shouldPrintStdout;
-    }
-  } // end UtilsTool class
 }

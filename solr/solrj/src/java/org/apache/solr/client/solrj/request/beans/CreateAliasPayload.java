@@ -57,7 +57,7 @@ public class CreateAliasPayload implements ReflectMapWriter {
         public String interval;
 
         @JsonProperty
-        public Integer maxFutureMs;
+        public Long maxFutureMs;
 
         @JsonProperty
         public String preemptiveCreateMath;

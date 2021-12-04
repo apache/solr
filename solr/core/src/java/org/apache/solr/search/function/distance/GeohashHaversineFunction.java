@@ -38,7 +38,8 @@ import java.util.Map;
  *
  * @see org.apache.solr.search.function.distance.HaversineFunction for more details on the implementation
  *
- **/
+ */
+@Deprecated
 public class GeohashHaversineFunction extends ValueSource {
 
   private final ValueSource geoHash1, geoHash2;

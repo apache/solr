@@ -46,7 +46,19 @@ limitations under the License.
       <div id="authn">
         <h2><span>Security Settings</span></h2>
         <div id="authn-content">
-          <div id="plugins"><span id="tls">TLS enabled? <img ng-show="tls" src="img/ico/tick.png"/><img ng-show="!tls" src="img/ico/cross.png"/></span><span id="authnPlugin">Authentication Plugin: <b>{{authenticationPlugin}}</b></span><span id="authzPlugin">Authorization Plugin: <b>{{authorizationPlugin}}</b></span></div>
+          <div id="plugins"><span id="tls">TLS enabled? <img ng-show="tls" src="img/ico/tick.png"/><img ng-show="!tls" src="img/ico/cross.png"/></span>
+            <span id="authnPlugin">Authentication Plugin: <b>{{authenticationPlugin}}</b><span ng-show="multiAuthWithBasic"><a ng-click="showHelp('multiAuthBasicHelp')"><img class="help-ico" src="img/ico/exclamation-button.png"/></a>
+            <div id="multiAuthBasicHelp" class="help" ng-show="helpId === 'multiAuthBasicHelp'">
+              <div class="help-top">
+                <p>When using the <b>MultiAuthPlugin</b>, changes made to <b>Users</b> and <b>Roles</b>, using the panels below, only affect <b>Basic</b> authentication.<br><br><b>
+                  Users</b> and <b>Roles</b> for the other authentication schemes, such as the <b>Bearer</b> scheme (JWTAuthPlugin), are managed by an external provider.
+                  Thus, not all users with access to the system are displayed below; only users managed by the <b>BasicAuthPlugin</b> are displayed on this screen.
+                </p>
+              </div>
+            </div>
+            </span>
+            </span>
+            <span id="authzPlugin">Authorization Plugin: <b>{{authorizationPlugin}}</b></span></div>
           <form>
             <span ng-show="manageUsersEnabled" id="realm-field">
               <label for="realmName">Realm:&nbsp;</label><input disabled class="input-text" type="text" id="realmName" ng-model="realmName">
@@ -125,11 +137,13 @@ limitations under the License.
               </div>
             </div>
             <div id="perm-select"><label for="predefined">Predefined:</label><select id="predefined"
-                chosen
+                chosen disable-search="true" allow-single-deselect="true"
                 ng-change="onPredefinedChanged()"
                 ng-model="selectedPredefinedPermission"
                 ng-disabled="permDialogMode === 'edit'"
-                ng-options="p for p in filteredPredefinedPermissions"></select><span id="add_perm_custom">or Custom: <input ng-disabled="permDialogMode === 'edit'" ng-change="onPredefinedChanged()" type="text" id="add_perm_name" ng-model="upsertPerm.name"><a ng-click="showHelp('permDialogHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                ng-options="p for p in filteredPredefinedPermissions">
+              <option value=""></option>
+            </select><span id="add_perm_custom">or Custom: <input ng-disabled="permDialogMode === 'edit'" ng-change="onPredefinedChanged()" type="text" id="add_perm_name" ng-model="upsertPerm.name"><a ng-click="showHelp('permDialogHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
               <div id="permDialogHelp" class="help" ng-show="helpId === 'permDialogHelp'">
                 <div class="help-perm">
                   <p>Permissions allow you to grant access to protected resources to one or more roles. Solr provides a list of <b>predefined</b> permissions to cover common use cases, such as collection administration. Otherwise, you can define a <b>custom permission</b> for fine-grained control over the API path(s), collection(s), request method(s) and params.
@@ -278,6 +292,15 @@ limitations under the License.
           </tr>
           </tbody>
         </table>
+        </div>
+        <div ng-show="hasPermWarnings" class="external-msg">
+          <table border="0" cellspacing="0" cellpadding="0">
+            <tbody>
+            <tr ng-repeat="w in permWarnings">
+              <td class="table-warn"><img src="img/ico/exclamation-button.png"/> {{w}}</td>
+            </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

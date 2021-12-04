@@ -15,6 +15,7 @@
  */
 package org.apache.solr.ltr;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
 
+@ThreadLeakLingering(linger = 10)
 public class TestLTROnSolrCloud extends TestRerankBase {
 
   private MiniSolrCloudCluster solrCluster;

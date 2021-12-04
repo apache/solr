@@ -62,7 +62,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
         SolrIgnoredThreadsFilter.class,
         QuickPatchThreadsFilter.class
 })
-@ThreadLeakLingering(linger = 10000)
+@ThreadLeakLingering(linger = 0)
 public class SolrTestCase extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

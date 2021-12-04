@@ -44,7 +44,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -725,14 +724,15 @@ public class Http2SolrClient extends SolrClient {
         String procMimeType = ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
         if (!procMimeType.equals(mimeType)) {
           // unexpected mime type
-          String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
+          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
           String exceptionEncoding = encoding != null? encoding : FALLBACK_CHARSET.name();
           try {
-            msg = msg + " " + IOUtils.toString(is, exceptionEncoding);
+            ByteArrayOutputStream body = new ByteArrayOutputStream();
+            is.transferTo(body);
+            throw new RemoteSolrException(serverBaseUrl, httpStatus, prefix + body.toString(exceptionEncoding), null);
           } catch (IOException e) {
             throw new RemoteSolrException(serverBaseUrl, httpStatus, "Could not parse response with encoding " + exceptionEncoding, e);
           }
-          throw new RemoteSolrException(serverBaseUrl, httpStatus, msg, null);
         }
       }
 

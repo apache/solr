@@ -45,6 +45,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.logging.MDCSnapshot;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -278,7 +279,9 @@ public class TestHarness extends BaseTestHarness {
    * @return The XML response to the update
    */
   public String update(String xml) {
-    try (SolrCore core = getCoreInc()) {
+    try (var mdcSnap = MDCSnapshot.create();
+         SolrCore core = getCoreInc()) {
+      assert null != mdcSnap; // prevent compiler warning of unused var
       DirectSolrConnection connection = new DirectSolrConnection(core);
       SolrRequestHandler handler = core.getRequestHandler("/update");
       // prefer the handler mapped to /update, but use our generic backup handler
@@ -335,7 +338,8 @@ public class TestHarness extends BaseTestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(String handler, SolrQueryRequest req) throws Exception {
-    try {
+    try (var mdcSnap = MDCSnapshot.create()) {
+      assert null != mdcSnap; // prevent compiler warning of unused var
       SolrCore core = req.getCore();
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -364,7 +368,9 @@ public class TestHarness extends BaseTestHarness {
   /** It is the users responsibility to close the request object when done with it.
    * This method does not set/clear SolrRequestInfo */
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
-    try (SolrCore core = getCoreInc()) {
+    try (var mdcSnap = MDCSnapshot.create();
+         SolrCore core = getCoreInc()) {
+      assert null != mdcSnap; // prevent compiler warning of unused var
       SolrQueryResponse rsp = new SolrQueryResponse();
       core.execute(core.getRequestHandler(handler), req, rsp);
       if (rsp.getException() != null) {
