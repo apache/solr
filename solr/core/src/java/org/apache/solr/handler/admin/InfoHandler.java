@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -26,16 +27,17 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 public class InfoHandler extends RequestHandlerBase  {
 
   protected final CoreContainer coreContainer;
+  private Map<String, RequestHandlerBase> handlers = new ConcurrentHashMap<>();
 
   /**
    * Overloaded ctor to inject CoreContainer into the handler.
@@ -152,10 +154,13 @@ public class InfoHandler extends RequestHandlerBase  {
     return this;
   }
 
-  private Map<String, RequestHandlerBase> handlers = new ConcurrentHashMap<>();
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
 
   @Override
   public Collection<Api> getApis() {
-    return Collections.emptyList();
+    return singletonList(new ApiBag.ReqHandlerToApi(this, ApiBag.EMPTY_SPEC));
   }
 }

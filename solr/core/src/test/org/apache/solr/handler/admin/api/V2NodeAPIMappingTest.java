@@ -32,7 +32,6 @@ import org.apache.solr.handler.admin.LoggingHandler;
 import org.apache.solr.handler.admin.PropertiesRequestHandler;
 import org.apache.solr.handler.admin.SystemInfoHandler;
 import org.apache.solr.handler.admin.ThreadDumpHandler;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -91,7 +90,7 @@ public class V2NodeAPIMappingTest {
         when(infoHandler.getThreadDumpHandler()).thenReturn(mockThreadDumpHandler);
 
         apiBag = new ApiBag(false);
-        ApiRegistrar.registerNodeSpecificApis(apiBag, mockCoresHandler, infoHandler);
+        registerAllNodeApis(apiBag, mockCoresHandler, infoHandler);
     }
 
     @Test
@@ -257,5 +256,17 @@ public class V2NodeAPIMappingTest {
         api.call(req, rsp);
         verify(mockHandler).handleRequestBody(queryRequestCaptor.capture(), any());
         return queryRequestCaptor.getValue().getParams();
+    }
+
+    private static void registerAllNodeApis(ApiBag apiBag, CoreAdminHandler coreHandler,
+                                            InfoHandler infoHandler) {
+        apiBag.registerObject(new OverseerOperationAPI(coreHandler));
+        apiBag.registerObject(new RejoinLeaderElectionAPI(coreHandler));
+        apiBag.registerObject(new InvokeClassAPI(coreHandler));
+        apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
+        apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
+        apiBag.registerObject(new NodeLoggingAPI(infoHandler.getLoggingHandler()));
+        apiBag.registerObject(new NodeSystemInfoAPI(infoHandler.getSystemInfoHandler()));
+        apiBag.registerObject(new NodeHealthAPI(infoHandler.getHealthCheckHandler()));
     }
 }
