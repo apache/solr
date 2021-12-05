@@ -73,6 +73,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -387,6 +388,7 @@ public class JettySolrRunner {
 
         root.getServletContext().setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
         root.getServletContext().setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
+        SSLConfigurationsFactory.current().init(); // normally happens in jetty-ssl.xml
         coreContainerProvider = new CoreContainerProvider();
         coreContainerProvider.init(root.getServletContext());
         log.info("Jetty properties: {}", nodeProperties);
