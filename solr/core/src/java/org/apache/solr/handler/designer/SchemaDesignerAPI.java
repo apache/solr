@@ -512,7 +512,11 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     }
 
     if (req.getParams().getBool(CLEANUP_TEMP_PARAM, true)) {
-      cleanupTemp(configSet);
+      try {
+        cleanupTemp(configSet);
+      } catch (IOException | SolrServerException | SolrException exc) {
+        log.warn("Failed to clean-up temp collection {} due to: {}", mutableId, exc.getMessage());
+      }
     }
 
     settings.setDisabled(req.getParams().getBool(DISABLE_DESIGNER_PARAM, false));
