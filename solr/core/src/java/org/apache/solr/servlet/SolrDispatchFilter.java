@@ -35,7 +35,6 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.CoreContainerProvider.ServiceHolder;
-import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +130,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   public void init(FilterConfig config) throws ServletException {
     try {
       coreService = CoreContainerProvider.serviceForContext(config.getServletContext());
-      SSLConfigurationsFactory.current().init();
+
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
