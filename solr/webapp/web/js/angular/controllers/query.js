@@ -21,6 +21,7 @@ solrAdminApp.controller('QueryController',
 
     $scope._models = [];
     $scope.filters = [{fq:""}];
+    $scope.rawParams = [{rawP:""}];
     $scope.val = {};
     $scope.val['q'] = "*:*";
     $scope.val['q.op'] = "OR";
@@ -43,9 +44,11 @@ solrAdminApp.controller('QueryController',
         if( !urlParams.hasOwnProperty(p) ){
           continue;
         }
+        // filters and rawParams are handled specially because of possible multiple values
         if( p === "fq" ) {
-            // filters are handled specially because of possible multiple values
             addFilters(urlParams[p]);
+        } else if( p === "rawP" ) {
+            addRawParams(urlParams[p]);
         } else {
             setParam(p, urlParams[p]);
         }
@@ -74,12 +77,10 @@ solrAdminApp.controller('QueryController',
     }
     // store not processed values to be displayed in a field
     function insertToRawParams(argKey, argValue){
-      if( $scope.rawParams == null ){
-        $scope.rawParams = "";
-      } else {
-        $scope.rawParams += "&";
+      if( ($scope.rawParams.length === 0) || ($scope.rawParams.length === 1 && $scope.rawParams[0].rawP === "") ){
+        $scope.rawParams = [];
       }
-      $scope.rawParams += argKey + "=" + argValue;
+      $scope.rawParams.push({rawP: argKey + "=" + argValue});
     }
     function addFilters(argObject){
       if( argObject ){
@@ -140,23 +141,25 @@ solrAdminApp.controller('QueryController',
       purgeParams(params, getDependentFields("spatial"), $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);
 
-      if ($scope.rawParams) {
-        var rawParams = $scope.rawParams.split(/[&\n]/);
-        for (var i in rawParams) {
-          var param = rawParams[i];
-          var equalPos = param.indexOf("=");
-          if (equalPos > -1) {
-            set(param.substring(0, equalPos), param.substring(equalPos+1));
-          } else {
-            set(param, ""); // Use empty value for params without "="
-          }
-        }
-      }
-
       var qt = $scope.qt ? $scope.qt : "/select";
 
       for (var filter in $scope.filters) {
         copy(params, $scope.filters[filter]);
+      }
+
+      for (var rawIndex in $scope.rawParams) {
+        if ($scope.rawParams[rawIndex].rawP) {
+          var rawParam = $scope.rawParams[rawIndex].rawP.split(/[&\n]/);
+          for (var i in rawParam) {
+            var param = rawParam[i];
+            var equalPos = param.indexOf("=");
+            if (equalPos > -1) {
+              set(param.substring(0, equalPos), param.substring(equalPos+1));
+            } else {
+              set(param, ""); // Use empty value for params without "="
+            }
+          }
+        }
       }
 
       params.core = $routeParams.core;
@@ -217,6 +220,16 @@ solrAdminApp.controller('QueryController',
     };
     $scope.addFilter = function(index) {
       $scope.filters.splice(index+1, 0, {fq:""});
+    };
+    $scope.removeRawParam = function (index) {
+      if ($scope.rawParams.length === 1) {
+        $scope.rawParams = [{rawP: ""}];
+      } else {
+        $scope.rawParams.splice(index, 1);
+      }
+    };
+    $scope.addRawParam = function (index) {
+      $scope.rawParams.splice(index+1, 0, {rawP:""});
     };
   }
 );

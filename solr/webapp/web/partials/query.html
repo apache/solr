@@ -45,7 +45,7 @@ limitations under the License.
         </label>
         <div class="multiple" id="fq">
           <div class="row clearfix" ng-repeat="filter in filters">
-            <textarea type="text" ng-model="filter.fq" name="fq" title="Filter query."></textarea>
+            <input type="text" ng-model="filter.fq" name="fq" title="Filter query.">
             <div class="buttons">
               <a class="rem" ng-click="removeFilter($index)"><span></span></a>
               <a class="add" ng-click="addFilter($index)"><span></span></a>
@@ -346,12 +346,19 @@ limitations under the License.
         <input type="text" ng-model="val['spellcheck.accuracy']" name="spellcheck.accuracy" id="spellcheck_accuracy">
        </div>
       </fieldset>
-      <fieldset class="additional optional">
-        <label for="custom_parameters">
-          <a rel="help">Raw Query Parameters</a>
-        </label>
-        <textarea type="text" name="rawParams" ng-model="rawParams" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2"></textarea>
-      </fieldset>
+      <label for="custom_parameters" title="Raw Query Parameters">
+        <a rel="help">Raw Query Parameters</a>
+      </label>
+      <div class="multiple" id="custom_parameters">
+        <div class="row clearfix" ng-repeat="rawParam in rawParams">
+          <input type="text" ng-model="rawParam.rawP" name="rawParamQuery" title="Raw param query.">
+          <div class="buttons">
+            <a class="rem" ng-click="removeRawParam($index)"><span></span></a>
+            <a class="add" ng-click="addRawParam($index)"><span></span></a>
+          </div>
+        </div>
+      </div>
+
 
       <button type="submit" ng-click="doQuery()">Execute Query</button>
     </form>
