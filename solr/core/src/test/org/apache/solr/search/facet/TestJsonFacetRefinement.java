@@ -1470,7 +1470,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     } // end method loop
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14595")
   public void testIndexAscRefineConsistency() throws Exception {
     initServers();
     final Client client = servers.getClient(random().nextInt());
@@ -1495,8 +1494,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     
     client.commit();
 
-    // TODO once SOLR-14595 is fixed, modify test to check full EnumSet, not just these two...
-    for (String m : Arrays.asList("smart", "enum")) {
+    for (String m : Arrays.asList("dv", "dvhash", "stream", "uif", "enum", "stream", "smart")) {
       client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
                            + " cat : { type:terms, field:cat_s, limit:1, refine:true,"
                            + "         overrequest:0, " // to trigger parent refinement given small data set
@@ -1509,8 +1507,12 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                            )
                     , "facets=={ count:5"
                     + ", cat:{buckets:[ { val:X, count:3, sum:6.0, "
-                    + "                   child_"+m+":{buckets:[{val:A, count:1}]}}]}}"
+                    + "                   child_"+m+":{buckets:[{val:B, count:1}]}}]}}" // * (see below)
                     );
     }
+    // * NOTE: the intuitive value to return here would be "A"; but we're testing for _consistency_
+    // here, and artificially setting `overrequest:0`. With default overrequest, the intuitive
+    // "correct" behavior would indeed be achieved -- but we then wouldn't be triggering the behavior
+    // that this test is designed to evaluate.
   }
 }

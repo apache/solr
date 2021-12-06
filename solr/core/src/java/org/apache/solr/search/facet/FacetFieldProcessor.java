@@ -292,6 +292,15 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
+  protected static long applyDefaultOverrequest(long offset, long limit) {
+    // NOTE: consider modifying the below heuristic; see SOLR-15760
+    // add over-request if this is a shard request and if we have a small offset (large offsets will already be gathering many more buckets than needed)
+    if (offset < 10) {
+      return (long) (limit * 1.1 + 4); // default: add 10% plus 4 (to overrequest for very small limits)
+    }
+    return limit;
+  }
+
   /** Processes the collected data to finds the top slots, and composes it in the response NamedList. */
   SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality,
                                         @SuppressWarnings("rawtypes") IntFunction<Comparable> bucketValFromSlotNumFunc,
@@ -304,12 +313,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     long effectiveLimit = Integer.MAX_VALUE; // use max-int instead of max-long to avoid overflow
     if (freq.limit >= 0) {
       effectiveLimit = freq.limit;
-      if (fcontext.isShard()) {
+      if (fcontext.isShard() && (null != resort || !"index".equals(this.sort.sortVariable))) {
+        // NOTE: even for distrib requests, `overrequest` is not directly relevant for "index" sort (unless
+        // `resort` is also specified -- an unusual case, but no trouble to support it for the sake of
+        // consistency); thus `overrequest` is disabled for the "index sort, no resort" case.
         if (freq.overrequest == -1) {
-          // add over-request if this is a shard request and if we have a small offset (large offsets will already be gathering many more buckets than needed)
-          if (freq.offset < 10) {
-            effectiveLimit = (long) (effectiveLimit * 1.1 + 4); // default: add 10% plus 4 (to overrequest for very small limits)
-          }
+          effectiveLimit = applyDefaultOverrequest(freq.offset, effectiveLimit);
         } else {
           effectiveLimit += freq.overrequest;
         }

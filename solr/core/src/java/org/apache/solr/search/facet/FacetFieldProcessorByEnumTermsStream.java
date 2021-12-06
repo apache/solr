@@ -48,6 +48,7 @@ import org.apache.solr.search.facet.SlotAcc.SlotContext;
  * It's able to stream since no data needs to be accumulated so long as it's index order.
  */
 class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implements Closeable {
+  long effectiveLimit;
   long bucketsToSkip;
   long bucketsReturned;
 
@@ -143,6 +144,17 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     countOnly = freq.facetStats.size() == 0 || freq.facetStats.values().iterator().next() instanceof CountAgg;
     hasSubFacets = freq.subFacets.size() > 0;
     bucketsToSkip = freq.offset;
+
+    effectiveLimit = freq.limit;
+    if (null != resort) {
+      if (freq.overrequest == -1) {
+        // NOTE: we don't care whether fcontext.isShard(), because overrequest only matters for
+        // the `resort` case, and matters equally for distrib and non-distrib case.
+        effectiveLimit = applyDefaultOverrequest(freq.offset, effectiveLimit);
+      } else if (0 < freq.overrequest) {
+        effectiveLimit += freq.overrequest;
+      }
+    }
 
     createAccs(-1, 1);
 
@@ -324,7 +336,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
           continue;
         }
 
-        if (freq.limit >= 0 && ++bucketsReturned > freq.limit) {
+        if (effectiveLimit >= 0 && ++bucketsReturned > effectiveLimit) {
           shardHasMoreBuckets.set(true);
           return null;
         }
