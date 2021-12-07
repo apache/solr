@@ -179,6 +179,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15427: Nested docs: [child limit=...] now defaults to -1 which is interpreted as unlimited.
   (David Smiley)
 
+* SOLR-15786: Add the "films" example to SolrCLI via -e films parameter. (Eric Pugh)
+
 Build
 ---------------------
 
@@ -461,10 +463,14 @@ Bug Fixes
 * SOLR-15825: Security UI 'hasPermission' check should check if the user has the "all" permission if the requested permission is not defined
   to match how the backend works (Timothy Potter)
 
+* SOLR-15826: ResourceLoader should better respect allowed paths (janhoy)
+
 * SOLR-15828: AuthTool (in SolrCLI) should include the config-read, collection-admin-read, core-admin-read, and all permissions in the initial security.json
   to avoid warnings in the security UI (Timothy Potter)
 
 * SOLR-15199: Pass thru all command actions not explicitly handled by the bin/solr script, such as 'api', to the SolrCLI Java app (Timothy Potter)
+
+* SOLR-15833: Enable exists queries on spatial types. (Mike Drob, Houston Putman)
 
 ==================  8.11.0 ==================
 

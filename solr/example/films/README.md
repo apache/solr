@@ -1,7 +1,8 @@
-We have a movie data set in JSON, Solr XML, and CSV formats.
-All 3 formats contain the same data.  You can use any one format to index documents to Solr.
+We have a movie data set in JSON, Solr XML, and CSV formats.  All 3 formats contain the same data.  You can use any one format to index documents to Solr.
 
-The data is fetched from Freebase and the data license is present in the films-LICENSE.txt file.
+This example uses the _default configset that ships with Solr plus some custom fields added via Schema API.
+
+The data is was fetched from Freebase and the data license is present in the films-LICENSE.txt file.  Freebase was shutdown in 2016 by Google.
 
 This data consists of the following fields:
  * "id" - unique identifier for the movie
@@ -10,6 +11,11 @@ This data consists of the following fields:
  * "initial_release_date" - The earliest official initial film screening date in any country
  * "genre" - The genre(s) that the movie belongs to
 
+ The "name" and "initial_release_date" are created via the Schema API, and the "genre" and "direct_by" fields
+ are created by the use of an Update Request Processor Change called "add-unknown-fields-to-the-schema".
+
+ The below steps walk you through learning how to start up Solr, setup the films collection yourself, and then load data.  You can also run `bin/solr start -e films` or `bin/solr start -c -e films` for SolrCloud version.
+
  Steps:
    * Start Solr:
      ```
@@ -17,13 +23,13 @@ This data consists of the following fields:
      ```
 
    * Create a "films" core:
-   
+
      ```
      bin/solr create -c films
      ```
 
    * Set the schema on a couple of fields that Solr would otherwise guess differently (than we'd like) about:
-   
+
       ```
       curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
         "add-field" : {
@@ -44,7 +50,7 @@ This data consists of the following fields:
 
      - JSON: `bin/post -c films example/films/films.json`
      - XML: `bin/post -c films example/films/films.xml`
-     - CSV: 
+     - CSV:
      ```
          bin/post \
                   -c films \
@@ -53,7 +59,7 @@ This data consists of the following fields:
      ```
    * Let's get searching!
      - Search for 'Batman':
-     
+
        http://localhost:8983/solr/films/query?q=name:batman
 
        * If you get an error about the name field not existing, you haven't yet indexed the data
@@ -62,17 +68,12 @@ This data consists of the following fields:
          It's easiest to simply reset the environment and try again, ensuring that each step successfully executes.
 
      - Show me all 'Super hero' movies:
-     
+
        http://localhost:8983/solr/films/query?q=*:*&fq=genre:%22Superhero%20movie%22
 
      - Let's see the distribution of genres across all the movies. See the facet section of the response for the counts:
-     
+
        http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre
-
-Exploring the data further - 
-
-  * Increase the MAX_ITERATIONS value, put in your freebase API_KEY and run the film_data_generator.py script using Python 3.
-    Now re-index Solr with the new data.
 
 FAQ:
   Why override the schema of the _name_ and _initial_release_date_ fields?

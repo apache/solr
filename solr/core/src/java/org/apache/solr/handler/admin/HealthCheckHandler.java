@@ -17,15 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
-
 import org.apache.lucene.index.IndexCommit;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
@@ -38,14 +32,21 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.NodeHealthAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.FAILURE;
-import static org.apache.solr.common.params.CommonParams.OK;
-import static org.apache.solr.common.params.CommonParams.STATUS;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+
+import static org.apache.solr.common.params.CommonParams.*;
 import static org.apache.solr.handler.ReplicationHandler.GENERATION;
 
 /**
@@ -274,5 +275,10 @@ public class HealthCheckHandler extends RequestHandlerBase {
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new NodeHealthAPI(this));
   }
 }
