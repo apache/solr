@@ -97,8 +97,6 @@ subprojects {
     dependsOn configurations.jarValidation
 
     doFirst {
-      def isSolr = project.path.startsWith(":solr")
-
       // When gradle resolves a configuration it applies exclude rules from inherited configurations
       // globally (this seems like a bug to me). So we process each inherited configuration independently
       // but make sure there are no other dependencies on jarValidation itself.
