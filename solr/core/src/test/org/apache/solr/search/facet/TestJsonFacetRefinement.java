@@ -1018,6 +1018,78 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                   );
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-15836")
+  @Test
+  public void testChildPhase1Exclusion() throws Exception {
+    initServers();
+    final Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
+
+    List<SolrClient> clients = client.getClientProvider().all();
+    final SolrClient c0 = clients.get(0);
+    final SolrClient c1 = clients.get(1);
+
+    client.deleteByQuery("*:*", null);
+    int id = 0;
+
+    c0.add(sdoc("id", id++, "parent_s", "A", "parent_s", "X"));
+    c0.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Y"));
+
+    c1.add(sdoc("id", id++, "parent_s", "A", "parent_s", "X"));
+    c1.add(sdoc("id", id++, "parent_s", "B", "parent_s", "Y"));
+    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
+    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
+    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
+    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
+    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
+
+    client.commit();
+
+    /*
+    quoting from the comment in `testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShardProcessEmpty`:
+     */
+
+    //   - or at the very least, if the purpose of "_l" is to give other buckets a chance to "bubble up"
+    //     in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen in
+    //     phase#1, and request that the shard fill them in in addition to returning its own top buckets?
+    /*
+
+    This test transposes the above question into a more generic request (i.e., no `processEmpty`, etc.)
+    The essence of the problem is that `simple` refinement method has two main requirements:
+      1. there is at most _one_ refinement request issued to each shard, and
+      2. any buckets returned are guaranteed to have accurate counts (or perhaps more generally, stats?)
+      reflecting contributions from all shards.
+
+    The proposal in the above quoted comment would work iff the "own top buckets" returned in phase#2 did not
+    introduce any new/unseen values (and note, the only case in which returning "own top buckets" would
+    be significant _would_ be the case in which it would introduce new/unseen values). If new values
+    _were_ returned in phase#2, the only way to ensure that requirement2 is respected would be to violate
+    requirement1 (i.e., by issuing _another_ refinement request to determine whether any other shards have
+    anything to contribute to the previously unseen value).
+
+    The test below describes intuitive behavior, but the failure can't exactly be called a "bug", because
+    the intuitive behavior is fundamentally incompatible with the `simple` refinement method.
+     */
+
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "processEmpty:true,"
+                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, refine:true, facet:{"
+                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine: true }"
+                    + "} } }")
+            , "facets=={ count: 9,"
+                    + "  parent:{ buckets:[ "
+                    + "    { val:C, count: 6,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:Z, count:5}," // entirely missing b/c val not seen in phase#1
+                    + "                   {val:Y, count:1}"
+                    + "      ] } },"
+                    + "    { val:A, count: 2,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:X,count:2}"
+                    + "      ] } },"
+                    + "  ] } }"
+    );
+  }
   
   @Test
   public void testBasicRefinement() throws Exception {
