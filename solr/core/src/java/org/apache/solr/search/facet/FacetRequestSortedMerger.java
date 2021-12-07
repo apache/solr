@@ -173,11 +173,17 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     return true;
   }
 
+  private final int passLimit = 1;
+
   @Override
   public Map<String, Object> getRefinement(Context mcontext) {
     // step 1) If this facet request has refining, then we need to fully request top buckets that were not seen by this shard.
     // step 2) If this facet does not have refining, but some sub-facets do, we need to check/recurse those sub-facets in *every* top bucket.
     // A combination of the two is possible and makes step 2 redundant for any buckets we fully requested in step 1.
+
+    if (mcontext.getPass() > passLimit) {
+      return null;
+    }
 
     Map<String,Object> refinement = null;
 

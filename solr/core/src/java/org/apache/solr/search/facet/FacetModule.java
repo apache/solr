@@ -169,7 +169,7 @@ public class FacetModule extends SearchComponent {
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) return ResponseBuilder.STAGE_DONE;
 
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS && rb.stage != ResponseBuilder.STAGE_REFINEMENT) {
       return ResponseBuilder.STAGE_DONE;
     }
 
@@ -187,12 +187,15 @@ public class FacetModule extends SearchComponent {
     // requests in the outgoing queue at once.
 
     assert rb.shards.length == facetState.mcontext.numShards;
+    int ret = ResponseBuilder.STAGE_DONE;
+    final int pass = facetState.mcontext.incrementPass();
     for (String shard : rb.shards) {
       facetState.mcontext.setShard(shard);
 
       // shard-specific refinement
       Map<String, Object> refinement = facetState.merger.getRefinement(facetState.mcontext);
       if (refinement == null) continue;
+      ret = ResponseBuilder.STAGE_REFINEMENT;
 
       boolean newRequest = false;
       ShardRequest shardsRefineRequest = null;
@@ -224,6 +227,7 @@ public class FacetModule extends SearchComponent {
       }
 
       shardsRefineRequest.purpose |= PURPOSE_REFINE_JSON_FACETS;
+      shardsRefineRequest.params.set("json_facet_pass", pass);
 
       Map<String, Object> finfo = new HashMap<>(1);
       finfo.put(FACET_REFINE, refinement);
@@ -253,7 +257,7 @@ public class FacetModule extends SearchComponent {
     }
 
     // clearFaceting(rb.outgoing);
-    return ResponseBuilder.STAGE_DONE;
+    return ret;
   }
 
   @Override
@@ -313,7 +317,7 @@ public class FacetModule extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
+    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS && rb.stage != ResponseBuilder.STAGE_REFINEMENT) return;
 
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) return;

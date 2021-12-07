@@ -135,6 +135,7 @@ public class ResponseBuilder
   public static int STAGE_TOP_GROUPS = 1500;
   public static int STAGE_EXECUTE_QUERY = 2000;
   public static int STAGE_GET_FIELDS = 3000;
+  public static int STAGE_REFINEMENT = 4000;
   public static int STAGE_DONE = Integer.MAX_VALUE;
 
   public int stage;  // What stage is this current request at?
