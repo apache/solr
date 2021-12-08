@@ -1032,16 +1032,14 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client.deleteByQuery("*:*", null);
     int id = 0;
 
-    c0.add(sdoc("id", id++, "parent_s", "A", "parent_s", "X"));
-    c0.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Y"));
+    for (int i = 0; i < 5; i++) {
+      c0.add(sdoc("id", id++, "parent_s", "A", "child_s", "X"+i));
+      c0.add(sdoc("id", id++, "parent_s", "C", "child_s", "Y"+i));
 
-    c1.add(sdoc("id", id++, "parent_s", "A", "parent_s", "X"));
-    c1.add(sdoc("id", id++, "parent_s", "B", "parent_s", "Y"));
-    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
-    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
-    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
-    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
-    c1.add(sdoc("id", id++, "parent_s", "C", "parent_s", "Z"));
+      c1.add(sdoc("id", id++, "parent_s", "A", "child_s", "X"+i));
+      c1.add(sdoc("id", id++, "parent_s", "B", "child_s", "Y"+i));
+      c1.add(sdoc("id", id++, "parent_s", "C", "child_s", "Z"));
+    }
 
     client.commit();
 
@@ -1072,20 +1070,27 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
      */
 
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
-                    + "processEmpty:true,"
-                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, refine:true, facet:{"
-                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine: true }"
+                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, overrefine:1, refine:true, facet:{"
+                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:true }"
                     + "} } }")
-            , "facets=={ count: 9,"
+            , "facets=={ count: 25,"
                     + "  parent:{ buckets:[ "
-                    + "    { val:C, count: 6,"
+                    + "    { val:A, count: 10,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:X0,count:2},"
+                    + "                   {val:X1,count:2},"
+                    + "                   {val:X2,count:2},"
+                    + "                   {val:X3,count:2},"
+                    + "                   {val:X4,count:2}"
+                    + "      ] } },"
+                    + "    { val:C, count: 10,"
                     + "      child:{ buckets:[ "
                     + "                   {val:Z, count:5}," // entirely missing b/c val not seen in phase#1
-                    + "                   {val:Y, count:1}"
-                    + "      ] } },"
-                    + "    { val:A, count: 2,"
-                    + "      child:{ buckets:[ "
-                    + "                   {val:X,count:2}"
+                    + "                   {val:Y0, count:1},"
+                    + "                   {val:Y1, count:1},"
+                    + "                   {val:Y2, count:1},"
+                    + "                   {val:Y3, count:1},"
+                    + "                   {val:Y4, count:1}" // instead we actually see this
                     + "      ] } },"
                     + "  ] } }"
     );
