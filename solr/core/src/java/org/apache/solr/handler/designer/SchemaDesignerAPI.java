@@ -515,7 +515,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       try {
         cleanupTemp(configSet);
       } catch (IOException | SolrServerException | SolrException exc) {
-        log.warn("Failed to clean-up temp collection {} due to: {}", mutableId, exc.getMessage());
+        final String excStr = exc.toString();
+        log.warn("Failed to clean-up temp collection {} due to: {}", mutableId, excStr);
       }
     }
 

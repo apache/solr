@@ -461,7 +461,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     try {
       cloudClient().deleteByQuery(BLOB_STORE_ID, "id:" + configSet + "_sample/*", 10);
     } catch (IOException | SolrServerException | SolrException exc) {
-      log.warn("Failed to delete sample docs from blob store for {} due to: {}", configSet, exc.toString());
+      final String excStr = exc.toString();
+      log.warn("Failed to delete sample docs from blob store for {} due to: {}", configSet, excStr);
     }
   }
 
