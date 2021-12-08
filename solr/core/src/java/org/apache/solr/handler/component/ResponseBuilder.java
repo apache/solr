@@ -175,6 +175,10 @@ public class ResponseBuilder
     }
   }
 
+  protected ShardsInfoContainer newShardsInfoContainer() {
+    return new DefaultShardsInfoContainer();
+  }
+
   public Map<Object, ShardDoc> resultIds;
   // Maps uniqueKeyValue to ShardDoc, which may be used to
   // determine order of the doc or uniqueKey in the final

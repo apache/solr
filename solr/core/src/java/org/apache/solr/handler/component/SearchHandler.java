@@ -277,7 +277,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
   
   /**
-   * Override this method if you require a custom {@link ResponseBuilder} e.g. for use by a custom {@link SearchComponent}.
+   * Override this method if you require a custom {@link ResponseBuilder}
+   * e.g. to override the {@link ResponseBuilder#newShardsInfoContainer()}
+   * or for use by a custom {@link SearchComponent}.
    */
   protected ResponseBuilder newResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     return new ResponseBuilder(req, rsp, components);
@@ -516,7 +518,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     
     // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
     if(!rb.isDistrib && req.getParams().getBool(ShardParams.SHARDS_INFO, false) && rb.shortCircuitedURL != null) {  
-      NamedList<Object> shardInfo = new SimpleOrderedMap<Object>();
+      ShardsInfoContainer shardsInfo = rb.newShardsInfoContainer();
       SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();        
       if (rsp.getException() != null) {
         Throwable cause = rsp.getException();
@@ -541,8 +543,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       
       int pos = rb.shortCircuitedURL.indexOf("://");        
       String shardInfoName = pos != -1 ? rb.shortCircuitedURL.substring(pos+3) : rb.shortCircuitedURL;
-      shardInfo.add(shardInfoName, nl);   
-      rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);            
+      shardsInfo.accept(shardInfoName, nl);
+      rsp.getValues().add(ShardParams.SHARDS_INFO, shardsInfo.get());
     }
   }
 
