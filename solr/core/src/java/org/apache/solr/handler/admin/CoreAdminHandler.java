@@ -36,6 +36,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.InvokeClassAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
@@ -410,6 +411,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public Collection<Api> getApis() {
     final List<Api> apis = Lists.newArrayList(coreAdminHandlerApi.getApis());
     // Only some core-admin APIs use the v2 AnnotatedApi framework
+    apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new InvokeClassAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
