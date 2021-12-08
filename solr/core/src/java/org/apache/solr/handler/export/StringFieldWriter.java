@@ -20,6 +20,7 @@ package org.apache.solr.handler.export;
 import java.io.IOException;
 import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
@@ -27,11 +28,14 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.schema.DocValuesRefIterator;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 
 class StringFieldWriter extends FieldWriter {
   protected String field;
   private FieldType fieldType;
+  private final DocValuesRefIteratorCache dvRefIterCache;
   private BytesRef lastRef;
   private int lastOrd = -1;
   private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap<>();
@@ -49,9 +53,34 @@ class StringFieldWriter extends FieldWriter {
     }
   };
 
-  public StringFieldWriter(String field, FieldType fieldType) {
-    this.field = field;
+  public StringFieldWriter(SchemaField field, FieldType fieldType, int nLeaves) {
+    this.field = field.getName();
     this.fieldType = fieldType;
+    this.dvRefIterCache = new DocValuesRefIteratorCache(field, fieldType, nLeaves);
+  }
+
+  static class DocValuesRefIteratorCache {
+
+    private final SchemaField field;
+    private final FieldType fieldType;
+
+    DocValuesRefIteratorCache(SchemaField field, FieldType fieldType, int nLeaves) {
+      this.field = field;
+      this.fieldType = fieldType;
+      this.reuseDVIters = new DocValuesRefIterator[nLeaves];
+    }
+
+    // for reusing DocValues across invocations, where possible
+    private final DocValuesRefIterator[] reuseDVIters;
+
+    DocValuesRefIterator getDocValuesRefIterator(int docId, LeafReader reader, int readerOrd) throws IOException {
+      DocValuesRefIterator reuseDVIter = reuseDVIters[readerOrd];
+      if (reuseDVIter == null || docId < reuseDVIter.docID()) {
+        reuseDVIter = fieldType.getDocValuesRefIterator(reader, field);
+        reuseDVIters[readerOrd] = reuseDVIter;
+      }
+      return reuseDVIter;
+    }
   }
 
   public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
@@ -75,6 +104,13 @@ class StringFieldWriter extends FieldWriter {
       }
 
       this.lastOrd = stringValue.currentOrd;
+    } else if (fieldType.isUtf8Field()) {
+      // field is not part of 'sort' param, but part of 'fl' param
+      DocValuesRefIterator vals = dvRefIterCache.getDocValuesRefIterator(sortDoc.docId, readerContext.reader(), readerContext.ord);
+      if (!vals.advanceExact(sortDoc.docId)) {
+        return false;
+      }
+      ref = vals.nextRef();
     }
 
     if (ref == null) {

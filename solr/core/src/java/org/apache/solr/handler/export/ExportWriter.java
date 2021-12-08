@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -459,6 +461,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   public FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
     IndexSchema schema = searcher.getSchema();
+    final FieldInfos fieldInfos = searcher.getFieldInfos();
     FieldWriter[] writers = new FieldWriter[fields.length];
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
@@ -473,6 +476,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if (!schemaField.hasDocValues()) {
         throw new IOException(schemaField + " must have DocValues to use this feature.");
       }
+      final int nLeaves = searcher.getIndexReader().leaves().size();
+      final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+      if (fieldInfo == null) {
+        writers[i] = EMPTY_FIELD_WRITER;
+        continue;
+      }
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
 
@@ -482,45 +491,45 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
       if (fieldType instanceof IntValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, nLeaves);
         } else {
           writers[i] = new IntFieldWriter(field);
         }
       } else if (fieldType instanceof LongValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, nLeaves);
         } else {
           writers[i] = new LongFieldWriter(field);
         }
       } else if (fieldType instanceof FloatValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, nLeaves);
         } else {
           writers[i] = new FloatFieldWriter(field);
         }
       } else if (fieldType instanceof DoubleValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, nLeaves);
         } else {
           writers[i] = new DoubleFieldWriter(field);
         }
-      } else if (fieldType instanceof StrField || fieldType instanceof SortableTextField) {
+      } else if (fieldType.isUtf8Field()) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false, nLeaves);
         } else {
-          writers[i] = new StringFieldWriter(field, fieldType);
+          writers[i] = new StringFieldWriter(schemaField, fieldType, nLeaves);
         }
       } else if (fieldType instanceof DateValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false, nLeaves);
         } else {
           writers[i] = new DateFieldWriter(field);
         }
       } else if (fieldType instanceof BoolField) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, nLeaves);
         } else {
-          writers[i] = new BoolFieldWriter(field, fieldType);
+          writers[i] = new BoolFieldWriter(schemaField, fieldType, nLeaves);
         }
       } else {
         throw new IOException("Export fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
@@ -528,6 +537,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
     return writers;
   }
+
+  private static final FieldWriter EMPTY_FIELD_WRITER = new FieldWriter() {
+    @Override
+    public boolean write(SortDoc sortDoc, LeafReaderContext reader, EntryWriter out, int fieldIndex) throws IOException {
+      return false;
+    }
+  };
 
   SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
     SortValue[] sortValues = new SortValue[sortFields.length];

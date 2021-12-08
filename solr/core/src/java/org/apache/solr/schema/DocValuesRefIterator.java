@@ -14,23 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.handler.export;
+package org.apache.solr.schema;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
 
-class BoolFieldWriter extends StringFieldWriter {
-  public BoolFieldWriter(SchemaField field, FieldType fieldType, int nLeaves) {
-    super(field, fieldType, nLeaves);
-  }
+public abstract class DocValuesRefIterator extends DocIdSetIterator {
+  /**
+   * Serially returns each BytesRef value represented by DocValues for the
+   * current document. null return value indicates no further values.
+   */
+  public abstract BytesRef nextRef() throws IOException;
 
-  protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType) throws IOException {
-    fieldType.indexedToReadable(ref, cref);
-    ew.put(this.field, "true".equals(cref.toString()));
-  }
+  public abstract boolean advanceExact(int docId) throws IOException;
 }

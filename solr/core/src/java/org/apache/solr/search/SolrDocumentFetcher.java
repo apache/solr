@@ -68,6 +68,7 @@ import org.apache.solr.response.DocsStreamer;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.DocValuesRefIterator;
 import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
@@ -528,6 +529,22 @@ public class SolrDocumentFetcher {
       return null; // Searcher doesn't have info about this field, hence ignore it.
     }
 
+    org.apache.solr.schema.FieldType ft = schemaField.getType();
+    if (ft.isUtf8Field()) {
+      DocValuesRefIterator refIter = ft.getDocValuesRefIterator(leafReader, schemaField);
+      BytesRef value;
+      if (!refIter.advanceExact(localId) || (value = refIter.nextRef()) == null) {
+        return null;
+      } else if (!schemaField.multiValued()) {
+        return ft.toObject(schemaField, value);
+      } else {
+        final List<Object> outValues = new LinkedList<>();
+        do {
+          outValues.add(ft.toObject(schemaField, value));
+        } while ((value = refIter.nextRef()) != null);
+        return outValues;
+      }
+    }
     final DocValuesType dvType = fi.getDocValuesType();
     switch (dvType) {
       case NUMERIC:
@@ -551,8 +568,8 @@ public class SolrDocumentFetcher {
         if (sdv != null && sdv.advanceExact(localId)) {
           final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
-          if (schemaField.getType() instanceof BoolField) {
-            return schemaField.getType().toObject(schemaField, bRef);
+          if (ft instanceof BoolField) {
+            return ft.toObject(schemaField, bRef);
           } else {
             return bRef.utf8ToString();
           }
@@ -587,7 +604,7 @@ public class SolrDocumentFetcher {
           final List<Object> outValues = new LinkedList<>();
           for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
             BytesRef value = values.lookupOrd(ord);
-            outValues.add(schemaField.getType().toObject(schemaField, value));
+            outValues.add(ft.toObject(schemaField, value));
           }
           assert outValues.size() > 0;
           return outValues;

@@ -134,6 +134,11 @@ public class Grouping {
     this.main = main;
   }
 
+  public static String getSortFieldName(SchemaField field) {
+    //nocommit: should this just use a more direct (currently "whitebox"-labelled) method?
+    return field.getSortField(true).getField();
+  }
+
   public void add(Grouping.Command<?> groupingCommand) {
     commands.add(groupingCommand);
   }
@@ -156,7 +161,7 @@ public class Grouping {
 
     Grouping.CommandField gc = new CommandField();
     gc.withinGroupSort = withinGroupSort;
-    gc.groupBy = field;
+    gc.groupBy = getSortFieldName(schemaField);
     gc.key = field;
     gc.numGroups = limitDefault;
     gc.docsPerGroup = docsPerGroupDefault;
