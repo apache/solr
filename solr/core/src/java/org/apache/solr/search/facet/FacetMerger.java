@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.SIMPLE;
 
@@ -122,6 +124,49 @@ public abstract class FacetMerger {
       }
       refineSubMap.put(freq, subs);
       return subs;
+    }
+
+    protected enum TopLevelSub { NONE, DESCENDANT, CHILD }
+    protected static final Map<TopLevelSub, Collection<String>> NONE_ENTRY;
+    static {
+      Map<TopLevelSub, Collection<String>> tmp = new EnumMap<>(TopLevelSub.class);
+      tmp.put(TopLevelSub.NONE, null);
+      NONE_ENTRY = Collections.unmodifiableMap(tmp);
+    }
+
+    private Map<FacetRequest, Map<TopLevelSub, Collection<String>>> hasTopLevelSubs = new IdentityHashMap<>(4);
+    public Map<TopLevelSub, Collection<String>> hasTopLevelSubs(FacetRequest freq) {
+      if (freq.getSubFacets().isEmpty()) return NONE_ENTRY;
+      Map<TopLevelSub, Collection<String>> cached = hasTopLevelSubs.get(freq);
+      if (cached != null) {
+        return cached;
+      }
+
+      final Set<Map.Entry<String, FacetRequest>> children = freq.subFacets.entrySet();
+      Collection<String> topLevelChildren = new ArrayList<>(children.size());
+      Collection<String> childrenWithTopLevelDescendants = new ArrayList<>(children.size());
+      for (Map.Entry<String,FacetRequest> entry : children) {
+        final FacetRequest child = entry.getValue();
+        if (child.evaluateAsTopLevel()) {
+          topLevelChildren.add(entry.getKey());
+        } else if (hasTopLevelSubs(child) != NONE_ENTRY) {
+          childrenWithTopLevelDescendants.add(entry.getKey());
+        }
+      }
+      if (topLevelChildren.isEmpty() && childrenWithTopLevelDescendants.isEmpty()) {
+        // the common case
+        hasTopLevelSubs.put(freq, NONE_ENTRY);
+        return NONE_ENTRY;
+      }
+      Map<TopLevelSub, Collection<String>> ret = new EnumMap<>(TopLevelSub.class);
+      if (!topLevelChildren.isEmpty()) {
+        ret.put(TopLevelSub.CHILD, topLevelChildren);
+      }
+      if (!childrenWithTopLevelDescendants.isEmpty()) {
+        ret.put(TopLevelSub.DESCENDANT, childrenWithTopLevelDescendants);
+      }
+      hasTopLevelSubs.put(freq, ret);
+      return ret;
     }
 
 

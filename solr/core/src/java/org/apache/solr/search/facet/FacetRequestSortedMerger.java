@@ -173,7 +173,97 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     return true;
   }
 
-  private final int passLimit = 1;
+  private boolean prunedBuckets = false;
+
+  private void pruneBuckets(FacetRequest.FacetSort initial_sort) {
+    assert !sortedBuckets.isEmpty();
+    assert !prunedBuckets;
+    sortBuckets(initial_sort);
+    long first = freq.offset;
+    long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
+    long last = Math.min(sortedBuckets.size(), end);
+    List<FacetBucket> prunedBuckets = new ArrayList<>(Math.max(0, (int)(last - first)));
+    boolean refine = freq.refine != null && freq.refine != FacetRequest.RefineMethod.NONE;
+    int off = (int)freq.offset;
+    int lim = freq.limit >= 0 ? (int)freq.limit : Integer.MAX_VALUE;
+    for (FacetBucket bucket : sortedBuckets) {
+      if (bucket.getCount() < freq.mincount) {
+        // prune all buckets not meeting mincount
+        buckets.remove(bucket.bucketValue);
+        continue;
+      }
+      if (refine && !isBucketComplete(bucket,mcontext)) {
+        // prune all incomplete buckets
+        buckets.remove(bucket.bucketValue);
+        continue;
+      }
+
+      if (off > 0) {
+        // prune all buckets before specified offset
+        buckets.remove(bucket.bucketValue);
+        --off;
+        continue;
+      }
+
+      if (prunedBuckets.size() >= lim) {
+        // prune all buckets after specified limit
+        buckets.remove(bucket.bucketValue);
+        continue;
+      }
+
+      prunedBuckets.add(bucket);
+    }
+    sortedBuckets = prunedBuckets;
+    this.prunedBuckets = true;
+  }
+
+  private Collection<Object> initTopLevelSubs(int pass, FacetRequest.FacetSort initial_sort, final Map<Context.TopLevelSub, Collection<String>> topLevelSubs) {
+    assert topLevelSubs != Context.NONE_ENTRY;
+    final boolean initialTopLevelPivot = pass == passLimit;
+    if (!prunedBuckets) {
+      // only do this the first time
+      assert initialTopLevelPivot : "pass="+pass+", passLimit="+passLimit;
+      pruneBuckets(initial_sort);
+    }
+    ArrayList<Object> skipBuckets = new ArrayList<>(sortedBuckets.size());
+    final Collection<String> childrenWithTopLevelDescendants = topLevelSubs.get(Context.TopLevelSub.DESCENDANT);
+    final Collection<String> topLevelChildren = topLevelSubs.get(Context.TopLevelSub.CHILD);
+    final int mapInitSize = (childrenWithTopLevelDescendants == null ? 0 : childrenWithTopLevelDescendants.size()) + (topLevelChildren == null ? 0 : topLevelChildren.size());
+    for (FacetBucket bucket : sortedBuckets) {
+      Map<String, Object> refinement = new HashMap<>(mapInitSize);
+      if (childrenWithTopLevelDescendants != null) {
+        bucket.getRefinement(mcontext, childrenWithTopLevelDescendants, refinement);
+      }
+      if (topLevelChildren != null) {
+        if (initialTopLevelPivot) {
+          assert topLevelChildrenAbsent(bucket, topLevelChildren);
+          for (String key : topLevelChildren) {
+            refinement.put(key, Collections.EMPTY_MAP);
+          }
+        } else {
+          bucket.getRefinement(mcontext, topLevelChildren, refinement);
+        }
+      }
+      if (!refinement.isEmpty()) {
+        skipBuckets.add(Arrays.asList(bucket.bucketValue, refinement));
+      }
+    }
+    return skipBuckets.isEmpty() ? null : skipBuckets;
+  }
+
+  private boolean topLevelChildrenAbsent(FacetBucket bucket, Collection<String> topLevelChildren) {
+    if (bucket.subs == null) {
+      return true;
+    }
+    for (String key : topLevelChildren) {
+      if (bucket.subs.containsKey(key)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private int passLimit = -1;
 
   @Override
   public Map<String, Object> getRefinement(Context mcontext) {
@@ -181,8 +271,26 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // step 2) If this facet does not have refining, but some sub-facets do, we need to check/recurse those sub-facets in *every* top bucket.
     // A combination of the two is possible and makes step 2 redundant for any buckets we fully requested in step 1.
 
-    if (mcontext.getPass() > passLimit) {
-      return null;
+    final FacetRequest.FacetSort initial_sort = null == freq.prelim_sort ? freq.sort : freq.prelim_sort;
+
+    Collection<Object> initTopLevelSubs = null;
+
+    if (passLimit == -1) {
+      // `passLimit` always the same wrt first time `getRefinement(...)` is called, regardless of `freq.refine`
+      passLimit = mcontext.getPass() + 1;
+      final Map<Context.TopLevelSub, Collection<String>> topLevelSubs;
+      if (false && freq.refine == FacetRequest.RefineMethod.NONE && (topLevelSubs = mcontext.hasTopLevelSubs(freq)) != Context.NONE_ENTRY) {
+        // TODO: enable this when merging is implemented; as currently disabled we simply run extra requests
+        initTopLevelSubs = initTopLevelSubs(mcontext.getPass(), initial_sort, topLevelSubs);
+      }
+    } else if (mcontext.getPass() >= passLimit) {
+      final Map<Context.TopLevelSub, Collection<String>> topLevelSubs = mcontext.hasTopLevelSubs(freq);
+      if (topLevelSubs == Context.NONE_ENTRY) {
+        return null;
+      } else {
+        initTopLevelSubs = initTopLevelSubs(mcontext.getPass(), initial_sort, topLevelSubs);
+        return initTopLevelSubs == null ? null : Collections.singletonMap("_s", initTopLevelSubs);
+      }
     }
 
     Map<String,Object> refinement = null;
@@ -193,8 +301,6 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       return null;
     }
 
-    final FacetRequest.FacetSort initial_sort = null == freq.prelim_sort ? freq.sort : freq.prelim_sort;
-    
     // Tags for sub facets that have partial facets somewhere in their children.
     // If we are missing a bucket for this shard, we'll need to get the specific buckets that need refining.
     Collection<String> tagsWithPartial = mcontext.getSubsWithPartial(freq);
@@ -307,11 +413,19 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // TODO: what if we don't need to refine any variable buckets, but we do need to contribute to numBuckets, missing, allBuckets, etc...
     // because we were "partial".  That will be handled at a higher level (i.e. we'll be in someone's missing bucket?)
     // TODO: test with a sub-facet with a limit of 0 and something like a missing bucket
-    if (leafBuckets != null || partialBuckets != null || skipBuckets != null) {
+    if (leafBuckets != null || partialBuckets != null || skipBuckets != null || initTopLevelSubs != null) {
       refinement = new HashMap<>(3);
       if (leafBuckets != null) refinement.put("_l",leafBuckets);
       if (partialBuckets != null) refinement.put("_p", partialBuckets);
-      if (skipBuckets != null) refinement.put("_s", skipBuckets);
+      if (skipBuckets != null) {
+        if (initTopLevelSubs != null) {
+          // merge in topLevelSubs
+          throw new UnsupportedOperationException("TODO: implement this");
+        }
+        refinement.put("_s", skipBuckets);
+      } else if (initTopLevelSubs != null) {
+        refinement.put("_s", initTopLevelSubs);
+      }
     }
 
     refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial);

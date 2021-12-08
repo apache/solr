@@ -460,8 +460,18 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
       }
 
-      // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
-      if (skip && facetInfoSub == null) continue;
+      if (skip) {
+        // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
+        if (facetInfoSub == null) continue;
+        if (facetInfoSub.isEmpty()) {
+          assert subRequest.evaluateAsTopLevel();
+          // hacky; we use an _empty_ facetInfoSub as a signal to perform top-level (i.e. non-refinement) faceting
+          facetInfoSub = null;
+        }
+      } else if (subRequest.evaluateAsTopLevel() && fcontext.isShard()) {
+        // defer evaluateAtTopLevel requests until requested via an empty `facetInfoSub` under "skip" bucket
+        continue;
+      }
 
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);

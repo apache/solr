@@ -380,6 +380,10 @@ public abstract class FacetRequest {
     return false;
   }
 
+  public boolean evaluateAsTopLevel() {
+    return false;
+  }
+
   public void addStat(String key, AggValueSource stat) {
     facetStats.put(key, stat);
   }

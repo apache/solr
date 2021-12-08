@@ -227,7 +227,6 @@ public class FacetModule extends SearchComponent {
       }
 
       shardsRefineRequest.purpose |= PURPOSE_REFINE_JSON_FACETS;
-      shardsRefineRequest.params.set("json_facet_pass", pass);
 
       Map<String, Object> finfo = new HashMap<>(1);
       finfo.put(FACET_REFINE, refinement);

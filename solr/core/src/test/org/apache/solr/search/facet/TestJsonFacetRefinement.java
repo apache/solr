@@ -1071,7 +1071,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
                     + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, overrefine:1, refine:true, facet:{"
-                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:true }"
+                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:true, topLevel:true }"
                     + "} } }")
             , "facets=={ count: 25,"
                     + "  parent:{ buckets:[ "

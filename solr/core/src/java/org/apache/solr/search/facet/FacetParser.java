@@ -548,6 +548,7 @@ abstract class FacetParser<T extends FacetRequest> {
 
         // TODO: pull up to higher level?
         facet.refine = FacetRequest.RefineMethod.fromObj(m.get("refine"));
+        facet.topLevel = getBoolean(m, "topLevel", facet.topLevel);
 
         facet.perSeg = getBooleanOrNull(m, "perSeg");
 
