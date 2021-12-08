@@ -146,6 +146,8 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.facet.FacetParser;
+import org.apache.solr.search.facet.FacetParserFactory;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.DefaultSolrCoreState;
@@ -226,6 +228,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors =
       new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
+  private final PluginBag<FacetParserFactory> facetParserFactories =
+      new PluginBag<>(FacetParserFactory.class, this);
   private final Map<String, UpdateRequestProcessorChain> updateProcessorChains;
   private final SolrCoreMetricManager coreMetricManager;
   private final Map<String, SolrInfoBean> infoRegistry = new ConcurrentHashMap<>();
@@ -1126,6 +1130,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();
+      loadFacetParserFactories();
       updateProcessors.init(Collections.emptyMap(), this);
 
       // Processors initialized before the handlers
@@ -1770,6 +1775,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (reqHandlers != null) reqHandlers.close();
     responseWriters.close();
     searchComponents.close();
+    facetParserFactories.close();
     qParserPlugins.close();
     valueSourceParsers.close();
     transformerFactories.close();
@@ -2012,6 +2018,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public PluginBag<SearchComponent> getSearchComponents() {
     return searchComponents;
+  }
+
+  /** Registers the default facet parsers */
+  private void loadFacetParserFactories() {
+    Map<String, FacetParserFactory> instances = createInstances(FacetParser.standard_factories);
+    facetParserFactories.init(instances, this);
+  }
+
+  /**
+   * @return The facet parser factory registered to the given name.
+   */
+  public FacetParserFactory getFacetParserFactory(String name) {
+    return facetParserFactories.get(name);
   }
 
   ////////////////////////////////////////////////////////////////////////////////
