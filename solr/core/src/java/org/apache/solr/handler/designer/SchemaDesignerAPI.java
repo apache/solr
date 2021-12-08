@@ -773,11 +773,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       Optional<SchemaField> maybeSchemaField = schemaSuggester.suggestField(normalizedField, sampleValues, schema, langs);
       maybeSchemaField.ifPresent(fieldsToAdd::add);
     }
-
     if (!fieldsToAdd.isEmpty()) {
       schema = (ManagedIndexSchema) schema.addFields(fieldsToAdd);
     }
-
     return schema;
   }
 
