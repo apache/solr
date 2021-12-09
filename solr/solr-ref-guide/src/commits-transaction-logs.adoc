@@ -266,7 +266,7 @@ The number of update records to keep per log.
 |Optional |Default: `10`
 |===
 +
-The maximum number of logs keep.
+The maximum number of logs to keep.
 
 `numVersionBuckets`::
 +

@@ -202,8 +202,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
   protected TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap2
 
-  protected final int numDeletesToKeep = 1000;
-  protected final int numDeletesByQueryToKeep = 100;
+  protected int numDeletesToKeep = 1000;
+  protected int numDeletesByQueryToKeep = 100;
   protected int numRecordsToKeep;
   protected int maxNumLogsToKeep;
   protected int numVersionBuckets; // This should only be used to initialize VersionInfo... the actual number of buckets may be rounded up to a power of two.
@@ -340,6 +340,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     dataDir = (String)info.initArgs.get("dir");
     defaultSyncLevel = SyncLevel.getSyncLevel((String)info.initArgs.get("syncLevel"));
 
+    numDeletesToKeep = objToInt(info.initArgs.get("numDeletesToKeep"), 1000);
+    numDeletesByQueryToKeep = objToInt(info.initArgs.get("numDeletesByQueryToKeep"), 100);
     numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
     numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 65536);
@@ -347,8 +349,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Number of version buckets must be greater than 0!");
 
-    log.info("Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} numVersionBuckets={}",
-        dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep, numVersionBuckets);
+    log.info("Initializing UpdateLog: dataDir={} defaultSyncLevel={} numDeletesToKeep={} numDeletesByQueryToKeep={} numRecordsToKeep={} maxNumLogsToKeep={} numVersionBuckets={}",
+        dataDir, defaultSyncLevel, numDeletesToKeep, numDeletesByQueryToKeep, numRecordsToKeep, maxNumLogsToKeep, numVersionBuckets);
   }
 
   /* Note, when this is called, uhandler is not completely constructed.
