@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Enumerator that reads from a Solr collection. */
-class SolrEnumerator implements Enumerator<Object> {
+public class SolrEnumerator implements Enumerator<Object> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final TupleStream tupleStream;
@@ -51,6 +51,10 @@ class SolrEnumerator implements Enumerator<Object> {
     }
     this.fields = fields;
     this.current = null;
+  }
+
+  public TupleStream tupleStream() {
+    return tupleStream;
   }
 
   /** Produce the next row from the results

@@ -28,6 +28,10 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.jdbc.CalciteConnection;
+import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
@@ -39,6 +43,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.sql.CalciteSolrDriver;
+import org.apache.solr.handler.sql.SolrEnumerator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -145,6 +150,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     private boolean firstTuple = true;
     List<String> metadataFields = new ArrayList<>();
     Map<String, String> metadataAliases = new HashMap<>();
+    private final boolean returnSolrQueryOnly;
+    private final String sqlQuery;
+    TupleStream queryTupleStream;
 
     SqlHandlerStream(String connectionUrl, String sqlQuery, StreamComparator definedSort,
                      Properties connectionProperties, String driverClassName, boolean includeMetadata)
@@ -152,10 +160,46 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
       super(connectionUrl, sqlQuery, definedSort, connectionProperties, driverClassName);
 
       this.includeMetadata = includeMetadata;
+      this.returnSolrQueryOnly = "true".equals(connectionProperties.getProperty("returnSolrQueryOnly"));
+      this.sqlQuery = sqlQuery;
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void open() throws IOException {
+      if (returnSolrQueryOnly) {
+        // Get the Calcite connection and then call prepareSql so we can grab the TupleStream directly
+        // to by-pass all the ResultSet creation in the JDBC layer as we just want the Solr query for this SQL vs. executing the SQL
+        CalciteConnection calciteConn = (CalciteConnection)openConnection();
+        CalcitePrepare.Context context = calciteConn.createPrepareContext();
+        CalcitePrepare.CalciteSignature sig =
+            (new CalcitePrepareImpl()).prepareSql(context, CalcitePrepare.Query.of(sqlQuery), Object[].class, -1);
+        Enumerator<Object> e = sig.enumerable(context.getDataContext()).enumerator();
+        if (e instanceof SolrEnumerator) {
+          queryTupleStream = ((SolrEnumerator)e).tupleStream();
+          queryTupleStream.open();
+          return;
+        } else {
+          try {
+            calciteConn.close();
+          } catch (SQLException warnOnly) {
+            log.warn("Failed to close JDBC Connection", warnOnly);
+          }
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to parse SQL into Solr query!");
+        }
+      }
+
+      // else just normal SQL query execution
+      super.open();
     }
 
     @Override
     public Tuple read() throws IOException {
+      // did the user request the Solr query only vs. actually executing the query?
+      if (returnSolrQueryOnly) {
+        return queryTupleStream.read();
+      }
+
       // Return a metadata tuple as the first tuple and then pass through to the JDBCStream.
       if(firstTuple) {
         try {

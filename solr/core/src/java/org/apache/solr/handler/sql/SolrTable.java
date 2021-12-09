@@ -28,6 +28,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.calcite.util.Pair;
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
@@ -46,11 +47,13 @@ import org.apache.solr.client.solrj.io.eval.NotEvaluator;
 import org.apache.solr.client.solrj.io.eval.OrEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
 import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 
 import java.io.IOException;
 import java.util.*;
@@ -63,7 +66,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 /**
  * Table based on a Solr collection
  */
-class SolrTable extends AbstractQueryableTable implements TranslatableTable {
+public class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   private static final String DEFAULT_QUERY = "*:*";
 
   private final String collection;
@@ -129,7 +132,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     String zk = properties.getProperty("zk");
     try {
       if (metricPairs.isEmpty() && buckets.isEmpty()) {
-        tupleStream = handleSelect(zk, collection, q, fields, orders, limit, offset);
+        boolean returnSolrQueryOnly = "true".equals(properties.getProperty("returnSolrQueryOnly"));
+        tupleStream = handleSelect(zk, collection, q, fields, orders, limit, offset, returnSolrQueryOnly);
       } else {
         if(buckets.isEmpty()) {
           tupleStream = handleStats(zk, collection, q, metricPairs, fields);
@@ -265,7 +269,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                    List<Map.Entry<String, Class<?>>> fields,
                                    List<Pair<String, String>> orders,
                                    String limit,
-                                   String offset) throws IOException {
+                                   String offset,
+                                   boolean returnSolrQueryOnly) throws IOException {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.Q, query);
@@ -303,27 +308,39 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     if (offset != null && limit == null) {
       throw new IOException("OFFSET without LIMIT not supported by Solr! Specify desired limit using 'FETCH NEXT <LIMIT> ROWS ONLY'");
     }
-    
+
     if (limit != null) {
       int limitInt = Integer.parseInt(limit);
       // if there's an offset, then we need to fetch offset + limit rows from each shard and then sort accordingly
-      LimitStream limitStream;
+      TupleStream limitStream;
       if (offset != null) {
         int offsetInt = Integer.parseInt(offset);
         int rows = limitInt + offsetInt;
         params.add(CommonParams.START, "0"); // tricky ... we need all rows up to limit + offset
         params.add(CommonParams.ROWS, String.valueOf(rows));
         // re-sort all the streams back from the shards
-        StreamComparator streamSorter = new MultipleFieldComparator(getComps(orders));
-        limitStream = new LimitStream(new SortStream(new CloudSolrStream(zk, collection, params), streamSorter), limitInt, offsetInt);
+        if (returnSolrQueryOnly) {
+          limitStream = new SolrParamsStream(params);
+        } else {
+          StreamComparator streamSorter = new MultipleFieldComparator(getComps(orders));
+          limitStream = new LimitStream(new SortStream(new CloudSolrStream(zk, collection, params), streamSorter), limitInt, offsetInt);
+        }
       } else {
         params.add(CommonParams.ROWS, limit);
-        limitStream = new LimitStream(new CloudSolrStream(zk, collection, params), limitInt);
+        if (returnSolrQueryOnly) {
+          limitStream = new SolrParamsStream(params);
+        } else {
+          limitStream = new LimitStream(new CloudSolrStream(zk, collection, params), limitInt);
+        }
       }
       return limitStream;
     } else {
       params.add(CommonParams.QT, "/export");
-      return new CloudSolrStream(zk, collection, params);
+      if (returnSolrQueryOnly) {
+        return new SolrParamsStream(params);
+      } else {
+        return new CloudSolrStream(zk, collection, params);
+      }
     }
   }
 
@@ -906,6 +923,56 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       return ComparatorOrder.DESCENDING;
     } else {
       return ComparatorOrder.ASCENDING;
+    }
+  }
+
+  private static class SolrParamsStream extends TupleStream {
+
+    private boolean finished = false;
+    private final SolrParams params;
+
+    SolrParamsStream(SolrParams params) {
+      this.params = params;
+    }
+
+    @Override
+    public void setStreamContext(StreamContext context) {
+
+    }
+
+    @Override
+    public List<TupleStream> children() {
+      return new ArrayList<>();
+    }
+
+    @Override
+    public void open() throws IOException {
+
+    }
+
+    @Override
+    public void close() throws IOException {
+
+    }
+
+    @Override
+    public Tuple read() throws IOException {
+      if (finished) {
+        return Tuple.EOF();
+      } else {
+        finished = true;
+        return new Tuple("query", params.jsonStr());
+      }
+    }
+
+    @Override
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+      return null;
     }
   }
 }

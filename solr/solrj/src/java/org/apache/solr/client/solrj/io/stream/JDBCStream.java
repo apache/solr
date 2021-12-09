@@ -245,33 +245,8 @@ public class JDBCStream extends TupleStream implements Expressible {
   *
   ***/
   public void open() throws IOException {
-    
-    try{
-      if(null != driverClassName){
-        Class.forName(driverClassName);
-      }
-    } catch (ClassNotFoundException e){
-      throw new IOException(String.format(Locale.ROOT, "Failed to load JDBC driver for '%s'", driverClassName), e);
-    }
-    
-    // See if we can figure out the driver based on the url, if not then tell the user they most likely want to provide the driverClassName.
-    // Not being able to find a driver generally means the driver has not been loaded.
-    try{
-      if(null == DriverManager.getDriver(connectionUrl)){
-        throw new SQLException("DriverManager.getDriver(url) returned null");
-      }
-    } catch(SQLException e){
-      throw new IOException(String.format(Locale.ROOT,
-          "Failed to determine JDBC driver from connection url '%s'. Usually this means the driver is not loaded - " +
-              "you can have JDBCStream try to load it by providing the 'driverClassName' value", connectionUrl), e);
-    }
-    
-    try {
-      connection = DriverManager.getConnection(connectionUrl, connectionProperties);
-    } catch (SQLException e) {
-      throw new IOException(String.format(Locale.ROOT, "Failed to open JDBC connection to '%s'", connectionUrl), e);
-    }
-    
+    openConnection();
+
     try{
       statement = connection.createStatement();
     } catch (SQLException e) {
@@ -292,6 +267,38 @@ public class JDBCStream extends TupleStream implements Expressible {
     } catch (SQLException e) {
       throw new IOException(String.format(Locale.ROOT,
           "Failed to generate value selectors for sqlQuery '%s' against JDBC connection '%s'", sqlQuery, connectionUrl), e);
+    }
+  }
+
+  protected Connection openConnection() throws IOException {
+    ensureDriver();
+    try {
+      connection = DriverManager.getConnection(connectionUrl, connectionProperties);
+    } catch (SQLException e) {
+      throw new IOException(String.format(Locale.ROOT, "Failed to open JDBC connection to '%s'", connectionUrl), e);
+    }
+    return connection;
+  }
+
+  private void ensureDriver() throws IOException {
+    try{
+      if(null != driverClassName){
+        Class.forName(driverClassName);
+      }
+    } catch (ClassNotFoundException e){
+      throw new IOException(String.format(Locale.ROOT, "Failed to load JDBC driver for '%s'", driverClassName), e);
+    }
+
+    // See if we can figure out the driver based on the url, if not then tell the user they most likely want to provide the driverClassName.
+    // Not being able to find a driver generally means the driver has not been loaded.
+    try{
+      if(null == DriverManager.getDriver(connectionUrl)){
+        throw new SQLException("DriverManager.getDriver(url) returned null");
+      }
+    } catch(SQLException e){
+      throw new IOException(String.format(Locale.ROOT,
+          "Failed to determine JDBC driver from connection url '%s'. Usually this means the driver is not loaded - " +
+              "you can have JDBCStream try to load it by providing the 'driverClassName' value", connectionUrl), e);
     }
   }
 
