@@ -400,6 +400,10 @@ public class Assign {
 
     /**
      * Assign new replicas to nodes.
+     * If multiple {@link AssignRequest}s are provided, then every {@link ReplicaPosition} made for an
+     * {@link AssignRequest} will be applied to the {@link SolrCloudManager}'s state when processing subsequent {@link AssignRequest}s.
+     * Therefore, the order in which {@link AssignRequest}s are provided can and will affect the {@link ReplicaPosition}s returned.
+     *
      * @param solrCloudManager current instance of {@link SolrCloudManager}.
      * @param assignRequests assign request.
      * @return list of {@link ReplicaPosition}-s for new replicas.
@@ -412,8 +416,12 @@ public class Assign {
 
     /**
      * Assign new replicas to nodes.
+     * If multiple {@link AssignRequest}s are provided, then every {@link ReplicaPosition} made for an
+     * {@link AssignRequest} will be applied to the {@link SolrCloudManager}'s state when processing subsequent {@link AssignRequest}s.
+     * Therefore, the order in which {@link AssignRequest}s are provided can and will affect the {@link ReplicaPosition}s returned.
+     *
      * @param solrCloudManager current instance of {@link SolrCloudManager}.
-     * @param assignRequests assign request.
+     * @param assignRequests list of assign requests to process together ().
      * @return list of {@link ReplicaPosition}-s for new replicas.
      * @throws AssignmentException when assignment request cannot produce any valid assignments.
      */

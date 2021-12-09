@@ -51,13 +51,17 @@ public interface PlacementPlugin {
   }
 
   /**
-   * <p>Request from plugin code to compute multiple placements. Note this method must be reentrant as a plugin instance may (read
-   * will) get multiple such calls in parallel.
+   * <p>Request from plugin code to compute multiple placements.
+   * If multiple placements are requested, then the {@link PlacementPlan} computed for each {@link PlacementRequest}
+   * will be used to affect the starting state for each subsequent {@link PlacementRequest} in the list.
+   * This means that each {@link PlacementRequest} is computed in the context of the previous
+   * {@link PlacementRequest}'s already having been implemented.
+   * Note this method must be reentrant as a plugin instance may (read will) get multiple such calls in parallel.
    *
    * <p>Configuration is passed upon creation of a new instance of this class by {@link PlacementPluginFactory#createPluginInstance}.
    *
    * @param placementRequests     requests for placing new replicas or moving existing replicas on the cluster.
-   * @return plan satisfying the placement request.
+   * @return plan satisfying all placement requests.
    */
   List<PlacementPlan> computePlacements(Collection<PlacementRequest> placementRequests, PlacementContext placementContext) throws PlacementException, InterruptedException;
 
