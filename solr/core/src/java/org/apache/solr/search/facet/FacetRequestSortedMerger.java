@@ -176,9 +176,12 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
   private boolean prunedBuckets = false;
 
+  protected boolean prunedBuckets() {
+    return prunedBuckets;
+  }
+
   private void pruneBuckets(FacetRequest.FacetSort initial_sort) {
-    assert !sortedBuckets.isEmpty();
-    assert !prunedBuckets;
+    assert !prunedBuckets; // check this condition externally; this clarifies calling logic, at expense of slight increase in verbosity
     sortBuckets(initial_sort);
     long first = freq.offset;
     long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
@@ -284,10 +287,21 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     if (passLimit == -1) {
       // `passLimit` always the same wrt first time `getRefinement(...)` is called, regardless of `freq.refine`
       passLimit = mcontext.getPass() + 1;
-      if (freq.refine == FacetRequest.RefineMethod.NONE && (topLevelSubs = mcontext.hasTopLevelSubs(freq)) != Context.NONE_ENTRY) {
-        overlapTopLevelSubsWithParentRefinement = true;
+      if (freq.refine != FacetRequest.RefineMethod.SIMPLE) {
+        if ((topLevelSubs = mcontext.hasTopLevelSubs(freq)) != Context.NONE_ENTRY) {
+          // TODO: NO! If you don't prune buckets at this level, you lose one of the main benefits
+          //  of having a subfacet be `topLevel` -- and you _can't_ prune buckets while parent refinement
+          //  is ongoing (see below).
+          overlapTopLevelSubsWithParentRefinement = true;
+        }
         if (!prunedBuckets) {
-          // TODO: shouldn't we just always prune buckets when no refinement, before issuing refinement for subs?
+          // nocommit: we can't do this!!
+          // gradlew :solr:core:test --tests "org.apache.solr.search.facet.TestCloudJSONFacetJoinDomain.testRandom" -Ptests.jvms=4
+          //     -Ptests.jvmargs=-XX:TieredStopAtLevel=1 -Ptests.seed=A4C143860EF04282 -Ptests.file.encoding=US-ASCII
+          // TODO: NO! you cannot prune buckets while parental refinement is ongoing, because there could be
+          //  shards with _leaf_ buckets at the parent level that can contribute new counts (affecting sort, and
+          //  therefore pruning), and even contribute entirely new values (in phase#2, even if the child facet has
+          //  specified `refine:NONE`)
           pruneBuckets(initial_sort);
         }
       }
