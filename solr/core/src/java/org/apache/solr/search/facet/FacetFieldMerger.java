@@ -103,7 +103,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     }
 
     if (!prunedBuckets()) {
-      // nocommit: I think this conditional breaks the distinction between `sort` and `prelim_sort`
+      // otherwise we've already applied the final sort
       sortBuckets(freq.sort);
     }
 

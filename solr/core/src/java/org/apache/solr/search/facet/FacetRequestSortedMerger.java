@@ -180,9 +180,9 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     return prunedBuckets;
   }
 
-  private void pruneBuckets(FacetRequest.FacetSort initial_sort) {
+  private void pruneBuckets() {
     assert !prunedBuckets; // check this condition externally; this clarifies calling logic, at expense of slight increase in verbosity
-    sortBuckets(initial_sort);
+    sortBuckets(freq.sort); // by the time we're _pruning_, it had better be the final sort, not prelim_sort!
     long first = freq.offset;
     long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
     long last = Math.min(sortedBuckets.size(), end);
@@ -221,13 +221,13 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     this.prunedBuckets = true;
   }
 
-  private Collection<Object> initTopLevelSubs(int pass, FacetRequest.FacetSort initial_sort, final Map<Context.TopLevelSub, Collection<String>> topLevelSubs) {
+  private Collection<Object> initTopLevelSubs(int pass, final Map<Context.TopLevelSub, Collection<String>> topLevelSubs) {
     assert topLevelSubs != Context.NONE_ENTRY;
     final boolean initialTopLevelPivot = pass == passLimit;
     if (!prunedBuckets) {
       // only do this the first time
       assert initialTopLevelPivot : "pass="+pass+", passLimit="+passLimit;
-      pruneBuckets(initial_sort);
+      pruneBuckets();
     }
     return getTopLevelSkipBuckets(initialTopLevelPivot, topLevelSubs);
   }
@@ -279,8 +279,6 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // step 2) If this facet does not have refining, but some sub-facets do, we need to check/recurse those sub-facets in *every* top bucket.
     // A combination of the two is possible and makes step 2 redundant for any buckets we fully requested in step 1.
 
-    final FacetRequest.FacetSort initial_sort = null == freq.prelim_sort ? freq.sort : freq.prelim_sort;
-
     Map<Context.TopLevelSub, Collection<String>> topLevelSubs = null;
     boolean overlapTopLevelSubsWithParentRefinement = false;
 
@@ -302,7 +300,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
           //  shards with _leaf_ buckets at the parent level that can contribute new counts (affecting sort, and
           //  therefore pruning), and even contribute entirely new values (in phase#2, even if the child facet has
           //  specified `refine:NONE`)
-          pruneBuckets(initial_sort);
+          pruneBuckets();
         }
       }
     } else if (mcontext.getPass() >= passLimit) {
@@ -310,7 +308,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       if (topLevelSubs == Context.NONE_ENTRY) {
         return null;
       } else {
-        Collection<Object> initTopLevelSubs = initTopLevelSubs(mcontext.getPass(), initial_sort, topLevelSubs);
+        Collection<Object> initTopLevelSubs = initTopLevelSubs(mcontext.getPass(), topLevelSubs);
         return initTopLevelSubs == null ? null : Collections.singletonMap("_s", initTopLevelSubs);
       }
     }
@@ -350,6 +348,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         return skipBuckets.isEmpty() ? null : Collections.singletonMap("_s", skipBuckets);
       }
     }
+
+    final FacetRequest.FacetSort initial_sort = null == freq.prelim_sort ? freq.sort : freq.prelim_sort;
 
     long numBucketsToCheck = Integer.MAX_VALUE; // use max-int instead of max-long to avoid overflow
     if (freq.limit >= 0) {
