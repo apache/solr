@@ -53,9 +53,9 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeRole;
+import org.apache.solr.core.NodeRoles;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -258,15 +258,10 @@ public class Assign {
 
   public static void filterNonDataNodes(DistribStateManager zk, List<String> liveNodes) {
     try {
-     zk.forEachChild(ZkStateReader.NODE_ROLES, (name, data) -> {
-       if (data != null && data.getData() != null && data.getData().length > 0) {
-         @SuppressWarnings("unchecked")
-         List<String> roles = (List<String>) Utils.fromJSON(data.getData());
-         if (!roles.contains(NodeRole.Role.DATA.toString())) {
-           liveNodes.remove(name);
-         }
-       }
-     });
+     List<String> noData =  ClusterAPI.getNodesByRole(NodeRoles.Role.DATA, NodeRoles.OFF, zk);
+     if(!noData.isEmpty()){
+       liveNodes.removeAll(noData);
+     }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Problem fetching roles from Zookeeper", e);
     }

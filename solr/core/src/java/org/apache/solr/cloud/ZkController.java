@@ -73,12 +73,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.CloudConfig;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrCoreInitializationException;
+import org.apache.solr.core.*;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -855,6 +850,13 @@ public class ZkController implements Closeable {
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
+    for (NodeRoles.Role role : NodeRoles.Role.values()) {
+      cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES + "/" + role.roleName, zkClient);
+      for (String v : role.supportedVals()) {
+        cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES + "/" + role.roleName + "/"+v, zkClient);
+      }
+    }
+
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
     byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
@@ -1089,8 +1091,8 @@ public class ZkController implements Closeable {
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
 
     // Create the roles node as well
-    ops.add(Op.create(ZkStateReader.NODE_ROLES + "/" + nodeName,
-            Utils.toJSON(cc.nodeRoles), zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+   cc.nodeRoles.ROLES.forEach((role, val) -> ops.add(Op.create(ZkStateReader.NODE_ROLES + "/" + role.roleName+ "/"+val +"/"+ nodeName,
+           null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL)));
 
     zkClient.multi(ops, true);
   }

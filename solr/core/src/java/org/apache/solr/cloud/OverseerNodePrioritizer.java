@@ -28,6 +28,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -72,7 +73,7 @@ public class OverseerNodePrioritizer {
       }
     }
 
-    overseerDesignates.addAll(ClusterAPI.getNodesByRole("overseer", new ZkDistribStateManager(zkStateReader.getZkClient())));
+    overseerDesignates.addAll(ClusterAPI.getNodesByRole(NodeRoles.Role.OVERSEER, NodeRoles.PREFERRED, new ZkDistribStateManager(zkStateReader.getZkClient())));
     if (overseerDesignates.isEmpty()) return;
     String ldr = OverseerTaskProcessor.getLeaderNode(zk);
     if(overseerDesignates.contains(ldr)) return;
