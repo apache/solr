@@ -19,7 +19,24 @@ package org.apache.solr.handler.api;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.api.*;
+import org.apache.solr.handler.admin.api.AddReplicaAPI;
+import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CreateShardAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.DeleteShardAPI;
+import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.MigrateDocsAPI;
+import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
+import org.apache.solr.handler.admin.api.MoveReplicaAPI;
+import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
+import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
+import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.SplitShardAPI;
+import org.apache.solr.handler.admin.api.SyncShardAPI;
 
 /**
  * Registers annotation-based V2 APIs with an {@link ApiBag}
@@ -51,5 +68,7 @@ public class ApiRegistrar {
     apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
     apiBag.registerObject(new SyncShardAPI(collectionsHandler));
     apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
+    // really this is a replica API, but since there's only 1 API on the replica path, it's included here for simplicity.
+    apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
   }
 }

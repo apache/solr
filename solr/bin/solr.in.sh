@@ -134,12 +134,12 @@
 # Restrict access to solr by IP address.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-#SOLR_IP_WHITELIST=
+#SOLR_IP_ALLOWLIST=
 
 # Block access to solr from specific IP addresses.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-#SOLR_IP_BLACKLIST=
+#SOLR_IP_DENYLIST=
 
 # Sets the network interface the Solr binds to. To prevent administrators from
 # accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
