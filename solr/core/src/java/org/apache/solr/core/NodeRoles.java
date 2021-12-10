@@ -30,46 +30,65 @@ public class NodeRoles implements MapWriter {
 
   public static final String NODE_ROLES_PROP = "solr.node.roles";
 
-  public Map<Role, String> ROLES ;
+  public static final String ON =  "on";
+  public static final String OFF =  "off";
+  public static final String ALLOWED =  "allowed";
+  public static final String DISALLOWED =  "disallowed";
+  public static final String PREFERRED =  "preferred";
 
-  public NodeRoles(String role) {
-    ROLES = new EnumMap<>(Role.class);
-    if (StringUtils.isEmpty(role)) {
-     role = DEFAULT_ROLE;
+  public static final String DEFAULT_ROLES_STRING = "data:on,overseer:allowed";
+
+  // Map of roles to mode that are applicable for this node.
+  private Map<Role, String> nodeRoles;
+
+  public NodeRoles(String rolesString) {
+    Map<Role, String> roles = new EnumMap<>(Role.class);
+    if (StringUtils.isEmpty(rolesString)) {
+     rolesString = DEFAULT_ROLES_STRING;
     }
-    List<String> rolesList = StrUtils.splitSmart(role, ',');
-    for (String s : rolesList) {
-      List<String> roleVal =  StrUtils.splitSmart(s,':');
-      Role r = Role.getRole(roleVal.get(0));
-      if(r.supportedVals().contains(roleVal.get(1))) {
-        ROLES.put(r, roleVal.get(1));
+    List<String> rolesList = StrUtils.splitSmart(rolesString, ',');
+    for (String s: rolesList) {
+      List<String> roleMode =  StrUtils.splitSmart(s,':');
+      Role r = Role.getRole(roleMode.get(0));
+      if (r.supportedModes().contains(roleMode.get(1))) {
+        roles.put(r, roleMode.get(1));
       } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "UNKNOWN role value :"+roleVal.get(0));
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role mode: " + roleMode.get(0));
       }
     }
-    ROLES = Collections.unmodifiableMap(ROLES);
+    for(Role r: Role.values()) {
+      if (!roles.containsKey(r)) {
+        roles.put(r, r.defaultIfAbsent());
+      }
+    }
+    nodeRoles = Collections.unmodifiableMap(roles);
   }
 
-  public String getRoleVal(Role role) {
-    return ROLES.get(role);
+  public Map<Role, String> getRoles() {
+    return nodeRoles;
   }
 
-
+  public String getRoleMode(Role role) {
+    return nodeRoles.get(role);
+  }
 
   @Override
   public void writeMap(EntryWriter ew) {
-    ROLES.forEach((role, s) -> ew.putNoEx(role.roleName, s));
+    nodeRoles.forEach((role, s) -> ew.putNoEx(role.roleName, s));
   }
 
   public enum Role {
-    DATA("data") ,
+    DATA("data"),
     OVERSEER("overseer") {
       @Override
-      public Set<String> supportedVals() {
-        return OVERSEER_VALS;
+      public Set<String> supportedModes() {
+        return Set.of(ALLOWED, PREFERRED, DISALLOWED);
       }
-    },
-    COORDINATOR("coordinator");
+      @Override
+      public String defaultIfAbsent() {
+        return DISALLOWED;
+      }
+    };
 
     public final String roleName;
 
@@ -78,16 +97,21 @@ public class NodeRoles implements MapWriter {
     }
 
     public static Role getRole(String value) {
-      // Given a user string "overseer", convert to OVERSEER and return the enum value
-      for (Role role : Role.values()) {
-        if(value.equals(role.roleName)) return role;
+      for (Role role: Role.values()) {
+        if (value.equals(role.roleName)) return role;
       }
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role : "+value);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role: " + value);
     }
 
-    public Set<String> supportedVals() {
-      return ON_OFF;
+    public Set<String> supportedModes() {
+      return Set.of(ON, OFF);
+    }
 
+    /**
+     * Default mode for a role in nodes where this role is not specified.
+     */
+    public String defaultIfAbsent() {
+      return OFF;
     }
 
     @Override
@@ -95,13 +119,4 @@ public class NodeRoles implements MapWriter {
       return super.toString().toLowerCase();
     }
   }
-
-  public static final String ON =  "on";
-  public static final String OFF =  "off";
-  public static final Set<String> ON_OFF = Set.of(ON,OFF);
-  public static final String ALLOWED =  "allowed";
-  public static final String DISALLOWED =  "disallowed";
-  public static final String PREFERRED =  "preferred";
-  public static final Set<String> OVERSEER_VALS = Set.of(ALLOWED, DISALLOWED, PREFERRED);
-  public static final String DEFAULT_ROLE = "data:on,overseer:allowed";
 }
