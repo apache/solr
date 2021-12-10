@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -30,19 +29,14 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Testing of pivot facets on multiple collections.
@@ -51,10 +45,6 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressSSL
 public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  private static MiniSolrCloudCluster solrCluster;
-  
   private static final String COLL_A = "collectionA";
   private static final String COLL_B = "collectionB";
   private static final String ALIAS = "all";
@@ -75,15 +65,14 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-
     // create and configure cluster
-    solrCluster = configureCluster(1)
+    configureCluster(1)
         .addConfig(COLL_A, configset("different-stopwords" + File.separator + COLL_A))
         .addConfig(COLL_B, configset("different-stopwords" + File.separator + COLL_B))
         .configure();
     
     try {
-      CollectionAdminResponse responseA = CollectionAdminRequest.createCollection(COLL_A,COLL_A,1,1).process(solrCluster.getSolrClient());
+      CollectionAdminResponse responseA = CollectionAdminRequest.createCollection(COLL_A,COLL_A,1,1).process(cluster.getSolrClient());
       NamedList<Object> result = responseA.getResponse();
       if(result.get("failure") != null) {
         fail("Collection A creation failed : " + result.get("failure"));
@@ -93,7 +82,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
     }
 
     try {
-      CollectionAdminResponse responseB = CollectionAdminRequest.createCollection(COLL_B,COLL_B,1,1).process(solrCluster.getSolrClient());
+      CollectionAdminResponse responseB = CollectionAdminRequest.createCollection(COLL_B,COLL_B,1,1).process(cluster.getSolrClient());
       NamedList<Object> result = responseB.getResponse();
       if(result.get("failure") != null) {
         fail("Collection B creation failed : " + result.get("failure"));
@@ -102,7 +91,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
       fail("Collection B creation failed : " + e.getMessage());    
     }
     
-    CollectionAdminResponse response = CollectionAdminRequest.createAlias(ALIAS, COLL_A+","+COLL_B).process(solrCluster.getSolrClient());
+    CollectionAdminResponse response = CollectionAdminRequest.createAlias(ALIAS, COLL_A+","+COLL_B).process(cluster.getSolrClient());
     NamedList<Object> result = response.getResponse();
     if(result.get("failure") != null) {
       fail("Alias creation failed : " + result.get("failure"));
@@ -110,25 +99,11 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
     
     index(COLL_A, 10);
     index(COLL_B, 10);
-    
   }
-  
-  
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();    
-  }
-  
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-  
+
   @AfterClass
   public static void tearDownCluster() throws Exception {
-    solrCluster.shutdown();    
+    shutdownCluster();
   }
   
   public void testOneCollectionPivotName() throws SolrServerException, IOException {
@@ -137,7 +112,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", SUBJECT_TXT_FIELD_MULTIVALUED,
         "facet.pivot", NAME_TXT_FIELD_NOT_MULTIVALUED);
-    QueryResponse response = solrCluster.getSolrClient().query(COLL_A, params);
+    QueryResponse response = cluster.getSolrClient().query(COLL_A, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       /*
@@ -163,7 +138,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", SUBJECT_TXT_FIELD_MULTIVALUED,
         "facet.pivot", DYNAMIC_INT_FIELD_NOT_MULTIVALUED);
-    QueryResponse response = solrCluster.getSolrClient().query(COLL_A, params);
+    QueryResponse response = cluster.getSolrClient().query(COLL_A, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on one collection failed");
@@ -176,7 +151,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", SUBJECT_TXT_FIELD_MULTIVALUED,
         "facet.pivot", DYNAMIC_FLOAT_FIELD_NOT_MULTIVALUED);
-    QueryResponse response = solrCluster.getSolrClient().query(COLL_A, params);
+    QueryResponse response = cluster.getSolrClient().query(COLL_A, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on one collection failed");
@@ -189,7 +164,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", SUBJECT_TXT_FIELD_MULTIVALUED,
         "facet.pivot", DYNAMIC_DATE_FIELD_NOT_MULTIVALUED);
-    QueryResponse response = solrCluster.getSolrClient().query(COLL_A, params);
+    QueryResponse response = cluster.getSolrClient().query(COLL_A, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on one collection failed");
@@ -202,7 +177,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", TITLE_TXT_FIELD_NOT_MULTIVALUED,
         "facet.pivot", String.join(",", FILETYPE_TXT_FIELD_NOT_MULTIVALUED,TITLE_TXT_FIELD_NOT_MULTIVALUED));
-    QueryResponse response = solrCluster.getSolrClient().query(COLL_A, params);
+    QueryResponse response = cluster.getSolrClient().query(COLL_A, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on one collection failed");
@@ -215,7 +190,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", SUBJECT_TXT_FIELD_MULTIVALUED,
         "facet.pivot", NAME_TXT_FIELD_NOT_MULTIVALUED);
-    final QueryResponse response = solrCluster.getSolrClient().query(ALIAS, params);
+    final QueryResponse response = cluster.getSolrClient().query(ALIAS, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on the alias failed");
@@ -228,7 +203,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", SUBJECT_TXT_FIELD_MULTIVALUED,
         "facet.pivot", FILETYPE_TXT_FIELD_NOT_MULTIVALUED);
-    final QueryResponse response = solrCluster.getSolrClient().query(ALIAS, params);
+    final QueryResponse response = cluster.getSolrClient().query(ALIAS, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on the alias failed");
@@ -241,7 +216,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", SUBJECT_TXT_FIELD_MULTIVALUED,
         "facet.pivot", DYNAMIC_FLOAT_FIELD_NOT_MULTIVALUED);
-    final QueryResponse response = solrCluster.getSolrClient().query(ALIAS, params);
+    final QueryResponse response = cluster.getSolrClient().query(ALIAS, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on the alias failed");
@@ -254,7 +229,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", SUBJECT_TXT_FIELD_MULTIVALUED,
         "facet.pivot", DYNAMIC_FLOAT_FIELD_NOT_MULTIVALUED);
-    final QueryResponse response = solrCluster.getSolrClient().query(ALIAS, params);
+    final QueryResponse response = cluster.getSolrClient().query(ALIAS, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on the alias failed");
@@ -267,7 +242,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
         "facet", "true",
         "facet.field", TITLE_TXT_FIELD_NOT_MULTIVALUED,
         "facet.pivot", String.join(",", FILETYPE_TXT_FIELD_NOT_MULTIVALUED,TITLE_TXT_FIELD_NOT_MULTIVALUED));
-    QueryResponse response = solrCluster.getSolrClient().query(ALIAS, params);
+    QueryResponse response = cluster.getSolrClient().query(ALIAS, params);
     NamedList<Object> result = response.getResponse();
     if(result.get("facet_counts") == null) {
       fail("Facet pivot on the alias failed");
@@ -282,10 +257,10 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
       solrDoc.addField(DYNAMIC_DATE_FIELD_NOT_MULTIVALUED, skewed(randomSkewedDate(), randomDate()));
       solrDoc.addField(DYNAMIC_INT_FIELD_NOT_MULTIVALUED, skewed(TestUtil.nextInt(random(), 0, 100), random().nextInt()));
       solrDoc.addField(DYNAMIC_FLOAT_FIELD_NOT_MULTIVALUED, skewed(1.0F / random().nextInt(25), random().nextFloat() * random().nextInt()));
-      solrCluster.getSolrClient().add(collection, solrDoc);      
+      cluster.getSolrClient().add(collection, solrDoc);
     }
-    solrCluster.getSolrClient().commit(COLL_A);
-    solrCluster.getSolrClient().commit(COLL_B);
+    cluster.getSolrClient().commit(COLL_A);
+    cluster.getSolrClient().commit(COLL_B);
   }
 
   private static Map<String,SolrInputField> addDocFields(final int id) {
