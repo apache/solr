@@ -852,7 +852,7 @@ public class ZkController implements Closeable {
     cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
     for (NodeRoles.Role role : NodeRoles.Role.values()) {
       cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES + "/" + role.roleName, zkClient);
-      for (String v : role.supportedVals()) {
+      for (String v : role.supportedModes()) {
         cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES + "/" + role.roleName + "/"+v, zkClient);
       }
     }
@@ -1091,7 +1091,7 @@ public class ZkController implements Closeable {
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
 
     // Create the roles node as well
-   cc.nodeRoles.ROLES.forEach((role, val) -> ops.add(Op.create(ZkStateReader.NODE_ROLES + "/" + role.roleName+ "/"+val +"/"+ nodeName,
+   cc.nodeRoles.getRoles().forEach((role, val) -> ops.add(Op.create(ZkStateReader.NODE_ROLES + "/" + role.roleName+ "/"+val +"/"+ nodeName,
            null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL)));
 
     zkClient.multi(ops, true);
