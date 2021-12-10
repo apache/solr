@@ -246,7 +246,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRole nodeRoles = new NodeRole(System.getProperty(NodeRole.NODE_ROLES_PROP));
+  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ClusterSingletons clusterSingletons = new ClusterSingletons(
       () -> getZkController() != null &&
@@ -946,9 +946,9 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
-      if (nodeRoles.getRoles().contains(NodeRole.Role.OVERSEER)) {
+      if (NodeRoles.PREFERRED.equals(nodeRoles.getRoleVal(NodeRoles.Role.OVERSEER))) {
         try {
-          log.info("This node is started as an overseer");
+          log.info("This node is started as a preferred overseer");
           zkSys.getZkController().setPreferredOverseer();
         } catch (KeeperException | InterruptedException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
