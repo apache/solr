@@ -165,18 +165,17 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public void open() throws IOException {
       if (returnSolrQueryOnly) {
         // Get the Calcite connection and then call prepareSql so we can grab the TupleStream directly
         // to by-pass all the ResultSet creation in the JDBC layer as we just want the Solr query for this SQL vs. executing the SQL
-        CalciteConnection calciteConn = (CalciteConnection)openConnection();
+        CalciteConnection calciteConn = (CalciteConnection) openConnection();
         CalcitePrepare.Context context = calciteConn.createPrepareContext();
-        CalcitePrepare.CalciteSignature sig =
+        CalcitePrepare.CalciteSignature<Object> sig =
             (new CalcitePrepareImpl()).prepareSql(context, CalcitePrepare.Query.of(sqlQuery), Object[].class, -1);
         Enumerator<Object> e = sig.enumerable(context.getDataContext()).enumerator();
         if (e instanceof SolrEnumerator) {
-          queryTupleStream = ((SolrEnumerator)e).tupleStream();
+          queryTupleStream = ((SolrEnumerator) e).tupleStream();
           queryTupleStream.open();
           return;
         } else {

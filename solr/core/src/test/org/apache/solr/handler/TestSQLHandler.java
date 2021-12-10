@@ -2506,15 +2506,15 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String sqlStmt = "SELECT id FROM $ALIAS WHERE a_s = 'foo'";
+    String sqlStmt = "SELECT id FROM $ALIAS WHERE b_s = 'foo' ORDER BY id ASC LIMIT 100";
     sqlStmt = sqlStmt.replace("$ALIAS", COLLECTIONORALIAS);
     SolrParams params = mapParams(CommonParams.QT, "/sql", "stmt", sqlStmt, "returnSolrQueryOnly", "true");
     List<Tuple> tuples = getTuples(params, sqlUrl());
     assertEquals(1, tuples.size());
-    Tuple t = tuples.get(0);
-    String query = t.getString("query");
+    String query = tuples.get(0).getString("query");
     assertNotNull(query);
     Map<String, Object> parsed = (Map<String, Object>) Utils.fromJSON(query.getBytes(StandardCharsets.UTF_8));
-    assertEquals("a_s:\"foo\"", parsed.get("q"));
+    assertEquals("b_s:\"foo\"", parsed.get("q"));
+    assertEquals("id asc", parsed.get("sort"));
   }
 }
