@@ -29,6 +29,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -58,6 +59,11 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
     private ApiBag apiBag;
     private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
     private CoreAdminHandler mockCoreAdminHandler;
+
+    @BeforeClass
+    public static void ensureWorkingMockito() {
+        assumeWorkingMockito();
+    }
 
     @Before
     public void setUpMocks() {
@@ -92,8 +98,6 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
                         "'async': 'requestTrackingId' " +
                         "}}");
 
-        // TODO Delete apispec file
-        // TODO Delete apispec related stuff from CoreApiMapping
         assertEquals(CREATE.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
         assertEquals("someCoreName", v1Params.get(NAME));
         assertEquals("someInstanceDir", v1Params.get(INSTANCE_DIR));
