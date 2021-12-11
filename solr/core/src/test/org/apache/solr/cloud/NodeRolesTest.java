@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 
+import java.util.List;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -50,9 +51,14 @@ public class NodeRolesTest extends SolrCloudTestCase {
   public void testRoleIntegration() throws Exception {
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
     JettySolrRunner j1 = null, j2 = null;
+    V2Response rsp = new V2Request.Builder("/cluster/node-roles/supported").GET().build().process(cluster.getSolrClient());
+    List<String> l = (List<String>) rsp._get("supported-roles", Collections.emptyList());
+    assertTrue(l.contains("data"));
+    assertTrue(l.contains("overseer"));
+
     j1 = startNodeWithRoles("overseer:preferred,data:off");
 
-    V2Response rsp = new V2Request.Builder("/cluster/node-roles").GET().build().process(cluster.getSolrClient());
+    rsp = new V2Request.Builder("/cluster/node-roles").GET().build().process(cluster.getSolrClient());
     assertEquals(j1.getNodeName(), rsp._getStr("node-roles/overseer/preferred[0]", null));
     assertEquals(j1.getNodeName(), rsp._getStr("node-roles/data/off[0]", null));
     OverseerRolesTest.waitForNewOverseer(20, j1.getNodeName(), false);

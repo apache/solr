@@ -84,41 +84,32 @@ public class ClusterAPI {
   @EndPoint(method = GET,
           path = "/cluster/node-roles",
           permission = COLL_READ_PERM)
-  @SuppressWarnings("unchecked")
   // nocommit: it must also output all data nodes that didn't start with -Dsolr.node.roles
   public void roles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     Map<String, Object> result = new LinkedHashMap<>();
 
-    rsp.add("node-roles", readRecursive(ZkStateReader.NODE_ROLES, collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager(), 3));
+    rsp.add("node-roles", readRecursive(ZkStateReader.NODE_ROLES,
+            collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager(), 3));
   }
 
   Object readRecursive(String path, DistribStateManager zk, int depth) {
     if (depth == 0) return null;
     Map<String, Object> result = null;
-    boolean hasSubValues = false;
     try {
       List<String> children = zk.listData(path);
       if (children != null && !children.isEmpty()) {
         result = new HashMap<>();
       } else {
-        return depth >=1 ? Collections.emptyList(): null;
+        return depth >= 1 ? Collections.emptyList() : null;
       }
       for (String child : children) {
         Object c = readRecursive(path + "/" + child, zk, depth - 1);
-        if (c != null) {
-          hasSubValues = true;
-        }
+
         result.put(child, c);
       }
 
-
     } catch (Exception e) {
-    }
-
-
-
-    if (result == null) {
-      return null;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     if (depth == 1) {
       return result.keySet();
@@ -137,6 +128,14 @@ public class ClusterAPI {
             readRecursive(ZkStateReader.NODE_ROLES + "/"+ role,
                     collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager(), 2));
   }
+  @EndPoint(method = GET,
+          path = "/cluster/node-roles/supported",
+          permission = COLL_READ_PERM)
+  public void supportedRoles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    rsp.add("supported-roles",
+                    collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().listData(ZkStateReader.NODE_ROLES));
+  }
+
   @EndPoint(method = GET,
           path = "/cluster/node-roles/{role}/{role-val}",
           permission = COLL_READ_PERM)

@@ -352,7 +352,9 @@ public class ZkController implements Closeable {
 
                 overseerElector.setup(context);
 
-                overseerElector.joinElection(context, true);
+                if(cc.nodeRoles.isOverseerAllowed()) {
+                  overseerElector.joinElection(context, true);
+                }
               }
 
               cc.cancelCoreRecoveries();
@@ -683,7 +685,9 @@ public class ZkController implements Closeable {
         } finally {
 
           // just in case the OverseerElectionContext managed to start another Overseer
-          IOUtils.closeQuietly(overseer);
+          if(overseer != null) {
+            IOUtils.closeQuietly(overseer);
+          }
 
           ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
         }
@@ -909,14 +913,16 @@ public class ZkController implements Closeable {
       registerLiveNodesListener();
 
       // start the overseer first as following code may need it's processing
-      if (!zkRunOnly) {
+      if (!zkRunOnly &&  cc.nodeRoles.isOverseerAllowed()) {
         overseerElector = new LeaderElector(zkClient);
         this.overseer = new Overseer((HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
             CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
         ElectionContext context = new OverseerElectionContext(zkClient,
             overseer, getNodeName());
         overseerElector.setup(context);
-        overseerElector.joinElection(context, false);
+        if(cc.nodeRoles.isOverseerAllowed()) {
+          overseerElector.joinElection(context, false);
+        }
       }
 
       Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);

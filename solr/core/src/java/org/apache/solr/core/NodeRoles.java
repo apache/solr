@@ -35,6 +35,7 @@ public class NodeRoles implements MapWriter {
   public static final String ALLOWED =  "allowed";
   public static final String DISALLOWED =  "disallowed";
   public static final String PREFERRED =  "preferred";
+  public static final Set<String> OVERSEER_MODES = Set.of(ALLOWED, PREFERRED, DISALLOWED);
 
   public static final String DEFAULT_ROLES_STRING = "data:on,overseer:allowed";
 
@@ -77,12 +78,17 @@ public class NodeRoles implements MapWriter {
     nodeRoles.forEach((role, s) -> ew.putNoEx(role.roleName, s));
   }
 
+  public boolean isOverseerAllowed() {
+    String roleMode = nodeRoles.get(Role.OVERSEER);
+    return ALLOWED.equals(roleMode) || PREFERRED.equals(roleMode);
+  }
+
   public enum Role {
     DATA("data"),
     OVERSEER("overseer") {
       @Override
       public Set<String> supportedModes() {
-        return Set.of(ALLOWED, PREFERRED, DISALLOWED);
+        return OVERSEER_MODES;
       }
       @Override
       public String defaultIfAbsent() {
