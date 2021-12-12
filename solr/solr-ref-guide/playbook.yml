@@ -13,7 +13,10 @@ content:
     start_path: solr/solr-ref-guide
 ui:
   bundle:
-    url: https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip
+# Uncomment next line when developing UI for local access
+    url: ./ui/build/ui-bundle.zip
+# Uncomment next line when pulling stable UI build from nightlies
+#    url: https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip
     snapshot: true
 output:
   clean: true
