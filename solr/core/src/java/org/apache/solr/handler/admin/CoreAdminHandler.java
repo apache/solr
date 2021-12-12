@@ -16,19 +16,10 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -45,6 +36,10 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.CreateCoreAPI;
+import org.apache.solr.handler.admin.api.InvokeClassAPI;
+import org.apache.solr.handler.admin.api.OverseerOperationAPI;
+import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -57,6 +52,18 @@ import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
@@ -402,7 +409,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
   @Override
   public Collection<Api> getApis() {
-    return coreAdminHandlerApi.getApis();
+    final List<Api> apis = Lists.newArrayList(coreAdminHandlerApi.getApis());
+    // Only some core-admin APIs use the v2 AnnotatedApi framework
+    apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new InvokeClassAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
+    return apis;
   }
 
   static {

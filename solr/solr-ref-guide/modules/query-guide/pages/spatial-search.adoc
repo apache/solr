@@ -332,7 +332,7 @@ s|Required |Default: none
 +
 This should be `solr.SpatialRecursivePrefixTreeFieldType`.
 But be aware that the Lucene spatial module includes some other so-called "spatial strategies" other than RPT, notably TermQueryPT*, BBox, PointVector*, and SerializedDV.
-Solr requires a field type to parallel these in order to use them.
+Solr requires a corresponding field type in order to use those strategies.
 The asterisked ones have them.
 
 `spatialContextFactory`::
