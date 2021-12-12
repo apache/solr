@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $routeParams, $location, Query, Constants){
+  function($scope, $route, $routeParams, $location, Query, Constants){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     $scope._models = [];
@@ -47,8 +47,6 @@ solrAdminApp.controller('QueryController',
         // filters and rawParams are handled specially because of possible multiple values
         if( p === "fq" ) {
             addFilters(urlParams[p]);
-        } else if( p === "rawP" ) {
-            addRawParams(urlParams[p]);
         } else {
             setParam(p, urlParams[p]);
         }
@@ -80,7 +78,13 @@ solrAdminApp.controller('QueryController',
       if( ($scope.rawParams.length === 0) || ($scope.rawParams.length === 1 && $scope.rawParams[0].rawP === "") ){
         $scope.rawParams = [];
       }
-      $scope.rawParams.push({rawP: argKey + "=" + argValue});
+      if (argValue instanceof Array) {
+        for (var index in argValue) {
+          $scope.rawParams.push({rawP: argKey + "=" + argValue[index]});
+        }
+      } else {
+        $scope.rawParams.push({rawP: argKey + "=" + argValue});
+      }
     }
     function addFilters(argObject){
       if( argObject ){
@@ -95,7 +99,7 @@ solrAdminApp.controller('QueryController',
       }
     }
 
-    $scope.doQuery = function() {
+    $scope.doQuery = function(isPageReload) {
       var params = {};
 
       var set = function(key, value) {
@@ -163,7 +167,7 @@ solrAdminApp.controller('QueryController',
       }
 
       params.core = $routeParams.core;
-      if (qt[0] == '/') {
+      if (qt[0] === '/') {
         params.handler = qt.substring(1);
       } else { // Support legacy style handleSelect=true configs
         params.handler = "select";
@@ -179,18 +183,21 @@ solrAdminApp.controller('QueryController',
       if( $scope.qt != null ) {
         adminParams.qt = [$scope.qt];
       }
-
-      Query.query(params, function(data) {
-        $scope.lang = $scope.val['wt'];
-        if ($scope.lang == undefined || $scope.lang == '') {
-          $scope.lang = "json";
-        }
-        $scope.response = data;
-        // Use relative URL to make it also work through proxies that may have a different host/port/context
-        $scope.url = url;
-        $scope.hostPortContext = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // For display only
+      if (isPageReload) {
+        Query.query(params, function (data) {
+          $scope.lang = $scope.val['wt'];
+          if (!$scope.lang || $scope.lang === '') {
+            $scope.lang = "json";
+          }
+          $scope.response = data;
+          // Use relative URL to make it also work through proxies that may have a different host/port/context
+          $scope.url = url;
+          $scope.hostPortContext = $location.absUrl().substr(0, $location.absUrl().indexOf("#")); // For display only
+        });
+      } else {
+        var previousUrl = $location.$$url;
         for( key in $location.search() ){
-            $location.search(key, null);
+          $location.search(key, null);
         }
         for( var key in adminParams ){
           if( Array.isArray(adminParams[key]) && adminParams[key].length === 1 ){
@@ -201,7 +208,11 @@ solrAdminApp.controller('QueryController',
           }
           $location.search(key, adminParams[key]);
         }
-      });
+        var currentUrl = $location.$$url;
+        if (previousUrl === currentUrl) { //if the query send with same parameters the query should be executed
+          $route.reload();
+        }
+      }
     };
     setModels("input");
     setModels("textarea");
@@ -209,7 +220,7 @@ solrAdminApp.controller('QueryController',
     setUrlParams();
 
     if ($location.search().q) {
-      $scope.doQuery();
+      $scope.doQuery(true);
     }
     $scope.removeFilter = function(index) {
       if ($scope.filters.length === 1) {
