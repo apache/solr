@@ -285,31 +285,47 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     if (passLimit == -1) {
       // `passLimit` always the same wrt first time `getRefinement(...)` is called, regardless of `freq.refine`
       passLimit = mcontext.getPass() + 1;
-      if (freq.refine != FacetRequest.RefineMethod.SIMPLE) {
+      if (!freq.doRefine() && !mcontext.ancestorHasPendingRefinement()) {
+        // NOTE: you cannot prune buckets while parental refinement is ongoing, because there could be
+        // shards with _leaf_ buckets at the parent level that can contribute new counts in phase#2 (affecting sort,
+        // and therefore pruning), and even contribute entirely new values (even if the child facet has
+        // specified `refine:NONE`) -- hence the condition above on `mcontext.hasPendingRefinement()`. See:
+        //
+        // gradlew :solr:core:test --tests "org.apache.solr.search.facet.TestCloudJSONFacetJoinDomain.testRandom" -Ptests.jvms=4
+        //     -Ptests.jvmargs=-XX:TieredStopAtLevel=1 -Ptests.seed=A4C143860EF04282 -Ptests.file.encoding=US-ASCII
+
+        // Pruning buckets early only has a practical benefit when there are `topLevel` subs or subs that require
+        // refinement -- but it doesn't hurt either, so we do it here unconditionally in order to achieve additional
+        // coverage from existing tests with no extra effort.
+        assert !prunedBuckets; // this is the first time we've been called, so the first conceivable opportunity to prune
+        pruneBuckets();
+
         if ((topLevelSubs = mcontext.hasTopLevelSubs(freq)) != Context.NONE_ENTRY) {
-          // TODO: NO! If you don't prune buckets at this level, you lose one of the main benefits
-          //  of having a subfacet be `topLevel` -- and you _can't_ prune buckets while parent refinement
-          //  is ongoing (see below).
+          // when the outer conditional is satisfied (wrt self and ancestor refinement), we can overlap initial `topLevel` children (and may be able to overlap initial
+          // `topLevel` descendants) with refinement requests to non-topLevel subs (descendants) that have refinement.
+          // TODO: if we know that no subs have refinement either, we can simplify this case, _a la_ `mcontext.getPass() >= passLimit`
           overlapTopLevelSubsWithParentRefinement = true;
         }
-        if (!prunedBuckets) {
-          // nocommit: we can't do this!!
-          // gradlew :solr:core:test --tests "org.apache.solr.search.facet.TestCloudJSONFacetJoinDomain.testRandom" -Ptests.jvms=4
-          //     -Ptests.jvmargs=-XX:TieredStopAtLevel=1 -Ptests.seed=A4C143860EF04282 -Ptests.file.encoding=US-ASCII
-          // TODO: NO! you cannot prune buckets while parental refinement is ongoing, because there could be
-          //  shards with _leaf_ buckets at the parent level that can contribute new counts (affecting sort, and
-          //  therefore pruning), and even contribute entirely new values (in phase#2, even if the child facet has
-          //  specified `refine:NONE`)
-          pruneBuckets();
-        }
+      } else if ((topLevelSubs = mcontext.hasTopLevelSubs(freq)) != Context.NONE_ENTRY) {
+        // we can't overlap `topLevel` requests with parental refinement phase; but it's possible that the
+        // parental refinement phase will return `null` (i.e., "no refinement necessary") -- we set this flag
+        // on `mcontext` to notify the root `FacetMerger` that there are pending `topLevel` pivots
+        mcontext.setHasPendingTopLevel(true);
       }
     } else if (mcontext.getPass() >= passLimit) {
       topLevelSubs = mcontext.hasTopLevelSubs(freq);
       if (topLevelSubs == Context.NONE_ENTRY) {
         return null;
       } else {
+        // ancestors below pivot have completed any refinement
+        // subs need only be concerned with pending ancestral refinement up to the nearest `topLevel` ancestor
+        final boolean prev = mcontext.setAncestorHasPendingRefinement(false);
         Collection<Object> initTopLevelSubs = initTopLevelSubs(mcontext.getPass(), topLevelSubs);
-        return initTopLevelSubs == null ? null : Collections.singletonMap("_s", initTopLevelSubs);
+        try {
+          return initTopLevelSubs == null ? null : Collections.singletonMap("_s", initTopLevelSubs);
+        } finally {
+          mcontext.setAncestorHasPendingRefinement(prev);
+        }
       }
     }
 
@@ -321,6 +337,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       if (!overlapTopLevelSubsWithParentRefinement) {
         return null;
       } else {
+        assert !mcontext.ancestorHasPendingRefinement();
         Collection<Object> skipBuckets = getTopLevelSkipBuckets(true, topLevelSubs);
         return skipBuckets.isEmpty() ? null : Collections.singletonMap("_s", skipBuckets);
       }
@@ -344,6 +361,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       if (!overlapTopLevelSubsWithParentRefinement) {
         return null;
       } else {
+        assert !mcontext.ancestorHasPendingRefinement();
         Collection<Object> skipBuckets = getTopLevelSkipBuckets(true, topLevelSubs);
         return skipBuckets.isEmpty() ? null : Collections.singletonMap("_s", skipBuckets);
       }
@@ -417,6 +435,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       topLevelChildren = topLevelSubs.get(Context.TopLevelSub.CHILD);
       mapInitSize = (childrenWithTopLevelDescendants == null ? 0 : childrenWithTopLevelDescendants.size()) + (topLevelChildren == null ? 0 : topLevelChildren.size());
     }
+    final boolean alreadyHadAncestorRefinement = mcontext.setAncestorHasPendingRefinement(freq.doRefine());
     for (FacetBucket bucket : bucketList) {
       Map<String,Object> bucketRefinement = null;
       if (numBucketsToCheck-- <= 0) break;
@@ -494,7 +513,11 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
     refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial);
 
-    return refinement;
+    try {
+      return refinement;
+    } finally {
+      mcontext.setAncestorHasPendingRefinement(alreadyHadAncestorRefinement);
+    }
   }
 
   // utility method for subclasses to override to finish calculating faceting (special buckets in field facets)... this feels hacky and we

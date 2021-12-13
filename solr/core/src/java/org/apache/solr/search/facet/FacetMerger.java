@@ -57,6 +57,8 @@ public abstract class FacetMerger {
     int maxBucket;  // the current max bucket across all bucket types... incremented as we encounter more
     int shardNum = -1;  // TODO: keep same mapping across multiple phases...
     boolean bucketWasMissing;
+    boolean ancestorHasPendingRefinement;
+    boolean hasPendingTopLevel;
 
     public void newShard(String shard) {
       Integer prev = shardmap.put(shard, ++shardNum);
@@ -101,6 +103,32 @@ public abstract class FacetMerger {
       boolean oldVal = bucketWasMissing();
       bucketWasMissing = newVal;
       return oldVal;
+    }
+
+    public boolean ancestorHasPendingRefinement() {
+      return ancestorHasPendingRefinement;
+    }
+
+    public boolean setAncestorHasPendingRefinement(boolean newVal) {
+      boolean oldVal = ancestorHasPendingRefinement;
+      ancestorHasPendingRefinement = newVal;
+      return oldVal;
+    }
+
+    public boolean hasPendingTopLevel() {
+      return hasPendingTopLevel;
+    }
+
+    public boolean setHasPendingTopLevel(boolean newVal) {
+      boolean oldVal = hasPendingTopLevel;
+      hasPendingTopLevel = newVal;
+      return oldVal;
+    }
+
+    public Context reset() {
+      ancestorHasPendingRefinement = false;
+      hasPendingTopLevel = false;
+      return this;
     }
 
     private Map<FacetRequest, Collection<String>> refineSubMap = new IdentityHashMap<>(4);

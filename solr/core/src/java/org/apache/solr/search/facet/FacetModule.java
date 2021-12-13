@@ -189,12 +189,21 @@ public class FacetModule extends SearchComponent {
     assert rb.shards.length == facetState.mcontext.numShards;
     int ret = ResponseBuilder.STAGE_DONE;
     final int pass = facetState.mcontext.incrementPass();
+    forEachShard:
     for (String shard : rb.shards) {
       facetState.mcontext.setShard(shard);
 
       // shard-specific refinement
-      Map<String, Object> refinement = facetState.merger.getRefinement(facetState.mcontext);
-      if (refinement == null) continue;
+      Map<String, Object> refinement;
+      while ((refinement = facetState.merger.getRefinement(facetState.mcontext.reset())) == null) {
+        // no refinements were registered, but there could still be pending topLevel requests
+        // that could not yet be issued, so we call `getRefinement` in a loop to give `topLevel`
+        // subs the opportunity to register when they are ready to do so.
+        if (!facetState.mcontext.hasPendingTopLevel()) {
+          // no pending topLevel subs (the usual case; loop assigning `refinement` is only executed once in practice)
+          continue forEachShard;
+        }
+      }
       ret = ResponseBuilder.STAGE_REFINEMENT;
 
       boolean newRequest = false;
