@@ -283,7 +283,15 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     boolean overlapTopLevelSubsWithParentRefinement = false;
 
     if (passLimit == -1) {
-      // `passLimit` always the same wrt first time `getRefinement(...)` is called, regardless of `freq.refine`
+      // `passLimit` will currently always be the same wrt first time `getRefinement(...)` is called, regardless
+      // of `freq.refine`.
+      // NOTE: `passLimit`-setting logic could change, e.g. if a refinement method other than `RefineMethod.SIMPLE`
+      // is added that may inherently make more than one iterative pass; if the number of passes for such an alternate
+      // refinement method is variable/dynamic, this will require a reworking logic of when to pivot to `topLevel`
+      // subs (currently `mcontext.getPass() >= passLimit`). The reworked logic should be fairly straightforward,
+      // likely tying into looped calls to `facetState.merger.getRefinement(...)` in
+      // `FacetModule.distributedProcess(...)`, communicating pivot status via `FacetMerger.Context` (`mcontext`).
+      // Indeed, this could entirely obviate `passLimit`?
       passLimit = mcontext.getPass() + 1;
       if (!freq.doRefine() && !mcontext.ancestorHasPendingRefinement()) {
         // NOTE: you cannot prune buckets while parental refinement is ongoing, because there could be
