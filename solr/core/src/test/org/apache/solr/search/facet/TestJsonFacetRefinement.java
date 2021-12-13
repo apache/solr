@@ -1018,7 +1018,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                   );
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-15836")
   @Test
   public void testChildPhase1Exclusion() throws Exception {
     initServers();
