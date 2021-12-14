@@ -188,7 +188,7 @@ public class FacetModule extends SearchComponent {
 
     assert rb.shards.length == facetState.mcontext.numShards;
     int ret = ResponseBuilder.STAGE_DONE;
-    final int pass = facetState.mcontext.incrementPass();
+    facetState.mcontext.incrementPass();
     forEachShard:
     for (String shard : rb.shards) {
       facetState.mcontext.setShard(shard);
@@ -203,6 +203,7 @@ public class FacetModule extends SearchComponent {
           // no pending topLevel subs (the usual case; loop assigning `refinement` is only executed once in practice)
           continue forEachShard;
         }
+        facetState.mcontext.incrementPass();
       }
       ret = ResponseBuilder.STAGE_REFINEMENT;
 
