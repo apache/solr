@@ -264,9 +264,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       return true;
     }
     for (String key : topLevelChildren) {
-      if (bucket.subs.containsKey(key)) {
-        return false;
-      }
+      // actually throw the assertion here so we get the message -- sorry caller
+      assert !bucket.subs.containsKey(key) : "found extant topLevel child: \""+key+"\":"+((FacetFieldMerger)bucket.subs.get(key)).buckets;
     }
     return true;
   }
