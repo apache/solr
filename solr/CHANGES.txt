@@ -170,6 +170,17 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15790: SearchHandler now includes the `rid` value in the Logging MDC for the duration of the request, allowing custom logging
   configurations to include it. (hossman)
 
+* SOLR-15785: Custom node request handlers/endpoints that weren't in packages can now be located in JARs in solr-home/lib,
+  not just WEB-INF/lib. (Nazerke Seidan, David Smiley)
+
+* SOLR-15376: Accept "Long" values for CollectionAdminRequest.CreateTimeRoutedAlias.setMaxFutureMs
+  to support durations greater than ~ 25 days. (Nahian-Al Hasan, Gus Heck, Christine Poerschke)
+
+* SOLR-15427: Nested docs: [child limit=...] now defaults to -1 which is interpreted as unlimited.
+  (David Smiley)
+
+* SOLR-15786: Add the "films" example to SolrCLI via -e films parameter. (Eric Pugh)
+
 Build
 ---------------------
 
@@ -396,7 +407,16 @@ Other Changes
 
 * SOLR-15791: Remove remaining unused <admin/> clauses from solrconfigs. (Eric Pugh)
 
-* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
+* SOLR-15784: Remove SolrJ dependency on commons-io. (Mike Drob)
+
+* SOLR-15808: [Docker] The jattach tool is now installed with apt (janhoy)
+
+* SOLR-15809: Get rid of blacklist/whitelist terminology
+  JWTAuthPlugin parameter 'algWhitelist' is now 'algAllowlist'
+  Environment variables SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST are no longer supported, but replaced with SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST.
+  (janhoy)
+
+* SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
 
 Bug Fixes
 ---------------------
@@ -430,6 +450,34 @@ Bug Fixes
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
   closed fromCore if provided (Mikhail Khludnev, David Smiley)
 
+* SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
+
+* SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
+
+* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
+
+* SOLR-13900: Reset index values on authorization rules after deleting by index (Timothy Potter)
+
+* SOLR-15813: Schema designer not handling `update.autoCreateFields` stored as a string (vs. boolean) in the config overlay (Timothy Potter)
+
+* SOLR-15825: Security UI 'hasPermission' check should check if the user has the "all" permission if the requested permission is not defined
+  to match how the backend works (Timothy Potter)
+
+* SOLR-15826: ResourceLoader should better respect allowed paths (janhoy)
+
+* SOLR-15828: AuthTool (in SolrCLI) should include the config-read, collection-admin-read, core-admin-read, and all permissions in the initial security.json
+  to avoid warnings in the security UI (Timothy Potter)
+
+* SOLR-15199: Pass thru all command actions not explicitly handled by the bin/solr script, such as 'api', to the SolrCLI Java app (Timothy Potter)
+
+* SOLR-15833: Enable exists queries on spatial types. (Mike Drob, Houston Putman)
+
+* SOLR-15832: Clean-up after publish action in Schema Designer shouldn't fail if .system collection doesn't exist (Timothy Potter)
+
+* SOLR-8319: Fix NPE in pivot facets, add non-Analyzed query method in FieldType. (Houston Putman, Isabelle Giguere)
+
+* SOLR-15843: Update Log4J to 2.16 (Mike Drob, janhoy)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -450,6 +498,8 @@ Improvements
 ---------------------
 
 * SOLR-15707: Add the ability to set the AWS Profile per S3Repository (Houston Putman)
+
+* SOLR-15700: Make include paths in bin/solr consistent (turnertg, janhoy via Eric Pugh)
 
 Optimizations
 ---------------------
@@ -558,7 +608,7 @@ Improvements
 
 * SOLR-15610: log4j-layout-template-json is now included in solr server, allowing JSON formatted logs to be configurable. (hossman)
 
-* SOLR-15607: Explicitly indent results in Admin Query UI by default (Olvia Falk via Eric Pugh)
+* SOLR-15607: Explicitly indent results in Admin Query UI by default (Olivia Falk via Eric Pugh)
 
 * SOLR-15555: Identical filter queries will no longer race to record a filterCache entry. Allows for async cache computation instead of
   all queries contending for the same set of locks on the cache. Fixed a bug with ramBytes usage reporting on filterCache.

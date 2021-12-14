@@ -96,11 +96,17 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 {
   public static final String HIDDEN = "hidden";
   public static final String USE_CONTENT_TYPE = "contentType";
+  private static final Set<String> KNOWN_MIME_TYPES;
 
   protected Set<String> hiddenFiles;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  static {
+    KNOWN_MIME_TYPES = new HashSet<>(MimeTypes.getKnownMimeTypes());
+    KNOWN_MIME_TYPES.add("text/xml");
+    KNOWN_MIME_TYPES.add("text/javascript");
+  }
 
   public ShowFileRequestHandler()
   {
@@ -265,10 +271,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       log.debug("No contentType specified");
       return null;
     }
-    if (!MimeTypes.getKnownMimeTypes().contains(contentType)) {
+    String rawContentType = contentType.split(";")[0].trim().toLowerCase(Locale.ROOT); // Strip away charset part
+    if (!KNOWN_MIME_TYPES.contains(rawContentType)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Requested content type '" + contentType + "' is not supported.");
     }
-    if (contentType.toLowerCase(Locale.ROOT).contains("html")) {
+    if (rawContentType.contains("html")) {
       log.info("Using text/plain instead of {}", contentType);
       return "text/plain";
     }
@@ -368,7 +375,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
         rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
         return null;
       }
-      Path filePath = configdir.toPath().resolve(fname);
+      // A leading slash is unnecessary but supported and interpreted as start of config dir
+      Path filePath = configdir.toPath().resolve(fname.startsWith("/") ? fname.substring(1) : fname);
       req.getCore().getCoreContainer().assertPathAllowed(filePath);
       adminFile = filePath.toFile();
     }

@@ -38,8 +38,6 @@ import org.apache.solr.common.util.ContentStreamBase.FileStream;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import org.apache.commons.io.IOUtils;
-
 /**
  * This class is experimental and subject to change.
  *
@@ -215,7 +213,7 @@ public abstract class ConfigSetAdminRequest
         @Override
         public void write(OutputStream os) throws IOException {
           try(var inStream = stream.getStream()) {
-            IOUtils.copy(inStream, os);
+            inStream.transferTo(os);
           }
         }
         
