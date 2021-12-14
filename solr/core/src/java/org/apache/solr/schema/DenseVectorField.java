@@ -24,28 +24,32 @@ import static java.util.Optional.ofNullable;
 public class DenseVectorField extends FieldType {
 
     static final String KNN_VECTOR_DIMENSION = "vector_dimension";
+    static final String KNN_SIMILARITY_FUNCTION = "similarity_function";
     private int dimension;
     private VectorSimilarityFunction similarityFunction;
 
     @Override
     public void init(IndexSchema schema, Map<String, String> args){
-        this.dimension = ofNullable(args.get(KNN_VECTOR_DIMENSION)).map(Integer::parseInt).orElseThrow();
+        this.dimension = ofNullable(args.get(KNN_VECTOR_DIMENSION))
+                .map(Integer::parseInt)
+                .orElseThrow(() -> new SolrException(SolrException.ErrorCode.BAD_REQUEST, "k is mandatory parameter"));
         args.remove(KNN_VECTOR_DIMENSION);
+        this.similarityFunction = ofNullable(args.get(KNN_SIMILARITY_FUNCTION))
+                .map(this::parseVectorSimilarityFunction)
+                .orElseThrow(() -> new SolrException(SolrException.ErrorCode.BAD_REQUEST, "similarity function is mandatory parameter"));
+        args.remove(KNN_SIMILARITY_FUNCTION);
         this.similarityFunction = VectorSimilarityFunction.EUCLIDEAN;
         super.init(schema, args);
     }
 
     public List<IndexableField> createFields(SchemaField field, Object value) {
-
         List<IndexableField> fields = new ArrayList<>();
         if (field.indexed()){
             fields.add(createField(field, value));
         }
-        
         if (field.stored()){
             fields.add(getStoredField(field, value));
         }
-
         return fields;
     }
 
@@ -73,17 +77,7 @@ public class DenseVectorField extends FieldType {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "impossible to parse vector value");
         }
 
-        org.apache.lucene.document.FieldType fieldType = createFieldType(field, dimension, similarityFunction);
-
-        return new KnnVectorField(field.getName(), vector, fieldType);
-    }
-
-
-    public org.apache.lucene.document.FieldType createFieldType(SchemaField field, int dimension, VectorSimilarityFunction similarityFunction){
-
-        org.apache.lucene.document.FieldType type = new org.apache.lucene.document.FieldType();
-        type.setVectorDimensionsAndSimilarityFunction(dimension, similarityFunction);
-        return type;
+        return new KnnVectorField(field.getName(), vector, similarityFunction);
     }
 
     @Override
@@ -118,6 +112,19 @@ public class DenseVectorField extends FieldType {
         }
 
         return vector;
+    }
+
+
+    private VectorSimilarityFunction parseVectorSimilarityFunction(String value){
+        if (value.equals("euclidean")){
+            return VectorSimilarityFunction.EUCLIDEAN;
+        } else if (value.equals("cosine")){
+            return VectorSimilarityFunction.COSINE;
+        } else if (value.equals("dot_product")){
+            return VectorSimilarityFunction.DOT_PRODUCT;
+        }
+
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("{} is not a valid similarity function", value));
     }
 
 }

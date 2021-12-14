@@ -286,7 +286,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-
     List<SearchComponent> components  = getComponents();
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
