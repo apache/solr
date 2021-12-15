@@ -36,13 +36,12 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   List<FacetBucket> sortedBuckets;
   BitSet shardHasMoreBuckets;  // null, or "true" if we saw a result from this shard and it indicated that there are more results
-  private boolean pendingRefinement;
+  private Context.PendingRefinement pendingRefinement;
   private boolean currentPassRefinement;
   Context mcontext;  // HACK: this should be passed in getMergedResult as well!
 
   public FacetRequestSortedMerger(FacetRequestT freq) {
     super(freq);
-    pendingRefinement = freq.doRefine();
   }
 
   @Override
@@ -280,14 +279,22 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   private void checkPass(int pass) {
     if (pass != lastPass) {
       // reset pass trackers
-      // TODO: for `SIMPLE` refinement, we can always set `pendingRefinement=false`, regardless of
-      //  what `currentPassRefinement` reports about refinement requests issued in the last pass.
-      pendingRefinement = lastPass == -1 ? freq.doRefine() : currentPassRefinement;
+      if (lastPass == -1) {
+        // the first time we see this, assume there is pending refinement if refinement is enabled
+        pendingRefinement = freq.doRefine() ? Context.PendingRefinement.ONGOING : Context.PendingRefinement.NO;
+      } else if (freq.refine == FacetRequest.RefineMethod.SIMPLE) {
+        // `SIMPLE` always does refinement (if any) in a single pass; so unconditionally set to false for subsequent passes
+        pendingRefinement = currentPassRefinement ? Context.PendingRefinement.PENDING_RESULTS : Context.PendingRefinement.NO;
+      } else {
+        // otherwise assume iterative refinement -- if we did refinement on last pass, we might need to refine again
+        assert false : "this code path should be dead until `RefineMethod.ITERATIVE` is introduced";
+        pendingRefinement = mcontext.maybeIterativeRefinement(currentPassRefinement);
+      }
       currentPassRefinement = false;
       switch (pivotState) {
         case PRE:
         case INIT_PIVOT:
-          pivotState = pendingRefinement ? PivotState.PRE : PivotState.INIT_PIVOT;
+          pivotState = pendingRefinement == Context.PendingRefinement.ONGOING ? PivotState.PRE : PivotState.INIT_PIVOT;
           break;
         case PIVOT:
           pivotState = PivotState.REFINE;
@@ -314,7 +321,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     boolean overlapTopLevelSubsWithParentRefinement = false;
     final PivotState initialPivotState = pivotState;
 
-    if (!pendingRefinement && !mcontext.ancestorHasPendingRefinement()) {
+    if (pendingRefinement != Context.PendingRefinement.ONGOING && mcontext.ancestorHasPendingRefinement() != Context.PendingRefinement.ONGOING) {
       // NOTE: you cannot prune buckets while parental refinement is ongoing, because there could be
       // shards with _leaf_ buckets at the parent level that can contribute new counts in phase#2 (affecting sort,
       // and therefore pruning), and even contribute entirely new values (even if the child facet has
@@ -339,7 +346,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       // we can't overlap `topLevel` requests with parental refinement phase; but it's possible that the
       // parental refinement phase will return `null` (i.e., "no refinement necessary") -- we set this flag
       // on `mcontext` to notify the root `FacetMerger` that there are pending `topLevel` pivots
-      mcontext.setHasPendingTopLevel(true);
+      mcontext.setHasPendingTopLevel();
     }
 
     Map<String,Object> refinement = null;
@@ -446,7 +453,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       topLevelChildren = topLevelSubs.get(Context.TopLevelSub.CHILD);
       mapInitSize = (childrenWithTopLevelDescendants == null ? 0 : childrenWithTopLevelDescendants.size()) + (topLevelChildren == null ? 0 : topLevelChildren.size());
     }
-    final boolean alreadyHadAncestorRefinement = mcontext.updateAncestorHasPendingRefinement(pendingRefinement);
+    final Context.PendingRefinement alreadyHadAncestorRefinement = mcontext.updateAncestorHasPendingRefinement(pendingRefinement);
     for (FacetBucket bucket : bucketList) {
       Map<String,Object> bucketRefinement = null;
       if (numBucketsToCheck-- <= 0) break;

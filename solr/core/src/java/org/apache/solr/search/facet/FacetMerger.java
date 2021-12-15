@@ -57,8 +57,10 @@ public abstract class FacetMerger {
     int shardNum = -1;  // TODO: keep same mapping across multiple phases...
     boolean bucketWasMissing;
     private int pass = 0;
-    private boolean ancestorHasPendingRefinement;
+    public enum PendingRefinement { NO, PENDING_RESULTS, ONGOING }
+    private PendingRefinement ancestorHasPendingRefinement = PendingRefinement.NO;
     private boolean hasPendingTopLevel;
+    private boolean refinementComplete;
 
     public void newShard(String shard) {
       Integer prev = shardmap.put(shard, ++shardNum);
@@ -97,31 +99,47 @@ public abstract class FacetMerger {
       return oldVal;
     }
 
-    public boolean ancestorHasPendingRefinement() {
+    public PendingRefinement ancestorHasPendingRefinement() {
       return ancestorHasPendingRefinement;
     }
 
-    public boolean updateAncestorHasPendingRefinement(boolean newVal) {
-      final boolean oldVal = ancestorHasPendingRefinement;
-      if (newVal) {
-        // `true` take priority
-        ancestorHasPendingRefinement = true;
+    public PendingRefinement updateAncestorHasPendingRefinement(PendingRefinement newVal) {
+      final PendingRefinement oldVal = ancestorHasPendingRefinement;
+      if (newVal.compareTo(oldVal) > 0) {
+        ancestorHasPendingRefinement = newVal;
       }
       return oldVal;
     }
 
-    public void setAncestorHasPendingRefinement(boolean newVal) {
+    public void setAncestorHasPendingRefinement(PendingRefinement newVal) {
       ancestorHasPendingRefinement = newVal;
+    }
+
+    public boolean shardFinished() {
+      return refinementComplete && !hasPendingTopLevel;
+    }
+
+    public PendingRefinement maybeIterativeRefinement(boolean currentPassRefinement) {
+      switch (ancestorHasPendingRefinement) {
+        case NO:
+          return currentPassRefinement ? PendingRefinement.PENDING_RESULTS : PendingRefinement.NO;
+        case PENDING_RESULTS:
+          refinementComplete = false;
+          return currentPassRefinement ? PendingRefinement.ONGOING : PendingRefinement.PENDING_RESULTS;
+        case ONGOING:
+          refinementComplete = false;
+          return PendingRefinement.ONGOING;
+        default:
+          throw new IllegalStateException();
+      }
     }
 
     public boolean hasPendingTopLevel() {
       return hasPendingTopLevel;
     }
 
-    public boolean setHasPendingTopLevel(boolean newVal) {
-      boolean oldVal = hasPendingTopLevel;
-      hasPendingTopLevel = newVal;
-      return oldVal;
+    public void setHasPendingTopLevel() {
+      hasPendingTopLevel = true;
     }
 
     public int getPass() {
@@ -136,7 +154,8 @@ public abstract class FacetMerger {
     }
 
     public Context resetPerShard() {
-      ancestorHasPendingRefinement = false;
+      ancestorHasPendingRefinement = PendingRefinement.NO;
+      refinementComplete = true;
       return this;
     }
 

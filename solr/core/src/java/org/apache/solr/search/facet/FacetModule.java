@@ -206,7 +206,8 @@ public class FacetModule extends SearchComponent {
         }
         continue;
       }
-      ret = ResponseBuilder.STAGE_REFINEMENT;
+
+      ret = Math.min(ret, facetState.mcontext.shardFinished() ? ResponseBuilder.STAGE_DONE : ResponseBuilder.STAGE_REFINEMENT);
 
       boolean newRequest = false;
       ShardRequest shardsRefineRequest = null;
