@@ -18,15 +18,16 @@
 Solr example
 ------------
 
-This directory contains Solr examples. Each example is contained in a 
+This directory contains Solr examples. Each example is contained in a
 separate directory. To run a specific example, do:
 
 ```
   bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
-  
+
     cloud        : SolrCloud example
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
+    films        : Example of starting with _default configset and defining explicit fields dynamically.
 ```
 
 For instance, if you want to run the SolrCloud example, do:
@@ -65,7 +66,7 @@ For more information about the "Solr Home" and Solr specific configuration
 
 For a Solr tutorial
 
- * https://solr.apache.org/resources.html 
+ * https://solr.apache.org/resources.html
 
 For a list of other tutorials and introductory articles.
 
@@ -91,4 +92,3 @@ be convenient when first getting started, but eventually you will want to
 log just to a file. To configure logging, edit the log4j2.xml file in
 ".../server/resources".
 It is also possible to setup log4j or other popular logging frameworks.
-
