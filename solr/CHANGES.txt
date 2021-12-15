@@ -179,6 +179,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15427: Nested docs: [child limit=...] now defaults to -1 which is interpreted as unlimited.
   (David Smiley)
 
+* SOLR-15824 Improved Query Screen handling of raw query parameters.  (Betul Ince via Tim Potter, Eric Pugh) 
+
 Build
 ---------------------
 
