@@ -21,7 +21,7 @@ solrAdminApp.controller('QueryController',
 
     $scope._models = [];
     $scope.filters = [{fq:""}];
-    $scope.rawParams = [{rawP:""}];
+    $scope.rawParams = [{rawParam:""}];
     $scope.val = {};
     $scope.val['q'] = "*:*";
     $scope.val['q.op'] = "OR";
@@ -75,15 +75,15 @@ solrAdminApp.controller('QueryController',
     }
     // store not processed values to be displayed in a field
     function insertToRawParams(argKey, argValue){
-      if( ($scope.rawParams.length === 0) || ($scope.rawParams.length === 1 && $scope.rawParams[0].rawP === "") ){
+      if( ($scope.rawParams.length === 0) || ($scope.rawParams.length === 1 && $scope.rawParams[0].rawParam === "") ){
         $scope.rawParams = [];
       }
       if (argValue instanceof Array) {
         for (var index in argValue) {
-          $scope.rawParams.push({rawP: argKey + "=" + argValue[index]});
+          $scope.rawParams.push({rawParam: argKey + "=" + argValue[index]});
         }
       } else {
-        $scope.rawParams.push({rawP: argKey + "=" + argValue});
+        $scope.rawParams.push({rawParam: argKey + "=" + argValue});
       }
     }
     function addFilters(argObject){
@@ -152,8 +152,8 @@ solrAdminApp.controller('QueryController',
       }
 
       for (var rawIndex in $scope.rawParams) {
-        if ($scope.rawParams[rawIndex].rawP) {
-          var rawParam = $scope.rawParams[rawIndex].rawP.split(/[&\n]/);
+        if ($scope.rawParams[rawIndex].rawParam) {
+          var rawParam = $scope.rawParams[rawIndex].rawParam.split(/[&\n]/);
           for (var i in rawParam) {
             var param = rawParam[i];
             var equalPos = param.indexOf("=");
@@ -234,13 +234,13 @@ solrAdminApp.controller('QueryController',
     };
     $scope.removeRawParam = function (index) {
       if ($scope.rawParams.length === 1) {
-        $scope.rawParams = [{rawP: ""}];
+        $scope.rawParams = [{rawParam: ""}];
       } else {
         $scope.rawParams.splice(index, 1);
       }
     };
     $scope.addRawParam = function (index) {
-      $scope.rawParams.splice(index+1, 0, {rawP:""});
+      $scope.rawParams.splice(index+1, 0, {rawParam:""});
     };
   }
 );

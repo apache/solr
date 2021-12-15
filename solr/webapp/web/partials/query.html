@@ -350,8 +350,8 @@ limitations under the License.
         <a rel="help">Raw Query Parameters</a>
       </label>
       <div class="multiple" id="custom_parameters">
-        <div class="row clearfix" ng-repeat="rawParam in rawParams">
-          <input type="text" ng-model="rawParam.rawP" name="rawParamQuery" title="Raw param query.">
+        <div class="row clearfix" ng-repeat="param in rawParams">
+          <input type="text" ng-model="param.rawParam" name="rawParamQuery" title="Raw param query.">
           <div class="buttons">
             <a class="rem" ng-click="removeRawParam($index)"><span></span></a>
             <a class="add" ng-click="addRawParam($index)"><span></span></a>
