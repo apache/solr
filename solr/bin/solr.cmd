@@ -237,12 +237,8 @@ REM Only allow the command to be the first argument, assume start if not supplie
 IF "%1"=="start" goto set_script_cmd
 IF "%1"=="stop" goto set_script_cmd
 IF "%1"=="restart" goto set_script_cmd
-IF "%1"=="healthcheck" (
-  REM healthcheck uses different arg parsing strategy
-  set SCRIPT_CMD=healthcheck
-  SHIFT
-  goto parse_healthcheck_args
-)
+IF "%1"=="healthcheck" goto run_solrcli
+
 IF "%1"=="create" (
   set SCRIPT_CMD=create
   SHIFT
@@ -295,15 +291,11 @@ IF "%FIRST_ARG%"=="/?" goto script_usage
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
-IF "%SCRIPT_CMD%"=="healthcheck" goto healthcheck_usage
 IF "%SCRIPT_CMD%"=="create" goto create_usage
-IF "%SCRIPT_CMD%"=="create_core" goto create_core_usage
-IF "%SCRIPT_CMD%"=="create_collection" goto create_collection_usage
-IF "%SCRIPT_CMD%"=="delete" goto delete_usage
 IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
 IF "%SCRIPT_CMD%"=="status" goto status_usage
-goto done
+goto solrcli_usage
 
 :script_usage
 @echo.
@@ -412,21 +404,6 @@ goto done
 @echo.
 goto done
 
-:healthcheck_usage
-@echo.
-@echo Usage: solr healthcheck [-c collection] [-z zkHost] [-V]
-@echo.
-@echo Can be run from remote (non-Solr^) hosts, as long as a proper ZooKeeper connection is provided
-@echo.
-@echo   -c collection  Collection to run healthcheck against.
-@echo.
-@echo   -z zkHost      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.cmd;
-@echo                    otherwise, default is localhost:9983
-@echo.
-@echo   -V             Enable more verbose output
-@echo.
-goto done
-
 :create_usage
 echo.
 echo Usage: solr create [-c name] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port] [-V]
@@ -440,97 +417,6 @@ echo.
 echo        or
 echo.
 echo     bin\solr create_collection -help
-echo.
-goto done
-
-:delete_usage
-echo.
-echo Usage: solr delete [-c name] [-deleteConfig true^|false] [-p port] [-V]
-echo.
-echo  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud
-echo  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also
-echo  delete the configuration directory from Zookeeper so long as it is not being used by another collection.
-echo  You can override this behavior by passing -deleteConfig false when running this command.
-echo.
-echo  Can be run on remote (non-Solr^) hosts, as long as a valid SOLR_HOST is provided in solr.in.cmd
-echo.
-echo   -c name     Name of core to delete
-echo.
-echo   -deleteConfig boolean Delete the configuration directory from Zookeeper; default is true
-echo.
-echo   -p port     Port of a local Solr instance where you want to delete the core/collection
-echo                 If not specified, the script will search the local system for a running
-echo                 Solr instance and will use the port of the first server it finds.
-echo.
-echo   -V            Enables more verbose output.
-echo.
-goto done
-
-:create_core_usage
-echo.
-echo Usage: solr create_core [-c ^<core^>] [-d confdir] [-p port] [-V]
-echo.
-echo When a configSet is used, this can be run from any host.  If pointing at a non-configSet directory, this
-echo must be run from the host that you wish to create the core on.
-echo.
-echo   -c ^<core^>     Name of core to create
-echo.
-echo   -d confdir  Configuration directory to copy when creating the new core, built-in options are:
-echo.
-echo       _default: Minimal configuration, which supports enabling/disabling field-guessing support
-echo       sample_techproducts_configs: Example configuration with many optional features enabled to
-echo          demonstrate the full power of Solr
-echo.
-echo       If not specified, default is: _default
-echo.
-echo       Alternatively, you can pass the path to your own configuration directory instead of using
-echo       one of the built-in configurations, such as: bin\solr create_core -c mycore -d c:/tmp/myconfig
-echo.
-echo   -p port     Port of a local Solr instance where you want to create the new core
-echo                 If not specified, the script will search the local system for a running
-echo                 Solr instance and will use the port of the first server it finds.
-echo.
-echo   -V            Enable more verbose output.
-echo.
-goto done
-
-:create_collection_usage
-echo.
-echo Usage: solr create_collection [-c collection] [-d confdir] [-n confname] [-shards #] [-replicationFactor #] [-p port] [-V]
-echo.
-echo Can be run from remote (non-Solr^) hosts, as long as a valid SOLR_HOST is provided in solr.in.cmd.
-echo.
-echo   -c ^<collection^>         Name of collection to create
-echo.
-echo   -d ^<confdir^>            Configuration directory to copy when creating the new collection, built-in options are:
-echo.
-echo       _default: Minimal configuration, which supports enabling/disabling field-guessing support
-echo       sample_techproducts_configs: Example configuration with many optional features enabled to
-echo          demonstrate the full power of Solr
-echo.
-echo       If not specified, default is: _default
-echo.
-echo       Alternatively, you can pass the path to your own configuration directory instead of using
-echo       one of the built-in configurations, such as: bin\solr create_collection -c mycoll -d c:/tmp/myconfig
-echo.
-echo       By default the script will upload the specified confdir directory into Zookeeper using the same
-echo         name as the collection (-c) option. Alternatively, if you want to reuse an existing directory
-echo         or create a confdir in Zookeeper that can be shared by multiple collections, use the -n option
-echo.
-echo   -n configName         Name the configuration directory in Zookeeper; by default, the configuration
-echo                             will be uploaded to Zookeeper using the collection name (-c), but if you want
-echo                             to use an existing directory or override the name of the configuration in
-echo                              Zookeeper, then use the -c option.
-echo.
-echo   -shards #             Number of shards to split the collection into; default is 1
-echo.
-echo   -replicationFactor #  Number of copies of each document in the collection, default is 1 (no replication)
-echo.
-echo   -p port               Port of a local Solr instance where you want to create the new collection
-echo                           If not specified, the script will search the local system for a running
-echo                           Solr instance and will use the port of the first server it finds.
-echo.
-echo   -V                    Enable more verbose output.
 echo.
 goto done
 
@@ -667,6 +553,14 @@ echo                                configuration files (e.g. basicAuth.conf^) w
 echo.
 echo   -V                           Enable more verbose output
 echo.
+goto done
+
+REM Catch-all to delegate command usage to SolrCLI
+:solrcli_usage
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI %SCRIPT_CMD% -help
 goto done
 
 REM Really basic command-line arg parsing
@@ -1418,47 +1312,6 @@ for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port
 )
 if NOT "!has_info!"=="1" echo No running Solr nodes found.
 set has_info=
-goto done
-
-:parse_healthcheck_args
-IF [%1]==[] goto run_healthcheck
-IF "%1"=="-V" goto set_healthcheck_verbose
-IF "%1"=="-c" goto set_healthcheck_collection
-IF "%1"=="-collection" goto set_healthcheck_collection
-IF "%1"=="-z" goto set_healthcheck_zk
-IF "%1"=="-zkhost" goto set_healthcheck_zk
-IF "%1"=="-zkHost" goto set_healthcheck_zk
-IF "%1"=="-help" goto usage
-IF "%1"=="-usage" goto usage
-IF "%1"=="/?" goto usage
-goto run_healthcheck
-
-:set_healthcheck_verbose
-set HEALTHCHECK_VERBOSE="-verbose"
-SHIFT
-goto parse_healthcheck_args
-
-:set_healthcheck_collection
-set HEALTHCHECK_COLLECTION=%~2
-SHIFT
-SHIFT
-goto parse_healthcheck_args
-
-:set_healthcheck_zk
-set ZK_HOST=%~2
-SHIFT
-SHIFT
-goto parse_healthcheck_args
-
-:run_healthcheck
-IF NOT DEFINED HEALTHCHECK_COLLECTION goto healthcheck_usage
-IF NOT DEFINED HEALTHCHECK_VERBOSE set "HEALTHCHECK_VERBOSE="
-IF NOT DEFINED HEALTHCHECK_ZK_HOST set "HEALTHCHECK_ZK_HOST=localhost:9983"
-echo ZK_HOST: !ZK_HOST!
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! -zkHost !ZK_HOST! %HEALTHCHECK_VERBOSE%
 goto done
 
 :run_solrcli
