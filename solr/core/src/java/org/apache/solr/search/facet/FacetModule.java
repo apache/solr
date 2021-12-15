@@ -187,23 +187,24 @@ public class FacetModule extends SearchComponent {
     // requests in the outgoing queue at once.
 
     assert rb.shards.length == facetState.mcontext.numShards;
+    facetState.mcontext.resetPerPass();
     int ret = ResponseBuilder.STAGE_DONE;
-    facetState.mcontext.incrementPass();
-    forEachShard:
     for (String shard : rb.shards) {
       facetState.mcontext.setShard(shard);
 
       // shard-specific refinement
-      Map<String, Object> refinement;
-      while ((refinement = facetState.merger.getRefinement(facetState.mcontext.reset())) == null) {
-        // no refinements were registered, but there could still be pending topLevel requests
-        // that could not yet be issued, so we call `getRefinement` in a loop to give `topLevel`
-        // subs the opportunity to register when they are ready to do so.
-        if (!facetState.mcontext.hasPendingTopLevel()) {
-          // no pending topLevel subs (the usual case; loop assigning `refinement` is only executed once in practice)
-          continue forEachShard;
+      Map<String, Object> refinement = facetState.merger.getRefinement(facetState.mcontext.resetPerShard());
+      if (refinement == null) {
+        if (facetState.mcontext.hasPendingTopLevel()) {
+          // TODO: outside of this loop (i.e., as a subsequent loop), if we have pending topLevel pivots and
+          //  either no refinements at all, or no pending parent/ancestor refinements (wrt `topLevel` subs),
+          //  we should be able to issue first-pass `topLevel` pivots in the current pass.
+          //  NOTE: I think the outer loop (in `SearchHandler.handleRequestBody(...)` should be lean enough
+          //  that this is only _worth_ doing in the current pass for the more complex mixed/overlap case
+          //  (i.e., not "no refinements at all")
+          ret = ResponseBuilder.STAGE_REFINEMENT;
         }
-        facetState.mcontext.incrementPass();
+        continue;
       }
       ret = ResponseBuilder.STAGE_REFINEMENT;
 

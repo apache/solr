@@ -47,7 +47,6 @@ public abstract class FacetMerger {
     final int numShards;
     private final BitSet sawShard = new BitSet(); // [bucket0_shard0, bucket0_shard1, bucket0_shard2,  bucket1_shard0, bucket1_shard1, bucket1_shard2]
     private Map<String,Integer> shardmap = new HashMap<>();
-    private int pass = 0;
 
     public Context(int numShards) {
       this.numShards = numShards;
@@ -57,21 +56,14 @@ public abstract class FacetMerger {
     int maxBucket;  // the current max bucket across all bucket types... incremented as we encounter more
     int shardNum = -1;  // TODO: keep same mapping across multiple phases...
     boolean bucketWasMissing;
-    boolean ancestorHasPendingRefinement;
-    boolean hasPendingTopLevel;
+    private int pass = 0;
+    private boolean ancestorHasPendingRefinement;
+    private boolean hasPendingTopLevel;
 
     public void newShard(String shard) {
       Integer prev = shardmap.put(shard, ++shardNum);
       assert prev == null;
       this.bucketWasMissing = false;
-    }
-
-    public int incrementPass() {
-      return ++pass;
-    }
-
-    public int getPass() {
-      return pass;
     }
 
     public void setShard(String shard) {
@@ -109,10 +101,17 @@ public abstract class FacetMerger {
       return ancestorHasPendingRefinement;
     }
 
-    public boolean setAncestorHasPendingRefinement(boolean newVal) {
-      boolean oldVal = ancestorHasPendingRefinement;
-      ancestorHasPendingRefinement = newVal;
+    public boolean updateAncestorHasPendingRefinement(boolean newVal) {
+      final boolean oldVal = ancestorHasPendingRefinement;
+      if (newVal) {
+        // `true` take priority
+        ancestorHasPendingRefinement = true;
+      }
       return oldVal;
+    }
+
+    public void setAncestorHasPendingRefinement(boolean newVal) {
+      ancestorHasPendingRefinement = newVal;
     }
 
     public boolean hasPendingTopLevel() {
@@ -125,9 +124,19 @@ public abstract class FacetMerger {
       return oldVal;
     }
 
-    public Context reset() {
-      ancestorHasPendingRefinement = false;
+    public int getPass() {
+      return pass;
+    }
+
+    public Context resetPerPass() {
+      resetPerShard();
+      pass++;
       hasPendingTopLevel = false;
+      return this;
+    }
+
+    public Context resetPerShard() {
+      ancestorHasPendingRefinement = false;
       return this;
     }
 

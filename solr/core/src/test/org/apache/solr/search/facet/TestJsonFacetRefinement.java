@@ -1120,7 +1120,54 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                     + "  ] } }"
     );
   }
-  
+
+  @Test
+  public void testDeepTopLevel() throws Exception {
+    initServers();
+    final Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
+
+    List<SolrClient> clients = client.getClientProvider().all();
+    final SolrClient c0 = clients.get(0);
+    final SolrClient c1 = clients.get(1);
+
+    client.deleteByQuery("*:*", null);
+    int id = 0;
+
+    for (int i = 0; i < 10; i++) {
+      c0.add(sdoc("id", id++, "parent_s", "A", "child_s", "B", "leaf_s", "C"+i));
+      c1.add(sdoc("id", id++, "parent_s", "A", "child_s", "B", "leaf_s", "C"+i));
+    }
+
+    client.commit();
+
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "parent:{ type:terms, field:parent_s, limit:10, refine:false, facet:{"
+                    + "  child:{ type:terms, field:child_s, limit:10, refine:false, facet:{"
+                    + "    leaf:{ type:terms, field:leaf_s, limit:10, refine:true, topLevel:true }"
+                    + "} } } } }")
+            , "facets=={ count: 20,"
+                    + "  parent:{ buckets:[ "
+                    + "    { val:A, count: 20,"
+                    + "      child:{ buckets:[ "
+                    + "        { val:B, count: 20,"
+                    + "          leaf:{ buckets:[ "
+                    + "                   {val:C0,count:2},"
+                    + "                   {val:C1,count:2},"
+                    + "                   {val:C2,count:2},"
+                    + "                   {val:C3,count:2},"
+                    + "                   {val:C4,count:2},"
+                    + "                   {val:C5,count:2},"
+                    + "                   {val:C6,count:2},"
+                    + "                   {val:C7,count:2},"
+                    + "                   {val:C8,count:2},"
+                    + "                   {val:C9,count:2},"
+                    + "          ] } },"
+                    + "      ] } },"
+                    + "  ] } }"
+    );
+  }
+
   @Test
   public void testBasicRefinement() throws Exception {
     ModifiableSolrParams p;
