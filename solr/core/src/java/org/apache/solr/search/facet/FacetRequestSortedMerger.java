@@ -282,13 +282,20 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       if (lastPass == -1) {
         // the first time we see this, assume there is pending refinement if refinement is enabled
         pendingRefinement = freq.doRefine() ? Context.PendingRefinement.ONGOING : Context.PendingRefinement.NO;
-      } else if (freq.refine == FacetRequest.RefineMethod.SIMPLE) {
-        // `SIMPLE` always does refinement (if any) in a single pass; so unconditionally set to false for subsequent passes
-        pendingRefinement = currentPassRefinement ? Context.PendingRefinement.PENDING_RESULTS : Context.PendingRefinement.NO;
       } else {
-        // otherwise assume iterative refinement -- if we did refinement on last pass, we might need to refine again
-        assert false : "this code path should be dead until `RefineMethod.ITERATIVE` is introduced";
-        pendingRefinement = mcontext.maybeIterativeRefinement(currentPassRefinement);
+        assert freq.refine != null;
+        switch (freq.refine) {
+          case SIMPLE:
+            // `SIMPLE` always does refinement (if any) in a single pass; so unconditionally set to false for subsequent passes
+            pendingRefinement = currentPassRefinement ? Context.PendingRefinement.PENDING_RESULTS : Context.PendingRefinement.NO;
+            break;
+          case ITERATIVE:
+            // iterative refinement -- we might need to refine again
+            pendingRefinement = mcontext.maybeIterativeRefinement(currentPassRefinement);
+            break;
+          default:
+            throw new IllegalStateException();
+        }
       }
       currentPassRefinement = false;
       switch (pivotState) {

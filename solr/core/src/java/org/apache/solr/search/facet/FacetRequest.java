@@ -111,7 +111,8 @@ public abstract class FacetRequest {
 
   public static enum RefineMethod {
     NONE,
-    SIMPLE;
+    SIMPLE,
+    ITERATIVE;
     // NONE is distinct from null since we may want to know if refinement was explicitly turned off.
     public static FacetRequest.RefineMethod fromObj(Object method) {
       if (method == null) return null;
@@ -120,6 +121,8 @@ public abstract class FacetRequest {
       }
       if ("simple".equals(method)) {
         return SIMPLE;
+      } else if ("iterative".equals(method)) {
+        return ITERATIVE;
       } else if ("none".equals(method)) {
         return NONE;
       } else {
