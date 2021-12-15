@@ -181,6 +181,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15786: Add the "films" example to SolrCLI via -e films parameter. (Eric Pugh)
 
+* SOLR-15834: Films example readme needs updating, including useParams support for multiple algorithms.  (Eric Pugh) 
+
 Build
 ---------------------
 
