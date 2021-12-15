@@ -178,10 +178,12 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15427: Nested docs: [child limit=...] now defaults to -1 which is interpreted as unlimited.
   (David Smiley)
-
+  
 * SOLR-15786: Add the "films" example to SolrCLI via -e films parameter. (Eric Pugh)
 
 * SOLR-15834: Films example readme needs updating, including useParams support for multiple algorithms.  (Eric Pugh) 
+
+* SOLR-15824 Improved Query Screen handling of raw query parameters.  (Betul Ince via Tim Potter, Eric Pugh) 
 
 Build
 ---------------------
