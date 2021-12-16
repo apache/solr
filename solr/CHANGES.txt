@@ -451,8 +451,6 @@ Bug Fixes
 
 Bug Fixes
 ---------------------
-* SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
-
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
   closed fromCore if provided (Mikhail Khludnev, David Smiley)
 
@@ -460,9 +458,13 @@ Bug Fixes
 
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
 
+* SOLR-15768: Set default permissions for the zookeeper endpoints so users won't need to configure custom permissions for these (janhoy)
+
 * SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
 
 * SOLR-13900: Reset index values on authorization rules after deleting by index (Timothy Potter)
+
+* SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
 
 * SOLR-15813: Schema designer not handling `update.autoCreateFields` stored as a string (vs. boolean) in the config overlay (Timothy Potter)
 
@@ -480,9 +482,13 @@ Bug Fixes
 
 * SOLR-15832: Clean-up after publish action in Schema Designer shouldn't fail if .system collection doesn't exist (Timothy Potter)
 
+* SOLR-15844: Upgrade Velocity from v2.0 to v2.3 (wcmrnd1, janhoy)
+
 * SOLR-8319: Fix NPE in pivot facets, add non-Analyzed query method in FieldType. (Houston Putman, Isabelle Giguere)
 
 * SOLR-15843: Update Log4J to 2.16 (Mike Drob, janhoy)
+
+* SOLR-15324: Upgrade jaegertracing to 1.6.0 and libthrift to 0.14.1 (wcmrnd1, janhoy)
 
 ==================  8.11.0 ==================
 
