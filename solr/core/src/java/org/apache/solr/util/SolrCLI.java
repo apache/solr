@@ -2860,9 +2860,9 @@ public class SolrCLI implements CLIO {
         }
       }
       else if ("films".equals(exampleName) && !alreadyExists) {
-        echo("Adding name and initial_release_data fields to films schema \"_default\"");
-
         HttpSolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build();
+
+        echo("Adding name and initial_release_data fields to films schema \"_default\"");
         try {
           SolrCLI.postJsonToSolr(solrClient, "/" + collectionName + "/schema", "{\n" +
                   "        \"add-field\" : {\n" +
@@ -2877,6 +2877,27 @@ public class SolrCLI implements CLIO {
                   "          \"stored\":true\n" +
                   "        }\n" +
                   "      }");
+        } catch (Exception ex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        }
+
+        echo("Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
+        try {
+          SolrCLI.postJsonToSolr(solrClient, "/" + collectionName + "/config/params", "{\n" +
+                  "        \"set\": {\n" +
+                  "        \"algo_a\":{\n" +
+                  "               \"defType\":\"dismax\",\n" +
+                  "               \"qf\":\"name\"\n" +
+                  "             }\n" +
+                  "           },\n" +
+                  "           \"set\": {\n" +
+                  "             \"algo_b\":{\n" +
+                  "               \"defType\":\"dismax\",\n" +
+                  "               \"qf\":\"name\",\n" +
+                  "               \"mm\":\"100%\"\n" +
+                  "             }\n" +
+                  "            }\n" +
+                  "        }\n");
         } catch (Exception ex) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
         }
