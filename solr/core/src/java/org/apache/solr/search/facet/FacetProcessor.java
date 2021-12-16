@@ -18,12 +18,16 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -460,16 +464,21 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
       }
 
-      if (skip) {
-        // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
-        if (facetInfoSub == null) continue;
-        if (facetInfoSub.isEmpty()) {
-          assert subRequest.evaluateAsTopLevel();
-          // hacky; we use an _empty_ facetInfoSub as a signal to perform top-level (i.e. non-refinement) faceting
+      Set<Object> augment = null;
+      if (facetInfoSub != null) {
+        final Object augmentLeaves = facetInfoSub.get("_a");
+        if (augmentLeaves != null) {
+          // augment
+          assert facetInfoSub.get("_s") == null && facetInfoSub.get("_p") == null;
+          List<Object> augmentValList = (List<Object>) augmentLeaves;
+          augment = augmentValList.isEmpty() ? null : new HashSet<>(augmentValList);
           facetInfoSub = null;
         }
+      } else if (skip) {
+        // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
+        continue;
       } else if (subRequest.evaluateAsTopLevel() && fcontext.isShard()) {
-        // defer evaluateAtTopLevel requests until requested via an empty `facetInfoSub` under "skip" bucket
+        // defer evaluateAtTopLevel requests until requested via augment ("_a") `facetInfoSub` under "skip" bucket
         continue;
       }
 
@@ -485,6 +494,26 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       }
 
       Object result = subRequest.process(subContext);
+
+      if (augment != null) {
+        // make sure that all buckets specifically enumerated are present in the response
+        // TODO: It would be more efficient if we could inline this with bulk collection in a single pass.
+        //  This should indeed be possible, at least for the "String field" case. The tricky (?) part would
+        //  be converting the specified values to something that can be efficiently checked for equality against
+        //  values during bulk collection.
+        final List<FacetBucket> buckets = (List<FacetBucket>) ((Map<String, Object>) result).get("buckets");
+        for (FacetBucket bucket : buckets) {
+          // prune any enumerated values that are already represented as a result of bulk collection
+          augment.remove(bucket.bucketValue);
+        }
+        if (!augment.isEmpty()) {
+          // specifically collect any values not already represented.
+          // NOTE: "augment" vals are always handled exactly as leaves.
+          subContext.facetInfo = Collections.singletonMap("_l", Arrays.asList(augment.toArray(new Object[augment.size()])));
+          Object augmentResult = subRequest.process(subContext);
+          buckets.addAll((List<FacetBucket>)((Map<String, Object>)augmentResult).get("buckets"));
+        }
+      }
 
       response.add( sub.getKey(), result);
     }

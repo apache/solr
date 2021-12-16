@@ -225,6 +225,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     this.prunedBuckets = true;
   }
 
+  private static final Map<String, Object> BULK_COLLECT = Collections.singletonMap("_a", Collections.EMPTY_LIST);
+
   @SuppressWarnings("fallthrough")
   private Collection<Object> getTopLevelSkipBuckets(PivotState initialPivotState, final Map<Context.TopLevelSub, Collection<String>> topLevelSubs) {
     ArrayList<Object> skipBuckets = new ArrayList<>(sortedBuckets.size());
@@ -245,7 +247,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
             // fallthrough
           case PIVOT:
             for (String key : topLevelChildren) {
-              refinement.put(key, Collections.EMPTY_MAP);
+              refinement.put(key, BULK_COLLECT);
             }
             break;
           default:
@@ -523,7 +525,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
               // fallthrough
             case PIVOT:
               for (String key : topLevelChildren) {
-                bucketRefinement.put(key, Collections.EMPTY_MAP);
+                bucketRefinement.put(key, BULK_COLLECT);
               }
               break;
             default:
