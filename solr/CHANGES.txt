@@ -677,8 +677,6 @@ Other Changes
 * SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
 
-* SOLR-15324: Upgrade Jaeger dependency from 1.1.0 to 1.6.0 and thus also libthrift to 0.14.1 (janhoy)
-
 * SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
 
 * SOLR-15621: index.html for Admin UI should send Solr version in the request for JavaScript files (Timothy Potter)
