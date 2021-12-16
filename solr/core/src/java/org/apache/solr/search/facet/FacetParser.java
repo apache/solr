@@ -557,6 +557,13 @@ abstract class FacetParser<T extends FacetRequest> {
         Object o = m.get("facet");
         parseSubs(o);
 
+        if (facet.refine == FacetRequest.RefineMethod.SIMPLE && Boolean.TRUE == m.get("refine") && wantsIterative(this)) {
+          // default for `refine:true` depends on `processEmpty`, which is parsed in `parseSubs(...)`.
+          // Unfortunately, `wantsIterative(...)` also depends on `parent.doRefine()`, so we have to set
+          // a stub val for `refine` _before_ parsing stubs, and then adjust it if necessary here :-/
+          facet.refine = FacetRequest.RefineMethod.ITERATIVE;
+        }
+
         facet.sort = parseAndValidateSort(facet, m, SORT);
         facet.prelim_sort = parseAndValidateSort(facet, m, "prelim_sort");
       } else if (arg != null) {
@@ -569,6 +576,18 @@ abstract class FacetParser<T extends FacetRequest> {
       }
 
       return facet;
+    }
+
+    private static boolean wantsIterative(FacetParser<?> p) {
+      if (!p.facet.processEmpty) {
+        return false;
+      }
+      while ((p = p.parent) != null) {
+        if (p.facet.doRefine()) {
+          return true;
+        }
+      }
+      return false;
     }
 
     /**

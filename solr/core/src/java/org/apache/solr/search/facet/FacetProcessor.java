@@ -455,7 +455,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       // an empty domain.  Should this be changed to a dynamic check as well?  That would
       // probably require actually executing the facet anyway, and dropping it at the
       // end if it was unproductive.
-      if (emptyDomain && !freq.processEmpty && !subRequest.canProduceFromEmpty()) {
+      if (emptyDomain && !freq.processEmpty && !subRequest.canProduceFromEmpty(facetInfo != null)) {
         continue;
       }
 

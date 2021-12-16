@@ -375,10 +375,11 @@ public abstract class FacetRequest {
   }
 
   /** Returns true if this facet, or any sub-facets can produce results from an empty domain. */
-  public boolean canProduceFromEmpty() {
+  public boolean canProduceFromEmpty(boolean refining) {
+    if (refining && processEmpty) return true;
     if (domain != null && domain.canBecomeNonEmpty()) return true;
     for (FacetRequest freq : subFacets.values()) {
-      if (freq.canProduceFromEmpty()) return true;
+      if (freq.canProduceFromEmpty(refining)) return true;
     }
     return false;
   }

@@ -966,7 +966,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   }
   
   /** @see #testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShard */
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12556")
   @Test
   public void testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShardProcessEmpty() throws Exception {
     final int numDocs = initSomeDocsWhere1ShardHasOnlyParentFacetField();
@@ -992,10 +991,11 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     //   - or at the very least, if the purpose of "_l" is to give other buckets a chance to "bubble up"
     //     in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen in
     //     phase#1, and request that the shard fill them in in addition to returning its own top buckets?
+    boolean ancestorsProcessEmpty = random().nextBoolean();
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
-                         + "processEmpty:true,"
+                         + "processEmpty:"+ancestorsProcessEmpty+","
                          + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, refine:true, facet:{"
-                         + "  processEmpty:true,"
+                         + "  processEmpty:"+ancestorsProcessEmpty+","
                          + "  debug:'debug(numShards)',"
                          + "  child:{ type:terms, field:child_s, limit:2, overrequest:0, refine: true,"
                          + "          facet:{ processEmpty:true, debug:'debug(numShards)' } }"
@@ -1003,13 +1003,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                   , "facets=={ count: "+numDocs+","
                   + "  parent:{ buckets:[ "
                   + "    { val:pY, count: 24,"
-                  + "      debug:"+numClients+", "
+                  + "      debug:"+(ancestorsProcessEmpty ? numClients : numClients - 1)+", "
                   + "      child:{ buckets:[ "
                   + "                   {val:c1,count:3, debug:"+numClients+"},"
                   + "                   {val:c0,count:1, debug:"+numClients+"},"
                   + "      ] } },"
                   + "    { val:pX, count: 13,"
-                  + "      debug:"+numClients+", "
+                  + "      debug:"+(ancestorsProcessEmpty ? numClients : numClients - 1)+", "
                   + "      child:{ buckets:[ "
                   + "                   {val:c0,count:2, debug:"+numClients+"},"
                   + "                   {val:c1,count:1, debug:"+numClients+"},"
