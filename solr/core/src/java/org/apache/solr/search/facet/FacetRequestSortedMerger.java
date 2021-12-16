@@ -551,7 +551,6 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     if (registerPendingRefinement || skipBuckets != null) {
       refinement = new HashMap<>(3);
       if (leafBuckets != null) refinement.put("_l",leafBuckets);
-      assert leafBuckets == null ^ (partialBuckets == null && skipBuckets == null);
       if (partialBuckets != null) refinement.put("_p", partialBuckets);
       if (skipBuckets != null) refinement.put("_s", skipBuckets);
     }
