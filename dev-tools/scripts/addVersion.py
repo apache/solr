@@ -44,6 +44,7 @@ def update_changes(filename, new_version, init_changes, headers):
   print('done' if changed else 'uptodate')
 
 def add_constant(new_version, deprecate):
+  # TODO: Modify for new SolrVersion class, see SOLR-15845
   filename = 'lucene/core/src/java/org/apache/lucene/util/Version.java'
   print('  adding constant %s...' % new_version.constant, end='', flush=True)
   constant_prefix = 'public static final Version LUCENE_'
@@ -118,6 +119,7 @@ def update_build_version(new_version):
   print('done' if changed else 'uptodate')
 
 def update_latest_constant(new_version):
+  #TODO: Modify for new SolrVersion class, see SOLR-15845
   print('  changing Version.LATEST to %s...' % new_version.constant, end='', flush=True)
   filename = 'lucene/core/src/java/org/apache/lucene/util/Version.java'
   matcher = re.compile('public static final Version LATEST')
@@ -159,11 +161,6 @@ def update_solrconfig(filename, matcher, new_version):
 
   changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
-
-def check_lucene_version_tests():
-  print('  checking lucene version tests...', end='', flush=True)
-  run('./gradlew -p lucene/core test --tests TestVersion')
-  print('ok')
 
 def check_solr_version_tests():
   print('  checking solr version tests...', end='', flush=True)
@@ -212,14 +209,17 @@ def main():
 
   latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
   if latest_or_backcompat:
-    add_constant(newconf.version, not newconf.is_latest_version)
+    # TODO See SOLR-15845
+    #add_constant(newconf.version, not newconf.is_latest_version)
+    print('\nSolr does not yet have a Version class, see SOLR-15845')
   else:
     print('\nNot adding constant for version %s because it is no longer supported' % newconf.version)
 
   if newconf.is_latest_version:
     print('\nUpdating latest version')
     update_build_version(newconf.version)
-    update_latest_constant(newconf.version)
+    # TODO See SOLR-15845.
+    #update_latest_constant(newconf.version)
     update_example_solrconfigs(newconf.version)
 
   if newconf.version.is_major_release():
@@ -228,7 +228,6 @@ def main():
     print('  - Update IndexFormatTooOldException throw cases')
   elif latest_or_backcompat:
     print('\nTesting changes')
-    check_lucene_version_tests()
     check_solr_version_tests()
 
   print()
