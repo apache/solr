@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -656,7 +657,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CollectionParams.SOURCE_NODE, sourceNode);
-      params.set(CollectionParams.TARGET_NODE, targetNode);
+      if (!StringUtils.isEmpty(targetNode)) {
+        params.set(CollectionParams.TARGET_NODE, targetNode);
+      }
       if (parallel != null) params.set("parallel", parallel.toString());
       return params;
     }
