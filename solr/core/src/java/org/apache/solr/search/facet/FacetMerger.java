@@ -117,22 +117,10 @@ public abstract class FacetMerger {
       return refinementComplete && !hasPendingTopLevel;
     }
 
-    public PendingRefinement maybeIterativeRefinement(boolean currentPassRefinement, boolean processEmpty) {
+    public PendingRefinement maybeIterativeRefinement(boolean currentPassRefinement) {
       switch (ancestorHasPendingRefinement) {
         case NO:
-          if (!currentPassRefinement) {
-            return PendingRefinement.NO;
-          } else {
-            if (processEmpty) {
-              // Normally, the only way that sibling buckets requiring refinement followup can be introduced
-              // is by pending parent refinement; otherwise, refinement should be considered complete after
-              // the current pass.
-              // `processEmpty` is an exception to this, because it is also capable of introducing such sibling
-              // buckets
-              refinementComplete = false;
-            }
-            return PendingRefinement.PENDING_RESULTS;
-          }
+          return currentPassRefinement ? PendingRefinement.PENDING_RESULTS : PendingRefinement.NO;
         case PENDING_RESULTS:
           refinementComplete = false;
           return currentPassRefinement ? PendingRefinement.ONGOING : PendingRefinement.PENDING_RESULTS;
