@@ -202,8 +202,6 @@ def main():
 
   print('\nAdding new version %s' % newconf.version)
   # See LUCENE-8883 for some thoughts on which categories to use
-  update_changes('lucene/CHANGES.txt', newconf.version, '\n',
-                 ['Bug Fixes'] if is_bugfix else ['API Changes', 'New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other'])
   update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
                  ['Bug Fixes'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
 
