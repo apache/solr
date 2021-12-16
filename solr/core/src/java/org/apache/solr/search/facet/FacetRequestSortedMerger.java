@@ -284,6 +284,10 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       if (lastPass == -1) {
         // the first time we see this, assume there is pending refinement if refinement is enabled
         pendingRefinement = freq.doRefine() ? Context.PendingRefinement.ONGOING : Context.PendingRefinement.NO;
+        if (freq.refine == FacetRequest.RefineMethod.ITERATIVE) {
+          // TODO: make this a switch statement
+          pendingRefinement = mcontext.maybeIterativeRefinement(true, freq.processEmpty);
+        }
       } else {
         assert freq.refine != null;
         switch (freq.refine) {
@@ -293,7 +297,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
             break;
           case ITERATIVE:
             // iterative refinement -- we might need to refine again
-            pendingRefinement = mcontext.maybeIterativeRefinement(currentPassRefinement);
+            pendingRefinement = mcontext.maybeIterativeRefinement(currentPassRefinement, freq.processEmpty);
             break;
           default:
             throw new IllegalStateException();
@@ -547,6 +551,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     if (registerPendingRefinement || skipBuckets != null) {
       refinement = new HashMap<>(3);
       if (leafBuckets != null) refinement.put("_l",leafBuckets);
+      assert leafBuckets == null ^ (partialBuckets == null && skipBuckets == null);
       if (partialBuckets != null) refinement.put("_p", partialBuckets);
       if (skipBuckets != null) refinement.put("_s", skipBuckets);
     }

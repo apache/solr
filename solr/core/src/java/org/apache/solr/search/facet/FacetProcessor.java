@@ -501,17 +501,17 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         //  This should indeed be possible, at least for the "String field" case. The tricky (?) part would
         //  be converting the specified values to something that can be efficiently checked for equality against
         //  values during bulk collection.
-        final List<FacetBucket> buckets = (List<FacetBucket>) ((Map<String, Object>) result).get("buckets");
-        for (FacetBucket bucket : buckets) {
+        final List<SimpleOrderedMap<?>> buckets = (List<SimpleOrderedMap<?>>) ((SimpleOrderedMap<Object>) result).get("buckets");
+        for (SimpleOrderedMap<?> bucket : buckets) {
           // prune any enumerated values that are already represented as a result of bulk collection
-          augment.remove(bucket.bucketValue);
+          augment.remove(bucket.get("val"));
         }
         if (!augment.isEmpty()) {
           // specifically collect any values not already represented.
           // NOTE: "augment" vals are always handled exactly as leaves.
           subContext.facetInfo = Collections.singletonMap("_l", Arrays.asList(augment.toArray(new Object[augment.size()])));
           Object augmentResult = subRequest.process(subContext);
-          buckets.addAll((List<FacetBucket>)((Map<String, Object>)augmentResult).get("buckets"));
+          buckets.addAll((List<SimpleOrderedMap<?>>)((SimpleOrderedMap<?>)augmentResult).get("buckets"));
         }
       }
 

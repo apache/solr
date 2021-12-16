@@ -26,8 +26,6 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.solr.search.facet.FacetRequest.RefineMethod.SIMPLE;
-
 
 public abstract class FacetMerger {
   public abstract void merge(Object facetResult, Context mcontext);
@@ -119,10 +117,22 @@ public abstract class FacetMerger {
       return refinementComplete && !hasPendingTopLevel;
     }
 
-    public PendingRefinement maybeIterativeRefinement(boolean currentPassRefinement) {
+    public PendingRefinement maybeIterativeRefinement(boolean currentPassRefinement, boolean processEmpty) {
       switch (ancestorHasPendingRefinement) {
         case NO:
-          return currentPassRefinement ? PendingRefinement.PENDING_RESULTS : PendingRefinement.NO;
+          if (!currentPassRefinement) {
+            return PendingRefinement.NO;
+          } else {
+            if (processEmpty) {
+              // Normally, the only way that sibling buckets requiring refinement followup can be introduced
+              // is by pending parent refinement; otherwise, refinement should be considered complete after
+              // the current pass.
+              // `processEmpty` is an exception to this, because it is also capable of introducing such sibling
+              // buckets
+              refinementComplete = false;
+            }
+            return PendingRefinement.PENDING_RESULTS;
+          }
         case PENDING_RESULTS:
           refinementComplete = false;
           return currentPassRefinement ? PendingRefinement.ONGOING : PendingRefinement.PENDING_RESULTS;
@@ -167,7 +177,7 @@ public abstract class FacetMerger {
 
       for (Map.Entry<String,FacetRequest> entry : freq.subFacets.entrySet()) {
         Collection<String> childSubs = getSubsWithRefinement(entry.getValue());
-        if (childSubs.size() > 0 || entry.getValue().getRefineMethod() == SIMPLE) {
+        if (childSubs.size() > 0 || entry.getValue().doRefine()) {
           if (subs == null) {
             subs = new ArrayList<>(freq.getSubFacets().size());
           }

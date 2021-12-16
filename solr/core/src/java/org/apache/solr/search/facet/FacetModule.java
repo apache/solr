@@ -195,7 +195,7 @@ public class FacetModule extends SearchComponent {
       // shard-specific refinement
       Map<String, Object> refinement = facetState.merger.getRefinement(facetState.mcontext.resetPerShard());
       if (refinement == null) {
-        if (facetState.mcontext.hasPendingTopLevel()) {
+        if (!facetState.mcontext.shardFinished()) {
           // TODO: outside of this loop (i.e., as a subsequent loop), if we have pending topLevel pivots and
           //  either no refinements at all, or no pending parent/ancestor refinements (wrt `topLevel` subs),
           //  we should be able to issue first-pass `topLevel` pivots in the current pass.
