@@ -84,7 +84,6 @@ public class ClusterAPI {
   @EndPoint(method = GET,
           path = "/cluster/node-roles",
           permission = COLL_READ_PERM)
-  // nocommit: it must also output all data nodes that didn't start with -Dsolr.node.roles
   public void roles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     Map<String, Object> result = new LinkedHashMap<>();
 

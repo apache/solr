@@ -73,7 +73,13 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.*;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.NodeRoles;
+import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -685,9 +691,7 @@ public class ZkController implements Closeable {
         } finally {
 
           // just in case the OverseerElectionContext managed to start another Overseer
-          if(overseer != null) {
-            IOUtils.closeQuietly(overseer);
-          }
+          IOUtils.closeQuietly(overseer);
 
           ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
         }
@@ -913,7 +917,7 @@ public class ZkController implements Closeable {
       registerLiveNodesListener();
 
       // start the overseer first as following code may need it's processing
-      if (!zkRunOnly &&  cc.nodeRoles.isOverseerAllowed()) {
+      if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
         this.overseer = new Overseer((HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
             CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);

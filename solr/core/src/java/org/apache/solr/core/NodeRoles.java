@@ -36,6 +36,7 @@ public class NodeRoles implements MapWriter {
   public static final String DISALLOWED =  "disallowed";
   public static final String PREFERRED =  "preferred";
   public static final Set<String> OVERSEER_MODES = Set.of(ALLOWED, PREFERRED, DISALLOWED);
+  public static final Set<String> ON_OFF = Set.of(ON,OFF);
 
   public static final String DEFAULT_ROLES_STRING = "data:on,overseer:allowed";
 
@@ -110,7 +111,7 @@ public class NodeRoles implements MapWriter {
     }
 
     public Set<String> supportedModes() {
-      return Set.of(ON, OFF);
+      return ON_OFF;
     }
 
     /**
