@@ -863,6 +863,7 @@ Changes made to managed resources are not applied to the active Solr components 
     { "name" : "originalScore" }
   ],
   "params" : {
+    "splitToRight": false,
     "trees" : [
       {
         "weight" : "1",
