@@ -123,7 +123,7 @@ public class NodeRoles implements MapWriter {
 
     @Override
     public String toString() {
-      return super.toString().toLowerCase();
+      return super.toString().toLowerCase(Locale.ROOT);
     }
   }
 }
