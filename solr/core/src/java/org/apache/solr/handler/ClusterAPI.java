@@ -103,10 +103,8 @@ public class ClusterAPI {
       }
       for (String child : children) {
         Object c = readRecursive(path + "/" + child, zk, depth - 1);
-
         result.put(child, c);
       }
-
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -115,7 +113,6 @@ public class ClusterAPI {
     } else {
       return result;
     }
-
   }
 
   @EndPoint(method = GET,
@@ -123,16 +120,45 @@ public class ClusterAPI {
           permission = COLL_READ_PERM)
   public void nodesWithRole(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String role = req.getPathTemplateValues().get("role");
-    rsp.add(role,
+    rsp.add("node-roles", Map.of(role,
             readRecursive(ZkStateReader.NODE_ROLES + "/"+ role,
-                    collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager(), 2));
+                    collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager(), 2)));
   }
+
+  @EndPoint(method = GET,
+          path = "/cluster/node-roles/nodes/{node}",
+          permission = COLL_READ_PERM)
+  @SuppressWarnings("unchecked")
+  public void rolesForNode(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    String node = req.getPathTemplateValues().get("node");
+    Map<String, String> ret = new HashMap<String, String>();
+    Map<String, Map<String, Set<String>>> roles = (Map<String, Map<String, Set<String>>>) readRecursive(ZkStateReader.NODE_ROLES,
+            collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager(), 3);
+    for (String role: roles.keySet()) {
+      for (String mode : roles.get(role).keySet()) {
+        if (roles.get(role).get(mode) instanceof List && ((List) roles.get(role).get(mode)).size() == 0) {
+          continue;
+        }
+        Set<String> nodes = roles.get(role).get(mode);
+        if (nodes.contains(node)) ret.put(role, mode);
+      }
+    }
+    for (String role: ret.keySet()) {
+      rsp.add(role, ret.get(role));
+    }
+  }
+
   @EndPoint(method = GET,
           path = "/cluster/node-roles/supported",
           permission = COLL_READ_PERM)
   public void supportedRoles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    rsp.add("supported-roles",
-                    collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().listData(ZkStateReader.NODE_ROLES));
+    //rsp.add("supported-roles",
+    //                collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().listData(ZkStateReader.NODE_ROLES));
+    Map<String, Object> roleModesSupportedMap = new HashMap<>();
+    for (NodeRoles.Role role: NodeRoles.Role.values()) {
+      roleModesSupportedMap.put(role.toString(), Map.of("modes", role.supportedModes(), "defaultIfAbsent", role.defaultIfAbsent()));
+    }
+    rsp.add("supported-roles", roleModesSupportedMap);
   }
 
   @EndPoint(method = GET,
@@ -143,7 +169,7 @@ public class ClusterAPI {
     String roleVal = req.getPathTemplateValues().get("role-val");
     List<String> nodes =  collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager()
             .getDistribStateManager().listData(ZkStateReader.NODE_ROLES + "/"+ role+"/"+roleVal);
-    rsp.add( role, Collections.singletonMap(roleVal, nodes));
+    rsp.add( "node-roles", Map.of(role, Collections.singletonMap(roleVal, nodes)));
   }
 
    public static List<String> getNodesByRole(NodeRoles.Role role, String val, DistribStateManager zk)

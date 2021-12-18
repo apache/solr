@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 import java.util.List;
+import java.util.Map;
+
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -52,9 +54,9 @@ public class NodeRolesTest extends SolrCloudTestCase {
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
     JettySolrRunner j1 = null, j2 = null;
     V2Response rsp = new V2Request.Builder("/cluster/node-roles/supported").GET().build().process(cluster.getSolrClient());
-    List<String> l = (List<String>) rsp._get("supported-roles", Collections.emptyList());
-    assertTrue(l.contains("data"));
-    assertTrue(l.contains("overseer"));
+    Map<String, Object> l = (Map<String, Object>) rsp._get("supported-roles", Collections.emptyMap());
+    assertTrue(l.containsKey("data"));
+    assertTrue(l.containsKey("overseer"));
 
     j1 = startNodeWithRoles("overseer:preferred,data:off");
 
@@ -72,12 +74,12 @@ public class NodeRolesTest extends SolrCloudTestCase {
 
     rsp = new V2Request.Builder("/cluster/node-roles/overseer").GET().build().process(cluster.getSolrClient());
 
-    assertTrue( ((Collection)rsp._get("overseer/preferred", Collections.emptyList())).contains(j2.getNodeName()));
-    assertTrue( ((Collection)rsp._get("overseer/preferred", Collections.emptyList())).contains(j1.getNodeName()));
+    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j2.getNodeName()));
+    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j1.getNodeName()));
 
     rsp = new V2Request.Builder("/cluster/node-roles/overseer/preferred").GET().build().process(cluster.getSolrClient());
-    assertTrue( ((Collection)rsp._get("overseer/preferred", Collections.emptyList())).contains(j2.getNodeName()));
-    assertTrue( ((Collection)rsp._get("overseer/preferred", Collections.emptyList())).contains(j1.getNodeName()));
+    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j2.getNodeName()));
+    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j1.getNodeName()));
 
     String COLLECTION_NAME = "TEST_ROLES";
     CollectionAdminRequest
@@ -93,7 +95,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
     // Shutdown the dedicated overseer, make sure that node disappears from the roles output
     j1.stop();
     rsp = new V2Request.Builder("/cluster/node-roles/overseer/preferred").GET().build().process(cluster.getSolrClient());
-    assertFalse (((Collection) rsp._get("overseer/preferred" , null)). contains(j1.getNodeName()));
+    assertFalse (((Collection) rsp._get("node-roles/overseer/preferred" , null)). contains(j1.getNodeName()));
   }
 
   private JettySolrRunner startNodeWithRoles(String roles) throws Exception {
