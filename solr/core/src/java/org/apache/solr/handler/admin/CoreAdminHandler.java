@@ -36,10 +36,12 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.InvokeClassAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
+import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -411,6 +413,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public Collection<Api> getApis() {
     final List<Api> apis = Lists.newArrayList(coreAdminHandlerApi.getApis());
     // Only some core-admin APIs use the v2 AnnotatedApi framework
+    apis.addAll(AnnotatedApi.getApis(new AllCoresStatusAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SingleCoreStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new InvokeClassAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
