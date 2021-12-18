@@ -37,10 +37,10 @@ In order to specify role(s) for a node, one needs to start a Solr node with the 
 |Parameter |Value |Required? | Default
 
 |solr.node.roles
-|Comma separated list of roles (in the format: <role>:<mode>) for this node.
-Examples: "data:on,overseer:allowed" or "overseer:preferred"
+|Comma separated list of roles (in the format: `<role>:<mode>`) for this node.
+Examples: `-Dsolr.node.roles=data:on,overseer:allowed` or `-Dsolr.node.roles=overseer:preferred`
 |No
-|data:on,overseer:allowed
+|`data:on,overseer:allowed`
 |===
 
 [TIP]
@@ -48,6 +48,17 @@ Examples: "data:on,overseer:allowed" or "overseer:preferred"
 If a node has been started with no `solr.node.roles` parameter, it will be assumed to have the data role turned on and overseer role allowed on it. If you've never needed roles before, you likely won't need to change anything in your startup parameters to accomodate the functionality associated with these roles.
 ====
 
+.Supported roles
+[cols="1,1"] 
+|===
+|Role |Modes
+
+|`data`
+|on, off
+
+|`overseer`
+|allowed, preferred, disallowed
+|===
 
 === `data` role
 A node with this role (in mode "on") can host shards and replicas for collections.
@@ -55,9 +66,9 @@ A node with this role (in mode "on") can host shards and replicas for collection
 === `overseer` role
 A node with this role can perform duties of an overseer node (unless mode is `disallowed`). When one or more nodes have the overseer role in `preferred` mode, the overseer leader will be elected from one of these nodes. In case no node is designated as a preferred overseer or no such node is live, the overseer leader will be elected from one of the nodes that have the overseer role in `allowed` mode. If all nodes that are designated with overseer role (allowed or preferred) are down, the cluster will be left without an overseer.
 
-== A typical scenario of roles usage
+== Example usage
 
-A common situation arises when the nodes in a cluster is under heavy querying or indexing load, and under such circumstances the overseer leader node is unable to perform collection management duties efficiently. It might be reasonable to have dedicated nodes to act as the overseer. Such an effect can be achieved as follows:
+Sometimes, when the nodes in a cluster is under heavy querying or indexing load, the overseer leader node is unable to perform collection management duties efficiently. It might be reasonable to have dedicated nodes to act as the overseer. Such an effect can be achieved as follows:
 
 * Most nodes, say 10 of them, in the cluster start with `-Dsolr.node.roles=data:on,overseer:allowed` (or with no parameter, since the default value for `solr.node.roles` is the same).
 * One or more nodes can start with `-Dsolr.node.roles=overseer:preferred` (or `-Dsolr.node.roles=overseer:preferred,data:off`)
@@ -67,6 +78,8 @@ In this arrangement, such dedicated nodes can have lesser resources than other d
 == Roles API
 
 === GET /api/cluster/node-roles/supported
+
+Fetches the list of supported roles and their supported modes for this cluster.
 
 *Input*
 [source,text]
@@ -96,6 +109,8 @@ curl http://localhost:8983/api/cluster/node-roles/supported
 
 === GET /api/cluster/node-roles
 
+Fetches the current node roles assignment for all the nodes in the cluster.
+
 *Input*
 [source,text]
 ----
@@ -122,6 +137,8 @@ curl http://localhost:8983/api/cluster/node-roles
 
 === GET /api/cluster/node-roles/{role}
 
+Fetches the current node roles assignment for a specified role.
+
 *Input*
 [source,text]
 ----
@@ -143,6 +160,8 @@ http://localhost:8983/api/node-roles/data
 
 
 === GET /api/cluster/node-roles/nodes/{node}
+
+Fetches the current node roles assignment for the specified node.
 
 *Input*
 [source,text]
