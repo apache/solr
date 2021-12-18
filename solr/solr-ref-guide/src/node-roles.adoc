@@ -63,3 +63,98 @@ A common situation arises when the nodes in a cluster is under heavy querying or
 * One or more nodes can start with `-Dsolr.node.roles=overseer:preferred` (or `-Dsolr.node.roles=overseer:preferred,data:off`)
 
 In this arrangement, such dedicated nodes can have lesser resources than other data nodes (since these are stateless nodes) and yet the cluster will behave optimally. In case the dedicated overseer nodes go down for some reason, the overseer leader will be elected from one of the data nodes (since they have overseer in "allowed" mode), and once one of the dedicated overseer nodes are back up, it will assume the overseer leadership again.
+
+== Roles API
+
+=== GET /api/cluster/node-roles/supported
+
+*Input*
+[source,text]
+----
+curl http://localhost:8983/api/cluster/node-roles/supported
+----
+
+*Output*
+[source,text]
+----
+{
+  "supported-roles":{
+    "data":{
+      "defaultIfAbsent":"off",
+      "modes":["off",
+        "on"]
+    },
+    "overseer":{
+      "defaultIfAbsent":"disallowed",
+      "modes":["disallowed",
+        "allowed",
+        "preferred"]
+    }
+  }
+}
+----
+
+=== GET /api/cluster/node-roles
+
+*Input*
+[source,text]
+----
+curl http://localhost:8983/api/cluster/node-roles
+----
+
+*Output*
+[source,text]
+----
+{
+  "node-roles":{
+    "data":{
+      "off":["solr2:8983_solr"],
+      "on":["solr1:8983_solr"]
+    },
+    "overseer":{
+      "allowed":["solr1:8983_solr"],
+      "disallowed":[],
+      "preferred":["solr2:8983_solr"]
+    }
+  }
+}
+----
+
+=== GET /api/cluster/node-roles/{role}
+
+*Input*
+[source,text]
+----
+http://localhost:8983/api/node-roles/data
+----
+
+*Output*
+[source,text]
+----
+{
+  "node-roles":{
+    "data":{
+      "off":["solr2:8983_solr"],
+      "on":["solr1:8983_solr"]
+    }
+  }
+}
+----
+
+
+=== GET /api/cluster/node-roles/nodes/{node}
+
+*Input*
+[source,text]
+----
+curl http://localhost:8983/api/cluster/node-roles/nodes/solr1:8983_solr
+----
+
+*Output*
+[source,text]
+----
+{
+  "data":"on",
+  "overseer":"allowed"
+}
+----
