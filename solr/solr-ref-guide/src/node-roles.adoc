@@ -135,14 +135,14 @@ curl http://localhost:8983/api/cluster/node-roles
 }
 ----
 
-=== GET /api/cluster/node-roles/{role}
+=== GET /api/cluster/node-roles/role/{role}
 
 Fetches the current node roles assignment for a specified role.
 
 *Input*
 [source,text]
 ----
-http://localhost:8983/api/node-roles/data
+http://localhost:8983/api/node-roles/role/data
 ----
 
 *Output*
@@ -158,15 +158,34 @@ http://localhost:8983/api/node-roles/data
 }
 ----
 
+*Input*
+[source,text]
+----
+http://localhost:8983/api/node-roles/role/data/off
+----
 
-=== GET /api/cluster/node-roles/nodes/{node}
+*Output*
+[source,text]
+----
+{
+  "node-roles":{
+    "data":{
+      "off":["solr2:8983_solr"]
+    }
+  }
+}
+----
+
+
+
+=== GET /api/cluster/node-roles/node/{node}
 
 Fetches the current node roles assignment for the specified node.
 
 *Input*
 [source,text]
 ----
-curl http://localhost:8983/api/cluster/node-roles/nodes/solr1:8983_solr
+curl http://localhost:8983/api/cluster/node-roles/node/solr1:8983_solr
 ----
 
 *Output*
