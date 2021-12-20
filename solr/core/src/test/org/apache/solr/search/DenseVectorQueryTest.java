@@ -32,7 +32,6 @@ public class DenseVectorQueryTest extends SolrTestCaseJ4 {
   @Override
   @Before
   public void setUp() throws Exception {
-
     super.setUp();
     clearIndex();
     assertU(commit());
@@ -61,7 +60,7 @@ public class DenseVectorQueryTest extends SolrTestCaseJ4 {
   public void testDenseVectorQuery() {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.add("q", "{!knn f=\"vector\" v=\"[21, 200, 1, 2]\" k=3}");
+    params.add("q", "{!knn f=vector v=[21,200,1,2] k=3}");
 
     assertQ(req(params, "indent", "on"), "*[count(//doc)=3]",
             "//result/doc[1]/str[@name='id'][.='2']",

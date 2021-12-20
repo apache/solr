@@ -34,11 +34,12 @@ public class DenseVectorField extends FieldType {
                 .map(Integer::parseInt)
                 .orElseThrow(() -> new SolrException(SolrException.ErrorCode.BAD_REQUEST, "k is mandatory parameter"));
         args.remove(KNN_VECTOR_DIMENSION);
+
         this.similarityFunction = ofNullable(args.get(KNN_SIMILARITY_FUNCTION))
                 .map(this::parseVectorSimilarityFunction)
                 .orElseThrow(() -> new SolrException(SolrException.ErrorCode.BAD_REQUEST, "similarity function is mandatory parameter"));
         args.remove(KNN_SIMILARITY_FUNCTION);
-        this.similarityFunction = VectorSimilarityFunction.EUCLIDEAN;
+
         super.init(schema, args);
     }
 
@@ -76,7 +77,6 @@ public class DenseVectorField extends FieldType {
         } else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "impossible to parse vector value");
         }
-
         return new KnnVectorField(field.getName(), vector, similarityFunction);
     }
 
