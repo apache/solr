@@ -45,7 +45,7 @@ Examples: `-Dsolr.node.roles=data:on,overseer:allowed` or `-Dsolr.node.roles=ove
 
 [TIP]
 ====
-If a node has been started with no `solr.node.roles` parameter, it will be assumed to have the data role turned on and overseer role allowed on it. If you've never needed roles before, you likely won't need to change anything in your startup parameters to accomodate the functionality associated with these roles.
+If a node has been started with no `solr.node.roles` parameter, it will be assumed to have the data role turned on and overseer role allowed on it. If you've never used roles before, you likely won't need to change anything in your startup parameters to accomodate the functionality associated with these roles.
 ====
 
 .Supported roles
@@ -68,12 +68,12 @@ A node with this role can perform duties of an overseer node (unless mode is `di
 
 == Example usage
 
-Sometimes, when the nodes in a cluster is under heavy querying or indexing load, the overseer leader node is unable to perform collection management duties efficiently. It might be reasonable to have dedicated nodes to act as the overseer. Such an effect can be achieved as follows:
+Sometimes, when the nodes in a cluster are under heavy querying or indexing load, the overseer leader node might be unable to perform collection management duties efficiently. It might be reasonable to have dedicated nodes to act as the overseer. Such an effect can be achieved as follows:
 
-* Most nodes, say 10 of them, in the cluster start with `-Dsolr.node.roles=data:on,overseer:allowed` (or with no parameter, since the default value for `solr.node.roles` is the same).
-* One or more nodes can start with `-Dsolr.node.roles=overseer:preferred` (or `-Dsolr.node.roles=overseer:preferred,data:off`)
+* Most nodes (data nodes) in the cluster start with `-Dsolr.node.roles=data:on,overseer:allowed` (or with no parameter, since the default value for `solr.node.roles` is the same).
+* One or more nodes (dedicated overseer nodes) can start with `-Dsolr.node.roles=overseer:preferred` (or `-Dsolr.node.roles=overseer:preferred,data:off`)
 
-In this arrangement, such dedicated nodes can have lesser resources than other data nodes (since these are stateless nodes) and yet the cluster will behave optimally. In case the dedicated overseer nodes go down for some reason, the overseer leader will be elected from one of the data nodes (since they have overseer in "allowed" mode), and once one of the dedicated overseer nodes are back up, it will assume the overseer leadership again.
+In this arrangement, such dedicated nodes can be provisioned on hardware with lesser resources like CPU, memory or disk space than other data nodes (since these are stateless nodes) and yet the cluster will behave optimally. In case the dedicated overseer nodes go down for some reason, the overseer leader will be elected from one of the data nodes (since they have overseer in "allowed" mode), and once one of the dedicated overseer nodes are back up again, it will be re-elected for the overseer leadership.
 
 == Roles API
 
