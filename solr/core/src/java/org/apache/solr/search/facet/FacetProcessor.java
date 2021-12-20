@@ -21,13 +21,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -443,6 +442,74 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     }
   }
 
+  private static final class AugmentEntries {
+    private final int leafEntries;
+    private final int partialEntries;
+    private final Map<Object, Boolean> entries;
+    private final Map<String, Object> origFacetInfo;
+
+    private AugmentEntries(int leafEntries, int partialEntries, Map<Object, Boolean> entries, Map<String, Object> origFacetInfo) {
+      this.leafEntries = leafEntries;
+      this.partialEntries = partialEntries;
+      this.entries = entries;
+      this.origFacetInfo = origFacetInfo;
+    }
+
+    private Map<String, Object> getFacetInfo() {
+      if (entries.size() == leafEntries + partialEntries) {
+        // nothing was removed; simply rename the keys
+        if (leafEntries != 0) {
+          origFacetInfo.put("_l", origFacetInfo.remove("_a"));
+        }
+        if (partialEntries != 0) {
+          origFacetInfo.put("_p", origFacetInfo.remove("_q"));
+        }
+        return origFacetInfo;
+      } else if (partialEntries == 0) {
+        // common case
+        return Collections.singletonMap("_l", Arrays.asList(entries.keySet().toArray()));
+      } else if (leafEntries == 0) {
+        // _far_ less common, but easy
+        return Collections.singletonMap("_p", Arrays.asList(entries.keySet().toArray()));
+      } else {
+        final List<Object> leaves = new ArrayList<>(leafEntries);
+        final List<Object> partial = new ArrayList<>(partialEntries);
+        for (Map.Entry<Object, Boolean > e : entries.entrySet()) {
+          (e.getValue() ? leaves : partial).add(e.getKey());
+        }
+        Map<String, Object> ret = new HashMap<>(2);
+        ret.put("_l", leaves);
+        ret.put("_p", partial);
+        return ret;
+      }
+    }
+  }
+
+  @SuppressWarnings({"unchecked"})
+  private static AugmentEntries getAugmentEntries(Map<String,Object> facetInfoSub) {
+    Map<Object, Boolean> ret = null;
+    Object tmp;
+    List<Object> augmentLeaf = (tmp = facetInfoSub.get("_a")) == null ? null : (List<Object>) tmp;
+    List<Object> augmentPartial = (tmp = facetInfoSub.get("_q")) == null ? null : (List<Object>) tmp;
+    int leafSize = 0;
+    int partialSize = 0;
+    if (augmentLeaf == null) {
+      ret = new HashMap<>((leafSize = augmentLeaf.size()) + (augmentPartial == null ? 0 : (partialSize = augmentPartial.size())));
+      for (Object o : augmentLeaf) {
+        ret.put(o, Boolean.TRUE);
+      }
+    }
+    if (augmentPartial != null) {
+      if (ret == null) {
+        ret = new HashMap<>(partialSize = augmentPartial.size());
+      }
+      for (Object o : augmentPartial) {
+        ret.put(o, Boolean.FALSE);
+      }
+    }
+    return ret == null ? null : new AugmentEntries(leafSize, partialSize, ret, facetInfoSub);
+  }
+
   @SuppressWarnings({"unchecked"})
   void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
@@ -464,14 +531,11 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
       }
 
-      Set<Object> augment = null;
+      final AugmentEntries augment;
       if (facetInfoSub != null) {
-        final Object augmentLeaves = facetInfoSub.get("_a");
-        if (augmentLeaves != null) {
+        if ((augment = getAugmentEntries(facetInfoSub)) != null) {
           // augment
-          assert facetInfoSub.get("_s") == null && facetInfoSub.get("_p") == null;
-          List<Object> augmentValList = (List<Object>) augmentLeaves;
-          augment = augmentValList.isEmpty() ? null : new HashSet<>(augmentValList);
+          assert facetInfoSub.get("_s") == null && facetInfoSub.get("_p") == null && facetInfoSub.get("_l") == null;
           facetInfoSub = null;
         }
       } else if (skip) {
@@ -480,6 +544,8 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       } else if (subRequest.evaluateAsTopLevel() && fcontext.isShard()) {
         // defer evaluateAtTopLevel requests until requested via augment ("_a") `facetInfoSub` under "skip" bucket
         continue;
+      } else {
+        augment = null;
       }
 
       // make a new context for each sub-facet since they can change the domain
@@ -504,12 +570,11 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         final List<SimpleOrderedMap<?>> buckets = (List<SimpleOrderedMap<?>>) ((SimpleOrderedMap<Object>) result).get("buckets");
         for (SimpleOrderedMap<?> bucket : buckets) {
           // prune any enumerated values that are already represented as a result of bulk collection
-          augment.remove(bucket.get("val"));
+          augment.entries.remove(bucket.get("val"));
         }
-        if (!augment.isEmpty()) {
+        if (!augment.entries.isEmpty()) {
           // specifically collect any values not already represented.
-          // NOTE: "augment" vals are always handled exactly as leaves.
-          subContext.facetInfo = Collections.singletonMap("_l", Arrays.asList(augment.toArray(new Object[augment.size()])));
+          subContext.facetInfo = augment.getFacetInfo();
           Object augmentResult = subRequest.process(subContext);
           buckets.addAll((List<SimpleOrderedMap<?>>)((SimpleOrderedMap<?>)augmentResult).get("buckets"));
         }

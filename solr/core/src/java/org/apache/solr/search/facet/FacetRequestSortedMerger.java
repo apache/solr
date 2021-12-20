@@ -379,7 +379,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // If we are missing a bucket for this shard, we'll need to get the specific buckets that need refining.
     Collection<String> tagsWithPartial = mcontext.getSubsWithPartial(freq);
 
-    boolean thisMissing = mcontext.bucketWasMissing(); // Was this whole facet missing (i.e. inside a bucket that was missing)?
+    final boolean thisMissing = mcontext.bucketWasMissing(); // Was this whole facet missing (i.e. inside a bucket that was missing)?
     boolean shardHasMore = shardHasMoreBuckets != null && shardHasMoreBuckets.get(mcontext.shardNum);  // shard indicated it has more buckets
     shardHasMore |= thisMissing;  // if we didn't hear from the shard at all, assume it as more buckets
 
@@ -547,11 +547,13 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // TODO: what if we don't need to refine any variable buckets, but we do need to contribute to numBuckets, missing, allBuckets, etc...
     // because we were "partial".  That will be handled at a higher level (i.e. we'll be in someone's missing bucket?)
     // TODO: test with a sub-facet with a limit of 0 and something like a missing bucket
+    final boolean augment = thisMissing && freq.refine == FacetRequest.RefineMethod.ITERATIVE;
     final boolean registerPendingRefinement = leafBuckets != null || partialBuckets != null;
     if (registerPendingRefinement || skipBuckets != null) {
       refinement = new HashMap<>(3);
-      if (leafBuckets != null) refinement.put("_l",leafBuckets);
-      if (partialBuckets != null) refinement.put("_p", partialBuckets);
+      if (leafBuckets != null) refinement.put(augment ? "_a" : "_l" ,leafBuckets);
+      if (partialBuckets != null) refinement.put(augment ? "_q" : "_p", partialBuckets);
+      assert !(augment && skipBuckets != null); // consequence of `skipBuckets` dependence on `thisMissing`
       if (skipBuckets != null) refinement.put("_s", skipBuckets);
     }
 
