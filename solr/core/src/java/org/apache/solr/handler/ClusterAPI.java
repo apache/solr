@@ -116,7 +116,7 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = GET,
-          path = "/cluster/node-roles/{role}",
+          path = "/cluster/node-roles/role/{role}",
           permission = COLL_READ_PERM)
   public void nodesWithRole(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String role = req.getPathTemplateValues().get("role");
@@ -126,7 +126,7 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = GET,
-          path = "/cluster/node-roles/nodes/{node}",
+          path = "/cluster/node-roles/node/{node}",
           permission = COLL_READ_PERM)
   @SuppressWarnings("unchecked")
   public void rolesForNode(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -152,9 +152,7 @@ public class ClusterAPI {
           path = "/cluster/node-roles/supported",
           permission = COLL_READ_PERM)
   public void supportedRoles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    //rsp.add("supported-roles",
-    //                collectionsHandler.getCoreContainer().getZkController().getSolrCloudManager().getDistribStateManager().listData(ZkStateReader.NODE_ROLES));
-    Map<String, Object> roleModesSupportedMap = new HashMap<>();
+     Map<String, Object> roleModesSupportedMap = new HashMap<>();
     for (NodeRoles.Role role: NodeRoles.Role.values()) {
       roleModesSupportedMap.put(role.toString(), Map.of("modes", role.supportedModes(), "defaultIfAbsent", role.defaultIfAbsent()));
     }
@@ -162,7 +160,7 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = GET,
-          path = "/cluster/node-roles/{role}/{role-val}",
+          path = "/cluster/node-roles/role/{role}/{role-val}",
           permission = COLL_READ_PERM)
   public void nodesWithRoleVal(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String role = req.getPathTemplateValues().get("role");
