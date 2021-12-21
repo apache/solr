@@ -18,8 +18,10 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -53,30 +55,34 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
     }
 
     @Override
-    public PlacementPlan computePlacement(PlacementRequest request, PlacementContext placementContext) throws PlacementException {
-      int totalReplicasPerShard = 0;
-      for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
-        totalReplicasPerShard += request.getCountReplicasToCreate(rt);
-      }
-
-      if (placementContext.getCluster().getLiveNodes().size() < totalReplicasPerShard) {
-        throw new PlacementException("Cluster size too small for number of replicas per shard");
-      }
-
-      Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
-
-      // Now place randomly all replicas of all shards on available nodes
-      for (String shardName : request.getShardNames()) {
-        // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
-        ArrayList<Node> nodesToAssign = new ArrayList<>(placementContext.getCluster().getLiveNodes());
-        Collections.shuffle(nodesToAssign, replicaPlacementRandom);
-
+    public List<PlacementPlan> computePlacements(Collection<PlacementRequest> requests, PlacementContext placementContext) throws PlacementException {
+      List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
+      for (PlacementRequest request : requests) {
+        int totalReplicasPerShard = 0;
         for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
-          placeForReplicaType(request.getCollection(), nodesToAssign, placementContext.getPlacementPlanFactory(), replicaPlacements, shardName, request, rt);
+          totalReplicasPerShard += request.getCountReplicasToCreate(rt);
         }
-      }
 
-      return placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements);
+        if (placementContext.getCluster().getLiveNodes().size() < totalReplicasPerShard) {
+          throw new PlacementException("Cluster size too small for number of replicas per shard");
+        }
+
+        Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
+
+        // Now place randomly all replicas of all shards on available nodes
+        for (String shardName : request.getShardNames()) {
+          // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
+          ArrayList<Node> nodesToAssign = new ArrayList<>(placementContext.getCluster().getLiveNodes());
+          Collections.shuffle(nodesToAssign, replicaPlacementRandom);
+
+          for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
+            placeForReplicaType(request.getCollection(), nodesToAssign, placementContext.getPlacementPlanFactory(), replicaPlacements, shardName, request, rt);
+          }
+        }
+
+        placementPlans.add(placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements));
+      }
+      return placementPlans;
     }
 
     private void placeForReplicaType(SolrCollection solrCollection, ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,
