@@ -23,7 +23,7 @@ from the Apache Lucene project.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
-https://lucene.apache.org/solr
+https://solr.apache.org/solr
 
 
 Getting Started
