@@ -26,7 +26,7 @@ public class DenseVectorQueryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-dense-vector.xml", "schema-dense-vector.xml");
+    initCore("solrconfig-dense-vector.xml", "schema-densevector.xml");
   }
 
   @Override

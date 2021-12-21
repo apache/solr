@@ -16,33 +16,65 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * Provides a field type to support Lucene's {@link
+ * org.apache.lucene.document.KnnVectorField}.
+ * See {@link org.apache.lucene.search.KnnVectorQuery} for more details.
+ * It supports a fixed cardinality dimension for the vector and a fixed similarity function. 
+ * See subclasses for details.
+ * 
+ * <br>
+ * Only {@code Indexed} and {@code Stored} attributes are supported.
+ */
 public class DenseVectorField extends FieldType {
 
-    static final String KNN_VECTOR_DIMENSION = "vector_dimension";
-    static final String KNN_SIMILARITY_FUNCTION = "similarity_function";
-    private int dimension;
-    private VectorSimilarityFunction similarityFunction;
+    static final String KNN_VECTOR_DIMENSION = "vectorDimension";
+    static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
+    
+    int dimension;
+    VectorSimilarityFunction similarityFunction;
 
     @Override
     public void init(IndexSchema schema, Map<String, String> args){
         this.dimension = ofNullable(args.get(KNN_VECTOR_DIMENSION))
-                .map(Integer::parseInt)
-                .orElseThrow(() -> new SolrException(SolrException.ErrorCode.BAD_REQUEST, "k is mandatory parameter"));
+                .map(value -> parseDimension(value))
+                .orElseThrow(() -> new SolrException(SolrException.ErrorCode.SERVER_ERROR, "the vector dimension is a mandatory parameter"));
         args.remove(KNN_VECTOR_DIMENSION);
 
         this.similarityFunction = ofNullable(args.get(KNN_SIMILARITY_FUNCTION))
-                .map(this::parseVectorSimilarityFunction)
-                .orElseThrow(() -> new SolrException(SolrException.ErrorCode.BAD_REQUEST, "similarity function is mandatory parameter"));
+                .map(value -> VectorSimilarityFunction.valueOf(value.toUpperCase(Locale.ROOT)))
+                .orElseThrow(() -> new SolrException(SolrException.ErrorCode.SERVER_ERROR, "similarity function is mandatory parameter"));
         args.remove(KNN_SIMILARITY_FUNCTION);
 
+        this.properties &= ~MULTIVALUED;
+        this.properties &= ~UNINVERTIBLE;
+        
         super.init(schema, args);
     }
 
+    private int parseDimension(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "the vector dimension must be an integer");
+        }
+    }
+
+    @Override
+    public void checkSchemaField(final SchemaField field) throws SolrException {
+        super.checkSchemaField(field);
+        if (field.multiValued()) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                    getClass().getSimpleName() + " fields can not be multiValued: " + field.getName());
+        }
+    }
+    
     public List<IndexableField> createFields(SchemaField field, Object value) {
         List<IndexableField> fields = new ArrayList<>();
         if (field.indexed()){
@@ -82,49 +114,42 @@ public class DenseVectorField extends FieldType {
 
     @Override
     public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-        return null;
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Field Queries are not supported for Dense Vector fields. Please use the {!knn} query parser to run K nearest neighbors search queries.");
     }
 
     @Override
+    public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Range Queries are not supported for Dense Vector fields. Please use the {!knn} query parser to run K nearest neighbors search queries.");
+    }
+    
+    @Override
     public SortField getSortField(SchemaField field, boolean top) {
-        return null;
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot sort on a Dense Vector field");
     }
 
-    public Query getKnnVectorQuery(SchemaField field, String externalVal, int k) {
-        float[] vector = parseVector(externalVal);
-        return new KnnVectorQuery(field.getName(), vector, k);
+    public Query getKnnVectorQuery(SchemaField field, String valueToSearch, int topK) {
+        float[] vector = parseVector(valueToSearch);
+        return new KnnVectorQuery(field.getName(), vector, topK);
     }
 
     private float[] parseVector(String value){
         float[] vector = new float[dimension];
 
-        List<Float> floats =  Arrays.stream(value.substring(1, value.length() - 1).split(","))
+        List<Float> parsed =  Arrays.stream(value.substring(1, value.length() - 1).split(","))
                 .map(Float::parseFloat)
                 .collect(Collectors.toList());
 
-        if (floats.size() != dimension){
+        if (parsed.size() != dimension){
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "wrong vector dimension. The vector value used in the query has size "
-            + floats.size() + "while it is expected a vector with size " + dimension);
+            + parsed.size() + "while it is expected a vector with size " + dimension);
         }
 
-        for (int i = 0; i < floats.size(); i++){
-            vector[i] = floats.get(i);
+        for (int i = 0; i < parsed.size(); i++){
+            vector[i] = parsed.get(i);
         }
 
         return vector;
     }
-
-
-    private VectorSimilarityFunction parseVectorSimilarityFunction(String value){
-        if (value.equals("euclidean")){
-            return VectorSimilarityFunction.EUCLIDEAN;
-        } else if (value.equals("cosine")){
-            return VectorSimilarityFunction.COSINE;
-        } else if (value.equals("dot_product")){
-            return VectorSimilarityFunction.DOT_PRODUCT;
-        }
-
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("{} is not a valid similarity function", value));
-    }
-
 }
