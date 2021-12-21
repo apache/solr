@@ -469,7 +469,7 @@ public class SolrQueryTest extends SolrTestCase {
     //when
     SolrQuery solrQuery = new SolrQuery();
     solrQuery.setQuery("id:123")
-             .acceptParams(queryConsumer);
+             .accept(queryConsumer);
 
     //then
     assertEquals("id:123", solrQuery.getQuery());

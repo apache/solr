@@ -1215,7 +1215,7 @@ public class SolrQuery extends ModifiableSolrParams
    *
    * @return modifiable solr query object for easy chaining
    */
-  public SolrQuery acceptParams(Consumer<SolrQuery> queryConsumer) {
+  public SolrQuery accept(Consumer<SolrQuery> queryConsumer) {
     queryConsumer.accept(this);
     return this;
   }
