@@ -177,7 +177,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         } finally {
           synchronized (runners) {
             // check to see if anything else was added to the queue
-            if (runners.size() == 1 && !queue.isEmpty() && !scheduler.isShutdown()) {
+            if (runners.size() == 1 && !queue.isEmpty() && !isSchedulerShutdown()) {
               // If there is something else to process, keep last runner alive by staying in the loop.
             } else {
               runners.remove(this);
@@ -426,6 +426,24 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
+  private boolean isSchedulerShutdown() {
+    try {
+      return scheduler.isShutdown();
+    } catch (IllegalStateException e) {
+      // this is a JSR-239 ManagedExecutorService which cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
+  private boolean isSchedulerTerminated() {
+    try {
+      return scheduler.isTerminated();
+    } catch (IllegalStateException e) {
+      // this is a JSR-239 ManagedExecutorService which cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
   /**
    * Class representing an UpdateRequest and an optional collection.
    */
@@ -592,7 +610,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           
           if (log.isDebugEnabled()) blockLoops.incrementAndGet();
           
-          if (scheduler.isShutdown())
+          if (isSchedulerShutdown())
             break;
           
           loopCount++;
@@ -656,7 +674,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     int lastQueueSize = -1;
     while (!queue.isEmpty()) {
       if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
-      if (scheduler.isTerminated()) {
+      if (isSchedulerTerminated()) {
         log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}"
             , scheduler, queue.size(), runners.size(), threadInterrupted);
         break;
