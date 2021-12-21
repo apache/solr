@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.function.Consumer;
 
 import junit.framework.Assert;
 
@@ -458,5 +459,22 @@ public class SolrQueryTest extends SolrTestCase {
     assertEquals(15, solrQuery.setMoreLikeThisMaxQueryTerms(15).getMoreLikeThisMaxQueryTerms());
     assertEquals(16, solrQuery.setMoreLikeThisCount(16).getMoreLikeThisCount());
 
+  }
+
+  public void testAcceptParams() {
+    //given
+    SortClause sortClause = new SortClause("field1", SolrQuery.ORDER.asc);
+    Consumer<SolrQuery> queryConsumer = query -> query.addFilterQuery("type:category_aaa").addSort(sortClause);
+
+    //when
+    SolrQuery solrQuery = new SolrQuery();
+    solrQuery.setQuery("id:123")
+             .acceptParams(queryConsumer);
+
+    //then
+    assertEquals("id:123", solrQuery.getQuery());
+    assertEquals("field1 asc", solrQuery.getSortField());
+    assertTrue(solrQuery.getSorts().contains(sortClause));
+    assertTrue(Arrays.asList(solrQuery.getFilterQueries()).contains("type:category_aaa"));
   }
 }
