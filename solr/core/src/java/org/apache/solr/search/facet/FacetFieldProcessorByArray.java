@@ -19,6 +19,8 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.util.BytesRef;
@@ -98,7 +100,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
     SimpleOrderedMap<Object> refineResult = null;
     boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
 
-    if (fcontext.facetInfo != null) {
+    if (isRefining(fcontext.facetInfo)) {
       refineResult = refineFacets();
       // if we've seen this facet bucket, then refining can be done.  If we haven't, we still
       // only need to continue if we need allBuckets or numBuckets info.

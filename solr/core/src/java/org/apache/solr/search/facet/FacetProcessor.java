@@ -445,14 +445,24 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
   private static final class AugmentEntries {
     private final int leafEntries;
     private final int partialEntries;
-    private final Map<Object, Boolean> entries;
+    private final Map<Object, Object> entries;
     private final Map<String, Object> origFacetInfo;
 
-    private AugmentEntries(int leafEntries, int partialEntries, Map<Object, Boolean> entries, Map<String, Object> origFacetInfo) {
+    private AugmentEntries(int leafEntries, int partialEntries, Map<Object, Object> entries, Map<String, Object> origFacetInfo) {
       this.leafEntries = leafEntries;
       this.partialEntries = partialEntries;
       this.entries = entries;
       this.origFacetInfo = origFacetInfo;
+    }
+
+    private Map<String, Object> getBulkPhasePartialFacetInfo() {
+      if (partialEntries == 0) {
+        return null;
+      }
+      // we only care about "augmented partial" facets here, because we need to make sure that enumerated vals for
+      // partial subs are propagated down, even if a val for a given sub is evaluted during the "bulk collection"
+      // phase of augmentation.
+      return Collections.singletonMap("_q", origFacetInfo.get("_q"));
     }
 
     private Map<String, Object> getFacetInfo() {
@@ -473,9 +483,14 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         return Collections.singletonMap("_p", Arrays.asList(entries.keySet().toArray()));
       } else {
         final List<Object> leaves = new ArrayList<>(leafEntries);
-        final List<Object> partial = new ArrayList<>(partialEntries);
-        for (Map.Entry<Object, Boolean > e : entries.entrySet()) {
-          (e.getValue() ? leaves : partial).add(e.getKey());
+        final List<List<?>> partial = new ArrayList<>(partialEntries);
+        for (Map.Entry<Object, Object> e : entries.entrySet()) {
+          final Object val = e.getValue();
+          if (val == null) {
+            leaves.add(e.getKey());
+          } else {
+            partial.add(List.of(e.getKey(), val));
+          }
         }
         Map<String, Object> ret = new HashMap<>(2);
         ret.put("_l", leaves);
@@ -487,27 +502,31 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
 
   @SuppressWarnings({"unchecked"})
   private static AugmentEntries getAugmentEntries(Map<String,Object> facetInfoSub) {
-    Map<Object, Boolean> ret = null;
+    Map<Object, Object> ret = null;
     Object tmp;
     List<Object> augmentLeaf = (tmp = facetInfoSub.get("_a")) == null ? null : (List<Object>) tmp;
-    List<Object> augmentPartial = (tmp = facetInfoSub.get("_q")) == null ? null : (List<Object>) tmp;
+    List<List<Object>> augmentPartial = (tmp = facetInfoSub.get("_q")) == null ? null : (List<List<Object>>) tmp;
     int leafSize = 0;
     int partialSize = 0;
-    if (augmentLeaf == null) {
+    if (augmentLeaf != null) {
       ret = new HashMap<>((leafSize = augmentLeaf.size()) + (augmentPartial == null ? 0 : (partialSize = augmentPartial.size())));
       for (Object o : augmentLeaf) {
-        ret.put(o, Boolean.TRUE);
+        ret.put(o, null);
       }
     }
     if (augmentPartial != null) {
       if (ret == null) {
         ret = new HashMap<>(partialSize = augmentPartial.size());
       }
-      for (Object o : augmentPartial) {
-        ret.put(o, Boolean.FALSE);
+      for (List<Object> o : augmentPartial) {
+        ret.put(o.get(0), o.get(1));
       }
     }
     return ret == null ? null : new AugmentEntries(leafSize, partialSize, ret, facetInfoSub);
+  }
+
+  protected static boolean isRefining(Map<String,Object> facetInfo) {
+    return facetInfo != null && (facetInfo.size() != 1 || !facetInfo.containsKey("_q"));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -518,17 +537,17 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     for (Map.Entry<String,FacetRequest> sub : freq.getSubFacets().entrySet()) {
       FacetRequest subRequest = sub.getValue();
 
+      Map<String,Object>facetInfoSub = null;
+      if (facetInfo != null) {
+        facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
+      }
+
       // This includes a static check if a sub-facet can possibly produce something from
       // an empty domain.  Should this be changed to a dynamic check as well?  That would
       // probably require actually executing the facet anyway, and dropping it at the
       // end if it was unproductive.
-      if (emptyDomain && !freq.processEmpty && !subRequest.canProduceFromEmpty(facetInfo != null)) {
+      if (emptyDomain && !freq.processEmpty && !subRequest.canProduceFromEmpty(facetInfoSub != null)) {
         continue;
-      }
-
-      Map<String,Object>facetInfoSub = null;
-      if (facetInfo != null) {
-        facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
       }
 
       final AugmentEntries augment;
@@ -536,7 +555,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         if ((augment = getAugmentEntries(facetInfoSub)) != null) {
           // augment
           assert facetInfoSub.get("_s") == null && facetInfoSub.get("_p") == null && facetInfoSub.get("_l") == null;
-          facetInfoSub = null;
+          facetInfoSub = augment.getBulkPhasePartialFacetInfo();
         }
       } else if (skip) {
         // If we're skipping this node, then we only need to process sub-facets that have facet info specified.

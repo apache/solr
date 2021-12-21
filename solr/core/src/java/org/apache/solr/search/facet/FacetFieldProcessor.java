@@ -441,11 +441,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
     List<SimpleOrderedMap<?>> bucketList = new ArrayList<>(sortedSlots.length);
 
+    final Map<Object, Map<String, Object>> augmentPartial = getAugmentPartial();
     for (Slot slot : sortedSlots) {
       SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
       bucket.add("val", slot.bucketVal);
 
-      fillBucketFromSlot(bucket, slot, resortAccForFill);
+      fillBucketFromSlot(bucket, slot, resortAccForFill, augmentPartial == null ? null : augmentPartial.get(slot.bucketVal));
 
       bucketList.add(bucket);
     }
@@ -464,6 +465,29 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     return res;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<Object, Map<String, Object>> getAugmentPartial() {
+    if (fcontext.facetInfo == null) {
+      return null;
+    }
+    final Object tmp = fcontext.facetInfo.get("_q");
+    assert tmp != null && fcontext.facetInfo.size() == 1; // there should be exactly one entry: for "_q" (augmented partial)
+    List<List<Map<String, Object>>> enumerated = (List<List<Map<String, Object>>>) tmp;
+    final int size = enumerated.size();
+    switch (size) {
+      case 0:
+        throw new IllegalStateException("should not be empty");
+      case 1:
+        List<Map<String, Object>> entry = enumerated.get(0);
+        return Collections.singletonMap(entry.get(0), entry.get(1));
+    }
+    final Map<Object, Map<String, Object>> ret = new HashMap<>(size);
+    for (List<Map<String, Object>> entry : enumerated) {
+      ret.put(entry.get(0), entry.get(1));
+    }
+    return ret;
   }
 
   /**
@@ -509,7 +533,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   /** Helper method used solely when looping over buckets to be returned in findTopSlots */
   private void fillBucketFromSlot(SimpleOrderedMap<Object> target, Slot slot,
-                                  SlotAcc resortAcc) throws IOException {
+                                  SlotAcc resortAcc, Map<String, Object> facetInfo) throws IOException {
     final int slotOrd = slot.slot;
     countAcc.setValues(target, slotOrd);
     if (countAcc.getCount(slotOrd) <= 0 && !freq.processEmpty) return;
@@ -545,7 +569,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
 
-    processSubs(target, filter, subDomain, false, null);
+    processSubs(target, filter, subDomain, false, facetInfo);
   }
 
   /** 

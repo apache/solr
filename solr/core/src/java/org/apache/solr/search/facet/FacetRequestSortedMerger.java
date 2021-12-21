@@ -256,7 +256,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         }
       }
       if (!refinement.isEmpty()) {
-        skipBuckets.add(Arrays.asList(bucket.bucketValue, refinement));
+        skipBuckets.add(List.of(bucket.bucketValue, refinement));
       }
     }
     return skipBuckets.isEmpty() ? null : skipBuckets;
@@ -539,7 +539,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         }
         if (!alreadyAdded && !bucketRefinement.isEmpty()) {
           if (skipBuckets == null) skipBuckets = new ArrayList<>();
-          skipBuckets.add( Arrays.asList(bucket.bucketValue, bucketRefinement) );
+          skipBuckets.add(List.of(bucket.bucketValue, bucketRefinement));
         }
       }
     }
