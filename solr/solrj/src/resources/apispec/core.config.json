@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/config-api.html",
+  "documentation": "https://solr.apache.org/guide/config-api.html",
   "description": "Gets the Solr configuration for a collection.",
   "methods": [
     "GET"

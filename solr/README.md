@@ -117,11 +117,11 @@ For more information about Solr examples please read...
    
 For more information about the "Solr Home" and Solr specific configuration
  
- * https://lucene.apache.org/solr/guide/solr-tutorial.html
+ * https://solr.apache.org/guide/solr-tutorial.html
    
 For a Solr tutorial
  
- * https://lucene.apache.org/solr/resources.html
+ * https://solr.apache.org/resources.html
 
 For a list of other tutorials and introductory articles.
 
@@ -168,7 +168,7 @@ Instructions for Building Apache Solr from Source
    Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the GIT repository:
 
-     https://lucene.apache.org/solr/community.html#version-control
+     https://solr.apache.org/community.html#version-control
 
 3. Navigate to the root of your source tree folder and issue the `./gradlew tasks` 
    command to see the available options for building, testing, and packaging Solr.
