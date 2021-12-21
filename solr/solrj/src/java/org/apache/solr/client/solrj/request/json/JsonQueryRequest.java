@@ -33,7 +33,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 
 /**
- * Represents a query using the <a href="https://lucene.apache.org/solr/guide/json-request-api.html">JSON Query DSL</a>
+ * Represents a query using the <a href="https://solr.apache.org/guide/json-request-api.html">JSON Query DSL</a>
  *
  * This class constructs the request using setters for individual properties.  For a more monolithic approach to
  * constructing the JSON request, see {@link DirectJsonQueryRequest}
