@@ -143,35 +143,8 @@ If they agree, you can start a VOTE thread in private@solr.apache.org nominating
 Assuming the vote passes, you can send a resolution to the Board for their approval to change the Chair. Include the vote thread in the resolution.
 You do not need to wait until the usual quarterly report is due to change the Chair.
 
-Resolution example/template:
-
-----
-A. Change the Apache Lucene Project Chair
-
-    WHEREAS, the Board of Directors heretofore appointed <old Chair>
-    (<apache id>) to the office of Vice President, Apache Lucene, and
-
-    WHEREAS, the Board of Directors is in receipt of the resignation
-    of Adrien Grand from the office of Vice President, Apache
-    Lucene, and
-
-    WHEREAS, the Project Management Committee of the Apache Lucene
-    project has chosen by vote to recommend <new Chair> (<apache id>)
-    as the successor to the post;
-
-    NOW, THEREFORE, BE IT RESOLVED, that <old Chair> is relieved
-    and discharged from the duties and responsibilities of the office
-    of Vice President, Apache Lucene, and
-
-    BE IT FURTHER RESOLVED, that <new Chair> be and hereby is
-    appointed to the office of Vice President, Apache Lucene, to serve
-    in accordance with and subject to the direction of the Board of
-    Directors and the Bylaws of the Foundation until death,
-    resignation, retirement, removal or disqualification, or until a
-    successor is appointed.
-
-    Thread: <link to vote thread>
-----
+Use the Whimsy Board agenda tool to add a "Change Chair" resolution to the next board agenda:
+https://whimsy.apache.org/board/agenda/ and include a link to the VOTE thread.
 
 The Board will vote to adopt the resolution in their next meeting.
 
