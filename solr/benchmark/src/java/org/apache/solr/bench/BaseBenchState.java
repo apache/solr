@@ -25,7 +25,7 @@ import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.MBeanServer;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.bench.generators.SolrGen;
+import org.apache.solr.bench.rndgen.RndGen;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 @State(Scope.Benchmark)
 public class BaseBenchState {
 
+  public static final boolean DEBUG = false;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long RANDOM_SEED = 6624420638116043983L;
@@ -105,8 +106,8 @@ public class BaseBenchState {
             MethodHandles.lookup().lookupClass().getName()
                 + ".RandomCounts"); // nowarn_valid_logger
 
-    SolrGen.countsReport().forEach(randomCountsLog::info);
-    SolrGen.COUNTS.clear();
+    RndGen.countsReport().forEach(randomCountsLog::info);
+    RndGen.COUNTS.clear();
   }
 
   /**

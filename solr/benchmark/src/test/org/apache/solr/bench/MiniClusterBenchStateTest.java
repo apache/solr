@@ -17,13 +17,13 @@
 package org.apache.solr.bench;
 
 import static org.apache.solr.bench.Docs.docs;
-import static org.apache.solr.bench.generators.SourceDSL.booleans;
-import static org.apache.solr.bench.generators.SourceDSL.dates;
-import static org.apache.solr.bench.generators.SourceDSL.doubles;
-import static org.apache.solr.bench.generators.SourceDSL.floats;
-import static org.apache.solr.bench.generators.SourceDSL.integers;
-import static org.apache.solr.bench.generators.SourceDSL.longs;
-import static org.apache.solr.bench.generators.SourceDSL.strings;
+import static org.apache.solr.bench.rndgen.SourceDSL.booleans;
+import static org.apache.solr.bench.rndgen.SourceDSL.dates;
+import static org.apache.solr.bench.rndgen.SourceDSL.doubles;
+import static org.apache.solr.bench.rndgen.SourceDSL.floats;
+import static org.apache.solr.bench.rndgen.SourceDSL.integers;
+import static org.apache.solr.bench.rndgen.SourceDSL.longs;
+import static org.apache.solr.bench.rndgen.SourceDSL.strings;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;

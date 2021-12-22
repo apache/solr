@@ -17,8 +17,8 @@
 package org.apache.solr.bench.search;
 
 import static org.apache.solr.bench.Docs.docs;
-import static org.apache.solr.bench.generators.SourceDSL.integers;
-import static org.apache.solr.bench.generators.SourceDSL.strings;
+import static org.apache.solr.bench.rndgen.SourceDSL.integers;
+import static org.apache.solr.bench.rndgen.SourceDSL.strings;
 
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;

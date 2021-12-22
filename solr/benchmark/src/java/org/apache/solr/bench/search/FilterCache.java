@@ -16,7 +16,7 @@
  */
 package org.apache.solr.bench.search;
 
-import static org.apache.solr.bench.generators.SourceDSL.integers;
+import static org.apache.solr.bench.rndgen.SourceDSL.integers;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -25,8 +25,8 @@ import java.nio.charset.StandardCharsets;
 import org.apache.solr.bench.BaseBenchState;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
-import org.apache.solr.bench.SolrRandomnessSource;
-import org.apache.solr.bench.generators.SolrGen;
+import org.apache.solr.bench.rndgen.RandomnessSource;
+import org.apache.solr.bench.rndgen.RndGen;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -85,12 +85,12 @@ public class FilterCache {
 
       Docs docs = Docs.docs().field("id", integers().incrementing());
 
-      SolrGen<Boolean> booleans =
-          new SolrGen<>() {
+      RndGen<Boolean> booleans =
+          new RndGen<>() {
             int threshold = Integer.parseInt(frequency);
 
             @Override
-            public Boolean generate(SolrRandomnessSource in) {
+            public Boolean gen(RandomnessSource in) {
               return in.next(0, 100) < threshold;
             }
           };

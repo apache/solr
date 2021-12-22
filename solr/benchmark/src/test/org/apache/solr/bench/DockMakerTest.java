@@ -17,17 +17,17 @@
 package org.apache.solr.bench;
 
 import static org.apache.solr.bench.Docs.docs;
-import static org.apache.solr.bench.generators.SourceDSL.booleans;
-import static org.apache.solr.bench.generators.SourceDSL.integers;
-import static org.apache.solr.bench.generators.SourceDSL.strings;
+import static org.apache.solr.bench.rndgen.SourceDSL.booleans;
+import static org.apache.solr.bench.rndgen.SourceDSL.integers;
+import static org.apache.solr.bench.rndgen.SourceDSL.strings;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.bench.generators.Distribution;
-import org.apache.solr.bench.generators.SolrGen;
+import org.apache.solr.bench.rndgen.Distribution;
+import org.apache.solr.bench.rndgen.RndGen;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.junit.After;
@@ -46,8 +46,8 @@ public class DockMakerTest extends SolrTestCaseJ4 {
 
   @After
   public void after() {
-    SolrGen.countsReport().forEach(log::info);
-    SolrGen.COUNTS.clear();
+    RndGen.countsReport().forEach(log::info);
+    RndGen.COUNTS.clear();
   }
 
   @Test
@@ -117,11 +117,11 @@ public class DockMakerTest extends SolrTestCaseJ4 {
 
     docs.field("IntCard2", integers().between(10, 50).withDistribution(Distribution.GAUSSIAN));
 
-    HashSet<Integer> values = new HashSet<>();
+    HashSet<Number> values = new HashSet<>();
     for (int i = 0; i < 300; i++) {
       SolrInputDocument doc = docs.inputDocument();
       SolrInputField field = doc.getField("IntCard2");
-      values.add((Integer) field.getValue());
+      values.add((Number) field.getValue()); // TODO should be int, not long
     }
 
     if (log.isInfoEnabled()) {
@@ -176,7 +176,7 @@ public class DockMakerTest extends SolrTestCaseJ4 {
   public void testRealisticUnicode() throws Exception {
     Docs docs = docs();
 
-    docs.field("unicode", strings().realisticUnicode(4, 12).multi(6));
+    docs.field("unicode", strings().realisticUnicode().multi(6).ofLengthBetween(4, 12));
 
     Set<String> values = new HashSet<>();
     for (int i = 0; i < 1; i++) {
@@ -186,7 +186,7 @@ public class DockMakerTest extends SolrTestCaseJ4 {
     }
 
     for (String val : values) {
-      assertEquals(6, val.split("\\s").length);
+      assertEquals(val, 6, val.split("\\s").length);
     }
   }
 
