@@ -3558,7 +3558,7 @@ Example 1 below illustrates the default (non-zero) splitting behavior.
 |Optional |Default: `1`
 |===
 +
-If `0`, don't split words on transitions from alpha to numeric:"FemBot3000" -> "Fem", "Bot3000"
+If `0`, don't split words on transitions from alpha to numeric:"FemBot3000" -> "FemBot", "3000"
 
 `catenateWords`::
 +
