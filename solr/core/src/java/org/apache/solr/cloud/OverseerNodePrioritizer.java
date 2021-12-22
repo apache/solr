@@ -73,7 +73,15 @@ public class OverseerNodePrioritizer {
       }
     }
 
-    overseerDesignates.addAll(ClusterAPI.getNodesByRole(NodeRoles.Role.OVERSEER, NodeRoles.PREFERRED, new ZkDistribStateManager(zkStateReader.getZkClient())));
+    List<String> preferredOverseers = ClusterAPI.getNodesByRole(NodeRoles.Role.OVERSEER, NodeRoles.Mode.PREFERRED,
+            new ZkDistribStateManager(zkStateReader.getZkClient()));
+    for (String preferred: preferredOverseers) {
+      if (overseerDesignates.contains(preferred)) {
+        log.warn("Node " + preferred + " has been configured to be a preferred overseer using both ADDROLE API command " +
+                "as well as using Node Roles (i.e. -Dsolr.node.roles start up property). Only the latter is recommended.");
+      }
+    }
+    overseerDesignates.addAll(preferredOverseers);
     if (overseerDesignates.isEmpty()) return;
     String ldr = OverseerTaskProcessor.getLeaderNode(zk);
     if(overseerDesignates.contains(ldr)) return;

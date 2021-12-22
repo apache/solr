@@ -358,7 +358,7 @@ public class ZkController implements Closeable {
 
                 overseerElector.setup(context);
 
-                if(cc.nodeRoles.isOverseerAllowed()) {
+                if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
                   overseerElector.joinElection(context, true);
                 }
               }
@@ -858,10 +858,10 @@ public class ZkController implements Closeable {
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
-    for (NodeRoles.Role role : NodeRoles.Role.values()) {
-      cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES + "/" + role.roleName, zkClient);
-      for (String v : role.supportedModes()) {
-        cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES + "/" + role.roleName + "/"+v, zkClient);
+    for (NodeRoles.Role role: NodeRoles.Role.values()) {
+      cmdExecutor.ensureExists(NodeRoles.getZNodeForRole(role), zkClient);
+      for (NodeRoles.Mode mode: role.supportedModes()) {
+        cmdExecutor.ensureExists(NodeRoles.getZNodeForRoleMode(role, mode), zkClient);
       }
     }
 
@@ -924,7 +924,7 @@ public class ZkController implements Closeable {
         ElectionContext context = new OverseerElectionContext(zkClient,
             overseer, getNodeName());
         overseerElector.setup(context);
-        if(cc.nodeRoles.isOverseerAllowed()) {
+        if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
           overseerElector.joinElection(context, false);
         }
       }
@@ -1101,7 +1101,7 @@ public class ZkController implements Closeable {
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
 
     // Create the roles node as well
-   cc.nodeRoles.getRoles().forEach((role, val) -> ops.add(Op.create(ZkStateReader.NODE_ROLES + "/" + role.roleName+ "/"+val +"/"+ nodeName,
+   cc.nodeRoles.getRoles().forEach((role, mode) -> ops.add(Op.create(NodeRoles.getZNodeForRoleMode(role, mode) +"/" + nodeName,
            null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL)));
 
     zkClient.multi(ops, true);

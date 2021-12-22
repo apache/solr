@@ -947,9 +947,9 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
-      if (NodeRoles.PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
+      if (NodeRoles.Mode.PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
         try {
-          log.info("This node is started as a preferred overseer");
+          log.info("This node has been started as a preferred overseer");
           zkSys.getZkController().setPreferredOverseer();
         } catch (KeeperException | InterruptedException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
