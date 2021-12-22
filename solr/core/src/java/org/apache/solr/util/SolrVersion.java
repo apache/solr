@@ -1,10 +1,7 @@
 package org.apache.solr.util;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.text.ParseException;
 import java.util.Locale;
-import java.util.jar.Manifest;
 
 /**
  * Use by certain classes to match version compatibility across releases of Solr.
@@ -27,9 +24,6 @@ public final class SolrVersion {
    * <b>WARNING</b>: Be careful where you use this constant. Usually you should use the exact version constants
    */
   public static final SolrVersion LATEST = SOLR_9_0_0;
-
-  /** @see #getPackageImplementationVersion() */
-  private static String implementationVersion;
 
   /**
    * Parse a version number of the form {@code "major.minor.bugfix.prerelease"}.
@@ -259,48 +253,6 @@ public final class SolrVersion {
   @Override
   public int hashCode() {
     return encodedValue;
-  }
-
-  /**
-   * Return Solr's full implementation version. This version is saved in Solr's metadata at
-   * build time (JAR manifest, module info). If it is not available, an {@code unknown}
-   * implementation version is returned.
-   *
-   * @return Solr implementation version string, never {@code null}.
-   */
-  public static String getPackageImplementationVersion() {
-    // Initialize the lazy value.
-    synchronized (SolrVersion.class) {
-      if (implementationVersion == null) {
-        String version;
-
-        Package p = SolrVersion.class.getPackage();
-        version = p.getImplementationVersion();
-
-        if (version == null) {
-          var module = SolrVersion.class.getModule();
-          if (module.isNamed()) {
-            // Running as a module? Try parsing the manifest manually.
-            try (var is = module.getResourceAsStream("/META-INF/MANIFEST.MF")) {
-              if (is != null) {
-                Manifest m = new Manifest(is);
-                version = m.getMainAttributes().getValue("Implementation-Version");
-              }
-            } catch (IOException e) {
-              throw new UncheckedIOException(e);
-            }
-          }
-        }
-
-        if (version == null) {
-          version = "unknown";
-        }
-
-        implementationVersion = version;
-      }
-
-      return implementationVersion;
-    }
   }
 
   /**
