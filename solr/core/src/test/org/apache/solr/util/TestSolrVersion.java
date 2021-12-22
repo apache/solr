@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -25,7 +25,7 @@ import java.util.Locale;
 import java.util.Random;
 
 @SuppressWarnings("deprecation")
-public class TestSolrVersion extends LuceneTestCase {
+public class TestSolrVersion extends SolrTestCase {
 
   public void testOnOrAfter() throws Exception {
     for (Field field : SolrVersion.class.getDeclaredFields()) {
