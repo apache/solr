@@ -31,6 +31,7 @@ public interface Cluster {
    */
   Set<Node> getLiveNodes();
 
+  Set<Node> getLiveNodes(boolean filterNonDataNodes) ;
   /**
    * Returns info about the given collection if one exists.
    *

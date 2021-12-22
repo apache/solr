@@ -21,18 +21,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -246,22 +235,25 @@ public class Assign {
         Collections.shuffle(nodeList, random);
       }
     } else {
-      nodeList = new ArrayList<>(liveNodes);
-      filterNonDataNodes(zk, nodeList);
+      nodeList = new ArrayList<>(filterNonDataNodes(zk, liveNodes));
       Collections.shuffle(nodeList, random);
     }
 
     return nodeList;
   }
 
-  public static void filterNonDataNodes(DistribStateManager zk, List<String> liveNodes) {
+  public static Collection<String> filterNonDataNodes(DistribStateManager zk, Collection<String> liveNodes) {
     try {
      List<String> noData =  ClusterAPI.getNodesByRole(NodeRoles.Role.DATA, NodeRoles.Mode.OFF, zk);
-     if (!noData.isEmpty()) {
-       liveNodes.removeAll(noData);
-     }
+      if (noData.isEmpty()) {
+        return liveNodes;
+      } else {
+        liveNodes  = new HashSet<>(liveNodes);
+        liveNodes.removeAll(noData);
+        return liveNodes;
+      }
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Problem fetching roles from Zookeeper", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching roles from Zookeeper", e);
     }
   }
 

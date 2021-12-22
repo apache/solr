@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -61,7 +60,7 @@ public class NodeRoles {
     }
     for(Role r: Role.values()) {
       if (!roles.containsKey(r)) {
-        roles.put(r, r.defaultIfAbsent());
+        roles.put(r, r.defaultMode());
       }
     }
     nodeRoles = Collections.unmodifiableMap(roles);
@@ -100,7 +99,7 @@ public class NodeRoles {
         return Set.of(Mode.ON, Mode.OFF);
       }
       @Override
-      public Mode defaultIfAbsent() {
+      public Mode defaultMode() {
         return Mode.OFF;
       }
     },
@@ -110,7 +109,7 @@ public class NodeRoles {
         return Set.of(Mode.ALLOWED, Mode.PREFERRED, Mode.DISALLOWED);
       }
       @Override
-      public Mode defaultIfAbsent() {
+      public Mode defaultMode() {
         return Mode.DISALLOWED;
       }
     };
@@ -122,12 +121,10 @@ public class NodeRoles {
     }
 
     public static Role getRole(String value) {
-      try {
-        Role role = Role.valueOf(value.toUpperCase(Locale.ROOT));
-        return role;
-      } catch (IllegalArgumentException ex) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role: " + value);
+      for (Role role: Role.values()) {
+        if (value.equals(role.roleName)) return role;
       }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role: " + value);
     }
 
     public abstract Set<Mode> supportedModes();
@@ -135,7 +132,7 @@ public class NodeRoles {
     /**
      * Default mode for a role in nodes where this role is not specified.
      */
-    public abstract Mode defaultIfAbsent();
+    public abstract Mode defaultMode();
 
     @Override
     public String toString() {
