@@ -52,6 +52,7 @@ import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
  */
 abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SchemaField sf;
+  final Function<Object, Object> toNativeType;
   SlotAcc indexOrderAcc;
   int effectiveMincount;
   final boolean singlePassSlotAccCollection;
@@ -75,6 +76,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq);
     this.sf = sf;
+    this.toNativeType = toNativeType(sf);
     this.effectiveMincount = (int)(fcontext.isShard() ? Math.min(1 , freq.mincount) : freq.mincount);
     this.singlePassSlotAccCollection = (freq.limit == -1 && freq.subFacets.size() == 0);
 
@@ -1012,6 +1014,16 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     // the normal collection method may be best.
 
     return res;
+  }
+
+  private static Function<Object, Object> toNativeType(SchemaField sf) {
+    final FieldType ft = sf.getType();
+    return ft::toNativeType;  // refinement info passed in as JSON will cause int->long and float->double
+  }
+
+  @Override
+  protected Function<Object, Object> toNativeType() {
+    return toNativeType;
   }
 
   private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {

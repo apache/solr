@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -480,10 +481,15 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         return Collections.singletonMap("_l", Arrays.asList(entries.keySet().toArray()));
       } else if (leafEntries == 0) {
         // _far_ less common, but easy
-        return Collections.singletonMap("_p", Arrays.asList(entries.keySet().toArray()));
+        final List<List<?>> partial = new ArrayList<>(entries.size());
+        for (Map.Entry<Object, Object> e : entries.entrySet()) {
+          partial.add(List.of(e.getKey(), e.getValue()));
+        }
+        return Collections.singletonMap("_p", partial);
       } else {
-        final List<Object> leaves = new ArrayList<>(leafEntries);
-        final List<List<?>> partial = new ArrayList<>(partialEntries);
+        final int maxSize = entries.size();
+        final List<Object> leaves = new ArrayList<>(Math.min(leafEntries, maxSize));
+        final List<List<?>> partial = new ArrayList<>(Math.min(partialEntries, maxSize));
         for (Map.Entry<Object, Object> e : entries.entrySet()) {
           final Object val = e.getValue();
           if (val == null) {
@@ -501,17 +507,26 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
   }
 
   @SuppressWarnings({"unchecked"})
-  private static AugmentEntries getAugmentEntries(Map<String,Object> facetInfoSub) {
-    Map<Object, Object> ret = null;
+  private AugmentEntries getAugmentEntries(Map<String,Object> facetInfoSub) {
     Object tmp;
-    List<Object> augmentLeaf = (tmp = facetInfoSub.get("_a")) == null ? null : (List<Object>) tmp;
-    List<List<Object>> augmentPartial = (tmp = facetInfoSub.get("_q")) == null ? null : (List<List<Object>>) tmp;
+    final List<Object> augmentLeaf = (tmp = facetInfoSub.get("_a")) == null ? null : (List<Object>) tmp;
+    final List<List<Object>> augmentPartial;
+    if ((tmp = facetInfoSub.get("_q")) == null) {
+      if (augmentLeaf == null) {
+        return null;
+      }
+      augmentPartial = null;
+    } else {
+      augmentPartial = (List<List<Object>>) tmp;
+    }
+    final Function<Object, Object> toNativeType = toNativeType();
+    Map<Object, Object> ret = null;
     int leafSize = 0;
     int partialSize = 0;
     if (augmentLeaf != null) {
       ret = new HashMap<>((leafSize = augmentLeaf.size()) + (augmentPartial == null ? 0 : (partialSize = augmentPartial.size())));
       for (Object o : augmentLeaf) {
-        ret.put(o, null);
+        ret.put(toNativeType.apply(o), null);
       }
     }
     if (augmentPartial != null) {
@@ -519,14 +534,18 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         ret = new HashMap<>(partialSize = augmentPartial.size());
       }
       for (List<Object> o : augmentPartial) {
-        ret.put(o.get(0), o.get(1));
+        ret.put(toNativeType.apply(o.get(0)), o.get(1));
       }
     }
-    return ret == null ? null : new AugmentEntries(leafSize, partialSize, ret, facetInfoSub);
+    return new AugmentEntries(leafSize, partialSize, ret, facetInfoSub);
   }
 
   protected static boolean isRefining(Map<String,Object> facetInfo) {
     return facetInfo != null && (facetInfo.size() != 1 || !facetInfo.containsKey("_q"));
+  }
+
+  protected Function<Object, Object> toNativeType() {
+    return (o) -> o;
   }
 
   @SuppressWarnings({"unchecked"})

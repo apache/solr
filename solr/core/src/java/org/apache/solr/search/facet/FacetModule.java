@@ -170,12 +170,14 @@ public class FacetModule extends SearchComponent {
     if (facetState == null) return ResponseBuilder.STAGE_DONE;
 
     if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS && rb.stage != ResponseBuilder.STAGE_REFINEMENT) {
+      facetState.done = true;
       return ResponseBuilder.STAGE_DONE;
     }
 
     // Check if there are any refinements possible
     if ((facetState.mcontext == null) || facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
       clearFaceting(rb.outgoing);
+      facetState.done = true;
       return ResponseBuilder.STAGE_DONE;
     }
 
@@ -268,6 +270,7 @@ public class FacetModule extends SearchComponent {
     }
 
     // clearFaceting(rb.outgoing);
+    facetState.done = ret == ResponseBuilder.STAGE_DONE;
     return ret;
   }
 
@@ -331,7 +334,7 @@ public class FacetModule extends SearchComponent {
     if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS && rb.stage != ResponseBuilder.STAGE_REFINEMENT) return;
 
     FacetComponentState facetState = getFacetComponentState(rb);
-    if (facetState == null) return;
+    if (facetState == null || !facetState.done) return;
 
     if (facetState.merger != null) {
       // TODO: merge any refinements
@@ -365,6 +368,7 @@ public class FacetModule extends SearchComponent {
     //
     FacetMerger merger;
     FacetMerger.Context mcontext;
+    boolean done;
   }
 
   // base class for facet functions that can be used in a sort

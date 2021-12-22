@@ -132,10 +132,6 @@ public abstract class FacetMerger {
       }
     }
 
-    public boolean hasPendingTopLevel() {
-      return hasPendingTopLevel;
-    }
-
     public void setHasPendingTopLevel() {
       hasPendingTopLevel = true;
     }
