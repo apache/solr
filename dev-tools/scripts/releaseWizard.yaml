@@ -1083,7 +1083,7 @@ groups:
           cmd: "{{ gradle_cmd }} solr:solr-ref-guide:buildSite -PsolrGuideDraft=false"
           comment: Build Ref Guide
   - !Todo
-    id: upload_final_ref_guide
+    id: upload_final_ref_guide_new
     title: Upload the ref guide
     links:
       - https://solr.apache.org/guide/{{ release_version_refguide }}
@@ -1101,17 +1101,18 @@ groups:
           logfile: add-docs-solr.log
           comment: Upload Solr Ref Guide
   - !Todo
-    id: upload_final_ref_guide
+    id: upload_final_ref_guide_changes
     title: Upload (and overwrite-write) the ref guide
     links:
       - https://solr.apache.org/guide/{{ release_version_refguide }}
     depends:
       - build_final_ref_guide
     types:
-      - patch
+      - bugfix
     commands: !Commands
       root_folder: '{{ ref_guide_svn_folder }}'
       commands_text: Upload the Solr Ref Guide to SVN production tree, overwriting the previous version
+      confirm_each_command: true
       commands:
         - !Command
           cmd: svn co https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }} "{{ ref_guide_svn_folder }}"
@@ -1123,11 +1124,23 @@ groups:
           comment: Copy and overwrite new Solr Ref Guide
           root_folder: '{{ git_checkout_folder }}'
         - !Command
+          cmd: svn status
+          comment: Check that the changes in the ref-guide look good for this bugfix version
+          stdout: true
+        - !Command
           cmd: svn status | grep '^!' | awk '{print $2}' | xargs svn delete
           comment: Remove removed files in SVN
         - !Command
           cmd: svn add --force .
           comment: Add new and modified files in SVN
+        - !Command
+          cmd: svn status
+          comment: There should be no staged changes left in svn, all should be ready to commit
+          stdout: true
+        - !Command
+          cmd: diff {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
+          comment: There should be no difference between the ref-guide build and the version in svn.
+          stdout: true
         - !Command
           cmd: svn commit -m "Update Solr Ref Guide {{ release_version_refguide }}, for version {{ release_version }}"
           comment: Upload Solr Ref Guide
