@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -54,6 +53,7 @@ import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.SolrCLI;
+import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -68,7 +68,7 @@ public class RepositoryManager {
 
   final private PackageManager packageManager;
 
-  public static final String systemVersion = Version.LATEST.toString();
+  public static final String systemVersion = SolrVersion.LATEST.toString();
 
   final HttpSolrClient solrClient;
 
