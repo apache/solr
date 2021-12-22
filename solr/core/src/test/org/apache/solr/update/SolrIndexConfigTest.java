@@ -159,7 +159,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     final boolean expectedFieldSortDescending = true;
 
     SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameIndexSort);
-    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
     assertNotNull(solrIndexConfig);
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
 
