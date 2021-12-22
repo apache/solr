@@ -321,8 +321,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void algWhitelist() {
-    testConfig.put("algWhitelist", Arrays.asList("PS384", "PS512"));
+  public void algAllowlist() {
+    testConfig.put("algAllowlist", Arrays.asList("PS384", "PS512"));
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
