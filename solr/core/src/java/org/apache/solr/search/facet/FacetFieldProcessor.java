@@ -292,6 +292,19 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
+  static final long OVERREQUEST_ASYMPTOTE_THRESHOLD = 84;
+
+  /**
+   * Default overrequest is calculated as a monotonically non-decreasing function of the gross limit (offset + limit).
+   * <code>f(0..6)=>12</code>, and the function decays predictably until <code>f(x)=>x</code> for
+   * <code>x >= {@value #OVERREQUEST_ASYMPTOTE_THRESHOLD}</code>.
+   * @param grossLimit - the gross limit (including offset) requested
+   * @return adjusted gross limit, including offset and calculated overrequest.
+   */
+  static long applyOverrequestFunction(final long grossLimit) {
+    return grossLimit + (90 / (7 + grossLimit));
+  }
+
   /** Processes the collected data to finds the top slots, and composes it in the response NamedList. */
   SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality,
                                         @SuppressWarnings("rawtypes") IntFunction<Comparable> bucketValFromSlotNumFunc,
@@ -306,9 +319,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       effectiveLimit = freq.limit;
       if (fcontext.isShard()) {
         if (freq.overrequest == -1) {
-          // add over-request if this is a shard request and if we have a small offset (large offsets will already be gathering many more buckets than needed)
-          if (freq.offset < 10) {
-            effectiveLimit = (long) (effectiveLimit * 1.1 + 4); // default: add 10% plus 4 (to overrequest for very small limits)
+          final long grossLimit;
+          if (effectiveLimit > 0 && (grossLimit = freq.offset + effectiveLimit) < OVERREQUEST_ASYMPTOTE_THRESHOLD) {
+            effectiveLimit = applyOverrequestFunction(grossLimit) - freq.offset;
           }
         } else {
           effectiveLimit += freq.overrequest;
