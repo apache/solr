@@ -17,10 +17,10 @@
 package org.apache.solr.schema;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -81,9 +81,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
 
     RuleBasedCollator tailoredCollator = new RuleBasedCollator(baseCollator.getRules() + DIN5007_2_tailorings);
     String tailoredRules = tailoredCollator.getRules();
-    FileOutputStream os = new FileOutputStream(new File(confDir, "customrules.dat"));
-    IOUtils.write(tailoredRules, os, "UTF-8");
-    os.close();
+    Files.writeString(confDir.toPath().resolve("customrules.dat"), tailoredRules, StandardCharsets.UTF_8);
 
     return tmpFile.getAbsolutePath();
   }

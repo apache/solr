@@ -3428,7 +3428,7 @@ With the example below, for a token "example.com" with type `<URL>`, the token e
 
 == Type Token Filter
 
-This filter blacklists or whitelists a specified list of token types, assuming the tokens have type metadata associated with them.
+This filter denies or allows a specified list of token types, assuming the tokens have type metadata associated with them.
 For example, the <<tokenizers.adoc#uax29-url-email-tokenizer,UAX29 URL Email Tokenizer>> emits "<URL>" and "<EMAIL>" typed tokens, as well as other types.
 This filter would allow you to pull out only e-mail addresses from text as tokens, if you wish.
 
@@ -3453,7 +3453,7 @@ Defines the path to a file of types to filter.
 |===
 +
 If `true`, the file defined in `types` should be used as include list.
-If `false`, or undefined, the file defined in `types` is used as a blacklist.
+If `false`, or undefined, the file defined in `types` is used as a denylist.
 
 *Example:*
 

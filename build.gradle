@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "2.0.0"
-  id "org.owasp.dependencycheck" version "5.3.0"
+  id "org.owasp.dependencycheck" version "6.4.1.1"
   id 'de.thetaphi.forbiddenapis' version '3.2' apply false
   id "de.undercouch.download" version "4.0.2" apply false
   id "net.ltgt.errorprone" version "2.0.2" apply false
@@ -164,6 +164,9 @@ apply from: file('gradle/testing/profiling.gradle')
 apply from: file('gradle/testing/beasting.gradle')
 apply from: file('gradle/help.gradle')
 
+// Configures development for joint Lucene/ Solr composite build.
+apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
+
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
 // here so that we can coexist with current ant build but they are indicative
 // of potential problems with the build conventions, dependencies, etc.
@@ -190,3 +193,5 @@ apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
+
+

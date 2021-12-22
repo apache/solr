@@ -16,15 +16,19 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.util.Enumeration;
-
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.NodePropertiesAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RedactionUtils;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Enumeration;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -74,5 +78,15 @@ public class PropertiesRequestHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new NodePropertiesAPI(this));
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }

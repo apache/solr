@@ -20,15 +20,17 @@ allprojects {
 
   group "org.apache"
 
-  def lucenePrereleaseBuild = '5'
+  // def lucenePrereleaseBuild = '9'
 
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
+    /* Reenable this if we need it again in future
     maven {
       name "LucenePrerelease${lucenePrereleaseBuild}"
       url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
     }
+    */
   }
 
   // Artifacts will have names after full gradle project path

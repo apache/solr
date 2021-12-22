@@ -18,6 +18,7 @@
 package org.apache.solr.prometheus.exporter;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -98,7 +99,7 @@ public class MetricsQuery {
     for (NamedList<?> request : requests) {
       NamedList<?> query = (NamedList<?>) request.get("query");
       @SuppressWarnings("unchecked")
-      NamedList<String> queryParameters = (NamedList<String>) query.get("params");
+      NamedList<Object> queryParameters = (NamedList<Object>) query.get("params");
       String path = (String) query.get("path");
       String core = (String) query.get("core");
       String collection = (String) query.get("collection");
@@ -107,8 +108,16 @@ public class MetricsQuery {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       if (queryParameters != null) {
-        for (Map.Entry<String, String> entrySet : queryParameters.asShallowMap().entrySet()) {
-          params.add(entrySet.getKey(), entrySet.getValue());
+        for (Map.Entry<String, Object> entrySet : queryParameters.asShallowMap().entrySet()) {
+          if (entrySet.getValue() instanceof Collection) {
+            @SuppressWarnings("unchecked")
+            Collection<Object> values = (Collection<Object>) entrySet.getValue();
+            for (Object value : values) {
+              params.add(entrySet.getKey(), String.valueOf(value));
+            }
+          } else {
+            params.add(entrySet.getKey(), String.valueOf(entrySet.getValue()));
+          }
         }
       }
 

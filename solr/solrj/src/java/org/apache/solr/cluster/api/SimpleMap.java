@@ -20,6 +20,8 @@ package org.apache.solr.cluster.api;
 import org.apache.solr.common.MapWriter;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -67,7 +69,7 @@ public interface SimpleMap<T> extends MapWriter {
    * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
    */
   default void abortableForEach(BiFunction<String, ? super T, Boolean> fun) {
-    forEachEntry(new BiConsumer<String, T>() {
+    forEachEntry(new BiConsumer<>() {
       boolean end = false;
       @Override
       public void accept(String k, T v) {
@@ -81,5 +83,14 @@ public interface SimpleMap<T> extends MapWriter {
   @Override
   default void writeMap(EntryWriter ew) throws IOException {
     forEachEntry(ew::putNoEx);
+  }
+
+  default Map<String, T> asMap( Map<String, T> sink) {
+    forEachEntry(sink::put);
+    return sink;
+  }
+
+  default Map<String, T> asMap() {
+    return asMap(new LinkedHashMap<>());
   }
 }

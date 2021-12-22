@@ -18,7 +18,7 @@
 
 <!--
      For more details about configurations options that may appear in
-     this file, see http://wiki.apache.org/solr/SolrConfigXml.
+     this file, see https://solr.apache.org/guide/configuring-solrconfig-xml.html.
 -->
 <config>
   <!-- In all configuration below, a prefix of "solr." for class names
@@ -202,7 +202,7 @@
                    'simple' is the default
 
          More details on the nuances of each LockFactory...
-         http://wiki.apache.org/lucene-java/AvailableLockFactories
+         https://cwiki.apache.org/confluence/display/lucene/AvailableLockFactories
     -->
     <lockType>${solr.lock.type:native}</lockType>
 
@@ -255,7 +255,7 @@
        parameters. Remove this to disable exposing Solr configuration
        and statistics to JMX.
 
-       For more details see http://wiki.apache.org/solr/SolrJmx
+       For more details see https://solr.apache.org/guide/jmx-with-solr.html
     -->
   <jmx />
   <!-- If you want to connect to a particular server, specify the
@@ -293,7 +293,7 @@
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents.
 
-         http://wiki.apache.org/solr/UpdateXmlMessages
+         https://solr.apache.org/guide/indexing-with-update-handlers.html
 
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
@@ -368,11 +368,11 @@
   <query>
 
     <!-- Maximum number of clauses allowed when parsing a boolean query string.
-         
+
          This limit only impacts boolean queries specified by a user as part of a query string,
          and provides per-collection controls on how complex user specified boolean queries can
          be.  Query strings that specify more clauses then this will result in an error.
-         
+
          If this per-collection limit is greater then the global `maxBooleanClauses` limit
          specified in `solr.xml`, it will have no effect, as that setting also limits the size
          of user specified boolean queries.
@@ -735,7 +735,7 @@
 
   <!-- Request Handlers
 
-       https://lucene.apache.org/solr/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
+       https://solr.apache.org/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
 
        Incoming queries will be dispatched to a specific handler by name based on the path specified in the request.
 
@@ -778,7 +778,7 @@
        The spell check component can return a list of alternative spelling
        suggestions.
 
-       https://lucene.apache.org/solr/guide/spell-checking.html
+       https://solr.apache.org/guide/spell-checking.html
     -->
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
 
@@ -835,7 +835,7 @@
        IN OTHER WORDS, THERE IS REALLY GOOD CHANCE THE SETUP BELOW IS
        NOT WHAT YOU WANT FOR YOUR PRODUCTION SYSTEM!
 
-       See https://lucene.apache.org/solr/guide/spell-checking.html for details
+       See https://solr.apache.org/guide/spell-checking.html for details
        on the request parameters.
     -->
   <requestHandler name="/spell" class="solr.SearchHandler" startup="lazy">
@@ -862,7 +862,7 @@
 
   <!-- Highlighting Component
 
-       https://lucene.apache.org/solr/guide/highlighting.html
+       https://solr.apache.org/guide/highlighting.html
     -->
   <searchComponent class="solr.HighlightComponent" name="highlight">
     <highlighting>
@@ -967,7 +967,7 @@
   </searchComponent>
 
   <!-- Update Request Processors
-       https://lucene.apache.org/solr/guide/update-request-processors.html
+       https://solr.apache.org/guide/update-request-processors.html
 
        Chains or individual Update Request Processor Factories can be declared and referenced
        to preprocess documents sent to Update Request Handlers.
@@ -986,7 +986,7 @@
        declaring schemaFactory as ManagedIndexSchemaFactory, with
        mutable specified as true.
 
-       See https://lucene.apache.org/solr/guide/schemaless-mode.html for further explanation.
+       See https://solr.apache.org/guide/schemaless-mode.html for further explanation.
 
     -->
   <updateProcessor class="solr.UUIDUpdateProcessorFactory" name="uuid"/>
@@ -1071,7 +1071,7 @@
 
   <!-- Response Writers
 
-       http://wiki.apache.org/solr/QueryResponseWriter
+       https://solr.apache.org/guide/response-writers.html
 
        Request responses will be written using the writer specified by
        the 'wt' request parameter matching the name of a registered
@@ -1108,7 +1108,7 @@
 
   <!-- Query Parsers
 
-       https://lucene.apache.org/solr/guide/query-syntax-and-parsing.html
+       https://solr.apache.org/guide/query-syntax-and-parsing.html
 
        Multiple QParserPlugins can be registered by name, and then
        used in either the "defType" param for the QueryComponent (used
@@ -1121,7 +1121,7 @@
 
   <!-- Function Parsers
 
-       http://wiki.apache.org/solr/FunctionQuery
+       https://solr.apache.org/guide/function-queries.html
 
        Multiple ValueSourceParsers can be registered by name, and then
        used as function names when using the "func" QParser.
@@ -1134,7 +1134,7 @@
 
 
   <!-- Document Transformers
-       http://wiki.apache.org/solr/DocTransformers
+       https://solr.apache.org/guide/document-transformers.html
     -->
   <!--
      Could be something like:

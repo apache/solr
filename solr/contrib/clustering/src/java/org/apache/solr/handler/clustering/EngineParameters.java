@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.clustering;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.common.params.SolrParams;
 
 import java.util.Arrays;
@@ -345,7 +344,7 @@ public final class EngineParameters implements Cloneable {
     Set<String> fields = new LinkedHashSet<>(fields());
     fields.add(docIdField());
     String languageField = languageField();
-    if (StringUtils.isNotBlank(languageField)) {
+    if (languageField != null && !languageField.isBlank()) {
       fields.add(languageField);
     }
     return fields;

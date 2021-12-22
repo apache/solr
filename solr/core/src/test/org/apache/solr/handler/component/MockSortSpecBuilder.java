@@ -34,8 +34,7 @@ public class MockSortSpecBuilder {
     }
 
     public MockSortSpecBuilder withSortFields(SortField[] sortFields) {
-        Sort sort = Mockito.mock(Sort.class);
-        Mockito.when(sort.getSort()).thenReturn(sortFields);
+        Sort sort = new Sort(sortFields);
         Mockito.when(sortSpec.getSort()).thenReturn(sort);
         return this;
     }

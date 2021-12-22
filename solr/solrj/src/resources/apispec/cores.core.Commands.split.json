@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-split",
+  "documentation": "https://solr.apache.org/guide/coreadmin-api.html#coreadmin-split",
   "description": "Allows splitting an index into two or more new indexes.",
   "type": "object",
   "properties": {

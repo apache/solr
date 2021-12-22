@@ -101,11 +101,6 @@ REM set SOLR_LOG_LEVEL=INFO
 REM Location where Solr should write logs to. Absolute or relative to solr start dir
 REM set SOLR_LOGS_DIR=logs
 
-REM Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
-REM start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
-REM framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
-REM set SOLR_LOG_PRESTART_ROTATION=false
-
 REM Enables jetty request log for all requests
 REM set SOLR_REQUESTLOG_ENABLED=false
 
@@ -123,12 +118,12 @@ REM set SOLR_JETTY_HOST=127.0.0.1
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:
 REM   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-REM set SOLR_IP_WHITELIST=
+REM set SOLR_IP_ALLOWLIST=
 
 REM Block access to solr from specific IP addresses.
 REM Specify a comma-separated list of addresses or networks, for example:
 REM   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-REM set SOLR_IP_BLACKLIST=
+REM set SOLR_IP_DENYLIST=
 
 REM Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 REM to enable https module with custom jetty configuration.
@@ -218,4 +213,8 @@ REM set SOLR_ADMIN_UI_DISABLED=false
 REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
-REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path"
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path
+
+REM Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
+REM then enable the following setting to address CVE-2021-44228
+REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true

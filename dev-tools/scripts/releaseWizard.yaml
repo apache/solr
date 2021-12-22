@@ -64,7 +64,7 @@ templates:
     (( template=vote_logic ))
     .Mail template {% if passed %}successful{% else %}failed{% endif %} vote
     ----
-    To: dev@lucene.apache.org
+    To: dev@solr.apache.org
     Subject: [{% if passed %}RESULT{% else %}FAILED{% endif %}] [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number }}
 
     It's been >72h since the vote was initiated and the result is:
@@ -113,7 +113,7 @@ templates:
 
     Solr {{ release_version }} is available for immediate download at:
 
-      <https://lucene.apache.org/solr/downloads.html>
+      <https://solr.apache.org/downloads.html>
 
     ### Solr {{ release_version }} Release Highlights:
 
@@ -122,11 +122,11 @@ templates:
 
     Please refer to the Upgrade Notes in the Solr Ref Guide for information on upgrading from previous Solr versions:
 
-      <https://lucene.apache.org/solr/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
+      <https://solr.apache.org/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
-      <https://lucene.apache.org/solr/{{ release_version_underscore }}/changes/Changes.html>
+      <https://solr.apache.org/{{ release_version_underscore }}/changes/Changes.html>
 
     Solr {{ release_version }} also includes {% if is_feature_release %}features, optimizations and {% endif %}bugfixes in the corresponding Apache Lucene release:
 
@@ -137,7 +137,7 @@ templates:
 
     .Mail template
     ----
-    To: dev@lucene.apache.org, general@lucene.apache.org, java-user@lucene.apache.org
+    To: dev@solr.apache.org, users@solr.apache.org
     Subject: [ANNOUNCE] Apache Lucene {{ release_version }} released
 
     (( template=announce_lucene_mail_body ))
@@ -171,7 +171,7 @@ templates:
 
     .Mail template
     ----
-    To: dev@lucene.apache.org, general@lucene.apache.org, solr-user@lucene.apache.org
+    To: dev@solr.apache.org, users@solr.apache.org
     Subject: [ANNOUNCE] Apache Solr {{ release_version }} released
 
     (( template=announce_solr_mail_body ))
@@ -548,7 +548,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: New branch and feature freeze for Lucene/Solr {{ release_version }}
 
       NOTICE:
@@ -588,7 +588,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: Bugfix release Lucene/Solr {{ release_version }}
 
       NOTICE:
@@ -799,7 +799,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number }}
 
       Please vote for release candidate {{ rc_number }} for Lucene/Solr {{ release_version }}
@@ -907,8 +907,8 @@ groups:
     - https://www.apache.org/foundation/voting.html
 - !TodoGroup
   id: publish
-  title: Publishing to the ASF Mirrors
-  description: Once the vote has passed, the release may be published to the ASF Mirrors and to Maven Central.
+  title: Publishing to the ASF Distribution Directory
+  description: Once the vote has passed, the release may be published to the ASF Distribution Directory and to Maven Central.
   todos:
   - !Todo
     id: tag_release
@@ -937,7 +937,7 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: false
-      commands_text: This will remove maven artifacts so they do not end up in the mirrors
+      commands_text: This will remove maven artifacts so they do not end up in the Distribution Directory
       commands:
       - !Command
         cmd: svn rm -m "Delete the lucene maven artifacts"  {{ dist_stage_url }}/lucene/maven
@@ -1010,22 +1010,22 @@ groups:
       . Wait and keep clicking refresh until the "Release" button becomes available
       . Click on the "Release" button above the repository list, then enter a description when prompted, e.g. "Lucene/Solr {{ release_version }}".
 
-      Maven central should show the release after a short while, but you need to
-      wait 24 hours to give the Apache mirrors a chance to copy the new release.
+      Maven central should show the release after a short while
     links:
     - https://wiki.apache.org/lucene-java/PublishMavenArtifacts
     - https://repository.apache.org/index.html
   - !Todo
-    id: check_mirroring
-    title: Check state of mirroring so far
-    description: Mark this as complete once a good spread is confirmed
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run this script to check the number and percentage of mirrors (and Maven Central) that have the release
-      commands:
-      - !Command
-        cmd: python3 -u dev-tools/scripts/poll-mirrors.py -version {{ release_version }} -o
-        live: true
+    id: check_distribution_directory
+    depends: publish_maven
+    title: Check that artifacts are available
+    function: check_artifacts_available
+    description: |
+      The task will attempt to fetch https://dlcdn.apache.org/solr/{{ release_version }}/solr-{{ release_version }}-src.tgz.asc
+      to validate ASF repo, and https://repo1.maven.org/maven2/org/apache/solr/solr-core/{{ release_version }}/solr-core-{{ release_version }}.jar.asc
+      to validate Maven repo.
+
+      If the check fails, please re-run the task, until it succeeds.
+
 - !TodoGroup
   id: website
   title: Update the website
@@ -1232,7 +1232,7 @@ groups:
       - stage_website
     description: |
       Push the website changes to 'production' branch. This will build and publish the live site on
-      https://lucene.apache.org
+      https://solr.apache.org
     commands: !Commands
       root_folder: '{{ git_website_folder }}'
       commands:
@@ -1607,36 +1607,36 @@ groups:
     - https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions
     - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
   - !Todo
-    id: stop_mirroring
-    title: Stop mirroring old releases
+    id: stop_promoting_old
+    title: Stop promoting old releases
     description: |
-      Shortly after new releases are first mirrored, they are automatically copied to the archives. 
+      Shortly after new releases are first published, they are automatically copied to the archives.
       Only the latest point release from each active branch should be kept under the Lucene PMC 
       svnpubsub areas `dist/releases/lucene/` and `dist/releases/solr/`. Older releases can be 
       safely deleted, since they are already backed up in the archives.
 
-      Currenlty these versions are in the mirrors:
+      Currenlty these versions exist in the distribution directory:
 
       *{{ mirrored_versions|join(', ') }}*
 
       The commands below will remove old versions automatically. If this suggestion is wrong,
       please do *not* execute the commands automatically, but edit the command and run manually.
-      Versions to be deleted from the mirrors are:
+      Versions to be deleted from the distribution directory are:
 
       *{{ mirrored_versions_to_delete|join(', ') }}*
 
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |
-        Run these commands to delete proposed versions from mirrors.
+        Run these commands to delete proposed versions from distribution directory.
 
         WARNING: Validate that the proposal is correct!
       commands:
       - !Command
         cmd: |
-          svn rm -m "Stop mirroring old Lucene releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/java/{{ ver }}{% endfor %}
+          svn rm -m "Stop publishing old Lucene releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/java/{{ ver }}{% endfor %}
         logfile: svn-rm-lucene.log
       - !Command
         cmd: |
-          svn rm -m "Stop mirroring old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
-        logfile: svn-rm-lucene.log
+          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
+        logfile: svn-rm-solr.log
