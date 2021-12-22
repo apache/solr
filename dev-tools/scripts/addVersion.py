@@ -44,10 +44,9 @@ def update_changes(filename, new_version, init_changes, headers):
   print('done' if changed else 'uptodate')
 
 def add_constant(new_version, deprecate):
-  # TODO: Modify for new SolrVersion class, see SOLR-15845
-  filename = 'lucene/core/src/java/org/apache/lucene/util/Version.java'
+  filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
   print('  adding constant %s...' % new_version.constant, end='', flush=True)
-  constant_prefix = 'public static final Version LUCENE_'
+  constant_prefix = 'public static final Version SOLR_'
   matcher = re.compile(constant_prefix)
   prev_matcher = new_version.make_previous_matcher(prefix=constant_prefix, sep='_')
 
@@ -56,8 +55,8 @@ def add_constant(new_version, deprecate):
     if last.strip() != '@Deprecated':
       spaces = ' ' * (len(last) - len(last.lstrip()) - 1)
       del buffer[-1] # Remove comment closer line
-      if (len(buffer) >= 4 and re.search('for Lucene.\s*$', buffer[-1]) != None):
-        del buffer[-3:] # drop the trailing lines '<p> / Use this to get the latest ... / ... for Lucene.'
+      if (len(buffer) >= 4 and re.search('for Solr.\s*$', buffer[-1]) != None):
+        del buffer[-3:] # drop the trailing lines '<p> / Use this to get the latest ... / ... for Solr.'
       buffer.append(( '{0} * @deprecated ({1}) Use latest\n'
                     + '{0} */\n'
                     + '{0}@Deprecated\n').format(spaces, new_version))
@@ -65,14 +64,14 @@ def add_constant(new_version, deprecate):
   def buffer_constant(buffer, line):
     spaces = ' ' * (len(line) - len(line.lstrip()))
     buffer.append(( '\n{0}/**\n'
-                  + '{0} * Match settings and bugs in Lucene\'s {1} release.\n')
+                  + '{0} * Represents Solr\'s {1} release.\n')
                   .format(spaces, new_version))
     if deprecate:
       buffer.append('%s * @deprecated Use latest\n' % spaces)
     else:
       buffer.append(( '{0} * <p>\n'
                     + '{0} * Use this to get the latest &amp; greatest settings, bug\n'
-                    + '{0} * fixes, etc, for Lucene.\n').format(spaces))
+                    + '{0} * fixes, etc, for Solr.\n').format(spaces))
     buffer.append('%s */\n' % spaces)
     if deprecate:
       buffer.append('%s@Deprecated\n' % spaces)
@@ -119,10 +118,9 @@ def update_build_version(new_version):
   print('done' if changed else 'uptodate')
 
 def update_latest_constant(new_version):
-  #TODO: Modify for new SolrVersion class, see SOLR-15845
-  print('  changing Version.LATEST to %s...' % new_version.constant, end='', flush=True)
-  filename = 'lucene/core/src/java/org/apache/lucene/util/Version.java'
-  matcher = re.compile('public static final Version LATEST')
+  print('  changing SolrVersion.LATEST to %s...' % new_version.constant, end='', flush=True)
+  filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
+  matcher = re.compile('public static final SolrVersion LATEST')
   def edit(buffer, match, line):
     if new_version.constant in line:
       return None
@@ -162,7 +160,12 @@ def update_solrconfig(filename, matcher, new_version):
   changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
 
-def check_solr_version_tests():
+def check_solr_version_class_tests():
+  print('  checking solr version tests...', end='', flush=True)
+  run('./gradlew -p solr/core test --tests TestSolrVersion')
+  print('ok')
+
+def check_lucene_match_version_tests():
   print('  checking solr version tests...', end='', flush=True)
   run('./gradlew -p solr/core test --tests TestLuceneMatchVersion')
   print('ok')
@@ -207,8 +210,7 @@ def main():
 
   latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
   if latest_or_backcompat:
-    # TODO See SOLR-15845
-    #add_constant(newconf.version, not newconf.is_latest_version)
+    add_constant(newconf.version, not newconf.is_latest_version)
     print('\nSolr does not yet have a Version class, see SOLR-15845')
   else:
     print('\nNot adding constant for version %s because it is no longer supported' % newconf.version)
@@ -216,8 +218,7 @@ def main():
   if newconf.is_latest_version:
     print('\nUpdating latest version')
     update_build_version(newconf.version)
-    # TODO See SOLR-15845.
-    #update_latest_constant(newconf.version)
+    update_latest_constant(newconf.version)
     update_example_solrconfigs(newconf.version)
 
   if newconf.version.is_major_release():
@@ -226,7 +227,8 @@ def main():
     print('  - Update IndexFormatTooOldException throw cases')
   elif latest_or_backcompat:
     print('\nTesting changes')
-    check_solr_version_tests()
+    check_solr_version_class_tests()
+    check_lucene_match_version_tests()
 
   print()
 
