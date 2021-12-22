@@ -21,30 +21,29 @@ import java.util.*;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NodeRoles implements MapWriter {
+public class NodeRoles {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String NODE_ROLES_PROP = "solr.node.roles";
 
-  public static final String ON =  "on";
+  /*public static final String ON =  "on";
   public static final String OFF =  "off";
   public static final String ALLOWED =  "allowed";
   public static final String DISALLOWED =  "disallowed";
-  public static final String PREFERRED =  "preferred";
-  public static final Set<String> OVERSEER_MODES = Set.of(ALLOWED, PREFERRED, DISALLOWED);
-  public static final Set<String> ON_OFF = Set.of(ON,OFF);
+  public static final String PREFERRED =  "preferred";*/
 
   public static final String DEFAULT_ROLES_STRING = "data:on,overseer:allowed";
 
   // Map of roles to mode that are applicable for this node.
-  private Map<Role, String> nodeRoles;
+  private Map<Role, Mode> nodeRoles;
 
   public NodeRoles(String rolesString) {
-    Map<Role, String> roles = new EnumMap<>(Role.class);
+    Map<Role, Mode> roles = new EnumMap<>(Role.class);
     if (StringUtils.isEmpty(rolesString)) {
      rolesString = DEFAULT_ROLES_STRING;
     }
@@ -52,10 +51,12 @@ public class NodeRoles implements MapWriter {
     for (String s: rolesList) {
       List<String> roleMode =  StrUtils.splitSmart(s,':');
       Role r = Role.getRole(roleMode.get(0));
-      if (r.supportedModes().contains(roleMode.get(1))) {
-        roles.put(r, roleMode.get(1));
+      Mode m = Mode.valueOf(roleMode.get(1).toUpperCase(Locale.ROOT));
+      if (r.supportedModes().contains(m)) {
+        roles.put(r, m);
       } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role mode: " + roleMode.get(0));
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Unknown role mode '" + roleMode.get(1) + "' for role '" + r + "'");
       }
     }
     for(Role r: Role.values()) {
@@ -66,34 +67,51 @@ public class NodeRoles implements MapWriter {
     nodeRoles = Collections.unmodifiableMap(roles);
   }
 
-  public Map<Role, String> getRoles() {
+  public Map<Role, Mode> getRoles() {
     return nodeRoles;
   }
 
-  public String getRoleMode(Role role) {
+  public Mode getRoleMode(Role role) {
     return nodeRoles.get(role);
   }
 
-  @Override
-  public void writeMap(EntryWriter ew) {
-    nodeRoles.forEach((role, s) -> ew.putNoEx(role.roleName, s));
+  public boolean isOverseerAllowedOrPreferred() {
+    Mode roleMode = nodeRoles.get(Role.OVERSEER);
+    return Mode.ALLOWED.equals(roleMode) || Mode.PREFERRED.equals(roleMode);
   }
 
-  public boolean isOverseerAllowed() {
-    String roleMode = nodeRoles.get(Role.OVERSEER);
-    return ALLOWED.equals(roleMode) || PREFERRED.equals(roleMode);
-  }
+  public enum Mode {
+    ON, OFF, ALLOWED, PREFERRED, DISALLOWED;
+
+    @Override
+    /**
+     * Need this lowercasing so that the ZK references use the lowercase form, which is
+     * also the form documented in user facing documentation.
+     */
+    public String toString() {
+      return name().toLowerCase(Locale.ROOT);
+    }
+  };
 
   public enum Role {
-    DATA("data"),
-    OVERSEER("overseer") {
+    DATA("data") {
       @Override
-      public Set<String> supportedModes() {
-        return OVERSEER_MODES;
+      public Set<Mode> supportedModes() {
+        return Set.of(Mode.ON, Mode.OFF);
       }
       @Override
-      public String defaultIfAbsent() {
-        return DISALLOWED;
+      public Mode defaultIfAbsent() {
+        return Mode.OFF;
+      }
+    },
+    OVERSEER("overseer") {
+      @Override
+      public Set<Mode> supportedModes() {
+        return Set.of(Mode.ALLOWED, Mode.PREFERRED, Mode.DISALLOWED);
+      }
+      @Override
+      public Mode defaultIfAbsent() {
+        return Mode.DISALLOWED;
       }
     };
 
@@ -104,26 +122,33 @@ public class NodeRoles implements MapWriter {
     }
 
     public static Role getRole(String value) {
-      for (Role role: Role.values()) {
-        if (value.equals(role.roleName)) return role;
+      try {
+        Role role = Role.valueOf(value.toUpperCase(Locale.ROOT));
+        return role;
+      } catch (IllegalArgumentException ex) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role: " + value);
       }
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role: " + value);
     }
 
-    public Set<String> supportedModes() {
-      return ON_OFF;
-    }
+    public abstract Set<Mode> supportedModes();
 
     /**
      * Default mode for a role in nodes where this role is not specified.
      */
-    public String defaultIfAbsent() {
-      return OFF;
-    }
+    public abstract Mode defaultIfAbsent();
 
     @Override
     public String toString() {
-      return super.toString().toLowerCase(Locale.ROOT);
+      return roleName;
     }
   }
+
+  public static String getZNodeForRole(Role role) {
+    return ZkStateReader.NODE_ROLES + "/" + role.roleName;
+  }
+
+  public static String getZNodeForRoleMode(Role role, Mode mode) {
+    return ZkStateReader.NODE_ROLES + "/" + role.roleName + "/" + mode;
+  }
+
 }

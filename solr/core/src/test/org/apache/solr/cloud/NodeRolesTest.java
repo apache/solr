@@ -52,7 +52,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   public void testRoleIntegration() throws Exception {
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
-    JettySolrRunner j1 = null, j2 = null;
+    JettySolrRunner j1, j2;
     V2Response rsp = new V2Request.Builder("/cluster/node-roles/supported").GET().build().process(cluster.getSolrClient());
     Map<String, Object> l = (Map<String, Object>) rsp._get("supported-roles", Collections.emptyMap());
     assertTrue(l.containsKey("data"));

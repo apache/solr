@@ -45,7 +45,7 @@ Examples: `-Dsolr.node.roles=data:on,overseer:allowed` or `-Dsolr.node.roles=ove
 
 [TIP]
 ====
-If a node has been started with no `solr.node.roles` parameter, it will be assumed to have the data role turned on and overseer role allowed on it. If you've never used roles before, you likely won't need to change anything in your startup parameters to accomodate the functionality associated with these roles.
+If a node has been started with no `solr.node.roles` parameter, it will be assumed to have the data role turned on and overseer role allowed on it. If you've never used roles before, you likely won't need to change anything in your startup parameters to accommodate the functionality associated with these roles.
 ====
 
 .Supported roles
