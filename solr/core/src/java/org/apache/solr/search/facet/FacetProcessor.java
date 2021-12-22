@@ -606,10 +606,23 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         //  be converting the specified values to something that can be efficiently checked for equality against
         //  values during bulk collection.
         final List<SimpleOrderedMap<?>> buckets = (List<SimpleOrderedMap<?>>) ((SimpleOrderedMap<Object>) result).get("buckets");
+
+        // TODO: circle back and figure out what's going on here. We should _not_ have to apply this `toNativeType`
+        //  on the vals returned from the response -- e.g.: why are we getting `Long` vals returned for `StrField` type?
+        //  Reproduce:
+        //  gradlew --console=plain :solr:core:test --tests "org.apache.solr.search.facet.TestCloudJSONFacetSKG.testRandom"
+        //            -Ptests.jvms=4 -Ptests.jvmargs=-XX:TieredStopAtLevel=1 -Ptests.seed=8B4038889D0A1CB1
+        //            -Ptests.file.encoding=US-ASCII
+        Object val = null;
+        final Function<Object, Object> toNativeType = toNativeType();
         for (SimpleOrderedMap<?> bucket : buckets) {
           // prune any enumerated values that are already represented as a result of bulk collection
-          augment.entries.remove(bucket.get("val"));
+          augment.entries.remove(val = toNativeType.apply(bucket.get("val")));
         }
+        // this is just a sanity check to detect blatant incompatibility between types as specified for refinement
+        // request "augmentation", and types as returned from the initial "bulk collection" request. (we only check
+        // one value here -- the last one)
+        assert validateCompatibleTypes(val, augment);
         if (!augment.entries.isEmpty()) {
           // specifically collect any values not already represented.
           subContext.facetInfo = augment.getFacetInfo();
@@ -622,6 +635,14 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     }
   }
 
+  private static boolean validateCompatibleTypes(Object fromResponse, AugmentEntries augment) {
+    if (fromResponse != null && !augment.entries.isEmpty()) {
+      final Class<?> fromResponseClass = fromResponse.getClass();
+      final Class<?> fromRequestClass = augment.entries.keySet().iterator().next().getClass();
+      assert fromResponseClass == fromRequestClass : "request "+fromRequestClass+" incompatible with response "+fromResponseClass;
+    }
+    return true;
+  }
   @SuppressWarnings("unused")
   static DocSet getFieldMissing(SolrIndexSearcher searcher, DocSet docs, String fieldName) throws IOException {
     SchemaField sf = searcher.getSchema().getField(fieldName);

@@ -69,6 +69,14 @@ public class StrField extends PrimitiveFieldType {
     return Collections.singletonList(fval);
   }
 
+  @Override
+  public Object toNativeType(Object val) {
+    if (val instanceof Number) {
+      return val.toString();
+    }
+    return super.toNativeType(val);
+  }
+
   public static BytesRef getBytesRef(Object value) {
     if (value instanceof ByteArrayUtf8CharSequence) {
       ByteArrayUtf8CharSequence utf8 = (ByteArrayUtf8CharSequence) value;
