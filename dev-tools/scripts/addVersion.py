@@ -43,66 +43,19 @@ def update_changes(filename, new_version, init_changes, headers):
   changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
 
-def add_constant(new_version, deprecate):
+def update_solrversion_class(new_version):
   filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
-  print('  adding constant %s...' % new_version.constant, end='', flush=True)
-  constant_prefix = 'public static final Version SOLR_'
+  print('  changing version to %s...' % new_version.dot, end='', flush=True)
+  constant_prefix = 'private static final String LATEST_STRING = "(.*?)"'
   matcher = re.compile(constant_prefix)
-  prev_matcher = new_version.make_previous_matcher(prefix=constant_prefix, sep='_')
 
-  def ensure_deprecated(buffer):
-    last = buffer[-1]
-    if last.strip() != '@Deprecated':
-      spaces = ' ' * (len(last) - len(last.lstrip()) - 1)
-      del buffer[-1] # Remove comment closer line
-      if (len(buffer) >= 4 and re.search('for Solr.\s*$', buffer[-1]) != None):
-        del buffer[-3:] # drop the trailing lines '<p> / Use this to get the latest ... / ... for Solr.'
-      buffer.append(( '{0} * @deprecated ({1}) Use latest\n'
-                    + '{0} */\n'
-                    + '{0}@Deprecated\n').format(spaces, new_version))
-
-  def buffer_constant(buffer, line):
-    spaces = ' ' * (len(line) - len(line.lstrip()))
-    buffer.append(( '\n{0}/**\n'
-                  + '{0} * Represents Solr\'s {1} release.\n')
-                  .format(spaces, new_version))
-    if deprecate:
-      buffer.append('%s * @deprecated Use latest\n' % spaces)
-    else:
-      buffer.append(( '{0} * <p>\n'
-                    + '{0} * Use this to get the latest &amp; greatest settings, bug\n'
-                    + '{0} * fixes, etc, for Solr.\n').format(spaces))
-    buffer.append('%s */\n' % spaces)
-    if deprecate:
-      buffer.append('%s@Deprecated\n' % spaces)
-    buffer.append('{0}public static final Version {1} = new Version({2}, {3}, {4});\n'.format
-                  (spaces, new_version.constant, new_version.major, new_version.minor, new_version.bugfix))
+  def edit(buffer, match, line):
+    if new_version.dot in line:
+      return None
+    buffer.append(line.replace(match.group(1), new_version.dot))
+    return True
   
-  class Edit(object):
-    found = -1
-    def __call__(self, buffer, match, line):
-      if new_version.constant in line:
-        return None # constant already exists
-      # outer match is just to find lines declaring version constants
-      match = prev_matcher.search(line)
-      if match is not None:
-        ensure_deprecated(buffer) # old version should be deprecated
-        self.found = len(buffer) + 1 # extra 1 for buffering current line below
-      elif self.found != -1:
-        # we didn't match, but we previously had a match, so insert new version here
-        # first find where to insert (first empty line before current constant)
-        c = []
-        buffer_constant(c, line)
-        tmp = buffer[self.found:]
-        buffer[self.found:] = c
-        buffer.extend(tmp)
-        buffer.append(line)
-        return True
-
-      buffer.append(line)
-      return False
-  
-  changed = update_file(filename, matcher, Edit())
+  changed = update_file(filename, matcher, edit)
   print('done' if changed else 'uptodate')
 
 def update_build_version(new_version):
@@ -210,7 +163,7 @@ def main():
 
   latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
   if latest_or_backcompat:
-    add_constant(newconf.version, not newconf.is_latest_version)
+    update_solrversion_class(newconf.version)
     print('\nSolr does not yet have a Version class, see SOLR-15845')
   else:
     print('\nNot adding constant for version %s because it is no longer supported' % newconf.version)
