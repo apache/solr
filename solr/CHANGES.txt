@@ -449,6 +449,14 @@ Bug Fixes
 
 * SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
 
+* SOLR-15871: Update Log4J to 2.17 (weidongkl)
+
+==================  8.11.2 ==================
+
+Bug Fixes
+---------------------
+* SOLR-15871: Update Log4J to 2.17 (weidongkl)
+
 ==================  8.11.1 ==================
 
 Bug Fixes
@@ -488,7 +496,7 @@ Bug Fixes
 
 * SOLR-8319: Fix NPE in pivot facets, add non-Analyzed query method in FieldType. (Houston Putman, Isabelle Giguere)
 
-* SOLR-15843: Update Log4J to 2.17 (Mike Drob, janhoy, weidongkl)
+* SOLR-15843: Update Log4J to 2.16 (Mike Drob, janhoy)
 
 * SOLR-15324: Upgrade jaegertracing to 1.6.0 and libthrift to 0.14.1 (wcmrnd1, janhoy)
 
