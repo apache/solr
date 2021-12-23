@@ -216,12 +216,12 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
       // use full firstPassTopDocs (possibly higher than topN)
       for (int topN = 1; topN <= 5; topN++) {
-        hits = searcher.search(bqBuilder.build(), 10);
-        log.info("rerank {} documents, return {} documents", hits.scoreDocs.length, topN);
+        final TopDocs allHits = searcher.search(bqBuilder.build(), 10);
+        log.info("rerank {} documents, return {} documents", allHits.scoreDocs.length, topN);
 
-        TopDocs rescoredHits = rescorer.rescore(searcher, hits, topN);
+        TopDocs rescoredHits = rescorer.rescore(searcher, allHits, topN);
         assertEquals(topN, rescoredHits.scoreDocs.length);
-        for (int i = hits.scoreDocs.length-1, j = 0; i >= 0 && j < topN; i--, j++) {
+        for (int i = allHits.scoreDocs.length-1, j = 0; i >= 0 && j < topN; i--, j++) {
           if (log.isInfoEnabled()) {
             log.info("doc {} in pos {}", searcher.doc(rescoredHits.scoreDocs[j].doc)
                 .get("id"), j);
