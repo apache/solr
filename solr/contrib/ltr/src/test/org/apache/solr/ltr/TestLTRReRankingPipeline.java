@@ -184,12 +184,11 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       final LTRRescorer rescorer = new LTRRescorer(scoringQuery);
 
       // rerank @ 0 should not change the order
-      hits = rescorer.rescore(searcher, hits, 0);
-      assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-      assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
-      assertEquals("2", searcher.doc(hits.scoreDocs[2].doc).get("id"));
-      assertEquals("3", searcher.doc(hits.scoreDocs[3].doc).get("id"));
-      assertEquals("4", searcher.doc(hits.scoreDocs[4].doc).get("id"));
+      {
+        final TopDocs noHits = new TopDocs(hits.totalHits, new ScoreDoc[0]);
+        final TopDocs noHitsRescored = rescorer.rescore(searcher, noHits);
+        assertEquals(0, noHitsRescored.scoreDocs.length);
+      }
 
       // test rerank with different topN cuts
 
@@ -216,22 +215,14 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       }
 
       // use full firstPassTopDocs (possibly higher than topN)
-      for (int topN = 1; topN <= 5; topN++) {
+      for (int topN = 0; topN <= 5; topN++) {
         final TopDocs allHits = searcher.search(bqBuilder.build(), 10);
         log.info("rerank {} documents, return {} documents", allHits.scoreDocs.length, topN);
 
-        TopDocs rescoredHits = rescorer.rescore(searcher, allHits, topN);
-        assertEquals(topN, rescoredHits.scoreDocs.length);
-        for (int i = allHits.scoreDocs.length-1, j = 0; i >= 0 && j < topN; i--, j++) {
-          if (log.isInfoEnabled()) {
-            log.info("doc {} in pos {}", searcher.doc(rescoredHits.scoreDocs[j].doc)
-                .get("id"), j);
-          }
-          assertEquals(i,
-                  Integer.parseInt(searcher.doc(rescoredHits.scoreDocs[j].doc).get("id")));
-          assertEquals((i + 1) * features.size()*featureWeight, rescoredHits.scoreDocs[j].score, 0.00001);
-
-        }
+        final int topNN = topN;
+        expectThrows(UnsupportedOperationException.class, () -> {
+          rescorer.rescore(searcher, allHits, topNN);
+        });
       }
     }
   }

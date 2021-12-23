@@ -42,11 +42,9 @@ public abstract class ReRankRescorer extends Rescorer {
 
   /**
    * Throws an {@link UnsupportedOperationException} exception.
-   * @deprecated Use {@link #rescore(IndexSearcher, TopDocs)} instead.
-   * From Solr 9.1.0 onwards this method will be <code>final</code>.
+   * Use {@link #rescore(IndexSearcher, TopDocs)} instead.
    */
-  @Deprecated
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+  final public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
       throws IOException
   {
     throw new UnsupportedOperationException();

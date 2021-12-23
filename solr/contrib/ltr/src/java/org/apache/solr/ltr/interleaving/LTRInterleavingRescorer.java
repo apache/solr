@@ -63,27 +63,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
    */
   @Override
   public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs) throws IOException {
-    return rescore(searcher, firstPassTopDocs, firstPassTopDocs.scoreDocs.length);
-  }
-
-  /**
-   * rescores the documents:
-   *
-   * @param searcher
-   *          current IndexSearcher
-   * @param firstPassTopDocs
-   *          documents to rerank;
-   * @param topN
-   *          documents to return;
-
-   * @deprecated Use {@link #rescore(IndexSearcher, TopDocs)} instead.
-   * From Solr 9.1.0 onwards this method will be removed.
-   */
-  @Deprecated
-  @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
-      int topN) throws IOException {
-    if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
+    if (firstPassTopDocs.scoreDocs.length == 0) {
       return firstPassTopDocs;
     }
 
@@ -92,9 +72,8 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       firstPassResults = new ScoreDoc[firstPassTopDocs.scoreDocs.length];
       System.arraycopy(firstPassTopDocs.scoreDocs, 0, firstPassResults, 0, firstPassTopDocs.scoreDocs.length);
     }
-    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
 
-    ScoreDoc[][] reRankedPerModel = rerank(searcher,topN,getFirstPassDocsRanked(firstPassTopDocs));
+    ScoreDoc[][] reRankedPerModel = rerank(searcher,getFirstPassDocsRanked(firstPassTopDocs));
     if (originalRankingIndex != null) {
       reRankedPerModel[originalRankingIndex] = firstPassResults;
     }
@@ -108,8 +87,8 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     return new TopDocs(firstPassTopDocs.totalHits, interleavedResults);
   }
 
-  private ScoreDoc[][] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults) throws IOException {
-    ScoreDoc[][] reRankedPerModel = new ScoreDoc[rerankingQueries.length][topN];
+  private ScoreDoc[][] rerank(IndexSearcher searcher, ScoreDoc[] firstPassResults) throws IOException {
+    ScoreDoc[][] reRankedPerModel = new ScoreDoc[rerankingQueries.length][firstPassResults.length];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     LTRScoringQuery.ModelWeight[] modelWeights = new LTRScoringQuery.ModelWeight[rerankingQueries.length];
     for (int i = 0; i < rerankingQueries.length; i++) {
@@ -118,7 +97,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
             .createWeight(searcher.rewrite(rerankingQueries[i]), ScoreMode.COMPLETE, 1);
       }
     }
-    scoreFeatures(searcher, topN, modelWeights, firstPassResults, leaves, reRankedPerModel);
+    scoreFeatures(searcher, modelWeights, firstPassResults, leaves, reRankedPerModel);
 
     for (int i = 0; i < rerankingQueries.length; i++) {
       if (originalRankingIndex == null || originalRankingIndex != i) {
@@ -129,8 +108,8 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     return reRankedPerModel;
   }
 
-  public void scoreFeatures(IndexSearcher indexSearcher,
-                            int topN, LTRScoringQuery.ModelWeight[] modelWeights, ScoreDoc[] hits, List<LeafReaderContext> leaves,
+  private void scoreFeatures(IndexSearcher indexSearcher,
+                            LTRScoringQuery.ModelWeight[] modelWeights, ScoreDoc[] hits, List<LeafReaderContext> leaves,
                             ScoreDoc[][] rerankedPerModel) throws IOException {
 
     int readerUpto = -1;
@@ -160,9 +139,8 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       for (int i = 0; i < rerankingQueries.length; i++) {
         if (modelWeights[i] != null) {
           final ScoreDoc hit_i = new ScoreDoc(hit.doc, hit.score, hit.shardIndex);
-          if (scoreSingleHit(topN, docBase, hitUpto, hit_i, docID, scorers[i], rerankedPerModel[i])) {
-            logSingleHit(indexSearcher, modelWeights[i], hit_i.doc, rerankingQueries[i]);
-          }
+          rerankedPerModel[i][hitUpto] = scoreSingleHit(docBase, hit_i, docID, scorers[i]);
+          logSingleHit(indexSearcher, modelWeights[i], hit_i.doc, rerankingQueries[i]);
         }
       }
       hitUpto++;
