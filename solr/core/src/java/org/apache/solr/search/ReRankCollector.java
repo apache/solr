@@ -112,8 +112,12 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       mainDocs.scoreDocs = reRankScoreDocs;
 
-      TopDocs rescoredDocs = reRankQueryRescorer
-          .rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+      final TopDocs rescoredDocs;
+      if (reRankQueryRescorer instanceof ReRankRescorer) {
+        rescoredDocs = ((ReRankRescorer) reRankQueryRescorer).rescore(searcher, mainDocs);
+      } else {
+        rescoredDocs = reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+      }
 
       //Lower howMany to return if we've collected fewer documents.
       howMany = Math.min(howMany, mainScoreDocs.length);

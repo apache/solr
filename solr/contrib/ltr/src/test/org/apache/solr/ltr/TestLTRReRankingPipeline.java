@@ -132,7 +132,8 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       LTRScoringQuery ltrScoringQuery = new LTRScoringQuery(ltrScoringModel);
       ltrScoringQuery.setRequest(solrQueryRequest);
       final LTRRescorer rescorer = new LTRRescorer(ltrScoringQuery);
-      hits = rescorer.rescore(searcher, hits, 2);
+      assertEquals(2, hits.scoreDocs.length);
+      hits = rescorer.rescore(searcher, hits);
 
       // rerank using the field finalScore
       assertEquals("1", searcher.doc(hits.scoreDocs[0].doc).get("id"));
@@ -200,7 +201,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
         final ScoreDoc[] slice = new ScoreDoc[topN];
         System.arraycopy(hits.scoreDocs, 0, slice, 0, topN);
         hits = new TopDocs(hits.totalHits, slice);
-        hits = rescorer.rescore(searcher, hits, topN);
+        hits = rescorer.rescore(searcher, hits);
         assertEquals(topN, hits.scoreDocs.length);
         for (int i = topN - 1, j = 0; i >= 0; i--, j++) {
           if (log.isInfoEnabled()) {

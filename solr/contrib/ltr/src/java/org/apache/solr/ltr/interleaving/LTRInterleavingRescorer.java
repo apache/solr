@@ -54,6 +54,19 @@ public class LTRInterleavingRescorer extends LTRRescorer {
   }
 
   /**
+   * rescores all the documents:
+   *
+   * @param searcher
+   *          current IndexSearcher
+   * @param firstPassTopDocs
+   *          documents to rerank;
+   */
+  @Override
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs) throws IOException {
+    return rescore(searcher, firstPassTopDocs, firstPassTopDocs.scoreDocs.length);
+  }
+
+  /**
    * rescores the documents:
    *
    * @param searcher
@@ -62,7 +75,11 @@ public class LTRInterleavingRescorer extends LTRRescorer {
    *          documents to rerank;
    * @param topN
    *          documents to return;
+
+   * @deprecated Use {@link #rescore(IndexSearcher, TopDocs)} instead.
+   * From Solr 9.1.0 onwards this method will be removed.
    */
+  @Deprecated
   @Override
   public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
       int topN) throws IOException {

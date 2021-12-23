@@ -25,13 +25,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
+import org.apache.solr.search.ReRankRescorer;
 import org.apache.solr.search.SolrIndexSearcher;
 
 
@@ -41,7 +41,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * new score to each document. The top documents will be resorted based on the
  * new score.
  * */
-public class LTRRescorer extends Rescorer {
+public class LTRRescorer extends ReRankRescorer {
 
   final private LTRScoringQuery scoringQuery;
 
@@ -110,6 +110,19 @@ public class LTRRescorer extends Rescorer {
   }
 
   /**
+   * rescores all the documents:
+   *
+   * @param searcher
+   *          current IndexSearcher
+   * @param firstPassTopDocs
+   *          documents to rerank;
+   */
+  @Override
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs) throws IOException {
+    return rescore(searcher, firstPassTopDocs, firstPassTopDocs.scoreDocs.length);
+  }
+
+  /**
    * rescores the documents:
    *
    * @param searcher
@@ -118,7 +131,11 @@ public class LTRRescorer extends Rescorer {
    *          documents to rerank;
    * @param topN
    *          documents to return;
+
+   * @deprecated Use {@link #rescore(IndexSearcher, TopDocs)} instead.
+   * From Solr 9.1.0 onwards this method will be removed.
    */
+  @Deprecated
   @Override
   public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
       int topN) throws IOException {
