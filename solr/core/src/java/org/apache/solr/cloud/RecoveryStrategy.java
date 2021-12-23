@@ -333,6 +333,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   final private void doReplicateOnlyRecovery(SolrCore core) throws InterruptedException {
+    final RTimer timer = new RTimer();
     boolean successfulRecovery = false;
 
     // if (core.getUpdateHandler().getUpdateLog() != null) {
@@ -422,7 +423,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
     }
     // We skip core.seedVersionBuckets(); We don't have a transaction log
-    log.info("Finished recovery process, successful=[{}]", successfulRecovery);
+    if (log.isInfoEnabled()) {
+      log.info("Finished recovery process, successful=[{}] msTimeTaken={}", successfulRecovery, timer.getTime());
+    }
+
   }
 
   /**
@@ -480,6 +484,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
   public final void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
+    final RTimer timer = new RTimer();
     boolean successfulRecovery = false;
 
     UpdateLog ulog;
@@ -728,7 +733,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
       core.seedVersionBuckets();
     }
 
-    log.info("Finished recovery process, successful=[{}]", successfulRecovery);
+    if (log.isInfoEnabled()) {
+      log.info("Finished recovery process, successful=[{}] msTimeTaken={}", successfulRecovery, timer.getTime());
+    }
   }
 
   /**
