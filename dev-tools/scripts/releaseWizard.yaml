@@ -1098,7 +1098,7 @@ groups:
       commands:
         - !Command
           cmd: svn -m "Add Solr Ref Guide {{ release_version }}" import {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site  https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }}
-          logfile: add-docs-solr.log
+          logfile: svn-upload-ref-guide.log
           comment: Upload Solr Ref Guide
   - !Todo
     id: upload_final_ref_guide_changes
@@ -1118,11 +1118,11 @@ groups:
           cmd: svn co https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }} "{{ ref_guide_svn_folder }}"
           logfile: ref-guide-svn-co.log
           comment: Checkout the existing Solr Ref Guide for version {{ ref_guide_svn_folder }}
-          root_folder: '{{ git_checkout_folder }}'
+          cwd: '{{ git_checkout_folder }}'
         - !Command
           cmd: cp -r {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
           comment: Copy and overwrite new Solr Ref Guide
-          root_folder: '{{ git_checkout_folder }}'
+          cwd: '{{ git_checkout_folder }}'
         - !Command
           cmd: svn status
           comment: Check that the changes in the ref-guide look good for this bugfix version
