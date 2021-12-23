@@ -122,6 +122,7 @@ allprojects { prj ->
             '-Xep:TypeParameterUnusedInFormals:OFF',
             '-Xep:UndefinedEquals:OFF',
             '-Xep:UnescapedEntity:OFF',
+            '-Xep:UnicodeEscape:OFF',
             '-Xep:UnnecessaryParentheses:OFF',
             '-Xep:UnsynchronizedOverridesSynchronized:OFF',
             '-Xep:UnusedMethod:OFF',
