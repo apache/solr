@@ -112,6 +112,10 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     return reRankedPerModel;
   }
 
+  /**
+   * @deprecated From Solr 9.1.0 onwards this method will become private.
+   */
+  @Deprecated
   public void scoreFeatures(IndexSearcher indexSearcher,
                             int topN, LTRScoringQuery.ModelWeight[] modelWeights, ScoreDoc[] hits, List<LeafReaderContext> leaves,
                             ScoreDoc[][] rerankedPerModel) throws IOException {

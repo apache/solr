@@ -153,6 +153,10 @@ public class LTRRescorer extends Rescorer {
     return hits;
   }
 
+  /**
+   * @deprecated From Solr 9.1.0 onwards this method will become private.
+   */
+  @Deprecated
   public void scoreFeatures(IndexSearcher indexSearcher,
                             int topN, LTRScoringQuery.ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
                             ScoreDoc[] reranked) throws IOException {
