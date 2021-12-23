@@ -10,6 +10,7 @@
     block-join-query-parser, \
     join-query-parser, \
     spatial-search, \
+    neural-search, \
     other-parsers, \
     sql-query, \
     query-screen, \
