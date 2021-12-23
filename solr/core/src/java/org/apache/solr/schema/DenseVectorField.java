@@ -127,21 +127,32 @@ public class DenseVectorField extends FieldType {
      * @return a float array
      */
     private float[] parseVector(String value) {
+        if (!value.startsWith("[") || !value.endsWith("]")) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format." +
+                    " The expected format is:'[f1,f2..f3]' where each element f is a float");
+        }
+        
         String[] elements = value.substring(1, value.length() - 1).split(",");
         if (elements.length != dimension) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "wrong vector dimension. The vector value used in the query has size "
-                    + elements.length + "while it is expected a vector with size " + dimension);
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector dimension." +
+                    " The vector value used in the query has size "
+                    + elements.length + " while it is expected a vector with size " + dimension);
         }
         float[] vector = new float[dimension];
         for (int i = 0; i < dimension; i++) {
-            vector[i] = Float.parseFloat(elements[i]);
+            try {
+                vector[i] = Float.parseFloat(elements[i]);
+            } catch (NumberFormatException e) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector element: '" + elements[i] +
+                        "'. The expected format is:'[f1,f2..f3]' where each element f is a float");
+            }
         }
         return vector;
     }
 
     public Query getKnnVectorQuery(SchemaField field, String valueToSearch, int topK) {
-        float[] vector = parseVector(valueToSearch);
-        return new KnnVectorQuery(field.getName(), vector, topK);
+        float[] vectorToSearch = parseVector(valueToSearch);
+        return new KnnVectorQuery(field.getName(), vectorToSearch, topK);
     }
 
     /**

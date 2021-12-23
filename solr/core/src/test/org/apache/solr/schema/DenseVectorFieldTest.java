@@ -10,11 +10,6 @@ import static org.hamcrest.core.Is.is;
 
 public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     
-    public void cleanUp() throws Exception {
-        clearIndex();
-        assertU(commit());
-    }
-    
     @Test
     public void fieldTypeDefinition_badVectorDimension_shouldThrowException() throws Exception {
         assertConfigs("solrconfig-basic.xml", "bad-schema-densevector-dimension.xml",
@@ -75,7 +70,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertNotNull(vector);
 
             DenseVectorField type = (DenseVectorField) vector.getType();
-            MatcherAssert.assertThat(type.similarityFunction, is(VectorSimilarityFunction.DOT_PRODUCT));
+            MatcherAssert.assertThat(type.similarityFunction, is(VectorSimilarityFunction.COSINE));
             MatcherAssert.assertThat(type.dimension, is(4));
 
             assertTrue(vector.indexed());
@@ -86,12 +81,13 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
 
     @Test
-    public void indexing_wrongVectorFormat_shouldThrowException() throws Exception {
+    public void indexing_incorrectVectorFormat_shouldThrowException() throws Exception {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
             assertFailedU(adoc("id", "0", "vector", "[1.0 ,2,3ss,4]"));
             assertFailedU(adoc("id", "0", "vector", "1,2,3,4]"));
+            assertFailedU(adoc("id", "0", "vector", "2.0, 4.4, 3.5, 6.4"));
             assertFailedU(adoc("id", "0", "vector", "[1,2,3,4"));
             assertFailedU(adoc("id", "0", "vector", "[1,,2,3,4]"));
         } finally {

@@ -20,10 +20,11 @@
 
 <schema name="schema-densevector" version="1.0">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>  
-  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="dot_product"/>
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
   
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+  <field name="vector2" type="knn_vector" indexed="true" stored="true"/>
   
   <uniqueKey>id</uniqueKey>
 </schema>
