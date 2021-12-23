@@ -126,7 +126,6 @@ allprojects { prj ->
             '-Xep:UnnecessaryParentheses:OFF',
             '-Xep:UnsynchronizedOverridesSynchronized:OFF',
             '-Xep:UnusedMethod:OFF',
-            '-Xep:UnusedNestedClass:OFF',
             '-Xep:UnusedVariable:OFF',
             '-Xep:WaitNotInLoop:OFF',
         ]
