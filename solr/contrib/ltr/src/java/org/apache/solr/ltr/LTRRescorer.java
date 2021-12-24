@@ -110,6 +110,34 @@ public class LTRRescorer extends ReRankRescorer {
   }
 
   /**
+   * rescores the documents:
+   *
+   * @param searcher
+   *          current IndexSearcher
+   * @param firstPassTopDocs
+   *          documents to rerank;
+   * @param topN
+   *          documents to return;
+
+   * @deprecated Use {@link #rescore(IndexSearcher, TopDocs)} instead.
+   * From Solr 9.1.0 onwards this method will be removed.
+   */
+  @Deprecated
+  @Override
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
+      int topN) throws IOException {
+    if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
+      return firstPassTopDocs;
+    }
+    final ScoreDoc[] firstPassResults = getFirstPassDocsRanked(firstPassTopDocs);
+    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
+
+    final ScoreDoc[] reranked = rerank(searcher, topN, firstPassResults);
+
+    return new TopDocs(firstPassTopDocs.totalHits, reranked);
+  }
+
+  /**
    * rescores all the documents:
    *
    * @param searcher
@@ -127,6 +155,23 @@ public class LTRRescorer extends ReRankRescorer {
     final ScoreDoc[] reranked = rerank(searcher, firstPassResults);
 
     return new TopDocs(firstPassTopDocs.totalHits, reranked);
+  }
+
+  /**
+   * @deprecated Use {@link #rerank(IndexSearcher, ScoreDoc[])} instead.
+   * From Solr 9.1.0 onwards this method will be removed.
+   */
+  @Deprecated
+  private ScoreDoc[] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults) throws IOException {
+    final ScoreDoc[] reranked = new ScoreDoc[topN];
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+    final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher
+        .createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
+
+    scoreFeatures(searcher,topN, modelWeight, firstPassResults, leaves, reranked);
+    // Must sort all documents that we reranked, and then select the top
+    Arrays.sort(reranked, scoreComparator);
+    return reranked;
   }
 
   private ScoreDoc[] rerank(IndexSearcher searcher, ScoreDoc[] firstPassResults) throws IOException {
@@ -147,6 +192,42 @@ public class LTRRescorer extends ReRankRescorer {
 
     assert firstPassTopDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
     return hits;
+  }
+
+  /**
+   * @deprecated From Solr 9.1.0 onwards this method will be removed.
+   */
+  @Deprecated
+  public void scoreFeatures(IndexSearcher indexSearcher,
+                            int topN, LTRScoringQuery.ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
+                            ScoreDoc[] reranked) throws IOException {
+
+    int readerUpto = -1;
+    int endDoc = 0;
+    int docBase = 0;
+
+    LTRScoringQuery.ModelWeight.ModelScorer scorer = null;
+    int hitUpto = 0;
+
+    while (hitUpto < hits.length) {
+      final ScoreDoc hit = hits[hitUpto];
+      final int docID = hit.doc;
+      LeafReaderContext readerContext = null;
+      while (docID >= endDoc) {
+        readerUpto++;
+        readerContext = leaves.get(readerUpto);
+        endDoc = readerContext.docBase + readerContext.reader().maxDoc();
+      }
+      // We advanced to another segment
+      if (readerContext != null) {
+        docBase = readerContext.docBase;
+        scorer = modelWeight.scorer(readerContext);
+      }
+      if (scoreSingleHit(topN, docBase, hitUpto, hit, docID, scorer, reranked)) {
+        logSingleHit(indexSearcher, modelWeight, hit.doc, scoringQuery);
+      }
+      hitUpto++;
+    }
   }
 
   private void scoreFeatures(IndexSearcher indexSearcher,
@@ -191,32 +272,10 @@ public class LTRRescorer extends ReRankRescorer {
   }
 
   /**
-   * Scores a single document and returns it.
-   */
-  protected static ScoreDoc scoreSingleHit(int docBase, ScoreDoc hit, int docID, LTRScoringQuery.ModelWeight.ModelScorer scorer) throws IOException {
-    // Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to
-    // call score
-    // even if no feature scorers match, since a model might use that info to
-    // return a
-    // non-zero score. Same applies for the case of advancing a LTRScoringQuery.ModelWeight.ModelScorer
-    // past the target
-    // doc since the model algorithm still needs to compute a potentially
-    // non-zero score from blank features.
-    assert (scorer != null);
-    final int targetDoc = docID - docBase;
-    scorer.docID();
-    scorer.iterator().advance(targetDoc);
-
-    scorer.getDocInfo().setOriginalDocScore(hit.score);
-    hit.score = scorer.score();
-    return hit;
-  }
-
-  /**
    * Scores a single document and returns true if the document's feature info should be logged via the
    * {@link #logSingleHit(IndexSearcher, org.apache.solr.ltr.LTRScoringQuery.ModelWeight, int, LTRScoringQuery)}
    * method. Feature info logging is only necessary for the topN documents.
-   * @deprecated From Solr 9.2.0 onwards this method will be removed.
+   * @deprecated From Solr 9.1.0 onwards this method will be removed.
    */
   @Deprecated
   protected static boolean scoreSingleHit(int topN, int docBase, int hitUpto, ScoreDoc hit, int docID, LTRScoringQuery.ModelWeight.ModelScorer scorer, ScoreDoc[] reranked) throws IOException {
@@ -259,6 +318,28 @@ public class LTRRescorer extends ReRankRescorer {
       }
     }
     return logHit;
+  }
+
+  /**
+   * Scores a single document and returns it.
+   */
+  protected static ScoreDoc scoreSingleHit(int docBase, ScoreDoc hit, int docID, LTRScoringQuery.ModelWeight.ModelScorer scorer) throws IOException {
+    // Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to
+    // call score
+    // even if no feature scorers match, since a model might use that info to
+    // return a
+    // non-zero score. Same applies for the case of advancing a LTRScoringQuery.ModelWeight.ModelScorer
+    // past the target
+    // doc since the model algorithm still needs to compute a potentially
+    // non-zero score from blank features.
+    assert (scorer != null);
+    final int targetDoc = docID - docBase;
+    scorer.docID();
+    scorer.iterator().advance(targetDoc);
+
+    scorer.getDocInfo().setOriginalDocScore(hit.score);
+    hit.score = scorer.score();
+    return hit;
   }
 
   @Override
