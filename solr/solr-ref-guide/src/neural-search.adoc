@@ -86,6 +86,7 @@ Here's how `DenseVectorField` should be configured in the schema:
 |===
 +
 The dimension of the dense vector to pass in.
++
 Accepted values:
 Integer < = 1024.
 
@@ -97,14 +98,15 @@ Integer < = 1024.
 |===
 +
 Vector similarity function; used in search to return top K most similar vectors to a target vector.
++
 Accepted values: `euclidean`, `dot_product`  or `cosine`.
 
 * `euclidean`: https://en.wikipedia.org/wiki/Euclidean_distance[Euclidean distance]
-* `dot_product`: https://en.wikipedia.org/wiki/Dot_product[Dot product]. NOTE: this similarity is intended as an optimized way to perform cosine similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results..
-* `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]. NOTE: the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
+* `dot_product`: https://en.wikipedia.org/wiki/Dot_product[Dot product]. *NOTE*: this similarity is intended as an optimized way to perform cosine similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results..
+* `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]. *NOTE*: the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
 
-DenseVectorField supports enabling the attributes: `indexed`, `stored`.
+DenseVectorField supports the attributes: `indexed`, `stored`.
 
 *N.B.* currently multivalue is not supported
 
@@ -169,7 +171,7 @@ client.add(Arrays.asList(d1, d2));
 This is the list of Apache Solr query approaches designed to support Neural Search:
 
 === knn Query Parser
-The `knn` K Nearest Neighbors query parser allows to find the k nearest documents to the target vector according to indexed dense vectors in the given field.
+The `knn` K-Nearest Neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
 
 It takes the following parameters:
 
@@ -189,14 +191,14 @@ The DenseVectorField to search in.
 |Optional |Default: 10
 |===
 +
-How many nearest k results to return.
+How many k-nearest results to return.
 
 Here's how to run a KNN search:
 
 [source,text]
 &q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
-The search results retrieved are the nearest K to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the similarityFunction configured at indexing time.
+The search results retrieved are the K-nearest to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the similarityFunction configured at indexing time.
 
 ==== Usage with Filter Queries
 The `knn` query parser can be used in filter queries:
@@ -229,7 +231,7 @@ The `knn` query parser can be used to rerank first pass query results:
 When using `knn` in reranking pay attention to the `topK` parameter.
 
 The second pass score(deriving from knn) is calculated only if the documend `d` from the first pass is within
-the K nearest neighbors(*in the whole index*) of the target vector to search.
+the K-nearest neighbors(*in the whole index*) of the target vector to search.
 
 This means the second pass `knn` is executed on the whole index anyway, which is a current limitation.
 
