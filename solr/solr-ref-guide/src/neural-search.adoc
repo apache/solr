@@ -25,7 +25,7 @@ Search comprises of performing four primary steps:
 
 With the *Neural Search* module Apache Solr is introducing support for neural networks based techniques that can improve various aspects of search.
 
-They can be differentiated based on whether they affect the query representation, the document representation, or the estimation of the relevance score.
+These techniques can be differentiated based on whether they affect the query representation, the document representation, or the estimation of the relevance score.
 
 Neural Search is an industry derivation from the academic field of https://www.microsoft.com/en-us/research/uploads/prod/2017/06/fntir2018-neuralir-mitra.pdf[Neural information Retrieval].
 
@@ -41,10 +41,26 @@ Since computing power has strongly and steadily advanced in the recent past, AI 
 
 In particular the advent of https://en.wikipedia.org/wiki/Deep_learning[Deep Learning] introduced the use of deep neural networks to solve complex problems that could not simply be solved by an algorithm.
 
-=== Dense Vector Representation 
+Deep Learning can be used to produce a vector representation of both the query and the documents in corpus of information.
 
+=== Dense Vector Representation 
+A Dense vector describes an information as an array of elements, each of them explicitly defined.
+
+Various Deep Learning models such as https://en.wikipedia.org/wiki/BERT_(language_model)[BERT] are able to encode textual information as dense vectors, to be used for Dense Retrieval strategies.
+
+For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
 
 === Dense Retrieval
+Given a dense vector `v` that models the information need, the easiest approach for providing dense vector retrieval would be to calculate the distance(euclidean, dot product, etc.) between `v` and each vector `d` that represents a document in the corpus of information.
+
+This approach is quite expensive, so many approximate strategies are currently under active research.
+
+The approach implemented in Apache Lucene and used by Apache Solr is based on Navigable Small-world graph.
+
+It provides efficient approximate nearest neighbor search for high dimensional vectors.
+
+See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[this paper [2018]] for details.
+
 
 == Index Time
 This is the list of Apache Solr field types designed to support Neural Search:
@@ -90,7 +106,7 @@ Accepted values: `euclidean`, `dot_product`  or `cosine`.
 
 DenseVectorField supports enabling the attributes: `indexed`, `stored`.
 
-N.B. currently multivalue is not supported
+*N.B.* currently multivalue is not supported
 
 Here's how a `DenseVectorField` should be indexed:
 
@@ -219,3 +235,9 @@ This means the second pass `knn` is executed on the whole index anyway, which is
 
 The final ranked list of results will have the first pass score(main query `q`) combined with the second pass score(the approximated similarityFunction distance to the target vector to search).
 ====
+
+== Additional Neural Search Resources
+
+* Apache Solr Dense Vectors
+** Blog: https://sease.io/2021/12/apache-solr-neural-search.html
+** Blog: https://sease.io/2021/12/apache-solr-neural-search-knn-benchmark.html
