@@ -162,12 +162,12 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertU(adoc("id", "0", "vector", vectorValue));
             assertU(commit());
 
-            assertQEx("Range queries over vectors are not supported",
+            assertQEx("Running Range queries on a dense vector field should raise an Exception",
                     "Cannot parse 'vector:[[1.0 2.0] TO [1.5 2.5]]'",
                     req("q", "vector:[[1.0 2.0] TO [1.5 2.5]]", "fl", "vector"),
                     SolrException.ErrorCode.BAD_REQUEST);
 
-            assertQEx("Range queries over vectors are not supported",
+            assertQEx("Running Range queries on a dense vector field should raise an Exception",
                     "Range Queries are not supported for Dense Vector fields." +
                             " Please use the {!knn} query parser to run K nearest neighbors search queries.",
                     req("q", "vector:[1 TO 5]", "fl", "vector"),
@@ -189,7 +189,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertU(adoc("id", "0", "vector", vectorValue));
             assertU(commit());
 
-            assertQEx("Range queries over vectors are not supported",
+            assertQEx("Running Existence queries on a dense vector field should raise an Exception",
                     "Range Queries are not supported for Dense Vector fields." +
                             " Please use the {!knn} query parser to run K nearest neighbors search queries.",
                     req("q", "vector:[* TO *]", "fl", "vector"),
@@ -211,18 +211,18 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertU(adoc("id", "0", "vector", vectorValue));
             assertU(commit());
 
-            assertQEx("Field queries over vectors are not supported",
+            assertQEx("Running Field queries on a dense vector field should raise an Exception",
                     "Cannot parse 'vector:[1.0, 2.0, 3.0, 4.0]",
                     req("q", "vector:[1.0, 2.0, 3.0, 4.0]", "fl", "vector"),
                     SolrException.ErrorCode.BAD_REQUEST);
 
-            assertQEx("Field queries over vectors are not supported",
+            assertQEx("Running Field queries on a dense vector field should raise an Exception",
                     "Field Queries are not supported for Dense Vector fields." +
                             " Please use the {!knn} query parser to run K nearest neighbors search queries.",
                     req("q", "vector:\"[1.0, 2.0, 3.0, 4.0]\"", "fl", "vector"),
                     SolrException.ErrorCode.BAD_REQUEST);
 
-            assertQEx("Field queries over vectors are not supported",
+            assertQEx("Running Field queries on a dense vector field should raise an Exception",
                     "Field Queries are not supported for Dense Vector fields." +
                             " Please use the {!knn} query parser to run K nearest neighbors search queries.",
                     req("q", "vector:2.0", "fl", "vector"),
@@ -244,7 +244,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertU(adoc("id", "0", "vector", vectorValue));
             assertU(commit());
 
-            assertQEx("Sort over vectors is not supported",
+            assertQEx("Sort over vectors should raise an Exception",
                     "Cannot sort on a Dense Vector field",
                     req("q", "*:*", "sort", "vector desc"),
                     SolrException.ErrorCode.BAD_REQUEST);
@@ -265,7 +265,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertU(adoc("id", "0", "vector", vectorValue));
             assertU(commit());
 
-            assertQEx("Function Queries over vectors are not supported",
+            assertQEx("Running Function queries on a dense vector field should raise an Exception",
                     "Function queries are not supported for Dense Vector fields.",
                     req("q", "*:*", "fl", "id,field(vector)"),
                     SolrException.ErrorCode.BAD_REQUEST);

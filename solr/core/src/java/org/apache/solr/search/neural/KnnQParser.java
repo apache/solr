@@ -49,7 +49,7 @@ public class KnnQParser extends QParser {
         String vectorToSearch = localParams.get(QueryParsing.V);
         int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
 
-        if (denseVectorField == null) {
+        if (denseVectorField == null || denseVectorField.isEmpty()) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "the Dense Vector field 'f' is missing");
         }
 
@@ -60,7 +60,7 @@ public class KnnQParser extends QParser {
         SchemaField schemaField = req.getCore().getLatestSchema().getField(denseVectorField);
         FieldType fieldType = schemaField.getType();
         if (!(fieldType instanceof DenseVectorField)) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "only DenseVectorField is compatible with this Query Parser");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "only DenseVectorField is compatible with Knn Query Parser");
         }
 
         return ((DenseVectorField) fieldType).getKnnVectorQuery(schemaField, vectorToSearch, topK);

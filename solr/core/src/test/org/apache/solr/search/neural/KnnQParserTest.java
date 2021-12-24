@@ -119,7 +119,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
         assertQEx("Incorrect vector field type should throw Exception",
-                "only DenseVectorField is compatible with this Query Parser",
+                "only DenseVectorField is compatible with Knn Query Parser",
                 req(CommonParams.Q, "{!knn f=id topK=10}" + vectorToSearch, "fl", "id"),
                 SolrException.ErrorCode.BAD_REQUEST);
     }
@@ -168,13 +168,13 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     public void incorrectVectorToSearchDimension_shouldThrowException() {
         String vectorToSearch = "[2.0, 4.4, 3.]";
         assertQEx("missing vector to search should throw Exception",
-                "incorrect vector dimension. The vector value used in the query has size 3 while it is expected a vector with size 4",
+                "incorrect vector dimension. The vector value has size 3 while it is expected a vector with size 4",
                 req(CommonParams.Q, "{!knn f=vector topK=10}" + vectorToSearch, "fl", "id"),
                 SolrException.ErrorCode.BAD_REQUEST);
 
         vectorToSearch = "[2.0, 4.4,,]";
         assertQEx("incorrect vector to search should throw Exception",
-                "incorrect vector dimension. The vector value used in the query has size 2 while it is expected a vector with size 4",
+                "incorrect vector dimension. The vector value has size 2 while it is expected a vector with size 4",
                 req(CommonParams.Q, "{!knn f=vector topK=10}" + vectorToSearch, "fl", "id"),
                 SolrException.ErrorCode.BAD_REQUEST);
     }

@@ -98,12 +98,12 @@ public class DenseVectorField extends FieldType {
             fields.add(createField(field, value));
         }
         if (field.stored()){
-            fields.add(getStoredField(field, value));
+            fields.add(createStoredField(field, value));
         }
         return fields;
     }
 
-    private IndexableField getStoredField(SchemaField field, Object value) {
+    private IndexableField createStoredField(SchemaField field, Object value) {
         return new StoredField(field.getName(), value.toString());
     }
 
@@ -129,7 +129,7 @@ public class DenseVectorField extends FieldType {
         try {
             parsedVector = parseVector(value.toString());
         } catch (RuntimeException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "', expected format:'[f1, f2, f3...fn] e.g. [1.0, 3.4, 5.6]'", e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]", e);
         }
         if (parsedVector == null) return null;
 
@@ -151,7 +151,7 @@ public class DenseVectorField extends FieldType {
         String[] elements = value.substring(1, value.length() - 1).split(",");
         if (elements.length != dimension) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector dimension." +
-                    " The vector value used in the query has size "
+                    " The vector value has size "
                     + elements.length + " while it is expected a vector with size " + dimension);
         }
         float[] vector = new float[dimension];
