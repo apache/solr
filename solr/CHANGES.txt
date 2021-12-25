@@ -187,6 +187,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15803: Compute concurrent replica assignment requests together, using the shared context to better distribute replicas. (Houston Putman)
 
+* SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
+  also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
+
 Build
 ---------------------
 

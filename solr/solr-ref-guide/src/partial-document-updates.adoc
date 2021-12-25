@@ -217,6 +217,7 @@ curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H '
 } ]'
 ----
 
+Note that this is add-or-replace (by ID).  Meaning, if it happens that doc `P11!S21` already has a child doc with the ID `P11!D99` (the one we are adding), then it will be replaced.
 
 ==== Removing a Child Document
 
