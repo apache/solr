@@ -41,7 +41,7 @@ Since computing power has strongly and steadily advanced in the recent past, AI 
 
 In particular the advent of https://en.wikipedia.org/wiki/Deep_learning[Deep Learning] introduced the use of deep neural networks to solve complex problems that could not simply be solved by an algorithm.
 
-Deep Learning can be used to produce a vector representation of both the query and the documents in corpus of information.
+Deep Learning can be used to produce a vector representation of both the query and the documents in a corpus of information.
 
 === Dense Vector Representation 
 A Dense vector describes information as an array of elements, each of them explicitly defined.
