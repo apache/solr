@@ -1294,4 +1294,9 @@ public class JSONParser {
   public long getPosition() {
     return gpos + start;
   }
+  
+  public float getFloat() throws IOException {
+    return Float.parseFloat(getNumberChars().toString());
+  }
+
 }

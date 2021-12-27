@@ -41,6 +41,8 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
+import org.apache.lucene.index.VectorSimilarityFunction;
+
 /**
  * A FilterReader that exposes <i>indexed</i> values as if they also had
  * docvalues.
@@ -170,7 +172,8 @@ public class UninvertingReader extends FilterLeafReader {
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
-    SORTED_SET_DOUBLE
+    SORTED_SET_DOUBLE,
+    VECTOR_FIELD
 
   }
 
@@ -275,6 +278,9 @@ public class UninvertingReader extends FilterLeafReader {
             case SORTED_SET_DOUBLE:
               type = DocValuesType.SORTED_SET;
               break;
+            case VECTOR_FIELD:
+              type = DocValuesType.NONE;
+              break;
             default:
               throw new AssertionError();
           }
@@ -285,7 +291,8 @@ public class UninvertingReader extends FilterLeafReader {
         newFieldInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
             fi.hasPayloads(), fi.getIndexOptions(), type, fi.getDocValuesGen(), fi.attributes(),
             fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
-            fi.getVectorDimension(), fi.getVectorSimilarityFunction(), fi.isSoftDeletesField()));
+            3, VectorSimilarityFunction.DOT_PRODUCT, fi.isSoftDeletesField()));
+
       } else {
         newFieldInfos.add(fi);
       }
@@ -336,6 +343,7 @@ public class UninvertingReader extends FilterLeafReader {
         case SORTED_SET_FLOAT:
         case SORTED_SET_INTEGER:
         case SORTED_SET_LONG:
+        case VECTOR_FIELD:
           break;
       }
     }
@@ -397,6 +405,7 @@ public class UninvertingReader extends FilterLeafReader {
         case INTEGER_POINT:
         case LONG_POINT:
         case SORTED:
+        case VECTOR_FIELD:
           break;
       }
     }

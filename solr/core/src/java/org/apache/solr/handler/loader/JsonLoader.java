@@ -575,7 +575,8 @@ public class JsonLoader extends ContentStreamLoader {
         case JSONParser.LONG:
           return parser.getLong();
         case JSONParser.NUMBER:
-          return parser.getDouble();
+//          return parser.getDouble();
+          return parser.getFloat();          
         case JSONParser.BIGNUMBER:
           return parser.getNumberChars().toString();
         case JSONParser.BOOLEAN:

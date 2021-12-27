@@ -20,6 +20,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
+
 
 import com.google.common.collect.Sets;
 import org.apache.lucene.document.Document;
@@ -165,71 +167,76 @@ public class DocumentBuilder {
 
       // load each field value
       boolean hasField = false;
-      try {
-        Iterator<?> it = field.iterator();
-        while (it.hasNext()) {
-          Object v = it.next();
-          if( v == null ) {
-            continue;
-          }
-          hasField = true;
-          if (sfield != null) {
-            used = true;
-            addField(out, sfield, v, forInPlaceUpdate);
-            // record the field as having a value
-            usedFields.add(sfield.getName());
-          }
-  
-          // Check if we should copy this field value to any other fields.
-          // This could happen whether it is explicit or not.
-          if (copyFields != null) {
-            for (CopyField cf : copyFields) {
-              SchemaField destinationField = cf.getDestination();
-
-              final boolean destHasValues = usedFields.contains(destinationField.getName());
-
-              // check if the copy field is a multivalued or not
-              if (!destinationField.multiValued() && destHasValues) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "Multiple values encountered for non multiValued copy field " +
-                    destinationField.getName() + ": " + v);
-              }
-
+      if(field.getValue() instanceof ArrayList) {        
+                addField(out, sfield, field, forInPlaceUpdate);
+                // record the field as having a value
+                usedFields.add(sfield.getName());
+        } else {
+        try {
+          Iterator<?> it = field.iterator();
+          while (it.hasNext()) {
+            Object v = it.next();
+            if( v == null ) {
+              continue;
+            }
+            hasField = true;
+            if (sfield != null) {
               used = true;
-
-              // Perhaps trim the length of a copy field
-              Object val = v;
-              if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
-                  val = cf.getLimitedValue(val.toString());
-              }
-
-              // TODO ban copyField populating uniqueKeyField; too problematic to support
-              addField(out, destinationField, val,
-                       destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+              addField(out, sfield, v, forInPlaceUpdate);
               // record the field as having a value
-              usedFields.add(destinationField.getName());
+              usedFields.add(sfield.getName());
+            }
+    
+            // Check if we should copy this field value to any other fields.
+            // This could happen whether it is explicit or not.
+            if (copyFields != null) {
+              for (CopyField cf : copyFields) {
+                SchemaField destinationField = cf.getDestination();
+  
+                final boolean destHasValues = usedFields.contains(destinationField.getName());
+  
+                // check if the copy field is a multivalued or not
+                if (!destinationField.multiValued() && destHasValues) {
+                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                      "Multiple values encountered for non multiValued copy field " +
+                      destinationField.getName() + ": " + v);
+                }
+  
+                used = true;
+  
+                // Perhaps trim the length of a copy field
+                Object val = v;
+                if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
+                    val = cf.getLimitedValue(val.toString());
+                }
+  
+                // TODO ban copyField populating uniqueKeyField; too problematic to support
+                addField(out, destinationField, val,
+                         destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+                // record the field as having a value
+                usedFields.add(destinationField.getName());
+              }
             }
           }
         }
+        catch( SolrException ex ) {
+          throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()),
+              "ERROR: "+getID(doc, schema)+"Error adding field '" + 
+                field.getName() + "'='" +field.getValue()+"' msg=" + ex.getMessage(), ex );
+        }
+        catch( Exception ex ) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+              "ERROR: "+getID(doc, schema)+"Error adding field '" + 
+                field.getName() + "'='" +field.getValue()+"' msg=" + ex.getMessage(), ex );
+        }
+        
+        // make sure the field was used somehow...
+        if( !used && hasField ) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+              "ERROR: "+getID(doc, schema)+"unknown field '" +name + "'");
+        }
       }
-      catch( SolrException ex ) {
-        throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()),
-            "ERROR: "+getID(doc, schema)+"Error adding field '" + 
-              field.getName() + "'='" +field.getValue()+"' msg=" + ex.getMessage(), ex );
-      }
-      catch( Exception ex ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"Error adding field '" + 
-              field.getName() + "'='" +field.getValue()+"' msg=" + ex.getMessage(), ex );
-      }
-      
-      // make sure the field was used somehow...
-      if( !used && hasField ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"unknown field '" +name + "'");
-      }
-    }
-    
+    }    
         
     // Now validate required fields or add default values
     // fields with default values are defacto 'required'

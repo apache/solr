@@ -219,9 +219,11 @@
     <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
     <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
     <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
-    <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
+    <fieldType name="random" class="solr.RandomSortField" indexed="true"/><fieldType
+    	name="vector" class="solr.VectorFieldType" multiValued="true">
+</fieldType>
 
-    <!-- since fields of this type are by default not stored or indexed,
+	<!-- since fields of this type are by default not stored or indexed,
        any data added to them will be ignored outright.  -->
     <fieldType name="ignored" stored="false" indexed="false" multiValued="true" class="solr.StrField" />
 

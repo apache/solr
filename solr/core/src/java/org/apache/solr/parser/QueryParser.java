@@ -8,11 +8,17 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.vector.search.SearchVector;
+import org.apache.solr.vector.search.VectorQuery;
+import org.apache.solr.parser.SolrQueryParserBase.RawQuery;
+import org.apache.solr.schema.FieldType;
+
 import org.apache.solr.search.QParser;
 
 import org.apache.lucene.queryparser.charstream.CharStream;
@@ -244,7 +250,29 @@ addClause(clauses, conj, mods, q);
 if (clauses.size() == 1 && clauses.get(0).getOccur() == BooleanClause.Occur.SHOULD) {
       Query firstQuery = clauses.get(0).getQuery();
       if ( ! (firstQuery instanceof RawQuery) || ((RawQuery)firstQuery).getTermCount() == 1) {
-        {if ("" != null) return rawToNormal(firstQuery);}
+//        {if ("" != null) return rawToNormal(firstQuery);}
+          {
+            if ("" != null) {
+              if (firstQuery instanceof RawQuery) {
+                RawQuery rawq = (RawQuery)firstQuery;
+                if (! rawq.sfield.getType().isTokenized()) {                
+                  FieldType ft = rawq.sfield.getType();
+                  if (rawq.getTermCount() == 1) {
+                    String externalVal = rawq.getExternalVals().get(0);            
+                    try {
+                      String arrOfStr[] = externalVal.split(",");
+                      for (int i = 0; i < arrOfStr.length; i++) { 
+                        Float.parseFloat(arrOfStr[i]);
+                      }
+                      return rawToNormal(firstQuery);
+                    }catch(PatternSyntaxException | NullPointerException | NumberFormatException pe){
+                      throw new ParseException(pe.getMessage());
+                    }
+                  }
+                }
+              }
+            }
+          }
       }
     }
     {if ("" != null) return getBooleanQuery(clauses);}

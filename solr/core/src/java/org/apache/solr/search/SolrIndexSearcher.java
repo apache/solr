@@ -33,6 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.vector.search.VectorQuery;
+
 
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
@@ -211,6 +213,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     try {
+
+          TopDocs docs = null;
+          if(query instanceof VectorQuery)
+          {
+            float vector[] = ((VectorQuery)query).getSearchVector().getVector();
+            String field = ((VectorQuery)query).getSearchVector().field();
+
+            int topK = 10;
+            // int topK = ((VectorQuery)query).getTopK();
+
+            docs = doKnnSearch(reader, field, vector, topK, null);  
+          }
+          
       super.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException |
             CancellableCollector.QueryCancelledException x) {
@@ -236,6 +251,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     return collector;
   }
+ 
+  private static TopDocs doKnnSearch(IndexReader reader, String field, float[] vector, int k, Bits fanout) throws IOException {
+      TopDocs[] results = new TopDocs[reader.leaves().size()];
+      for (LeafReaderContext ctx : reader.leaves()) {
+        results[ctx.ord] = ctx.reader().searchNearestVectors(field, vector, k, fanout);
+        int docBase = ctx.docBase;
+        for (ScoreDoc scoreDoc : results[ctx.ord].scoreDocs) {
+          scoreDoc.doc += docBase;
+        }
+      }
+      return TopDocs.merge(k, results);
+    }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name,
       boolean enableCache, DirectoryFactory directoryFactory) throws IOException {

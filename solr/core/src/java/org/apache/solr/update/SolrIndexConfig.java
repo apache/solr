@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.lucene.codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -269,7 +270,7 @@ public class SolrIndexConfig implements MapSerializable {
                                                                         new Object[] { iwc.getInfoStream() });
       iwc.setMergedSegmentWarmer(warmer);
     }
-
+    iwc.setCodec(new Lucene90Codec());
     return iwc;
   }
 

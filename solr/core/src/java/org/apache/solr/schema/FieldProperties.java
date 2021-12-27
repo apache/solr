@@ -75,6 +75,7 @@ public abstract class FieldProperties {
 
   static final String POSTINGS_FORMAT = "postingsFormat";
   static final String DOC_VALUES_FORMAT = "docValuesFormat";
+  static final String VECTOR_DIMENSION = "vectorDimension";
 
   /** Returns the symbolic name for the property. */
   static String getPropertyName(int property) {
@@ -95,7 +96,9 @@ public abstract class FieldProperties {
   }
 
   private static boolean isPropertyIgnored(String name) {
-    return name.equals("default") || name.equals(POSTINGS_FORMAT) || name.equals(DOC_VALUES_FORMAT);
+//    return name.equals("default") || name.equals(POSTINGS_FORMAT) || name.equals(DOC_VALUES_FORMAT);
+    return name.equals("default") || name.equals(POSTINGS_FORMAT) || name.equals(DOC_VALUES_FORMAT) || name.equals(VECTOR_DIMENSION);
+
   }
 
   static String propertiesToString(int properties) {
