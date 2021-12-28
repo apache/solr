@@ -30,12 +30,9 @@ public class NodeRoles {
 
   public static final String NODE_ROLES_PROP = "solr.node.roles";
 
-  /*public static final String ON =  "on";
-  public static final String OFF =  "off";
-  public static final String ALLOWED =  "allowed";
-  public static final String DISALLOWED =  "disallowed";
-  public static final String PREFERRED =  "preferred";*/
-
+  /**
+   * Roles to be assumed on nodes that don't have roles specified for them at startup
+   */
   public static final String DEFAULT_ROLES_STRING = "data:on,overseer:allowed";
 
   // Map of roles to mode that are applicable for this node.
@@ -60,7 +57,7 @@ public class NodeRoles {
     }
     for(Role r: Role.values()) {
       if (!roles.containsKey(r)) {
-        roles.put(r, r.defaultMode());
+        roles.put(r, r.modeWhenRoleIsAbsent());
       }
     }
     nodeRoles = Collections.unmodifiableMap(roles);
@@ -82,11 +79,11 @@ public class NodeRoles {
   public enum Mode {
     ON, OFF, ALLOWED, PREFERRED, DISALLOWED;
 
-    @Override
     /**
      * Need this lowercasing so that the ZK references use the lowercase form, which is
      * also the form documented in user facing documentation.
      */
+    @Override
     public String toString() {
       return name().toLowerCase(Locale.ROOT);
     }
@@ -99,7 +96,7 @@ public class NodeRoles {
         return Set.of(Mode.ON, Mode.OFF);
       }
       @Override
-      public Mode defaultMode() {
+      public Mode modeWhenRoleIsAbsent() {
         return Mode.OFF;
       }
     },
@@ -109,7 +106,7 @@ public class NodeRoles {
         return Set.of(Mode.ALLOWED, Mode.PREFERRED, Mode.DISALLOWED);
       }
       @Override
-      public Mode defaultMode() {
+      public Mode modeWhenRoleIsAbsent() {
         return Mode.DISALLOWED;
       }
     };
@@ -132,7 +129,7 @@ public class NodeRoles {
     /**
      * Default mode for a role in nodes where this role is not specified.
      */
-    public abstract Mode defaultMode();
+    public abstract Mode modeWhenRoleIsAbsent();
 
     @Override
     public String toString() {

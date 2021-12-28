@@ -108,7 +108,7 @@ public class ZkStateReader implements SolrCloseable {
    * The following, node_roles and roles.json are for assigning roles to
    * nodes. The node_roles is the preferred way (using -Dsolr.node.roles param),
    * and roles.json is used by legacy ADDROLE API command.
-   * TODO: Deprecate & remove support for roles.json in an upcoming release.
+   * TODO: Deprecate and remove support for roles.json in an upcoming release.
    */
   public static final String NODE_ROLES = "/node_roles";
   public static final String ROLES = "/roles.json";

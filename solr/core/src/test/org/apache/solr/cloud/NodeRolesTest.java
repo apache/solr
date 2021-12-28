@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 
-import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -49,37 +48,25 @@ public class NodeRolesTest extends SolrCloudTestCase {
     shutdownCluster();
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("rawtypes")
   public void testRoleIntegration() throws Exception {
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
-    JettySolrRunner j1, j2;
-    V2Response rsp = new V2Request.Builder("/cluster/node-roles/supported").GET().build().process(cluster.getSolrClient());
-    Map<String, Object> l = (Map<String, Object>) rsp._get("supported-roles", Collections.emptyMap());
-    assertTrue(l.containsKey("data"));
-    assertTrue(l.containsKey("overseer"));
+    testSupportedRolesAPI();
 
-    j1 = startNodeWithRoles("overseer:preferred,data:off");
+    // Start a dedicated overseer node
+    JettySolrRunner j1 = startNodeWithRoles("overseer:preferred,data:off");
+    validateNodeRoles(j1.getNodeName(), "node-roles/overseer/preferred", j1.getNodeName(), "node-roles/data/off");
 
-    rsp = new V2Request.Builder("/cluster/node-roles").GET().build().process(cluster.getSolrClient());
-    assertEquals(j1.getNodeName(), rsp._getStr("node-roles/overseer/preferred[0]", null));
-    assertEquals(j1.getNodeName(), rsp._getStr("node-roles/data/off[0]", null));
-    OverseerRolesTest.waitForNewOverseer(20, j1.getNodeName(), false);
+    V2Response rsp;
+    OverseerRolesTest.waitForNewOverseer(20, j1.getNodeName(), true);
 
-    // start another node that is overseer but has data
-    j2 = startNodeWithRoles("overseer:preferred,data:on");
-    rsp = new V2Request.Builder("/cluster/node-roles").GET().build().process(cluster.getSolrClient());
+    // Start another node that is allowed or preferred overseer but has data
+    String overseerModeOnDataNode = random().nextBoolean() ? "preferred" : "allowed";
+    JettySolrRunner j2 = startNodeWithRoles("overseer:" + overseerModeOnDataNode + ",data:on");
+    validateNodeRoles(j2.getNodeName(), "node-roles/overseer/" + overseerModeOnDataNode, j2.getNodeName(), "node-roles/data/on");
 
-    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j2.getNodeName()));
-    assertTrue( ((Collection)rsp._get("node-roles/data/on", Collections.emptyList())).contains(j2.getNodeName()));
-
-    rsp = new V2Request.Builder("/cluster/node-roles/role/overseer").GET().build().process(cluster.getSolrClient());
-
-    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j2.getNodeName()));
-    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j1.getNodeName()));
-
-    rsp = new V2Request.Builder("/cluster/node-roles/role/overseer/preferred").GET().build().process(cluster.getSolrClient());
-    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j2.getNodeName()));
-    assertTrue( ((Collection)rsp._get("node-roles/overseer/preferred", Collections.emptyList())).contains(j1.getNodeName()));
+    // validate the preferred overseers
+    validateNodeRoles(j2.getNodeName(), "node-roles/overseer/" + overseerModeOnDataNode, j1.getNodeName(), "node-roles/overseer/preferred");
 
     String COLLECTION_NAME = "TEST_ROLES";
     CollectionAdminRequest
@@ -94,8 +81,32 @@ public class NodeRolesTest extends SolrCloudTestCase {
 
     // Shutdown the dedicated overseer, make sure that node disappears from the roles output
     j1.stop();
-    rsp = new V2Request.Builder("/cluster/node-roles/role/overseer/preferred").GET().build().process(cluster.getSolrClient());
-    assertFalse (((Collection) rsp._get("node-roles/overseer/preferred" , null)). contains(j1.getNodeName()));
+
+    // Wait and make sure that another node picks up overseer responsibilities
+    OverseerRolesTest.waitForNewOverseer(20, it -> !dedicatedOverseer.equals(it), false);
+
+    // Make sure the stopped node no longer has the role assigned
+    rsp = new V2Request.Builder("/cluster/node-roles/role/overseer/" + overseerModeOnDataNode).GET().build().process(cluster.getSolrClient());
+    assertFalse(((Collection) rsp._get("node-roles/overseer/" + overseerModeOnDataNode, null)).contains(j1.getNodeName()));
+  }
+
+  @SuppressWarnings("rawtypes")
+  private void validateNodeRoles(String... nodenamePaths) throws org.apache.solr.client.solrj.SolrServerException, java.io.IOException {
+    V2Response rsp = new V2Request.Builder("/cluster/node-roles").GET().build().process(cluster.getSolrClient());
+    for (int i = 0; i < nodenamePaths.length; i += 2) {
+      String nodename = nodenamePaths[i];
+      String path = nodenamePaths[i + 1];
+      assertTrue("Didn't find " + nodename + " at " + path + ". Full response: " + rsp.jsonStr(),
+              ((Collection) rsp._get(path, Collections.emptyList())).contains(nodename));
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void testSupportedRolesAPI() throws Exception {
+    V2Response rsp = new V2Request.Builder("/cluster/node-roles/supported").GET().build().process(cluster.getSolrClient());
+    Map<String, Object> l = (Map<String, Object>) rsp._get("supported-roles", Collections.emptyMap());
+    assertTrue(l.containsKey("data"));
+    assertTrue(l.containsKey("overseer"));
   }
 
   private JettySolrRunner startNodeWithRoles(String roles) throws Exception {
