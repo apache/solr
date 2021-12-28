@@ -156,13 +156,6 @@ public class PackageUtils {
   }
 
   /**
-   * Checks whether a given version satisfies the constraint (defined by a semver expression)
-   */
-  public static boolean checkVersionConstraint(String ver, String constraint) {
-    return Strings.isNullOrEmpty(constraint) || Version.valueOf(ver).satisfies(constraint);
-  }
-
-  /**
    * Fetches a manifest file from the File Store / Package Store. A SHA512 check is enforced after fetching.
    */
   public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {

@@ -58,6 +58,7 @@ import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.SolrCLI;
+import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -658,9 +659,9 @@ public class PackageManager implements Closeable {
     if (version == null) version = packageInstance.version;
 
     Manifest manifest = packageInstance.manifest;
-    if (PackageUtils.checkVersionConstraint(RepositoryManager.systemVersion, manifest.versionConstraint) == false) {
+    if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
       PackageUtils.printRed("Version incompatible! Solr version: "
-          + RepositoryManager.systemVersion + ", package version constraint: " + manifest.versionConstraint);
+          + SolrVersion.LATEST + ", package version constraint: " + manifest.versionConstraint);
       System.exit(1);
     }
 

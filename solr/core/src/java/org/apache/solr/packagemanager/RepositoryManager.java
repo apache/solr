@@ -68,8 +68,6 @@ public class RepositoryManager {
 
   final private PackageManager packageManager;
 
-  public static final String systemVersion = SolrVersion.LATEST.toString();
-
   final HttpSolrClient solrClient;
 
   public RepositoryManager(HttpSolrClient solrClient, PackageManager packageManager) {
