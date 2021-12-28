@@ -57,4 +57,9 @@ public class TestSolrVersion extends SolrTestCase {
     assertTrue(SOLR_9_0_1.satisfies(">9.0"));
     assertFalse(SOLR_9_0_1.satisfies("8.x"));
   }
+
+  public void testSatisfiesParseFailure() {
+    assertThrows(SolrVersion.InvalidSemVerExpressionException.class, () ->
+        SOLR_9_0_1.satisfies(":"));
+  }
 }

@@ -16,8 +16,10 @@
  */
 package org.apache.solr.util;
 
+import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 import com.github.zafarkhaja.semver.expr.ExpressionParser;
+import org.apache.solr.common.SolrException;
 
 /**
  * Simple Solr version representation backed by a <a href="https://devhints.io/semver">Semantic Versioning</a> library.
@@ -77,9 +79,14 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   /**
    * Returns true if this version satisfies the provided <a href="https://devhints.io/semver">SemVer Expression</a>
    * @param semVerExpression the expression to test
+   * @throws InvalidSemVerExpressionException if the SemVer expression is invalid
    */
   public boolean satisfies(String semVerExpression) {
-    return ExpressionParser.newInstance().parse(semVerExpression).interpret(version);
+    try {
+      return ExpressionParser.newInstance().parse(semVerExpression).interpret(version);
+    } catch (ParseException parseException) {
+      throw new InvalidSemVerExpressionException();
+    }
   }
 
   public int getMajorVersion() {
@@ -122,5 +129,11 @@ public final class SolrVersion implements Comparable<SolrVersion> {
       return false;
     }
     return compareTo((SolrVersion) other) == 0;
+  }
+
+  public static class InvalidSemVerExpressionException extends SolrException {
+    public InvalidSemVerExpressionException() {
+      super(ErrorCode.BAD_REQUEST, "Invalid SemVer expression");
+    }
   }
 }

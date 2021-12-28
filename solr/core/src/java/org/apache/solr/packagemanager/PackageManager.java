@@ -658,9 +658,14 @@ public class PackageManager implements Closeable {
     }
 
     Manifest manifest = packageInstance.manifest;
-    if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
-      PackageUtils.printRed("Version incompatible! Solr version: "
-          + SolrVersion.LATEST + ", package version constraint: " + manifest.versionConstraint);
+    try {
+      if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
+        PackageUtils.printRed("Version incompatible! Solr version: "
+            + SolrVersion.LATEST + ", package version constraint: " + manifest.versionConstraint);
+        System.exit(1);
+      }
+    } catch (SolrVersion.InvalidSemVerExpressionException ex) {
+      PackageUtils.printRed("Error in version constraint given in package manifest: " +  manifest.versionConstraint + ". It does not a valid SemVer expression.");
       System.exit(1);
     }
 
