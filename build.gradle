@@ -179,7 +179,7 @@ apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
-// apply from: file('gradle/documentation/render-javadoc.gradle')
+apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/gradle-archives.gradle')
 apply from: file('gradle/hacks/solr.findbugs.gradle')

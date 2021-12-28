@@ -252,6 +252,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return collector;
   }
  
+//  It will compare passed embedding with embedding of indexed documents, and return score of top matching documents.  
   private static TopDocs doKnnSearch(IndexReader reader, String field, float[] vector, int k, Bits fanout) throws IOException {
       TopDocs[] results = new TopDocs[reader.leaves().size()];
       for (LeafReaderContext ctx : reader.leaves()) {
