@@ -93,12 +93,10 @@ curl http://localhost:8983/api/cluster/node-roles/supported
 {
   "supported-roles":{
     "data":{
-      "defaultIfAbsent":"off",
       "modes":["off",
         "on"]
     },
     "overseer":{
-      "defaultIfAbsent":"disallowed",
       "modes":["disallowed",
         "allowed",
         "preferred"]
