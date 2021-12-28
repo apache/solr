@@ -656,7 +656,6 @@ public class PackageManager implements Closeable {
       PackageUtils.printRed("Package instance doesn't exist: " + packageName + ":" + version + ". Use install command to install this version first.");
       System.exit(1);
     }
-    if (version == null) version = packageInstance.version;
 
     Manifest manifest = packageInstance.manifest;
     if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
