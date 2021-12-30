@@ -1128,8 +1128,11 @@ groups:
           comment: Check that the changes in the ref-guide look good for this bugfix version
           stdout: true
         - !Command
+          cmd: svn status | grep '^!' | awk '{print $2}'
+          comment: List files that will be deleted in online refguide
+        - !Command
           cmd: svn status | grep '^!' | awk '{print $2}' | xargs svn delete
-          comment: Remove removed files in SVN
+          comment: Confirm delete of files in SVN (DOUBLE CHECK)
         - !Command
           cmd: svn add --force .
           comment: Add new and modified files in SVN
