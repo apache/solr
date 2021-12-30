@@ -1068,6 +1068,86 @@ groups:
         logfile: add-docs-solr.log
         comment: Add docs for Solr
   - !Todo
+    id: build_final_ref_guide
+    title: Build the ref guide
+    links:
+      - https://solr.apache.org/guide/{{ release_version_refguide }}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Build the Solr Ref Guide
+      commands:
+        - !Command
+          cmd: "{{ gradle_cmd }} solr:solr-ref-guide:clean"
+          comment: Clean the Ref Guide build
+        - !Command
+          cmd: "{{ gradle_cmd }} solr:solr-ref-guide:buildSite -PsolrGuideDraft=false"
+          comment: Build Ref Guide
+  - !Todo
+    id: upload_final_ref_guide_new
+    title: Upload the ref guide
+    links:
+      - https://solr.apache.org/guide/{{ release_version_refguide }}
+    depends:
+      - build_final_ref_guide
+    types:
+      - major
+      - minor
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Upload the Solr Ref Guide to SVN production tree
+      commands:
+        - !Command
+          cmd: svn -m "Add Solr Ref Guide {{ release_version }}" import {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site  https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }}
+          logfile: svn-upload-ref-guide.log
+          comment: Upload Solr Ref Guide
+  - !Todo
+    id: upload_final_ref_guide_changes
+    title: Upload (and overwrite-write) the ref guide
+    links:
+      - https://solr.apache.org/guide/{{ release_version_refguide }}
+    depends:
+      - build_final_ref_guide
+    types:
+      - bugfix
+    commands: !Commands
+      root_folder: '{{ ref_guide_svn_folder }}'
+      commands_text: Upload the Solr Ref Guide to SVN production tree, overwriting the previous version
+      confirm_each_command: true
+      commands:
+        - !Command
+          cmd: svn co https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }} "{{ ref_guide_svn_folder }}"
+          logfile: ref-guide-svn-co.log
+          comment: Checkout the existing Solr Ref Guide for version {{ ref_guide_svn_folder }}
+          cwd: '{{ git_checkout_folder }}'
+        - !Command
+          cmd: cp -r {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
+          comment: Copy and overwrite new Solr Ref Guide
+          cwd: '{{ git_checkout_folder }}'
+        - !Command
+          cmd: svn status
+          comment: Check that the changes in the ref-guide look good for this bugfix version
+          stdout: true
+        - !Command
+          cmd: svn status | grep '^!' | awk '{print $2}'
+          comment: List files that will be deleted in online refguide
+        - !Command
+          cmd: svn status | grep '^!' | awk '{print $2}' | xargs svn delete
+          comment: Confirm delete of files in SVN (DOUBLE CHECK)
+        - !Command
+          cmd: svn add --force .
+          comment: Add new and modified files in SVN
+        - !Command
+          cmd: svn status
+          comment: There should be no staged changes left in svn, all should be ready to commit
+          stdout: true
+        - !Command
+          cmd: diff {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
+          comment: There should be no difference between the ref-guide build and the version in svn.
+          stdout: true
+        - !Command
+          cmd: svn commit -m "Update Solr Ref Guide {{ release_version_refguide }}, for version {{ release_version }}"
+          comment: Upload Solr Ref Guide
+  - !Todo
     id: website_git_clone
     title: Do a clean git clone of the website repo
     description: This is where we'll commit later updates for the website.
