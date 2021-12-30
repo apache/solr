@@ -401,8 +401,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Unable to read spelling info for shard: " + srsp.getShard(), e);
           }
-          if (log.isInfoEnabled()) {
-            log.info("{} {}", srsp.getShard(), nl);
+          if (log.isDebugEnabled()) {
+            log.debug("{} {}", srsp.getShard(), nl);
           }
           if (nl != null) {
             mergeData.totalNumberShardResponses++;
@@ -695,7 +695,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   @SuppressWarnings({"unchecked"})
   public void inform(SolrCore core) {
     if (initParams != null) {
-      log.info("Initializing spell checkers");
+      log.debug("Initializing spell checkers");
       boolean hasDefault = false;
       for (int i = 0; i < initParams.size(); i++) {
         if (initParams.getName(i).equals("spellchecker")) {

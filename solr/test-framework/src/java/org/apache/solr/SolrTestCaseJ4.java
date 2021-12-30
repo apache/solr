@@ -41,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.SecureRandom;
@@ -74,7 +75,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import io.opentracing.noop.NoopTracerFactory;
 import io.opentracing.util.GlobalTracer;
-import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -2146,7 +2146,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       throws IOException, SAXException {
 
     try {
-      String xml = FileUtils.readFileToString(file, "UTF-8");
+      String xml = Files.readString(file.toPath());
       String results = TestHarness.validateXPath(xml, xpath);
       if (null != results) {
         String msg = "File XPath failure: file=" + file.getPath() + " xpath="
@@ -2193,62 +2193,52 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static void copyMinConf(File dstRoot, String propertiesContent, String solrconfigXmlName) throws IOException {
+    Path dstPath = dstRoot.toPath();
+    Path subHome = dstPath.resolve("conf");
+    Files.createDirectories(subHome);
 
-    File subHome = new File(dstRoot, "conf");
-    if (! dstRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
-    }
-    Files.createFile(dstRoot.toPath().resolve("core.properties"));
     if (propertiesContent != null) {
-      FileUtils.writeStringToFile(new File(dstRoot, "core.properties"), propertiesContent, StandardCharsets.UTF_8);
+      Files.writeString(dstRoot.toPath().resolve(CORE_PROPERTIES_FILENAME), propertiesContent);
     }
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
-    FileUtils.copyFile(new File(top, solrconfigXmlName), new File(subHome, "solrconfig.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+    Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+    Files.copy(top.resolve("schema-tiny.xml"), subHome.resolve("schema.xml"));
+    Files.copy(top.resolve(solrconfigXmlName), subHome.resolve("solrconfig.xml"));
+    Files.copy(top.resolve("solrconfig.snippet.randomindexconfig.xml"), subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
   // Creates minimal full setup, including solr.xml
   public static void copyMinFullSetup(File dstRoot) throws IOException {
-    if (! dstRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
-    }
-    File xmlF = new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml");
-    FileUtils.copyFile(xmlF, new File(dstRoot, "solr.xml"));
+    Files.createDirectories(dstRoot.toPath());
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.toPath().resolve("solr.xml"));
     copyMinConf(dstRoot);
   }
 
   // Just copies the file indicated to the tmp home directory naming it "solr.xml"
   public static void copyXmlToHome(File dstRoot, String fromFile) throws IOException {
-    if (! dstRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
-    }
-    File xmlF = new File(SolrTestCaseJ4.TEST_HOME(), fromFile);
-    FileUtils.copyFile(xmlF, new File(dstRoot, "solr.xml"));
-    
+    Files.createDirectories(dstRoot.toPath());
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.toPath().resolve("solr.xml"));
   }
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf and copies
   // the stock files in there.
 
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
-    if (!dstRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
-    }
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
+    Path subHome = dstRoot.toPath().resolve(collection).resolve("conf");
+    Files.createDirectories(subHome);
 
-    File subHome = new File(dstRoot, collection + File.separator + "conf");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "currency.xml"), new File(subHome, "currency.xml"));
-    FileUtils.copyFile(new File(top, "mapping-ISOLatin1Accent.txt"), new File(subHome, "mapping-ISOLatin1Accent.txt"));
-    FileUtils.copyFile(new File(top, "old_synonyms.txt"), new File(subHome, "old_synonyms.txt"));
-    FileUtils.copyFile(new File(top, "open-exchange-rates.json"), new File(subHome, "open-exchange-rates.json"));
-    FileUtils.copyFile(new File(top, "protwords.txt"), new File(subHome, "protwords.txt"));
-    FileUtils.copyFile(new File(top, "schema.xml"), new File(subHome, "schema.xml"));
-    FileUtils.copyFile(new File(top, "enumsConfig.xml"), new File(subHome, "enumsConfig.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig.xml"), new File(subHome, "solrconfig.xml"));
-    FileUtils.copyFile(new File(top, "stopwords.txt"), new File(subHome, "stopwords.txt"));
-    FileUtils.copyFile(new File(top, "synonyms.txt"), new File(subHome, "synonyms.txt"));
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.toPath().resolve("solr.xml"), StandardCopyOption.REPLACE_EXISTING);
+
+    Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+    Files.copy(top.resolve("currency.xml"), subHome.resolve("currency.xml"));
+    Files.copy(top.resolve("mapping-ISOLatin1Accent.txt"), subHome.resolve("mapping-ISOLatin1Accent.txt"));
+    Files.copy(top.resolve("old_synonyms.txt"), subHome.resolve("old_synonyms.txt"));
+    Files.copy(top.resolve("open-exchange-rates.json"), subHome.resolve("open-exchange-rates.json"));
+    Files.copy(top.resolve("protwords.txt"), subHome.resolve("protwords.txt"));
+    Files.copy(top.resolve("schema.xml"), subHome.resolve("schema.xml"));
+    Files.copy(top.resolve("enumsConfig.xml"), subHome.resolve("enumsConfig.xml"));
+    Files.copy(top.resolve("solrconfig.snippet.randomindexconfig.xml"), subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(top.resolve("solrconfig.xml"), subHome.resolve("solrconfig.xml"));
+    Files.copy(top.resolve("stopwords.txt"), subHome.resolve("stopwords.txt"));
+    Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
   public boolean compareSolrDocument(Object expected, Object actual) {
@@ -2902,7 +2892,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (null != allowedAlg) {
       // the user has explicitly requested to bypass our assertions and allow a particular alg
-      // the only thing we should do is assert that the algorithm they have whitelisted is actaully used
+      // the only thing we should do is assert that the algorithm they have allowed is actually used
       
       
       final String actualAlg = (new SecureRandom()).getAlgorithm();
@@ -2923,10 +2913,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     
     assertFalse("SecureRandom algorithm '" + algorithm + "' is in use by your JVM, " +
                 "which is a potentially blocking algorithm on some environments. " +
-                "Please report the details of this failure (and your JVM vendor/version) to solr-user@lucene.apache.org. " +
+                "Please report the details of this failure (and your JVM vendor/version) to users@solr.apache.org. " +
                 "You can try to run your tests with -D"+EGD+"="+URANDOM+" or bypass this check using " +
                 "-Dtest.solr.allowed.securerandom="+ algorithm +" as a JVM option when running tests.",
-                // be permissive in our checks and blacklist only algorithms 
+                // be permissive in our checks and deny only algorithms
                 // that are known to be blocking under some circumstances
                 algorithm.equals("NativePRNG") || algorithm.equals("NativePRNGBlocking"));
   }
