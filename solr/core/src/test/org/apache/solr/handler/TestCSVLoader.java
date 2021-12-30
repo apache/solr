@@ -16,15 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
@@ -34,6 +25,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestCSVLoader extends SolrTestCaseJ4 {
 
@@ -327,6 +327,24 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
 
   }
 
-  
+  @Test
+  public void CSVLoader_denseVector_shouldIndexCorrectly() throws Exception {
+    makeFile("id,vector\n"
+            + "999,\"1.3,2.3,3.3,4.3\"\n");
 
-}
+    loadLocal("commit", "true",
+            "f.str_s.map", ":EMPTY",
+            "f.vector.split", "true");
+
+    assertQ(req("q", "id:999", "fl", "vector"), "*[count(//doc)=1]",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[1][.='" + 1.3 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.3 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.3 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.3 + "']"
+    );
+  }
+  
+}  
+
+
+    

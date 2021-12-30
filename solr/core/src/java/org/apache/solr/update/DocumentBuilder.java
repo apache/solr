@@ -16,11 +16,6 @@
  */
 package org.apache.solr.update;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
 import com.google.common.collect.Sets;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -31,8 +26,15 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.CopyField;
+import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Builds a Lucene {@link Document} from a {@link SolrInputDocument}.
@@ -151,63 +153,49 @@ public class DocumentBuilder {
 
       String name = field.getName();
       SchemaField sfield = schema.getFieldOrNull(name);
-      boolean used = false;
       
-      // Make sure it has the correct number
-      if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued field " + 
-              sfield.getName() + ": " +field.getValue() );
-      }
-
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
       if( copyFields.size() == 0 ) copyFields = null;
 
+      // Make sure it has the correct number
+      if( sfield!=null && !(sfield.getType() instanceof DenseVectorField) && !sfield.multiValued() && field.getValueCount() > 1 ) {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued field " +
+                        sfield.getName() + ": " +field.getValue() );
+      }
+
       // load each field value
       boolean hasField = false;
+      boolean used = false;
       try {
-        Iterator<?> it = field.iterator();
-        while (it.hasNext()) {
-          Object v = it.next();
-          if( v == null ) {
-            continue;
+        if (sfield != null && sfield.getType() instanceof DenseVectorField) {
+          Object vectorValue = field.getValue();
+          if (vectorValue != null) {
+            hasField = true;
+            used = addOriginalField(vectorValue, sfield, forInPlaceUpdate, out, usedFields);
+
+            // Check if we should copy this field value to any other fields.
+            // This could happen whether it is explicit or not.
+            if (copyFields != null) {
+              used |= addCopyFields(vectorValue, sfield.getType(), copyFields, forInPlaceUpdate, uniqueKeyFieldName, out, usedFields);
+            }
           }
-          hasField = true;
-          if (sfield != null) {
-            used = true;
-            addField(out, sfield, v, forInPlaceUpdate);
-            // record the field as having a value
-            usedFields.add(sfield.getName());
-          }
-  
-          // Check if we should copy this field value to any other fields.
-          // This could happen whether it is explicit or not.
-          if (copyFields != null) {
-            for (CopyField cf : copyFields) {
-              SchemaField destinationField = cf.getDestination();
+        } else {
+          Iterator<?> it = field.iterator();
+          while (it.hasNext()) {
+            Object v = it.next();
+            if (v == null) {
+              continue;
+            }
+            hasField = true;
+            if (sfield != null) {
+              used = addOriginalField(v, sfield, forInPlaceUpdate, out, usedFields);
+            }
 
-              final boolean destHasValues = usedFields.contains(destinationField.getName());
-
-              // check if the copy field is a multivalued or not
-              if (!destinationField.multiValued() && destHasValues) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "Multiple values encountered for non multiValued copy field " +
-                    destinationField.getName() + ": " + v);
-              }
-
-              used = true;
-
-              // Perhaps trim the length of a copy field
-              Object val = v;
-              if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
-                  val = cf.getLimitedValue(val.toString());
-              }
-
-              // TODO ban copyField populating uniqueKeyField; too problematic to support
-              addField(out, destinationField, val,
-                       destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
-              // record the field as having a value
-              usedFields.add(destinationField.getName());
+            // Check if we should copy this field value to any other fields.
+            // This could happen whether it is explicit or not.
+            if (copyFields != null) {
+              used |= addCopyFields(v, sfield.getType(), copyFields, forInPlaceUpdate, uniqueKeyFieldName, out, usedFields);
             }
           }
         }
@@ -256,6 +244,48 @@ public class DocumentBuilder {
     }
     
     return out;
+  }
+
+  private static boolean addOriginalField( Object originalFieldValue, SchemaField sfield, boolean forInPlaceUpdate, Document out, Set<String> usedFields) {
+    addField(out, sfield, originalFieldValue, forInPlaceUpdate);
+    // record the field as having a value
+    usedFields.add(sfield.getName());
+    return true;
+  }
+
+  private static boolean addCopyFields(Object originalFieldValue, FieldType originalFieldType, List<CopyField> copyFields, boolean forInPlaceUpdate, String uniqueKeyFieldName, Document out, Set<String> usedFields) {
+    boolean used = false;
+    for (CopyField cf : copyFields) {
+      SchemaField destinationField = cf.getDestination();
+
+      final boolean destHasValues = usedFields.contains(destinationField.getName());
+
+      // Dense Vector Fields can only be copied to same field type
+      if (originalFieldType instanceof DenseVectorField && !(destinationField.getType() instanceof DenseVectorField)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "The copy field destination must be a DenseVectorField: " +
+                        destinationField.getName());
+      }
+      
+      // check if the copy field is a multivalued or not
+      if (!destinationField.multiValued() && destHasValues) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Multiple values encountered for non multiValued copy field " +
+                        destinationField.getName() + ": " + originalFieldValue);
+      }
+      // Perhaps trim the length of a copy field
+      if (originalFieldValue instanceof CharSequence && cf.getMaxChars() > 0) {
+        originalFieldValue = cf.getLimitedValue(originalFieldValue.toString());
+      }
+
+      // TODO ban copyField populating uniqueKeyField; too problematic to support
+      addField(out, destinationField, originalFieldValue,
+              destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+      // record the field as having a originalFieldValue
+      usedFields.add(destinationField.getName());
+      used = true;
+    }
+    return used;
   }
 
   private static SolrException unexpectedNestedDocException(IndexSchema schema, boolean forInPlaceUpdate) {

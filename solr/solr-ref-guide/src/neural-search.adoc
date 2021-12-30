@@ -70,7 +70,7 @@ The Dense Vector field gives the possibility of indexing and searching dense vec
 
 e.g.
 
-`[1.0, 2.5, 3.7, 4.1]` (a comma separated list of float elements, starting and ending with a square bracket)
+`[1.0, 2.5, 3.7, 4.1]` (array of float elements)
 
 Here's how `DenseVectorField` should be configured in the schema:
 
@@ -120,10 +120,10 @@ Here's how a `DenseVectorField` should be indexed:
 [source,json]
 ----
 [{ "id": "1",
-"vector": "[1.0, 2.5, 3.7, 4.1]"
+"vector": [1.0, 2.5, 3.7, 4.1]
 },
 { "id": "2",
-"vector": "[1.5, 5.5, 6.7, 65.1]"
+"vector": [1.5, 5.5, 6.7, 65.1]
 }
 ]
 ----
@@ -137,11 +137,17 @@ Here's how a `DenseVectorField` should be indexed:
 <add>
 <doc>
 <field name="id">1</field>
-<field name="vector">[1.0, 2.5, 3.7, 4.1]</field>
+<field name="vector">1.0</field>
+<field name="vector">2.5</field>
+<field name="vector">3.7</field>
+<field name="vector">4.1</field>
 </doc>
 <doc>
 <field name="id">2</field>
-<field name="vector">[1.5, 5.5, 6.7, 65.1]</field>
+<field name="vector">1.5</field>
+<field name="vector">5.5</field>
+<field name="vector">6.7</field>
+<field name="vector">65.1</field>
 </doc>
 </add>
 ----
@@ -156,11 +162,12 @@ final SolrClient client = getSolrClient();
 
 final SolrInputDocument d1 = new SolrInputDocument();
 d1.setField("id", "1");
-d1.setField("vector", "[1.0, 2.5, 3.7, 4.1]");
+d1.setField("vector", Arrays.asList(1.0f, 2.5f, 3.7f, 4.1f));
+
 
 final SolrInputDocument d2 = new SolrInputDocument();
 d2.setField("id", "2");
-d2.setField("vector", "[1.5, 5.5, 6.7, 65.1]");
+d2.setField("vector", Arrays.asList(1.5f, 5.5f, 6.7f, 65.1f));
 
 client.add(Arrays.asList(d1, d2));
 ----

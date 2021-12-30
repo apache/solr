@@ -50,7 +50,12 @@
   <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
   <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
-  
+
+  <!-- Dense Vector Fields -->
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+  <fieldType name="knn_vector2" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="dot_product"/>
+
+
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
@@ -697,8 +702,12 @@
   <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
   <field name="max_chars" type="string" indexed="false" stored="true"/>
-
-
+  
+  <!-- Dense Vector-->
+  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+  <field name="vector2" type="knn_vector2" indexed="true" stored="true"/>
+  <field name="vector3" type="knn_vector" indexed="true" stored="true"/>
+  
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
        will be used if the name matches any of the patterns.
        RESTRICTION: the glob-like pattern in the name attribute must have
@@ -904,6 +913,8 @@
   <copyField source="*_path" dest="*_ancestor"/>
 
   <copyField source="title" dest="max_chars" maxChars="10"/>
+  <copyField source="vector" dest="vector2"/>
+  <copyField source="vector3" dest="vector_f_p"/>
 
   <!-- example of a custom similarity -->
   <similarity class="solr.CustomSimilarityFactory">

@@ -18,14 +18,20 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.hamcrest.MatcherAssert;
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Arrays;
 
 import static org.hamcrest.core.Is.is;
 
 public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
-    
+
+    private DenseVectorField toTest = new DenseVectorField();
+
     @Test
     public void fieldTypeDefinition_badVectorDimension_shouldThrowException() throws Exception {
         assertConfigs("solrconfig-basic.xml", "bad-schema-densevector-dimension.xml",
@@ -47,7 +53,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     @Test
     public void fieldDefinition_docValues_shouldThrowException() throws Exception {
         assertConfigs("solrconfig-basic.xml", "bad-schema-densevector-docvalues.xml",
-                "does not support doc values");
+                "DenseVectorField fields can not have docValues: vector");
     }
 
     @Test
@@ -97,15 +103,83 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
 
     @Test
+    public void parseVector_NotAList_shouldThrowException() {
+        RuntimeException thrown = Assert.assertThrows("Single string value should throw an exception", SolrException.class, () -> {
+            toTest.parseVector("string");
+        });
+        MatcherAssert.assertThat(thrown.getMessage(), is("incorrect vector format." +
+                " The expected format is an array :'[f1,f2..f3]' where each element f is a float"));
+
+        thrown = Assert.assertThrows("Single float value should throw an exception", SolrException.class, () -> {
+            toTest.parseVector(1.5f);
+        });
+        MatcherAssert.assertThat(thrown.getMessage(), is("incorrect vector format." +
+                " The expected format is an array :'[f1,f2..f3]' where each element f is a float"));
+    }
+
+    @Test
+    public void parseVector_incorrectVectorDimension_shouldThrowException() {
+        toTest.dimension = 3;
+
+        RuntimeException thrown = Assert.assertThrows("Incorrect vector dimension should throw an exception", SolrException.class, () -> {
+            toTest.parseVector(Arrays.asList(1.0f, 1.5f));
+        });
+        MatcherAssert.assertThat(thrown.getMessage(), is("incorrect vector dimension. The vector value has size 2 while it is expected a vector with size 3"));
+    }
+
+    @Test
+    public void parseVector_incorrectElement_shouldThrowException() {
+        toTest.dimension = 3;
+
+        RuntimeException thrown = Assert.assertThrows("Incorrect elements should throw an exception", SolrException.class, () -> {
+            toTest.parseVector(Arrays.asList("1.0f", "string", "string2"));
+        });
+        MatcherAssert.assertThat(thrown.getMessage(), is("incorrect vector element: 'string'. The expected format is:'[f1,f2..f3]' where each element f is a float"));
+    }
+
+    /**
+     * The inputValue is an ArrayList with a type that dipends on the loader used:
+     * - {@link org.apache.solr.handler.loader.XMLLoader}, {@link org.apache.solr.handler.loader.CSVLoader} produces an ArrayList of String
+     */
+    @Test
+    public void parseVector_StringArrayList_shouldParseFloatArray() {
+        toTest.dimension = 3;
+        float[] expected = new float[]{1.1f, 2.2f, 3.3f};
+
+        MatcherAssert.assertThat(toTest.parseVector(Arrays.asList("1.1", "2.2", "3.3")), is(expected));
+    }
+
+    /**
+     * The inputValue is an ArrayList with a type that dipends on the loader used:
+     * - {@link org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double
+     */
+    @Test
+    public void parseVector_DoubleArrayList_shouldParseFloatArray() {
+        toTest.dimension = 3;
+        float[] expected = new float[]{1.7f, 5.4f, 6.6f};
+
+        MatcherAssert.assertThat(toTest.parseVector(Arrays.asList(1.7d, 5.4d, 6.6d)), is(expected));
+    }
+
+    /**
+     * The inputValue is an ArrayList with a type that dipends on the loader used:
+     * - {@link org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
+     */
+    @Test
+    public void parseVector_FloatArrayList_shouldParseFloatArray() {
+        toTest.dimension = 3;
+        float[] expected = new float[]{5.5f, 7.7f, 9.8f};
+
+        MatcherAssert.assertThat(toTest.parseVector(Arrays.asList(5.5f, 7.7f, 9.8f)), is(expected));
+    }
+
+    @Test
     public void indexing_incorrectVectorFormat_shouldThrowException() throws Exception {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
-            assertFailedU(adoc("id", "0", "vector", "[1.0 ,2,3ss,4]"));
-            assertFailedU(adoc("id", "0", "vector", "1,2,3,4]"));
-            assertFailedU(adoc("id", "0", "vector", "2.0, 4.4, 3.5, 6.4"));
-            assertFailedU(adoc("id", "0", "vector", "[1,2,3,4"));
-            assertFailedU(adoc("id", "0", "vector", "[1,,2,3,4]"));
+            assertFailedU(adoc("id", "0", "vector", "5.4"));
+            assertFailedU(adoc("id", "0", "vector", "string"));
         } finally {
             deleteCore();
         }
@@ -114,10 +188,19 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     @Test
     public void indexing_inconsistentVectorDimension_shouldThrowException() throws Exception {
         try {
+            //vectorDimension = 4
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
-            assertFailedU(adoc("id", "0", "vector", "[1, 2, 3]"));
-            assertFailedU(adoc("id", "0", "vector", "[1, 2, 3, 4, 5]"));
+            SolrInputDocument toFailDoc1 = new SolrInputDocument();
+            toFailDoc1.addField("id", "0");
+            toFailDoc1.addField("vector", Arrays.asList(1, 2, 3));
+
+            SolrInputDocument toFailDoc2 = new SolrInputDocument();
+            toFailDoc2.addField("id", "0");
+            toFailDoc2.addField("vector", Arrays.asList(1, 2, 3, 4, 5));
+
+            assertFailedU(adoc(toFailDoc1));
+            assertFailedU(adoc(toFailDoc2));
         } finally {
             deleteCore();
         }
@@ -128,7 +211,11 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
-            assertU(adoc("id", "0", "vector", "[1.0, 2.0, 3.0, 4.0]"));
+            SolrInputDocument correctDoc = new SolrInputDocument();
+            correctDoc.addField("id", "0");
+            correctDoc.addField("vector", Arrays.asList(1, 2, 3, 4));
+
+            assertU(adoc(correctDoc));
         } finally {
             deleteCore();
         }
@@ -139,12 +226,21 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
-            String vectorValue = "[1.0, 2.0, 3.0, 4.0]";
-            assertU(adoc("id", "0", "vector", vectorValue));
+            SolrInputDocument doc1 = new SolrInputDocument();
+            doc1.addField("id", "0");
+            doc1.addField("vector", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
+            assertU(adoc(doc1));
             assertU(commit());
 
+            assertJQ(req("q","id:0", "fl","vector"),
+                    "/response/docs/[0]=={'vector':[1.1,2.1,3.1,4.1]}");
+            
             assertQ(req("q", "id:0", "fl", "vector"), "*[count(//doc)=1]",
-                    "//result/doc[1]/str[@name='vector'][.='" + vectorValue + "']");
+                    "//result/doc[1]/arr[@name=\"vector\"]/float[1][.='" + 1.1 + "']",
+                    "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.1 + "']",
+                    "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.1 + "']",
+                    "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.1 + "']"
+            );
         } finally {
             deleteCore();
         }
@@ -157,10 +253,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     public void query_rangeSearch_shouldThrowException() throws Exception {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
-
-            String vectorValue = "[1.0, 2.0, 3.0, 4.0]";
-            assertU(adoc("id", "0", "vector", vectorValue));
-            assertU(commit());
 
             assertQEx("Running Range queries on a dense vector field should raise an Exception",
                     "Cannot parse 'vector:[[1.0 2.0] TO [1.5 2.5]]'",
@@ -185,10 +277,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
-            String vectorValue = "[1.0, 2.0, 3.0, 4.0]";
-            assertU(adoc("id", "0", "vector", vectorValue));
-            assertU(commit());
-
             assertQEx("Running Existence queries on a dense vector field should raise an Exception",
                     "Range Queries are not supported for Dense Vector fields." +
                             " Please use the {!knn} query parser to run K nearest neighbors search queries.",
@@ -206,10 +294,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     public void query_fieldQuery_shouldThrowException() throws Exception {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
-
-            String vectorValue = "[1.0, 2.0, 3.0, 4.0]";
-            assertU(adoc("id", "0", "vector", vectorValue));
-            assertU(commit());
 
             assertQEx("Running Field queries on a dense vector field should raise an Exception",
                     "Cannot parse 'vector:[1.0, 2.0, 3.0, 4.0]",
@@ -240,10 +324,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
-            String vectorValue = "[1.0, 2.0, 3.0, 4.0]";
-            assertU(adoc("id", "0", "vector", vectorValue));
-            assertU(commit());
-
             assertQEx("Sort over vectors should raise an Exception",
                     "Cannot sort on a Dense Vector field",
                     req("q", "*:*", "sort", "vector desc"),
@@ -260,11 +340,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     public void query_functionQueryUsage_shouldThrowException() throws Exception {
         try {
             initCore("solrconfig-basic.xml", "schema-densevector.xml");
-
-            String vectorValue = "[1.0, 2.0, 3.0, 4.0]";
-            assertU(adoc("id", "0", "vector", vectorValue));
-            assertU(commit());
-
+            
             assertQEx("Running Function queries on a dense vector field should raise an Exception",
                     "Function queries are not supported for Dense Vector fields.",
                     req("q", "*:*", "fl", "id,field(vector)"),

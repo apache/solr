@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.KnnVectorField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
@@ -25,11 +24,9 @@ import org.apache.lucene.search.KnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -48,17 +45,17 @@ import static java.util.Optional.ofNullable;
  * <br>
  * Only {@code Indexed} and {@code Stored} attributes are supported.
  */
-public class DenseVectorField extends FieldType {
+public class DenseVectorField extends FloatPointField {
 
     static final String KNN_VECTOR_DIMENSION = "vectorDimension";
     static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
-    
+
     int dimension;
     VectorSimilarityFunction similarityFunction;
     VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
 
     @Override
-    public void init(IndexSchema schema, Map<String, String> args){
+    public void init(IndexSchema schema, Map<String, String> args) {
         this.dimension = ofNullable(args.get(KNN_VECTOR_DIMENSION))
                 .map(value -> parseDimensionParameter(value))
                 .orElseThrow(() -> new SolrException(SolrException.ErrorCode.SERVER_ERROR, "the vector dimension is a mandatory parameter"));
@@ -83,6 +80,10 @@ public class DenseVectorField extends FieldType {
         }
     }
 
+    public int getDimension() {
+        return dimension;
+    }
+
     @Override
     public void checkSchemaField(final SchemaField field) throws SolrException {
         super.checkSchemaField(field);
@@ -90,21 +91,80 @@ public class DenseVectorField extends FieldType {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                     getClass().getSimpleName() + " fields can not be multiValued: " + field.getName());
         }
+
+        if (field.hasDocValues()) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                    getClass().getSimpleName() + " fields can not have docValues: " + field.getName());
+        }
     }
     
     public List<IndexableField> createFields(SchemaField field, Object value) {
         List<IndexableField> fields = new ArrayList<>();
-        if (field.indexed()){
-            fields.add(createField(field, value));
+        float[] parsedVector;
+        try {
+            parsedVector = parseVector(value);
+        } catch (RuntimeException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]", e);
         }
-        if (field.stored()){
-            fields.add(createStoredField(field, value));
+
+        if (field.indexed()) {
+            fields.add(createField(field, parsedVector));
+        }
+        if (field.stored()) {
+            for (float vectorElement : parsedVector) {
+                fields.add(getStoredField(field, vectorElement));
+            }
         }
         return fields;
     }
 
-    private IndexableField createStoredField(SchemaField field, Object value) {
-        return new StoredField(field.getName(), value.toString());
+    @Override
+    public IndexableField createField(SchemaField field, Object parsedVector) {
+        float[] typedVector;
+        if (parsedVector == null) return null;
+        typedVector = (float[]) parsedVector;
+        return new KnnVectorField(field.getName(), typedVector, similarityFunction);
+    }
+
+    /**
+     * Index Time Parsing
+     * The inputValue is an ArrayList with a type that dipends on the loader used:
+     * - {@link org.apache.solr.handler.loader.XMLLoader}, {@link org.apache.solr.handler.loader.CSVLoader} produces an ArrayList of String
+     * - {@link org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double
+     * - {@link org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
+     *
+     * @param inputValue - An {@link ArrayList} containing the elements of the vector
+     * @return the vector parsed
+     */
+    float[] parseVector(Object inputValue) {
+        if (!(inputValue instanceof List)) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format." +
+                    " The expected format is an array :'[f1,f2..f3]' where each element f is a float");
+        }
+        List<?> inputVector = (List<?>) inputValue;
+        if (inputVector.size() != dimension) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector dimension." +
+                    " The vector value has size "
+                    + inputVector.size() + " while it is expected a vector with size " + dimension);
+        }
+
+        float[] vector = new float[dimension];
+        if (inputVector.get(0) instanceof CharSequence) {
+            for (int i = 0; i < dimension; i++) {
+                try {
+                    vector[i] = Float.parseFloat(inputVector.get(i).toString());
+                } catch (NumberFormatException e) {
+                    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector element: '" + inputVector.get(i) +
+                            "'. The expected format is:'[f1,f2..f3]' where each element f is a float");
+                }
+            }
+        } else if (inputVector.get(0) instanceof Number) {
+            for (int i = 0; i < dimension; i++) {
+                vector[i] = ((Number) inputVector.get(i)).floatValue();
+            }
+        }
+
+        return vector;
     }
 
     @Override
@@ -118,56 +178,7 @@ public class DenseVectorField extends FieldType {
                 "Function queries are not supported for Dense Vector fields.");
     }
 
-    @Override
-    public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-        writer.writeVal(name, f.stringValue());
-    }
-
-    @Override
-    public IndexableField createField(SchemaField field, Object value) {
-        float[] parsedVector;
-        try {
-            parsedVector = parseVector(value.toString());
-        } catch (RuntimeException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]", e);
-        }
-        if (parsedVector == null) return null;
-
-        return new KnnVectorField(field.getName(), parsedVector, similarityFunction);
-    }
-
-    /**
-     * Parses a String vector.
-     *
-     * @param value with format: [f1, f2, f3, f4...fn]
-     * @return a float array
-     */
-    private float[] parseVector(String value) {
-        if (!value.startsWith("[") || !value.endsWith("]")) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format." +
-                    " The expected format is:'[f1,f2..f3]' where each element f is a float");
-        }
-        
-        String[] elements = value.substring(1, value.length() - 1).split(",");
-        if (elements.length != dimension) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector dimension." +
-                    " The vector value has size "
-                    + elements.length + " while it is expected a vector with size " + dimension);
-        }
-        float[] vector = new float[dimension];
-        for (int i = 0; i < dimension; i++) {
-            try {
-                vector[i] = Float.parseFloat(elements[i]);
-            } catch (NumberFormatException e) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector element: '" + elements[i] +
-                        "'. The expected format is:'[f1,f2..f3]' where each element f is a float");
-            }
-        }
-        return vector;
-    }
-
-    public Query getKnnVectorQuery(SchemaField field, String valueToSearch, int topK) {
-        float[] vectorToSearch = parseVector(valueToSearch);
+    public Query getKnnVectorQuery(SchemaField field, float[] vectorToSearch, int topK) {
         return new KnnVectorQuery(field.getName(), vectorToSearch, topK);
     }
 

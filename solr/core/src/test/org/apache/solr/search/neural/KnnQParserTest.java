@@ -18,39 +18,61 @@ package org.apache.solr.search.neural;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import static org.apache.solr.search.neural.KnnQParser.DEFAULT_TOP_K;
 
 public class KnnQParserTest extends SolrTestCaseJ4 {
-
+    String IDField = "id";
+    String vectorField = "vector";
+    String vectorField2 = "vector2";
+    
     @Before
     public void prepareIndex() throws Exception {
         /* vectorDimension="4" similarityFunction="cosine" */
         initCore("solrconfig-basic.xml", "schema-densevector.xml");
-        String id = "id";
-        String vectorField = "vector";
-        String vectorField2 = "vector2";
-
-        assertU(adoc(id, "1", vectorField, "[1.0, 2.0, 3.0, 4.0]")); // cosine distance vector1= 1
-        assertU(adoc(id, "2", vectorField, "[1.5, 2.5, 3.5, 4.5]")); // cosine distance vector1= 0.998
-        assertU(adoc(id, "3", vectorField, "[7.5, 15.5, 17.5, 22.5]"));// cosine distance vector1= 0.992
-        assertU(adoc(id, "4", vectorField, "[1.4, 2.4, 3.4, 4.4]"));// cosine distance vector1= 0.999
-        assertU(adoc(id, "5", vectorField, "[30.0, 22.0, 35.0, 20.0]"));// cosine distance vector1= 0.862
-        assertU(adoc(id, "6", vectorField, "[40, 1, 1, 200]"));// cosine distance vector1= 0.756
-        assertU(adoc(id, "7", vectorField, "[5, 10, 20, 40]"));// cosine distance vector1= 0.970
-        assertU(adoc(id, "8", vectorField, "[120, 60, 30, 15]"));// cosine distance vector1= 0.515
-        assertU(adoc(id, "9", vectorField, "[200, 50, 100, 25]"));// cosine distance vector1= 0.554
-        assertU(adoc(id, "10", vectorField, "[1.8, 2.5, 3.7, 4.9]"));// cosine distance vector1= 0.997
-
-        assertU(adoc(id, "11", vectorField2, "[1.0, 2.0, 3.0, 4.0]")); // cosine distance vector2= 1
-        assertU(adoc(id, "12", vectorField2, "[7.5, 15.5, 17.5, 22.5]"));// cosine distance vector2= 0.992
-        assertU(adoc(id, "13", vectorField2, "[1.5, 2.5, 3.5, 4.5]")); // cosine distance vector2= 0.998
+        
+        List<SolrInputDocument> docsToIndex = this.prepareDocs();
+        for(SolrInputDocument doc:docsToIndex){
+            assertU(adoc(doc));
+        }
 
         assertU(commit());
+    }
+
+    private List<SolrInputDocument> prepareDocs() {
+        int docsCount = 13;
+        List<SolrInputDocument> docs = new ArrayList<>(docsCount);
+        for (int i = 1; i < docsCount + 1; i++) {
+            SolrInputDocument doc = new SolrInputDocument();
+            doc.addField(IDField, i);
+            docs.add(doc);
+        }
+
+        docs.get(0).addField(vectorField, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector1= 1.0
+        docs.get(1).addField(vectorField, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector1= 0.998
+        docs.get(2).addField(vectorField, Arrays.asList(7.5f, 15.5f, 17.5f, 22.5f)); // cosine distance vector1= 0.992
+        docs.get(3).addField(vectorField, Arrays.asList(1.4f, 2.4f, 3.4f, 4.4f)); // cosine distance vector1= 0.999
+        docs.get(4).addField(vectorField, Arrays.asList(30f, 22f, 35f, 20f)); // cosine distance vector1= 0.862
+        docs.get(5).addField(vectorField, Arrays.asList(40f, 1f, 1f, 200f)); // cosine distance vector1= 0.756
+        docs.get(6).addField(vectorField, Arrays.asList(5f, 10f, 20f, 40f)); // cosine distance vector1= 0.970
+        docs.get(7).addField(vectorField, Arrays.asList(120f, 60f, 30f, 15f)); // cosine distance vector1= 0.515
+        docs.get(8).addField(vectorField, Arrays.asList(200f, 50f, 100f, 25f)); // cosine distance vector1= 0.554
+        docs.get(9).addField(vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f)); // cosine distance vector1= 0.997
+
+        docs.get(10).addField(vectorField2, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector2= 1
+        docs.get(11).addField(vectorField2, Arrays.asList(7.5f, 15.5f, 17.5f, 22.5f)); // cosine distance vector2= 0.992
+        docs.get(12).addField(vectorField2, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector2= 0.998
+
+        return docs;
     }
 
     @After
