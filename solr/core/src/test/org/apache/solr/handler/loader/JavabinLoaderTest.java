@@ -16,6 +16,12 @@
  */
 package org.apache.solr.handler.loader;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
@@ -28,12 +34,6 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class JavabinLoaderTest extends SolrTestCaseJ4 {
   @BeforeClass
